@@ -4254,6 +4254,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 	AverageTangGridVel  		= new su2double*[nMarker];
 	SpanArea 								= new su2double*[nMarker];
 	TurboRadius 					  = new su2double*[nMarker];
+
 	for (iMarker = 0; iMarker < nMarker; iMarker++){
 		nVertexSpan[iMarker] 								= NULL;
 		nTotVertexSpan[iMarker] 						= NULL;
@@ -4265,6 +4266,25 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 		SpanArea[iMarker]										= NULL;
 		TurboRadius[iMarker]								= NULL;
 	}
+
+	/*--- initialize pointers for turbomachinery performance computation  ---*/
+
+	AverageTangGridVelIn  		= new su2double*[config->GetnMarker_TurboPerformance()];
+	SpanAreaIn 								= new su2double*[config->GetnMarker_TurboPerformance()];
+	TurboRadiusIn 					  = new su2double*[config->GetnMarker_TurboPerformance()];
+	AverageTangGridVelOut  		= new su2double*[config->GetnMarker_TurboPerformance()];
+	SpanAreaOut 							= new su2double*[config->GetnMarker_TurboPerformance()];
+	TurboRadiusOut 					  = new su2double*[config->GetnMarker_TurboPerformance()];
+
+	for (iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
+		AverageTangGridVelIn[iMarker]					= NULL;
+		SpanAreaIn[iMarker]										= NULL;
+		TurboRadiusIn[iMarker]								= NULL;
+		AverageTangGridVelOut[iMarker]			  = NULL;
+		SpanAreaOut[iMarker]									= NULL;
+		TurboRadiusOut[iMarker]								= NULL;
+	}
+
   /*--- Release all of the temporary memory ---*/
   
   delete [] nDim_s;
@@ -8466,7 +8486,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 	unsigned long iPoint, iVertex;
 	long check, jVertex;
 	int nSpan, nSpan_loc, nSpan_max;
-  su2double *coord, *valueSpan, *valueSpan_gb, min, max, radius, target, delta;
+  su2double *coord, *valueSpan, min, max, radius, target, delta;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
   short SendRecv;
@@ -8527,13 +8547,6 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   		SU2_MPI::Allreduce(&My_MaxnSpan, &nSpan_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
-
-  		// check on the global number local number of span and on the max number
-  		//
-  		//	if(rank == MASTER_NODE){
-  		//		cout << "Ngloabl " << nSpan << " n loc " << nSpan_loc << endl;
-  		//		cout << "NSpan max " <<nSpan_max << endl;
-  		//	}
 
 
   		/*--- initialize the vector that will contain the disordered values span-wise ---*/
@@ -9770,6 +9783,172 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
   delete [] Normal;
 
 }
+
+
+void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
+
+  unsigned short iMarker, iMarkerTP;
+  unsigned short iSpan, iDim, i, n1, n2, n1t,n2t;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  int markerTP;
+  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+
+  su2double tangGridVelIn, tangGridVelOut;
+  su2double areaIn, areaOut;
+  su2double radiusIn, radiusOut;
+
+  if(allocate){
+  	for (iMarkerTP=0; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      SpanAreaIn[iMarkerTP]       = new su2double[nSpanWiseSections +1];
+      TangGridVelIn[iMarkerTP]    = new su2double[nSpanWiseSections +1];
+      TurboRadiusIn[iMarkerTP]    = new su2double[nSpanWiseSections +1];
+      SpanAreaOut[iMarkerTP]      = new su2double[nSpanWiseSections +1];
+			TangGridVelOut[iMarkerTP]   = new su2double[nSpanWiseSections +1];
+		  TurboRadiusOut[iMarkerTP]   = new su2double[nSpanWiseSections +1];
+
+		  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
+	      SpanAreaIn[iMarkerTP][iSpan]       = 0.0;
+	      TangGridVelIn[iMarkerTP][iSpan]    = 0.0;
+	      TurboRadiusIn[iMarkerTP][iSpan]     = 0.0;
+	      SpanAreaOut[iMarkerTP][iSpan]      = 0.0;
+	      TangGridVelOut[iMarkerTP][iSpan]   = 0.0;
+	      TurboRadiusOut[iMarkerTP][iSpan]   = 0.0;
+		  }
+  	}
+  }
+
+
+
+  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    su2double *TurbGeoIn= NULL,*TurbGeoOut= NULL;
+    su2double *TotTurbGeoIn = NULL,*TotTurbGeoOut = NULL;
+    int *TotMarkerTP;
+
+    n1          = 3;
+    n2          = 3;
+    n1t         = n1*size;
+    n2t         = n2*size;
+    TurbGeoIn  = new su2double[n1];
+    TurbGeoOut = new su2double[n2];
+
+    for (i=0;i<n1;i++)
+      TurbGeoIn[i]    = -1.0;
+    for (i=0;i<n2;i++)
+      TurbGeoOut[i]   = -1.0;
+#endif
+
+    areaIn           		 = -1.0;
+    tangGridVelIn        = -1.0;
+    radiusIn     				 = -1.0;
+
+    areaOut          		 = -1.0;
+    tangGridVelOut       = -1.0;
+    radiusOut    				 = -1.0;
+
+		markerTP          = -1;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
+          	 markerTP            = iMarkerTP;
+          	 areaIn          		 = SpanArea[iMarker][iSpan];
+          	 tangGridVelIn       = AverageTangGridVel[iMarker][iSpan];
+          	 radiusIn    				 = TurboRadius[iMarker][iSpan];
+
+#ifdef HAVE_MPI
+          	 TurbGeoIn[0]  = areaIn;
+          	 TurbGeoIn[1]  = tangGridVelIn;
+          	 TurbGeoIn[2]  = radiusIn;
+#endif
+          }
+
+          /*--- retrieve outlet information ---*/
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
+          	areaOut         		= SpanArea[iMarker][iSpan];
+          	tangGridVelOut      = AverageTangGridVel[iMarker][iSpan];
+          	radiusOut   				= TurboRadius[iMarker][iSpan];
+
+
+#ifdef HAVE_MPI
+         	 TurbGeoOut[0]  = areaOut;
+         	 TurbGeoOut[1]  = tangGridVelOut;
+         	 TurbGeoOut[2]  = radiusOut;
+#endif
+          }
+        }
+      }
+    }
+
+#ifdef HAVE_MPI
+    if (rank == MASTER_NODE){
+      TotTurbGeoIn       = new su2double[n1t];
+      TotTurbGeoOut      = new su2double[n2t];
+      for (i=0;i<n1t;i++)
+        TotTurbGeoIn[i]  = -1.0;
+      for (i=0;i<n2t;i++)
+        TotTurbGeoOut[i] = -1.0;
+      TotMarkerTP = new int[size];
+      for(i=0; i<size; i++){
+        TotMarkerTP[i]    = -1;
+      }
+    }
+    SU2_MPI::Gather(TurbGeoIn, n1, MPI_DOUBLE, TotTurbGeoIn, n1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(TurbGeoOut, n2, MPI_DOUBLE,TotTurbGeoOut, n2, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    if (rank == MASTER_NODE){
+      delete [] TurbGeoIn, delete [] TurbGeoOut;
+    }
+
+    if (rank == MASTER_NODE){
+      for (i=0;i<size;i++){
+        if(TotTurbGeoIn[n1*i] > 0.0){
+          areaIn              = 0.0;
+          areaIn              = TotTurbGeoIn[n1*i];
+          tangGridVelIn       = 0.0;
+          tangGridVelIn       = TotTurbGeoIn[n1*i+1];
+          readiusIn 					= 0.0;
+          readiusIn 					= TotTurbGeoIn[n1*i+2];
+
+          markerTP               = -1;
+          markerTP               = TotMarkerTP[i];
+        }
+
+        if(TotTurbGeoOut[n2*i] > 0.0){
+        	areaOut             = 0.0;
+        	areaOut             = TotTurbGeoOut[n1*i];
+        	tangGridVelOut      = 0.0;
+        	tangGridVelOut      = TotTurbGeoOut[n1*i+1];
+        	radiusOut 					= 0.0;
+        	radiusOut 					= TotTurbGeoOut[n1*i+2];
+
+        }
+      }
+
+      delete [] TotTurbGeoIn, delete [] TotTurbGeoOut; delete [] TotMarkerTP;
+    }
+
+#endif
+
+    if (rank == MASTER_NODE){
+      /*----Quantities needed for computing the turbomachinery performance -----*/
+      SpanAreaIn[markerTP -1][iSpan]       = areaIn;
+      TangGridVelIn[markerTP -1][iSpan]    = tangGridVelIn;
+      TurboRadiusIn[markerTP -1][iSpan]    = radiusIn;
+
+      SpanAreaOut[markerTP -1][iSpan]      = areaOut;
+      TangGridVelOut[markerTP -1][iSpan]   = tangGridVelOut;
+      TurboRadiusOut[markerTP -1][iSpan]   = radiusOut;
+
+
+    }
+  }
+}
+
 
 void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
