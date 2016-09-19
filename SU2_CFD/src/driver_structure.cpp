@@ -3138,6 +3138,7 @@ void CSingleZoneDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate
 	}
 	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, allocate);
 	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, allocate);
+	geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], allocate);
 
 }
 

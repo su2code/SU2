@@ -179,6 +179,8 @@ inline void CGeometry::SetTurboVertex(CConfig *config,unsigned short val_iZone, 
 
 inline void CGeometry::SetAvgTurboValue(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 
+inline void CGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){ }
+
 inline su2double* CGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){ return NULL;}
 
 inline su2double* CGeometry::GetAverageGridVel(unsigned short val_marker, unsigned short val_span){ return NULL;}

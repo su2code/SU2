@@ -4269,18 +4269,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
 	/*--- initialize pointers for turbomachinery performance computation  ---*/
 
-	AverageTangGridVelIn  		= new su2double*[config->GetnMarker_TurboPerformance()];
+	TangGridVelIn  		= new su2double*[config->GetnMarker_TurboPerformance()];
 	SpanAreaIn 								= new su2double*[config->GetnMarker_TurboPerformance()];
 	TurboRadiusIn 					  = new su2double*[config->GetnMarker_TurboPerformance()];
-	AverageTangGridVelOut  		= new su2double*[config->GetnMarker_TurboPerformance()];
+	TangGridVelOut  		= new su2double*[config->GetnMarker_TurboPerformance()];
 	SpanAreaOut 							= new su2double*[config->GetnMarker_TurboPerformance()];
 	TurboRadiusOut 					  = new su2double*[config->GetnMarker_TurboPerformance()];
 
 	for (iMarker = 0; iMarker < config->GetnMarker_TurboPerformance(); iMarker++){
-		AverageTangGridVelIn[iMarker]					= NULL;
+		TangGridVelIn[iMarker]								= NULL;
 		SpanAreaIn[iMarker]										= NULL;
 		TurboRadiusIn[iMarker]								= NULL;
-		AverageTangGridVelOut[iMarker]			  = NULL;
+		TangGridVelOut[iMarker]			  				= NULL;
 		SpanAreaOut[iMarker]									= NULL;
 		TurboRadiusOut[iMarker]								= NULL;
 	}
@@ -9799,7 +9799,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   su2double radiusIn, radiusOut;
 
   if(allocate){
-  	for (iMarkerTP=0; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+  	for (iMarkerTP=0; iMarkerTP < config->GetnMarker_TurboPerformance(); iMarkerTP++){
       SpanAreaIn[iMarkerTP]       = new su2double[nSpanWiseSections +1];
       TangGridVelIn[iMarkerTP]    = new su2double[nSpanWiseSections +1];
       TurboRadiusIn[iMarkerTP]    = new su2double[nSpanWiseSections +1];
@@ -9911,8 +9911,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
           areaIn              = TotTurbGeoIn[n1*i];
           tangGridVelIn       = 0.0;
           tangGridVelIn       = TotTurbGeoIn[n1*i+1];
-          readiusIn 					= 0.0;
-          readiusIn 					= TotTurbGeoIn[n1*i+2];
+          radiusIn 					  = 0.0;
+          radiusIn 					  = TotTurbGeoIn[n1*i+2];
 
           markerTP               = -1;
           markerTP               = TotMarkerTP[i];
