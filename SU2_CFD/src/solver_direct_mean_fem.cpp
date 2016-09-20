@@ -1475,12 +1475,104 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
 
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  
+
+  /* Initialize solutionSet. If a solution is set below, this boolean must be
+     set to true, such that the solution is communicated to the halo elements
+     at the end of this function. */
+  bool solutionSet = false;
+
+#ifdef INVISCID_VORTEX
+
+  solutionSet = true;
+
+  /* The initial conditions are set to the solution of the inviscid vortex,
+     which is an exact solution of the Euler equations. The initialization
+     below is valid for both 2D and 3D. For the 3D case the z-direction is
+     assumed to be the direction in which the solution does not change.
+     First set the parameters, which define this test case. */
+
+  const su2double MachVortex  = 0.5;     // Mach number of the undisturbed flow.
+  const su2double x0Vortex    = 0.0;     // Initial x-coordinate of the vortex center.
+  const su2double y0Vortex    = 0.0;     // Initial y-coordinate of the vortex center.
+  const su2double RVortex     = 0.1;     // Radius of the vortex.
+  const su2double epsVortex   = 1.0;     // Strength of the vortex.
+  const su2double thetaVortex = 0.0;     // Advection angle (in degrees) of the vortex.
+
+  /* Compute the free stream velocities in x- and y-direction. */
+  const su2double VelInf = MachVortex*sqrt(Gamma);
+  const su2double uInf   = VelInf*cos(thetaVortex*PI_NUMBER/180.0);
+  const su2double vInf   = VelInf*sin(thetaVortex*PI_NUMBER/180.0);
+
+  /* Useful coefficients in which Gamma is present. */
+  const su2double ovGm1    = 1.0/Gamma_Minus_One;
+  const su2double gamOvGm1 = Gamma*ovGm1;
+
+  /* Loop over the owned elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Loop over the DOFs of this element. */
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+
+      // Set the pointer to the solution of this DOF and to the
+      // coordinates of its corresponding node ID of the grid.
+      su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+
+      const unsigned long ind = volElem[i].nodeIDsGrid[j];
+      const su2double *coor   = meshPoints[ind].coor;
+
+      /* Compute the coordinates relative to the center of the vortex. */
+      const su2double dx = coor[0] - x0Vortex;
+      const su2double dy = coor[1] - y0Vortex;
+
+      /* Compute the components of the velocity. */
+      su2double f  = 1.0 - (dx*dx + dy*dy)/(RVortex*RVortex);
+      su2double t1 = epsVortex*dy*exp(0.5*f)/(2.0*PI_NUMBER*RVortex);
+      su2double u  = uInf - VelInf*t1;
+
+      t1          = epsVortex*dx*exp(0.5*f)/(2.0*PI_NUMBER*RVortex);
+      su2double v = vInf + VelInf*t1;
+
+      /* Compute the density and the pressure. */
+      t1 = 1.0 - epsVortex*epsVortex*Gamma_Minus_One
+         *       MachVortex*MachVortex*exp(f)/(8.0*PI_NUMBER*PI_NUMBER);
+
+      su2double rho = pow(t1,ovGm1);
+      su2double p   = pow(t1,gamOvGm1);
+
+      /* Compute the conservative variables. Note that both 2D and 3D
+         cases are treated correctly. */
+      solDOF[0]      = rho;
+      solDOF[1]      = rho*u;
+      solDOF[2]      = rho*v;
+      solDOF[3]      = 0.0;
+      solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
+    }
+  }
+
+#endif
+
   /*--- Set initial conditions here. We can do this with config options,
    e.g., config->GetInviscid_Vortex(), or through preprocessor directives,
-   e.g., #ifdef TGV. Don't forget to communicate the solution to halos at
-   the end for parallel simulations. ---*/
+   e.g., #ifdef TGV. ---*/
   
+
+  /*--- If the solution was set in this function, perform the MPI
+        communication of the solution including the possible self
+        communication for the periodic data. Correct for rotational
+        periodicity afterwards, if needed. ---*/
+
+  if( solutionSet ) {
+
+#ifdef HAVE_MPI
+    if( nCommRequests ) {
+      MPI_Startall(nCommRequests, commRequests.data());
+      SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
+    }
+#endif
+
+    SelfCommunication();
+    CorrectForRotationalPeriodicity();
+  }
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -2694,8 +2786,26 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
 void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  cout << "CFEM_DG_EulerSolver::BC_Custom: Not implemented yet" << endl;
-  exit(1);
+  /* No compiler directive specified. Write an error message and exit. */
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE) {
+    cout << endl;
+    cout << "In function CFEM_DG_EulerSolver::BC_Custom. " << endl;
+    cout << "No or wrong compiler directive specified. This is necessary "
+            "for customized boundary conditions." << endl << endl;
+  }
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
+
 }
 
 void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
