@@ -348,7 +348,7 @@ def main():
     spectral.cfg_dir   = "spectral_method"
     spectral.cfg_file  = "spectral.cfg"
     spectral.test_iter = 25
-    spectral.test_vals = [-1.569571,3.941897,0.008780,0.079776]
+    spectral.test_vals = [-1.504221,3.975775,0.0087778,0.079775]
     spectral.su2_exec  = "SU2_CFD"
     spectral.timeout   = 1600
     spectral.tol       = 0.00001
