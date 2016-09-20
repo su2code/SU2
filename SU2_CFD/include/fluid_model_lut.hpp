@@ -61,28 +61,29 @@ using namespace std;
 
 class CTrapezoidalMap {
 protected:
-	int rank, UpperI, LowerI, middleI, LowerJ, UpperJ, middleJ;
-	int UpperEdge, LowerEdge;
-	vector<int> CurrentFace;
+	int rank;
+	unsigned int UpperI, LowerI, middleI, LowerJ, UpperJ, middleJ;
+	unsigned int UpperEdge, LowerEdge;
+	vector<unsigned int> CurrentFace;
 	//The unique values of x which exist in the data
 	vector<su2double> Unique_X_Bands;
-	vector<vector<int> > Unique_Edges;
+	vector<vector<unsigned long> > Unique_Edges;
 	vector<vector<su2double> > X_Limits_of_Edges, Y_Limits_of_Edges;
 	//The value that each edge which intersects the band takes within that
 	//same band. Used to sort the edges
-	vector<vector<pair<su2double, int> > > Y_Values_of_Edge_Within_Band_And_Index;
-	vector<vector<int> > Edge_To_Face_Connectivity;
+	vector<vector<pair<su2double, unsigned long> > > Y_Values_of_Edge_Within_Band_And_Index;
+	vector<vector<unsigned long> > Edge_To_Face_Connectivity;
 public:
 	CTrapezoidalMap();
 	CTrapezoidalMap(vector<su2double> const &x_samples,
 			vector<su2double> const &y_samples,
-			vector<vector<int> > const &unique_edges,
-			vector<vector<int> > const &edge_to_face_connectivity);
+			vector<vector<unsigned long> > const &unique_edges,
+			vector<vector<unsigned long> > const &edge_to_face_connectivity);
 	void Find_Containing_Simplex(su2double x, su2double y);
 	void Search_Bands_For(su2double x);
 	void Search_Band_For_Edge(su2double x, su2double y);
 
-	int getCurrentFace() const {
+	unsigned int getCurrentFace() const {
 		return CurrentFace[0];
 	}
 };
@@ -99,9 +100,9 @@ class CLookUpTable: public CFluidModel {
 
 protected:
 	int rank;
-	int CurrentZone;
-	int CurrentFace;
-	int nInterpPoints;
+	unsigned int CurrentZone;
+	unsigned int CurrentFace;
+	unsigned int nInterpPoints;
 	vector<unsigned long> CurrentPoints;
 	bool LUT_Debug_Mode;/*!< \brief If true, master node prints errors of points outside LUT*/
 	su2double Pressure_Reference_Value;
@@ -156,11 +157,11 @@ protected:
 	vector<vector<su2double> > Interpolation_Matrix; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
 	vector<vector<su2double> > Interpolation_Matrix_Inverse; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
 
-	int nTable_Zone_Stations[2]; /*!< \brief Number of nodes in the '2' zones of the LuT*/
-	int nTable_Zone_Triangles[2]; /*!< \brief Number of triangles in the '2' zones of the LuT (must be triangles for now)*/
-	vector<vector<int> > Table_Zone_Triangles[2]; /*!< \brief The triangles in each zone are stored as three intgers (the tree defining data-points)*/
-	vector<vector<int> > Table_Zone_Edges[2]; /*!< \brief The edges in the '2' zones of the LuT*/
-	vector<vector<int> > Table_Edge_To_Face_Connectivity[2];/*!< \brief Number of edges in the '2' zones of the LuT*/
+	unsigned int nTable_Zone_Stations[2]; /*!< \brief Number of nodes in the '2' zones of the LuT*/
+	unsigned int nTable_Zone_Triangles[2]; /*!< \brief Number of triangles in the '2' zones of the LuT (must be triangles for now)*/
+	vector<vector<unsigned long> > Table_Zone_Triangles[2]; /*!< \brief The triangles in each zone are stored as three intgers (the tree defining data-points)*/
+	vector<vector<unsigned long> > Table_Zone_Edges[2]; /*!< \brief The edges in the '2' zones of the LuT*/
+	vector<vector<unsigned long> > Table_Edge_To_Face_Connectivity[2];/*!< \brief Number of edges in the '2' zones of the LuT*/
 
 public:
 
@@ -241,7 +242,7 @@ public:
 	 * \param[in] nDim - the dimension of the square block to invert
 	 */
 
-	void Gaussian_Inverse(int nDim);
+	void Gaussian_Inverse(unsigned int nDim);
 
 	vector<vector<double> > Interpolation_Matrix_Prepare_And_Invert(vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y);
 	void Calculate_Query_Specific_Coefficients(su2double x, su2double y);
@@ -260,7 +261,7 @@ public:
 	 * \param[in] filename - the name of the CFX file containing the table
 	 */
 
-	void LookUpTable_Malloc(int Index_of_Zone);
+	void LookUpTable_Malloc(unsigned int Index_of_Zone);
 	void LookUpTable_Load_TEC(std::string filename);
 	void NonDimensionalise_Table_Values();
 

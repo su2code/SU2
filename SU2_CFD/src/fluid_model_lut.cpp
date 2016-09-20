@@ -51,8 +51,8 @@ CTrapezoidalMap::CTrapezoidalMap() {
 }
 CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 		vector<su2double> const &y_samples,
-		vector<vector<int> > const &unique_edges,
-		vector<vector<int> > const &edge_to_face_connectivity) {
+		vector<vector<unsigned long> > const &unique_edges,
+		vector<vector<unsigned long> > const &edge_to_face_connectivity) {
 	rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -81,15 +81,15 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 	}
 
 	//How many bands to search?
-	int b_max = Unique_X_Bands.size() - 1;
+	unsigned int b_max = Unique_X_Bands.size() - 1;
 	//Start with band 0, obviously
-	int b = 0;
+	unsigned int b = 0;
 	//How many edges to check for intersection with the band?
-	int e_max = unique_edges.size();
+	unsigned int e_max = unique_edges.size();
 	//Start with edge indexes as 0.
-	int i = 0;
+	unsigned int i = 0;
 	//Count the how many edges intersect a band
-	int k = 0;
+	unsigned int k = 0;
 	//The high and low x value of each band
 	su2double x_low = 0;
 	su2double x_hi = 0;
@@ -149,9 +149,11 @@ void CTrapezoidalMap::Find_Containing_Simplex(su2double x, su2double y) {
 	//Within that band find edges between which the points rests
 	//these two edges uniquely identify the containing polygon
 	Search_Band_For_Edge(x, y);
-	//Now identify the simplex from the edges
-	vector<int> upper_edge_belongs_to_faces;
-	vector<int> lower_edge_belongs_to_faces;
+	//Now identify the simplex from the edges (cannot be ambiguous
+	//if all faces have the same number of edges). Cases where
+	//ambiguity might occur are not expected to occur in thermotables
+	vector<unsigned long> upper_edge_belongs_to_faces;
+	vector<unsigned long> lower_edge_belongs_to_faces;
 	upper_edge_belongs_to_faces = Edge_To_Face_Connectivity[UpperEdge];
 	sort(upper_edge_belongs_to_faces.begin(), upper_edge_belongs_to_faces.end());
 	lower_edge_belongs_to_faces = Edge_To_Face_Connectivity[LowerEdge];
@@ -196,7 +198,7 @@ void CTrapezoidalMap::Search_Bands_For(su2double x) {
 void CTrapezoidalMap::Search_Band_For_Edge(su2double x, su2double y) {
 
 	su2double RunVal, y00, y10, x00, x10;
-	int RunEdge;
+	unsigned int RunEdge;
 	UpperJ = Y_Values_of_Edge_Within_Band_And_Index[LowerI].size() - 1;
 	LowerJ = 0;
 
@@ -294,7 +296,9 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		// Building an KD_tree for the HS thermopair
 		cout << "Building trapezoidal map for rhoe..." << endl;
 	}
-
+	//Buld a map for all search pairs
+	//Currently only zone 1 is actually in use so one could
+	//also skip zone 0
 	rhoe_map[0] = CTrapezoidalMap(ThermoTables_Density[0],
 			ThermoTables_StaticEnergy[0], Table_Zone_Edges[0],
 			Table_Edge_To_Face_Connectivity[0]);
@@ -369,12 +373,20 @@ CLookUpTable::~CLookUpTable(void) {
 }
 
 void CLookUpTable::Get_Unique_Edges() {
-//Import all potential edges into a vector
-	for (int j = 0; j < 2; j++) {
-		Table_Zone_Edges[j].resize(3 * nTable_Zone_Triangles[j], vector<int>(3, 0));
+//Import all potential edges into a vector (assumes only triangles are used)
+	//Run through both zones of the lutmesh.tec (2 zones assumed)
+	for (unsigned int j = 0; j < 2; j++) {
+		Table_Zone_Edges[j].resize(3 * nTable_Zone_Triangles[j], vector<unsigned long>(3, 0));
 		//Fill with edges (based on triangulation
-		for (int i = 0; i < nTable_Zone_Triangles[j]; i++) {
-			int smaller_point, larger_point;
+		//For each zone, go through all the triangles
+		for (unsigned int i = 0; i < nTable_Zone_Triangles[j]; i++) {
+			unsigned int smaller_point, larger_point;
+			//Each triangle has 3 edges, add all of them to the list of edges for that zone
+			//By using smaller_point and larger_point ensures that edges which occur in 2
+			//triangles are recorded in the same way both times when they are found in the loop
+			//Duplicates can be easily filtered out afterwards to yield unique edges only
+			//The index i of the face the edge is associated with is stored as well
+			//so that it can later be used for setting the edge-to-face connectivity
 			smaller_point = Table_Zone_Triangles[j][i][0];
 			larger_point = Table_Zone_Triangles[j][i][1];
 			Table_Zone_Edges[j][3 * i + 0][0] = min(smaller_point, larger_point);
@@ -393,26 +405,46 @@ void CLookUpTable::Get_Unique_Edges() {
 		}
 		//Sort the edges to enable selecting unique entries only
 		stable_sort(Table_Zone_Edges[j].begin(), Table_Zone_Edges[j].end());
-		//Make the list of edges unique and set connectivities at the same time
-		int k_final = 0;
-		int k_temp = 0;
+		//Set connectivities of the edges to the faces of the triangulation.
+		//This is necessary for the trapezoidal map search i.e. the search
+		//will identify 2 edges between which the point is located. Those two
+		//edges should then be associated with the correct triangle so that
+		//the interpolation coefficients for that particular face can be used
+
+		//The index the edge will have in the final edge list
+		unsigned int k_final = 0;
+		//The index of the edge in the current edge list (non-unique but sorted)
+		unsigned int k_temp = 0;
+		//Traverse the current edge list
 		while (k_temp < Table_Zone_Edges[j].size() - 1) {
-			Table_Edge_To_Face_Connectivity[j].push_back(vector<int>(1, -1));
+			//Each unique edge is connected to at least 1 face so push_back the connectivity arr.
+			Table_Edge_To_Face_Connectivity[j].push_back(vector<unsigned long>(1, -1));
+			//Set the connectivty of the edge with a final index of k_final to the index of the
+			//face that the temporary edge with index k_temp is associated to
 			Table_Edge_To_Face_Connectivity[j][k_final][0] =
 					Table_Zone_Edges[j][k_temp][2];
+			//If the next edge in the temporary list is the same as the current edge
+			//Then skip the next edge and increment k_temp by 2 ...
 			if ((Table_Zone_Edges[j][k_temp][0] == Table_Zone_Edges[j][k_temp + 1][0])
 					and (Table_Zone_Edges[j][k_temp][1]
 							== Table_Zone_Edges[j][k_temp + 1][1])) {
+				//...and add the face the k_temp+1 edge is associated with to
+				//the list of faces that the k_final edge is connected to
+				//(Only edges on the periphery of the thermotable will
+				//be connected to only a single edge)
 				Table_Edge_To_Face_Connectivity[j][k_final].push_back(
 						Table_Zone_Edges[j][k_temp + 1][2]);
-				k_temp++;
+				k_temp++;//sic!
 			}
-			k_temp++;
+			//Move on to the next temporary edge
+			k_temp++;//sic!
+			//Advance to the next final unique edge
 			k_final++;
 		}
 		//The triangle index (entry 2 in vector) is no longer required as connectivities have
-		//been set already
-		for (int i = 0; i < nTable_Zone_Triangles[j]; i++) {
+		//been set already. Removing the last entry enables unique edges to be found
+		//using the "unique" algorithm for vectors
+		for (unsigned int i = 0; i < nTable_Zone_Triangles[j]; i++) {
 			Table_Zone_Edges[j][3 * i + 0].erase(
 					Table_Zone_Edges[j][3 * i + 0].begin() + 2);
 			Table_Zone_Edges[j][3 * i + 1].erase(
@@ -420,13 +452,11 @@ void CLookUpTable::Get_Unique_Edges() {
 			Table_Zone_Edges[j][3 * i + 2].erase(
 					Table_Zone_Edges[j][3 * i + 2].begin() + 2);
 		}
-
-		vector<vector<int> >::iterator iter;
+		//Make edges unique
+		vector<vector<unsigned long> >::iterator iter;
 		iter = unique(Table_Zone_Edges[j].begin(), Table_Zone_Edges[j].end());
 		Table_Zone_Edges[j].resize(distance(Table_Zone_Edges[j].begin(), iter));
 	}
-
-//Filter out all the edges which have been imported twice
 }
 void CLookUpTable::Compute_Interpolation_Coefficients() {
 
@@ -477,8 +507,8 @@ void CLookUpTable::Compute_Interpolation_Coefficients() {
 			vector<unsigned long>(nInterpPoints, 0));
 
 	//Now for each triangle in the zone calculate the e.g. 16 nearest points
-	for (int i = 0; i < Table_Zone_Triangles[CurrentZone].size(); i++) {
-		vector<int> Points_in_Triangle = Table_Zone_Triangles[CurrentZone][i];
+	for (unsigned int i = 0; i < Table_Zone_Triangles[CurrentZone].size(); i++) {
+		vector<unsigned long> Points_in_Triangle = Table_Zone_Triangles[CurrentZone][i];
 		//The query point is to be the weighted average of the vertexes of the
 		//triangle
 		query[0] = 0;
@@ -491,12 +521,20 @@ void CLookUpTable::Compute_Interpolation_Coefficients() {
 		query[1] += ThermoTables_Pressure[CurrentZone][Points_in_Triangle[1]];
 		query[1] += ThermoTables_Pressure[CurrentZone][Points_in_Triangle[2]];
 		query[1] /= 3;
-		//Then search the tree for the KD_vector.
+		if (nInterpPoints>3){
+		//If more than 3 points are required, than search the tree for the closet points
 		KD_tree->Determine_N_NearestNodes(nInterpPoints, query.data(),
 				best_dist.data(), result_IDs.data(), result_ranks.data());
 		//Set the found points as the current points
 		CurrentPoints = result_IDs;
 		Interpolation_Points[CurrentZone][i] = result_IDs;
+		}
+		else if (nInterpPoints==3)
+		{
+			result_IDs = Table_Zone_Triangles[CurrentZone][i];
+			CurrentPoints = result_IDs;
+			Interpolation_Points[CurrentZone][i] = result_IDs;
+		}
 
 		//Now use the nearest 16 points to construct an interpolation function
 		//for each search pair option
@@ -693,7 +731,7 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 
 }
 
-inline void CLookUpTable::Gaussian_Inverse(int nDim) {
+inline void CLookUpTable::Gaussian_Inverse(unsigned int nDim) {
 	//A temporary matrix to hold the inverse
 	vector<vector<su2double> > temp;
 	temp.resize(nDim, vector<su2double>(2 * nDim, 0));
@@ -882,9 +920,8 @@ void CLookUpTable::RecordState(char* file) {
 }
 
 void CLookUpTable::LookUpTable_Print_To_File(char* filename) {
-//Print the entire table to a file such that the mesh can be plotted
+//Print the current table zone a file such that the mesh can be plotted
 //externally (for verification purposes)
-//for (int i = 0; i < 2; i++) {
 	int i = CurrentZone;
 	for (int j = 0; j < nTable_Zone_Stations[i]; j++) {
 		Temperature = ThermoTables_Temperature[i][j];
@@ -903,15 +940,13 @@ void CLookUpTable::LookUpTable_Print_To_File(char* filename) {
 		Mu = ThermoTables_Mu[i][j];
 		RecordState(filename);
 	}
-//}
-
 }
 
 void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
 	string line;
 	string value;
 	int found;
-	int zone_scanned;
+	unsigned int zone_scanned;
 
 	ifstream table(filename.c_str());
 	if (!table.is_open()) {
@@ -984,7 +1019,7 @@ void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
 	NonDimensionalise_Table_Values();
 }
 
-void CLookUpTable::LookUpTable_Malloc(int Index_of_Zone) {
+void CLookUpTable::LookUpTable_Malloc(unsigned int Index_of_Zone) {
 	ThermoTables_StaticEnergy[Index_of_Zone] = vector<su2double>(
 			nTable_Zone_Stations[Index_of_Zone], 0);
 	ThermoTables_Entropy[Index_of_Zone] = vector<su2double>(
@@ -1021,10 +1056,10 @@ void CLookUpTable::LookUpTable_Malloc(int Index_of_Zone) {
 //		nTable_Zone_Stations[Index_of_Zone], 0);
 //ThermoTables_dktdT_rho[Index_of_Zone] = vector< su2double >(
 //		nTable_Zone_Stations[Index_of_Zone], 0);
-	Table_Zone_Triangles[Index_of_Zone] = vector<vector<int> >(
+	Table_Zone_Triangles[Index_of_Zone] = vector<vector<unsigned long> >(
 			nTable_Zone_Triangles[Index_of_Zone]);
 	for (int j = 0; j < nTable_Zone_Triangles[Index_of_Zone]; j++) {
-		Table_Zone_Triangles[Index_of_Zone][j] = vector<int>(3, 0);
+		Table_Zone_Triangles[Index_of_Zone][j] = vector<unsigned long>(3, 0);
 	}
 }
 
