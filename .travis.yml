@@ -9,8 +9,8 @@ compiler:
 notifications:
     email:
         recipients:
-            - sravya@stanford.edu
-	    - a.rubino@tudelft.nl
+        - sravya@stanford.edu
+        - a.rubino@tudelft.nl
   
 branches:
     only:
