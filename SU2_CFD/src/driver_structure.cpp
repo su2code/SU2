@@ -3220,9 +3220,25 @@ CSpectralDriver::CSpectralDriver(char* confFile,
                                  unsigned short val_nZone,
                                  unsigned short val_nDim) : CDriver(confFile,
                                                                     val_nZone,
-                                                                    val_nDim) { }
+                                                                    val_nDim) {
+	unsigned short kZone;
 
-CSpectralDriver::~CSpectralDriver(void) { }
+	D = NULL;
+	/*--- allocate dynamic memory for D ---*/
+	D = new su2double*[nZone]; 	for (kZone = 0; kZone < nZone; kZone++) D[kZone] = new su2double[nZone];
+
+}
+
+CSpectralDriver::~CSpectralDriver(void) {
+
+	unsigned short kZone;
+
+	  /*--- delete dynamic memory for D ---*/
+	  for (kZone = 0; kZone < nZone; kZone++) if (D[kZone] != NULL) delete [] D[kZone];
+
+	  if (D[kZone] != NULL) delete [] D;
+
+}
 
 void CSpectralDriver::Run() {
   
@@ -3322,6 +3338,8 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
     implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   }
   
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
   /*--- Retrieve values from the config file ---*/
   su2double *U = new su2double[nVar];
   su2double *U_old = new su2double[nVar];
@@ -3336,31 +3354,27 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   /*--- Non-dimensionalize the input period, if necessary.	*/
   period /= config_container[ZONE_0]->GetTime_Ref();
   
-  /*--- allocate dynamic memory for D ---*/
-  su2double **D = new su2double*[nZone];
-  for (kZone = 0; kZone < nZone; kZone++) {
-    D[kZone] = new su2double[nZone];
-  }
-  
-  if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
 
-  /*--- Build the Time Spectral operator matrix ---*/
-    ComputeTimeSpectral_Operator(D, period);
-  }
-  if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) {
-  	su2double *Omega_HB = new su2double[nZone];
-  	for (jZone = 0; jZone < nZone; jZone++){
-  		Omega_HB[jZone]  = config_container[jZone]->GetOmega_HB()[jZone];
+  if (ExtIter == 0) {
+  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
 
-  		/*--- Non-dimensionalize the input Omega Harmonic Balance, if necessary.	*/
-  		Omega_HB[jZone] /= config_container[jZone]->GetOmega_Ref();
+  		/*--- Build the Time Spectral operator matrix ---*/
+  		ComputeTimeSpectral_Operator(D, period);
   	}
+  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) {
+  		su2double *Omega_HB = new su2double[nZone];
+  		for (jZone = 0; jZone < nZone; jZone++){
+  			Omega_HB[jZone]  = config_container[jZone]->GetOmega_HB()[jZone];
 
-  	/*--- Build the Harmonic Balance operator matrix ---*/
-  	ComputeHarmonicBalance_Operator(D, Omega_HB, period);
-  	delete [] Omega_HB;
+  			/*--- Non-dimensionalize the input Omega Harmonic Balance, if necessary.	*/
+  			Omega_HB[jZone] /= config_container[jZone]->GetOmega_Ref();
+  		}
+
+  		/*--- Build the Harmonic Balance operator matrix ---*/
+  		ComputeHarmonicBalance_Operator(D, Omega_HB, period);
+  		delete [] Omega_HB;
+  	}
   }
-    
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
   for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
@@ -3446,12 +3460,12 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
     delete [] Source_Turb;
   }
   
-  /*--- delete dynamic memory for D ---*/
-  for (kZone = 0; kZone < nZone; kZone++) {
-    delete [] D[kZone];
-  }
-
-  delete [] D;
+//  /*--- delete dynamic memory for D ---*/
+//  for (kZone = 0; kZone < nZone; kZone++) {
+//    delete [] D[kZone];
+//  }
+//
+//  delete [] D;
   delete [] U;
   delete [] U_old;
   delete [] Psi;
@@ -3597,7 +3611,6 @@ void CSpectralDriver::InverseBlock(unsigned short nVar_mat, su2double *block, su
 
 }
 
-/* ----- Computing harmonic balance operator --------- */
 void CSpectralDriver::ComputeHarmonicBalance_Operator(su2double **D, su2double *Omega_HB, su2double period) {
     
     unsigned short iVar, jVar;
