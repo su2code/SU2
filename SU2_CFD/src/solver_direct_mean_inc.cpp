@@ -7212,7 +7212,7 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 }
 
 
-void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
+void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;

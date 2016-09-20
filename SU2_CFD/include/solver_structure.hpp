@@ -2022,11 +2022,6 @@ public:
 	 */
 	virtual su2double GetTotal_HeatFluxDiff(void);
     
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
-	 */
-	virtual su2double GetTotal_CFreeSurface(void);
     
 	/*!
 	 * \brief A virtual member.
@@ -2065,12 +2060,6 @@ public:
 	 */
 	virtual void SetTotal_HeatFluxDiff(su2double val_heat);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
-	 */
-	virtual void SetTotal_CFreeSurface(su2double val_cfreesurface);
-    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cfea - Value of the FEA coefficient.
