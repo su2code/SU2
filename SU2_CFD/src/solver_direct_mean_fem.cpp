@@ -1475,6 +1475,12 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
 
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
+  
+  /*--- Set initial conditions here. We can do this with config options,
+   e.g., config->GetInviscid_Vortex(), or through preprocessor directives,
+   e.g., #ifdef TGV. Don't forget to communicate the solution to halos at
+   the end for parallel simulations. ---*/
+  
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -1542,108 +1548,137 @@ void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  
   /* Easier storage whether or not a viscous computation is carried out. */
   const bool viscous = config->GetViscous();
 
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
-  /* Easier storage of the CFL number. */
+  /* Easier storage of the CFL number. Note that if we are using explicit
+   time stepping, the regular CFL condition has been overwritten with the
+   unsteady CFL condition in the config post-processing (if non-zero). */
+  
   const su2double CFL = config->GetCFL(iMesh);
 
-  /*--- Check for a compressible solver. ---*/
-  if(config->GetKind_Regime() == COMPRESSIBLE) {
-
-    /*--- Loop over the owned volume elements. ---*/
-    for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-      /*--- Loop over the DOFs of this element and determine the maximum wave speed
-            and the maximum value of the kinematic viscosity (if needed). ---*/
-      su2double charVel2Max = 0.0, nuMax = 0.0;
-      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
-        const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
-
-        /* Compute the velocities. */
-        su2double velAbs[3];
-        const su2double DensityInv = 1.0/solDOF[0];
-        su2double Velocity2 = 0.0;
-        for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-          const su2double vel = solDOF[iDim]*DensityInv;
-          velAbs[iDim-1] = fabs(vel);
-          Velocity2 += vel*vel;
+  /*--- Explicit time stepping with imposed time step (eventually will
+   allow for local time stepping with this value imposed as the time
+   for syncing the cells). If the unsteady CFL is set to zero (default), 
+   it uses the defined unsteady time step, otherwise it computes the time
+   step based on the provided unsteady CFL. Note that the regular CFL
+   option in the config is always ignored with time stepping. ---*/
+  
+  if (time_stepping && (config->GetUnst_CFL() == 0.0)) {
+    
+    /*--- Loop over the owned volume elements and set the fixed dt. ---*/
+    for(unsigned long i=0; i<nVolElemOwned; ++i)
+      VecDeltaTime[i] = config->GetDelta_UnstTimeND();
+    
+  } else {
+    
+    /*--- Check for a compressible solver. ---*/
+    if(config->GetKind_Regime() == COMPRESSIBLE) {
+      
+      /*--- Loop over the owned volume elements. ---*/
+      for(unsigned long i=0; i<nVolElemOwned; ++i) {
+        
+        /*--- Loop over the DOFs of this element and determine the maximum wave speed
+         and the maximum value of the kinematic viscosity (if needed). ---*/
+        su2double charVel2Max = 0.0, nuMax = 0.0;
+        for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+          const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+          
+          /* Compute the velocities. */
+          su2double velAbs[3];
+          const su2double DensityInv = 1.0/solDOF[0];
+          su2double Velocity2 = 0.0;
+          for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+            const su2double vel = solDOF[iDim]*DensityInv;
+            velAbs[iDim-1] = fabs(vel);
+            Velocity2 += vel*vel;
+          }
+          
+          /*--- Compute the maximum value of the wave speed. This is a rather
+           conservative estimate. ---*/
+          const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
+          FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+          const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+          const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+          
+          su2double charVel2 = 0.0;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+            const su2double rad = velAbs[iDim] + SoundSpeed;
+            charVel2 += rad*rad;
+          }
+          
+          charVel2Max = max(charVel2Max, charVel2);
+          
+          /* Update the kinematic viscosity, if a viscous computation is carried out. */
+          if( viscous ) {
+            const su2double nu = DensityInv*FluidModel->GetLaminarViscosity();
+            nuMax = max(nuMax, nu);
+          }
         }
-
-        /*--- Compute the maximum value of the wave speed. This is a rather
-              conservative estimate. ---*/
-        const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
-        FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-        const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
-        const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
-
-        su2double charVel2 = 0.0;
-        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-          const su2double rad = velAbs[iDim] + SoundSpeed;
-          charVel2 += rad*rad;
-        }
-
-        charVel2Max = max(charVel2Max, charVel2);
-
-        /* Update the kinematic viscosity, if a viscous computation is carried out. */
-        if( viscous ) {
-          const su2double nu = DensityInv*FluidModel->GetLaminarViscosity();
-          nuMax = max(nuMax, nu);
-        }
+        
+        /*--- Compute the time step for the element and update the minimum and
+         maximum value. Note that in the length scale the polynomial degree
+         must be taken into account for the high order element. ---*/
+        const unsigned short ind = volElem[i].indStandardElement;
+        unsigned short nPoly = standardElementsSol[ind].GetNPoly();
+        if(nPoly == 0) nPoly = 1;
+        
+        const su2double lenScaleInv = nPoly/volElem[i].lenScale;
+        const su2double dtInv       = lenScaleInv*(charVel2Max + nuMax*lenScaleInv);
+        
+        VecDeltaTime[i] = CFL/dtInv;
+        
+        Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
+        Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
       }
-
-      /*--- Compute the time step for the element and update the minimum and
-            maximum value. Note that in the length scale the polynomial degree
-            must be taken into account for the high order element. ---*/
-      const unsigned short ind = volElem[i].indStandardElement;
-      unsigned short nPoly = standardElementsSol[ind].GetNPoly();
-      if(nPoly == 0) nPoly = 1;
-
-      const su2double lenScaleInv = nPoly/volElem[i].lenScale;
-      const su2double dtInv       = lenScaleInv*(charVel2Max + nuMax*lenScaleInv);
-
-      VecDeltaTime[i] = CFL/dtInv;
-
-      Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
-      Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
     }
-  }
-  else {
-
-    /*--- Incompressible solver. ---*/
-
-    int rank = MASTER_NODE;
+    else {
+      
+      /*--- Incompressible solver. ---*/
+      
+      int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Barrier(MPI_COMM_WORLD);
 #endif
-
-    if(rank == MASTER_NODE) {
-      cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
-      cout << "Incompressible solver not implemented yet" << endl;
-    }
-
+      
+      if(rank == MASTER_NODE) {
+        cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
+        cout << "Incompressible solver not implemented yet" << endl;
+      }
+      
 #ifdef HAVE_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #else
-    exit(EXIT_FAILURE);
+      exit(EXIT_FAILURE);
 #endif
-
-  }
-
-  /*--- Compute the max and the min dt (in parallel) ---*/
+      
+    }
+    
+    /*--- Compute the max and the min dt (in parallel) ---*/
 #ifdef HAVE_MPI
-  su2double rbuf_time = Min_Delta_Time;
-  SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-
-  rbuf_time = Max_Delta_Time;
-  SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    su2double rbuf_time = Min_Delta_Time;
+    SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    
+    rbuf_time = Max_Delta_Time;
+    SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
+    
+    /*--- For explicit time stepping with an unsteady CFL imposed, 
+     use the minimum delta time of the entire mesh. ---*/
+    if (time_stepping) {
+      for(unsigned long i=0; i<nVolElemOwned; ++i)
+        VecDeltaTime[i] = Min_Delta_Time;
+    }
+  }
+  
 }
 
 void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

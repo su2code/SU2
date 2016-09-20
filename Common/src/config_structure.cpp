@@ -2746,6 +2746,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
      Kind_TimeIntScheme_Flow = Kind_TimeIntScheme_FEM_Flow;
   }
  
+  /*--- Set up the time stepping / unsteady CFL options. ---*/
+  if ((Unsteady_Simulation == TIME_STEPPING) && (Unst_CFL != 0.0)) {
+    for (iCFL = 0; iCFL < nCFL; iCFL++)
+      CFL[iCFL] = Unst_CFL;
+  }
+  
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
