@@ -3241,17 +3241,6 @@ CSpectralDriver::~CSpectralDriver(void) {
 
 void CSpectralDriver::Run() {
   
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- If this is the first iteration, set up the spectral operators,
-   initialize the source terms, and compute any grid veocities, if necessary. ---*/
-  
-  if (ExtIter == 0) {
-    SetTimeSpectral_Velocities();
-    for (iZone = 0; iZone < nZone; iZone++)
-      SetSpectralMethod(iZone);
-  }
-  
   /*--- Run a single iteration of a spectral method problem. Preprocess all
    all zones before beginning the iteration. ---*/
   
