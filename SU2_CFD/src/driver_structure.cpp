@@ -3224,8 +3224,8 @@ CSpectralDriver::CSpectralDriver(char* confFile,
 	unsigned short kZone;
 
 	D = NULL;
-	/*--- allocate dynamic memory for D ---*/
-	D = new su2double*[nZone]; 	for (kZone = 0; kZone < nZone; kZone++) D[kZone] = new su2double[nZone];
+	/*--- allocate dynamic memory for the spectral operator ---*/
+	D = new su2double*[nZone]; for (kZone = 0; kZone < nZone; kZone++) D[kZone] = new su2double[nZone];
 
 }
 
@@ -3233,9 +3233,8 @@ CSpectralDriver::~CSpectralDriver(void) {
 
 	unsigned short kZone;
 
-	  /*--- delete dynamic memory for D ---*/
+	  /*--- delete dynamic memory for the spectral operator ---*/
 	  for (kZone = 0; kZone < nZone; kZone++) if (D[kZone] != NULL) delete [] D[kZone];
-
 	  if (D[kZone] != NULL) delete [] D;
 
 }

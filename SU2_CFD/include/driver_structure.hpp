@@ -419,9 +419,9 @@ public:
  */
 class CSpectralDriver : public CDriver {
 
-protected:
+private:
 
-	su2double **D;
+	su2double **D; /*!< \brief spectral operator. */
 
 public:
 
