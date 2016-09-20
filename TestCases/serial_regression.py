@@ -490,7 +490,7 @@ def main():
     centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
     centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
     centrifugal_stage.test_iter = 100
-    centrifugal_stage.test_vals = [-10.166364, 1.621172, 2.206476e+01, 1.054215e+05] #last 4 columns
+    centrifugal_stage.test_vals = [-10.166717, 1.620590, 30.003500, 0.487959] #last 4 columns
     centrifugal_stage.su2_exec  = "SU2_CFD"
     centrifugal_stage.timeout   = 1600
     centrifugal_stage.tol       = 0.000001
