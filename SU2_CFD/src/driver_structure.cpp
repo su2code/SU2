@@ -3264,6 +3264,8 @@ void CSpectralDriver::Update() {
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, iZone);
 
+    output->SpectralMethodOutput(solver_container, config_container, nZone, iZone);
+
   }
 
 }
@@ -3454,9 +3456,6 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   delete [] U_old;
   delete [] Psi;
   delete [] Psi_old;
-  delete [] Source;
-  
-  output->SpectralMethodOutput(solver_container, config_container, nZone, iZone);
 
 }
 
