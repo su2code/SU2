@@ -9013,3 +9013,103 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
 }
 
+
+void COutput::SpectralMethodOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short iZone) {
+
+	int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	/*--- Write file with force coefficients ---*/
+	ofstream TS_Flow_file;
+	ofstream mean_TS_Flow_file;
+
+	/*--- MPI Send/Recv buffers ---*/
+	su2double *sbuf_force = NULL,  *rbuf_force = NULL;
+
+	/*--- Other variables ---*/
+	unsigned short iVar, kZone;
+	unsigned short nVar_Force = 8;
+	unsigned long current_iter = config[ZONE_0]->GetExtIter();
+
+	/*--- Allocate memory for send buffer ---*/
+	sbuf_force = new su2double[nVar_Force];
+
+	su2double *averages = new su2double[nVar_Force];
+	for (iVar = 0; iVar < nVar_Force; iVar++)
+		averages[iVar] = 0;
+
+	/*--- Allocate memory for receive buffer ---*/
+	if (rank == MASTER_NODE) {
+		rbuf_force = new su2double[nVar_Force];
+
+		TS_Flow_file.precision(15);
+		TS_Flow_file.open("TEST_force_coefficients.csv", ios::out);
+		TS_Flow_file <<  "\"time_instance\",\"lift_coeff\",\"drag_coeff\",\"moment_coeff_x\",\"moment_coeff_y\",\"moment_coeff_z\"" << endl;
+
+		mean_TS_Flow_file.precision(15);
+		if (current_iter == 0 && iZone == 1) {
+			mean_TS_Flow_file.open("history_TS_forces.plt", ios::trunc);
+			mean_TS_Flow_file << "TITLE = \"SU2 TIME-SPECTRAL SIMULATION\"" << endl;
+			mean_TS_Flow_file <<  "VARIABLES = \"Iteration\",\"CLift\",\"CDrag\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
+			mean_TS_Flow_file << "ZONE T= \"Average Convergence History\"" << endl;
+		}
+		else
+			mean_TS_Flow_file.open("history_TS_forces.plt", ios::out | ios::app);
+	}
+
+	if (rank == MASTER_NODE) {
+
+		/*--- Run through the zones, collecting the forces coefficients
+	     N.B. Summing across processors within a given zone is being done
+	     elsewhere. ---*/
+		for (kZone = 0; kZone < val_nZone; kZone++) {
+
+			/*--- Flow solution coefficients (parallel) ---*/
+			sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CL();
+			sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CD();
+			sbuf_force[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
+			sbuf_force[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
+			sbuf_force[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
+			sbuf_force[5] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CT();
+			sbuf_force[6] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CQ();
+			sbuf_force[7] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
+
+			for (iVar = 0; iVar < nVar_Force; iVar++) {
+				rbuf_force[iVar] = sbuf_force[iVar];
+			}
+
+			TS_Flow_file << kZone << ", ";
+			for (iVar = 0; iVar < nVar_Force; iVar++)
+				TS_Flow_file << rbuf_force[iVar] << ", ";
+			TS_Flow_file << endl;
+
+			/*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
+			for (iVar = 0; iVar < nVar_Force; iVar++) {
+				averages[iVar] += (1.0/su2double(val_nZone))*rbuf_force[iVar];
+			}
+		}
+	}
+
+	if (rank == MASTER_NODE && iZone == ZONE_0) {
+
+		mean_TS_Flow_file << current_iter << ", ";
+		for (iVar = 0; iVar < nVar_Force; iVar++) {
+			mean_TS_Flow_file << averages[iVar];
+			if (iVar < nVar_Force-1)
+				mean_TS_Flow_file << ", ";
+		}
+		mean_TS_Flow_file << endl;
+	}
+
+	if (rank == MASTER_NODE) {
+		TS_Flow_file.close();
+		mean_TS_Flow_file.close();
+		delete [] rbuf_force;
+	}
+
+	delete [] sbuf_force;
+	delete [] averages;
+}
