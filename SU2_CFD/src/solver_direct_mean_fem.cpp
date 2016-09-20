@@ -1476,6 +1476,11 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /* Initialize solutionSet. If a solution is set below, this boolean must be
      set to true, such that the solution is communicated to the halo elements
      at the end of this function. */
@@ -1484,6 +1489,14 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 #ifdef INVISCID_VORTEX
 
   solutionSet = true;
+
+  /* Write a message that the solution is initialized for the inviscid vortex
+     test case. */
+  if(rank == MASTER_NODE) {
+    cout << endl;
+    cout << "Warning: Solution is initialized for the inviscid vortex test case!!!" << endl;
+    cout << endl << flush;
+  }
 
   /* The initial conditions are set to the solution of the inviscid vortex,
      which is an exact solution of the Euler equations. The initialization
@@ -1550,11 +1563,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
   }
 
 #endif
-
-  /*--- Set initial conditions here. We can do this with config options,
-   e.g., config->GetInviscid_Vortex(), or through preprocessor directives,
-   e.g., #ifdef TGV. ---*/
-  
 
   /*--- If the solution was set in this function, perform the MPI
         communication of the solution including the possible self
