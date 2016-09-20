@@ -509,11 +509,11 @@ public:
   void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
 
   /*!
-   * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
-   *  on the surface and in the volume to a file.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Write the output file for spectral method for each time-instance.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Number of Zones.
+   * \param[in] val_iZone - Zone index.
    */
   void SpectralMethodOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
 
