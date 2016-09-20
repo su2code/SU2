@@ -1091,6 +1091,8 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         config->Tock(tick,"BC_Custom",3);
         break;
+      case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+        break;
       default:
         cout << "BC not implemented." << endl;
 #ifndef HAVE_MPI
