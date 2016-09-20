@@ -22,5 +22,5 @@ COPYING
 README.md
 *.autotest
 config_*.cfg
-*.ref
+*.ref*
 *.eqn

@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -95,8 +97,9 @@ CSolver::~CSolver(void) {
   if (Point_Max != NULL) delete [] Point_Max;
 
   if (Point_Max_Coord != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete Point_Max_Coord[iVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Point_Max_Coord[iVar];
+    }
     delete [] Point_Max_Coord;
   }
 
@@ -116,53 +119,51 @@ CSolver::~CSolver(void) {
 
   if (Jacobian_i != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_i[iVar];
+      delete [] Jacobian_i[iVar];
     delete [] Jacobian_i;
   }
 
   if (Jacobian_j != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_j[iVar];
+      delete [] Jacobian_j[iVar];
     delete [] Jacobian_j;
   }
 
   if (Jacobian_ii != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ii[iVar];
+      delete [] Jacobian_ii[iVar];
     delete [] Jacobian_ii;
   }
 
   if (Jacobian_ij != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ij[iVar];
+      delete [] Jacobian_ij[iVar];
     delete [] Jacobian_ij;
   }
 
   if (Jacobian_ji != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ji[iVar];
+      delete [] Jacobian_ji[iVar];
     delete [] Jacobian_ji;
   }
 
   if (Jacobian_jj != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_jj[iVar];
+      delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
   }
 
   if (Smatrix != NULL) {
     for (iDim = 0; iDim < nDim; iDim++)
-      delete Smatrix[iDim];
+      delete [] Smatrix[iDim];
     delete [] Smatrix;
   }
 
   if (cvector != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete cvector[iVar];
+    for (iVar = 0; iVar < nVarGrad; iVar++)
+      delete [] cvector[iVar];
     delete [] cvector;
   }
-
-
 
 }
 
@@ -577,6 +578,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     
+    /*--- Set the value of the singular ---*/
+    singular = false;
+    
     /*--- Get coordinates ---*/
     
     Coord_i = geometry->node[iPoint]->GetCoord();
@@ -606,15 +610,16 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
       
       /*--- Sumations for entries of upper triangular matrix R ---*/
       
-      if (fabs(weight) > EPS) {
+      if (weight != 0.0) {
+        
         r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
         r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
         r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
         if (nDim == 3) {
-          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r13   += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
           r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
           r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+          r33   += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
         }
         
         /*--- Entries of c:= transpose(A)*b ---*/
@@ -628,15 +633,14 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Entries of upper triangular matrix R ---*/
     
-    if (fabs(r11) < EPS) r11 = EPS;
-    r11 = sqrt(r11);
-    r12 = r12/(r11);
-    r22 = sqrt(r22-r12*r12);
-    if (fabs(r22) < EPS) r22 = EPS;
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+    
     if (nDim == 3) {
-      r13 = r13/(r11);
-      r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
-      r33 = sqrt(r33-r23*r23-r13*r13);
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
     }
     
     /*--- Compute determinant ---*/
@@ -646,7 +650,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Detect singular matrices ---*/
     
-    if (fabs(detR2) < EPS) singular = true;
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
     
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     
@@ -1320,12 +1324,12 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
       /*--- Find the particular marker being monitored and get the forces acting on it. ---*/
       
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) {
           
-          Cl = GetSurface_CLift(iMarker_Monitoring);
-          Cd = GetSurface_CDrag(iMarker_Monitoring);
+          Cl = GetSurface_CL(iMarker_Monitoring);
+          Cd = GetSurface_CD(iMarker_Monitoring);
           
           /*--- For typical section wing model want the force normal to the airfoil (in the direction of the spring) ---*/
           Cn = Cl*cos(Alpha) + Cd*sin(Alpha);
@@ -1716,7 +1720,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 	/*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-	if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+	if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
 
 		ifstream restart_file_n1;
 		string filename_n1;
@@ -1827,7 +1831,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
-CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names){
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names) {
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -1836,7 +1840,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Solution = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++){
+  for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = 0.0;
   }
 
@@ -1848,7 +1852,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   node = new CVariable*[geometry->GetnPoint()];
 
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
 
@@ -1892,7 +1896,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
@@ -2025,12 +2029,12 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
   GridVel_Index = 2*nDim;
 
-  if (config->GetKind_Turb_Model() == SA){
+  if (config->GetKind_Turb_Model() == SA) {
     GridVel_Index += 1;
-  }else if (config->GetKind_Turb_Model() == SST){
+  }else if (config->GetKind_Turb_Model() == SST) {
     GridVel_Index += 2;
   }
-  if (config->GetKind_Regime() != INCOMPRESSIBLE){
+  if (config->GetKind_Regime() != INCOMPRESSIBLE) {
     GridVel_Index += 1;
   }
   
@@ -2142,7 +2146,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
 
-          if (config->GetGrid_Movement()){
+          if (config->GetGrid_Movement()) {
             Solution[GridVel_Index + 1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
                                            rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
             Solution[GridVel_Index + 2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
@@ -2174,7 +2178,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
                               rotMatrix[2][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
                               rotMatrix[2][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
 
-          if (config->GetGrid_Movement()){
+          if (config->GetGrid_Movement()) {
             Solution[GridVel_Index+1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
                                          rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
                                          rotMatrix[0][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
@@ -2229,7 +2233,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
@@ -2343,7 +2347,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
 	filename = config->GetSolution_FlowFileName();
