@@ -52,11 +52,11 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
   unsigned long iPoint;
   bool stat_mesh = true;
   bool adjoint = config_container[val_iZone]->GetContinuous_Adjoint();
-  bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method = (config_container[val_iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD);
 
   /*--- For a time-spectral case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
-  if (time_spectral) {
+  if (spectral_method) {
     ExtIter = val_iZone;
     Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
   }
