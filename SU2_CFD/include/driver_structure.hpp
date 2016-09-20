@@ -418,6 +418,11 @@ public:
  * \version 4.3.0 "Cardinal"
  */
 class CSpectralDriver : public CDriver {
+
+protected:
+
+	su2double **D;
+
 public:
 
 	/*!
