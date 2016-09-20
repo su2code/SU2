@@ -188,7 +188,7 @@ CDriver::CDriver(char* confFile,
   if(nZone == SINGLE_ZONE) {
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
   }
-  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     if (rank == MASTER_NODE) cout << "A spectral method driver has been instantiated." << endl;
   }
   else if (nZone == 2 && fsi) {
@@ -288,7 +288,7 @@ CDriver::CDriver(char* confFile,
 
 	/*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically
-   deforming meshes, and time-spectral preprocessing. ---*/
+   deforming meshes, and preprocessing of spectral methods. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -300,7 +300,7 @@ CDriver::CDriver(char* confFile,
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
-      if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
+      if (config_container[iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD)
         iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
     }
 
@@ -3032,10 +3032,10 @@ void CSingleZoneDriver::ResetConvergence() {
 
 void CSingleZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method = (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD);
 
   /*--- Dynamic mesh update ---*/
-  if ((config_container[ZONE_0]->GetGrid_Movement()) && (!time_spectral)) {
+  if ((config_container[ZONE_0]->GetGrid_Movement()) && (!spectral_method)) {
     iteration_container[ZONE_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, 0, ExtIter );
   }
 
@@ -3161,12 +3161,12 @@ void CMultiZoneDriver::ResetConvergence() {
 
 void CMultiZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool time_spectral;
+  bool spectral_method;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    time_spectral = (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+   spectral_method = (config_container[iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD);
     /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
+    if ((config_container[iZone]->GetGrid_Movement()) && (spectral_method)) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
