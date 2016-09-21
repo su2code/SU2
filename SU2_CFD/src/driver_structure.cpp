@@ -3512,7 +3512,6 @@ void CSpectralDriver::ComputeSpectral_Operator(su2double **D, su2double *Omega_H
 		for (k = 0; k < nZone; k++) {
 			if (k == i ){
 				D_diag[i][k] = J*Omega_t[k];
-				cout <<  i << k << D_diag[i][k] << endl;
 			}
 		}
 	}
