@@ -483,14 +483,6 @@ public:
 	 */
 	void ComputeHarmonicBalance_Operator(su2double **D, su2double *omega_HB, su2double period);
 
-
-
-	/*!
-	 * \brief Computation and storage of the time-spectral mesh velocities.
-	 * \author K. Naik, T. Economon
-	 */
-	void SetTimeSpectral_Velocities();
-
 	/*!
 	 * \brief Update the solution for the spectral method.
 	 */
