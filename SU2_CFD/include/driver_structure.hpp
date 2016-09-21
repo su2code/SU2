@@ -457,7 +457,7 @@ public:
 	 * \author K. Naik
 	 * \param[in] D - su2double pointer to the operator matrix.
 	 */
-	void ComputeTimeSpectral_Operator(su2double **D, su2double period);
+	void ComputeTimeSpectral_Operator(su2double period);
 
 	/*!
 	 * \brief Dense matrix matrix Product A*B - A(nRows_prod*nRows_prod), B(nRows_prod*nCols_prod)
@@ -481,7 +481,7 @@ public:
 	 * \param[in] nHarmonics - Total number of harmonics (Number of Frequency values).
 	 * \param[in] nZone - Total number of zones (periodic instances).
 	 */
-	void ComputeSpectral_Operator(su2double **D, su2double *omega_HB, su2double period);
+	void ComputeSpectral_Operator(su2double *omega_HB, su2double period);
 
 	/*!
 	 * \brief Update the solution for the spectral method.

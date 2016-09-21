@@ -3346,7 +3346,7 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   	if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
 
   		/*--- Build the Time Spectral operator matrix ---*/
-  		ComputeTimeSpectral_Operator(D, period);
+  		ComputeTimeSpectral_Operator(period);
   	}
   	if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) {
   		su2double *Omega_HB = new su2double[nZone];
@@ -3358,8 +3358,8 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   		}
 
   		/*--- Build the Harmonic Balance operator matrix ---*/
-  		ComputeSpectral_Operator(D, Omega_HB, period);
-  		delete [] Omega_HB;
+  		ComputeSpectral_Operator(Omega_HB, period);
+		delete [] Omega_HB;
   	}
   }
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
@@ -3454,7 +3454,7 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
 
 }
 
-void CSpectralDriver::ComputeTimeSpectral_Operator(su2double **D, su2double period) {
+void CSpectralDriver::ComputeTimeSpectral_Operator(su2double period) {
 
 	unsigned short kZone, jZone;
 
@@ -3489,7 +3489,7 @@ void CSpectralDriver::ComputeTimeSpectral_Operator(su2double **D, su2double peri
 }
 
 
-void CSpectralDriver::ComputeSpectral_Operator(su2double **D, su2double *Omega_HB, su2double Period){
+void CSpectralDriver::ComputeSpectral_Operator(su2double *Omega_HB, su2double Period){
 
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i,k, iZone;
@@ -3513,13 +3513,15 @@ void CSpectralDriver::ComputeSpectral_Operator(su2double **D, su2double *Omega_H
 			if (k == i ){
 				D_diag[i][k] = J*Omega_t[k];
 			}
+			else
+			  cout << D_diag[i][k] << endl;
 		}
 	}
 
 	/*--- Build the spectral interpolation inverse matrix ---*/
 	for (i = 0; i < nZone; i++) {
 		for (k = 0; k < nZone; k++) {
-			Einv[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
+			Einv[i][k] = complex<su2double>(cos(Omega_t[k]*(i*Period/nZone))) + J*complex<su2double>(sin(Omega_t[k]*(i*Period/nZone)));
 		}
 	}
 
