@@ -3343,24 +3343,13 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   
 
   if (ExtIter == 0) {
-  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
-
+  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) 
   		/*--- Build the Time Spectral operator matrix ---*/
-  		ComputeTimeSpectral_Operator(period);
-  	}
-  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) {
-  		su2double *Omega_HB = new su2double[nZone];
-  		for (jZone = 0; jZone < nZone; jZone++){
-  			Omega_HB[jZone]  = config_container[jZone]->GetOmega_HB()[jZone];
+  		ComputeTimeSpectral_Operator();
 
-  			/*--- Non-dimensionalize the input Omega Harmonic Balance, if necessary.	*/
-  			Omega_HB[jZone] /= config_container[jZone]->GetOmega_Ref();
-  		}
-
+  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) 
   		/*--- Build the Harmonic Balance operator matrix ---*/
-  		ComputeSpectral_Operator(Omega_HB, period);
-		delete [] Omega_HB;
-  	}
+  		ComputeSpectral_Operator();
   }
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
@@ -3454,9 +3443,14 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
 
 }
 
-void CSpectralDriver::ComputeTimeSpectral_Operator(su2double period) {
+void CSpectralDriver::ComputeTimeSpectral_Operator() {
 
 	unsigned short kZone, jZone;
+	/*--- Compute period of oscillation ---*/
+	su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
+
+	/*--- Non-dimensionalize the input period, if necessary.      */
+	period /= config_container[ZONE_0]->GetTime_Ref();
 
 	/*--- Build the time-spectral operator matrix ---*/
 	for (kZone = 0; kZone < nZone; kZone++) {
@@ -3489,10 +3483,15 @@ void CSpectralDriver::ComputeTimeSpectral_Operator(su2double period) {
 }
 
 
-void CSpectralDriver::ComputeSpectral_Operator(su2double *Omega_HB, su2double Period){
+void CSpectralDriver::ComputeSpectral_Operator(){
 
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i,k, iZone;
+	/*--- Compute period of oscillation ---*/
+	su2double Period = config_container[ZONE_0]->GetSpectralMethod_Period();
+
+	/*--- Non-dimensionalize the input period, if necessary.      */
+	Period /= config_container[ZONE_0]->GetTime_Ref();
 
 	vector< complex<su2double> >Omega_t(nZone);
 
@@ -3500,11 +3499,10 @@ void CSpectralDriver::ComputeSpectral_Operator(su2double *Omega_HB, su2double Pe
 	vector< vector <complex<su2double> > > Einv   ( nZone, vector< complex<su2double> >(nZone));
 	vector< vector <complex<su2double> > > D_diag ( nZone, vector< complex<su2double> >(nZone));
 
-
-
 	/*--- Build the vector containing the selected frequencies ---*/
 	for (iZone = 0; iZone < nZone; iZone++){
 		Omega_t[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
+		Omega_t[iZone] /= config_container[iZone]->GetOmega_Ref();
 	}
 
 	/*--- Build the diagonal matrix of the frequencies ---*/
@@ -3513,8 +3511,6 @@ void CSpectralDriver::ComputeSpectral_Operator(su2double *Omega_HB, su2double Pe
 			if (k == i ){
 				D_diag[i][k] = J*Omega_t[k];
 			}
-			else
-			  cout << D_diag[i][k] << endl;
 		}
 	}
 
