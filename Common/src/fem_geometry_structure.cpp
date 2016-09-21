@@ -907,7 +907,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   /* Resize the vector of the communication requests to the number of messages
-     to be sent ny this rank. Only in parallel node. */
+     to be sent by this rank. Only in parallel node. */
   commReqs.resize(3*nRankRecv);
 #endif
 
@@ -1253,7 +1253,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
         /* Determine the tolerance for equal points, which is a small value
            times the length scale of this surface element. */
-        su2double tolElem = 1.e-4*surfElem[j].DetermineLengthScale(meshPoints);
+        su2double tolElem = 1.e-6*surfElem[j].DetermineLengthScale(meshPoints);
 
         /* Loop over the nodes of this surface grid and update the points on
            this periodic boundary. */
@@ -1363,7 +1363,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         }
         else {
 
-          /* This point is not present yet on this rank yet. Store it in the
+          /* This point is not present yet on this rank. Store it in the
              mapping to the local points in mesh points and create it. */
           unsignedLong2T globIndAndPer;
           globIndAndPer.long0 = haloPoints[i].globalID;
