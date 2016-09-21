@@ -3358,7 +3358,7 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   		}
 
   		/*--- Build the Harmonic Balance operator matrix ---*/
-  		ComputeHarmonicBalance_Operator(D, Omega_HB, period);
+  		ComputeSpectral_Operator(D, Omega_HB, period);
   		delete [] Omega_HB;
   	}
   }
@@ -3593,15 +3593,15 @@ void CSpectralDriver::InverseBlock(unsigned short nVar_mat, su2double *block, su
 }
 
 void CSpectralDriver::ComputeHarmonicBalance_Operator(su2double **D, su2double *Omega_HB, su2double period) {
-    
+
     unsigned short iVar, jVar;
-    
+
     su2double *Einv_Re  = new su2double[nZone*nZone];
     su2double *Einv_Im  = new su2double[nZone*nZone];
     su2double *E_Re     = new su2double[nZone*nZone];
     su2double *E_Im     = new su2double[nZone*nZone];
     su2double *D_diag   = new su2double[nZone*nZone];
-    
+
     for (iVar = 0; iVar < nZone; iVar++) {
         for (jVar = 0; jVar < nZone; jVar++) {
             E_Re[iVar*nZone+jVar] = cos(Omega_HB[jVar]*(iVar*period/nZone));
@@ -3610,13 +3610,13 @@ void CSpectralDriver::ComputeHarmonicBalance_Operator(su2double **D, su2double *
         }
         D_diag[iVar*nZone+iVar] = Omega_HB[iVar];
     }
-    
-    
+
+
     /*---- Finding inverse of matrix E = E_Re + 1i*E_Im -----*/
     su2double *L = new su2double[(2*nZone)*(2*nZone)];
     su2double *L_inv = new su2double[(2*nZone)*(2*nZone)];
     su2double *M = new su2double[(2*nZone)*nZone];
-    
+
     for (iVar = 0; iVar < nZone; iVar++) {
         for (jVar = 0; jVar < nZone; jVar++) {
             L[iVar*(2*nZone)+jVar] = E_Re[iVar*nZone+jVar];
@@ -3628,14 +3628,14 @@ void CSpectralDriver::ComputeHarmonicBalance_Operator(su2double **D, su2double *
         }
         M[iVar*nZone+iVar] = 1.;
     }
-    
+
     /* Inverse of E ( 2nZone*nZone )- inv(L)*M */
     InverseBlock(2*nZone, L, L_inv);
-    
+
     su2double *Linv_M = new su2double[(2*nZone)*nZone];
     MatrixMatrixProduct(2*nZone, nZone, L_inv, M, Linv_M);
-    
-    
+
+
     for (iVar = 0; iVar < nZone; iVar++) {
         for (jVar = 0; jVar < nZone; jVar++) {
             Einv_Re[iVar*nZone+jVar] = Linv_M[iVar*nZone+jVar];
@@ -3646,27 +3646,27 @@ void CSpectralDriver::ComputeHarmonicBalance_Operator(su2double **D, su2double *
     delete [] L_inv;
     delete [] M;
     delete [] Linv_M;
-    
-    
+
+
     /* Spectral operator - inv(E)*D_diag*E= -E_Im*D_diag*Einv_Re - E_Re*D_diag*Einv_Im */
     su2double *prod1 = new su2double[nZone*nZone];
     su2double *prod2 = new su2double[nZone*nZone];
-    
+
     /* E_Im*D_diag*Einv_Re stored in prod1 */
     MatrixMatrixProduct(nZone, nZone, E_Im, D_diag, prod2);
     MatrixMatrixProduct(nZone, nZone, prod2, Einv_Re, prod1);
-    
+
     /* E_Re*D_diag*Einv_Im stored in prod2 */
     MatrixMatrixProduct(nZone, nZone, E_Re, D_diag, E_Im);
     MatrixMatrixProduct(nZone, nZone, E_Im, Einv_Im, prod2);
-    
+
     /* Harmonic Balance spectral operator */
     for (iVar = 0; iVar < nZone; iVar++) {
         for (jVar = 0; jVar < nZone; jVar++) {
             D[iVar][jVar] = -prod1[iVar*nZone+jVar] - prod2[iVar*nZone+jVar];
         }
     }
-    
+
     delete [] prod1;
     delete [] prod2;
     delete [] E_Re;
@@ -3675,6 +3675,155 @@ void CSpectralDriver::ComputeHarmonicBalance_Operator(su2double **D, su2double *
     delete [] Einv_Im;
     delete [] D_diag;
 }
+
+
+
+
+
+void CSpectralDriver::ComputeSpectral_Operator(su2double **D, su2double *Omega_HB, su2double Period){
+
+	const   complex<su2double> J(0.0,1.0);
+	unsigned short i,k, iZone;
+
+	vector< complex<su2double> >Omega_t(nZone);
+
+	vector< vector <complex<su2double> > > E      ( nZone, vector< complex<su2double> >(nZone));
+	vector< vector <complex<su2double> > > Einv   ( nZone, vector< complex<su2double> >(nZone));
+	vector< vector <complex<su2double> > > D_diag ( nZone, vector< complex<su2double> >(nZone));
+
+
+
+	/*--- Build the vector containing the selected frequencies ---*/
+	for (iZone = 0; iZone < nZone; iZone++){
+		Omega_t[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
+	}
+
+	/*--- Build the diagonal matrix of the frequencies ---*/
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZone; k++) {
+			if (k == i ){
+				D_diag[i][k] = J*Omega_t[k];
+				cout <<  i << k << D_diag[i][k] << endl;
+			}
+		}
+	}
+
+	/*--- Build the spectral interpolation inverse matrix ---*/
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZone; k++) {
+			Einv[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
+		}
+	}
+
+	/*---  Invert Spectral matrix Ein with Gauss elimination ---*/
+
+	/*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
+	complex<su2double> **temp = new complex<su2double>*[nZone];
+	for (int i = 0; i < nZone; i++) {
+		temp[i] = new complex<su2double>[2 * nZone];
+	}
+
+	/*---  Copy the desired matrix into the temporary matrix ---*/
+	for (int i = 0; i < nZone; i++) {
+		for (int j = 0; j < nZone; j++) {
+			temp[i][j] = Einv[i][j];
+			temp[i][nZone + j] = 0;
+		}
+		temp[i][nZone + i] = 1;
+	}
+
+	su2double max_val;
+	int max_idx;
+
+	/*---  Pivot each column such that the largest number possible divides the other rows  ---*/
+	for (int k = 0; k < nZone - 1; k++) {
+		max_idx = k;
+		max_val = abs(temp[k][k]);
+		/*---  Find the largest value (pivot) in the column  ---*/
+		for (int j = k; j < nZone; j++) {
+			if (abs(temp[j][k]) > max_val) {
+				max_idx = j;
+				max_val = abs(temp[j][k]);
+			}
+		}
+		/*---  Move the row with the highest value up  ---*/
+		for (int j = 0; j < (nZone * 2); j++) {
+			complex<su2double> d = temp[k][j];
+			temp[k][j] = temp[max_idx][j];
+			temp[max_idx][j] = d;
+		}
+		/*---  Subtract the moved row from all other rows ---*/
+		for (int i = k + 1; i < nZone; i++) {
+			complex<su2double> c = temp[i][k] / temp[k][k];
+			for (int j = 0; j < (nZone * 2); j++) {
+				temp[i][j] = temp[i][j] - temp[k][j] * c;
+			}
+		}
+	}
+	/*---  Back-substitution  ---*/
+	for (int k = nZone - 1; k > 0; k--) {
+		if (temp[k][k] != complex<su2double>(0.0)) {
+			for (int i = k - 1; i > -1; i--) {
+				complex<su2double> c = temp[i][k] / temp[k][k];
+				for (int j = 0; j < (nZone * 2); j++) {
+					temp[i][j] = temp[i][j] - temp[k][j] * c;
+				}
+			}
+		}
+	}
+	/*---  Normalize the inverse  ---*/
+	for (int i = 0; i < nZone; i++) {
+		complex<su2double> c = temp[i][i];
+		for (int j = 0; j < nZone; j++) {
+			temp[i][j + nZone] = temp[i][j + nZone] / c;
+		}
+	}
+	/*---  Copy the inverse back to the main program flow ---*/
+	for (int i = 0; i < nZone; i++) {
+		for (int j = 0; j < nZone; j++) {
+			E[i][j] = temp[i][j + nZone];
+		}
+	}
+	/*---  Delete dynamic template  ---*/
+	for (int i = 0; i < nZone; i++) {
+		delete[] temp[i];
+	}
+	delete[] temp;
+
+
+	/*---  Temporary matrix for performing product  ---*/
+	vector< vector <complex<su2double> > > Temp   ( nZone, vector< complex<su2double> >(nZone));
+
+	/*---  Temporary complex spectral operator  ---*/
+	vector< vector <complex<su2double> > > D_cpx  ( nZone, vector< complex<su2double> >(nZone));
+
+	/*---  Calculation of the spectral operator matrix ---*/
+	for (int row = 0; row < nZone; row++) {
+		for (int col = 0; col < nZone; col++) {
+			for (int inner = 0; inner < nZone; inner++) {
+				Temp[row][col] += Einv[row][inner] * D_diag[inner][col];
+			}
+		}
+	}
+
+	for (int row = 0; row < nZone; row++) {
+		for (int col = 0; col < nZone; col++) {
+			for (int inner = 0; inner < nZone; inner++) {
+				D_cpx[row][col] += Temp[row][inner] * E[inner][col];
+			}
+		}
+	}
+
+	/*---  Take just the real part of the spectral operator matrix ---*/
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZone; k++) {
+			D[i][k] = real(D_cpx[i][k]);
+		}
+	}
+
+}
+
+
 
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
