@@ -455,9 +455,8 @@ public:
 	/*!
 	 * \brief Computation of the Time-Spectral operator matrix.
 	 * \author K. Naik
-	 * \param[in] D - su2double pointer to the operator matrix.
 	 */
-	void ComputeTimeSpectral_Operator(su2double period);
+	void ComputeTimeSpectral_Operator();
 
 	/*!
 	 * \brief Dense matrix matrix Product A*B - A(nRows_prod*nRows_prod), B(nRows_prod*nCols_prod)
@@ -476,12 +475,8 @@ public:
 	/*!
 	 * \brief Computation of the spectral operator matrix(Harmonic Balance and Time Spectral).
 	 * \author A. Rubino, S. Nimmagadda
-	 * \param[in] D - double pointer to the operator matrix.
-	 * \param[in] omega_HB - single pointer to array of frequency values to be modelled.
-	 * \param[in] nHarmonics - Total number of harmonics (Number of Frequency values).
-	 * \param[in] nZone - Total number of zones (periodic instances).
 	 */
-	void ComputeSpectral_Operator(su2double *omega_HB, su2double period);
+	void ComputeSpectral_Operator();
 
 	/*!
 	 * \brief Update the solution for the spectral method.
