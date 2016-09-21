@@ -474,17 +474,7 @@ public:
 	void InverseBlock(unsigned short nVar_mat, su2double *block, su2double *invBlock);
 
 	/*!
-	 * \brief Computation of the Harmonic-Balance operator matrix.
-	 * \author Sravya Nimmagadda
-	 * \param[in] D - double pointer to the operator matrix.
-	 * \param[in] omega_HB - single pointer to array of frequency values to be modelled.
-	 * \param[in] nHarmonics - Total number of harmonics (Number of Frequency values).
-	 * \param[in] nZone - Total number of zones (periodic instances).
-	 */
-	void ComputeHarmonicBalance_Operator(su2double **D, su2double *omega_HB, su2double period);
-
-	/*!
-	 * \brief Computation of the spectral operator matrix.
+	 * \brief Computation of the spectral operator matrix(Harmonic Balance and Time Spectral).
 	 * \author A. Rubino, S. Nimmagadda
 	 * \param[in] D - double pointer to the operator matrix.
 	 * \param[in] omega_HB - single pointer to array of frequency values to be modelled.
