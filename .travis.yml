@@ -7,9 +7,9 @@ compiler:
     - g++
 
 notifications:
-    email:
-        recipients:
-            - su2code-dev@lists.stanford.edu
+    slack:
+        rooms:
+             - su2devteam:USsShF4H7GLkit9Jegju4BYN#feature_caa
   
 branches:
     only:
