@@ -3487,29 +3487,34 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i,k, iZone;
-	/*--- Compute period of oscillation ---*/
+
+	su2double *Omega_HB       = new su2double[nZone];
+	complex<su2double> **E    = new complex<su2double>*[nZone];
+	complex<su2double> **Einv = new complex<su2double>*[nZone];
+	complex<su2double> **DD   = new complex<su2double>*[nZone];
+	for (iZone = 0; iZone < nZone; iZone++){
+		E[iZone]    = new complex<su2double>[nZone];
+		Einv[iZone] = new complex<su2double>[nZone];
+		DD[iZone]   = new complex<su2double>[nZone];
+	}
+
+	/*--- Get simualation period from config file ---*/
 	su2double Period = config_container[ZONE_0]->GetSpectralMethod_Period();
 
 	/*--- Non-dimensionalize the input period, if necessary.      */
 	Period /= config_container[ZONE_0]->GetTime_Ref();
 
-	vector< complex<su2double> >Omega_t(nZone);
-
-	vector< vector <complex<su2double> > > E      ( nZone, vector< complex<su2double> >(nZone));
-	vector< vector <complex<su2double> > > Einv   ( nZone, vector< complex<su2double> >(nZone));
-	vector< vector <complex<su2double> > > D_diag ( nZone, vector< complex<su2double> >(nZone));
-
-	/*--- Build the vector containing the selected frequencies ---*/
+	/*--- Build the array containing the selected frequencies to solve ---*/
 	for (iZone = 0; iZone < nZone; iZone++){
-		Omega_t[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
-		Omega_t[iZone] /= config_container[iZone]->GetOmega_Ref();
+		Omega_HB[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
+		Omega_HB[iZone] /= config_container[iZone]->GetOmega_Ref();
 	}
 
-	/*--- Build the diagonal matrix of the frequencies ---*/
+	/*--- Build the diagonal matrix of the frequencies DD ---*/
 	for (i = 0; i < nZone; i++) {
 		for (k = 0; k < nZone; k++) {
 			if (k == i ){
-				D_diag[i][k] = J*Omega_t[k];
+				DD[i][k] = J*Omega_HB[k];
 			}
 		}
 	}
@@ -3517,7 +3522,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 	/*--- Build the spectral interpolation inverse matrix ---*/
 	for (i = 0; i < nZone; i++) {
 		for (k = 0; k < nZone; k++) {
-			Einv[i][k] = complex<su2double>(cos(Omega_t[k]*(i*Period/nZone))) + J*complex<su2double>(sin(Omega_t[k]*(i*Period/nZone)));
+			Einv[i][k] = complex<su2double>(cos(Omega_HB[k]*(i*Period/nZone))) + J*complex<su2double>(sin(Omega_HB[k]*(i*Period/nZone)));
 		}
 	}
 
@@ -3598,16 +3603,21 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 
 
 	/*---  Temporary matrix for performing product  ---*/
-	vector< vector <complex<su2double> > > Temp   ( nZone, vector< complex<su2double> >(nZone));
+	complex<su2double> **Temp    = new complex<su2double>*[nZone];
 
 	/*---  Temporary complex spectral operator  ---*/
-	vector< vector <complex<su2double> > > D_cpx  ( nZone, vector< complex<su2double> >(nZone));
+	complex<su2double> **Dcpx    = new complex<su2double>*[nZone];
+
+	for (iZone = 0; iZone < nZone; iZone++){
+		Temp[iZone]    = new complex<su2double>[nZone];
+		Dcpx[iZone]   = new complex<su2double>[nZone];
+	}
 
 	/*---  Calculation of the spectral operator matrix ---*/
 	for (int row = 0; row < nZone; row++) {
 		for (int col = 0; col < nZone; col++) {
 			for (int inner = 0; inner < nZone; inner++) {
-				Temp[row][col] += Einv[row][inner] * D_diag[inner][col];
+				Temp[row][col] += Einv[row][inner] * DD[inner][col];
 			}
 		}
 	}
@@ -3615,7 +3625,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 	for (int row = 0; row < nZone; row++) {
 		for (int col = 0; col < nZone; col++) {
 			for (int inner = 0; inner < nZone; inner++) {
-				D_cpx[row][col] += Temp[row][inner] * E[inner][col];
+				Dcpx[row][col] += Temp[row][inner] * E[inner][col];
 			}
 		}
 	}
@@ -3623,9 +3633,23 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 	/*---  Take just the real part of the spectral operator matrix ---*/
 	for (i = 0; i < nZone; i++) {
 		for (k = 0; k < nZone; k++) {
-			D[i][k] = real(D_cpx[i][k]);
+			D[i][k] = real(Dcpx[i][k]);
 		}
 	}
+
+	/*--- Deallocate dynamic memory ---*/
+		for (iZone = 0; iZone < nZone; iZone++){
+			delete [] E[iZone];
+			delete [] Einv[iZone];
+			delete [] DD[iZone];
+			delete [] Temp[iZone];
+			delete [] Dcpx[iZone];
+		}
+		delete [] E;
+		delete [] Einv;
+		delete [] DD[iZone];
+		delete [] Temp;
+		delete [] Omega_HB;
 
 }
 
