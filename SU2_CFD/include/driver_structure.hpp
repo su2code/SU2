@@ -459,20 +459,6 @@ public:
 	void ComputeTimeSpectral_Operator();
 
 	/*!
-	 * \brief Dense matrix matrix Product A*B - A(nRows_prod*nRows_prod), B(nRows_prod*nCols_prod)
-	 * \param[in] nRows_prod - nRows of product matrix, nCols_prod - nCols of product matrix
-	 */
-	void MatrixMatrixProduct(unsigned short nRows_prod, unsigned short nCols_prod, su2double *matrix_a, su2double *matrix_b, su2double *product);
-
-	/*!
-	 * \brief Inverse of dense square matrix using Gauss-Jordan elimination
-	 * \author Sravya NImmagadda
-	 * \param[in] nVar_mat - size of square matrix (nRows/nCols)
-	 * *block and *invblock - pointers to matrix and its inverse
-	 */
-	void InverseBlock(unsigned short nVar_mat, su2double *block, su2double *invBlock);
-
-	/*!
 	 * \brief Computation of the spectral operator matrix(Harmonic Balance and Time Spectral).
 	 * \author A. Rubino, S. Nimmagadda
 	 */
