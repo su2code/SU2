@@ -1107,7 +1107,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
   /* Harmonic Balance config */
-  /* DESCRIPTION: Omega(2*pi*f) - frequencies for Harmonic Balance method */
+  /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
   addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
 
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/
@@ -2246,7 +2246,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		}
   	}
   }
-    
+
     /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
      There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
      The largest period of motion is the one to be used for time-spectral calculations. ---*/
