@@ -3310,101 +3310,100 @@ void CSpectralDriver::ResetConvergence() {
 }
 
 void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
-  
-  int rank = MASTER_NODE;
+
+	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  unsigned short iVar, jZone, kZone, iMGlevel;
-  unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
-  unsigned long iPoint;
-  bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
-  if (adjoint) {
-    implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  }
-  
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-  /*--- Retrieve values from the config file ---*/
-  su2double *U = new su2double[nVar];
-  su2double *U_old = new su2double[nVar];
-  su2double *Psi = new su2double[nVar];
-  su2double *Psi_old = new su2double[nVar];
-  su2double *Source = new su2double[nVar];
-  su2double deltaU, deltaPsi;
-  
-  /*--- Compute period of oscillation ---*/
-  su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
+	unsigned short iVar, jZone, kZone, iMGlevel;
+	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
+	unsigned long iPoint;
+	bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
+	if (adjoint) {
+		implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+	}
 
-  /*--- Non-dimensionalize the input period, if necessary.	*/
-  period /= config_container[ZONE_0]->GetTime_Ref();
-  
+	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-  if (ExtIter == 0) {
-  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) 
-  		/*--- Build the Time Spectral operator matrix ---*/
-  		ComputeTimeSpectral_Operator();
+	/*--- Retrieve values from the config file ---*/
+	su2double *U = new su2double[nVar];
+	su2double *U_old = new su2double[nVar];
+	su2double *Psi = new su2double[nVar];
+	su2double *Psi_old = new su2double[nVar];
+	su2double *Source = new su2double[nVar];
+	su2double deltaU, deltaPsi;
 
-  	if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) 
-  		/*--- Build the Harmonic Balance operator matrix ---*/
-  		ComputeSpectral_Operator();
-  }
-  /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
-  /*--- Loop over all grid levels ---*/
-  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-    
-    /*--- Loop over each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Source[iVar] = 0.0;
-      }
-      
-      /*--- Step across the columns ---*/
-      for (jZone = 0; jZone < nZone; jZone++) {
-        
-        /*--- Retrieve solution at this node in current zone ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          
-          if (!adjoint) {
-            U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-            Source[iVar] += U[iVar]*D[iZone][jZone];
-            
-            if (implicit) {
-              U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
-              deltaU = U[iVar] - U_old[iVar];
-              Source[iVar] += deltaU*D[iZone][jZone];
-            }
-            
-          }
-          
-          else {
-            Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
-            Source[iVar] += Psi[iVar]*D[jZone][iZone];
-            
-            if (implicit) {
-              Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
-              deltaPsi = Psi[iVar] - Psi_old[iVar];
-              Source[iVar] += deltaPsi*D[jZone][iZone];
-            }
-          }
-        }
-        
-        /*--- Store sources for current row ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (!adjoint) {
-            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
-          }
-          else {
-            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
-          }
-        }
-        
-      }
-    }
-  }
+	/*--- Compute period of oscillation ---*/
+	su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
+
+	/*--- Non-dimensionalize the input period, if necessary.	*/
+	period /= config_container[ZONE_0]->GetTime_Ref();
+
+	if (ExtIter == 0) {
+		if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL)
+			/*--- Build the Time Spectral operator matrix ---*/
+			ComputeTimeSpectral_Operator();
+
+		if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE)
+			/*--- Build the Harmonic Balance operator matrix ---*/
+			ComputeSpectral_Operator();
+	}
+	/*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
+	/*--- Loop over all grid levels ---*/
+	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+
+		/*--- Loop over each node in the volume mesh ---*/
+		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+
+			for (iVar = 0; iVar < nVar; iVar++) {
+				Source[iVar] = 0.0;
+			}
+
+			/*--- Step across the columns ---*/
+			for (jZone = 0; jZone < nZone; jZone++) {
+
+				/*--- Retrieve solution at this node in current zone ---*/
+				for (iVar = 0; iVar < nVar; iVar++) {
+
+					if (!adjoint) {
+						U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+						Source[iVar] += U[iVar]*D[iZone][jZone];
+
+						if (implicit) {
+							U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+							deltaU = U[iVar] - U_old[iVar];
+							Source[iVar] += deltaU*D[iZone][jZone];
+						}
+
+					}
+
+					else {
+						Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
+						Source[iVar] += Psi[iVar]*D[jZone][iZone];
+
+						if (implicit) {
+							Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+							deltaPsi = Psi[iVar] - Psi_old[iVar];
+							Source[iVar] += deltaPsi*D[jZone][iZone];
+						}
+					}
+				}
+
+				/*--- Store sources for current row ---*/
+				for (iVar = 0; iVar < nVar; iVar++) {
+					if (!adjoint) {
+						solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
+					}
+					else {
+						solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
+					}
+				}
+
+			}
+		}
+	}
   
   /*--- Source term for a turbulence model ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
@@ -3486,7 +3485,7 @@ void CSpectralDriver::ComputeTimeSpectral_Operator() {
 void CSpectralDriver::ComputeSpectral_Operator(){
 
 	const   complex<su2double> J(0.0,1.0);
-	unsigned short i,k, iZone;
+	unsigned short i, j, k, iZone;
 
 	su2double *Omega_HB       = new su2double[nZone];
 	complex<su2double> **E    = new complex<su2double>*[nZone];
@@ -3526,17 +3525,17 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 		}
 	}
 
-	/*---  Invert Spectral matrix Ein with Gauss elimination ---*/
+	/*---  Invert inverse spectral matrix Einv with Gauss elimination ---*/
 
 	/*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
 	complex<su2double> **temp = new complex<su2double>*[nZone];
-	for (int i = 0; i < nZone; i++) {
+	for (i = 0; i < nZone; i++) {
 		temp[i] = new complex<su2double>[2 * nZone];
 	}
 
 	/*---  Copy the desired matrix into the temporary matrix ---*/
-	for (int i = 0; i < nZone; i++) {
-		for (int j = 0; j < nZone; j++) {
+	for (i = 0; i < nZone; i++) {
+		for (j = 0; j < nZone; j++) {
 			temp[i][j] = Einv[i][j];
 			temp[i][nZone + j] = 0;
 		}
@@ -3544,59 +3543,59 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 	}
 
 	su2double max_val;
-	int max_idx;
+	unsigned short max_idx;
 
 	/*---  Pivot each column such that the largest number possible divides the other rows  ---*/
-	for (int k = 0; k < nZone - 1; k++) {
+	for (k = 0; k < nZone - 1; k++) {
 		max_idx = k;
 		max_val = abs(temp[k][k]);
 		/*---  Find the largest value (pivot) in the column  ---*/
-		for (int j = k; j < nZone; j++) {
+		for (j = k; j < nZone; j++) {
 			if (abs(temp[j][k]) > max_val) {
 				max_idx = j;
 				max_val = abs(temp[j][k]);
 			}
 		}
 		/*---  Move the row with the highest value up  ---*/
-		for (int j = 0; j < (nZone * 2); j++) {
+		for (j = 0; j < (nZone * 2); j++) {
 			complex<su2double> d = temp[k][j];
 			temp[k][j] = temp[max_idx][j];
 			temp[max_idx][j] = d;
 		}
 		/*---  Subtract the moved row from all other rows ---*/
-		for (int i = k + 1; i < nZone; i++) {
+		for (i = k + 1; i < nZone; i++) {
 			complex<su2double> c = temp[i][k] / temp[k][k];
-			for (int j = 0; j < (nZone * 2); j++) {
+			for (j = 0; j < (nZone * 2); j++) {
 				temp[i][j] = temp[i][j] - temp[k][j] * c;
 			}
 		}
 	}
 	/*---  Back-substitution  ---*/
-	for (int k = nZone - 1; k > 0; k--) {
+	for (k = nZone - 1; k > 0; k--) {
 		if (temp[k][k] != complex<su2double>(0.0)) {
 			for (int i = k - 1; i > -1; i--) {
 				complex<su2double> c = temp[i][k] / temp[k][k];
-				for (int j = 0; j < (nZone * 2); j++) {
+				for (j = 0; j < (nZone * 2); j++) {
 					temp[i][j] = temp[i][j] - temp[k][j] * c;
 				}
 			}
 		}
 	}
 	/*---  Normalize the inverse  ---*/
-	for (int i = 0; i < nZone; i++) {
+	for (i = 0; i < nZone; i++) {
 		complex<su2double> c = temp[i][i];
-		for (int j = 0; j < nZone; j++) {
+		for (j = 0; j < nZone; j++) {
 			temp[i][j + nZone] = temp[i][j + nZone] / c;
 		}
 	}
 	/*---  Copy the inverse back to the main program flow ---*/
-	for (int i = 0; i < nZone; i++) {
-		for (int j = 0; j < nZone; j++) {
+	for (i = 0; i < nZone; i++) {
+		for (j = 0; j < nZone; j++) {
 			E[i][j] = temp[i][j + nZone];
 		}
 	}
 	/*---  Delete dynamic template  ---*/
-	for (int i = 0; i < nZone; i++) {
+	for (i = 0; i < nZone; i++) {
 		delete[] temp[i];
 	}
 	delete[] temp;
@@ -3622,9 +3621,11 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 		}
 	}
 
-	for (int row = 0; row < nZone; row++) {
-		for (int col = 0; col < nZone; col++) {
-			for (int inner = 0; inner < nZone; inner++) {
+	unsigned short row, col, inner;
+
+	for (row = 0; row < nZone; row++) {
+		for (col = 0; col < nZone; col++) {
+			for (inner = 0; inner < nZone; inner++) {
 				Dcpx[row][col] += Temp[row][inner] * E[inner][col];
 			}
 		}
@@ -3649,6 +3650,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 		delete [] Einv;
 		delete [] DD;
 		delete [] Temp;
+		delete [] Dcpx;
 		delete [] Omega_HB;
 
 }

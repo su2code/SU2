@@ -1257,8 +1257,8 @@ static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_U
  * \brief types of Spectral method
  */
 enum ENUM_SPECTRALMETHODTYPE {
-    TIME_SPECTRAL = 0,             /*!< \brief Time Spectral method (periodic flows) */
-    HARMONIC_BALANCE = 1,		/*!< \brief Harmonic Balance method (non-periodic flows) */
+    TIME_SPECTRAL    = 0,  /*!< \brief Time Spectral method (periodic flows) */
+    HARMONIC_BALANCE = 1,  /*!< \brief Harmonic Balance method (non-periodic flows) */
     
 };
 static const map<string, ENUM_SPECTRALMETHODTYPE> Spectral_Map = CCreateMap<string, ENUM_SPECTRALMETHODTYPE>
