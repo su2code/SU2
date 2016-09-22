@@ -3647,7 +3647,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 		}
 		delete [] E;
 		delete [] Einv;
-		delete [] DD[iZone];
+		delete [] DD;
 		delete [] Temp;
 		delete [] Omega_HB;
 
