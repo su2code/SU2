@@ -1216,7 +1216,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; adj_turb=true; break;
+    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
       
   }
   
