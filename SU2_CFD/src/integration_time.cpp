@@ -1076,6 +1076,16 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         config->Tock(tick,"BC_Sym_Plane",3);
         break;
+      case INLET_FLOW:
+        config->Tick(&tick);
+        solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Inlet",3);
+        break;
+      case OUTLET_FLOW:
+        config->Tick(&tick);
+        solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Outlet",3);
+        break;
       case ISOTHERMAL:
         config->Tick(&tick);
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
