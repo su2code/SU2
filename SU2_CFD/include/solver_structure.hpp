@@ -5953,7 +5953,7 @@ public:
                     CConfig *config, unsigned short val_marker);
   
   /*!
-   * \brief Impose the symmetry boundary condition using the residual.
+   * \brief Impose the symmetry boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -5963,6 +5963,30 @@ public:
    */
   void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the subsonic inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the outlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Impose the user customized boundary condition.
@@ -6580,6 +6604,30 @@ public:
    */
   void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the subsonic inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the outlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
