@@ -56,14 +56,14 @@ def main():
                     metavar="ZONES")
   parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver",
                     metavar="FSI")
-  parser.add_option("--spectral", dest="time_spectral", default="False",
-                    help="Launch the time SPECTRAL driver", metavar="SPECTRAL")
+  parser.add_option("--spectral", dest="spectral_method", default="False",
+                    help="Launch the SPECTRAL driver", metavar="SPECTRAL")
 
   (options, args) = parser.parse_args()
   options.nDim  = int( options.nDim )
   options.nZone = int( options.nZone )
   options.fsi = options.fsi.upper() == 'TRUE'
-  options.time_spectral = options.time_spectral.upper() == 'TRUE'
+  options.spectral_method = options.spectral_method.upper() == 'TRUE'
 
   if options.filename == None:
     raise Exception("No config file provided. Use -f flag")
@@ -71,7 +71,7 @@ def main():
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   if options.nZone == 1:
     SU2Driver = SU2Solver.CSingleZoneDriver(options.filename, options.nZone, options.nDim);
-  elif options.time_spectral:
+  elif options.spectral_method:
     SU2Driver = SU2Solver.CSpectralDriver(options.filename, options.nZone, options.nDim);
   elif (options.nZone == 2) and (options.fsi):
     SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim);

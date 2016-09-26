@@ -608,8 +608,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
   addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
-  /* DESCRIPTION: Spectral method type  */
-  addEnumOption("SPECTRALMETHOD_TYPE", SpectralMethod_Type, Spectral_Map, TIME_SPECTRAL);
   /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Time Spectral wihtout moving meshes */
@@ -2232,17 +2230,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		exit(EXIT_FAILURE);
   	}
   	/* Initialize the Harmonic balance Frequency pointer */
-  	if (SpectralMethod_Type == HARMONIC_BALANCE)
-  	{
-  		if (Omega_HB == NULL) {
-  			Omega_HB = new su2double[nOmega_HB];
-  			for (iZone = 0; iZone < nOmega_HB; iZone++ )
-  				Omega_HB[iZone] = 0.0;
-  		}else {
-  			if (nOmega_HB != nTimeInstances) {
-  				cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
-  				exit(EXIT_FAILURE);
-  			}
+  	if (Omega_HB == NULL) {
+  		Omega_HB = new su2double[nOmega_HB];
+  		for (iZone = 0; iZone < nOmega_HB; iZone++ )
+  			Omega_HB[iZone] = 0.0;
+  	}else {
+  		if (nOmega_HB != nTimeInstances) {
+  			cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
+  			exit(EXIT_FAILURE);
   		}
   	}
   }
