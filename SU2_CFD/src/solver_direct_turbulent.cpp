@@ -1552,7 +1552,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Access stored time spectral source term ---*/
+      /*--- Access stored spectral method source term ---*/
       
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
         Source = node[iPoint]->GetSpectralMethod_Source(iVar);

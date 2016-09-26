@@ -49,7 +49,7 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
   
 	TS_Source = NULL;
   
-	/*--- Allocate space for the time spectral source terms ---*/
+	/*--- Allocate space for the spectral method source terms ---*/
   
 	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 		TS_Source = new su2double[nVar];

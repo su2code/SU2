@@ -4270,7 +4270,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Get control volume ---*/
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Get stored time spectral source term ---*/
+      /*--- Get stored spectral method source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Source = node[iPoint]->GetSpectralMethod_Source(iVar);
         Residual[iVar] = Source*Volume;

@@ -138,9 +138,8 @@ private:
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
-    unsigned short SpectralMethod_Type; /*!< \brief Type of Spectral method, TimeSpectral or HarmonicBalance. */
-	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
-	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
+	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for spectral integration. */
+	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with spectral method computations. */
 	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -4011,8 +4010,8 @@ public:
   /*!
 	 * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
-   * \param[in] val_iter - Unsteady iteration number or time spectral instance.
-	 * \return Name of the file with the iteration numer for an unsteady solution file.
+   * \param[in] val_iter - Unsteady iteration number or time instance.
+	 * \return Name of the file with the iteration number for an unsteady solution file.
 	 */
   string GetUnsteady_FileName(string val_filename, int val_iter);
 

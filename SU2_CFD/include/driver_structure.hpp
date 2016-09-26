@@ -446,17 +446,11 @@ public:
 	void Run();
 
 	/*!
-	 * \brief Computation and storage of the time spectral source terms.
+	 * \brief Computation and storage of the spectral method source terms.
 	 * \author T. Economon, K. Naik
 	 * \param[in] iZone - Current zone number.
 	 */
 	void SetSpectralMethod(unsigned short iZone);
-
-	/*!
-	 * \brief Computation of the Time-Spectral operator matrix.
-	 * \author K. Naik
-	 */
-	void ComputeTimeSpectral_Operator();
 
 	/*!
 	 * \brief Computation of the spectral operator matrix(Harmonic Balance and Time Spectral).

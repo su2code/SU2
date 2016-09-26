@@ -3436,45 +3436,6 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
 
 }
 
-void CSpectralDriver::ComputeTimeSpectral_Operator() {
-
-	unsigned short kZone, jZone;
-	/*--- Compute period of oscillation ---*/
-	su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
-
-	/*--- Non-dimensionalize the input period, if necessary.      */
-	period /= config_container[ZONE_0]->GetTime_Ref();
-
-	/*--- Build the time-spectral operator matrix ---*/
-	for (kZone = 0; kZone < nZone; kZone++) {
-		for (jZone = 0; jZone < nZone; jZone++) {
-
-			if (nZone%2 == 0) {
-
-				/*--- For an even number of time instances ---*/
-				if (kZone == jZone) {
-					D[kZone][jZone] = 0.0;
-				}
-				else {
-					D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
-				}
-			}
-			else {
-
-				/*--- For an odd number of time instances ---*/
-				if (kZone == jZone) {
-					D[kZone][jZone] = 0.0;
-				}
-				else {
-					D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
-				}
-			}
-
-		}
-	}
-
-}
-
 
 void CSpectralDriver::ComputeSpectral_Operator(){
 

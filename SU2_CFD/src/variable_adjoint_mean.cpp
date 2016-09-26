@@ -145,7 +145,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
-  /*--- Allocate space for the time spectral source terms ---*/
+  /*--- Allocate space for the spectral method source terms ---*/
 	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
@@ -229,7 +229,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
-	/*--- Allocate space for the time spectral source terms ---*/
+	/*--- Allocate space for the spectral method source terms ---*/
 	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
