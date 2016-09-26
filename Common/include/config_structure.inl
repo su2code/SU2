@@ -67,8 +67,6 @@ inline bool CConfig::GetViscous(void) { return Viscous; }
 
 inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
-inline unsigned short CConfig::GetSpectralMethod_Type(void) { return SpectralMethod_Type; }
-
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
 
 inline su2double CConfig::GetSpectralMethod_Period(void) { return SpectralMethod_Period; }

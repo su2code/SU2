@@ -1777,7 +1777,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source.
+	 * \param[in] val_source - Value of the spectral method source.
 	 */
 	virtual void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
@@ -3161,16 +3161,16 @@ public:
 	void SetVelocityInc_Old(su2double *val_velocity);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_solution - Value of the spectral method source term. for the index <i>val_var</i>.
 	 */
 	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the spectral method source term for the index <i>val_var</i>.
 	 */
 	su2double GetSpectralMethod_Source(unsigned short val_var);
 
@@ -3487,16 +3487,16 @@ public:
 	~CTurbSAVariable(void);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_source - Value of the spectral method source term. for the index <i>val_var</i>.
 	 */
 	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the spectral method source term for the index <i>val_var</i>.
 	 */
 	su2double GetSpectralMethod_Source(unsigned short val_var);
 
@@ -3534,16 +3534,16 @@ public:
 	~CTurbMLVariable(void);
   
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_source - Value of the spectral method source term. for the index <i>val_var</i>.
 	 */
 	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
   
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the spectral method source term for the index <i>val_var</i>.
 	 */
 	su2double GetSpectralMethod_Source(unsigned short val_var);
   
@@ -3775,16 +3775,16 @@ public:
 	su2double *GetIntBoundary_Jump(void);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_solution - Value of the spectral method source term. for the index <i>val_var</i>.
 	 */
 	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the spectral method source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the spectral method source term for the index <i>val_var</i>.
 	 */
 	su2double GetSpectralMethod_Source(unsigned short val_var);
 };

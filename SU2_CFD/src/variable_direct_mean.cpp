@@ -197,7 +197,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 		}
 	}
   
-	/*--- Allocate space for the time spectral source terms ---*/
+	/*--- Allocate space for the spectral method source terms ---*/
   
 	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 		TS_Source = new su2double[nVar];
@@ -352,7 +352,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 		}
 	}
   
-	/*--- Allocate space for the time spectral source terms ---*/
+	/*--- Allocate space for the spectral method source terms ---*/
 	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;

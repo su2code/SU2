@@ -1237,12 +1237,12 @@ static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMa
  * \brief types of schemes for unsteady computations
  */
 enum ENUM_UNSTEADY {
-  STEADY = 0,             /*!< \brief A steady computation. */
-  TIME_STEPPING = 1,		/*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,	/*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,	/*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
-  ROTATIONAL_FRAME = 4,   /*!< \brief Use a rotational source term. */
-  SPECTRAL_METHOD = 5       	/*!< \brief Use a time spectral source term. */
+  STEADY = 0,            /*!< \brief A steady computation. */
+  TIME_STEPPING = 1,		 /*!< \brief Use a time stepping strategy for unsteady computations. */
+  DT_STEPPING_1ST = 2,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND = 3,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
+  SPECTRAL_METHOD = 5    /*!< \brief Use a spectral method source term. */
 
 };
 static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
@@ -1252,18 +1252,6 @@ static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_U
 ("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
 ("SPECTRAL_METHOD", SPECTRAL_METHOD)
 ("ROTATIONAL_FRAME", ROTATIONAL_FRAME);
-
-/*!
- * \brief types of Spectral method
- */
-enum ENUM_SPECTRALMETHODTYPE {
-    TIME_SPECTRAL    = 0,  /*!< \brief Time Spectral method (periodic flows) */
-    HARMONIC_BALANCE = 1,  /*!< \brief Harmonic Balance method (non-periodic flows) */
-    
-};
-static const map<string, ENUM_SPECTRALMETHODTYPE> Spectral_Map = CCreateMap<string, ENUM_SPECTRALMETHODTYPE>
-("TIME_SPECTRAL", TIME_SPECTRAL)
-("HARMONIC_BALANCE", HARMONIC_BALANCE);
 
 /*!
  * \brief types of criteria to determine when the solution is converged

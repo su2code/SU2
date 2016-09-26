@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
 	/*--- Definition of the output class (one for all the zones) ---*/
 	output = new COutput();
   
-  /*---  Check whether this is an FSI, fluid unsteady, time spectral or structural dynamic simulation and call the
+  /*---  Check whether this is an FSI, fluid unsteady, spectral method or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
 
 	if (fsi){
