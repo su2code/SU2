@@ -310,7 +310,7 @@ int main(int argc, char *argv[]) {
     
     else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 
-			/*--- Time-spectral simulation: merge files for each time instance (each zone). ---*/
+			/*--- Spectral simulation: merge files for each time instance (each zone). ---*/
 			unsigned short nSpectralMethod = config_container[ZONE_0]->GetnTimeInstances();
 			unsigned short iSpectralMethod;
 			for (iSpectralMethod = 0; iSpectralMethod < nSpectralMethod; iSpectralMethod++) {

@@ -3341,15 +3341,9 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
 	/*--- Non-dimensionalize the input period, if necessary.	*/
 	period /= config_container[ZONE_0]->GetTime_Ref();
 
-	if (ExtIter == 0) {
-		if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL)
-			/*--- Build the Time Spectral operator matrix ---*/
-			ComputeTimeSpectral_Operator();
+	if (ExtIter == 0)
+		ComputeSpectral_Operator();
 
-		if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE)
-			/*--- Build the Harmonic Balance operator matrix ---*/
-			ComputeSpectral_Operator();
-	}
 	/*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
 	/*--- Loop over all grid levels ---*/
 	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
