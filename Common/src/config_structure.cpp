@@ -33,6 +33,63 @@
 
 #include "../include/config_structure.hpp"
 
+
+unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nZone = 1; // Default value
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+
+  /*--- Search the mesh file for the 'NZONE' keyword. ---*/
+
+  switch (val_format) {
+    case SU2:
+
+      /*--- Open grid file ---*/
+
+      strcpy (cstr, val_mesh_filename.c_str());
+      mesh_file.open(cstr, ios::in);
+      if (mesh_file.fail()) {
+        cout << "cstr=" << cstr << endl;
+        cout << "There is no geometry file (GetnZone))!" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Read the SU2 mesh file ---*/
+
+      for (iLine = 0; iLine < nLine ; iLine++) {
+
+        getline (mesh_file, text_line);
+
+        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+
+        position = text_line.find ("NZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
+        }
+      }
+
+      break;
+
+  }
+
+  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
+
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD && (config->GetKind_SU2() != SU2_DEF)   ) {
+  	nZone = config->GetnTimeInstances();
+  }
+
+  return (unsigned short) nZone;
+}
+
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
 
   int rank = MASTER_NODE;
