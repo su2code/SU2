@@ -674,7 +674,31 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
         }
         
         break;
-        
+
+      case SA_E:
+            
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+                node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+        }
+            
+        break;
+
+      case SA_COMP:
+            
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+                node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+        }
+            
+        break;
+
+      case SA_E_COMP:
+            
+            for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+                node[iPoint]->AddClippedSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint], lowerlimit[0], upperlimit[0]);
+            }
+            
+            break;
+      
       case SA_NEG:
         
         for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1593,7 +1617,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
           psi_2 = min(100.0,psi_2);
           
-          distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES*sqrt(psi_2)));
+          //distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES*sqrt(psi_2)));
+          distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES));
           
           /*--- Set distance to the surface with DDES distance ---*/
           //fd_print[iPoint]=f_d;
@@ -1671,7 +1696,8 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
           psi_2 = min(100.0,psi_2);
           
-          distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES*sqrt(psi_2)));
+          //distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES*sqrt(psi_2)));
+          distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES));
           
           /*--- Set distance to the surface with DDES distance ---*/
           numerics->SetDistance(distDES_tilde, 0.0);

@@ -610,7 +610,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
   addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
   /* DESCRIPTION: Post-reconstruction correction for low Mach number flows */
-  addBoolOption("LOW_MACH_CORR", Low_Mach_Corr, false); 
+  addBoolOption("LOW_MACH_CORR", Low_Mach_Corr, false);
+  /* DESCRIPTION:  Roe with low dissipation for unsteady flows */
+  addBoolOption("ROE_LOW_DISSIPATION", Roe_Low_Diss, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
   addDoubleOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
@@ -3085,6 +3087,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
           case SST:    cout << "Menter's SST"     << endl; break;
+          case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
+          case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
+          case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
         }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
@@ -3492,6 +3497,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               case BARTH_JESPERSEN:
                 cout << "Barth-Jespersen slope-limiting method." << endl;
                 break;
+              case VENKATAKRISHNAN_MOD:
+                cout << "Venkatakrishnan slope-limiting method, with constant:. "<< endl;
+                break;
+                    
             }
             break;
         }
