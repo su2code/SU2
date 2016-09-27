@@ -1586,8 +1586,6 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
   const su2double tgvVelocity = 1.0;     // Taylor-Green velocity.
   const su2double tgvDensity  = 1.0;     // Taylor-Green density.
   const su2double tgvPressure = 100.0;   // Taylor-Green pressure.
-  const su2double factorA     = 0.0;
-  const su2double factorB     = 0.0;
   
   /* Useful coefficient in which Gamma is present. */
   const su2double ovGm1    = 1.0/Gamma_Minus_One;
@@ -1616,8 +1614,8 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
       su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
                                       sin(coor[1]/tgvLength)*
                                       cos(coorZ  /tgvLength));
-      factorA       = cos(2.0*coorZ/tgvLength) + 2.0;
-      factorB       = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
+      su2double factorA = cos(2.0*coorZ/tgvLength) + 2.0;
+      su2double factorB = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
       su2double p   = tgvPressure+tgvDensity*(pow(tgvVelocity,2.0)/16.0)*factorA*factorB;
 
       /* Compute the conservative variables. Note that both 2D and 3D
