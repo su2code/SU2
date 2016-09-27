@@ -4936,7 +4936,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
 
   /*--- Append iteration number for unsteady cases ---*/
 
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == SPECTRAL_METHOD) || (Wrt_Dynamic)) {
+  if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
@@ -4956,7 +4956,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
     string multizone_filename = val_filename;
     char buffer[50];
     
-    if (GetnZone() > 1) {
+    if (GetnZone() > 1 ) {
         unsigned short lastindex = multizone_filename.find_last_of(".");
         multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));

@@ -11657,7 +11657,9 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     strcpy (cstr, surfadj_filename.c_str());
     
     /*--- Write file name with extension if unsteady or steady ---*/
-    
+    if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD)
+    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+
     if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
         (config->GetUnsteady_Simulation() == SPECTRAL_METHOD)) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
