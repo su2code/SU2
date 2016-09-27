@@ -1564,6 +1564,74 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 
 #endif
 
+#ifdef TAYLOR_GREEN
+  
+  solutionSet = true;
+  
+  /* Write a message that the solution is initialized for the inviscid vortex
+   test case. */
+  if(rank == MASTER_NODE) {
+    cout << endl;
+    cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
+    cout << endl << flush;
+  }
+  
+  /* The initial conditions are set for the Taylor-Green vortex case, which 
+   is a DNS case that features vortex breakdown into turbulence. These
+   particular settings are for the typical Re = 1600 case (M = 0.08) with
+   an initial temperature of 300 K. Note that this condition works in both
+   2D and 3D. */
+  
+  const su2double tgvLength   = 1.0;     // Taylor-Green length scale.
+  const su2double tgvVelocity = 1.0;     // Taylor-Green velocity.
+  const su2double tgvDensity  = 1.0;     // Taylor-Green density.
+  const su2double tgvPressure = 100.0;   // Taylor-Green pressure.
+  const su2double factorA     = 0.0;
+  const su2double factorB     = 0.0;
+  
+  /* Useful coefficient in which Gamma is present. */
+  const su2double ovGm1    = 1.0/Gamma_Minus_One;
+  
+  /* Loop over the owned elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    
+    /* Loop over the DOFs of this element. */
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+      
+      // Set the pointer to the solution of this DOF and to the
+      // coordinates of its corresponding node ID of the grid.
+      su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+      
+      const unsigned long ind = volElem[i].nodeIDsGrid[j];
+      const su2double *coor   = meshPoints[ind].coor;
+
+      su2double coorZ = 0.0;
+      if (nDim == 3) coorZ = coor[2];
+      
+      /* Compute the primitive variables. */
+      su2double rho = tgvDensity;
+      su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
+                                      cos(coor[1]/tgvLength)*
+                                      cos(coorZ  /tgvLength));
+      su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
+                                      sin(coor[1]/tgvLength)*
+                                      cos(coorZ  /tgvLength));
+      factorA       = cos(2.0*coorZ/tgvLength) + 2.0;
+      factorB       = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
+      su2double p   = tgvPressure+tgvDensity*(pow(tgvVelocity,2.0)/16.0)*factorA*factorB;
+
+      /* Compute the conservative variables. Note that both 2D and 3D
+       cases are treated correctly. */
+      solDOF[0]      = rho;
+      solDOF[1]      = rho*u;
+      solDOF[2]      = rho*v;
+      solDOF[3]      = 0.0;
+      solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
+    }
+  }
+  
+#endif
+  
   /*--- If the solution was set in this function, perform the MPI
         communication of the solution including the possible self
         communication for the periodic data. Correct for rotational
