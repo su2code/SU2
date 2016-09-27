@@ -1904,11 +1904,11 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
+  if (nZone > 1  || config->GetUnsteady_Simulation() == SPECTRAL_METHOD)
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+  if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -2241,11 +2241,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
+  if (nZone > 1 )
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != SPECTRAL_METHOD) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -2359,7 +2359,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != SPECTRAL_METHOD) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
