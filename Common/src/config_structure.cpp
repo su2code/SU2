@@ -34,6 +34,84 @@
 #include "../include/config_structure.hpp"
 
 
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Initialize pointers to Null---*/
+
+  SetPointersNull();
+
+  /*--- Reading config options  ---*/
+
+  SetConfig_Options(val_iZone, val_nZone);
+
+  /*--- Parsing the config file  ---*/
+
+  SetConfig_Parsing(case_filename);
+
+  /*--- Configuration file postprocessing ---*/
+
+  SetPostprocessing(val_software, val_iZone, val_nDim);
+
+  /*--- Configuration file boundaries/markers setting ---*/
+
+  SetMarkers(val_software);
+
+  /*--- Configuration file output ---*/
+
+  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
+    SetOutput(val_software, val_iZone);
+
+}
+
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
+
+  /*--- Initialize pointers to Null---*/
+
+  SetPointersNull();
+
+  /*--- Reading config options  ---*/
+
+  SetConfig_Options(0, 1);
+
+  /*--- Parsing the config file  ---*/
+
+  SetConfig_Parsing(case_filename);
+
+  /*--- Configuration file postprocessing ---*/
+
+  SetPostprocessing(val_software, 0, 1);
+
+}
+
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
+
+  bool runtime_file = false;
+
+  /*--- Initialize pointers to Null---*/
+
+  SetPointersNull();
+
+  /*--- Reading config options  ---*/
+
+  SetRunTime_Options();
+
+  /*--- Parsing the config file  ---*/
+
+  runtime_file = SetRunTime_Parsing(case_filename);
+
+  /*--- Update original config file ---*/
+
+  if (runtime_file) {
+    config->SetnExtIter(nExtIter);
+  }
+
+}
+
 unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -90,84 +168,105 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
   return (unsigned short) nZone;
 }
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	string text_line, Marker_Tag;
+	ifstream mesh_file;
+	short nDim = 3;
+	unsigned short iLine, nLine = 10;
+	char cstr[200];
+	string::size_type position;
+
+	/*--- Open grid file ---*/
+
+	strcpy (cstr, val_mesh_filename.c_str());
+	mesh_file.open(cstr, ios::in);
+
+	switch (val_format) {
+	case SU2:
+
+		/*--- Read SU2 mesh file ---*/
+
+		for (iLine = 0; iLine < nLine ; iLine++) {
+
+			getline (mesh_file, text_line);
+
+			/*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+
+			position = text_line.find ("NDIME=",0);
+			if (position != string::npos) {
+				text_line.erase (0,6); nDim = atoi(text_line.c_str());
+			}
+		}
+		break;
+
+	case CGNS:
+
+#ifdef HAVE_CGNS
+
+		/*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+
+		int fn, nbases = 0, nzones = 0, file_type;
+		int cell_dim = 0, phys_dim = 0;
+		char basename[CGNS_STRING_SIZE];
+
+		/*--- Check whether the supplied file is truly a CGNS file. ---*/
+
+		if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+			printf( "\n\n   !!! Error !!!\n" );
+			printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+			printf( " Now exiting...\n\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+
+		if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+
+		/*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+
+		if (cg_nbases(fn, &nbases)) cg_error_exit();
+
+		/*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+
+		if ( nbases > 1 ) {
+			printf("\n\n   !!! Error !!!\n" );
+			printf("CGNS reader currently incapable of handling more than 1 database.");
+			printf("Now exiting...\n\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- Read the databases. Note that the indexing starts at 1. ---*/
+
+		for ( int i = 1; i <= nbases; i++ ) {
+
+			if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+
+			/*--- Get the number of zones for this base. ---*/
+
+			if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+
+		}
+
+		/*--- Set the problem dimension as read from the CGNS file ---*/
+
+		nDim = cell_dim;
+
 #endif
 
-  /*--- Initialize pointers to Null---*/
-  
-  SetPointersNull();
+		break;
 
-  /*--- Reading config options  ---*/
-  
-  SetConfig_Options(val_iZone, val_nZone);
+	}
 
-  /*--- Parsing the config file  ---*/
-  
-  SetConfig_Parsing(case_filename);
+	mesh_file.close();
 
-  /*--- Configuration file postprocessing ---*/
-
-  SetPostprocessing(val_software, val_iZone, val_nDim);
-
-  /*--- Configuration file boundaries/markers setting ---*/
-  
-  SetMarkers(val_software);
-
-  /*--- Configuration file output ---*/
-
-  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
-    SetOutput(val_software, val_iZone);
-
+	return (unsigned short) nDim;
 }
-
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
-  
-  /*--- Initialize pointers to Null---*/
-  
-  SetPointersNull();
-
-  /*--- Reading config options  ---*/
-  
-  SetConfig_Options(0, 1);
-
-  /*--- Parsing the config file  ---*/
-  
-  SetConfig_Parsing(case_filename);
-
-  /*--- Configuration file postprocessing ---*/
-  
-  SetPostprocessing(val_software, 0, 1);
-  
-}
-
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
-  
-  bool runtime_file = false;
-  
-  /*--- Initialize pointers to Null---*/
-  
-  SetPointersNull();
-  
-  /*--- Reading config options  ---*/
-  
-  SetRunTime_Options();
-  
-  /*--- Parsing the config file  ---*/
-  
-  runtime_file = SetRunTime_Parsing(case_filename);
-  
-  /*--- Update original config file ---*/
-  
-  if (runtime_file) {
-    config->SetnExtIter(nExtIter);
-  }
-
-}
-
 void CConfig::SetPointersNull(void) {
   
   Marker_CfgFile_Out_1D = NULL;       Marker_All_Out_1D = NULL;

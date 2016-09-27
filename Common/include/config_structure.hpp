@@ -41,6 +41,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <stdlib.h>
 #include <cmath>
@@ -49,6 +50,10 @@
 
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
+
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
 
 using namespace std;
 
@@ -1044,6 +1049,13 @@ public:
    */
   static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
 
+  /*!
+   * \brief Gets the number of dimensions in the mesh file
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \return Total number of domains in the grid file.
+   */
+  static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
   /*!
    * \brief Initializes pointers to null
