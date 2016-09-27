@@ -1036,6 +1036,16 @@ public:
 	~CConfig(void);
 
   /*!
+   * \brief Gets the number of zones in the mesh file.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] config - Definition of the particular problem.
+   * \return Total number of zones in the grid file.
+   */
+  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
+
+
+  /*!
    * \brief Initializes pointers to null
    */
 	void SetPointersNull(void);
