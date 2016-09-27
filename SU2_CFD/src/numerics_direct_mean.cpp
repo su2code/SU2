@@ -2338,6 +2338,7 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
+  roe_low_diss = config->Roe_Low_Dissipation();
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -2385,14 +2386,14 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
-  
+
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
   if (grid_movement){
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   /*--- Face area (norm or the normal vector) ---*/
-  
+
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
     Area += Normal[iDim]*Normal[iDim];
@@ -2587,10 +2588,24 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         for (kVar = 0; kVar < nVar; kVar++)
           Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
         
-        val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-        val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-        val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-        
+        /*--- Apply Roe Low Dissipation only to the momentum equations ---*/
+          
+        if (roe_low_diss){
+            if ((iVar>0) && (iVar<(nDim+1))){
+                val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*dissipation;
+                val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*dissipation;
+                val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*dissipation;
+            }
+            else
+                val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+                val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+                val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        }
+        else{
+          val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+          val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+          val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
+        }
       }
       
     }
@@ -3053,6 +3068,7 @@ void CUpwL2Roe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     /*--- L2Roe: a low dissipation version of Roe's approximate Riemann solver for low Mach numbers. IJNMF 2015 ---*/
     
     zeta = min(1.0,max(Mach_i,Mach_j));
+    //zeta = max(zeta,0.05);
     
     /*--- Recompute conservative variables ---*/
     
@@ -3206,7 +3222,7 @@ void CUpwL2Roe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     }
     delta_p = Pressure_j - Pressure_i;
     delta_rho = Density_j - Density_i;
-    proj_delta_vel = proj_delta_vel/Area;
+    proj_delta_vel = (proj_delta_vel/Area)*zeta;
     
     if (nDim == 2) {
         delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
@@ -3358,6 +3374,7 @@ void CUpwLMRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
     su2double ProjGridVel = 0.0;
     su2double zeta,Mach_i,Mach_j;
+    bool roe_low_diss = config->Roe_Low_Dissipation();
     
     AD::StartPreacc();
     AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
@@ -3403,7 +3420,12 @@ void CUpwLMRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     /*--- Rieper, A low-Mach number fix for Roe's approximate Riemman Solver, JCP 2011 ---*/
     
     zeta = min(1.0,max(Mach_i,Mach_j));
-    
+    zeta = max(0.05,zeta);
+    if (roe_low_diss){
+        if (dissipation>0.9)
+            zeta = 1.0;
+    }
+    //cout<< zeta << endl;
     /*--- Recompute conservative variables ---*/
     
     U_i[0] = Density_i; U_j[0] = Density_j;

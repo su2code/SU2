@@ -212,6 +212,8 @@ public:
   su2double *Ys, **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
   RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  su2double dissipation;
+    
   CVariable *var;
   
   /*!
@@ -301,6 +303,8 @@ public:
    * \param[in] val_u_j - Value of the conservative variable at point j.
    */
   void SetConservative_ZeroOrder(su2double *val_u_i, su2double *val_u_j);
+    
+  void SetRoeDissipation(double val_dissipation);
   
   /*!
    * \brief Set the value of the primitive variables.
@@ -1563,6 +1567,7 @@ private:
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
   unsigned short iDim, iVar, jVar, kVar;
+  bool roe_low_diss;
   
 public:
   
@@ -4363,6 +4368,298 @@ public:
    * \brief  ______________.
    */
   su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_E
+ * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author E.Molina, A. Bueno.
+ * \version 4.1.0 "Cardinal"
+ */
+class CSourcePieceWise_TurbSA_E : public CNumerics {
+private:
+    su2double cv1_3;
+    su2double k2;
+    su2double cb1;
+    su2double cw2;
+    su2double ct3;
+    su2double ct4;
+    su2double cw3_6;
+    su2double cb2_sigma;
+    su2double sigma;
+    su2double cb2;
+    su2double cw1;
+    unsigned short iDim;
+    su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+    su2double r, g, g_6, glim, fw;
+    su2double norm2_Grad;
+    su2double dfv1, dfv2, dShat;
+    su2double dr, dg, dfw;
+    bool incompressible;
+    bool rotating_frame;
+    su2double intermittency;
+    su2double Production, Destruction, CrossProduction;
+    su2double Sbar;
+    unsigned short jDim;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CSourcePieceWise_TurbSA_E(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CSourcePieceWise_TurbSA_E(void);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] intermittency_in - Value of the intermittency.
+     */
+    void SetIntermittency(su2double intermittency_in);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_production - Value of the Production.
+     */
+    void SetProduction(su2double val_production);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_destruction - Value of the Destruction.
+     */
+    void SetDestruction(su2double val_destruction);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_crossproduction - Value of the CrossProduction.
+     */
+    void SetCrossProduction(su2double val_crossproduction);
+    
+    /*!
+     * \brief ______________.
+     */
+    su2double GetProduction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetDestruction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_COMP
+ * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author E.Molina, A. Bueno.
+ * \version 4.2.0 "Cardinal"
+ */
+class CSourcePieceWise_TurbSA_COMP : public CNumerics {
+private:
+    su2double cv1_3;
+    su2double k2;
+    su2double cb1;
+    su2double cw2;
+    su2double ct3;
+    su2double ct4;
+    su2double cw3_6;
+    su2double cb2_sigma;
+    su2double sigma;
+    su2double cb2;
+    su2double cw1;
+    unsigned short iDim;
+    su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+    su2double r, g, g_6, glim, fw;
+    su2double norm2_Grad;
+    su2double dfv1, dfv2, dShat;
+    su2double dr, dg, dfw;
+    bool incompressible;
+    bool rotating_frame;
+    su2double intermittency;
+    su2double Production, Destruction, CrossProduction;
+    su2double aux_cc, CompCorrection, c5;
+    unsigned short jDim;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CSourcePieceWise_TurbSA_COMP(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CSourcePieceWise_TurbSA_COMP(void);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] intermittency_in - Value of the intermittency.
+     */
+    void SetIntermittency(su2double intermittency_in);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_production - Value of the Production.
+     */
+    void SetProduction(su2double val_production);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_destruction - Value of the Destruction.
+     */
+    void SetDestruction(su2double val_destruction);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_crossproduction - Value of the CrossProduction.
+     */
+    void SetCrossProduction(su2double val_crossproduction);
+    
+    /*!
+     * \brief ______________.
+     */
+    su2double GetProduction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetDestruction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetCrossProduction(void);
+};
+
+/*!
+ * \class CSourcePieceWise_TurbSA_E_COMP
+ * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
+ * \ingroup SourceDiscr
+ * \author E.Molina, A. Bueno.
+ * \version 4.2.0 "Cardinal"
+ */
+class CSourcePieceWise_TurbSA_E_COMP : public CNumerics {
+private:
+    su2double cv1_3;
+    su2double k2;
+    su2double cb1;
+    su2double cw2;
+    su2double ct3;
+    su2double ct4;
+    su2double cw3_6;
+    su2double cb2_sigma;
+    su2double sigma;
+    su2double cb2;
+    su2double cw1;
+    unsigned short iDim;
+    su2double nu, Ji, fv1, fv2, ft2, Omega, S, Shat, inv_Shat, dist_i_2, Ji_2, Ji_3, inv_k2_d2;
+    su2double r, g, g_6, glim, fw;
+    su2double norm2_Grad;
+    su2double dfv1, dfv2, dShat;
+    su2double dr, dg, dfw;
+    bool incompressible;
+    bool rotating_frame;
+    su2double intermittency;
+    su2double Production, Destruction, CrossProduction;
+    su2double Sbar;
+    unsigned short jDim;
+    su2double aux_cc, CompCorrection, c5;
+    
+public:
+    
+    /*!
+     * \brief Constructor of the class.
+     * \param[in] val_nDim - Number of dimensions of the problem.
+     * \param[in] val_nVar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CSourcePieceWise_TurbSA_E_COMP(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+    
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CSourcePieceWise_TurbSA_E_COMP(void);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[out] val_residual - Pointer to the total residual.
+     * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+     * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] intermittency_in - Value of the intermittency.
+     */
+    void SetIntermittency(su2double intermittency_in);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_production - Value of the Production.
+     */
+    void SetProduction(su2double val_production);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_destruction - Value of the Destruction.
+     */
+    void SetDestruction(su2double val_destruction);
+    
+    /*!
+     * \brief Residual for source term integration.
+     * \param[in] val_crossproduction - Value of the CrossProduction.
+     */
+    void SetCrossProduction(su2double val_crossproduction);
+    
+    /*!
+     * \brief ______________.
+     */
+    su2double GetProduction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetDestruction(void);
+    
+    /*!
+     * \brief  ______________.
+     */
+    su2double GetCrossProduction(void);
 };
 
 /*!
