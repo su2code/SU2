@@ -10853,6 +10853,10 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
   
+  int rank = MASTER_NODE, irank = 1;
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
 		if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE)	{
@@ -10864,9 +10868,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
 					for (iVar = 0; iVar < nPrimVar; iVar++) {
 						PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-						PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);//cout << PrimVar_j[iVar] << "  ";
+						PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);//if(rank == irank) cout << PrimVar_j[iVar] << "  ";
 					}
-//cout << endl;
+//if(rank == irank) cout << endl;
 					/*--- Set primitive variables ---*/
 
 					numerics->SetPrimitive(PrimVar_i, PrimVar_j);
@@ -10894,7 +10898,11 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 				}
 			}
 		}
-		  //getchar();
+		/*
+		if(rank == irank)
+			getchar();
+		MPI_Barrier(MPI_COMM_WORLD);
+		  */
 	}
 	
 	/*--- Free locally allocated memory ---*/
