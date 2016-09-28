@@ -388,7 +388,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 	  continue;
 
 	if(markDonor != -1)
-		nVertexDonor  =  donor_geometry->GetnVertex(markDonor);
+		nVertexDonor  = donor_geometry->GetnVertex(markDonor);
 	else
 		nVertexDonor  = 0;
 	
@@ -413,6 +413,11 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 		
 	  /*--- Compute the closest point to a Near-Field boundary point ---*/
 	  maxdist = 0.0;
+	  /*
+	  cout << rank << "  " << nVertexTarget << endl; 
+	  MPI_Barrier(MPI_COMM_WORLD);
+	  getchar();
+	  */
 	  for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
 		  Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
@@ -429,13 +434,14 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 			  /*--- Loop over all the boundaries to find the pair ---*/
 
 			  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-				  for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+				  for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
 					  Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 						
 					  /*--- Compute the dist ---*/
-					  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+					  dist = 0.0; 
+					  for (iDim = 0; iDim < nDim; iDim++) {
 						  Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-						  dist += pow(Coord_j[iDim] - Coord_i[iDim],2.0);
+						  dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
 					  }
 
 					  if (dist < mindist) {
@@ -444,8 +450,15 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
 					  if (dist == 0.0) break;
 				  }
-			  }
 
+			  }
+			/*  
+if(rank == 1) cout << mindist << "   ";
+
+MPI_Barrier(MPI_COMM_WORLD);
+getchar();
+*/
+//if(rank == 1) cout << pGlobalPoint << "   ";
 			  /*--- Store the value of the pair ---*/
 			  maxdist = max(maxdist, mindist);
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorPoint(iDonor, pGlobalPoint);
