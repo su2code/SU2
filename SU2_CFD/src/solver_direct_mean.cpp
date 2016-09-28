@@ -10855,7 +10855,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   
   int rank = MASTER_NODE, irank = 1;
   
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  //MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
