@@ -9,12 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-        - sravya@stanford.edu
-        - a.rubino@tudelft.nl
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_HB
+        - develop
 
 env:
     global:
