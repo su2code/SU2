@@ -11634,7 +11634,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
     
-    su2double period = config->GetSpectralMethod_Period();
+    su2double period = config->GetHarmonicBalance_Period();
     nExtIter  = config->GetnTimeInstances();
     delta_T   = period/(su2double)nExtIter;
     total_T   = period;

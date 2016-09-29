@@ -1779,12 +1779,12 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the harmonic balance source.
 	 */
-	virtual void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
+	virtual void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double GetSpectralMethod_Source(unsigned short val_var);
+	virtual su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
@@ -3165,14 +3165,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetSpectralMethod_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3491,14 +3491,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetSpectralMethod_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 };
 
@@ -3538,14 +3538,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
   
 	/*!
 	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetSpectralMethod_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
   
 };
 
@@ -3779,14 +3779,14 @@ public:
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetSpectralMethod_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetSpectralMethod_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 };
 
 /*! 

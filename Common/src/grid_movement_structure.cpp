@@ -1985,7 +1985,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   /*-- Set dt for harmonic balance cases ---*/
   if (harmonic_balance) {
 	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
-	  su2double period = config->GetSpectralMethod_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
 	  period /= config->GetTime_Ref();
 	  dt = period * (su2double)iter/(su2double)(config->GetnTimeInstances());
   }
@@ -2152,7 +2152,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 
   if (harmonic_balance) {    
 	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
-	  su2double period = config->GetSpectralMethod_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
 	  period /= config->GetTime_Ref();
 	  deltaT = period/(su2double)(config->GetnTimeInstances());
   }
@@ -2310,7 +2310,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   
   if (harmonic_balance) {
 	  /*--- period of oscillation & time interval using nTimeInstances ---*/
-	  su2double period = config->GetSpectralMethod_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
 	  period /= config->GetTime_Ref();
 	  deltaT = period/(su2double)(config->GetnTimeInstances());
   }
@@ -2450,7 +2450,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   
   if (harmonic_balance) {
 	  /*--- period of oscillation & time interval using nTimeInstances ---*/
-	  su2double period = config->GetSpectralMethod_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
 	  period /= config->GetTime_Ref();
 	  deltaT = period/(su2double)(config->GetnTimeInstances());
   }
