@@ -3166,7 +3166,7 @@ void CMultiZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
   for (iZone = 0; iZone < nZone; iZone++) {
    harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (harmonic_balance)) {
+    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
