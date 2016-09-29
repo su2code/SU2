@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -79,6 +81,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
+  if (config->GetKind_SU2() == SU2_DOT) {
+    if (surf_sol) filename = config->GetSurfSens_FileName();
+    else filename = config->GetVolSens_FileName();
+  }
   strcpy (cstr, filename.c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
@@ -124,7 +130,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   /*--- Write the list of the fields in the restart file.
    Without including the PointID---*/
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
@@ -209,7 +215,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
           ( Kind_Solver == DISC_ADJ_RANS               )) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-        if (geometry->GetnDim() == 3){
+        if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
         }
       }
@@ -227,7 +233,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
           if (headings == NULL) {
             Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
-          } else{
+          } else {
             Tecplot_File << ", \""<< headings[iVar] <<"\"";
           }
         }
@@ -303,7 +309,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       if (LocalIndex[iPoint+1] != 0) {
         
         /*--- Write the node coordinates ---*/
-        if (config->GetKind_SU2() != SU2_SOL) {
+        if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
           for (iDim = 0; iDim < nDim; iDim++)
           Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         }
@@ -319,7 +325,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     } else {
       
       /*--- Write the node coordinates ---*/
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
         Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -413,7 +419,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   Tecplot_File.close();
   
-  if (surf_sol){
+  if (surf_sol) {
     delete [] LocalIndex;
     delete[] SurfacePoint;
   }
@@ -510,7 +516,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
           ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
           ( Kind_Solver == DISC_ADJ_RANS               )) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-        if (geometry->GetnDim() == 3){
+        if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
         }
       }

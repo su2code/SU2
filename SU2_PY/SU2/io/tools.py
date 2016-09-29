@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.2 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -218,7 +220,8 @@ def get_headerMap():
                  "D(CFx)"          : "D_FORCE_X"               ,
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"}
+                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "ComboObj"        : "COMBO"}
     
     return map_dict
 
@@ -255,7 +258,8 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_PRESSURE" ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
-                  "MAXIMUM_HEATFLUX"        ]
+                  "MAXIMUM_HEATFLUX"        ,
+                  "COMBO"]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -372,7 +376,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'UNSTEADY_SIMULATION' in special_cases:
+    if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
         for key,value in Func_Values.iteritems():
             Func_Values[key] = sum(value)/len(value)
          
@@ -406,7 +410,6 @@ def get_objectiveSign( ObjFun_name ):
             THRUST
             FIGURE_OF_MERIT
             MASS_FLOW_RATE
-            AVG_OUTLET_PRESSURE
             AVG_TOTAL_PRESSURE
         returns +1 otherwise
     """
@@ -418,7 +421,6 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
     if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
     if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
-    if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
     
     # otherwise
     return 1.0
@@ -473,20 +475,26 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
-                 "OUTFLOW_GENERALIZED"       : "chn"       ,
-                 "FREE_SURFACE"            : "fs"       }
+                 "OUTFLOW_GENERALIZED"     : "chn"       ,
+                 "FREE_SURFACE"            : "fs"        ,
+                 "COMBO"                   : "combo"}
     
     # if none or false, return map
     if not objective_function:
         return name_map
-    
-    # return desired objective function suffix
-    elif name_map.has_key(objective_function):
-        return name_map[objective_function]
-    
-    # otherwise...
     else:
-        raise Exception('Unrecognized adjoint function name')
+        # remove white space
+        objective = ''.join(objective_function.split())
+        objective = objective.split(",")
+        nObj = len(objective)
+        if (nObj>1):
+            return "combo"
+        if name_map.has_key(objective[0]):
+            return name_map[objective[0]]
+    
+        # otherwise...
+        else:
+            raise Exception('Unrecognized adjoint function name')
     
 #: def get_adjointSuffix()
     
@@ -536,6 +544,7 @@ def get_dvMap():
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
                19  : "CUSTOM"                ,
+	       20  : "CST"                   ,
                101 : "MACH_NUMBER"           ,
                102 : "AOA"                    }
     
@@ -636,6 +645,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "HICKS_HENNE"        :
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r', %s, %s')
+    elif kindID == "CST"        :
+        header.append(r',"Up/Down","Kulfan number", "Total Kulfan numbers"')
+        write_format.append(r', %s, %s', '%s')
     elif kindID == "GAUSS_BUMP"       :
         header.append(r',"Up/Down","Loc_Max","Size_Bump"')
         write_format.append(r', %s, %s, %s')

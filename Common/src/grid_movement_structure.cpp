@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -81,7 +83,13 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
 			if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
 			geometry->node[iPoint]->SetCoord(iDim, new_coord);
 		}
-  
+
+  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
+   * Hence we still need a communication of the transformed coordinates, otherwise periodicity
+   * is not maintained. ---*/
+
+  geometry->Set_MPI_Coord(config);
+
 }
 
 void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
@@ -116,7 +124,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
   
   unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
-  su2double MinVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
+  su2double MinVolume, MaxVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
   
   int rank = MASTER_NODE;
@@ -168,7 +176,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
 
-    if (Derivative){
+    if (Derivative) {
       SetBoundaryDerivatives(geometry, config);
     }
     
@@ -193,7 +201,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      * we solve the system using the normal matrix vector product and preconditioner.
      * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
      * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)){
+    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
       mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
       precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
 
@@ -273,9 +281,9 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
 
-    if (!Derivative){
+    if (!Derivative) {
       UpdateGridCoord(geometry, config);
-    }else{
+    }else {
       UpdateGridCoord_Derivatives(geometry, config);
     }
 
@@ -284,15 +292,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    MinVolume = Check_Grid(geometry);
+    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
     
     /*--- Set number of iterations in the mesh update. ---*/
 
     Set_nIterMesh(Tot_Iter);
 
     if (rank == MASTER_NODE) {
-      cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter
-      << ". Linear iter.: " << Tot_Iter << ". ";
+      cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << Tot_Iter << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
     }
@@ -302,22 +309,27 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
 }
 
-su2double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
+void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume) {
   
-	unsigned long iElem, ElemCounter = 0, PointCorners[8];
-  su2double Area = 0.0, Volume = 0.0, MaxArea = -1E22, MaxVolume = -1E22, MinArea = 1E22, MinVolume = 1E22, CoordCorners[8][3];
+  unsigned long iElem, ElemCounter = 0, PointCorners[8];
+  su2double Volume = 0.0, CoordCorners[8][3];
   unsigned short nNodes = 0, iNodes, iDim;
   bool RightVol = true;
   
   int rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-	/*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
+  if (rank == MASTER_NODE)
+    cout << "Computing volumes of the grid elements." << endl;
   
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+  MaxVolume = -1E22; MinVolume = 1E22;
+  
+  /*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
     if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
     if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
@@ -333,41 +345,32 @@ su2double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
       }
     }
     
-    /*--- Triangles ---*/
+    /*--- 2D elements ---*/
     
     if (nDim == 2) {
-      
-      if (nNodes == 3) Area = GetTriangle_Area(CoordCorners);
-      if (nNodes == 4) Area = GetQuadrilateral_Area(CoordCorners);
-      
-      if (Area >= -EPS) RightVol = true;
-      else RightVol = false;;
-      
-      MaxArea = max(MaxArea, Area);
-      MinArea = min(MinArea, Area);
-      
+      if (nNodes == 3) Volume = GetTriangle_Area(CoordCorners);
+      if (nNodes == 4) Volume = GetQuadrilateral_Area(CoordCorners);
     }
     
-    /*--- Tetrahedra ---*/
+    /*--- 3D Elementes ---*/
     
     if (nDim == 3) {
-      
       if (nNodes == 4) Volume = GetTetra_Volume(CoordCorners);
       if (nNodes == 5) Volume = GetPyram_Volume(CoordCorners);
       if (nNodes == 6) Volume = GetPrism_Volume(CoordCorners);
       if (nNodes == 8) Volume = GetHexa_Volume(CoordCorners);
-      
-      if (Volume >= -EPS) RightVol = true;
-      else RightVol = false;;
-      
-      MaxVolume = max(MaxVolume, Volume);
-      MinVolume = min(MinVolume, Volume);
-      
     }
+    
+    RightVol = true;
+    if (Volume < 0.0) RightVol = false;
+    
+    MaxVolume = max(MaxVolume, Volume);
+    MinVolume = min(MinVolume, Volume);
+    geometry->elem[iElem]->SetVolume(Volume);
     
     if (!RightVol) ElemCounter++;
     
-	}
+  }
   
 #ifdef HAVE_MPI
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
@@ -378,15 +381,19 @@ su2double CVolumetricMovement::Check_Grid(CGeometry *geometry) {
   SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 #endif
   
+  /*--- Volume from  0 to 1 ---*/
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    Volume = geometry->elem[iElem]->GetVolume()/MaxVolume;
+    geometry->elem[iElem]->SetVolume(Volume);
+  }
+  
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
   
-  if (nDim == 2) return MinArea;
-  else return MinVolume;
-  
 }
 
-void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config) {
+void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
   
   su2double *coord, dist2, dist;
   unsigned short iDim, iMarker;
@@ -396,6 +403,10 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+  
+  MaxDistance = -1E22; MinDistance = 1E22;
+  
+  
   if (rank == MASTER_NODE)
     cout << "Computing distances to the nearest deforming surface." << endl;
   
@@ -412,7 +423,8 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
   
   /*--- Allocate an array to hold boundary node coordinates ---*/
@@ -427,7 +439,8 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -446,11 +459,21 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
     for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
       dist2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim])
-        *(coord[iDim]-Coord_bound[iVertex][iDim]);
+        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim]) *(coord[iDim]-Coord_bound[iVertex][iDim]);
       if (dist2 < dist) dist = dist2;
     }
+    
+    MaxDistance = max(MaxDistance, sqrt(dist));
+    if (sqrt(dist)> EPS) MinDistance = min(MinDistance, sqrt(dist));
+    
     geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
+  }
+  
+  /*--- Distance from  0 to 1 ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
+    geometry->node[iPoint]->SetWall_Distance(dist);
   }
   
   /*--- Deallocate the vector of boundary coordinates. ---*/
@@ -465,6 +488,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   /*--- Variables and buffers needed for MPI ---*/
   
   int iProcessor, nProcessor;
+  
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
   unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
@@ -476,7 +500,8 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
       nLocalVertex_NS += geometry->GetnVertex(iMarker);
   
   /*--- Communicate to all processors the total number of deforming boundary
@@ -505,7 +530,8 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -528,9 +554,26 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
         for (iDim = 0; iDim < nDim; iDim++)
           dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
           (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+        
         if (dist2 < dist) dist = dist2;
       }
+    
+    MaxDistance = max(MaxDistance, sqrt(dist));
+    if (sqrt(dist)> EPS)  MinDistance = min(MinDistance, sqrt(dist));
+    
     geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
+  }
+  
+  su2double MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
+  su2double MinDistance_Local = MinDistance; MinDistance = 0.0;
+  SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  
+  /*--- Distance from  0 to 1 ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
+    geometry->node[iPoint]->SetWall_Distance(dist);
   }
   
   /*--- Deallocate the buffers needed for the MPI communication. ---*/
@@ -541,15 +584,20 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   delete[] Buffer_Receive_nVertex;
   
 #endif
-
+  
 }
 
 su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config) {
   
-	unsigned short iVar, iDim, nNodes = 0, iNodes, StiffMatrix_nElem = 0;
-	unsigned long Point_0, Point_1, iElem, iEdge, ElemCounter = 0, PointCorners[8];
-  su2double *Coord_0, *Coord_1, Length, MinLength = 1E10, **StiffMatrix_Elem = NULL, Scale, CoordCorners[8][3];
-  su2double *Edge_Vector = new su2double [nDim];
+  unsigned short iVar, iDim, nNodes = 0, iNodes, StiffMatrix_nElem = 0;
+  unsigned long iElem, PointCorners[8];
+  su2double **StiffMatrix_Elem = NULL, CoordCorners[8][3];
+  su2double MinVolume = 0.0, MaxVolume = 0.0, MinDistance = 0.0, MaxDistance = 0.0, ElemVolume = 0.0, ElemDistance = 0.0;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   
   /*--- Allocate maximum size (quadrilateral and hexahedron) ---*/
   
@@ -560,50 +608,30 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   for (iVar = 0; iVar < StiffMatrix_nElem; iVar++)
     StiffMatrix_Elem[iVar] = new su2double [StiffMatrix_nElem];
   
-  /*--- Check the minimum edge length in the entire mesh. ---*/
-  
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    
-		/*--- Points in edge and coordinates ---*/
-    
-		Point_0 = geometry->edge[iEdge]->GetNode(0);  Coord_0 = geometry->node[Point_0]->GetCoord();
-		Point_1 = geometry->edge[iEdge]->GetNode(1);  Coord_1 = geometry->node[Point_1]->GetCoord();
-    
-		/*--- Compute Edge_Vector ---*/
-    
-		Length = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Edge_Vector[iDim] = Coord_1[iDim] - Coord_0[iDim];
-			Length += Edge_Vector[iDim]*Edge_Vector[iDim];
-		}
-		Length = sqrt(Length);
-		MinLength = min(Length, MinLength);
-    
-	}
-  
   /*--- Compute min volume in the entire mesh. ---*/
   
-  Scale = Check_Grid(geometry);
+  ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
+  if (rank == MASTER_NODE) cout <<"Min. volume: "<< MinVolume <<", max. volume: "<< MaxVolume <<"." << endl;
+  
   
   /*--- Compute the distance to the nearest deforming surface if needed
-   as part of the stiffness calculation. In this case, we can scale based
-   on the minimum edge length. ---*/
+   as part of the stiffness calculation.. ---*/
   
   if (config->GetDeform_Stiffness_Type() == WALL_DISTANCE) {
-    ComputeDeforming_Wall_Distance(geometry, config);
-    Scale = MinLength;
+    ComputeDeforming_Wall_Distance(geometry, config, MinDistance, MaxDistance);
+    if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
   }
   
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
   
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      nNodes = 3;
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   nNodes = 4;
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       nNodes = 5;
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         nNodes = 6;
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    nNodes = 8;
     
     for (iNodes = 0; iNodes < nNodes; iNodes++) {
       PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
@@ -612,17 +640,23 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
       }
     }
     
-    if (nDim == 2) SetFEA_StiffMatrix2D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, Scale);
-    if (nDim == 3) SetFEA_StiffMatrix3D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, Scale);
-
+    /*--- Extract Element volume and distance to compute the stiffness ---*/
+    
+    ElemVolume = geometry->elem[iElem]->GetVolume();
+    
+    if (config->GetDeform_Stiffness_Type() == WALL_DISTANCE) {
+      ElemDistance = 0.0;
+      for (iNodes = 0; iNodes < nNodes; iNodes++)
+        ElemDistance += geometry->node[PointCorners[iNodes]]->GetWall_Distance();
+      ElemDistance = ElemDistance/(su2double)nNodes;
+    }
+    
+    if (nDim == 2) SetFEA_StiffMatrix2D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
+    if (nDim == 3) SetFEA_StiffMatrix3D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
+    
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
 	}
-  
-#ifdef HAVE_MPI
-  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
-  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
   
   /*--- Deallocate memory and exit ---*/
   
@@ -630,17 +664,8 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
     delete [] StiffMatrix_Elem[iVar];
   delete [] StiffMatrix_Elem;
   
-  delete [] Edge_Vector;
-  
-  /*--- If there are no degenerate cells, use the minimum volume instead ---*/
-  if (ElemCounter == 0) MinLength = Scale;
-  
-#ifdef HAVE_MPI
-  su2double MinLength_Local = MinLength; MinLength = 0.0;
-  SU2_MPI::Allreduce(&MinLength_Local, &MinLength, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-#endif
-      
-	return MinLength;
+  return MinVolume;
+
 }
 
 su2double CVolumetricMovement::ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
@@ -1173,7 +1198,7 @@ su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
   
@@ -1200,7 +1225,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1217,7 +1242,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -1244,7 +1269,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
     
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1261,7 +1286,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1278,7 +1303,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -1305,7 +1330,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1322,7 +1347,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1339,7 +1364,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1356,7 +1381,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[2];
   Coord_1 = CoordCorners[7];
@@ -1373,17 +1398,18 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
 }
 
-void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale) {
+void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
+                                               unsigned short nNodes, su2double ElemVolume, su2double ElemDistance) {
   
   su2double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  su2double Xi = 0.0, Eta = 0.0, Det = 0.0, E, Lambda = 0.0, Nu, Mu = 0.0, Avg_Wall_Dist;
-  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss = 0;
+  su2double Xi = 0.0, Eta = 0.0, Det = 0.0, E = 1/EPS, Lambda = 0.0, Mu = 0.0, Nu = 0.0;
+  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
   su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   su2double Location[4][3], Weight[4];
@@ -1394,12 +1420,6 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
       StiffMatrix_Elem[iVar][jVar] = 0.0;
     }
   }
-  
-  /*--- Each element uses their own stiffness which is inversely
-   proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
-   is a modification to help allow rigid rotation of elements (see
-   "Robust Mesh Deformation using the Linear Elasticity Equations" by
-   R. P. Dwight. ---*/
   
   /*--- Integration formulae from "Shape functions and points of
    integration of the Résumé" by Josselin DELMAS (2013) ---*/
@@ -1445,31 +1465,14 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     /*--- Impose a type of stiffness for each element ---*/
     
     switch (config->GetDeform_Stiffness_Type()) {
-        
-      case INVERSE_VOLUME:
-        E = scale / (Weight[iGauss] * Det) ;
-        Mu = E;
-        Lambda = -E;
-        break;
-        
-      case WALL_DISTANCE:
-        Avg_Wall_Dist = 0.0;
-        for (jNode = 0; jNode < nNodes; jNode++) {
-          Avg_Wall_Dist += geometry->node[PointCorners[jNode]]->GetWall_Distance()/((su2double)nNodes);
-        }
-        E = scale / (Weight[iGauss] * Avg_Wall_Dist);
-        Mu = E;
-        Lambda = -E;
-        break;
-        
-      case CONSTANT_STIFFNESS:
-        E=config->GetDeform_ElasticityMod();
-        Nu=config->GetDeform_PoissonRatio();
-        //E = 2E11; Nu = 0.30;
-        Mu = E / (2.0*(1.0 + Nu));
-        Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-        break;
+      case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
+      case WALL_DISTANCE: E = 1.0 / ElemDistance; break;
+      case CONSTANT_STIFFNESS: E=1.0/EPS; break;
     }
+    
+    Nu = config->GetDeform_Coeff();
+    Mu = E / (2.0*(1.0 + Nu));
+    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
     
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
     
@@ -1494,7 +1497,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     for (iVar = 0; iVar < nNodes*nVar; iVar++) {
       for (jVar = 0; jVar < nNodes*nVar; jVar++) {
         for (kVar = 0; kVar < 3; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * Det;
+          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * fabs(Det);
         }
       }
     }
@@ -1503,28 +1506,23 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
   
 }
 
-void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale) {
+void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
+                                               unsigned short nNodes, su2double ElemVolume, su2double ElemDistance) {
   
   su2double B_Matrix[6][24], D_Matrix[6][6] = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}, Aux_Matrix[24][6];
-  su2double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0, Mu = 0.0, E = 0.0, Lambda = 0.0, Nu = 0.0, Avg_Wall_Dist;
-  unsigned short iNode, jNode, iVar, jVar, kVar, iGauss, nGauss = 0;
+  su2double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0, Mu = 0.0, E = 0.0, Lambda = 0.0, Nu = 0.0;
+  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
   su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
     {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
   su2double Location[8][3], Weight[8];
   unsigned short nVar = geometry->GetnDim();
-
+  
   for (iVar = 0; iVar < nNodes*nVar; iVar++) {
     for (jVar = 0; jVar < nNodes*nVar; jVar++) {
       StiffMatrix_Elem[iVar][jVar] = 0.0;
     }
   }
-  
-  /*--- Each element uses their own stiffness which is inversely
-   proportional to the area/volume of the cell. Using Mu = E & Lambda = -E
-   is a modification to help allow rigid rotation of elements (see
-   "Robust Mesh Deformation using the Linear Elasticity Equations" by
-   R. P. Dwight. ---*/
   
   /*--- Integration formulae from "Shape functions and points of
    integration of the Résumé" by Josselin Delmas (2013) ---*/
@@ -1606,31 +1604,14 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     /*--- Impose a type of stiffness for each element ---*/
     
     switch (config->GetDeform_Stiffness_Type()) {
-        
-      case INVERSE_VOLUME:
-        E = scale / (Weight[iGauss] * Det) ;
-        Mu = E;
-        Lambda = -E;
-        break;
-        
-      case WALL_DISTANCE:
-        Avg_Wall_Dist = 0.0;
-        for (jNode = 0; jNode < nNodes; jNode++) {
-          Avg_Wall_Dist += geometry->node[PointCorners[jNode]]->GetWall_Distance()/((su2double)nNodes);
-        }
-        E = scale / (Weight[iGauss] * Avg_Wall_Dist);
-        Mu = E;
-        Lambda = -E;
-        break;
-        
-      case CONSTANT_STIFFNESS:
-        E=config->GetDeform_ElasticityMod();
-        Nu=config->GetDeform_PoissonRatio();
-        //E = 2E11; Nu = 0.30;
-        Mu = E / (2.0*(1.0 + Nu));
-        Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-        break;
+      case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
+      case WALL_DISTANCE: E = 1.0 / ElemDistance; break;
+      case CONSTANT_STIFFNESS: E=1.0/EPS; break;
     }
+    
+    Nu = config->GetDeform_Coeff();
+    Mu = E / (2.0*(1.0 + Nu));
+    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
     
     /*--- Compute the D Matrix (for plane strain and 3-D)---*/
     
@@ -1658,7 +1639,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     for (iVar = 0; iVar < nNodes*nVar; iVar++) {
       for (jVar = 0; jVar < nNodes*nVar; jVar++) {
         for (kVar = 0; kVar < 6; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * Det;
+          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * fabs(Det);
         }
       }
     }
@@ -1725,20 +1706,21 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   
   VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
 	
-	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-	 plane and the receive boundaries. ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) )
-        && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = 0.0;
-					LinSysSol[total_index] = 0.0;
+  /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
+   plane, the receive boundaries and periodic boundaries. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = 0.0;
+          LinSysSol[total_index] = 0.0;
           StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
+        }
+      }
     }
   }
 
@@ -1755,12 +1737,12 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	        MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
 	    }
 	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-	    if (nDim==3){
+	    if (nDim==3) {
 	      if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
 	      if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
 	      if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
 	    }
-	    else{
+	    else {
 	      if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
 	      if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
 	    }
@@ -1832,13 +1814,13 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 
 }
 
-void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config){
+void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
 
   su2double * VarCoord;
   unsigned short Kind_SU2 = config->GetKind_SU2();
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1855,8 +1837,8 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
     if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
   } else if (Kind_SU2 == SU2_DOT) {
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iDim = 0; iDim < nDim; iDim++){
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
         LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
         LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
@@ -1865,7 +1847,7 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
   }
 }
 
-void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config){
+void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
   su2double *new_coord = new su2double[3];
@@ -1874,8 +1856,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
 
   /*--- Update derivatives of the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       new_coord[0] = 0.0; new_coord[1] = 0.0; new_coord[2] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
@@ -1884,12 +1866,14 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
       geometry->node[iPoint]->SetCoord(new_coord);
     }
-  } else if (Kind_SU2 == SU2_DOT){
+  } else if (Kind_SU2 == SU2_DOT) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_DV(iMarker) == YES) {
+      if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()){
+          if (geometry->node[iPoint]->GetDomain()) {
             for (iDim = 0; iDim < nDim; iDim++) {
               total_index = iPoint*nDim + iDim;
               geometry->SetSensitivity(iPoint,iDim, LinSysSol[total_index]);
@@ -2832,6 +2816,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
       }
       
+      /*--- Check if the FFD boxes referenced in the design variable definition can be found ---*/
+
+      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+        if (!CheckFFDBoxDefinition(config, iDV)) {
+         cout << endl << "There is no FFD box with tag \"" << config->GetFFDTag(iDV)
+              << "\" defined in the mesh file." << endl;
+         cout << "Check the definition of the design variables and/or the FFD settings !!" << endl;
+         exit(EXIT_FAILURE);
+        }
+      }
+
       /*--- Output original FFD FFDBox ---*/
       
       if (rank == MASTER_NODE) {
@@ -3014,6 +3009,30 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
 	}
   
+  /*--- 2D airfoil CST method with Kulfan parameters ---*/
+  else if (config->GetDesign_Variable(0) == CST) {
+    
+    /*--- Apply rotation, displacement and stretching design variables (this
+     should be done before the CST method deformation design variables) ---*/
+
+    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+			switch ( config->GetDesign_Variable(iDV) ) {
+        case SCALE :  SetScale(geometry, config, iDV, false); break;
+        case TRANSLATION :  SetTranslation(geometry, config, iDV, false); break;
+        case ROTATION :     SetRotation(geometry, config, iDV, false); break;
+			}
+		}
+
+		/*--- Apply the design variables to the control point position ---*/
+
+		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+			switch ( config->GetDesign_Variable(iDV) ) {
+				case CST :  SetCST(geometry, config, iDV, false); break;
+			}
+		}
+
+	}
+  
   /*--- NACA_4Digits design variable ---*/
 
   else if (config->GetDesign_Variable(0) == NACA_4DIGITS) { SetNACA_4Digits(geometry, config); }
@@ -3048,12 +3067,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     allmoving = true;
     
     /*--- Loop over markers ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_DV(iMarker) == NO)
         allmoving = false;
     }
     
-    if (!allmoving){
+    if (!allmoving) {
       /*---Only some markers are moving, use the surface method ---*/
       if (config->GetDesign_Variable(0) == ROTATION)
         SetRotation(geometry, config, iDV, false);
@@ -3062,7 +3081,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       if (config->GetDesign_Variable(0) == TRANSLATION)
         SetTranslation(geometry, config, iDV, false);
     }
-    else{
+    else {
       if (rank == MASTER_NODE)
         cout << "No surface deformation (scaling, rotation, or translation)." << endl;
     }
@@ -3080,21 +3099,21 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 }
 
 
-void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *config){
+void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *config) {
 
   su2double DV_Value = 0.0;
 
   unsigned short iDV = 0, iDV_Value = 0;
 
-  for (iDV = 0; iDV < config->GetnDV(); iDV++){
-    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
+  for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
 
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
 
       /*--- If value of the design variable is not 0.0 we apply the differentation.
      *     Note if multiple variables are non-zero, we end up with the sum of all the derivatives. ---*/
 
-      if (DV_Value != 0.0){
+      if (DV_Value != 0.0) {
 
         DV_Value = 0.0;
 
@@ -3315,7 +3334,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   
   su2double Coord_0[] = {0,0,0}, Coord_1[] = {0,0,0};
   unsigned short iMarker, iNode, jNode, lDegree, mDegree, nDegree, iDim;
-  unsigned long iElem, iPoint, jPoint;
+  unsigned long iElem, iPoint, jPoint, iSurfacePoints;
   
   unsigned short Kind_SU2 = config->GetKind_SU2();
 
@@ -3394,6 +3413,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   bool JPlane_Intersect_A = false, JPlane_Intersect_B = false;
   bool KPlane_Intersect_A = false, KPlane_Intersect_B = false;
 
+  bool found_Marker = false;
+
   /*--- Only the markers in the moving list ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -3402,49 +3423,82 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_GEO)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (config->GetDirectDiff() == D_DESIGN))) {
-      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-        for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
-          iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-          for (jNode = 0; jNode < geometry->bound[iMarker][iElem]->GetnNodes(); jNode++) {
-            jPoint = geometry->bound[iMarker][iElem]->GetNode(jNode);
-            
-            if (jPoint > iPoint) {
-              
-              for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-                Coord_0[iDim] = geometry->node[iPoint]->GetCoord()[iDim];
-                Coord_1[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
+
+      found_Marker = false;
+
+      /*--- Double check if the marker is indeed moved by the FFD box (i.e. if there is at least one surface point moved)
+       *     This is important because the intersection could be outside of the FFD box with a surface that is moved by a different FFD box. ---*/
+
+      for (iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_All_TagBound(FFDBox->Get_MarkerIndex(iSurfacePoints))) {
+          found_Marker = true;
+          break;
+        }
+      }
+
+      if (found_Marker == true) {
+
+        for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+          for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
+            iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+            for (jNode = 0; jNode < geometry->bound[iMarker][iElem]->GetnNodes(); jNode++) {
+              jPoint = geometry->bound[iMarker][iElem]->GetNode(jNode);
+
+              if (jPoint > iPoint) {
+
+                for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+                  Coord_0[iDim] = geometry->node[iPoint]->GetCoord()[iDim];
+                  Coord_1[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
+                }
+
+                if (geometry->GetnDim() == 3) {
+
+                  if (!IPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_1_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A_, IPlane_Coord_1_A_, IPlane_Coord_2_A_)) { IPlane_Intersect_A = true; }
+                  }
+
+                  if (!IPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_1_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B_, IPlane_Coord_1_B_, IPlane_Coord_2_B_)) { IPlane_Intersect_B = true; }
+                  }
+
+                  if (!JPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_1_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A_, JPlane_Coord_1_A_, JPlane_Coord_2_A_)) { JPlane_Intersect_A = true; }
+                  }
+
+                  if (!JPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_1_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B_, JPlane_Coord_1_B_, JPlane_Coord_2_B_)) { JPlane_Intersect_B = true; }
+                  }
+
+                  if (!KPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A, KPlane_Coord_1_A, KPlane_Coord_2_A)) { KPlane_Intersect_A = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A_, KPlane_Coord_1_A_, KPlane_Coord_2_A_)) { KPlane_Intersect_A = true; }
+                  }
+
+                  if (!KPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B, KPlane_Coord_1_B, KPlane_Coord_2_B)) { KPlane_Intersect_B = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B_, KPlane_Coord_1_B_, KPlane_Coord_2_B_)) { KPlane_Intersect_B = true; }
+                  }
+
+                } else {
+
+                  if (!IPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true;}
+                  }
+                  if (!IPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true;}
+                  }
+                  if (!JPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true;}
+                  }
+                  if (!JPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true;}
+                  }
+                }
               }
-              
-              if (!IPlane_Intersect_A) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_1_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A_, IPlane_Coord_1_A_, IPlane_Coord_2_A_)) { IPlane_Intersect_A = true; }
-              }
-              
-              if (!IPlane_Intersect_B) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_1_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B_, IPlane_Coord_1_B_, IPlane_Coord_2_B_)) { IPlane_Intersect_B = true; }
-              }
-              
-              if (!JPlane_Intersect_A) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_1_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A_, JPlane_Coord_1_A_, JPlane_Coord_2_A_)) { JPlane_Intersect_A = true; }
-              }
-              
-              if (!JPlane_Intersect_B) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_1_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B_, JPlane_Coord_1_B_, JPlane_Coord_2_B_)) { JPlane_Intersect_B = true; }
-              }
-              
-              if (!KPlane_Intersect_A) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A, KPlane_Coord_1_A, KPlane_Coord_2_A)) { KPlane_Intersect_A = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A_, KPlane_Coord_1_A_, KPlane_Coord_2_A_)) { KPlane_Intersect_A = true; }
-              }
-              
-              if (!KPlane_Intersect_B) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B, KPlane_Coord_1_B, KPlane_Coord_2_B)) { KPlane_Intersect_B = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B_, KPlane_Coord_1_B_, KPlane_Coord_2_B_)) { KPlane_Intersect_B = true; }
-              }
-              
             }
           }
         }
@@ -3696,7 +3750,7 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
                                          unsigned short iDV, bool ResetDef) {
   
   su2double movement[3] = {0.0,0.0,0.0}, Ampl;
-  unsigned short index[3], i, j;
+  unsigned short index[3], i, j, iPlane;
   string design_FFDBox;
   
   /*--- Set control points to its original value (even if the
@@ -3713,7 +3767,7 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     /*--- If we have only design value, than this value is the amplitude,
      * otherwise we have a general movement. ---*/
 
-    if (config->GetnDV_Value(iDV) == 1){
+    if (config->GetnDV_Value(iDV) == 1) {
 
       Ampl = config->GetDV_Value(iDV);
 
@@ -3735,6 +3789,16 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     /*--- Lower surface ---*/
     
     index[2] = 0;
+
+    /*--- Check that it is possible to move the control point ---*/
+
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
+      if (index[0] == FFDBox->Get_Fix_IPlane(iPlane)) return;
+    }
+
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
+      if (index[1] == FFDBox->Get_Fix_JPlane(iPlane)) return;
+    }
     
     if ((SU2_TYPE::Int(config->GetParamDV(iDV, 1)) == -1) &&
         (SU2_TYPE::Int(config->GetParamDV(iDV, 2)) != -1)) {
@@ -4507,6 +4571,184 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   
 }
 
+void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+	unsigned long iVertex;
+	unsigned short iMarker;
+	su2double VarCoord[3] = {0.0,0.0,0.0}, VarCoord_[3] = {0.0,0.0,0.0}, *Coord_, *Normal_, fk,
+  	Coord[3] = {0.0,0.0,0.0}, Normal[3] = {0.0,0.0,0.0},
+  	TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
+  
+	bool upper = true;
+
+	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
+
+	if ((iDV == 0) || (ResetDef == true)) {
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+			}
+	}
+  
+  	/*--- Compute the angle of attack to apply the deformation ---*/
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      Coord_ = boundary->vertex[iMarker][0]->GetCoord();
+      TPCoord[0] = Coord_[0]; TPCoord[1] = Coord_[1];
+      for (iVertex = 1; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+        if (Coord_[0] > TPCoord[0]) { TPCoord[0] = Coord_[0]; TPCoord[1] = Coord_[1]; }
+			}
+		}
+	}
+  
+#ifdef HAVE_MPI
+
+	int iProcessor, nProcessor;
+	su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+	Buffer_Receive_Coord = new su2double [nProcessor*2];
+  Buffer_Send_Coord = new su2double [2];
+  
+  Buffer_Send_Coord[0] = TPCoord[0]; Buffer_Send_Coord[1] = TPCoord[1];
+
+	SU2_MPI::Allgather(Buffer_Send_Coord, 2, MPI_DOUBLE, Buffer_Receive_Coord, 2, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  TPCoord[0] = Buffer_Receive_Coord[0]; TPCoord[1] = Buffer_Receive_Coord[1];
+  for (iProcessor = 1; iProcessor < nProcessor; iProcessor++) {
+    Coord[0] = Buffer_Receive_Coord[iProcessor*2 + 0];
+    Coord[1] = Buffer_Receive_Coord[iProcessor*2 + 1];
+    if (Coord[0] > TPCoord[0]) { TPCoord[0] = Coord[0]; TPCoord[1] = Coord[1]; }
+  }
+  
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  
+#endif
+
+
+  Chord = 0.0;
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+        Distance = sqrt(pow(Coord_[0] - TPCoord[0], 2.0) + pow(Coord_[1] - TPCoord[1], 2.0));
+        if (Chord < Distance) { Chord = Distance; LPCoord[0] = Coord_[0]; LPCoord[1] = Coord_[1]; }
+      }
+    }
+  }
+  
+#ifdef HAVE_MPI
+ 
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+	Buffer_Receive_Coord = new su2double [nProcessor*2];
+  Buffer_Send_Coord = new su2double [2];
+  
+  Buffer_Send_Coord[0] = LPCoord[0]; Buffer_Send_Coord[1] = LPCoord[1];
+
+	SU2_MPI::Allgather(Buffer_Send_Coord, 2, MPI_DOUBLE, Buffer_Receive_Coord, 2, MPI_DOUBLE, MPI_COMM_WORLD);
+  
+  Chord = 0.0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    Coord[0] = Buffer_Receive_Coord[iProcessor*2 + 0];
+    Coord[1] = Buffer_Receive_Coord[iProcessor*2 + 1];
+    Distance = sqrt(pow(Coord[0] - TPCoord[0], 2.0) + pow(Coord[1] - TPCoord[1], 2.0));
+    if (Chord < Distance) { Chord = Distance; LPCoord[0] = Coord[0]; LPCoord[1] = Coord[1]; }
+  }
+  
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  
+#endif
+  
+  AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
+  
+  /*--- WARNING: AoA currently overwritten to zero. ---*/
+  AoA = 0.0;
+
+	/*--- Perform multiple airfoil deformation ---*/
+  	
+	su2double Ampl = config->GetDV_Value(iDV);
+	su2double KulfanNum = config->GetParamDV(iDV, 1) - 1.0;
+	su2double maxKulfanNum = config->GetParamDV(iDV, 2) - 1.0;
+	if (KulfanNum < 0){
+		std::cout << "Warning: Kulfan number should be greater than 1." << std::endl;
+	}
+	if (KulfanNum > maxKulfanNum){
+		std::cout << "Warning: Kulfan number should be less than provided maximum." << std::endl;
+	}
+
+	if (config->GetParamDV(iDV, 0) == NO) { upper = false;}
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true;}
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      
+			if (config->GetMarker_All_DV(iMarker) == YES) {
+        
+				Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+				Normal_ = boundary->vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- The CST functions should be applied to a basic airfoil without AoA,
+         and unitary chord, a tranformation is required ---*/
+
+        ValCos = cos(AoA*PI_NUMBER/180.0);
+        ValSin = sin(AoA*PI_NUMBER/180.0);
+        
+        Coord[0] = Coord_[0]*ValCos - Coord_[1]*ValSin;
+        Coord[0] = max(0.0, Coord[0]); // Coord x should be always positive
+        Coord[1] = Coord_[1]*ValCos + Coord_[0]*ValSin;
+        
+        Normal[0] = Normal_[0]*ValCos - Normal_[1]*ValSin;
+        Normal[1] = Normal_[1]*ValCos + Normal_[0]*ValSin;
+	
+        /*--- CST computation ---*/
+        su2double fact_n = 1;
+	su2double fact_cst = 1;
+        su2double fact_cst_n = 1;
+	
+	for (int i = 1; i <= maxKulfanNum; i++){
+		fact_n = fact_n * i;
+	}
+	for (int i = 1; i <= KulfanNum; i++){
+		fact_cst = fact_cst * i;
+	}
+	for (int i = 1; i <= maxKulfanNum - KulfanNum; i++){
+		fact_cst_n = fact_cst_n * i;
+	} 
+	
+	// CST method only for 2D NACA type airfoils  
+	su2double N1, N2;       
+	N1 = 0.5;
+	N2 = 1.0;
+ 
+	/*--- Upper and lower surface change in coordinates based on CST equations by Kulfan et. al (www.brendakulfan.com/docs/CST3.pdf)  ---*/
+        fk = pow(Coord[0],N1)*pow((1-Coord[0]), N2) * fact_n/(fact_cst*(fact_cst_n)) * pow(Coord[0], KulfanNum) * pow((1-Coord[0]), (maxKulfanNum-(KulfanNum)));
+
+	if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
+
+        if ((!upper) && (Normal[1] < 0)) { VarCoord[1] =  Ampl*fk; }
+
+	
+	}
+      
+      /*--- Apply the transformation to the coordinate variation ---*/
+
+      ValCos = cos(-AoA*PI_NUMBER/180.0);
+      ValSin = sin(-AoA*PI_NUMBER/180.0);
+
+      VarCoord_[0] = VarCoord[0]*ValCos - VarCoord[1]*ValSin;
+      VarCoord_[1] = VarCoord[1]*ValCos + VarCoord[0]*ValSin;
+
+      			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord_);
+		}
+	}
+}
+
 void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
 	unsigned short iMarker;
@@ -4764,7 +5006,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -4880,7 +5122,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -5006,7 +5248,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -5162,7 +5404,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -5357,7 +5599,7 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
   unsigned long iPoint, iVertex;
   su2double x_new, y_new;
   su2double VarCoord[3];
-  string Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+  string Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
   
   /*--- Calculate the plunge displacement for the Typical Section Wing Model taking into account rotation ---*/
   if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
@@ -5509,6 +5751,9 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   
 	for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++)
 		SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+  
+  delete [] index;
+  delete [] move;
 	
 }
 
@@ -6304,7 +6549,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
             for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
               jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
               if (iPoint == geometry->node[jPoint]->GetGlobalIndex()) {
-                for (iDim = 0; iDim < nDim; iDim++){
+                for (iDim = 0; iDim < nDim; iDim++) {
                   coord[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
                 }
                 FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);

@@ -22,6 +22,11 @@ autom4te.cache
 # Python files
 *.pyc
 
+# SWIG compilation
+SU2_PY/pySU2/*.cxx
+SU2_PY/pySU2/*.h
+SU2_PY/pySU2/*.py
+
 # Mac files
 *.DS_Store
 *.xcuserdatad
@@ -42,6 +47,10 @@ externals/autotools/share
 *.err
 
 # configuration sets
-REVERSE/
-NORMAL/
-DIRECTDIFF/
+SU2_AD/
+SU2_BASE/
+SU2_DIRECTDIFF/
+
+# ignore the bin/ directory
+bin/
+

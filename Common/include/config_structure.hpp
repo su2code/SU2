@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -55,7 +57,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CConfig {
@@ -123,7 +125,8 @@ private:
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
-  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  su2double *Weight_ObjFunc;    /*!< \brief Weight applied to objective function. */
   unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -156,7 +159,7 @@ private:
 	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
-  nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+  nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
@@ -196,8 +199,8 @@ private:
 	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
-  *Marker_ActDisk_Inlet,
-  *Marker_ActDisk_Outlet,
+  *Marker_ActDiskInlet,
+  *Marker_ActDiskOutlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
@@ -228,7 +231,7 @@ private:
 	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
-	su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+  su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
 	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
@@ -281,6 +284,7 @@ private:
 	unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
+  long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
   unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
@@ -294,7 +298,8 @@ private:
   Max_DeltaTime,  		/*!< \brief Max delta time. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
-	unsigned short nDV;		/*!< \brief Number of design variables. */
+	unsigned short nDV,		/*!< \brief Number of design variables. */
+	nObj, nObjW;              /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
@@ -418,6 +423,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  su2double Deform_Coeff; /*!< Deform coeffienct */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
@@ -529,7 +535,9 @@ private:
 	ObjFunc_Value_FileName,			/*!< \brief Objective function. */
 	SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
 	SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
-	New_SU2_FileName;        		/*!< \brief Output SU2 mesh file converted from CGNS format. */
+  New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
+  SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
+  VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
@@ -701,12 +709,23 @@ private:
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
+  bool Prestretch;             /*!< Read a reference geometry for optimization purposes. */
+  string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-
+  su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
+  *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
+  *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
+  *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
+  *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
+  *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -821,13 +840,13 @@ private:
 
   void addDoubleArrayOption(const string name, const int size, su2double * & option_field, su2double * default_value) {
 
-    su2double * def = new su2double [size];
-    for (int i = 0; i < size; i++) {
-      def[i] = default_value[i];
-    }
+  //  su2double * def = new su2double [size];
+  //  for (int i = 0; i < size; i++) {
+  //    def[i] = default_value[i];
+  //  }
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDoubleArray(name, size, option_field, def);
+    COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -957,7 +976,7 @@ private:
   }
 
   void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
-                    string* & Marker_MixBound, string* & Marker_MixDonor){
+                    string* & Marker_MixBound, string* & Marker_MixDonor) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
@@ -965,21 +984,21 @@ private:
   }
   template <class Tenum>
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
-                             string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet,
+                             string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                              su2double** & ActDisk_Origin, su2double* & ActDisk_RootRadius, su2double* & ActDisk_TipRadius,
                              su2double* & ActDisk_PressJump, su2double* & ActDisk_TempJump, su2double* & ActDisk_Omega,
                              unsigned short* & ActDisk_Distribution) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDiskInlet, nMarker_ActDiskOutlet, Marker_ActDiskInlet, Marker_ActDiskOutlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1570,6 +1589,19 @@ public:
 	 */
 	unsigned short GetElas2D_Formulation(void);
 
+  /*!
+    * \brief Decide whether it's necessary to read a reference geometry.
+    * \return <code>TRUE</code> if it's necessary to read a reference geometry, <code>FALSE</code> otherwise.
+    */
+
+  bool GetPrestretch(void);
+
+  /*!
+   * \brief Get the name of the file with the reference geometry of the structural problem.
+   * \return Name of the file with the reference geometry of the structural problem.
+   */
+  string GetPrestretch_FEMFileName(void);
+
 	/*!
 	 * \brief Get the Poisson's ratio.
 	 * \return Value of the Poisson's ratio.
@@ -2113,13 +2145,13 @@ public:
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_ActDisk_Inlet(void);
+	unsigned short GetnMarker_ActDiskInlet(void);
 
   /*!
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_ActDisk_Outlet(void);
+	unsigned short GetnMarker_ActDiskOutlet(void);
 
   /*!
    * \brief Get the total number of 1D output markers.
@@ -2139,6 +2171,12 @@ public:
 	 * \return Total number of moving markers.
 	 */
 	unsigned short GetnMarker_Moving(void);
+
+	/*!
+   * \brief Get the total number of objectives in kind_objective list
+   * \return Total number of objectives in kind_objective list
+   */
+	unsigned short GetnObj(void);
 
 	/*!
 	 * \brief Stores the number of marker in the simulation.
@@ -2177,7 +2215,13 @@ public:
   long GetUnst_AdjointIter(void);
 
   /*!
-	 * \brief Get the restart iteration number for dynamic structural simulations.
+  * \brief Number of iterations to average (reverse time integration).
+  * \return Starting direct iteration number for the unsteady adjoint.
+  */
+  unsigned long GetIter_Avg_Objective(void);
+
+  /*!
+   * \brief Get the restart iteration number for dynamic structural simulations.
 	 * \return Restart iteration number for dynamic structural simulations.
 	 */
   long GetDyn_RestartIter(void);
@@ -2355,7 +2399,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_ActDisk_Inlet(unsigned short val_marker);
+  string GetMarker_ActDiskInlet_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -2363,7 +2407,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_ActDisk_Outlet(unsigned short val_marker);
+  string GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker);
   
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2371,7 +2415,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_EngineInflow(unsigned short val_marker);
+	string GetMarker_EngineInflow_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -2379,7 +2423,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_EngineBleed(unsigned short val_marker);
+  string GetMarker_EngineBleed_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2387,15 +2431,15 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_EngineExhaust(unsigned short val_marker);
+	string GetMarker_EngineExhaust_TagBound(unsigned short val_marker);
 
-    /*!
+  /*!
 	 * \brief Get the name of the surface defined in the geometry file.
 	 * \param[in] val_marker - Value of the marker in which we are interested.
 	 * \return Name that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_Monitoring(unsigned short val_marker);
+	string GetMarker_Monitoring_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the tag if the iMarker defined in the geometry file.
@@ -2904,6 +2948,12 @@ public:
 	 * \return Factor to multiply smallest volume for deform tolerance.
 	 */
 	su2double GetDeform_Tol_Factor(void);
+  
+  /*!
+   * \brief Get factor to multiply smallest volume for deform tolerance.
+   * \return Factor to multiply smallest volume for deform tolerance.
+   */
+  su2double GetDeform_Coeff(void);
 
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
@@ -3500,12 +3550,45 @@ public:
 
 	/*!
 	 * \author H. Kline
+   * \brief Get the kind of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Kind of objective function.
+   */
+  unsigned short GetKind_ObjFunc(unsigned short val_obj);
+
+  /*!
+   * \author H. Kline
+   * \brief Get the weight of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Weight of objective function.
+   */
+  su2double GetWeight_ObjFunc(unsigned short val_obj);
+
+  /*!
+   * \author H. Kline
+   * \brief Set the weight of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Weight of objective function.
+   */
+  void SetWeight_ObjFunc(unsigned short val_obj, su2double val);
+
+  /*!
+  * \author H. Kline
 	 * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
    * \note This objective is only applicable to gradient calculations. Objective value must be
    * calculated using the area averaged outlet values of density, velocity, and pressure.
    * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
 	 */
 	su2double GetCoeff_ObjChainRule(unsigned short iVar);
+
+	/*!
+	 * \author H. Kline
+	 * \brief Get the flag indicating whether to comput a combined objective.
+	 */
+	bool GetComboObj(void);
 
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.
@@ -3903,6 +3986,18 @@ public:
 	 * \return Name of the file with the surface information for the adjoint problem.
 	 */
 	string GetSurfAdjCoeff_FileName(void);
+
+  /*!
+   * \brief Get the name of the file with the surface sensitivity (discrete adjoint).
+   * \return Name of the file with the surface sensitivity (discrete adjoint).
+   */
+  string GetSurfSens_FileName(void);
+
+  /*!
+   * \brief Get the name of the file with the volume sensitivity (discrete adjoint).
+   * \return Name of the file with the volume sensitivity (discrete adjoint).
+   */
+  string GetVolSens_FileName(void);
 
   /*!
 	 * \brief Augment the input filename with the iteration number for an unsteady file.
@@ -4594,7 +4689,7 @@ public:
 	 * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
 	 * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_ActDisk_Outlet(string val_marker);
+	unsigned short GetMarker_ActDiskOutlet(string val_marker);
 
   /*!
 	 * \brief Get the internal index for a moving boundary <i>val_marker</i>.
@@ -4608,7 +4703,7 @@ public:
 	 * \return Name that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_Moving(unsigned short val_marker);
+	string GetMarker_Moving_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.
