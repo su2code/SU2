@@ -5998,6 +5998,16 @@ public:
    */
   void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                  CConfig *config, unsigned short val_marker);
+
+#ifdef RINGLEB
+  /*!
+   * \brief Compute the exact solution of the Ringleb flow for the given coordinates.
+   * \param[in]  coor - Coordinates for which the solution must be computed.
+   * \param[out] sol  - Conservative variables to be computed.
+   */
+  void RinglebSolution(const su2double *coor,
+                             su2double *sol);
+#endif
   
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
