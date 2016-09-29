@@ -342,11 +342,11 @@ def main():
     test_list.append(contadj_incomp_cylinder)
 
     ######################################
-    ### Spectral Method                ###
+    ### Harmonic Balance               ###
     ######################################
     spectral           = TestCase('spectral')
-    spectral.cfg_dir   = "spectral_method"
-    spectral.cfg_file  = "spectral.cfg"
+    spectral.cfg_dir   = "harmonic_balance"
+    spectral.cfg_file  = "HB.cfg"
     spectral.test_iter = 25
     spectral.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
     spectral.su2_exec  = "SU2_CFD"
