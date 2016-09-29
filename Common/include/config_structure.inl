@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -89,6 +91,8 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
+inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
+
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
@@ -137,7 +141,6 @@ inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasF
 
 inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
 
-
 inline su2double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 
 inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Material_Compress; }
@@ -145,6 +148,10 @@ inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Ma
 inline unsigned short CConfig::GetMaterialModel(void) { return Kind_Material; }
 
 inline unsigned short CConfig::GetGeometricConditions(void) { return Kind_Struct_Solver; }
+
+inline bool CConfig::GetPrestretch(void) { return Prestretch; }
+
+inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
 inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 
@@ -610,6 +617,8 @@ inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
 
+inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
+
 inline su2double CConfig::GetDeform_ElasticityMod(void) { return Deform_ElasticityMod; }
 
 inline su2double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRatio; }
@@ -746,7 +755,13 @@ inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
 
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
-inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
+inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc[0]; }
+
+inline unsigned short CConfig::GetKind_ObjFunc(unsigned short val_obj) {return Kind_ObjFunc[val_obj]; }
+
+inline su2double CConfig::GetWeight_ObjFunc(unsigned short val_obj) {return Weight_ObjFunc[val_obj]; }
+
+inline void CConfig::SetWeight_ObjFunc(unsigned short val_obj, su2double val) {Weight_ObjFunc[val_obj] = val; }
 
 inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) {return Obj_ChainRuleCoeff[iVar]; }
 
@@ -768,19 +783,19 @@ inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = 
 
 inline string CConfig::GetMarker_All_TagBound(unsigned short val_marker) { return Marker_All_TagBound[val_marker]; }
 
-inline string CConfig::GetMarker_ActDisk_Inlet(unsigned short val_marker) { return Marker_ActDisk_Inlet[val_marker]; }
+inline string CConfig::GetMarker_ActDiskInlet_TagBound(unsigned short val_marker) { return Marker_ActDiskInlet[val_marker]; }
 
-inline string CConfig::GetMarker_ActDisk_Outlet(unsigned short val_marker) { return Marker_ActDisk_Outlet[val_marker]; }
+inline string CConfig::GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker) { return Marker_ActDiskOutlet[val_marker]; }
 
-inline string CConfig::GetMarker_EngineInflow(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
+inline string CConfig::GetMarker_EngineInflow_TagBound(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
-inline string CConfig::GetMarker_EngineBleed(unsigned short val_marker) { return Marker_EngineBleed[val_marker]; }
+inline string CConfig::GetMarker_EngineBleed_TagBound(unsigned short val_marker) { return Marker_EngineBleed[val_marker]; }
 
-inline string CConfig::GetMarker_EngineExhaust(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
+inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
 
-inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
+inline string CConfig::GetMarker_Monitoring_TagBound(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
 
-inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
+inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
 inline short CConfig::GetMarker_All_TagBound(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
@@ -858,9 +873,11 @@ inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; 
 
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 
-inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_ActDisk_Inlet; }
+inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }
 
-inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
+inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
+
+inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
@@ -917,6 +934,10 @@ inline string CConfig::GetObjFunc_Value_FileName(void) { return ObjFunc_Value_Fi
 inline string CConfig::GetSurfFlowCoeff_FileName(void) { return SurfFlowCoeff_FileName; }
 
 inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_FileName; }
+
+inline string CConfig::GetSurfSens_FileName(void) { return SurfSens_FileName; }
+
+inline string CConfig::GetVolSens_FileName(void) { return VolSens_FileName; }
 
 inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }
 
@@ -1012,15 +1033,21 @@ inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index;
 
 inline su2double* CConfig::GetPeriodicCenter(unsigned short val_index) { return Periodic_Center[val_index]; }
 
-inline void CConfig::SetPeriodicCenter(unsigned short val_index, su2double* center) { Periodic_Center[val_index] = center; }
+inline void CConfig::SetPeriodicCenter(unsigned short val_index, su2double* center) {
+  for (unsigned short i = 0; i < 3; i++) Periodic_Center[val_index][i] = center[i];
+}
 
 inline su2double* CConfig::GetPeriodicRotation(unsigned short val_index) { return Periodic_Rotation[val_index]; }
 
-inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* rotation) { Periodic_Rotation[val_index] = rotation; }
+inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* rotation) {
+    for (unsigned short i = 0; i < 3; i++) Periodic_Rotation[val_index][i] = rotation[i];
+}
 
 inline su2double* CConfig::GetPeriodicTranslate(unsigned short val_index) { return Periodic_Translate[val_index]; }
 
-inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) { Periodic_Translate[val_index] = translate; }
+inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) {
+  for (unsigned short i = 0; i < 3; i++) Periodic_Translate[val_index][i] = translate[i];
+}
 
 inline su2double CConfig::GetCyclic_Pitch(void) { return Cyclic_Pitch; }
 
@@ -1200,7 +1227,7 @@ inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 
-inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
+inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
 

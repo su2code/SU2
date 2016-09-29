@@ -3,7 +3,7 @@
  * \brief Headers for generalized datatypes.
  *        The subroutines and functions are in the <i>datatype_structure.cpp</i> file.
  * \author T. Albring
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -64,7 +66,7 @@ typedef double passivedouble;
  * \brief Namespace for defining the datatype wrapper routines; this class features as a base class for
  * type interfaces for non-primitive dataypes e.g. used by AD, complex etc.
  * \author T. Albring
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 namespace SU2_TYPE{
   /*!

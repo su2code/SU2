@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity_linear.cpp
  * \brief This file contains the routines for setting the FEM elastic structural problem.
  * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -37,11 +39,11 @@ CFEM_LinearElasticity::CFEM_LinearElasticity(unsigned short val_nDim, unsigned s
 
 	unsigned short iVar;
 
-	if (nDim == 2){
+	if (nDim == 2) {
 		nodalDisplacement = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		for (iVar = 0; iVar < 4; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
 	}
-	else if (nDim == 3){
+	else if (nDim == 3) {
 		nodalDisplacement = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
 	}
@@ -57,7 +59,7 @@ CFEM_LinearElasticity::~CFEM_LinearElasticity(void) {
 
 }
 
-void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config){
+void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -74,15 +76,15 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 	if (nDim == 2) bDim = 3;
 	else bDim = 6;
 
-	for (iVar = 0; iVar < bDim; iVar++){
-		for (jVar = 0; jVar < nDim; jVar++){
+	for (iVar = 0; iVar < bDim; iVar++) {
+		for (jVar = 0; jVar < nDim; jVar++) {
 			Ba_Mat[iVar][jVar] = 0.0;
 			Bb_Mat[iVar][jVar] = 0.0;
 		}
 	}
 
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 6; jVar++){
+	for (iVar = 0; iVar < 3; iVar++) {
+		for (jVar = 0; jVar < 6; jVar++) {
 			AuxMatrix[iVar][jVar] = 0.0;
 		}
 	}
@@ -92,28 +94,28 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++){
+	for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
 		Weight = element->GetWeight(iGauss);
 		Jac_X = element->GetJ_X(iGauss);
 
 		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
 		/*--- This avoids repeated operations ---*/
-		for (iNode = 0; iNode < nNode; iNode++){
-			for (iDim = 0; iDim < nDim; iDim++){
+		for (iNode = 0; iNode < nNode; iNode++) {
+			for (iDim = 0; iDim < nDim; iDim++) {
 				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
 			}
 		}
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
-			if (nDim == 2){
+			if (nDim == 2) {
 				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
 				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
 			}
-			else if (nDim == 3){
+			else if (nDim == 3) {
 				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
 				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
@@ -127,24 +129,24 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 
 		    /*--- Compute the BT.D Matrix ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
-				for (jVar = 0; jVar < bDim; jVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
+				for (jVar = 0; jVar < bDim; jVar++) {
 					AuxMatrix[iVar][jVar] = 0.0;
-					for (kVar = 0; kVar < bDim; kVar++){
+					for (kVar = 0; kVar < bDim; kVar++) {
 						AuxMatrix[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
 					}
 				}
 			}
 
 			/*--- Assumming symmetry ---*/
-			for (jNode = iNode; jNode < nNode; jNode++){
-				if (nDim == 2){
+			for (jNode = iNode; jNode < nNode; jNode++) {
+				if (nDim == 2) {
 					Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
 					Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
 					Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
 					Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
 				}
-				else if (nDim ==3){
+				else if (nDim ==3) {
 					Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
 					Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
 					Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
@@ -156,10 +158,10 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 					Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
 				}
 
-				for (iVar = 0; iVar < nDim; iVar++){
-					for (jVar = 0; jVar < nDim; jVar++){
+				for (iVar = 0; iVar < nDim; iVar++) {
+					for (jVar = 0; jVar < nDim; jVar++) {
 						KAux_ab[iVar][jVar] = 0.0;
-						for (kVar = 0; kVar < bDim; kVar++){
+						for (kVar = 0; kVar < bDim; kVar++) {
 							KAux_ab[iVar][jVar] += Weight * AuxMatrix[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
 						}
 					}
@@ -167,7 +169,7 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 
 				element->Add_Kab(KAux_ab,iNode, jNode);
 				/*--- Symmetric terms --*/
-				if (iNode != jNode){
+				if (iNode != jNode) {
 					element->Add_Kab_T(KAux_ab, jNode, iNode);
 				}
 
@@ -179,13 +181,13 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 }
 
 
-void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
+void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void) {
 
      /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
 
-	if (nDim == 2){
-		if (plane_stress){
+	if (nDim == 2) {
+		if (plane_stress) {
 
 			/*--- We enable plane stress cases ---*/
 
@@ -193,7 +195,7 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 			D_Mat[1][0] = (E*Nu)/(1-Nu*Nu);    	D_Mat[1][1] = E/(1-Nu*Nu);   	 D_Mat[1][2] = 0.0;
 			D_Mat[2][0] = 0.0;               	D_Mat[2][1] = 0.0;               D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
 		}
-		else{
+		else {
 			/*--- Assuming plane strain as a general case ---*/
 
 			D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
@@ -202,7 +204,7 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 		}
 
 	}
-	else if (nDim == 3){
+	else if (nDim == 3) {
 
 		D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;			D_Mat[0][2] = Lambda;			D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
 		D_Mat[1][0] = Lambda;			D_Mat[1][1] = Lambda + 2.0*Mu;	D_Mat[1][2] = Lambda;			D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
@@ -215,7 +217,7 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 
 }
 
-void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config){
+void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
 
 	unsigned short iVar, jVar;
 	unsigned short iGauss, nGauss;
@@ -230,8 +232,8 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CCon
 	if (nDim == 2) bDim = 3;
 	else bDim = 6;
 
-	for (iVar = 0; iVar < bDim; iVar++){
-		for (jVar = 0; jVar < nDim; jVar++){
+	for (iVar = 0; iVar < bDim; iVar++) {
+		for (jVar = 0; jVar < nDim; jVar++) {
 			Ba_Mat[iVar][jVar] = 0.0;
 		}
 	}
@@ -241,31 +243,31 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CCon
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++){
+	for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
 		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
 		/*--- This avoids repeated operations ---*/
-		for (iNode = 0; iNode < nNode; iNode++){
-			for (iDim = 0; iDim < nDim; iDim++){
+		for (iNode = 0; iNode < nNode; iNode++) {
+			for (iDim = 0; iDim < nDim; iDim++) {
 				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
 				nodalDisplacement[iNode][iDim] = element->GetCurr_Coord(iNode, iDim) - element->GetRef_Coord(iNode, iDim);
 			}
 		}
 
-		for (iVar = 0; iVar < bDim; iVar++){
+		for (iVar = 0; iVar < bDim; iVar++) {
 			Strain[iVar] = 0.0;
 		}
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
 			/*--- Set matrix B ---*/
-			if (nDim == 2){
+			if (nDim == 2) {
 				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
 				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
 			}
-			else if (nDim ==3){
+			else if (nDim ==3) {
 				Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
 				Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
 				Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
@@ -279,8 +281,8 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CCon
 
 		    /*--- Compute the Strain Vector as B*u ---*/
 
-			for (iVar = 0; iVar < bDim; iVar++){
-				for (jVar = 0; jVar < nDim; jVar++){
+			for (iVar = 0; iVar < bDim; iVar++) {
+				for (jVar = 0; jVar < nDim; jVar++) {
 					Strain[iVar] += Ba_Mat[iVar][jVar]*nodalDisplacement[iNode][jVar];
 				}
 			}
@@ -289,22 +291,22 @@ void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CCon
 
 	    /*--- Compute the Stress Vector as D*epsilon ---*/
 
-		for (iVar = 0; iVar < bDim; iVar++){
+		for (iVar = 0; iVar < bDim; iVar++) {
 			Stress[iVar] = 0.0;
-			for (jVar = 0; jVar < bDim; jVar++){
+			for (jVar = 0; jVar < bDim; jVar++) {
 				Stress[iVar] += D_Mat[iVar][jVar]*Strain[jVar];
 			}
 		}
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 			/*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz, while in the ---*/
 			/*--- output it is the 4th component for practical reasons ---*/
-			if (nDim == 2){
+			if (nDim == 2) {
 				element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
 				element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
 				element->Add_NodalStress(Stress[2] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
 			}
-			else if (nDim == 3){
+			else if (nDim == 3) {
 				element->Add_NodalStress(Stress[0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
 				element->Add_NodalStress(Stress[1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
 				element->Add_NodalStress(Stress[3] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
