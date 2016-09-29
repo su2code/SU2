@@ -40,7 +40,7 @@ CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
 	ForceProj_Vector = NULL;
 	ObjFuncSource = NULL;
 	IntBoundary_Jump = NULL;
-	TS_Source = NULL;
+	HB_Source = NULL;
   
 }
 
@@ -59,7 +59,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 	ForceProj_Vector = NULL;
 	ObjFuncSource = NULL;
 	IntBoundary_Jump = NULL;
-	TS_Source = NULL;
+	HB_Source = NULL;
   
 	/*--- Allocate residual structures ---*/
   Res_TruncError = new su2double [nVar];
@@ -145,11 +145,11 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
-  /*--- Allocate space for the spectral method source terms ---*/
-	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
-		TS_Source = new su2double[nVar];
+  /*--- Allocate space for the harmonic balance source terms ---*/
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+		HB_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
+			HB_Source[iVar] = 0.0;
 	}
 	
 }
@@ -166,7 +166,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
 	ForceProj_Vector = NULL;
 	ObjFuncSource = NULL;
 	IntBoundary_Jump = NULL;
-	TS_Source = NULL;
+	HB_Source = NULL;
   
 	/*--- Allocate residual structures ---*/
   Res_TruncError = new su2double [nVar];
@@ -229,11 +229,11 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
-	/*--- Allocate space for the spectral method source terms ---*/
-	if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
-		TS_Source = new su2double[nVar];
+	/*--- Allocate space for the harmonic balance source terms ---*/
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+		HB_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
+			HB_Source[iVar] = 0.0;
 	}
   
 }
@@ -244,7 +244,7 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
 	if (ForceProj_Vector  != NULL) delete [] ForceProj_Vector;
 	if (ObjFuncSource     != NULL) delete [] ObjFuncSource;
 	if (IntBoundary_Jump  != NULL) delete [] IntBoundary_Jump;
-	if (TS_Source         != NULL) delete [] TS_Source;
+	if (HB_Source         != NULL) delete [] HB_Source;
   
 }
 

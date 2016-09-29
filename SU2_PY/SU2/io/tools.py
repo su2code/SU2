@@ -827,8 +827,8 @@ def get_specialCases(config):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
     # Special case for time-spectral
-    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'SPECTRAL_METHOD':
-        special_cases.append('SPECTRAL_METHOD')
+    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
+        special_cases.append('HARMONIC_BALANCE')
 
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':

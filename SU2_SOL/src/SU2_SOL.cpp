@@ -310,7 +310,7 @@ int main(int argc, char *argv[]) {
 
 		}
     
-		else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+		else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
 			/*--- Read in the restart file for this time step ---*/
 			for (iZone = 0; iZone < nZone; iZone++) {

@@ -143,8 +143,8 @@ private:
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
-	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for spectral integration. */
-	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with spectral method computations. */
+	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for  harmonic balance. */
+	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with harmonic balance computations. */
 	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -2238,12 +2238,6 @@ public:
 	 */
   long GetUnst_AdjointIter(void);
 
-  /*!
-   * \brief Provides information about the type of spectral method
-   * \return The kind of spectral method : TimeSpectral or HarmonicBalance
-   */
-  unsigned short GetSpectralMethod_Type(void);
-    
   /*!
   * \brief Number of iterations to average (reverse time integration).
   * \return Starting direct iteration number for the unsteady adjoint.
