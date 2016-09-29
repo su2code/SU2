@@ -69,7 +69,7 @@ inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
 
-inline su2double CConfig::GetSpectralMethod_Period(void) { return SpectralMethod_Period; }
+inline su2double CConfig::GetHarmonicBalance_Period(void) { return HarmonicBalance_Period; }
 
 inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 

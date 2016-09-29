@@ -3336,7 +3336,7 @@ void CSpectralDriver::SetHarmonicBalance(unsigned short iZone) {
 	su2double deltaU, deltaPsi;
 
 	/*--- Compute period of oscillation ---*/
-	su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
+	su2double period = config_container[ZONE_0]->GetHarmonicBalance_Period();
 
 	/*--- Non-dimensionalize the input period, if necessary.	*/
 	period /= config_container[ZONE_0]->GetTime_Ref();
@@ -3388,10 +3388,10 @@ void CSpectralDriver::SetHarmonicBalance(unsigned short iZone) {
 				/*--- Store sources for current row ---*/
 				for (iVar = 0; iVar < nVar; iVar++) {
 					if (!adjoint) {
-						solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
+						solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iVar]);
 					}
 					else {
-						solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
+						solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iVar]);
 					}
 				}
 
@@ -3422,7 +3422,7 @@ void CSpectralDriver::SetHarmonicBalance(unsigned short iZone) {
       
       /*--- Store sources for current iZone ---*/
       for (iVar = 0; iVar < nVar_Turb; iVar++)
-        solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source_Turb[iVar]);
+        solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source_Turb[iVar]);
     }
     
     delete [] U_Turb;
@@ -3453,7 +3453,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 	}
 
 	/*--- Get simualation period from config file ---*/
-	su2double Period = config_container[ZONE_0]->GetSpectralMethod_Period();
+	su2double Period = config_container[ZONE_0]->GetHarmonicBalance_Period();
 
 	/*--- Non-dimensionalize the input period, if necessary.      */
 	Period /= config_container[ZONE_0]->GetTime_Ref();

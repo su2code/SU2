@@ -767,7 +767,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Time Spectral wihtout moving meshes */
-  addDoubleOption("SPECTRALMETHOD_PERIOD", SpectralMethod_Period, -1.0);
+  addDoubleOption("HB_PERIOD", HarmonicBalance_Period, -1.0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
@@ -2380,8 +2380,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*-- Setting Spectral method period from the config file */
 
   if (Unsteady_Simulation == HARMONIC_BALANCE) {
-  	SpectralMethod_Period = GetSpectralMethod_Period();
-  	if (SpectralMethod_Period < 0)  {
+  	HarmonicBalance_Period = GetHarmonicBalance_Period();
+  	if (HarmonicBalance_Period < 0)  {
   		cout << "Not a valid value for time period!!" << endl;
   		exit(EXIT_FAILURE);
   	}
@@ -2405,7 +2405,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*if (Unsteady_Simulation == HARMONIC_BALANCE) {
       if (!(GetGrid_Movement())) {
           // No grid movement - Time period from config file //
-          SpectralMethod_Period = GetSpectralMethod_Period();
+          HarmonicBalance_Period = GetHarmonicBalance_Period();
       }
       
       else {
@@ -2440,10 +2440,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           //--- determine which period is largest ---//
           
           unsigned short iVar;
-          SpectralMethod_Period = 0.0;
+          HarmonicBalance_Period = 0.0;
           for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
-              if (periods[iVar] > SpectralMethod_Period)
-                  SpectralMethod_Period = periods[iVar];
+              if (periods[iVar] > HarmonicBalance_Period)
+                  HarmonicBalance_Period = periods[iVar];
           }
           
           delete periods;
