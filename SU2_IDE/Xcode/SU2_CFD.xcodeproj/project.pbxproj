@@ -632,7 +632,7 @@
 				E91CACF21B8C110E00EE3FCC /* rotating */,
 				E91CACF71B8C110E00EE3FCC /* serial_regression.py */,
 				E9D9CE991C6563B3004119E9 /* serial_regression_AD.py */,
-				E91CACF81B8C110E00EE3FCC /* spectral_method */,
+				E91CACF81B8C110E00EE3FCC /* harmonic_balance */,
 				E91CACFA1B8C110E00EE3FCC /* TestCase.py */,
 				E91CACFE1B8C110E00EE3FCC /* unsteady */,
 			);
@@ -1280,12 +1280,12 @@
 			path = naca0012;
 			sourceTree = "<group>";
 		};
-		E91CACF81B8C110E00EE3FCC /* spectral_method */ = {
+		E91CACF81B8C110E00EE3FCC /* harmonic_balance */ = {
 			isa = PBXGroup;
 			children = (
 				E91CACF91B8C110E00EE3FCC /* spectral.cfg */,
 			);
-			path = spectral_method;
+			path = harmonic_balance;
 			sourceTree = "<group>";
 		};
 		E91CACFE1B8C110E00EE3FCC /* unsteady */ = {

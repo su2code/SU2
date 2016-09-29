@@ -1969,7 +1969,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   //	bool gravity        = (config->GetGravityForce() == YES);
-  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
+  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   //	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Initialize the source residual to zero ---*/
@@ -1999,7 +1999,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
   }
   
-  if (spectral_method) {
+  if (harmonic_balance) {
     
     su2double Volume, Source;
     
@@ -2009,7 +2009,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Get control volume ---*/
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Get stored spectral method source term ---*/
+      /*--- Get stored harmonic balance source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Source = node[iPoint]->GetSpectralMethod_Source(iVar);
         Residual[iVar] = Source*Volume;

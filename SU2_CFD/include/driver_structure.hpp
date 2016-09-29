@@ -413,7 +413,7 @@ public:
 
 /*!
  * \class CSpectralDriver
- * \brief Class for driving an iteration of a spectral method problem using multiple zones.
+ * \brief Class for driving an iteration of harmonic balance method problem using multiple zones.
  * \author T. Economon
  * \version 4.3.0 "Cardinal"
  */
@@ -446,14 +446,14 @@ public:
 	void Run();
 
 	/*!
-	 * \brief Computation and storage of the spectral method source terms.
+	 * \brief Computation and storage of the harmonic balance method source terms.
 	 * \author T. Economon, K. Naik
 	 * \param[in] iZone - Current zone number.
 	 */
-	void SetSpectralMethod(unsigned short iZone);
+	void SetHarmonicBalance(unsigned short iZone);
 
 	/*!
-	 * \brief Computation of the spectral operator matrix(Harmonic Balance and Time Spectral).
+	 * \brief Computation of the spectral operator matrix for harmonic balance.
 	 * \author A. Rubino, S. Nimmagadda
 	 */
 	void ComputeSpectral_Operator();

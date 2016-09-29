@@ -74,12 +74,12 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != SPECTRAL_METHOD)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
 //
-//  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+//  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 //
 //    if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
 //
@@ -516,12 +516,12 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != SPECTRAL_METHOD)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
   
-  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     

@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     driver = new CSingleZoneDriver(config_file_name, nZone, nDim);
 
-  } else if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
     /*--- Use the spectral method driver. ---*/
 

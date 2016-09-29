@@ -188,7 +188,7 @@ CDriver::CDriver(char* confFile,
   if(nZone == SINGLE_ZONE) {
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
   }
-  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     if (rank == MASTER_NODE) cout << "A spectral method driver has been instantiated." << endl;
   }
   else if (nZone == 2 && fsi) {
@@ -288,7 +288,7 @@ CDriver::CDriver(char* confFile,
 
 	/*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically
-   deforming meshes, and preprocessing of spectral methods. ---*/
+   deforming meshes, and preprocessing of harmonic balance. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -300,7 +300,7 @@ CDriver::CDriver(char* confFile,
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
-      if (config_container[iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD)
+      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
         iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
     }
 
@@ -3032,10 +3032,10 @@ void CSingleZoneDriver::ResetConvergence() {
 
 void CSingleZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool spectral_method = (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD);
+  bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 
   /*--- Dynamic mesh update ---*/
-  if ((config_container[ZONE_0]->GetGrid_Movement()) && (!spectral_method)) {
+  if ((config_container[ZONE_0]->GetGrid_Movement()) && (!harmonic_balance)) {
     iteration_container[ZONE_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, 0, ExtIter );
   }
 
@@ -3161,12 +3161,12 @@ void CMultiZoneDriver::ResetConvergence() {
 
 void CMultiZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool spectral_method;
+  bool harmonic_balance;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-   spectral_method = (config_container[iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD);
+   harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (spectral_method)) {
+    if ((config_container[iZone]->GetGrid_Movement()) && (harmonic_balance)) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
@@ -3241,7 +3241,7 @@ CSpectralDriver::~CSpectralDriver(void) {
 
 void CSpectralDriver::Run() {
   
-  /*--- Run a single iteration of a spectral method problem. Preprocess all
+  /*--- Run a single iteration of a harmonic balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
   
   for (iZone = 0; iZone < nZone; iZone++)
@@ -3260,14 +3260,14 @@ void CSpectralDriver::Update() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Update the spectral source terms across all zones ---*/
-  	SetSpectralMethod(iZone);
+    /*--- Update the harmonic balance terms across all zones ---*/
+  	SetHarmonicBalance(iZone);
 
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, iZone);
 
-    output->SpectralMethodOutput(solver_container, config_container, nZone, iZone);
+    output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
 
   }
 
@@ -3309,7 +3309,7 @@ void CSpectralDriver::ResetConvergence() {
 
 }
 
-void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
+void CSpectralDriver::SetHarmonicBalance(unsigned short iZone) {
 
 	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -3473,14 +3473,14 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 		}
 	}
 
-	/*--- Build the spectral interpolation inverse matrix ---*/
+	/*--- Build the harmonic balance inverse matrix ---*/
 	for (i = 0; i < nZone; i++) {
 		for (k = 0; k < nZone; k++) {
 			Einv[i][k] = complex<su2double>(cos(Omega_HB[k]*(i*Period/nZone))) + J*complex<su2double>(sin(Omega_HB[k]*(i*Period/nZone)));
 		}
 	}
 
-	/*---  Invert inverse spectral matrix Einv with Gauss elimination ---*/
+	/*---  Invert inverse harmonic balance Einv with Gauss elimination ---*/
 
 	/*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
 	complex<su2double> **temp = new complex<su2double>*[nZone];

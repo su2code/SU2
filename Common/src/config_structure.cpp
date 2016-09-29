@@ -159,9 +159,9 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
   }
 
-  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
+  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
 
-  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD && (config->GetKind_SU2() != SU2_DEF)   ) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
   	nZone = config->GetnTimeInstances();
   }
 
@@ -1936,7 +1936,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == SPECTRAL_METHOD  ||
+      Unsteady_Simulation == HARMONIC_BALANCE  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
@@ -2379,7 +2379,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*-- Setting Spectral method period from the config file */
 
-  if (Unsteady_Simulation == SPECTRAL_METHOD) {
+  if (Unsteady_Simulation == HARMONIC_BALANCE) {
   	SpectralMethod_Period = GetSpectralMethod_Period();
   	if (SpectralMethod_Period < 0)  {
   		cout << "Not a valid value for time period!!" << endl;
@@ -2398,11 +2398,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	}
   }
 
-    /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
+    /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
      There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
-     The largest period of motion is the one to be used for time-spectral calculations. ---*/
+     The largest period of motion is the one to be used for harmonic balance  calculations. ---*/
     
-  /*if (Unsteady_Simulation == SPECTRAL_METHOD) {
+  /*if (Unsteady_Simulation == HARMONIC_BALANCE) {
       if (!(GetGrid_Movement())) {
           // No grid movement - Time period from config file //
           SpectralMethod_Period = GetSpectralMethod_Period();

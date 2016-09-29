@@ -1481,7 +1481,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   unsigned short iVar;
   
   bool freesurface   = (config->GetKind_Regime() == FREESURFACE);
-  bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool transition    = (config->GetKind_Trans_Model() == LM);
   su2double epsilon     = config->GetFreeSurface_Thickness();
   
@@ -1539,7 +1539,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
   }
   
-  if (spectral_method) {
+  if (harmonic_balance) {
     
     su2double Volume, Source;
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
@@ -1552,7 +1552,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Access stored spectral method source term ---*/
+      /*--- Access stored harmonic balance source term ---*/
       
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
         Source = node[iPoint]->GetSpectralMethod_Source(iVar);
