@@ -352,7 +352,7 @@ def main():
     spectral.cfg_file  = "HB.cfg"
     spectral.test_iter = 25
     spectral.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
-    spectral.su2_exec  = "SU2_CFD"
+    spectral.su2_exec  = "parallel_computation.py -f"
     spectral.timeout   = 1600
     spectral.tol       = 0.00001
     test_list.append(spectral)
