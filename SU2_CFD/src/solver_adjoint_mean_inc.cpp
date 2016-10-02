@@ -374,7 +374,7 @@ CAdjIncEulerSolver::~CAdjIncEulerSolver(void) {
   
   if (CSensitivity != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete CSensitivity[iMarker];
+      delete [] CSensitivity[iMarker];
     delete [] CSensitivity;
   }
   
@@ -4612,7 +4612,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
     delete [] Sigma_Psi5v[iDim];
   delete [] Sigma_Psi5v;
   for (iDim = 0; iDim < nDim; iDim++)
-    delete tau[iDim];
+    delete [] tau[iDim];
   delete [] tau;
   delete [] Velocity;
   
