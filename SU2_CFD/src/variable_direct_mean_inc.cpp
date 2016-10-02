@@ -55,7 +55,7 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
  
 }
 
-CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
+CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
@@ -132,8 +132,8 @@ CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_veloc
   
 	/*--- Solution and old solution initialization ---*/
 
-  Solution[0] = config->GetPressure_FreeStreamND();
-  Solution_Old[0] = config->GetPressure_FreeStreamND();
+  Solution[0] = val_pressure;
+  Solution_Old[0] = val_pressure;
   for (iDim = 0; iDim < nDim; iDim++) {
     Solution[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
     Solution_Old[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
@@ -143,8 +143,8 @@ CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_veloc
 	/*--- Allocate and initialize solution for dual time strategy ---*/
   
 	if (dual_time) {
-    Solution_time_n[0] = config->GetPressure_FreeStreamND();
-    Solution_time_n1[0] = config->GetPressure_FreeStreamND();
+    Solution_time_n[0]  =  val_pressure;
+    Solution_time_n1[0] =  val_pressure;
     for (iDim = 0; iDim < nDim; iDim++) {
       Solution_time_n[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
       Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
@@ -359,9 +359,9 @@ bool CIncEulerVariable::SetPrimVar(su2double Density_Inf, CConfig *config) {
 
 CIncNSVariable::CIncNSVariable(void) : CIncEulerVariable() { }
 
-CIncNSVariable::CIncNSVariable(su2double val_density, su2double *val_velocity, su2double val_energy,
+CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity,
                          unsigned short val_nDim, unsigned short val_nvar,
-                         CConfig *config) : CIncEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
+                         CConfig *config) : CIncEulerVariable(val_pressure, val_velocity, val_nDim, val_nvar, config) {
   
 	Temperature_Ref = config->GetTemperature_Ref();
 	Viscosity_Ref   = config->GetViscosity_Ref();

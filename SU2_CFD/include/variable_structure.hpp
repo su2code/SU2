@@ -3078,14 +3078,13 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_density - Value of the flow density (initialization value).
+   * \param[in] val_pressure - value of the pressure.
    * \param[in] val_velocity - Value of the flow velocity (initialization value).
-   * \param[in] val_energy - Value of the flow energy (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
+  CIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
                  unsigned short val_nvar, CConfig *config);
   
   /*!
@@ -3490,15 +3489,13 @@ public:
 
 	/*!
 	 * \overload
-	 * \param[in] val_density - Value of the flow density (initialization value).
+   * \param[in] val_pressure - value of the pressure.
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
-	 * \param[in] val_energy - Value of the flow energy (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.		 
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CIncNSVariable(su2double val_density, su2double *val_velocity,
-			su2double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CIncNSVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
