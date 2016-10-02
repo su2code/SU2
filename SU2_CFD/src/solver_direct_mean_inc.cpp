@@ -64,22 +64,15 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
   
-  /*--- Supersonic simulation array initialization ---*/
-  
-  CEquivArea_Inv = NULL;
-  CNearFieldOF_Inv = NULL;
   
   /*--- Numerical methods array initialization ---*/
   
   iPoint_UndLapl = NULL;
   jPoint_UndLapl = NULL;
-  LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   Smatrix = NULL; cvector = NULL;
  
-  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
-
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
   
   Cauchy_Value = 0;
@@ -148,21 +141,13 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
 
-  /*--- Supersonic simulation array initialization ---*/
-  
-  CEquivArea_Inv = NULL;
-  CNearFieldOF_Inv = NULL;
-  
   /*--- Numerical methods array initialization ---*/
   
   iPoint_UndLapl = NULL;
   jPoint_UndLapl = NULL;
-  LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   Smatrix = NULL; cvector = NULL;
-
-  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
 
@@ -249,12 +234,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Primitive   = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar]   = 0.0;
   Primitive_i = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = 0.0;
   Primitive_j = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = 0.0;
-  
-  /*--- Define some auxiliary vectors related to the Secondary solution ---*/
-  
-  Secondary   = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar]   = 0.0;
-  Secondary_i = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_i[iVar] = 0.0;
-  Secondary_j = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
   
   /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
   
@@ -412,7 +391,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Total_CD      = 0.0;	Total_CL           = 0.0;  Total_CSF          = 0.0;
   Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
-  Total_CEff    = 0.0;	Total_CEquivArea   = 0.0;  Total_CNearFieldOF = 0.0;
+  Total_CEff    = 0.0;
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
@@ -423,9 +402,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
-  Energy_Inf      = config->GetEnergy_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
-  Mach_Inf        = config->GetMach();
   
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   
@@ -467,7 +444,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     /*--- Restart the solution from the free-stream state ---*/
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+      node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
     
   } else {
 
@@ -677,8 +654,6 @@ CIncEulerSolver::~CIncEulerSolver(void) {
   if (CMerit_Inv != NULL)        delete [] CMerit_Inv;
   if (CT_Inv != NULL)            delete [] CT_Inv;
   if (CQ_Inv != NULL)            delete [] CQ_Inv;
-  if (CEquivArea_Inv != NULL)    delete [] CEquivArea_Inv;
-  if (CNearFieldOF_Inv != NULL)  delete [] CNearFieldOF_Inv;
 
   if (CEff_Mnt != NULL)          delete [] CEff_Mnt;
   if (CMerit_Mnt != NULL)        delete [] CMerit_Mnt;
@@ -687,6 +662,8 @@ CIncEulerSolver::~CIncEulerSolver(void) {
 
   if (ForceInviscid != NULL)     delete [] ForceInviscid;
   if (MomentInviscid != NULL)    delete [] MomentInviscid;
+  if (ForceMomentum  != NULL)    delete [] ForceMomentum;
+  if (MomentMomentum != NULL)   delete [] MomentMomentum;
 
   if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
   if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
@@ -694,10 +671,6 @@ CIncEulerSolver::~CIncEulerSolver(void) {
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
-
-  if (Secondary != NULL)        delete [] Secondary;
-  if (Secondary_i != NULL)      delete [] Secondary_i;
-  if (Secondary_j != NULL)      delete [] Secondary_j;
 
   if (CPressure != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -2622,7 +2595,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       }
 
       numerics->SetPrimitive(Primitive_i, Primitive_j);
-      numerics->SetSecondary(Secondary_i, Secondary_j);
       
     }
     else {
@@ -3052,7 +3024,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   string Marker_Tag, Monitoring_Tag;
 
 #ifdef HAVE_MPI
-  su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv, MyAllBound_CMx_Inv, MyAllBound_CMy_Inv, MyAllBound_CMz_Inv, MyAllBound_CFx_Inv, MyAllBound_CFy_Inv, MyAllBound_CFz_Inv, MyAllBound_CT_Inv, MyAllBound_CQ_Inv, MyAllBound_CNearFieldOF_Inv, *MySurface_CL_Inv = NULL, *MySurface_CD_Inv = NULL, *MySurface_CSF_Inv = NULL, *MySurface_CEff_Inv = NULL, *MySurface_CFx_Inv = NULL, *MySurface_CFy_Inv = NULL, *MySurface_CFz_Inv = NULL, *MySurface_CMx_Inv = NULL, *MySurface_CMy_Inv = NULL, *MySurface_CMz_Inv = NULL;
+  su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv, MyAllBound_CMx_Inv, MyAllBound_CMy_Inv, MyAllBound_CMz_Inv, MyAllBound_CFx_Inv, MyAllBound_CFy_Inv, MyAllBound_CFz_Inv, MyAllBound_CT_Inv, MyAllBound_CQ_Inv, *MySurface_CL_Inv = NULL, *MySurface_CD_Inv = NULL, *MySurface_CSF_Inv = NULL, *MySurface_CEff_Inv = NULL, *MySurface_CFx_Inv = NULL, *MySurface_CFy_Inv = NULL, *MySurface_CFz_Inv = NULL, *MySurface_CMx_Inv = NULL, *MySurface_CMy_Inv = NULL, *MySurface_CMz_Inv = NULL;
 #endif
 
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -3090,13 +3062,13 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   Total_CMx = 0.0;          Total_CMy = 0.0;   Total_CMz = 0.0;
   Total_CFx = 0.0;          Total_CFy = 0.0;   Total_CFz = 0.0;
   Total_CT = 0.0;           Total_CQ = 0.0;    Total_CMerit = 0.0;
-  Total_CNearFieldOF = 0.0; Total_Heat = 0.0;  Total_MaxHeat = 0.0;
+  Total_Heat = 0.0;  Total_MaxHeat = 0.0;
 
   AllBound_CD_Inv = 0.0;        AllBound_CL_Inv = 0.0; AllBound_CSF_Inv = 0.0;
   AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;   AllBound_CMz_Inv = 0.0;
   AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;   AllBound_CFz_Inv = 0.0;
   AllBound_CT_Inv = 0.0;           AllBound_CQ_Inv = 0.0;    AllBound_CMerit_Inv = 0.0;
-  AllBound_CNearFieldOF_Inv = 0.0; AllBound_CEff_Inv = 0.0;
+  AllBound_CEff_Inv = 0.0;
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CL_Inv[iMarker_Monitoring]      = 0.0; Surface_CD_Inv[iMarker_Monitoring]      = 0.0;
@@ -3138,7 +3110,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
       CMx_Inv[iMarker] = 0.0;          CMy_Inv[iMarker] = 0.0;   CMz_Inv[iMarker] = 0.0;
       CFx_Inv[iMarker] = 0.0;          CFy_Inv[iMarker] = 0.0;   CFz_Inv[iMarker] = 0.0;
       CT_Inv[iMarker] = 0.0;           CQ_Inv[iMarker] = 0.0;    CMerit_Inv[iMarker] = 0.0;
-      CNearFieldOF_Inv[iMarker] = 0.0; CEff_Inv[iMarker] = 0.0;
+      CEff_Inv[iMarker] = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++) ForceInviscid[iDim] = 0.0;
       MomentInviscid[0] = 0.0; MomentInviscid[1] = 0.0; MomentInviscid[2] = 0.0;
@@ -3258,13 +3230,6 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
         }
 
-        /*--- At the Nearfield SU2 only cares about the pressure coeffient ---*/
-
-        else {
-          CNearFieldOF_Inv[iMarker] = NFPressOF;
-          AllBound_CNearFieldOF_Inv += CNearFieldOF_Inv[iMarker];
-        }
-
       }
 
 
@@ -3288,7 +3253,6 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   MyAllBound_CT_Inv           = AllBound_CT_Inv;           AllBound_CT_Inv = 0.0;
   MyAllBound_CQ_Inv           = AllBound_CQ_Inv;           AllBound_CQ_Inv = 0.0;
   AllBound_CMerit_Inv = 0.0;
-  MyAllBound_CNearFieldOF_Inv = AllBound_CNearFieldOF_Inv; AllBound_CNearFieldOF_Inv = 0.0;
 
   SU2_MPI::Allreduce(&MyAllBound_CD_Inv, &AllBound_CD_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_CL_Inv, &AllBound_CL_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -3303,7 +3267,6 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(&MyAllBound_CT_Inv, &AllBound_CT_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_CQ_Inv, &AllBound_CQ_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
-  SU2_MPI::Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Add the forces on the surfaces using all the nodes ---*/
 
@@ -3376,7 +3339,6 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   Total_CT            = AllBound_CT_Inv;
   Total_CQ            = AllBound_CQ_Inv;
   Total_CMerit        = Total_CT / (Total_CQ + EPS);
-  Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
 
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
 
@@ -6520,20 +6482,20 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Surface_CMz_Visc        = new su2double[config->GetnMarker_Monitoring()];
 
   
-  /*--- Rotational coefficients ---*/
-  
-  CMerit_Inv = new su2double[nMarker];
-  CT_Inv     = new su2double[nMarker];
-  CQ_Inv     = new su2double[nMarker];
-  
-  CMerit_Visc = new su2double[nMarker];
-  CT_Visc     = new su2double[nMarker];
-  CQ_Visc     = new su2double[nMarker];
+  /*--- Rotorcraft coefficients ---*/
 
-  /*--- Supersonic coefficients ---*/
-  
-  CEquivArea_Inv   = new su2double[nMarker];
-  CNearFieldOF_Inv = new su2double[nMarker];
+  CT_Inv           = new su2double[nMarker];
+  CQ_Inv           = new su2double[nMarker];
+  CMerit_Inv       = new su2double[nMarker];
+
+  CT_Mnt           = new su2double[nMarker];
+  CQ_Mnt           = new su2double[nMarker];
+  CMerit_Mnt       = new su2double[nMarker];
+
+  CMerit_Visc      = new su2double[nMarker];
+  CT_Visc          = new su2double[nMarker];
+  CQ_Visc          = new su2double[nMarker];
+
   
   /*--- Heat based coefficients ---*/
 
@@ -6544,7 +6506,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   Total_CD   = 0.0;	Total_CL        = 0.0;  Total_CSF   = 0.0;
   Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
-  Total_CEff    = 0.0;	Total_CEquivArea   = 0.0;  Total_CNearFieldOF = 0.0;
+  Total_CEff    = 0.0;
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;
@@ -6555,10 +6517,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
-  Energy_Inf      = config->GetEnergy_FreeStreamND();
-  Temperature_Inf = config->GetTemperature_FreeStreamND();
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Mach_Inf        = config->GetMach();
   Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
@@ -6605,7 +6564,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     /*--- Restart the solution from the free-stream state ---*/
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+      node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
     
   }
   

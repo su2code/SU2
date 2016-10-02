@@ -5096,9 +5096,7 @@ class CIncEulerSolver : public CSolver {
 protected:
   
   su2double
-  Mach_Inf,	/*!< \brief Mach number at the infinity. */
   Density_Inf,	/*!< \brief Density at the infinity. */
-  Energy_Inf,			/*!< \brief Energy at the infinity. */
   Temperature_Inf,			/*!< \brief Energy at the infinity. */
   Pressure_Inf,		/*!< \brief Pressure at the infinity. */
   *Velocity_Inf;		/*!< \brief Flow Velocity vector at the infinity. */
@@ -5127,8 +5125,6 @@ protected:
   *CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
   *CT_Inv,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
   *CQ_Inv,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  *CEquivArea_Inv,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  *CNearFieldOF_Inv,				/*!< \brief Near field pressure (inviscid contribution) for each boundary. */
   *CD_Mnt,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
   *CL_Mnt,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
   *CSF_Mnt,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
@@ -5152,7 +5148,6 @@ protected:
   *CMerit_Mnt,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
   *CT_Mnt,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
   *CQ_Mnt,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  *CEquivArea_Mnt,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
   **CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
   **CPressureTarget,		/*!< \brief Target Pressure coefficient for each boundary and vertex. */
   **HeatFlux,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
@@ -5178,10 +5173,9 @@ protected:
   AllBound_CEff_Inv,			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMerit_Inv,			/*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
   AllBound_CT_Inv,			/*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Inv,			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEquivArea_Inv,			/*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
-  
+  AllBound_CQ_Inv;			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+
+
   su2double
   AllBound_CD_Mnt,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CL_Mnt,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
@@ -5222,8 +5216,6 @@ protected:
   Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
-  Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_HeatFluxDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
@@ -5243,7 +5235,6 @@ protected:
   *SecondaryVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-  su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
   unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
   *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
@@ -5255,11 +5246,7 @@ protected:
   su2double *Primitive,		/*!< \brief Auxiliary nPrimVar vector. */
   *Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
   *Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-  
-  su2double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
-  *Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Secondary_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-  
+
   su2double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
   Cauchy_Func;			/*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter;	/*!< \brief Number of elements of the Cauchy serial. */
@@ -5358,12 +5345,6 @@ public:
    * \return Value of the 2-norm of the velocity at the infinity.
    */
   su2double GetModVelocity_Inf(void);
-  
-  /*!
-   * \brief Compute the density multiply by energy at the infinity.
-   * \return Value of the density multiply by  energy at the infinity.
-   */
-  su2double GetDensity_Energy_Inf(void);
   
   /*!
    * \brief Compute the pressure at the infinity.
@@ -6004,12 +5985,6 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
-  su2double GetTotal_CEquivArea(void);
-  
-  /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
-   * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
-   */
   su2double GetTotal_CpDiff(void);
   
   /*!
@@ -6017,18 +5992,6 @@ public:
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
   su2double GetTotal_HeatFluxDiff(void);
-  
-  /*!
-   * \brief Provide the total (inviscid + viscous) non dimensional Near-Field pressure coefficient.
-   * \return Value of the NearField pressure coefficient (inviscid + viscous contribution).
-   */
-  su2double GetTotal_CNearFieldOF(void);
-  
-  /*!
-   * \brief Set the value of the Equivalent Area coefficient.
-   * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
-   */
-  void SetTotal_CEquivArea(su2double val_cequivarea);
   
   /*!
    * \brief Set the value of the Equivalent Area coefficient.
@@ -6041,12 +6004,6 @@ public:
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
    */
   void SetTotal_HeatFluxDiff(su2double val_heat);
-  
-  /*!
-   * \brief Set the value of the Near-Field pressure oefficient.
-   * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
-   */
-  void SetTotal_CNearFieldOF(su2double val_cnearfieldpress);
   
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional lift coefficient.

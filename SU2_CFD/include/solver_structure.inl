@@ -1294,8 +1294,6 @@ inline su2double CIncEulerSolver::GetModVelocity_Inf(void) {
 
 inline CFluidModel* CIncEulerSolver::GetFluidModel(void) { return FluidModel;}
 
-inline su2double CIncEulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
-
 inline su2double CIncEulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
 
 inline su2double CIncEulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
@@ -1398,21 +1396,13 @@ inline void CIncEulerSolver::SetTotal_MaxHeatFlux(su2double val_Total_MaxHeat) {
 
 inline su2double CIncEulerSolver::GetTotal_CMerit() { return Total_CMerit; }
 
-inline su2double CIncEulerSolver::GetTotal_CEquivArea() { return Total_CEquivArea; }
-
 inline su2double CIncEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
 inline su2double CIncEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
-inline su2double CIncEulerSolver::GetTotal_CNearFieldOF() { return Total_CNearFieldOF; }
-
-inline void CIncEulerSolver::SetTotal_CEquivArea(su2double cequivarea) { Total_CEquivArea = cequivarea; }
-
 inline void CIncEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
 
 inline void CIncEulerSolver::SetTotal_HeatFluxDiff(su2double heat) { Total_HeatFluxDiff = heat; }
-
-inline void CIncEulerSolver::SetTotal_CNearFieldOF(su2double cnearfieldpress) { Total_CNearFieldOF = cnearfieldpress; }
 
 inline void CIncEulerSolver::SetTotal_CD(su2double val_Total_CD) { Total_CD = val_Total_CD; }
 
