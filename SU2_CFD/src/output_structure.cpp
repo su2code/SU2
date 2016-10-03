@@ -8618,7 +8618,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 
 	CFluidModel *FluidModel;
-	unsigned short iMarkerTP, iSpan;
+  unsigned short iMarkerTP, iSpan, iDim;
 	unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
   FluidModel = solver_container->GetFluidModel();
@@ -8631,7 +8631,10 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			/*--- Retrieve Inflow primitive quantities ---*/
 			DensityIn[iMarkerTP][iSpan]          = solver_container->GetDensityIn(iMarkerTP, iSpan);
 			PressureIn[iMarkerTP][iSpan]         = solver_container->GetPressureIn(iMarkerTP, iSpan);
-			TurboVelocityIn[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityIn(iMarkerTP, iSpan);
+
+      for (iDim = 0; iDim < 3; iDim++){
+        TurboVelocityIn[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityIn(iMarkerTP, iSpan)[iDim];
+      }
 			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
       area																 = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
 
@@ -8646,7 +8649,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			/*--- Retrieve Outflow primitive quantities ---*/
 			DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
 			PressureOut[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
-			TurboVelocityOut[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan);
+      for (iDim = 0; iDim < 3; iDim++){
+        TurboVelocityOut[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan)[iDim];
+      }
 //			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
 			area																 = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
 
