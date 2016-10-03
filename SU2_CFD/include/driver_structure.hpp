@@ -474,6 +474,10 @@ public:
   void SetSensitivity(unsigned short kind_sensitivity);
 
   void DirectRun();
+
+  void SetObjFunction();
+
+  void SetAdj_ObjFunction();
 };
 
 /*!

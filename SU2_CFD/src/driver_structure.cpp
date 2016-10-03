@@ -3378,7 +3378,7 @@ CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
 
 CDiscAdjMultiZoneDriver::~CDiscAdjMultiZoneDriver(){
 
-  for (iZone = 0; iZone < nZone; nZone++){
+  for (iZone = 0; iZone < nZone; iZone++){
     delete direct_iteration[iZone];
   }
 
@@ -3390,11 +3390,6 @@ void CDiscAdjMultiZoneDriver::Run() {
 
   unsigned short iZone = 0;
 
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- For the adjoint iteration we need the derivatives of the iteration function with
    *    respect to the conservative flow variables. Since these derivatives do not change in the steady state case
@@ -3424,11 +3419,7 @@ void CDiscAdjMultiZoneDriver::Run() {
 
   /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-  if (rank == MASTER_NODE){
-    SU2_TYPE::SetDerivative(ObjFunc, 1.0);
-  } else {
-    SU2_TYPE::SetDerivative(ObjFunc, 0.0);
-  }
+  SetAdj_ObjFunction();
 
   /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -3470,11 +3461,7 @@ void CDiscAdjMultiZoneDriver::Run() {
 
     /*--- Initialize the adjoint of the objective function with 1.0. ---*/
 
-    if (rank == MASTER_NODE){
-      SU2_TYPE::SetDerivative(ObjFunc, 1.0);
-    } else {
-      SU2_TYPE::SetDerivative(ObjFunc, 0.0);
-    }
+    SetAdj_ObjFunction();
 
     /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
 
@@ -3516,8 +3503,8 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
     AD::StartRecording();
 
     if ((rank == MASTER_NODE)){
-       if (kind_recording == CONS_VARS)
-         cout << "Direct iteration to store computational graph." << endl;
+       if (kind_recording == CONS_VARS  && (config_container[ZONE_0]->GetExtIter() == 0))
+         cout << endl << "Direct iteration to store computational graph." << endl;
     }
 
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -3537,9 +3524,8 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
   /*--- Print residuals in the first iteration ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
 
-//    if ((rank == MASTER_NODE) && (kind_recording == SOLUTION) && (config_container[iZone]->GetExtIter() == 0)){
-    if (rank == MASTER_NODE){
-      cout << endl << "Convergence of direct solver for Zone " << iZone << ": " << endl;
+    if ((rank == MASTER_NODE) && (kind_recording == CONS_VARS) && (config_container[iZone]->GetExtIter() == 0)){
+      cout << "Convergence of direct solver for Zone " << iZone << ": " << endl;
 
       cout << "  log10[RMS Density]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
            <<", Drag: " <<solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
@@ -3551,7 +3537,6 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
           cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
         }
       }
-     cout << "Entropy Gen: " << output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, 0);
     }
   }
 
@@ -3559,11 +3544,96 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
     iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone);
   }
 
-  ObjFunc = output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, 0);
+  SetObjFunction();
 
   AD::StopRecording();
 
 }
+
+void CDiscAdjMultiZoneDriver::SetAdj_ObjFunction(){
+
+  int rank = MASTER_NODE;
+
+  bool time_stepping = config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
+  unsigned long IterAvg_Obj = config_container[ZONE_0]->GetIter_Avg_Objective();
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  su2double seeding = 1.0;
+
+  if (time_stepping){
+    if (ExtIter < IterAvg_Obj){
+      seeding = 1.0/((su2double)IterAvg_Obj);
+    }
+    else{
+      seeding = 0.0;
+    }
+  }
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE){
+    SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc, 0.0);
+  }
+
+}
+
+void CDiscAdjMultiZoneDriver::SetObjFunction(){
+
+  bool output_1d       = config_container[ZONE_0]->GetWrt_1D_Output();
+  bool output_massflow = (config_container[ZONE_0]->GetKind_ObjFunc() == MASS_FLOW_RATE);
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    if (output_1d) {
+      switch (config_container[iZone]->GetKind_Solver()) {
+        case EULER:                   case NAVIER_STOKES:                   case RANS:
+        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+          output->OneDimensionalOutput(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone]);
+          break;
+      }
+    }
+    if (output_massflow && !output_1d) {
+      switch (config_container[iZone]->GetKind_Solver()) {
+        case EULER:                   case NAVIER_STOKES:                   case RANS:
+        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+          output->SetMassFlowRate(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone]);
+          break;
+      }
+    }
+  }
+
+  /*--- Here we can add new (scalar) objective functions ---*/
+
+  /*--- Surface based obj. function ---*/
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[ZONE_0]);
+
+  switch (config_container[ZONE_0]->GetKind_ObjFunc()){
+    case ENTROPY_GENERATION:
+      solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, 0));
+      break;
+    default:
+      break;
+  }
+
+  ObjFunc = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+
+  if (rank == MASTER_NODE){
+    AD::RegisterOutput(ObjFunc);
+  }
+}
+
+
+
 
 void CDiscAdjMultiZoneDriver::DirectRun(){
 
