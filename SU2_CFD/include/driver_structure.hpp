@@ -426,18 +426,22 @@ public:
 
 };
 
+
 /*!
  * \class CDiscAdjMultiZoneDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author T. Albring
- * \version 4.1.0 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CDiscAdjMultiZoneDriver : public CMultiZoneDriver {
 
-  CMultiZoneDriver* direct_driver;
+private:
+  unsigned short RecordingState;
+
+  su2double ObjFunc;
+
   CIteration** direct_iteration;
 
-  unsigned short RecordingState;
 public:
 
   /*!
@@ -468,6 +472,8 @@ public:
   void SetRecording(unsigned short kind_recording);
 
   void SetSensitivity(unsigned short kind_sensitivity);
+
+  void DirectRun();
 };
 
 /*!
