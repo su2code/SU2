@@ -597,7 +597,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   		PressureOut             [iMarker][iSpan] = 0.0;
   		TurboVelocityOut [iMarker][iSpan]           = new su2double[nDim];
 
-  		for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < 3; iDim++){
   			TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
   			TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
   		}
@@ -14908,12 +14908,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 		for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
 			DensityIn               [iMarker][iSpan] = 0.0;
 			PressureIn              [iMarker][iSpan] = 0.0;
-			TurboVelocityIn  [iMarker][iSpan]           = new su2double[nDim];
+      TurboVelocityIn  [iMarker][iSpan]           = new su2double[3];
 			DensityOut              [iMarker][iSpan] = 0.0;
 			PressureOut             [iMarker][iSpan] = 0.0;
-			TurboVelocityOut [iMarker][iSpan]           = new su2double[nDim];
+      TurboVelocityOut [iMarker][iSpan]           = new su2double[3];
 
-			for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < 3; iDim++){
 				TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
 				TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
 			}

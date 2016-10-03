@@ -8482,11 +8482,11 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-	unsigned short iMarker, jMarker, iMarker_PerBound, iMarkerTP, iSpan, iSize, jSpan, kSpan;
+  unsigned short iMarker, jMarker, iMarkerTP, iSpan, jSpan, kSpan, iSize;
 	unsigned long iPoint, iVertex;
-	long check, jVertex;
+  long jVertex;
 	int nSpan, nSpan_loc, nSpan_max;
-  su2double *coord, *valueSpan, min, max, radius, target, delta;
+  su2double *coord, *valueSpan, min, max, radius, delta;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
   short SendRecv;
@@ -8665,7 +8665,6 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
   		/*---Ordering the vector of span-wise values---*/
   		SpanWiseValue[marker_flag -1][0] = min;
-  		target 					 = min;
   		for (iSpan = 1; iSpan < nSpan; iSpan++){
   			min = 10.0E+06;
   			for (jSpan = 0; jSpan < nSpan; jSpan++){
@@ -8780,14 +8779,13 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 	unsigned long  iPoint, jPoint = 0, jVertex, kVertex, kSpanVertex = 0, **ordered, **disordered, **oldVertex3D, oldVertex;
 	unsigned long nVert, nVertMax;
-	unsigned short iMarker, iMarkerTP, iSpan,iSize, jSpan, iDim;
-	su2double min, max, *coord, delta, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
+  unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, iSize;
+  su2double min, *coord, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 	int  globalindex;
 	bool **checkAssign;
 	min = 10.0E+06;
-	max = -10.0E+06;
 
 	su2double *ymin_loc, radius, minAngCoord;
 	int *nVertex_loc;
@@ -8798,7 +8796,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	su2double MyMax, MyMin, ymin[size], MyMinAngCoord;
+  su2double ymin[size], MyMinAngCoord;
 	su2double *x_gb = NULL, *y_gb = NULL, *z_gb = NULL, *angCoord_gb = NULL;
 	int       *globIdx_gb=NULL;
 
@@ -9426,7 +9424,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 				}
 			}
 
-			delete [] x_gb;	delete [] y_gb; delete [] z_gb;	delete angCoord_gb; delete [] globIdx_gb;
+      delete [] x_gb;	delete [] y_gb; delete [] z_gb;	delete [] angCoord_gb; delete [] globIdx_gb;
 
 		}
 	}
@@ -9788,7 +9786,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate){
 
   unsigned short iMarker, iMarkerTP;
-  unsigned short iSpan, iDim, i, n1, n2, n1t,n2t;
+  unsigned short iSpan, i, n1, n2, n1t,n2t;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   int markerTP;

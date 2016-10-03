@@ -2750,11 +2750,11 @@ public:
     this->relfac1 = new su2double[nVals];
     this->relfac2 = new su2double[nVals];
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned int i = 0; i < nVals; i++) {
       this->flowdir[i] = new su2double[3];
     }
 
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned int i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[9*i]);
         // Check to see if the enum value is in the map
     if (this->m.find(option_value[9*i + 1]) == m.end()) {
