@@ -4734,8 +4734,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         		}
         	}
         	if (direct_diff != NO_DERIVATIVE){
-        		D_TotalStaticEfficiency = SU2_TYPE::GetDerivative(TotalStaticEfficiency[2][nSpanWiseSections]);
-        		D_TotalTotalEfficiency  = SU2_TYPE::GetDerivative(TotalTotalEfficiency[2][nSpanWiseSections]);
+            D_TotalStaticEfficiency = SU2_TYPE::GetDerivative(TotalStaticEfficiency[nTurboPerf-1][nSpanWiseSections]);
+            D_TotalTotalEfficiency  = SU2_TYPE::GetDerivative(TotalTotalEfficiency[nTurboPerf-1][nSpanWiseSections]);
         		D_EntropyGen            = SU2_TYPE::GetDerivative(EntropyGen[nTurboPerf-1][nSpanWiseSections]);
         	}
         }

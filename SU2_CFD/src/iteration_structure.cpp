@@ -1855,10 +1855,6 @@ void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, 
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
 
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-
-  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
-
   /*--- Initialize the adjoints the conservative variables ---*/
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
@@ -1878,7 +1874,7 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
 
-  if (kind_recording == SOLUTION || kind_recording == COMBINED){
+  if (kind_recording == CONS_VARS || kind_recording == COMBINED){
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -1890,7 +1886,7 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
       solver_container[iZone][MESH_0][TURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
-  if (kind_recording == GEOMETRY){
+  if (kind_recording == MESH_COORDS){
 
     /*--- Register node coordinates as input ---*/
 
@@ -1904,7 +1900,7 @@ void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CG
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
 
-  if ((kind_recording == GEOMETRY) || (kind_recording == NONE)){
+  if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)){
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
@@ -1926,10 +1922,6 @@ void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGe
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
-
-    /*--- Register objective function as output of the iteration ---*/
-
-    solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterObj_Func(config_container[iZone]);
 
     /*--- Register conservative variables as output of the iteration ---*/
 
