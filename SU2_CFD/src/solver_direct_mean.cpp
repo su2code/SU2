@@ -212,6 +212,36 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Cauchy_Serie = NULL;
   FluidModel=NULL;
 
+  /*--- Initialize quantities for the average process for internal flow ---*/
+
+  AverageVelocity 									= NULL;
+  AverageTurboVelocity 							= NULL;
+  ExtAverageTurboVelocity 					= NULL;
+  AverageFlux 											= NULL;
+  SpanTotalFlux 										= NULL;
+  AveragePressure  									= NULL;
+  RadialEquilibriumPressure         = NULL;
+  ExtAveragePressure  							= NULL;
+  AverageDensity   									= NULL;
+  ExtAverageDensity   							= NULL;
+
+
+  /*--- Initialize primitive quantities for turboperformace ---*/
+
+  DensityIn                     = NULL;
+  PressureIn                    = NULL;
+  TurboVelocityIn               = NULL;
+  DensityOut                    = NULL;
+  PressureOut                   = NULL;
+  TurboVelocityOut              = NULL;
+
+
+  /*--- Initialize quantities for NRBC ---*/
+
+  CkInflow				= NULL;
+  CkOutflow1			= NULL;
+  CkOutflow2			= NULL;
+
   /*--- Set the gamma value ---*/
 
   Gamma = config->GetGamma();
@@ -1060,43 +1090,45 @@ CEulerSolver::~CEulerSolver(void) {
   }
 
   if(TurboVelocityIn !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  		for(iMarkerTP = 0; iMarkerTP < nMarkerTurboPerf; iMarkerTP++)
-  			delete [] TurboVelocityIn[iMarker][iMarkerTP];
-  		delete  [] TurboVelocityIn[iMarker];
-  	}
-  	delete [] TurboVelocityIn;
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+        delete [] TurboVelocityIn[iMarker][iSpan];
+      }
+      delete [] TurboVelocityIn[iMarker];
+    }
+    delete [] TurboVelocityIn;
   }
 
   if(TurboVelocityOut !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  		for(iMarkerTP = 0; iMarkerTP < nMarkerTurboPerf; iMarkerTP++)
-  			delete [] TurboVelocityOut[iMarker][iMarkerTP];
-  		delete  [] TurboVelocityOut[iMarker];
-  	}
-  	delete [] TurboVelocityOut;
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+      for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+        delete [] TurboVelocityOut[iMarker][iSpan];
+      }
+      delete [] TurboVelocityOut[iMarker];
+    }
+    delete [] TurboVelocityOut;
   }
 
   if(DensityIn !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
   		delete  [] DensityIn[iMarker];
   	delete [] DensityIn;
   }
 
   if(PressureIn !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
   		delete  [] PressureIn[iMarker];
   	delete [] PressureIn;
   }
 
   if(DensityOut !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
   		delete  [] DensityOut[iMarker];
   	delete [] DensityOut;
   }
 
   if(PressureOut !=NULL){
-  	for (iMarker = 0; iMarker < nMarker; iMarker++)
+    for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++)
   		delete  [] PressureOut[iMarker];
   	delete [] PressureOut;
   }
