@@ -477,15 +477,11 @@ private:
 public:
 
   /*!
-   * \brief Constructor of the class.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of zones.
-   */
+    * \brief Constructor of the class.
+    * \param[in] confFile - Configuration file name.
+    * \param[in] val_nZone - Total number of zones.
+    * \param[in] val_nDim - Number of dimensions.
+    */
   CDiscAdjMultiZoneDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim);
@@ -521,25 +517,14 @@ public:
  */
 class CDiscAdjTurbomachineryDriver : public  CDiscAdjMultiZoneDriver {
 
-private:
-  unsigned short RecordingState;
-
-  su2double ObjFunc;
-
-  CIteration** direct_iteration;
-
 public:
 
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Total number of zones.
-   */
+	 /*!
+	   * \brief Constructor of the class.
+	   * \param[in] confFile - Configuration file name.
+	   * \param[in] val_nZone - Total number of zones.
+	   * \param[in] val_nDim - Number of dimensions.
+	   */
   CDiscAdjTurbomachineryDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim);
