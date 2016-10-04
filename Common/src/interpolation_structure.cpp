@@ -316,7 +316,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
 #else
 
-  nProcessor = SINGLE_NODE
+  nProcessor = SINGLE_NODE;
 
 #endif
 
@@ -538,7 +538,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
 #else
 
-  nProcessor = SINGLE_NODE
+  nProcessor = SINGLE_NODE;
 
 #endif
 
@@ -1122,7 +1122,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
 #else
 
-  nProcessor = SINGLE_NODE
+  nProcessor = SINGLE_NODE;
 
 #endif
 
