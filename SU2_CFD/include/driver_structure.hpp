@@ -442,11 +442,6 @@ public:
   void Run();
 
   /*!
-   * \brief Set some average geometric quantities needed for turbomachinery computation
-   */
-  void SetGeoTurboAvgValues(unsigned short iZone, bool allocate);
-
-  /*!
    * \brief Set Mixing Plane interface within multiple zones.
    */
   void SetMixingPlane(unsigned short iZone);
@@ -467,7 +462,7 @@ public:
  */
 class CDiscAdjMultiZoneDriver : public CMultiZoneDriver {
 
-private:
+protected:
   unsigned short RecordingState;
 
   su2double ObjFunc;
@@ -540,9 +535,9 @@ public:
   void DirectRun();
 
   /*!
-   * \brief Set some average geometric quantities needed for turbomachinery computation
+   * \brief Set Obj.Function for turbomachinery design.
    */
-  void SetGeoTurboAvgValues(unsigned short iZone, bool allocate);
+  void SetObjFunction();
 
   /*!
    * \brief Set Mixing Plane interface within multiple zones.

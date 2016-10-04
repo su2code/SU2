@@ -5050,6 +5050,30 @@ public:
 	unsigned short GetKind_Data_NRBC(string val_marker);
 
 	/*!
+	 * \brief Get the outlet pressure imposed as BC for internal flow.
+	 * \return outlet pressure
+	 */
+	su2double GetPressureOut_BC();
+
+	/*!
+	 * \brief Get the inlet total pressure imposed as BC for internal flow.
+	 * \return inlet total pressure
+	 */
+	su2double GetTotalPressureIn_BC();
+
+	/*!
+	 * \brief Get the inlet total temperature imposed as BC for internal flow.
+	 * \return inlet total temperature
+	 */
+	su2double GetTotalTemperatureIn_BC();
+
+	/*!
+	 * \brief Get the inlet flow angle imposed as BC for internal flow.
+	 * \return inlet flow angle
+	 */
+	su2double GetFlowAngleIn_BC();
+
+	/*!
 	 * \brief Get the wall temperature (static) at an isothermal boundary.
 	 * \param[in] val_index - Index corresponding to the isothermal boundary.
 	 * \return The wall temperature.

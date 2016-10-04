@@ -192,7 +192,7 @@ COutput::COutput(CConfig *config) {
   			MassFlowIn              [iMarker][iSpan] = 0.0;
   			MassFlowOut             [iMarker][iSpan] = 0.0;
   			FlowAngleIn             [iMarker][iSpan] = 0.0;
-  			FlowAngleIn_BC          [iMarker][iSpan] = 0.0;
+  			FlowAngleIn_BC          [iMarker][iSpan] = config->GetFlowAngleIn_BC();
   			FlowAngleOut            [iMarker][iSpan] = 0.0;
   			EulerianWork            [iMarker][iSpan] = 0.0;
   			TotalEnthalpyIn         [iMarker][iSpan] = 0.0;
@@ -221,7 +221,7 @@ COutput::COutput(CConfig *config) {
   			TotalRothalpyIn         [iMarker][iSpan] = 0.0;
   			TotalRothalpyOut        [iMarker][iSpan] = 0.0;
   			AbsFlowAngleOut         [iMarker][iSpan] = 0.0;
-  			PressureOut_BC          [iMarker][iSpan] = 0.0;
+  			PressureOut_BC          [iMarker][iSpan] = config->GetPressureOut_BC();
 
   			TemperatureIn           [iMarker][iSpan] = 0.0;
   			TemperatureOut          [iMarker][iSpan] = 0.0;
@@ -8614,7 +8614,6 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
 }
 
-
 void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 
 	CFluidModel *FluidModel;
@@ -8623,6 +8622,16 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
   FluidModel = solver_container->GetFluidModel();
   su2double area;
+
+
+  /*--- Compute BC imposed value for convergence monitoring ---*/
+  for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
+  	for(iSpan = 0; iSpan < nSpanWiseSection +1; iSpan++){
+  		FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
+  		TotalEnthalpyIn_BC[iMarkerTP][iSpan] = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+  		EntropyIn_BC[iMarkerTP][iSpan] = FluidModel->GetEntropy();
+  	}
+  }
 
 	/*--- Compute performance for each blade ---*/
 	for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
@@ -8642,7 +8651,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
 			EntropyIn[iMarkerTP][iSpan]					 = FluidModel->GetEntropy();
 			MassFlowIn[iMarkerTP][iSpan]         = DensityIn[iMarkerTP][iSpan]*TurboVelocityIn[iMarkerTP][iSpan][0]*area;
-
+			AbsFlowAngleIn[iMarkerTP][iSpan]     = atan(TurboVelocityIn[iMarkerTP][iSpan][1]/TurboVelocityIn[iMarkerTP][iSpan][0]);
 
 
 
@@ -8660,12 +8669,10 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
 			EntropyOut[iMarkerTP][iSpan]				 = FluidModel->GetEntropy();
 			MassFlowOut[iMarkerTP][iSpan]         = DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
-
-
-
+			AbsFlowAngleOut[iMarkerTP][iSpan]     = atan(TurboVelocityOut[iMarkerTP][iSpan][1]/TurboVelocityOut[iMarkerTP][iSpan][0]);
 
 			/*--- Compute turbo-performance ---*/
-			EntropyGen[iMarkerTP][iSpan]				 = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn[iMarkerTP][iSpan] + 1);
+			EntropyGen[iMarkerTP][iSpan]				 = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
 
 		}
 	}
@@ -8720,9 +8727,9 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 			cout << endl;
 			cout << endl;
 			cout << "     Inlet Absolute Angle" << "     Inlet Absolute Angle BC" << "     err(%)" <<  endl;
-			cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring][nSpanWiseSections];
+			cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring][nSpanWiseSections];
 			cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn_BC[iMarker_Monitoring][nSpanWiseSections];
-			cout.width(25); cout << abs((FlowAngleIn[iMarker_Monitoring][nSpanWiseSections] - FlowAngleIn_BC[iMarker_Monitoring][nSpanWiseSections])/FlowAngleIn_BC[iMarker_Monitoring][nSpanWiseSections])*100.0;
+			cout.width(25); cout << abs((AbsFlowAngleIn[iMarker_Monitoring][nSpanWiseSections] - FlowAngleIn_BC[iMarker_Monitoring][nSpanWiseSections])/FlowAngleIn_BC[iMarker_Monitoring][nSpanWiseSections])*100.0;
 			cout << endl;
 			cout << endl;
 		}

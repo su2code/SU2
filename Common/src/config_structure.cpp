@@ -5701,6 +5701,71 @@ unsigned short CConfig::GetKind_Data_NRBC(string val_marker) {
 }
 
 
+su2double CConfig::GetPressureOut_BC() {
+  unsigned short iMarker_BC;
+  su2double pres_out;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == GLOBAL_STATIC_PRESSURE ){
+    	pres_out = NRBC_Var1[iMarker_BC];
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+  	if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE){
+  		pres_out = Riemann_Var1[iMarker_BC];
+  	}
+  }
+  return pres_out/Pressure_Ref;
+}
+
+su2double CConfig::GetTotalPressureIn_BC() {
+	unsigned short iMarker_BC;
+	su2double tot_pres_out;
+	for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+		if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+			tot_pres_out = NRBC_Var1[iMarker_BC];
+		}
+	}
+	for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+		if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+			tot_pres_out = Riemann_Var1[iMarker_BC];
+		}
+	}
+	return tot_pres_out/Pressure_Ref;
+}
+
+su2double CConfig::GetTotalTemperatureIn_BC() {
+  unsigned short iMarker_BC;
+  su2double tot_temp_in;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+    	tot_temp_in = NRBC_Var2[iMarker_BC];
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+  	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+  		tot_temp_in = Riemann_Var2[iMarker_BC];
+  	}
+  }
+  return tot_temp_in/Temperature_Ref;
+}
+
+su2double CConfig::GetFlowAngleIn_BC() {
+  unsigned short iMarker_BC;
+  su2double alpha_in;
+  for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
+    if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+    	alpha_in = atan(NRBC_FlowDir[iMarker_BC][1]/NRBC_FlowDir[iMarker_BC][0]);
+    }
+  }
+  for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
+  	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
+  		alpha_in = atan(Riemann_FlowDir[iMarker_BC][1]/Riemann_FlowDir[iMarker_BC][0]);
+  	}
+  }
+
+  return alpha_in;
+}
+
 su2double CConfig::GetIsothermal_Temperature(string val_marker) {
 
   unsigned short iMarker_Isothermal = 0;
