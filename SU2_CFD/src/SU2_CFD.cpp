@@ -76,8 +76,18 @@ int main(int argc, char *argv[]) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
   	if (config->GetDiscrete_Adjoint()){
+  		if (config->GetBoolTurbomachinery()){
 
-  		driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim);
+  			driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim);
+
+  		} else {
+
+  			driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim);
+
+  		}
+  	} else if (config->GetBoolTurbomachinery()){
+
+  		driver = new CTurbomachineryDriver(config_file_name, nZone, nDim);
 
   	} else {
 
@@ -104,7 +114,18 @@ int main(int argc, char *argv[]) {
 
   	if (config->GetDiscrete_Adjoint()){
 
-  		driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim);
+  		if (config->GetBoolTurbomachinery()){
+
+  			driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim);
+
+  		} else {
+
+  			driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim);
+  		}
+
+  	} else if (config->GetBoolTurbomachinery()){
+
+  		driver = new CTurbomachineryDriver(config_file_name, nZone, nDim);
 
   	} else {
 

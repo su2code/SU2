@@ -350,12 +350,6 @@ public:
      */
   void SetInitialMesh();
 
- 	/*!
-	 * \brief Set some average geometric quantities needed for turbomachinery computation
-	 */
-  void SetGeoTurboAvgValues(unsigned short iZone, bool allocate);
-
-
 };
 
 
@@ -365,7 +359,7 @@ public:
  * \author T. Economon
  * \version 4.2.0 "Cardinal"
  */
-class CMultiZoneDriver : public CSingleZoneDriver {
+class CMultiZoneDriver : public CDriver {
 public:
   
   /*!
@@ -414,14 +408,52 @@ public:
      */
   void SetInitialMesh();
 
-  	/*!
-   	 * \brief Set Mixing Plane interface within multiple zones.
-     */
+};
+
+
+/*!
+ * \class CTurbomachineryDriver
+ * \brief Class for driving an iteration for turbomachinery flow analysis.
+ * \author S. Vitale
+ * \version 4.2.0 "Cardinal"
+ */
+class CTurbomachineryDriver : public CMultiZoneDriver {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   */
+	CTurbomachineryDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbomachineryDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the physics within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Set some average geometric quantities needed for turbomachinery computation
+   */
+  void SetGeoTurboAvgValues(unsigned short iZone, bool allocate);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
   void SetMixingPlane(unsigned short iZone);
 
-	/*!
-     * \brief Set Mixing Plane interface within multiple zones.
-     */
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
   void SetTurboPerformance(unsigned short targetZone);
 
 };
@@ -479,6 +511,67 @@ public:
 
   void SetAdj_ObjFunction();
 };
+
+
+/*!
+ * \class CDiscAdjMultiZoneDriver
+ * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
+ * \author S. Vitale, T. Albring
+ * \version 4.2.0 "Cardinal"
+ */
+class CDiscAdjTurbomachineryDriver : public  CDiscAdjMultiZoneDriver {
+
+private:
+  unsigned short RecordingState;
+
+  su2double ObjFunc;
+
+  CIteration** direct_iteration;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  CDiscAdjTurbomachineryDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjTurbomachineryDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the direct solver.
+   */
+  void DirectRun();
+
+  /*!
+   * \brief Set some average geometric quantities needed for turbomachinery computation
+   */
+  void SetGeoTurboAvgValues(unsigned short iZone, bool allocate);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short iZone);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
+
+};
+
+
 
 /*!
  * \class CSpectralDriver
