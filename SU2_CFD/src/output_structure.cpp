@@ -8653,7 +8653,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
         TurboVelocityOut[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan)[iDim];
       }
 //			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
-			area																 = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
+			area																 = geometry->GetSpanAreaOut(iMarkerTP, iSpan);
 
 
 			/*--- Compute all the Outflow quantities ---*/
