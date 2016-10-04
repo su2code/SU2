@@ -2251,14 +2251,14 @@ public:
   long GetDyn_RestartIter(void);
 
 	/*!
-	 * \brief Retrieves the number of periodic time instances for Time Spectral.
-	 * \return: Number of periodic time instances for Time Spectral.
+	 * \brief Retrieves the number of periodic time instances for Harmonic Balance.
+	 * \return: Number of periodic time instances for Harmonic Balance.
 	 */
 	unsigned short GetnTimeInstances(void);
 
 	/*!
-	 * \brief Retrieves the period of oscillations to be used with Time Spectral.
-	 * \return: Period for Time Spectral.
+	 * \brief Retrieves the period of oscillations to be used with Harmonic Balance.
+	 * \return: Period for Harmonic Balance.
 	 */
 	su2double GetHarmonicBalance_Period(void);
 

@@ -83,9 +83,9 @@ int main(int argc, char *argv[]) {
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
-    /*--- Use the spectral method driver. ---*/
+    /*--- Use the Harmonic Balance driver. ---*/
 
-    driver = new CSpectralDriver(config_file_name, nZone, nDim);
+    driver = new CHBDriver(config_file_name, nZone, nDim);
 
   } else if ((nZone == 2) && fsi) {
 

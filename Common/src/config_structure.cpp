@@ -764,9 +764,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
   addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
-  /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
+  /* DESCRIPTION: Integer number of periodic time instances for Harmonic Balance */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
-  /* DESCRIPTION: Time period for Time Spectral wihtout moving meshes */
+  /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
   addDoubleOption("HB_PERIOD", HarmonicBalance_Period, -1.0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
@@ -2377,7 +2377,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*-- Setting Spectral method period from the config file */
+  /*-- Setting Harmonic Balance period from the config file */
 
   if (Unsteady_Simulation == HARMONIC_BALANCE) {
   	HarmonicBalance_Period = GetHarmonicBalance_Period();
