@@ -412,16 +412,16 @@ public:
 
 
 /*!
- * \class CSpectralDriver
- * \brief Class for driving an iteration of harmonic balance method problem using multiple zones.
+ * \class CHBDriver
+ * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  * \version 4.3.0 "Cardinal"
  */
-class CSpectralDriver : public CDriver {
+class CHBDriver : public CDriver {
 
 private:
 
-	su2double **D; /*!< \brief spectral operator. */
+	su2double **D; /*!< \brief Harmonic Balance operator. */
 
 public:
 
@@ -431,40 +431,40 @@ public:
 	 * \param[in] val_nZone - Total number of zones.
 	 * \param[in] val_nDim - Number of dimensions.
 	 */
-	CSpectralDriver(char* confFile,
+	CHBDriver(char* confFile,
 			unsigned short val_nZone,
 			unsigned short val_nDim);
 
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CSpectralDriver(void);
+	~CHBDriver(void);
 
 	/*!
-	 * \brief Run a single iteration of a spectral method problem.
+	 * \brief Run a single iteration of a Harmonic Balance problem.
 	 */
 	void Run();
 
 	/*!
-	 * \brief Computation and storage of the harmonic balance method source terms.
+	 * \brief Computation and storage of the Harmonic Balance method source terms.
 	 * \author T. Economon, K. Naik
 	 * \param[in] iZone - Current zone number.
 	 */
 	void SetHarmonicBalance(unsigned short iZone);
 
 	/*!
-	 * \brief Computation of the spectral operator matrix for harmonic balance.
+	 * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
 	 * \author A. Rubino, S. Nimmagadda
 	 */
-	void ComputeSpectral_Operator();
+	void ComputeHB_Operator();
 
 	/*!
-	 * \brief Update the solution for the spectral method.
+	 * \brief Update the solution for the Harmonic Balance.
 	 */
 	void Update();
 
 	/*!
-	 * \brief Reset the convergence flag (set to false) of the solver for the spectral method.
+	 * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
 	 */
 	void ResetConvergence();
 };

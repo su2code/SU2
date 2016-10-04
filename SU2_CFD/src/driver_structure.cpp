@@ -189,7 +189,7 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
   }
   else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    if (rank == MASTER_NODE) cout << "A spectral method driver has been instantiated." << endl;
+    if (rank == MASTER_NODE) cout << "A Harmonic Balance driver has been instantiated." << endl;
   }
   else if (nZone == 2 && fsi) {
     if (rank == MASTER_NODE) cout << "A Fluid-Structure Interaction driver has been instantiated." << endl;
@@ -3216,7 +3216,7 @@ void CMultiZoneDriver::SetInitialMesh() {
 
 }
 
-CSpectralDriver::CSpectralDriver(char* confFile,
+CHBDriver::CHBDriver(char* confFile,
                                  unsigned short val_nZone,
                                  unsigned short val_nDim) : CDriver(confFile,
                                                                     val_nZone,
@@ -3224,24 +3224,24 @@ CSpectralDriver::CSpectralDriver(char* confFile,
 	unsigned short kZone;
 
 	D = NULL;
-	/*--- allocate dynamic memory for the spectral operator ---*/
+	/*--- allocate dynamic memory for the Harmonic Balance operator ---*/
 	D = new su2double*[nZone]; for (kZone = 0; kZone < nZone; kZone++) D[kZone] = new su2double[nZone];
 
 }
 
-CSpectralDriver::~CSpectralDriver(void) {
+CHBDriver::~CHBDriver(void) {
 
 	unsigned short kZone;
 
-	  /*--- delete dynamic memory for the spectral operator ---*/
+	  /*--- delete dynamic memory for the Harmonic Balance operator ---*/
 	  for (kZone = 0; kZone < nZone; kZone++) if (D[kZone] != NULL) delete [] D[kZone];
 	  if (D[kZone] != NULL) delete [] D;
 
 }
 
-void CSpectralDriver::Run() {
+void CHBDriver::Run() {
   
-  /*--- Run a single iteration of a harmonic balance problem. Preprocess all
+  /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
   
   for (iZone = 0; iZone < nZone; iZone++)
@@ -3256,7 +3256,7 @@ void CSpectralDriver::Run() {
     
 }
 
-void CSpectralDriver::Update() {
+void CHBDriver::Update() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -3273,7 +3273,7 @@ void CSpectralDriver::Update() {
 
 }
 
-void CSpectralDriver::ResetConvergence() {
+void CHBDriver::ResetConvergence() {
 
   for(iZone = 0; iZone < nZone; iZone++) {
     switch (config_container[iZone]->GetKind_Solver()) {
@@ -3309,7 +3309,7 @@ void CSpectralDriver::ResetConvergence() {
 
 }
 
-void CSpectralDriver::SetHarmonicBalance(unsigned short iZone) {
+void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
 	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -3342,7 +3342,7 @@ void CSpectralDriver::SetHarmonicBalance(unsigned short iZone) {
 	period /= config_container[ZONE_0]->GetTime_Ref();
 
 	if (ExtIter == 0)
-		ComputeSpectral_Operator();
+		ComputeHB_Operator();
 
 	/*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
 	/*--- Loop over all grid levels ---*/
@@ -3437,7 +3437,7 @@ void CSpectralDriver::SetHarmonicBalance(unsigned short iZone) {
 }
 
 
-void CSpectralDriver::ComputeSpectral_Operator(){
+void CHBDriver::ComputeHB_Operator(){
 
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i, j, k, iZone;
@@ -3559,7 +3559,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 	/*---  Temporary matrix for performing product  ---*/
 	complex<su2double> **Temp    = new complex<su2double>*[nZone];
 
-	/*---  Temporary complex spectral operator  ---*/
+	/*---  Temporary complex HB operator  ---*/
 	complex<su2double> **Dcpx    = new complex<su2double>*[nZone];
 
 	for (iZone = 0; iZone < nZone; iZone++){
@@ -3567,7 +3567,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 		Dcpx[iZone]   = new complex<su2double>[nZone];
 	}
 
-	/*---  Calculation of the spectral operator matrix ---*/
+	/*---  Calculation of the HB operator matrix ---*/
 	for (int row = 0; row < nZone; row++) {
 		for (int col = 0; col < nZone; col++) {
 			for (int inner = 0; inner < nZone; inner++) {
@@ -3586,7 +3586,7 @@ void CSpectralDriver::ComputeSpectral_Operator(){
 		}
 	}
 
-	/*---  Take just the real part of the spectral operator matrix ---*/
+	/*---  Take just the real part of the HB operator matrix ---*/
 	for (i = 0; i < nZone; i++) {
 		for (k = 0; k < nZone; k++) {
 			D[i][k] = real(Dcpx[i][k]);

@@ -274,7 +274,7 @@
 		E91CACF41B8C110E00EE3FCC /* rot_caradonna_tung.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rot_caradonna_tung.cfg; sourceTree = "<group>"; };
 		E91CACF61B8C110E00EE3FCC /* rot_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = rot_NACA0012.cfg; sourceTree = "<group>"; };
 		E91CACF71B8C110E00EE3FCC /* serial_regression.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = serial_regression.py; sourceTree = "<group>"; };
-		E91CACF91B8C110E00EE3FCC /* spectral.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = spectral.cfg; sourceTree = "<group>"; };
+		E91CACF91B8C110E00EE3FCC /* HB.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = HB.cfg; sourceTree = "<group>"; };
 		E91CACFA1B8C110E00EE3FCC /* TestCase.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = TestCase.py; sourceTree = "<group>"; };
 		E91CAD001B8C110E00EE3FCC /* pitching_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pitching_NACA64A010.cfg; sourceTree = "<group>"; };
 		E91CAD021B8C110E00EE3FCC /* turb_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = turb_NACA64A010.cfg; sourceTree = "<group>"; };
@@ -1283,7 +1283,7 @@
 		E91CACF81B8C110E00EE3FCC /* harmonic_balance */ = {
 			isa = PBXGroup;
 			children = (
-				E91CACF91B8C110E00EE3FCC /* spectral.cfg */,
+				E91CACF91B8C110E00EE3FCC /* HB.cfg */,
 			);
 			path = harmonic_balance;
 			sourceTree = "<group>";

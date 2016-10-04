@@ -9030,18 +9030,18 @@ void COutput::HarmonicBalanceOutput(CSolver ****solver_container, CConfig **conf
 		rbuf_var = new su2double[nVar_output];
 
 		HB_output_file.precision(15);
-		HB_output_file.open("spectral_method_output.csv", ios::out);
+		HB_output_file.open("HB_output.csv", ios::out);
 		HB_output_file <<  "\"time_instance\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\"" << endl;
 
 		mean_HB_file.precision(15);
 		if (current_iter == 0 && iZone == 1) {
-			mean_HB_file.open("history_TS_forces.plt", ios::trunc);
-			mean_HB_file << "TITLE = \"SU2 SPECTRAL METHOD SIMULATION\"" << endl;
+			mean_HB_file.open("history_HB.plt", ios::trunc);
+			mean_HB_file << "TITLE = \"SU2 HARMONIC BALANCE SIMULATION\"" << endl;
 			mean_HB_file <<  "VARIABLES = \"Iteration\",\"CLift\",\"CDrag\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
 			mean_HB_file << "ZONE T= \"Average Convergence History\"" << endl;
 		}
 		else
-			mean_HB_file.open("history_spectral_method.plt", ios::out | ios::app);
+			mean_HB_file.open("history_HB.plt", ios::out | ios::app);
 	}
 
 	if (rank == MASTER_NODE) {

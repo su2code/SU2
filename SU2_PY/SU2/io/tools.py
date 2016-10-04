@@ -826,7 +826,7 @@ def get_specialCases(config):
     if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
-    # Special case for time-spectral
+    # Special case for harmonic balance
     if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
         special_cases.append('HARMONIC_BALANCE')
 
