@@ -329,17 +329,6 @@ CDriver::CDriver(char* confFile,
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
 
-    if(config_container[iZone]->GetBoolTurbomachinery()){
-      if ((config_container[iZone]->GetGrid_Movement())){
-              geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
-      }
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
-      geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
-
-    }
-
-
   }
 
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
@@ -3268,7 +3257,14 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
                                    unsigned short val_nZone,
                                    unsigned short val_nDim) : CMultiZoneDriver(confFile,
                                                                       val_nZone,
-                                                                      val_nDim) { }
+                                                                      val_nDim) {
+	for (iZone = 0; iZone < nZone; iZone++) {
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
+    geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
+
+  }
+}
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
@@ -3283,11 +3279,6 @@ void CTurbomachineryDriver::Run() {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-  if(ExtIter == 0){
-  	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
-  	for (iZone = 0; iZone < nZone; iZone++) SetGeoTurboAvgValues(iZone, true);
-  }
 
   /* --- Set the mixing-plane interface ---*/
 	for (iZone = 0; iZone < nZone; iZone++) {
@@ -3326,18 +3317,6 @@ void CTurbomachineryDriver::Run() {
 		SetTurboPerformance(ZONE_0);
 	}
 
-
-}
-
-
-void CTurbomachineryDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate){
-
-	if ((config_container[iZone]->GetGrid_Movement())){
-					geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
-	}
-	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, allocate);
-	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, allocate);
-	geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], allocate);
 
 }
 
@@ -3684,6 +3663,12 @@ CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
     																						 	 	 	 	 	 unsigned short val_nZone,
 																													 unsigned short val_nDim): CDiscAdjMultiZoneDriver(confFile, val_nZone, val_nDim){
 
+	for (iZone = 0; iZone < nZone; iZone++) {
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
+    geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
+
+  }
 
 }
 
@@ -3702,14 +3687,6 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-  /*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
-  if(config_container[iZone]->GetBoolTurbomachinery()){
-    for (iZone = 0; iZone < nZone; iZone++) {
-      SetGeoTurboAvgValues(iZone, false);
-    }
-  }
-
 
   /* --- Set the mixing-plane interface ---*/
   if (config_container[ZONE_0]->GetBoolTurbomachinery()){
@@ -3753,16 +3730,31 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
   }
 }
 
+void CDiscAdjTurbomachineryDriver::SetObjFunction(){
 
-void CDiscAdjTurbomachineryDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate){
 
-	if ((config_container[iZone]->GetGrid_Movement())){
-					geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
-	}
-	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, allocate);
-	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, allocate);
-	geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], allocate);
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[ZONE_0]);
+
+  switch (config_container[ZONE_0]->GetKind_ObjFunc()){
+    case ENTROPY_GENERATION:
+      solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, 0));
+      break;
+    default:
+      break;
+  }
+
+  ObjFunc = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+
+  if (rank == MASTER_NODE){
+    AD::RegisterOutput(ObjFunc);
+  }
 }
 
 void CDiscAdjTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
