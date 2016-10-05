@@ -80,8 +80,10 @@ def function( func_name, config, state=None ):
     state = su2io.State(state)
     
     multi_objective = (type(func_name)==list)
+    if multi_objective: func_name_string = 'COMBO'
+    else: func_name_string = func_name
     # redundancy check
-    if multi_objective or not state['FUNCTIONS'].has_key(func_name):
+    if not state['FUNCTIONS'].has_key(func_name_string):
 
         # Aerodynamics
         if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:

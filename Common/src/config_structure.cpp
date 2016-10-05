@@ -1848,7 +1848,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Weight_ObjFunc[0] = 1.0;
 
   /*--- Maker sure that nMarker = nObj ---*/
-  /*--- Maker sure that nMarker = nObj ---*/
   if (nObj>0) {
     if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL) {
       if (nMarker_Monitoring==1) {
