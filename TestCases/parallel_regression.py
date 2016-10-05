@@ -489,6 +489,18 @@ def main():
     channel_3D.unsteady  = True
     test_list.append(channel_3D)
 
+    # Pipe
+    pipe           = TestCase('pipe')
+    pipe.cfg_dir   = "sliding_interface/pipe"
+    pipe.cfg_file  = "pipe_NN.cfg"
+    pipe.test_iter = 10
+    pipe.test_vals = [-12.316841, -6.935029, 0.000000, 0.000000] #last 4 columns
+    pipe.su2_exec  = "parallel_computation.py -f"
+    pipe.timeout   = 1600
+    pipe.tol       = 0.00001
+    pipe.unsteady  = True
+    test_list.append(pipe)
+
     ##########################
     ### FEA - FSI          ###
     ##########################   
