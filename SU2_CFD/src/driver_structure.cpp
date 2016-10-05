@@ -3316,7 +3316,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-	unsigned short iVar, jZone, kZone, iMGlevel;
+	unsigned short iVar, jZone, iMGlevel;
 	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
 	unsigned long iPoint;
 	bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
