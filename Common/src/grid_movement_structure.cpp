@@ -1948,17 +1948,18 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
 	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
 	su2double cosPhi, sinPhi, cosPsi, sinPsi;
-	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+	bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 	bool adjoint = config->GetContinuous_Adjoint();
+
 
 	/*--- Problem dimension and physical time step ---*/
 	nDim = geometry->GetnDim();
 	dt   = config->GetDelta_UnstTimeND();
 	Lref = config->GetLength_Ref();
 
-  /*--- For time-spectral, motion is the same in each zone (at each instance).
+  /*--- For harmonic balance, motion is the same in each zone (at each instance).
    *    This is used for calls to the config container ---*/
-  if (time_spectral)
+  if (harmonic_balance)
 	  iZone = ZONE_0;
   
   /*--- For the unsteady adjoint, use reverse time ---*/
@@ -1981,10 +1982,11 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   Omega[1]  = (config->GetRotation_Rate_Y(iZone)/config->GetOmega_Ref());
   Omega[2]  = (config->GetRotation_Rate_Z(iZone)/config->GetOmega_Ref());
 
-  /*-- Set dt for time-spectral cases ---*/
-  if (time_spectral) {
+  /*-- Set dt for harmonic balance cases ---*/
+  if (harmonic_balance) {
 	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
-	  su2double period = config->GetTimeSpectral_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
+	  period /= config->GetTime_Ref();
 	  dt = period * (su2double)iter/(su2double)(config->GetnTimeInstances());
   }
   
@@ -2121,15 +2123,16 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short iDim;
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
+
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
   Lref   = config->GetLength_Ref();
 
-  /*--- For time-spectral, motion is the same in each zone (at each instance). ---*/
-  if (time_spectral) {
+  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
+  if (harmonic_balance) {
 	  iZone = ZONE_0;
   }
 
@@ -2147,9 +2150,10 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   Phase[1]   = config->GetPitching_Phase_Y(iZone)*DEG2RAD;
   Phase[2]   = config->GetPitching_Phase_Z(iZone)*DEG2RAD;
 
-  if (time_spectral) {    
+  if (harmonic_balance) {    
 	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
-	  su2double period = config->GetTimeSpectral_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
+	  period /= config->GetTime_Ref();
 	  deltaT = period/(su2double)(config->GetnTimeInstances());
   }
 
@@ -2165,8 +2169,8 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   } else {
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
-    if (time_spectral) {
-    	/*--- For time-spectral, begin movement from the zero position ---*/
+    if (harmonic_balance) {
+    	/*--- For harmonic balance, begin movement from the zero position ---*/
     	time_old = 0.0;
     } else {
     	time_old = time_new;
@@ -2280,15 +2284,16 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
+
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
   
-  /*--- For time-spectral, motion is the same in each zone (at each instance). ---*/
-  if (time_spectral) {
+  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
+  if (harmonic_balance) {
 	  iZone = ZONE_0;
   }
   
@@ -2303,9 +2308,10 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   Ampl[1]   = config->GetPlunging_Ampl_Y(iZone)/Lref;
   Ampl[2]   = config->GetPlunging_Ampl_Z(iZone)/Lref;
   
-  if (time_spectral) {
+  if (harmonic_balance) {
 	  /*--- period of oscillation & time interval using nTimeInstances ---*/
-	  su2double period = config->GetTimeSpectral_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
+	  period /= config->GetTime_Ref();
 	  deltaT = period/(su2double)(config->GetnTimeInstances());
   }
   
@@ -2321,8 +2327,8 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   } else {
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
-    if (time_spectral) {
-    	/*--- For time-spectral, begin movement from the zero position ---*/
+    if (harmonic_balance) {
+    	/*--- For harmonic balance, begin movement from the zero position ---*/
     	time_old = 0.0;
     } else {
     	time_old = time_new;
@@ -2422,14 +2428,15 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   su2double deltaT, time_new, time_old;
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
+
 	
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   
-  /*--- For time-spectral, motion is the same in each zone (at each instance). ---*/
-  if (time_spectral) {
+  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
+  if (harmonic_balance) {
 	  iZone = ZONE_0;
   }
 
@@ -2441,9 +2448,10 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   xDot[1]   = config->GetTranslation_Rate_Y(iZone);
   xDot[2]   = config->GetTranslation_Rate_Z(iZone);
   
-  if (time_spectral) {
+  if (harmonic_balance) {
 	  /*--- period of oscillation & time interval using nTimeInstances ---*/
-	  su2double period = config->GetTimeSpectral_Period();
+	  su2double period = config->GetHarmonicBalance_Period();
+	  period /= config->GetTime_Ref();
 	  deltaT = period/(su2double)(config->GetnTimeInstances());
   }
   
@@ -2459,8 +2467,8 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   } else {
     /*--- Forward time for the direct problem ---*/
     time_new = static_cast<su2double>(iter)*deltaT;
-    if (time_spectral) {
-    	/*--- For time-spectral, begin movement from the zero position ---*/
+    if (harmonic_balance) {
+    	/*--- For harmonic balance, begin movement from the zero position ---*/
     	time_old = 0.0;
     } else {
     	time_old = time_new;
@@ -3093,7 +3101,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
   else {
     if (rank == MASTER_NODE)
-      cout << "Design Variable not implemented yet" << endl;
+      cout << "Design Variable not implement yet" << endl;
   }
   
 }

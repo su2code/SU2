@@ -343,6 +343,20 @@ def main():
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
 
+    ######################################                                                                                  
+    ### Harmonic Balance               ###                                                                                  
+    ######################################                                                                                    
+
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "parallel_computation.py -f"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
+
     ######################################
     ### Moving Wall                    ###
     ######################################
@@ -434,6 +448,46 @@ def main():
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+
+    ######################################
+    ### Sliding Mesh                   ###
+    ######################################
+
+    # Uniform flow
+    uniform_flow         = TestCase('uniform_flow')
+    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
+    uniform_flow.cfg_file  = "uniform_NN.cfg"
+    uniform_flow.test_iter = 50
+    uniform_flow.test_vals = [-0.318912, 5.202787, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.su2_exec  = "parallel_computation.py -f"
+    uniform_flow.timeout   = 1600
+    uniform_flow.tol       = 0.000001
+    uniform_flow.unsteady  = True
+    test_list.append(uniform_flow) 
+
+    # Channel_2D
+    channel_2D           = TestCase('channel_2D')
+    channel_2D.cfg_dir   = "sliding_interface/channel_2D"
+    channel_2D.cfg_file  = "channel_2D_NN.cfg"
+    channel_2D.test_iter = 4
+    channel_2D.test_vals = [-1.656896, 4.263158, 0.000000, 0.000000] #last 4 columns
+    channel_2D.su2_exec  = "parallel_computation.py -f"
+    channel_2D.timeout   = 100
+    channel_2D.tol       = 0.00001
+    channel_2D.unsteady  = True
+    test_list.append(channel_2D)
+
+    # Channel_3D
+    channel_3D           = TestCase('channel_3D')
+    channel_3D.cfg_dir   = "sliding_interface/channel_3D"
+    channel_3D.cfg_file  = "channel_3D_NN.cfg"
+    channel_3D.test_iter = 2
+    channel_3D.test_vals = [-1.899946, 4.032882, 0.000000, 0.000000] #last 4 columns
+    channel_3D.su2_exec  = "parallel_computation.py -f"
+    channel_3D.timeout   = 1600
+    channel_3D.tol       = 0.00001
+    channel_3D.unsteady  = True
+    test_list.append(channel_3D)
 
     ##########################
     ### FEA - FSI          ###

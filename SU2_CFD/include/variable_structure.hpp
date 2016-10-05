@@ -1777,14 +1777,14 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source.
+	 * \param[in] val_source - Value of the harmonic balance source.
 	 */
-	virtual void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	virtual void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double GetTimeSpectral_Source(unsigned short val_var);
+	virtual su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
@@ -2736,11 +2736,11 @@ public:
  */
 class CEulerVariable : public CVariable {
 protected:
-	su2double Velocity2;			/*!< \brief Square of the velocity vector. */
-	su2double *TS_Source;		/*!< \brief Time spectral source term. */
-	su2double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
-  su2double *WindGust;           /*! < \brief Wind gust value */
-  su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
+	su2double  Velocity2;			/*!< \brief Square of the velocity vector. */
+	su2double *HB_Source;     /*!< \brief harmonic balance source term. */
+	su2double  Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
+  su2double *WindGust;      /*! < \brief Wind gust value */
+  su2double *WindGustDer;   /*! < \brief Wind gust derivatives value */
 
 	/*--- Primitive variable definition ---*/
   
@@ -2750,9 +2750,9 @@ protected:
 
   /*--- Secondary variable definition ---*/
   
-	su2double *Secondary;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+	su2double *Secondary;	          /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
 	su2double **Gradient_Secondary;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Secondary;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Limiter_Secondary;   /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
 public:
 
@@ -3161,18 +3161,18 @@ public:
 	void SetVelocityInc_Old(su2double *val_velocity);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3422,7 +3422,7 @@ public:
 class CTurbVariable : public CVariable {
 protected:
 	su2double muT;                /*!< \brief Eddy viscosity. */
-	su2double *TS_Source; 	       /*!< \brief Time spectral source term. */
+	su2double *HB_Source; 	       /*!< \brief Harmonic Balance source term. */
 
 public:
 	/*!
@@ -3487,18 +3487,18 @@ public:
 	~CTurbSAVariable(void);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 };
 
@@ -3534,18 +3534,18 @@ public:
 	~CTurbMLVariable(void);
   
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
   
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
   
 };
 
@@ -3680,7 +3680,7 @@ protected:
 	su2double *ForceProj_Vector;	/*!< \brief Vector d. */
 	su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
 	su2double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
-	su2double *TS_Source;		/*!< \brief Time spectral source term. */
+	su2double *HB_Source;		/*!< \brief Harmonic balance source term. */
 	bool incompressible;
 public:
 
@@ -3775,18 +3775,18 @@ public:
 	su2double *GetIntBoundary_Jump(void);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 };
 
 /*! 
