@@ -1581,18 +1581,18 @@ public:
 	virtual su2double GetCL_Visc(unsigned short val_marker);
 
 	/*!
-	 * \brief Get the non dimensional z moment coefficient (viscous contribution).
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetCMz_Visc(unsigned short val_marker);
-
-    /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
 	 */
 	virtual su2double GetCMz_Inv(unsigned short val_marker);
+
+	/*!
+	 * \brief Get the non dimensional z moment coefficient (viscous contribution).
+	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+	 * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
+	 */
+	virtual su2double GetCMz_Visc(unsigned short val_marker);
 
   /*!
    * \brief A virtual member.
@@ -5439,24 +5439,6 @@ public:
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
   su2double GetSurface_MaxHF(unsigned short val_marker);
-    
-	/*!
-	 * \brief Get the total non dimensional lift coefficient (viscous contribution).
-	 * \return Value of the lift coefficient (viscous contribution).
-	 */
-	su2double GetAllBound_CLift_Visc(void);
-  
-  /*!
-	 * \brief Get the total non dimensional sideforce coefficient (viscous contribution).
-	 * \return Value of the lift coefficient (viscous contribution).
-	 */
-	su2double GetAllBound_CSideForce_Visc(void);
-    
-	/*!
-	 * \brief Get the total non dimensional drag coefficient (viscous contribution).
-	 * \return Value of the drag coefficient (viscous contribution).
-	 */
-	su2double GetAllBound_CDrag_Visc(void);
 
 	/*!
 	 * \brief Get the non dimensional lift coefficient (viscous contribution).
