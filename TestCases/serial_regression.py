@@ -505,7 +505,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 50
-    uniform_flow.test_vals = [-0.318912, 5.202787, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
     uniform_flow.su2_exec  = "SU2_CFD"
     uniform_flow.timeout   = 1600
     uniform_flow.tol       = 0.000001
@@ -517,7 +517,7 @@ def main():
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_NN.cfg"
     channel_2D.test_iter = 4
-    channel_2D.test_vals = [-1.656896, 4.263158, 0.000000, 0.000000] #last 4 columns
+    channel_2D.test_vals = [-1.498300, 4.541411, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
     channel_2D.timeout   = 100
     channel_2D.tol       = 0.00001
@@ -541,7 +541,7 @@ def main():
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 10
-    pipe.test_vals = [-12.316841, -6.935029, 0.000000, 0.000000] #last 4 columns
+    pipe.test_vals = [-12.316828, -6.934901, 0.000000, 0.000000] #last 4 columns
     pipe.su2_exec  = "SU2_CFD"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
