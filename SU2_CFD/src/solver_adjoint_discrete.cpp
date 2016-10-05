@@ -577,19 +577,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
       config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
-  unsigned short iVar, iMarker, iMarker_Monitoring;
-  unsigned long iPoint, iVertex;
-  bool chainruleobj = false;
-  su2double* V_domain;
-  su2double Velocity2 =0.0, obj_weight=1.0;
-  unsigned short nDim;
-  string Marker_Tag, Monitoring_Tag;
-  bool Monitoring;
-
-  for (unsigned short iobj=0; iobj<config->GetnObj(); iobj++){
-    chainruleobj = (chainruleobj || config->GetKind_ObjFunc(iobj)==OUTFLOW_GENERALIZED);
-  }
-
+  unsigned short iVar;
+  unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -600,10 +589,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
-
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
-
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
