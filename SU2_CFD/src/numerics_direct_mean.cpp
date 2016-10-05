@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -76,7 +78,7 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   AD::SetPreaccIn(Sensor_i);    AD::SetPreaccIn(Sensor_j);
   AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
   AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
-  if (grid_movement){
+  if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
 
@@ -1064,7 +1066,7 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   sq_velRoe        = 0.0;
   RoeProjVelocity  = - ProjInterfaceVel;
 
-  for (iDim = 0; iDim < nDim; iDim++){
+  for (iDim = 0; iDim < nDim; iDim++) {
     RoeVelocity[iDim] = ( Velocity_i[iDim] * sqrt(Density_i) + Velocity_j[iDim] * sqrt(Density_j) ) / Rrho;
     sq_velRoe        +=  RoeVelocity[iDim] * RoeVelocity[iDim];
     RoeProjVelocity  +=  RoeVelocity[iDim] * UnitNormal[iDim];
@@ -1098,7 +1100,7 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
 if (sM > 0.0) {
 
-	if (sL > 0.0){
+	if (sL > 0.0) {
 
 		/*--- Compute Left Flux ---*/
 
@@ -1107,7 +1109,7 @@ if (sM > 0.0) {
 			val_residual[iDim+1] = Density_i * Velocity_i[iDim] * ProjVelocity_i + Pressure_i * UnitNormal[iDim];
 		val_residual[nVar-1] = Enthalpy_i * Density_i * ProjVelocity_i;
 	}
-	else{
+	else {
 
 		/*--- Compute Flux Left Star from Left Star State ---*/
 
@@ -1127,7 +1129,7 @@ if (sM > 0.0) {
   }
   else {
 
-	if (sR < 0.0){
+	if (sR < 0.0) {
 
 		/*--- Compute Right Flux ---*/
 
@@ -1136,7 +1138,7 @@ if (sM > 0.0) {
 			val_residual[iDim+1] = Density_j * Velocity_j[iDim] * ProjVelocity_j + Pressure_j * UnitNormal[iDim];
 		val_residual[nVar-1] = Enthalpy_j * Density_j * ProjVelocity_j;
 	}
-	else{
+	else {
 
 		/*--- Compute Flux Right Star from Right Star State ---*/
 
@@ -1164,7 +1166,7 @@ if (sM > 0.0) {
 
 	if (sM > 0.0) {
 
-		if (sL > 0.0){
+		if (sL > 0.0) {
 
 			/*--- Compute Jacobian based on Left State ---*/
 	
@@ -1175,7 +1177,7 @@ if (sM > 0.0) {
 			GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, val_Jacobian_i);
 
 		}
-		else{
+		else {
 			/*--- Compute Jacobian based on Left Star State ---*/
 
 			EStar = IntermediateState[nVar-1];
@@ -1235,7 +1237,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (jDim = 0; jDim < nDim; jDim++){
+			for (jDim = 0; jDim < nDim; jDim++) {
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_i[jDim+1][iVar] = ( OmegaSM + 1 ) * ( UnitNormal[jDim] * dpStar_dU[iVar] + IntermediateState[jDim+1] * dSm_dU[iVar] );
 
@@ -1289,7 +1291,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (iDim = 0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++) {
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_j[iDim+1][iVar] = ( OmegaSM + 1 ) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
 			}
@@ -1301,7 +1303,7 @@ if (sM > 0.0) {
 		}
 	}
 	else {
-		if (sR < 0.0){
+		if (sR < 0.0) {
 
 			/*--- Compute Jacobian based on Right State ---*/
 	
@@ -1312,7 +1314,7 @@ if (sM > 0.0) {
 			GetInviscidProjJac(Velocity_j, &Energy_j, UnitNormal, 1.0, val_Jacobian_j);
 		
 		}
-		else{
+		else {
 			/*--- Compute Jacobian based on Right Star State ---*/
 
 			EStar = IntermediateState[nVar-1];
@@ -1351,7 +1353,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (iDim = 0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++) {
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_i[iDim+1][iVar] = (OmegaSM + 1) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
 			}
@@ -1416,7 +1418,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (jDim = 0; jDim < nDim; jDim++){
+			for (jDim = 0; jDim < nDim; jDim++) {
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_j[jDim+1][iVar] = ( OmegaSM + 1 ) * ( UnitNormal[jDim] * dpStar_dU[iVar] + IntermediateState[jDim+1] * dSm_dU[iVar] );
 
@@ -1445,7 +1447,7 @@ if (sM > 0.0) {
 	Area *= kappa;	
 
 	for (iVar = 0; iVar < nVar; iVar++) {
-		for (jVar = 0; jVar < nVar; jVar++){
+		for (jVar = 0; jVar < nVar; jVar++) {
 			val_Jacobian_i[iVar][jVar] *=   Area;
 			val_Jacobian_j[iVar][jVar] *=   Area;
 		}
@@ -1584,7 +1586,7 @@ void CUpwGeneralHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **
   sq_velRoe        = 0.0;
   RoeProjVelocity  = - ProjInterfaceVel;
 
-  for (iDim = 0; iDim < nDim; iDim++){
+  for (iDim = 0; iDim < nDim; iDim++) {
     RoeVelocity[iDim] = ( Velocity_i[iDim] * sqrt(Density_i) + Velocity_j[iDim] * sqrt(Density_j) ) / Rrho;
     sq_velRoe        +=  RoeVelocity[iDim] * RoeVelocity[iDim];
     RoeProjVelocity  +=  RoeVelocity[iDim] * UnitNormal[iDim];
@@ -1621,7 +1623,7 @@ void CUpwGeneralHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **
 
 if (sM > 0.0) {
 
-	if (sL > 0.0){
+	if (sL > 0.0) {
 
 		/*--- Compute Left Flux ---*/
 
@@ -1630,7 +1632,7 @@ if (sM > 0.0) {
 			val_residual[iDim+1] = Density_i * Velocity_i[iDim] * ProjVelocity_i + Pressure_i * UnitNormal[iDim];
 		val_residual[nVar-1] = Enthalpy_i * Density_i * ProjVelocity_i;
 	}
-	else{
+	else {
 
 		/*--- Compute Flux Left Star from Left Star State ---*/
 
@@ -1650,7 +1652,7 @@ if (sM > 0.0) {
   }
   else {
 
-	if (sR < 0.0){
+	if (sR < 0.0) {
 
 		/*--- Compute Right Flux ---*/
 
@@ -1659,7 +1661,7 @@ if (sM > 0.0) {
 			val_residual[iDim+1] = Density_j * Velocity_j[iDim] * ProjVelocity_j + Pressure_j * UnitNormal[iDim];
 		val_residual[nVar-1] = Enthalpy_j * Density_j * ProjVelocity_j;
 	}
-	else{
+	else {
 
 		/*--- Compute Flux Right Star from Right Star State ---*/
 
@@ -1686,7 +1688,7 @@ if (sM > 0.0) {
 
 	if (sM > 0.0) {
 
-		if (sL > 0.0){
+		if (sL > 0.0) {
 
 			/*--- Compute Jacobian based on Left State ---*/
 	
@@ -1698,7 +1700,7 @@ if (sM > 0.0) {
 			GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, 1.0, val_Jacobian_i);
 
 		}
-		else{
+		else {
 			/*--- Compute Jacobian based on Left Star State ---*/
 
 			EStar = IntermediateState[nVar-1];
@@ -1758,7 +1760,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (jDim = 0; jDim < nDim; jDim++){
+			for (jDim = 0; jDim < nDim; jDim++) {
 
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_i[jDim+1][iVar] = ( OmegaSM + 1 ) * ( UnitNormal[jDim] * dpStar_dU[iVar] + IntermediateState[jDim+1] * dSm_dU[iVar] );
@@ -1821,7 +1823,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (iDim = 0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++) {
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_j[iDim+1][iVar] = ( OmegaSM + 1 ) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
 			}
@@ -1833,7 +1835,7 @@ if (sM > 0.0) {
 		}
 	}
 	else {
-		if (sR < 0.0){
+		if (sR < 0.0) {
 
 			/*--- Compute Jacobian based on Right State ---*/
 	
@@ -1844,7 +1846,7 @@ if (sM > 0.0) {
 			GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, UnitNormal, 1.0, val_Jacobian_j);
 		
 		}
-		else{
+		else {
 			/*--- Compute Jacobian based on Right Star State ---*/
 
 			EStar = IntermediateState[nVar-1];
@@ -1891,7 +1893,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (iDim = 0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++) {
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_i[iDim+1][iVar] = (OmegaSM + 1) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
 			}
@@ -1955,7 +1957,7 @@ if (sM > 0.0) {
 
 			/*--- Jacobian Middle Rows ---*/
 
-			for (jDim = 0; jDim < nDim; jDim++){
+			for (jDim = 0; jDim < nDim; jDim++) {
 				for (iVar = 0; iVar < nVar; iVar++)
 					val_Jacobian_j[jDim+1][iVar] = ( OmegaSM + 1 ) * ( UnitNormal[jDim] * dpStar_dU[iVar] + IntermediateState[jDim+1] * dSm_dU[iVar] );
 
@@ -1983,7 +1985,7 @@ if (sM > 0.0) {
 	Area *= kappa;
 	
 	for (iVar = 0; iVar < nVar; iVar++) {
-		for (jVar = 0; jVar < nVar; jVar++){
+		for (jVar = 0; jVar < nVar; jVar++) {
 			val_Jacobian_i[iVar][jVar] *= Area;
 			val_Jacobian_j[iVar][jVar] *= Area;
 		}
@@ -2388,7 +2390,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement){
+  if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   /*--- Face area (norm or the normal vector) ---*/
@@ -2625,7 +2627,7 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
   AD::SetPreaccIn(S_i, 2); AD::SetPreaccIn(S_j, 2);
-  if (grid_movement){
+  if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};

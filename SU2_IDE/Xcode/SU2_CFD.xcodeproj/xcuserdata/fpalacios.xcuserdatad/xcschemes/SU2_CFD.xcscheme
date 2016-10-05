@@ -47,7 +47,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/SU2_SIM/NACA0012_INV"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/euler/channel"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
@@ -64,7 +64,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "inv_NACA0012.cfg"
+            argument = "inv_channel_RK.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

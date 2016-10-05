@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -196,6 +198,7 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	restart_file.close();
 }
 
+
 void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, index;
 	unsigned short iVar;
@@ -238,6 +241,7 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.close();
 }
 
+
 void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, index;
 	string text_line;
@@ -256,10 +260,10 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-	if (config->GetnObj()>1){
+	if (config->GetnObj()>1) {
 	  SPRINTF (buffer, "_combo.dat");
 	}
-	else{
+	else {
     if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
     if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
     if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");
@@ -2068,7 +2072,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 					/*--- Quadrilateral case ---*/
           
 					if (Division[iPart][0] == 5) {
-						geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1], 
+						geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1],
 																											 Division[iPart][2], 
 																											 Division[iPart][3], 
 																											 Division[iPart][4], 2);
@@ -2099,7 +2103,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 				
 				RectDivision(RectAdaptCode[iElem], nodes, Division, &nPart);
 				for (long iPart = 0; iPart < nPart; iPart++) {
-					geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1], 
+					geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1],
 																										 Division[iPart][2], 
 																										 Division[iPart][3], 
 																										 Division[iPart][4], 2);
@@ -2141,7 +2145,7 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 					/*--- Quadrilateral case ---*/
           
 					if (Division[iPart][0] == 5) {
-						geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1], 
+						geo_adapt->elem[iElemNew] = new CQuadrilateral(Division[iPart][1],
 																											 Division[iPart][2], 
 																											 Division[iPart][3], 
 																											 Division[iPart][4], 2);
@@ -3524,10 +3528,10 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-  if (config->GetnObj()>1){
+  if (config->GetnObj()>1) {
     SPRINTF (buffer, "_combo.dat");
   }
-  else{
+  else {
     if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
     if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
     if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");
@@ -3627,8 +3631,8 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 	while (nElem_real <= max_elem) {
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
 			if ( Sensor[iElem] >= threshold && !geometry->elem[iElem]->GetDivide() ) {
-				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) nElem_real = nElem_real + 3;	
-				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) nElem_real = nElem_real + 3;	
+				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) nElem_real = nElem_real + 3;
+				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) nElem_real = nElem_real + 3;
 				if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON) nElem_real = nElem_real + 7;
 				geometry->elem[iElem]->SetDivide(true);
 				if (nElem_real >= max_elem) break;

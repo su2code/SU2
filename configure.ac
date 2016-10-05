@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 4.2.0 "Cardinal"
+# \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -36,9 +38,10 @@
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
 # CGNS integration added by Thomas D. Economon, 8/17/2016
+#
 ##########################
 
-AC_INIT([SU2], [4.2.0], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [4.3.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -544,7 +547,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 4.2.0 'Cardinal'                          |
+|   / __| | | |_  )   Release 4.3.0 'Cardinal'                          |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
@@ -558,6 +561,8 @@ AC_MSG_RESULT([
 | - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |
 | - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
 | - Prof. Rafael Palacios' group at Imperial College London.            |
+| - Prof. Edwin van der Weide's group at the University of Twente.      |
+| - Prof. Vincent Terrapon's group at the University of Liege.          |
 -------------------------------------------------------------------------
 | Copyright (C) 2012-2016 SU2, the open-source CFD code.                |
 |                                                                       |

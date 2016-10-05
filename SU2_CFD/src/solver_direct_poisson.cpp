@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -202,7 +204,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				Coord_0 = geometry->node[Point_0]->GetCoord();
 //				Coord_1 = geometry->node[Point_1]->GetCoord();
 //				Coord_2 = geometry->node[Point_2]->GetCoord();
-//        
+//
 //				for (iDim = 0; iDim < nDim; iDim++) {
 //					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
@@ -235,7 +237,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
 //				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
 //				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
-//        
+//
 //				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 //          
 //					Point_0 = geometry->elem[iElem]->GetNode(3);
@@ -245,7 +247,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //					Coord_0 = geometry->node[Point_0]->GetCoord();
 //					Coord_1 = geometry->node[Point_1]->GetCoord();
 //					Coord_2 = geometry->node[Point_2]->GetCoord();
-//          
+//
 //					for (iDim = 0; iDim < nDim; iDim++) {
 //						a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //						b[iDim] = Coord_1[iDim]-Coord_2[iDim];

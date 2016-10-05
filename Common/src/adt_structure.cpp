@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -66,7 +68,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   isEmpty = false;
   nLeaves = nPoints -1;
   if(nPoints <= 1) ++nLeaves;
-  if(nLeaves == 0){isEmpty = true; return;}
+  if(nLeaves == 0) {isEmpty = true; return;}
 
   /*--- Allocate the memory for the leaves of the ADT and the minimum and
         maximum coordinates of the leaves. Note that these coordinates are

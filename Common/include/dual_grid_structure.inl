@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -104,17 +106,17 @@ inline su2double **CPoint::GetGridVel_Grad(void) { return GridVel_Grad; }
 
 inline void CPoint::SetCoord_Old(su2double *val_coord_old) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_Old[iDim] = val_coord_old[iDim]; 
+		Coord_Old[iDim] = val_coord_old[iDim];
 }
 
 inline void CPoint::SetCoord_SumZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-	Coord_Sum[iDim] = 0.0; 
+	Coord_Sum[iDim] = 0.0;
 }
 
 inline void CPoint::AddCoord_Sum(su2double *val_coord_sum) { 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		Coord_Sum[iDim] += val_coord_sum[iDim]; 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_Sum[iDim] += val_coord_sum[iDim];
 }
 
 inline void CPoint::SetGridVel(unsigned short val_dim, su2double val_gridvel) { GridVel[val_dim] = val_gridvel; }
@@ -138,13 +140,13 @@ inline bool CPoint::GetAgglomerate_Indirect (void) { return Agglomerate_Indirect
 
 inline void CPoint::SetAgglomerate_Indirect(bool val_agglomerate) { Agglomerate_Indirect = val_agglomerate; };
 
-inline void CPoint::SetVertex(long val_vertex, unsigned short val_nmarker) { 
+inline void CPoint::SetVertex(long val_vertex, unsigned short val_nmarker) {
 	if (Boundary) Vertex[val_nmarker] = val_vertex;
 }
 
 inline unsigned short CPoint::GetnChildren_CV (void) { return nChildren_CV; }
 
-inline long CPoint::GetVertex(unsigned short val_marker) { 
+inline long CPoint::GetVertex(unsigned short val_marker) {
 	if (Boundary) return Vertex[val_marker];
 	else return -1; 
 }
@@ -360,7 +362,7 @@ inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor;
 
 inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Normal_Neighbor = val_Normal_Neighbor; }
 
-inline void CVertex::IncrementnDonor(void){nDonor_Points++;}
+inline void CVertex::IncrementnDonor(void) {nDonor_Points++;}
 
 inline void CVertex::SetInterpDonorPoint(unsigned short val_donorindex, long val_donorpoint) { Donor_Points[val_donorindex] = val_donorpoint; }
 
@@ -370,11 +372,11 @@ inline void CVertex::SetInterpDonorProcessor(unsigned short val_donorindex, long
 
 inline long CVertex::GetInterpDonorProcessor(unsigned short val_donorindex) { return Donor_Proc[val_donorindex]; }
 
-inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val){ Donor_Coeff[iDonor] = val; }
+inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val) { Donor_Coeff[iDonor] = val; }
 
-inline su2double CVertex::GetDonorCoeff(unsigned short iDonor){ return Donor_Coeff[iDonor];}
+inline su2double CVertex::GetDonorCoeff(unsigned short iDonor) { return Donor_Coeff[iDonor];}
 
-inline unsigned short CVertex::GetnDonorPoints(void){ return nDonor_Points;}
+inline unsigned short CVertex::GetnDonorPoints(void) { return nDonor_Points;}
 
 inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
 

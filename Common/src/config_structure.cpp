@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -31,6 +33,7 @@
 
 #include "../include/config_structure.hpp"
 
+
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
 
   int rank = MASTER_NODE;
@@ -39,15 +42,15 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 #endif
 
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
 
   /*--- Reading config options  ---*/
-  
+
   SetConfig_Options(val_iZone, val_nZone);
 
   /*--- Parsing the config file  ---*/
-  
+
   SetConfig_Parsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
@@ -55,7 +58,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
   /*--- Configuration file boundaries/markers setting ---*/
-  
+
   SetMarkers(val_software);
 
   /*--- Configuration file output ---*/
@@ -66,63 +69,220 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
-  
+
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
 
   /*--- Reading config options  ---*/
-  
+
   SetConfig_Options(0, 1);
 
   /*--- Parsing the config file  ---*/
-  
+
   SetConfig_Parsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
-  
+
   SetPostprocessing(val_software, 0, 1);
-  
+
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
-  
+
   bool runtime_file = false;
-  
+
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
-  
+
   /*--- Reading config options  ---*/
-  
+
   SetRunTime_Options();
-  
+
   /*--- Parsing the config file  ---*/
-  
+
   runtime_file = SetRunTime_Parsing(case_filename);
-  
+
   /*--- Update original config file ---*/
-  
+
   if (runtime_file) {
     config->SetnExtIter(nExtIter);
   }
 
 }
 
+unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nZone = 1; // Default value
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+
+  /*--- Search the mesh file for the 'NZONE' keyword. ---*/
+
+  switch (val_format) {
+    case SU2:
+
+      /*--- Open grid file ---*/
+
+      strcpy (cstr, val_mesh_filename.c_str());
+      mesh_file.open(cstr, ios::in);
+      if (mesh_file.fail()) {
+        cout << "cstr=" << cstr << endl;
+        cout << "There is no geometry file (GetnZone))!" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Read the SU2 mesh file ---*/
+
+      for (iLine = 0; iLine < nLine ; iLine++) {
+
+        getline (mesh_file, text_line);
+
+        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+
+        position = text_line.find ("NZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
+        }
+      }
+
+      break;
+
+  }
+
+  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
+
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
+  	nZone = config->GetnTimeInstances();
+  }
+
+  return (unsigned short) nZone;
+}
+
+unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
+
+	string text_line, Marker_Tag;
+	ifstream mesh_file;
+	short nDim = 3;
+	unsigned short iLine, nLine = 10;
+	char cstr[200];
+	string::size_type position;
+
+	/*--- Open grid file ---*/
+
+	strcpy (cstr, val_mesh_filename.c_str());
+	mesh_file.open(cstr, ios::in);
+
+	switch (val_format) {
+	case SU2:
+
+		/*--- Read SU2 mesh file ---*/
+
+		for (iLine = 0; iLine < nLine ; iLine++) {
+
+			getline (mesh_file, text_line);
+
+			/*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+
+			position = text_line.find ("NDIME=",0);
+			if (position != string::npos) {
+				text_line.erase (0,6); nDim = atoi(text_line.c_str());
+			}
+		}
+		break;
+
+	case CGNS:
+
+#ifdef HAVE_CGNS
+
+		/*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+
+		int fn, nbases = 0, nzones = 0, file_type;
+		int cell_dim = 0, phys_dim = 0;
+		char basename[CGNS_STRING_SIZE];
+
+		/*--- Check whether the supplied file is truly a CGNS file. ---*/
+
+		if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+			printf( "\n\n   !!! Error !!!\n" );
+			printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+			printf( " Now exiting...\n\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+
+		if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+
+		/*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+
+		if (cg_nbases(fn, &nbases)) cg_error_exit();
+
+		/*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+
+		if ( nbases > 1 ) {
+			printf("\n\n   !!! Error !!!\n" );
+			printf("CGNS reader currently incapable of handling more than 1 database.");
+			printf("Now exiting...\n\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- Read the databases. Note that the indexing starts at 1. ---*/
+
+		for ( int i = 1; i <= nbases; i++ ) {
+
+			if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+
+			/*--- Get the number of zones for this base. ---*/
+
+			if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+
+		}
+
+		/*--- Set the problem dimension as read from the CGNS file ---*/
+
+		nDim = cell_dim;
+
+#endif
+
+		break;
+
+	}
+
+	mesh_file.close();
+
+	return (unsigned short) nDim;
+}
 void CConfig::SetPointersNull(void) {
-  Marker_CfgFile_Out_1D=NULL;       Marker_All_Out_1D=NULL;
-  Marker_CfgFile_GeoEval=NULL;      Marker_All_GeoEval=NULL;
-  Marker_CfgFile_Monitoring=NULL;   Marker_All_Monitoring=NULL;
-  Marker_CfgFile_Designing=NULL;    Marker_All_Designing=NULL;
-  Marker_CfgFile_Plotting=NULL;     Marker_All_Plotting=NULL;
-  Marker_CfgFile_DV=NULL;           Marker_All_DV=NULL;
-  Marker_CfgFile_Moving=NULL;       Marker_All_Moving=NULL;
-  Marker_CfgFile_PerBound=NULL;     Marker_All_PerBound=NULL;   Marker_PerBound=NULL;
-  Marker_CfgFile_FSIinterface=NULL;
   
-  Marker_DV=NULL;  Marker_Moving=NULL;  Marker_Monitoring=NULL;
-  Marker_Designing=NULL;  Marker_GeoEval=NULL;  Marker_Plotting=NULL;
-  Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
+  Marker_CfgFile_Out_1D = NULL;       Marker_All_Out_1D = NULL;
+  Marker_CfgFile_GeoEval = NULL;      Marker_All_GeoEval = NULL;
+  Marker_CfgFile_Monitoring = NULL;   Marker_All_Monitoring = NULL;
+  Marker_CfgFile_Designing = NULL;    Marker_All_Designing = NULL;
+  Marker_CfgFile_Plotting = NULL;     Marker_All_Plotting = NULL;
+  Marker_CfgFile_DV = NULL;           Marker_All_DV = NULL;
+  Marker_CfgFile_Moving = NULL;       Marker_All_Moving = NULL;
+  Marker_CfgFile_PerBound = NULL;     Marker_All_PerBound = NULL;   Marker_PerBound = NULL;
+  Marker_CfgFile_FSIinterface = NULL;
+  
+  Marker_DV = NULL;  Marker_Moving = NULL;  Marker_Monitoring = NULL;
+  Marker_Designing = NULL;  Marker_GeoEval = NULL;  Marker_Plotting = NULL;
+  Marker_CfgFile_KindBC = NULL;       Marker_All_KindBC = NULL;
+  
   /*--- Marker Pointers ---*/
 
   Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
@@ -137,7 +297,7 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
-  Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL; Marker_Riemann = NULL;
+  Marker_FSIinterface = NULL;     Marker_All_FSIinterface = NULL;     Marker_Riemann = NULL;
   Marker_Load = NULL;
   /*--- Boundary Condition settings ---*/
 
@@ -151,8 +311,8 @@ void CConfig::SetPointersNull(void) {
   Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
   FlowLoad_Value = NULL;
   
-  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
-  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
+  Periodic_Translate = NULL;    Periodic_Rotation = NULL;    Periodic_Center = NULL;
+  Periodic_Translation = NULL;   Periodic_RotAngles = NULL;   Periodic_RotCenter = NULL;
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
@@ -163,16 +323,16 @@ void CConfig::SetPointersNull(void) {
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
   RefOriginMoment = NULL;
-  CFL_AdaptParam = NULL;            CFL=NULL;
+  CFL_AdaptParam = NULL;            CFL = NULL;
   PlaneTag = NULL;
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
-  ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
+  ParamDV = NULL;     DV_Value = NULL;    Design_Variable = NULL;
   MG_PreSmooth = NULL;
   MG_PostSmooth = NULL;
   MG_CorrecSmooth = NULL;
   Subsonic_Engine_Box = NULL;
-  Hold_GridFixed_Coord=NULL;
+  Hold_GridFixed_Coord = NULL;
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
   Int_Coeffs = NULL;
@@ -193,6 +353,9 @@ void CConfig::SetPointersNull(void) {
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
 
+  /* Harmonic Balance Frequency pointer */
+  Omega_HB = NULL;
+    
   /*--- Initialize some default arrays to NULL. ---*/
   
   default_vel_inf       = NULL;
@@ -483,8 +646,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) \ingroup Config*/
-  addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
-                        Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
+  addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
+                        Marker_ActDiskInlet, Marker_ActDiskOutlet,
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
                         ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
 
@@ -601,8 +764,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
   addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
-  /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
+  /* DESCRIPTION: Integer number of periodic time instances for Harmonic Balance */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
+  /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
+  addDoubleOption("HB_PERIOD", HarmonicBalance_Period, -1.0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
@@ -1095,6 +1260,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
+  /* Harmonic Balance config */
+  /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
+  addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
 
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/
   /*--- Options related to the equivalent area ---*/
@@ -1141,6 +1309,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
    - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
+   - CST ( Lower Surface (0)/Upper Surface (1), Kulfan parameter number, Total number of Kulfan parameters for surface )
    - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
    - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
    - NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
@@ -1655,7 +1824,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_SU2 = val_software;
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
-  if (Weight_ObjFunc==NULL and Kind_ObjFunc==NULL){
+  if (Weight_ObjFunc==NULL and Kind_ObjFunc==NULL) {
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0]=DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
@@ -1664,8 +1833,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObjW=1;
   }
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
-  if (nObjW<nObj){
-    if (Weight_ObjFunc!=NULL){
+  if (nObjW<nObj) {
+    if (Weight_ObjFunc!=NULL) {
       cout <<"The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"<<
           "or be deleted from the config file (equal weights will be applied)."<< endl;
       exit(EXIT_FAILURE);
@@ -1680,9 +1849,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Maker sure that nMarker = nObj ---*/
   /*--- Maker sure that nMarker = nObj ---*/
-  if (nObj>0){
-    if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL){
-      if (nMarker_Monitoring==1){
+  if (nObj>0) {
+    if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL) {
+      if (nMarker_Monitoring==1) {
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
         nMarker_Monitoring = nObj;
         string marker = Marker_Monitoring[0];
@@ -1691,7 +1860,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
       }
-      else if(nObj>1){
+      else if(nObj>1) {
         cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
             "For multiple surfaces per objective, list the objective multiple times. \n"<<
             "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
@@ -1714,8 +1883,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- All the other zones are structure.
    *--- This will allow us to define multiple physics structural problems */
 
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
-	  if (val_izone==0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
+  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
+	  if (val_izone == 0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
 
 	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
 	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
@@ -1723,7 +1892,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
 	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
-  else{ FSI_Problem = false; }
+  else { FSI_Problem = false; }
 
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
@@ -1767,7 +1936,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_SPECTRAL  ||
+      Unsteady_Simulation == HARMONIC_BALANCE  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
@@ -1783,8 +1952,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check for Fluid model consistency ---*/
 
-  if (standard_air){
-	if (Gamma != 1.4 || Gas_Constant != 287.058){
+  if (standard_air) {
+	if (Gamma != 1.4 || Gas_Constant != 287.058) {
 		Gamma = 1.4;
 		Gas_Constant = 287.058;
         }
@@ -2208,53 +2377,83 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
-   There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
-   The largest period of motion is the one to be used for time-spectral calculations. ---*/
-  
-  if (Unsteady_Simulation == TIME_SPECTRAL) {
-    
-    unsigned short N_MOTION_TYPES = 3;
-    su2double *periods;
-    periods = new su2double[N_MOTION_TYPES];
-    
-    /*--- rotation: ---*/
-    
-    su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
-    if (Omega_mag_rot > 0)
-      periods[0] = 2*PI_NUMBER/Omega_mag_rot;
-    else
-      periods[0] = 0.0;
-    
-    /*--- pitching: ---*/
-    
-    su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
-    if (Omega_mag_pitch > 0)
-      periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
-    else
-      periods[1] = 0.0;
-    
-    /*--- plunging: ---*/
-    
-    su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
-    if (Omega_mag_plunge > 0)
-      periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
-    else
-      periods[2] = 0.0;
-    
-    /*--- determine which period is largest ---*/
-    
-    unsigned short iVar;
-    TimeSpectral_Period = 0.0;
-    for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
-      if (periods[iVar] > TimeSpectral_Period)
-        TimeSpectral_Period = periods[iVar];
-    }
-    
-    delete periods;
-    
+  /*-- Setting Harmonic Balance period from the config file */
+
+  if (Unsteady_Simulation == HARMONIC_BALANCE) {
+  	HarmonicBalance_Period = GetHarmonicBalance_Period();
+  	if (HarmonicBalance_Period < 0)  {
+  		cout << "Not a valid value for time period!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  	/* Initialize the Harmonic balance Frequency pointer */
+  	if (Omega_HB == NULL) {
+  		Omega_HB = new su2double[nOmega_HB];
+  		for (iZone = 0; iZone < nOmega_HB; iZone++ )
+  			Omega_HB[iZone] = 0.0;
+  	}else {
+  		if (nOmega_HB != nTimeInstances) {
+  			cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
+  			exit(EXIT_FAILURE);
+  		}
+  	}
   }
+
+    /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
+     There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
+     The largest period of motion is the one to be used for harmonic balance  calculations. ---*/
+    
+  /*if (Unsteady_Simulation == HARMONIC_BALANCE) {
+      if (!(GetGrid_Movement())) {
+          // No grid movement - Time period from config file //
+          HarmonicBalance_Period = GetHarmonicBalance_Period();
+      }
+      
+      else {
+          unsigned short N_MOTION_TYPES = 3;
+          su2double *periods;
+          periods = new su2double[N_MOTION_TYPES];
+          
+          //--- rotation: ---//
+          
+          su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
+          if (Omega_mag_rot > 0)
+              periods[0] = 2*PI_NUMBER/Omega_mag_rot;
+          else
+              periods[0] = 0.0;
+          
+          //--- pitching: ---//
+          
+          su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
+          if (Omega_mag_pitch > 0)
+              periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
+          else
+              periods[1] = 0.0;
+          
+          //--- plunging: ---//
+          
+          su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
+          if (Omega_mag_plunge > 0)
+              periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
+          else
+              periods[2] = 0.0;
+          
+          //--- determine which period is largest ---//
+          
+          unsigned short iVar;
+          HarmonicBalance_Period = 0.0;
+          for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
+              if (periods[iVar] > HarmonicBalance_Period)
+                  HarmonicBalance_Period = periods[iVar];
+          }
+          
+          delete periods;
+      }
+    
+  }*/
   
+
+  
+    
   /*--- Initialize the RefOriginMoment Pointer ---*/
   
   RefOriginMoment = NULL;
@@ -2528,7 +2727,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   nCFL = nMGLevels+1;
   CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
-  if (ContinuousAdjoint){
+  if (ContinuousAdjoint) {
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2]*=CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3]*=CFLRedCoeff_AdjFlow;
@@ -2597,7 +2796,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Subsonic_Engine_Box[4] = Subsonic_Engine_Box[4]/12.0;
     Subsonic_Engine_Box[5] = Subsonic_Engine_Box[5]/12.0;
     
-    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++) {
+    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++) {
       for (iDim = 0; iDim < val_nDim; iDim++)
         ActDisk_Origin[iMarker][iDim] = ActDisk_Origin[iMarker][iDim]/12.0;
       ActDisk_RootRadius[iMarker] = ActDisk_RootRadius[iMarker]/12.0;
@@ -2606,9 +2805,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
-  if (DirectDiff != NO_DERIVATIVE){
+  if (DirectDiff != NO_DERIVATIVE) {
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
-      if (Kind_SU2 == SU2_CFD){
+      if (Kind_SU2 == SU2_CFD) {
         cout << "SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!" << endl;
         cout << "Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)." << endl;
         exit(EXIT_FAILURE);
@@ -2640,15 +2839,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #if defined CODI_REVERSE_TYPE
   AD_Mode = YES;
 #else
-  if (AD_Mode == YES){
+  if (AD_Mode == YES) {
     cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
     cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
   }
 #endif
 
-  if (DiscreteAdjoint){
+  if (DiscreteAdjoint) {
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
-    if (Kind_SU2 == SU2_CFD){
+    if (Kind_SU2 == SU2_CFD) {
       cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
       cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
       exit(EXIT_FAILURE);
@@ -2658,23 +2857,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
-    if (Unsteady_Simulation){
+    if (Unsteady_Simulation) {
 
       Restart_Flow = false;
 
-      if (Grid_Movement){
+      if (Grid_Movement) {
         cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
         exit(EXIT_FAILURE);
       }
 
-      /* --- If the averaging interval is not set, we average over all time-steps ---*/
+      /*--- If the averaging interval is not set, we average over all time-steps ---*/
 
-      if (Iter_Avg_Objective == 0.0){
+      if (Iter_Avg_Objective == 0.0) {
         Iter_Avg_Objective = nExtIter;
       }
     }
 
-    switch(Kind_Solver){
+    switch(Kind_Solver) {
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
         break;
@@ -2713,7 +2912,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
+  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
   
@@ -2732,7 +2931,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_Out_1D;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -2834,14 +3033,14 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
-		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskInlet[iMarker_ActDiskInlet];
 		Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_INLET;
 		iMarker_CfgFile++;
 	}
 
-  for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
-		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
 		Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_OUTLET;
 		iMarker_CfgFile++;
 	}
@@ -3068,8 +3267,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
   iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
-  iMarker_ActDisk_Outlet;
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
+  iMarker_ActDiskOutlet;
   
   
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
@@ -3079,7 +3278,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.2.0  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.3.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3102,6 +3301,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
+  cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
   cout << "|                                                                       |" << endl;
@@ -3121,11 +3322,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
-	if (FSI_Problem){
+	if (FSI_Problem) {
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
 
-  if (DiscreteAdjoint){
+  if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
      cout <<"based on the physical case: ";
   }
@@ -3327,9 +3528,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
 	if (val_software == SU2_DOT) {
-    if (DiscreteAdjoint){
+    if (DiscreteAdjoint) {
       cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
-    }else{
+    }else {
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
 	}
   }
@@ -3378,6 +3579,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+	  case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
           case TRANSLATION:           cout << "Translation design variable."; break;
           case SCALE:                 cout << "Scale design variable."; break;
           case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
@@ -3400,7 +3602,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           else cout << " <-> ";
         }
 
-        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++){
+        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++) {
           cout << DV_Value[iDV][iDV_Value];
           if (iDV_Value != nDV_Value[iDV]-1) cout << ", ";
         }
@@ -3415,6 +3617,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] == AIRFOIL) ) nParamDV = 2;
         if ((Design_Variable[iDV] ==  TRANSLATION) ||
             (Design_Variable[iDV] ==  NACA_4DIGITS) ||
+	    (Design_Variable[iDV] ==  CST) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
@@ -3488,7 +3691,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (((val_software == SU2_CFD) && ( ContinuousAdjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-		if (nObj==1){
+		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
         case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
@@ -3516,7 +3719,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
       }
 		}
-		else{
+		else {
 		  cout << "Weighted sum objective function." << endl;
 		}
 
@@ -3825,7 +4028,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-			if (Unsteady_Simulation != TIME_STEPPING){
+			if (Unsteady_Simulation != TIME_STEPPING) {
 				cout << "Courant-Friedrichs-Lewy number:   ";
 				cout.precision(3);
 				cout.width(6); cout << CFL[0];
@@ -4024,7 +4227,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_DOT) {
-    if (DiscreteAdjoint){
+    if (DiscreteAdjoint) {
       cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
       cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
     }
@@ -4306,20 +4509,20 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (nMarker_ActDisk_Inlet != 0) {
+  if (nMarker_ActDiskInlet != 0) {
 		cout << "Actuator disk (inlet) boundary marker(s): ";
-		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
-			cout << Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
-			if (iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet-1) cout << ", ";
+		for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+			cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+			if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
 			else cout <<"."<< endl;
 		}
 	}
 
-  if (nMarker_ActDisk_Outlet != 0) {
+  if (nMarker_ActDiskOutlet != 0) {
 		cout << "Actuator disk (outlet) boundary marker(s): ";
-		for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
-			cout << Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
-			if (iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet-1) cout << ", ";
+		for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+			cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+			if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
 			else cout <<"."<< endl;
 		}
 	}
@@ -4647,6 +4850,10 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
   if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
 
+  /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
+    
+  if (Omega_HB != NULL) delete [] Omega_HB;
+    
   /*--- Marker pointers ---*/
   
   if (Marker_CfgFile_Out_1D != NULL) delete[] Marker_CfgFile_Out_1D;
@@ -4758,7 +4965,7 @@ CConfig::~CConfig(void) {
   }
   
   if (ActDisk_Origin != NULL) {
-    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++)
+    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++)
       delete [] ActDisk_Origin[iMarker];
     delete [] ActDisk_Origin;
   }
@@ -4884,7 +5091,8 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   }
 
   /*--- Append iteration number for unsteady cases ---*/
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL) || (Wrt_Dynamic)) {
+
+  if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
@@ -4904,7 +5112,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
     string multizone_filename = val_filename;
     char buffer[50];
     
-    if (GetnZone() > 1){
+    if (GetnZone() > 1 ) {
         unsigned short lastindex = multizone_filename.find_last_of(".");
         multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -4923,7 +5131,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-    if (nObj==1){
+    if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
       case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
@@ -4951,7 +5159,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
       }
     }
-    else{
+    else {
       if (DiscreteAdjoint) {
         cout << endl << "Combined objective not yet compatible with discrete adjoint. Specify only one OBJECTIVE_FUNCTION." << endl << endl;
         exit(EXIT_FAILURE);
@@ -5169,72 +5377,72 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
 
 su2double* CConfig::GetActDisk_Origin(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_Origin[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_RootRadius(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_RootRadius[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_TipRadius(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_TipRadius[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_PressJump(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_PressJump[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_TempJump(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_TempJump[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_Omega(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_Omega[iMarker_ActDisk];
 }
 
 unsigned short CConfig::GetActDisk_Distribution(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_Distribution[iMarker_ActDisk];
 }
 
-unsigned short CConfig::GetMarker_ActDisk_Outlet(string val_marker) {
+unsigned short CConfig::GetMarker_ActDiskOutlet(string val_marker) {
   unsigned short iMarker_ActDisk, kMarker_All;
 
   /*--- Find the marker for this actuator disk inlet. ---*/
 
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if (Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if (Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) break;
 
   /*--- Find and return global marker index for the actuator disk outlet. ---*/
 
   for (kMarker_All = 0; kMarker_All < nMarker_CfgFile; kMarker_All++)
-    if (Marker_ActDisk_Outlet[iMarker_ActDisk] == Marker_All_TagBound[kMarker_All]) break;
+    if (Marker_ActDiskOutlet[iMarker_ActDisk] == Marker_All_TagBound[kMarker_All]) break;
 
   return kMarker_All;
 }

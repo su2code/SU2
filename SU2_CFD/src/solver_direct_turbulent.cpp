@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -1057,8 +1059,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     iPoint_Local = Global2Local[iPoint_Global];
     if (iPoint_Local >= 0) {
       point_line >> index;
-      for (iVar = 0; iVar < skipVars; iVar++){ point_line >> dull_val;}
-      for (iVar = 0; iVar < nVar; iVar++){ point_line >> Solution[iVar];}
+      for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
+      for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
       node[iPoint_Local]->SetSolution(Solution);
 
     }
@@ -1479,7 +1481,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   unsigned short iVar;
   
   bool freesurface   = (config->GetKind_Regime() == FREESURFACE);
-  bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool transition    = (config->GetKind_Trans_Model() == LM);
   su2double epsilon     = config->GetFreeSurface_Thickness();
   
@@ -1537,7 +1539,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     
   }
   
-  if (time_spectral) {
+  if (harmonic_balance) {
     
     su2double Volume, Source;
     unsigned short nVar_Turb = solver_container[TURB_SOL]->GetnVar();
@@ -1550,10 +1552,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Access stored time spectral source term ---*/
+      /*--- Access stored harmonic balance source term ---*/
       
       for (unsigned short iVar = 0; iVar < nVar_Turb; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       

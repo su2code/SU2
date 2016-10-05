@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -39,6 +41,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <stdlib.h>
 #include <cmath>
@@ -48,6 +51,10 @@
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
 
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
+
 using namespace std;
 
 /*!
@@ -55,7 +62,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CConfig {
@@ -136,8 +143,8 @@ private:
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
-	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
-	su2double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
+	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for  harmonic balance. */
+	su2double HarmonicBalance_Period;		/*!< \brief Period of oscillation to be used with harmonic balance computations. */
 	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -157,7 +164,7 @@ private:
 	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
-  nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+  nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
@@ -197,8 +204,8 @@ private:
 	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
-  *Marker_ActDisk_Inlet,
-  *Marker_ActDisk_Outlet,
+  *Marker_ActDiskInlet,
+  *Marker_ActDiskOutlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
@@ -587,133 +594,135 @@ private:
 	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
 	Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
 	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
-	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
-	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
-	Conductivity_Ref,    /*!< \brief Reference conductivity for non-dimensionalization. */
-	Energy_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
-	Wall_Temperature,    /*!< \brief Temperature at an isotropic wall in Kelvin. */
-	Omega_Ref,        /*!< \brief Reference angular velocity for non-dimensionalization. */
-	Force_Ref,        /*!< \brief Reference body force for non-dimensionalization. */
-	Pressure_FreeStreamND,     /*!< \brief Farfield pressure value (external flow). */
-	Temperature_FreeStreamND,  /*!< \brief Farfield temperature value (external flow). */
-	Density_FreeStreamND,      /*!< \brief Farfield density value (external flow). */
-  Velocity_FreeStreamND[3],    /*!< \brief Farfield velocity values (external flow). */
-	Energy_FreeStreamND,       /*!< \brief Farfield energy value (external flow). */
-	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
-	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
-  Omega_FreeStreamND, /*!< \brief Specific dissipation (external flow). */
-  Omega_FreeStream; /*!< \brief Specific dissipation (external flow). */
+	Time_Ref,                  /*!< \brief Reference time for non-dimensionalization. */
+	Viscosity_Ref,              /*!< \brief Reference viscosity for non-dimensionalization. */
+	Conductivity_Ref,           /*!< \brief Reference conductivity for non-dimensionalization. */
+	Energy_Ref,                 /*!< \brief Reference viscosity for non-dimensionalization. */
+	Wall_Temperature,           /*!< \brief Temperature at an isotropic wall in Kelvin. */
+	Omega_Ref,                  /*!< \brief Reference angular velocity for non-dimensionalization. */
+	Force_Ref,                  /*!< \brief Reference body force for non-dimensionalization. */
+	Pressure_FreeStreamND,      /*!< \brief Farfield pressure value (external flow). */
+	Temperature_FreeStreamND,   /*!< \brief Farfield temperature value (external flow). */
+	Density_FreeStreamND,       /*!< \brief Farfield density value (external flow). */
+  Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
+	Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
+	Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
+	Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
+  Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
+  Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
 	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
-	PoissonRatio,						/*!< \brief Poisson's ratio. */
-	MaterialDensity,								/*!< \brief Material density. */
+	PoissonRatio,						    /*!< \brief Poisson's ratio. */
+	MaterialDensity,					  /*!< \brief Material density. */
 	Bulk_Modulus_Struct;				/*!< \brief Bulk modulus (on the structural side). */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
-	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
-	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
-	su2double AitkenDynMaxInit;			/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
-	su2double AitkenDynMinInit;			/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
-	su2double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
+	unsigned short nIterFSI;	  /*!< \brief Number of maximum number of subiterations in a FSI problem. */
+	su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
+	su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
+	su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
+	su2double Wave_Speed;			  /*!< \brief Wave speed used in the wave solver. */
 	su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
-	su2double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
-	Collective_Pitch;             /*!< \brief Collective pitch for rotorcraft simulations. */
-	string Motion_Filename;				/*!< \brief Arbitrary mesh motion input base filename. */
+	su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
+	Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
+	string Motion_Filename;			/*!< \brief Arbitrary mesh motion input base filename. */
 	su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
-  su2double *Motion_Origin_X,    /*!< \brief X-coordinate of the mesh motion origin. */
+  su2double *Motion_Origin_X, /*!< \brief X-coordinate of the mesh motion origin. */
   *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
   *Motion_Origin_Z,           /*!< \brief Z-coordinate of the mesh motion origin. */
-  *Translation_Rate_X,           /*!< \brief Translational velocity of the mesh in the x-direction. */
-  *Translation_Rate_Y,           /*!< \brief Translational velocity of the mesh in the y-direction. */
-  *Translation_Rate_Z,           /*!< \brief Translational velocity of the mesh in the z-direction. */
+  *Translation_Rate_X,        /*!< \brief Translational velocity of the mesh in the x-direction. */
+  *Translation_Rate_Y,        /*!< \brief Translational velocity of the mesh in the y-direction. */
+  *Translation_Rate_Z,        /*!< \brief Translational velocity of the mesh in the z-direction. */
   *Rotation_Rate_X,           /*!< \brief Angular velocity of the mesh about the x-axis. */
   *Rotation_Rate_Y,           /*!< \brief Angular velocity of the mesh about the y-axis. */
   *Rotation_Rate_Z,           /*!< \brief Angular velocity of the mesh about the z-axis. */
-  *Pitching_Omega_X,           /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
-  *Pitching_Omega_Y,           /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
-  *Pitching_Omega_Z,           /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
+  *Pitching_Omega_X,          /*!< \brief Angular frequency of the mesh pitching about the x-axis. */
+  *Pitching_Omega_Y,          /*!< \brief Angular frequency of the mesh pitching about the y-axis. */
+  *Pitching_Omega_Z,          /*!< \brief Angular frequency of the mesh pitching about the z-axis. */
   *Pitching_Ampl_X,           /*!< \brief Pitching amplitude about the x-axis. */
   *Pitching_Ampl_Y,           /*!< \brief Pitching amplitude about the y-axis. */
   *Pitching_Ampl_Z,           /*!< \brief Pitching amplitude about the z-axis. */
-  *Pitching_Phase_X,           /*!< \brief Pitching phase offset about the x-axis. */
-  *Pitching_Phase_Y,           /*!< \brief Pitching phase offset about the y-axis. */
-  *Pitching_Phase_Z,           /*!< \brief Pitching phase offset about the z-axis. */
-  *Plunging_Omega_X,           /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
-  *Plunging_Omega_Y,           /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
-  *Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
+  *Pitching_Phase_X,          /*!< \brief Pitching phase offset about the x-axis. */
+  *Pitching_Phase_Y,          /*!< \brief Pitching phase offset about the y-axis. */
+  *Pitching_Phase_Z,          /*!< \brief Pitching phase offset about the z-axis. */
+  *Plunging_Omega_X,          /*!< \brief Angular frequency of the mesh plunging in the x-direction. */
+  *Plunging_Omega_Y,          /*!< \brief Angular frequency of the mesh plunging in the y-direction. */
+  *Plunging_Omega_Z,          /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
   *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
   *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-  *Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
+  *Plunging_Ampl_Z,           /*!< \brief Plunging amplitude in the z-direction. */
+  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
 	nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
 	nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
-	nTranslation_Rate_X,           /*!< \brief Number of Translational x-velocities for mesh motion. */
-	nTranslation_Rate_Y,           /*!< \brief Number of Translational y-velocities for mesh motion. */
-	nTranslation_Rate_Z,           /*!< \brief Number of Translational z-velocities for mesh motion. */
+	nTranslation_Rate_X,        /*!< \brief Number of Translational x-velocities for mesh motion. */
+	nTranslation_Rate_Y,        /*!< \brief Number of Translational y-velocities for mesh motion. */
+	nTranslation_Rate_Z,        /*!< \brief Number of Translational z-velocities for mesh motion. */
 	nRotation_Rate_X,           /*!< \brief Number of Angular velocities about the x-axis for mesh motion. */
 	nRotation_Rate_Y,           /*!< \brief Number of Angular velocities about the y-axis for mesh motion. */
 	nRotation_Rate_Z,           /*!< \brief Number of Angular velocities about the z-axis for mesh motion. */
-	nPitching_Omega_X,           /*!< \brief Number of Angular frequencies about the x-axis for pitching. */
-	nPitching_Omega_Y,           /*!< \brief Number of Angular frequencies about the y-axis for pitching. */
-	nPitching_Omega_Z,           /*!< \brief Number of Angular frequencies about the z-axis for pitching. */
+	nPitching_Omega_X,          /*!< \brief Number of Angular frequencies about the x-axis for pitching. */
+	nPitching_Omega_Y,          /*!< \brief Number of Angular frequencies about the y-axis for pitching. */
+	nPitching_Omega_Z,          /*!< \brief Number of Angular frequencies about the z-axis for pitching. */
 	nPitching_Ampl_X,           /*!< \brief Number of Pitching amplitudes about the x-axis. */
 	nPitching_Ampl_Y,           /*!< \brief Number of Pitching amplitudes about the y-axis. */
 	nPitching_Ampl_Z,           /*!< \brief Number of Pitching amplitudes about the z-axis. */
-	nPitching_Phase_X,           /*!< \brief Number of Pitching phase offsets about the x-axis. */
-	nPitching_Phase_Y,           /*!< \brief Number of Pitching phase offsets about the y-axis. */
-	nPitching_Phase_Z,           /*!< \brief Number of Pitching phase offsets about the z-axis. */
-	nPlunging_Omega_X,           /*!< \brief Number of Angular frequencies in the x-direction for plunging. */
-	nPlunging_Omega_Y,           /*!< \brief Number of Angular frequencies in the y-direction for plunging. */
-	nPlunging_Omega_Z,           /*!< \brief Number of Angular frequencies in the z-direction for plunging. */
+	nPitching_Phase_X,          /*!< \brief Number of Pitching phase offsets about the x-axis. */
+	nPitching_Phase_Y,          /*!< \brief Number of Pitching phase offsets about the y-axis. */
+	nPitching_Phase_Z,          /*!< \brief Number of Pitching phase offsets about the z-axis. */
+	nPlunging_Omega_X,          /*!< \brief Number of Angular frequencies in the x-direction for plunging. */
+	nPlunging_Omega_Y,          /*!< \brief Number of Angular frequencies in the y-direction for plunging. */
+	nPlunging_Omega_Z,          /*!< \brief Number of Angular frequencies in the z-direction for plunging. */
 	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+    nOmega_HB,                /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
   vector<vector<vector<su2double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
-  Aeroelastic_n, /*!< \brief Aeroelastic solution at time level n. */
-	Aeroelastic_n1; /*!< \brief Aeroelastic solution at time level n-1. */
-  su2double FlutterSpeedIndex, /*!< \brief The flutter speed index. */
-  PlungeNaturalFrequency, /*!< \brief Plunging natural frequency for Aeroelastic. */
-  PitchNaturalFrequency, /*!< \brief Pitch natural frequency for Aeroelastic. */
-  AirfoilMassRatio, /*!< \brief The airfoil mass ratio for Aeroelastic. */
-  CG_Location, /*!< \brief Center of gravity location for Aeroelastic. */
-  RadiusGyrationSquared; /*!< \brief The radius of gyration squared for Aeroelastic. */
+  Aeroelastic_n,              /*!< \brief Aeroelastic solution at time level n. */
+	Aeroelastic_n1;             /*!< \brief Aeroelastic solution at time level n-1. */
+  su2double FlutterSpeedIndex,/*!< \brief The flutter speed index. */
+  PlungeNaturalFrequency,     /*!< \brief Plunging natural frequency for Aeroelastic. */
+  PitchNaturalFrequency,      /*!< \brief Pitch natural frequency for Aeroelastic. */
+  AirfoilMassRatio,           /*!< \brief The airfoil mass ratio for Aeroelastic. */
+  CG_Location,                /*!< \brief Center of gravity location for Aeroelastic. */
+  RadiusGyrationSquared;      /*!< \brief The radius of gyration squared for Aeroelastic. */
   su2double *Aeroelastic_plunge, /*!< \brief Value of plunging coordinate at the end of an external iteration. */
-	*Aeroelastic_pitch; /*!< \brief Value of pitching coordinate at the end of an external iteration. */
+	*Aeroelastic_pitch;         /*!< \brief Value of pitching coordinate at the end of an external iteration. */
   unsigned short AeroelasticIter; /*!< \brief Solve the aeroelastic equations every given number of internal iterations. */
-  unsigned short Gust_Type,	/*!< \brief Type of Gust. */
-  Gust_Dir;   /*!< \brief Direction of the gust */
-  su2double Gust_WaveLength,     /*!< \brief The gust wavelength. */
-  Gust_Periods,              /*!< \brief Number of gust periods. */
+  unsigned short Gust_Type,	  /*!< \brief Type of Gust. */
+  Gust_Dir;                   /*!< \brief Direction of the gust */
+  su2double Gust_WaveLength,  /*!< \brief The gust wavelength. */
+  Gust_Periods,               /*!< \brief Number of gust periods. */
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
-  long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
+  long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
-  bool DeadLoad; 		/*!< Application of dead loads to the FE analysis */
-  bool MatchingMesh; 	/*!< Matching mesh (while implementing interpolation procedures). */
-  bool SteadyRestart; 	/*!< Restart from a steady state for FSI problems. */
-  su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
-  Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
+  bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
+  bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
+  bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
+  su2double Newmark_alpha,		/*!< \brief Parameter alpha for Newmark method. */
+  Newmark_delta;				      /*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
-  su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
-  bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
-  Ramp_Load;				/*!< \brief Apply the load with linear increases. */
-  bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
+  su2double *Int_Coeffs;		  /*!< \brief Time integration coefficients for structural method. */
+  bool Sigmoid_Load,		      /*!< \brief Apply the load using a sigmoid. */
+  Ramp_Load;				          /*!< \brief Apply the load with linear increases. */
+  bool IncrementalLoad;		    /*!< \brief Apply the load in increments (for nonlinear structural analysis). */
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
-  su2double *IncLoad_Criteria;	/*!< \brief Criteria for the application of incremental loading. */
-  su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
+  su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
+  su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
   su2double Sigmoid_Time;			/*!< \brief Time until the maximum load is applied, using a sigmoid. */
-  su2double Sigmoid_K;			/*!< \brief Sigmoid parameter determining its steepness. */
+  su2double Sigmoid_K;			  /*!< \brief Sigmoid parameter determining its steepness. */
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
-  bool Prestretch;             /*!< Read a reference geometry for optimization purposes. */
+  bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
-  Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
-  bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
-  unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  Nonphys_Reconstr;           /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
+  bool ParMETIS;              /*!< \brief Boolean for activating ParMETIS mode (while testing). */
+  unsigned short DirectDiff;  /*!< \brief Direct Differentation mode. */
+  bool DiscreteAdjoint;       /*!< \brief AD-based discrete adjoint mode. */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
@@ -974,7 +983,7 @@ private:
   }
 
   void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
-                    string* & Marker_MixBound, string* & Marker_MixDonor){
+                    string* & Marker_MixBound, string* & Marker_MixDonor) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
@@ -982,21 +991,21 @@ private:
   }
   template <class Tenum>
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
-                             string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet,
+                             string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                              su2double** & ActDisk_Origin, su2double* & ActDisk_RootRadius, su2double* & ActDisk_TipRadius,
                              su2double* & ActDisk_PressJump, su2double* & ActDisk_TempJump, su2double* & ActDisk_Omega,
                              unsigned short* & ActDisk_Distribution) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDiskInlet, nMarker_ActDiskOutlet, Marker_ActDiskInlet, Marker_ActDiskOutlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1030,6 +1039,23 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CConfig(void);
+
+  /*!
+   * \brief Gets the number of zones in the mesh file.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] config - Definition of the particular problem.
+   * \return Total number of zones in the grid file.
+   */
+  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
+
+  /*!
+   * \brief Gets the number of dimensions in the mesh file
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \return Total number of domains in the grid file.
+   */
+  static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
   /*!
    * \brief Initializes pointers to null
@@ -2143,13 +2169,13 @@ public:
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_ActDisk_Inlet(void);
+	unsigned short GetnMarker_ActDiskInlet(void);
 
   /*!
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_ActDisk_Outlet(void);
+	unsigned short GetnMarker_ActDiskOutlet(void);
 
   /*!
    * \brief Get the total number of 1D output markers.
@@ -2225,16 +2251,16 @@ public:
   long GetDyn_RestartIter(void);
 
 	/*!
-	 * \brief Retrieves the number of periodic time instances for Time Spectral.
-	 * \return: Number of periodic time instances for Time Spectral.
+	 * \brief Retrieves the number of periodic time instances for Harmonic Balance.
+	 * \return: Number of periodic time instances for Harmonic Balance.
 	 */
 	unsigned short GetnTimeInstances(void);
 
 	/*!
-	 * \brief Retrieves the period of oscillations to be used with Time Spectral.
-	 * \return: Period for Time Spectral.
+	 * \brief Retrieves the period of oscillations to be used with Harmonic Balance.
+	 * \return: Period for Harmonic Balance.
 	 */
-	su2double GetTimeSpectral_Period(void);
+	su2double GetHarmonicBalance_Period(void);
 
 	/*!
 	 * \brief Set the number of external iterations.
@@ -2397,7 +2423,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_ActDisk_Inlet(unsigned short val_marker);
+  string GetMarker_ActDiskInlet_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -2405,7 +2431,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_ActDisk_Outlet(unsigned short val_marker);
+  string GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker);
   
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2413,7 +2439,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_EngineInflow(unsigned short val_marker);
+	string GetMarker_EngineInflow_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -2421,7 +2447,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_EngineBleed(unsigned short val_marker);
+  string GetMarker_EngineBleed_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2429,7 +2455,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_EngineExhaust(unsigned short val_marker);
+	string GetMarker_EngineExhaust_TagBound(unsigned short val_marker);
 
   /*!
 	 * \brief Get the name of the surface defined in the geometry file.
@@ -2437,7 +2463,7 @@ public:
 	 * \return Name that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_Monitoring(unsigned short val_marker);
+	string GetMarker_Monitoring_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the tag if the iMarker defined in the geometry file.
@@ -4000,8 +4026,8 @@ public:
   /*!
 	 * \brief Augment the input filename with the iteration number for an unsteady file.
    * \param[in] val_filename - String value of the base filename.
-   * \param[in] val_iter - Unsteady iteration number or time spectral instance.
-	 * \return Name of the file with the iteration numer for an unsteady solution file.
+   * \param[in] val_iter - Unsteady iteration number or time instance.
+	 * \return Name of the file with the iteration number for an unsteady solution file.
 	 */
   string GetUnsteady_FileName(string val_filename, int val_iter);
 
@@ -4325,6 +4351,12 @@ public:
 	 * \return Plunging amplitude in the z-direction.
 	 */
 	su2double GetPlunging_Ampl_Z(unsigned short val_iZone);
+    
+    /*!
+     * \brief Get the Harmonic Balance frequency pointer.
+     * \return Harmonic Balance Frequency pointer.
+     */
+    su2double* GetOmega_HB(void);
 
   /*!
 	 * \brief Get if we should update the motion origin.
@@ -4687,7 +4719,7 @@ public:
 	 * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
 	 * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_ActDisk_Outlet(string val_marker);
+	unsigned short GetMarker_ActDiskOutlet(string val_marker);
 
   /*!
 	 * \brief Get the internal index for a moving boundary <i>val_marker</i>.
@@ -4701,7 +4733,7 @@ public:
 	 * \return Name that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_Moving(unsigned short val_marker);
+	string GetMarker_Moving_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.
