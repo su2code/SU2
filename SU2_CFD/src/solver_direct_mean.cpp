@@ -4933,8 +4933,8 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
   su2double *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord, Area,
-  factor, RefVel2, RefTemp, RefDensity, RefPressure, Mach2Vel, Mach_Motion,
-  UnitNormal[3] = {0.0,0.0,0.0}, Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density, Vel_Infty2, Vel_Infty;
+  factor, RefVel2, RefTemp, RefDensity, Mach2Vel, Mach_Motion,
+  Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density;
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
   
@@ -4967,7 +4967,6 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   
   RefTemp     = Temperature_Inf;
   RefDensity  = Density_Inf;
-  RefPressure = Pressure_Inf;
   if (grid_movement) {
     Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
     Mach_Motion = config->GetMach_Motion();
@@ -5053,16 +5052,13 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
           
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           
-          Vel_Infty2 =0.0; MassFlow = 0.0;
+          MassFlow = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Velocity[iDim] 	= node[iPoint]->GetVelocity(iDim);
-            UnitNormal[iDim] = Normal[iDim]/Area;
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
             MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
-            Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
           }
-          Vel_Infty = sqrt (Vel_Infty2);
-          
+
           /*--- Force computation, note the minus sign due to the
            orientation of the normal (outward) ---*/
           

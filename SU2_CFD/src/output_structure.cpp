@@ -7650,15 +7650,13 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U,// local values at each node (Velocity2 = V^2). U = normal velocity
   AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
-  su2double TotalArea=0.0, obj_weight=0.0;
+  su2double TotalArea=0.0;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
-  unsigned short iMarker_Monitoring = 0;
-  string Marker_Tag, Monitoring_Tag;
   
   /*--- Loop over the markers ---*/
   
@@ -7718,16 +7716,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
         }
       }
-      
     }
-    // TODO: make sure this works in parallel (potential solution: move combination across processors to be pe-marker. will be called more times, but may be needed )
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    for (unsigned short jMarker_Monitoring=0; jMarker_Monitoring <config->GetnMarker_Monitoring(); jMarker_Monitoring++) {
-      Monitoring_Tag = config->GetMarker_Monitoring_TagBound(jMarker_Monitoring);
-      if (Monitoring_Tag==Marker_Tag)
-        iMarker_Monitoring = jMarker_Monitoring;
-    }
-
   }
   
 #ifdef HAVE_MPI
