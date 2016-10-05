@@ -269,7 +269,6 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
 
 }
 
-
 void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
                                            su2double *val_velocity,
                                            su2double *val_pressure,
@@ -1134,7 +1133,6 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* Lambda, su2double *val_normal,
 		su2double **val_absPeJac) {
-
 
 	su2double lam1, lam2, lam3, lam4;
 	lam1 = Lambda[0]; lam2 = Lambda[1]; lam3 = Lambda[2]; lam4 = Lambda[3];

@@ -4130,7 +4130,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool gravity        = (config->GetGravityForce() == YES);
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool windgust       = config->GetWind_Gust();
   
   /*--- Initialize the source residual to zero ---*/
@@ -4260,7 +4260,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
   }
   
-  if (time_spectral) {
+  if (harmonic_balance) {
     
     su2double Volume, Source;
     
@@ -4270,9 +4270,9 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Get control volume ---*/
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Get stored time spectral source term ---*/
+      /*--- Get stored harmonic balance source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       
