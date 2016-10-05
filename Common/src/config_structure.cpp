@@ -33,6 +33,7 @@
 
 #include "../include/config_structure.hpp"
 
+
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
 
   int rank = MASTER_NODE;
@@ -41,15 +42,15 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 #endif
 
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
 
   /*--- Reading config options  ---*/
-  
+
   SetConfig_Options(val_iZone, val_nZone);
 
   /*--- Parsing the config file  ---*/
-  
+
   SetConfig_Parsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
@@ -57,7 +58,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
   /*--- Configuration file boundaries/markers setting ---*/
-  
+
   SetMarkers(val_software);
 
   /*--- Configuration file output ---*/
@@ -68,49 +69,204 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
-  
+
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
 
   /*--- Reading config options  ---*/
-  
+
   SetConfig_Options(0, 1);
 
   /*--- Parsing the config file  ---*/
-  
+
   SetConfig_Parsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
-  
+
   SetPostprocessing(val_software, 0, 1);
-  
+
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
-  
+
   bool runtime_file = false;
-  
+
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
-  
+
   /*--- Reading config options  ---*/
-  
+
   SetRunTime_Options();
-  
+
   /*--- Parsing the config file  ---*/
-  
+
   runtime_file = SetRunTime_Parsing(case_filename);
-  
+
   /*--- Update original config file ---*/
-  
+
   if (runtime_file) {
     config->SetnExtIter(nExtIter);
   }
 
 }
 
+unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nZone = 1; // Default value
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+
+  /*--- Search the mesh file for the 'NZONE' keyword. ---*/
+
+  switch (val_format) {
+    case SU2:
+
+      /*--- Open grid file ---*/
+
+      strcpy (cstr, val_mesh_filename.c_str());
+      mesh_file.open(cstr, ios::in);
+      if (mesh_file.fail()) {
+        cout << "cstr=" << cstr << endl;
+        cout << "There is no geometry file (GetnZone))!" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Read the SU2 mesh file ---*/
+
+      for (iLine = 0; iLine < nLine ; iLine++) {
+
+        getline (mesh_file, text_line);
+
+        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+
+        position = text_line.find ("NZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
+        }
+      }
+
+      break;
+
+  }
+
+  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
+
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
+  	nZone = config->GetnTimeInstances();
+  }
+
+  return (unsigned short) nZone;
+}
+
+unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
+
+	string text_line, Marker_Tag;
+	ifstream mesh_file;
+	short nDim = 3;
+	unsigned short iLine, nLine = 10;
+	char cstr[200];
+	string::size_type position;
+
+	/*--- Open grid file ---*/
+
+	strcpy (cstr, val_mesh_filename.c_str());
+	mesh_file.open(cstr, ios::in);
+
+	switch (val_format) {
+	case SU2:
+
+		/*--- Read SU2 mesh file ---*/
+
+		for (iLine = 0; iLine < nLine ; iLine++) {
+
+			getline (mesh_file, text_line);
+
+			/*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+
+			position = text_line.find ("NDIME=",0);
+			if (position != string::npos) {
+				text_line.erase (0,6); nDim = atoi(text_line.c_str());
+			}
+		}
+		break;
+
+	case CGNS:
+
+#ifdef HAVE_CGNS
+
+		/*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+
+		int fn, nbases = 0, nzones = 0, file_type;
+		int cell_dim = 0, phys_dim = 0;
+		char basename[CGNS_STRING_SIZE];
+
+		/*--- Check whether the supplied file is truly a CGNS file. ---*/
+
+		if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+			printf( "\n\n   !!! Error !!!\n" );
+			printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+			printf( " Now exiting...\n\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+
+		if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+
+		/*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+
+		if (cg_nbases(fn, &nbases)) cg_error_exit();
+
+		/*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+
+		if ( nbases > 1 ) {
+			printf("\n\n   !!! Error !!!\n" );
+			printf("CGNS reader currently incapable of handling more than 1 database.");
+			printf("Now exiting...\n\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- Read the databases. Note that the indexing starts at 1. ---*/
+
+		for ( int i = 1; i <= nbases; i++ ) {
+
+			if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+
+			/*--- Get the number of zones for this base. ---*/
+
+			if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+
+		}
+
+		/*--- Set the problem dimension as read from the CGNS file ---*/
+
+		nDim = cell_dim;
+
+#endif
+
+		break;
+
+	}
+
+	mesh_file.close();
+
+	return (unsigned short) nDim;
+}
 void CConfig::SetPointersNull(void) {
   
   Marker_CfgFile_Out_1D = NULL;       Marker_All_Out_1D = NULL;
@@ -197,6 +353,9 @@ void CConfig::SetPointersNull(void) {
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
 
+  /* Harmonic Balance Frequency pointer */
+  Omega_HB = NULL;
+    
   /*--- Initialize some default arrays to NULL. ---*/
   
   default_vel_inf       = NULL;
@@ -605,8 +764,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
   addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
-  /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
+  /* DESCRIPTION: Integer number of periodic time instances for Harmonic Balance */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
+  /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
+  addDoubleOption("HB_PERIOD", HarmonicBalance_Period, -1.0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
@@ -1099,6 +1260,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
+  /* Harmonic Balance config */
+  /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
+  addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
 
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/
   /*--- Options related to the equivalent area ---*/
@@ -1772,7 +1936,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_SPECTRAL  ||
+      Unsteady_Simulation == HARMONIC_BALANCE  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
@@ -2213,53 +2377,83 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
-   There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
-   The largest period of motion is the one to be used for time-spectral calculations. ---*/
-  
-  if (Unsteady_Simulation == TIME_SPECTRAL) {
-    
-    unsigned short N_MOTION_TYPES = 3;
-    su2double *periods;
-    periods = new su2double[N_MOTION_TYPES];
-    
-    /*--- rotation: ---*/
-    
-    su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
-    if (Omega_mag_rot > 0)
-      periods[0] = 2*PI_NUMBER/Omega_mag_rot;
-    else
-      periods[0] = 0.0;
-    
-    /*--- pitching: ---*/
-    
-    su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
-    if (Omega_mag_pitch > 0)
-      periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
-    else
-      periods[1] = 0.0;
-    
-    /*--- plunging: ---*/
-    
-    su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
-    if (Omega_mag_plunge > 0)
-      periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
-    else
-      periods[2] = 0.0;
-    
-    /*--- determine which period is largest ---*/
-    
-    unsigned short iVar;
-    TimeSpectral_Period = 0.0;
-    for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
-      if (periods[iVar] > TimeSpectral_Period)
-        TimeSpectral_Period = periods[iVar];
-    }
-    
-    delete periods;
-    
+  /*-- Setting Harmonic Balance period from the config file */
+
+  if (Unsteady_Simulation == HARMONIC_BALANCE) {
+  	HarmonicBalance_Period = GetHarmonicBalance_Period();
+  	if (HarmonicBalance_Period < 0)  {
+  		cout << "Not a valid value for time period!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  	/* Initialize the Harmonic balance Frequency pointer */
+  	if (Omega_HB == NULL) {
+  		Omega_HB = new su2double[nOmega_HB];
+  		for (iZone = 0; iZone < nOmega_HB; iZone++ )
+  			Omega_HB[iZone] = 0.0;
+  	}else {
+  		if (nOmega_HB != nTimeInstances) {
+  			cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
+  			exit(EXIT_FAILURE);
+  		}
+  	}
   }
+
+    /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
+     There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
+     The largest period of motion is the one to be used for harmonic balance  calculations. ---*/
+    
+  /*if (Unsteady_Simulation == HARMONIC_BALANCE) {
+      if (!(GetGrid_Movement())) {
+          // No grid movement - Time period from config file //
+          HarmonicBalance_Period = GetHarmonicBalance_Period();
+      }
+      
+      else {
+          unsigned short N_MOTION_TYPES = 3;
+          su2double *periods;
+          periods = new su2double[N_MOTION_TYPES];
+          
+          //--- rotation: ---//
+          
+          su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
+          if (Omega_mag_rot > 0)
+              periods[0] = 2*PI_NUMBER/Omega_mag_rot;
+          else
+              periods[0] = 0.0;
+          
+          //--- pitching: ---//
+          
+          su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
+          if (Omega_mag_pitch > 0)
+              periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
+          else
+              periods[1] = 0.0;
+          
+          //--- plunging: ---//
+          
+          su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
+          if (Omega_mag_plunge > 0)
+              periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
+          else
+              periods[2] = 0.0;
+          
+          //--- determine which period is largest ---//
+          
+          unsigned short iVar;
+          HarmonicBalance_Period = 0.0;
+          for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
+              if (periods[iVar] > HarmonicBalance_Period)
+                  HarmonicBalance_Period = periods[iVar];
+          }
+          
+          delete periods;
+      }
+    
+  }*/
   
+
+  
+    
   /*--- Initialize the RefOriginMoment Pointer ---*/
   
   RefOriginMoment = NULL;
@@ -4656,6 +4850,10 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
   if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
 
+  /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
+    
+  if (Omega_HB != NULL) delete [] Omega_HB;
+    
   /*--- Marker pointers ---*/
   
   if (Marker_CfgFile_Out_1D != NULL) delete[] Marker_CfgFile_Out_1D;
@@ -4893,7 +5091,8 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   }
 
   /*--- Append iteration number for unsteady cases ---*/
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL) || (Wrt_Dynamic)) {
+
+  if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
@@ -4913,7 +5112,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
     string multizone_filename = val_filename;
     char buffer[50];
     
-    if (GetnZone() > 1) {
+    if (GetnZone() > 1 ) {
         unsigned short lastindex = multizone_filename.find_last_of(".");
         multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
