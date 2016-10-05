@@ -341,18 +341,18 @@ def main():
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
 
-#    ######################################
-#    ### Spectral Method                ###
-#    ######################################
-#    spectral           = TestCase('spectral')
-#    spectral.cfg_dir   = "spectral_method"
-#    spectral.cfg_file  = "spectral.cfg"
-#    spectral.test_iter = 25
-#    spectral.test_vals = [-1.621870,3.852164,0.007465,0.084358]
-#    spectral.su2_exec  = "SU2_CFD"
-#    spectral.timeout   = 1600
-#    spectral.tol       = 0.00001
-#    test_list.append(spectral)
+    ######################################
+    ### Harmonic Balance               ###
+    ######################################
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "SU2_CFD"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###
@@ -496,6 +496,57 @@ def main():
     centrifugal_stage.tol       = 0.000001
     test_list.append(centrifugal_stage) 
 
+    ######################################
+    ### Sliding Mesh                   ###
+    ######################################
+
+    # Uniform flow
+    uniform_flow         = TestCase('uniform_flow')
+    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
+    uniform_flow.cfg_file  = "uniform_NN.cfg"
+    uniform_flow.test_iter = 50
+    uniform_flow.test_vals = [-0.318912, 5.202787, 0.000000, 0.000000] #last 4 columns
+    uniform_flow.su2_exec  = "SU2_CFD"
+    uniform_flow.timeout   = 1600
+    uniform_flow.tol       = 0.000001
+    uniform_flow.unsteady  = True
+    test_list.append(uniform_flow) 
+
+    # Channel_2D
+    channel_2D           = TestCase('channel_2D')
+    channel_2D.cfg_dir   = "sliding_interface/channel_2D"
+    channel_2D.cfg_file  = "channel_2D_NN.cfg"
+    channel_2D.test_iter = 4
+    channel_2D.test_vals = [-1.656896, 4.263158, 0.000000, 0.000000] #last 4 columns
+    channel_2D.su2_exec  = "SU2_CFD"
+    channel_2D.timeout   = 100
+    channel_2D.tol       = 0.00001
+    channel_2D.unsteady  = True
+    test_list.append(channel_2D)
+
+    # Channel_3D
+    channel_3D           = TestCase('channel_3D')
+    channel_3D.cfg_dir   = "sliding_interface/channel_3D"
+    channel_3D.cfg_file  = "channel_3D_NN.cfg"
+    channel_3D.test_iter = 2
+    channel_3D.test_vals = [-1.899946, 4.032882, 0.000000, 0.000000] #last 4 columns
+    channel_3D.su2_exec  = "SU2_CFD"
+    channel_3D.timeout   = 1600
+    channel_3D.tol       = 0.00001
+    channel_3D.unsteady  = True
+    test_list.append(channel_3D)
+
+    # Pipe
+    pipe           = TestCase('pipe')
+    pipe.cfg_dir   = "sliding_interface/pipe"
+    pipe.cfg_file  = "pipe.cfg"
+    pipe.test_iter = 10
+    pipe.test_vals = [-12.316841, -6.935029, 0.000000, 0.000000] #last 4 columns
+    pipe.su2_exec  = "SU2_CFD"
+    pipe.timeout   = 1600
+    pipe.tol       = 0.00001
+    pipe.unsteady  = True
+    test_list.append(pipe)
 
     ##########################
     ### FEA - FSI          ###

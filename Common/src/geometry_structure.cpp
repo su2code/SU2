@@ -4797,7 +4797,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
   bool found_transform = false;
-  bool time_spectral = config->GetUnsteady_Simulation() == TIME_SPECTRAL;
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
   nZone = val_nZone;
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
@@ -4850,9 +4850,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1 || time_spectral) {
-    if (time_spectral) {
-      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
+  if (val_nZone > 1 || harmonic_balance) {
+    if (harmonic_balance) {
+      if (rank == MASTER_NODE) cout << "Reading time instance " << val_iZone+1 << ":" << endl;
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
@@ -5034,8 +5034,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   mesh_file.open(cstr, ios::in);
   
   /*--- If more than one, find the zone in the mesh file  ---*/
-  
-  if (val_nZone > 1 && !time_spectral) {
+
+  if (val_nZone > 1 && !harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -5441,7 +5441,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1 && !time_spectral) {
+  if (val_nZone > 1 && !harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -5646,7 +5646,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1 && !time_spectral) {
+
+  if (val_nZone > 1 && !harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -11627,11 +11628,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     nExtIter = config->GetUnst_AdjointIter();
     delta_T  = config->GetDelta_UnstTimeND();
     total_T  = (su2double)nExtIter*delta_T;
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
     
-    su2double period = config->GetTimeSpectral_Period();
+    su2double period = config->GetHarmonicBalance_Period();
     nExtIter  = config->GetnTimeInstances();
     delta_T   = period/(su2double)nExtIter;
     total_T   = period;
@@ -11654,9 +11655,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     strcpy (cstr, surfadj_filename.c_str());
     
     /*--- Write file name with extension if unsteady or steady ---*/
-    
+    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+
     if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-        (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+        (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
