@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -491,7 +493,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
   
 }
 
-bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]){
+bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]) {
 
   su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
 
@@ -527,7 +529,7 @@ bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], 
   length = diff0_A*diff0_A
           +diff1_A*diff1_A;
 
-  if ( (dist0 > length) || (dist1 > length) ){
+  if ( (dist0 > length) || (dist1 > length) ) {
     return false;
   }
 
@@ -875,18 +877,18 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 }
 
 
-void CGeometry::RegisterCoordinates(CConfig *config){
+void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
     }
   }
 }
 
-void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
+void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
 
     unsigned short iMesh;
     geometry_container[MESH_0]->Set_MPI_Coord(config);
@@ -895,7 +897,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
 
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++){
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
         /*--- Update the control volume structures ---*/
 
         geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
@@ -1415,7 +1417,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
 
-          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX) {
             boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
           }
           boundary_file	<< iElem_Bound << endl;
@@ -1428,7 +1430,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
 
-          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX) {
             boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
           }
           boundary_file	<< iElem_Bound << endl;
@@ -2685,7 +2687,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           }
           
           
-        } else{
+        } else {
           
           index=temp_node_count_ghost;
           Local_to_Global_Point[index] = Buffer_Receive_GlobalPointIndex_loc[iPoint];
@@ -4794,7 +4796,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
   bool found_transform = false;
-  bool time_spectral = config->GetUnsteady_Simulation() == TIME_SPECTRAL;
+  bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
   nZone = val_nZone;
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
@@ -4847,9 +4849,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1 || time_spectral) {
-    if (time_spectral) {
-      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
+  if (val_nZone > 1 || harmonic_balance) {
+    if (harmonic_balance) {
+      if (rank == MASTER_NODE) cout << "Reading time instance " << val_iZone+1 << ":" << endl;
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
@@ -5031,8 +5033,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   mesh_file.open(cstr, ios::in);
   
   /*--- If more than one, find the zone in the mesh file  ---*/
-  
-  if (val_nZone > 1 && !time_spectral) {
+
+  if (val_nZone > 1 && !harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -5438,7 +5440,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1 && !time_spectral) {
+  if (val_nZone > 1 && !harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -5643,7 +5645,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1 && !time_spectral) {
+
+  if (val_nZone > 1 && !harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -8949,9 +8952,9 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   int rank, nProcessor;
   unsigned short Beneficiary = 0, Donor = 0, iBC;
   
-  unsigned short nMarker_ActDisk_Inlet = config->GetnMarker_ActDisk_Inlet();
+  unsigned short nMarker_ActDiskInlet = config->GetnMarker_ActDiskInlet();
   
-  if (nMarker_ActDisk_Inlet != 0) {
+  if (nMarker_ActDiskInlet != 0) {
     
     for (iBC = 0; iBC < 2; iBC++) {
       
@@ -10959,7 +10962,7 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
   /*--- We repeat the process for the coordinate n-1, in the case that the simulation is 2nd order ---*/
   /*--------------------------------------------------------------------------------------------------*/
 
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
 
 	  su2double *Buffer_Receive_Coord_n1 = NULL, *Buffer_Send_Coord_n1 = NULL, *Coord_n1 = NULL, *newCoord_n1 = NULL;
 	  newCoord_n1 = new su2double[nDim];
@@ -11627,11 +11630,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     nExtIter = config->GetUnst_AdjointIter();
     delta_T  = config->GetDelta_UnstTimeND();
     total_T  = (su2double)nExtIter*delta_T;
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
     
-    su2double period = config->GetTimeSpectral_Period();
+    su2double period = config->GetHarmonicBalance_Period();
     nExtIter  = config->GetnTimeInstances();
     delta_T   = period/(su2double)nExtIter;
     total_T   = period;
@@ -11654,9 +11657,11 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     strcpy (cstr, surfadj_filename.c_str());
     
     /*--- Write file name with extension if unsteady or steady ---*/
-    
+    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(iExtIter));
+
     if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-        (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+        (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -11706,7 +11711,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::SetSensitivity(CConfig *config){
+void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
@@ -11723,9 +11728,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
 
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()){
+  if (config->GetUnsteady_Simulation()) {
     nExtIter = config->GetnExtIter();
-  }else{
+  }else {
     nExtIter = 1;
   }
     int rank = MASTER_NODE;
@@ -11735,7 +11740,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   
   unsigned short skipVar = nDim, skipMult = 1;
 
-  if (wrt_residuals){ skipMult = 2; }
+  if (wrt_residuals) { skipMult = 2; }
   if (incompressible) { skipVar += skipMult*(nDim+1); }
   if (freesurface)    { skipVar += skipMult*(nDim+2); }
   if (compressible)   { skipVar += skipMult*(nDim+2); }
@@ -11763,8 +11768,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
   }
@@ -11776,7 +11781,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
 
   filename = config->GetObjFunc_Extension(filename);
 
-  if (config->GetUnsteady_Simulation()){
+  if (config->GetUnsteady_Simulation()) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
@@ -11800,10 +11805,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
              will be returned and used to instantiate the vars. ---*/
     iPoint_Local = Global2Local[iPoint_Global];
 
-    if (iPoint_Local >= 0){
+    if (iPoint_Local >= 0) {
       point_line >> index;
-      for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
+      for (iDim = 0; iDim < nDim; iDim++) {
         point_line >> Sens;
         Sensitivity[iPoint_Local*nDim+iDim] = Sens;
       }

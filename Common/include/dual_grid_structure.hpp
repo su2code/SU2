@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -48,7 +50,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CDualGrid{
 protected:
@@ -133,7 +135,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CPoint : public CDualGrid {
 private:
@@ -649,18 +651,18 @@ public:
 	 */
 	su2double **GetGridVel_Grad(void);
 	
-	/*! 
+	/*!
 	 * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
 	 * \param[in] val_coord_sum - Value of the coordinates to add.
 	 */	
 	void AddCoord_Sum(su2double *val_coord_sum);
 	
-	/*! 
+	/*!
 	 * \brief Initialize the vector <i>Coord_Sum</i>.
 	 */	
 	void SetCoord_SumZero(void);
 	
-	/*! 
+	/*!
 	 * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
 	 * \param[in] val_coord_old - Value of the coordinates.
 	 */	
@@ -740,7 +742,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CEdge : public CDualGrid {
 private:
@@ -877,7 +879,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CVertex : public CDualGrid {
 private:

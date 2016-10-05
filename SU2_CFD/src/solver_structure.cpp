@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -1322,12 +1324,12 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
       /*--- Find the particular marker being monitored and get the forces acting on it. ---*/
       
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) {
           
-          Cl = GetSurface_CLift(iMarker_Monitoring);
-          Cd = GetSurface_CDrag(iMarker_Monitoring);
+          Cl = GetSurface_CL(iMarker_Monitoring);
+          Cd = GetSurface_CD(iMarker_Monitoring);
           
           /*--- For typical section wing model want the force normal to the airfoil (in the direction of the spring) ---*/
           Cn = Cl*cos(Alpha) + Cd*sin(Alpha);
@@ -1718,7 +1720,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 	/*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-	if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+	if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
 
 		ifstream restart_file_n1;
 		string filename_n1;
@@ -1829,7 +1831,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
-CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names){
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names) {
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -1838,7 +1840,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Solution = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++){
+  for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = 0.0;
   }
 
@@ -1850,7 +1852,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   node = new CVariable*[geometry->GetnPoint()];
 
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
 
@@ -1894,7 +1896,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
@@ -1902,12 +1904,11 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
+  if (nZone > 1  || config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -2028,12 +2029,12 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
   GridVel_Index = 2*nDim;
 
-  if (config->GetKind_Turb_Model() == SA){
+  if (config->GetKind_Turb_Model() == SA) {
     GridVel_Index += 1;
-  }else if (config->GetKind_Turb_Model() == SST){
+  }else if (config->GetKind_Turb_Model() == SST) {
     GridVel_Index += 2;
   }
-  if (config->GetKind_Regime() != INCOMPRESSIBLE){
+  if (config->GetKind_Regime() != INCOMPRESSIBLE) {
     GridVel_Index += 1;
   }
   
@@ -2145,7 +2146,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
 
-          if (config->GetGrid_Movement()){
+          if (config->GetGrid_Movement()) {
             Solution[GridVel_Index + 1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
                                            rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
             Solution[GridVel_Index + 2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
@@ -2177,7 +2178,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
                               rotMatrix[2][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
                               rotMatrix[2][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
 
-          if (config->GetGrid_Movement()){
+          if (config->GetGrid_Movement()) {
             Solution[GridVel_Index+1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
                                          rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
                                          rotMatrix[0][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
@@ -2232,7 +2233,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
@@ -2240,11 +2241,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
+  if (nZone > 1 )
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -2346,7 +2347,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
 	filename = config->GetSolution_FlowFileName();
@@ -2358,7 +2359,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));

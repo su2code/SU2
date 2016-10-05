@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.2.0 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -339,18 +341,18 @@ def main():
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
 
-#    ######################################
-#    ### Spectral Method                ###
-#    ######################################
-#    spectral           = TestCase('spectral')
-#    spectral.cfg_dir   = "spectral_method"
-#    spectral.cfg_file  = "spectral.cfg"
-#    spectral.test_iter = 25
-#    spectral.test_vals = [-1.621870,3.852164,0.007465,0.084358]
-#    spectral.su2_exec  = "SU2_CFD"
-#    spectral.timeout   = 1600
-#    spectral.tol       = 0.00001
-#    test_list.append(spectral)
+    ######################################
+    ### Harmonic Balance               ###
+    ######################################
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "SU2_CFD"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###
@@ -808,7 +810,7 @@ def main():
     coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
     coupled_FSI.test_iter  = 1
     coupled_FSI.su2_exec   = "fsi_computation.py"
-    coupled_FSI.timeout    = 1600
+    coupled_FSI.timeout    = 3200
     coupled_FSI.reference_file = "StructHistory.dat.ref_serial"
     coupled_FSI.test_file  = "StructHistory.dat"
     pass_list.append(coupled_FSI.run_filediff())

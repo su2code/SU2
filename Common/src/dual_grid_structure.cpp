@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -41,7 +43,6 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	unsigned short iDim, jDim;
 	
 	/*--- Element, point and edge structures initialization ---*/
-  
 	Elem.clear(); nElem = 0;
 	Point.clear(); nPoint = 0;
 	Edge.clear();
@@ -72,7 +73,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	/*--- Identify boundaries, physical boundaries (not send-receive 
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/
-  
+
 	Boundary = false;
 	PhysicalBoundary = false;
 	SolidBoundary = false;
@@ -101,7 +102,6 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 		GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    
     GridVel_Grad = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       GridVel_Grad[iDim] = new su2double[nDim];
@@ -111,7 +111,6 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     
     /*--- Structures for storing old node coordinates for computing grid 
      velocities via finite differencing with dynamically deforming meshes. ---*/
-    
     if (config->GetUnsteady_Simulation() != NO) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
@@ -120,7 +119,6 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	}
   
   /*--- Intialize the value of the curvature ---*/
-  
   Curvature = 0.0;
 
 }
@@ -129,7 +127,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 	unsigned short iDim, jDim;
 
 	/*--- Element, point and edge structures initialization ---*/
-  
 	Elem.clear(); nElem = 0;
 	Point.clear(); nPoint = 0;
 	Edge.clear();
@@ -154,13 +151,13 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Flip_Orientation = false;
   
 	/*--- Indicator if the point is going to be moved in a volumetric deformation ---*/
-  
+
 	Move = true;
 	
 	/*--- Identify boundaries, physical boundaries (not send-receive 
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/
-  
+
 	Boundary = false;
   PhysicalBoundary = false;
   SolidBoundary = false;
@@ -189,7 +186,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
       GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    
     GridVel_Grad = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       GridVel_Grad[iDim] = new su2double[nDim];
@@ -199,7 +195,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
     
     /*--- Structures for storing old node coordinates for computing grid
      velocities via finite differencing with dynamically deforming meshes. ---*/
-    
     if (config->GetUnsteady_Simulation() != NO) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
@@ -213,7 +208,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 	}
   
   /*--- Intialize the value of the curvature ---*/
-  
   Curvature = 0.0;
   
 }
@@ -222,7 +216,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 	unsigned short iDim, jDim;
 
 	/*--- Element, point and edge structures initialization ---*/
-  
 	Elem.clear(); nElem = 0;
 	Point.clear(); nPoint = 0;
 	Edge.clear();
@@ -253,7 +246,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 	/*--- Identify boundaries, physical boundaries (not send-receive 
 	 condition), detect if an element belong to the domain or it must 
 	 be computed with other processor  ---*/
-  
 	Boundary = false;
   PhysicalBoundary = false;
   SolidBoundary = false;
@@ -282,7 +274,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
       GridVel[iDim] = 0.0;
     
     /*--- Gradient of the grid velocity ---*/
-    
     GridVel_Grad = new su2double*[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       GridVel_Grad[iDim] = new su2double[nDim];
@@ -292,7 +283,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
     
     /*--- Structures for storing old node coordinates for computing grid
      velocities via finite differencing with dynamically deforming meshes. ---*/
-    
     if (config->GetUnsteady_Simulation() != NO) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
@@ -306,7 +296,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 	}
   
   /*--- Intialize the value of the curvature ---*/
-  
   Curvature = 0.0;
   
 }
@@ -344,7 +333,7 @@ void CPoint::SetPoint(unsigned long val_point) {
 		}
 
 	/*--- Store the point structure and dimensionalizate edge structure ---*/
-  
+
 	if (new_point) {
 		Point.push_back(val_point);
 		Edge.push_back(-1);
@@ -373,19 +362,18 @@ CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short 
 	unsigned short iDim;
 	
   /*--- Pointers initialization ---*/
-  
   Coord_CG = NULL;
 	Normal = NULL;
 	Nodes = NULL;
   
 	/*--- Allocate center of gravity coordinates, nodes, and face normal ---*/
-  
+
 	Coord_CG = new su2double[nDim];
 	Nodes = new unsigned long[2];
 	Normal = new su2double [nDim];
 
 	/*--- Initializate the structure ---*/
-  
+
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Coord_CG[iDim] = 0.0;
 		Normal[iDim] = 0.0;
@@ -405,6 +393,7 @@ CEdge::~CEdge() {
 }
 
 void CEdge::SetCoord_CG(su2double **val_coord) {
+
 	unsigned short iDim, iNode;
 	
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -436,6 +425,7 @@ su2double CEdge::GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Fa
 
 	Local_Volume = fabs(vec_c[0]*vec_d[0] + vec_c[1]*vec_d[1] + vec_c[2]*vec_d[2])/6.0;
 	
+
   AD::SetPreaccOut(Local_Volume);
   AD::EndPreacc();
 
@@ -519,17 +509,17 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 	Normal = NULL;
   
 	/*--- Allocate node, and face normal ---*/
-  
+
 	Nodes = new unsigned long[1]; 
 	Normal = new su2double [nDim];
 
 	/*--- Initializate the structure ---*/
-  
+
 	Nodes[0] = val_point;
 	for (iDim = 0; iDim < nDim; iDim ++) Normal[iDim] = 0.0;
 	
 	/*--- Set to zero the variation of the coordinates ---*/
-  
+
 	VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
 
 	/*--- Set to NULL variation of the rotation  ---*/
@@ -612,7 +602,7 @@ void CVertex::AddNormal(su2double *val_face_normal) {
 	if (nDim == 3) Normal[2] += val_face_normal[2];
 }
 
-void CVertex::Allocate_DonorInfo(void){
+void CVertex::Allocate_DonorInfo(void) {
   Donor_Points = new unsigned long[nDonor_Points];
   Donor_Proc = new unsigned long[nDonor_Points];
   Donor_Coeff = new su2double[nDonor_Points];

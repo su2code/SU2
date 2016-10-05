@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.2.0 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -340,6 +342,20 @@ def main():
     contadj_incomp_cylinder.timeout   = 1600
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
+
+    ######################################                                                                                  
+    ### Harmonic Balance               ###                                                                                  
+    ######################################                                                                                    
+
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "parallel_computation.py -f"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###

@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -216,9 +218,9 @@ inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nI
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
 
-inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV){
-  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++){
-    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)){ return true;}
+inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV) {
+  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)) { return true;}
   }
   return false;
 }

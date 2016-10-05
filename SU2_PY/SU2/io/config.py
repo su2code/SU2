@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.2.0 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -396,6 +398,7 @@ def read_config(filename):
             if case("AoA")                    : pass
             if case("FIN_DIFF_STEP")          : pass
             if case("CFL_NUMBER")             : pass
+            if case("HB_PERIOD")    : pass
             if case("WRT_SOL_FREQ")           :
                 data_dict[this_param] = float(this_value)
                 break   
