@@ -105,10 +105,6 @@ def discrete_adjoint( filename           ,
         SU2.io.restart2solution(config,state)
     
     # Adjoint Solution
-    objectives      = config['OBJECTIVE_FUNCTION']
-    objectives = objectives.split(',')
-    n_obj = len(objectives)
-    marker_monitoring = config['MARKER_MONITORING']
 
     # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
     if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:

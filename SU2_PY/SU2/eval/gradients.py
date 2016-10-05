@@ -192,14 +192,15 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------
     #  Initialize    
     # ----------------------------------------------------
-    multi_objective = (type(func_name)==list)
+
     # initialize
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
-    multi_objective = ((config.OPT_COMBINE_OBJECTIVE=="YES") and (type(func_name)==list))
+    
+    # check for multiple objectives
+    multi_objective = (type(func_name)==list)
     func_name_string = func_name
-    if (multi_objective):
-        func_name_string = 'COMBO'
+    if multi_objective:   func_name_string = 'COMBO'
 
     ADJ_NAME = 'ADJOINT_'+func_name_string
 
