@@ -490,7 +490,7 @@ def main():
     centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
     centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
     centrifugal_stage.test_iter = 100
-    centrifugal_stage.test_vals = [-10.166364, 1.621172, 2.206476e+01, 5.271075e-01] #last 4 columns
+    centrifugal_stage.test_vals = [-10.166628, 1.621134, 22.064950, 0.527107] #last 4 columns
     centrifugal_stage.su2_exec  = "SU2_CFD"
     centrifugal_stage.timeout   = 1600
     centrifugal_stage.tol       = 0.000001
@@ -529,7 +529,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_NN.cfg"
     channel_3D.test_iter = 2
-    channel_3D.test_vals = [-1.899946, 4.032882, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_vals = [-1.998322, 3.957678, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -539,7 +539,7 @@ def main():
     # Pipe
     pipe           = TestCase('pipe')
     pipe.cfg_dir   = "sliding_interface/pipe"
-    pipe.cfg_file  = "pipe.cfg"
+    pipe.cfg_file  = "pipe_NN.cfg"
     pipe.test_iter = 10
     pipe.test_vals = [-12.316841, -6.935029, 0.000000, 0.000000] #last 4 columns
     pipe.su2_exec  = "SU2_CFD"
