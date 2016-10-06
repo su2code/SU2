@@ -81,7 +81,6 @@ COutput::COutput(CConfig *config) {
   RhoRes_Old = EPS;
   
 
-
   turbo = config->GetBoolTurbomachinery();
 
   if(turbo){
@@ -8617,11 +8616,12 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 
 	CFluidModel *FluidModel;
+	unsigned short nDim = geometry->GetnDim();
   unsigned short iMarkerTP, iSpan, iDim;
 	unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
   FluidModel = solver_container->GetFluidModel();
-  su2double area;
+  su2double area, absVel2;
 
 
   /*--- Compute BC imposed value for convergence monitoring ---*/
@@ -8641,17 +8641,29 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			DensityIn[iMarkerTP][iSpan]          = solver_container->GetDensityIn(iMarkerTP, iSpan);
 			PressureIn[iMarkerTP][iSpan]         = solver_container->GetPressureIn(iMarkerTP, iSpan);
 
-      for (iDim = 0; iDim < 3; iDim++){
+			absVel2 = 0.0;
+
+			for (iDim = 0; iDim < nDim; iDim++){
         TurboVelocityIn[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityIn(iMarkerTP, iSpan)[iDim];
+        absVel2   += TurboVelocityIn[iMarkerTP][iSpan][iDim]*TurboVelocityIn[iMarkerTP][iSpan][iDim];
       }
+			TurboVelocityIn[iMarkerTP][iSpan][nDim] = sqrt(absVel2);
+
 			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
       area																 = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
 
-			/*--- Compute all the Inflow quantities ---*/
+			/*--- Compute static Inflow quantities ---*/
 			FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
 			EntropyIn[iMarkerTP][iSpan]					 = FluidModel->GetEntropy();
 			MassFlowIn[iMarkerTP][iSpan]         = DensityIn[iMarkerTP][iSpan]*TurboVelocityIn[iMarkerTP][iSpan][0]*area;
 			AbsFlowAngleIn[iMarkerTP][iSpan]     = atan(TurboVelocityIn[iMarkerTP][iSpan][1]/TurboVelocityIn[iMarkerTP][iSpan][0]);
+			EnthalpyIn[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureIn[iMarkerTP][iSpan]/DensityIn[iMarkerTP][iSpan];
+
+			/*--- Compute Total Inflow quantities ---*/
+			TotalEnthalpyIn[iMarkerTP][iSpan]    = EnthalpyIn[iMarkerTP][iSpan] + 0.5*absVel2;
+			FluidModel->SetTDState_hs(TotalEnthalpyIn[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
+			TotalPressureIn[iMarkerTP][iSpan]    = FluidModel->GetPressure();
+			TotalTemperatureIn[iMarkerTP][iSpan] = FluidModel->GetTemperature();
 
 
 
