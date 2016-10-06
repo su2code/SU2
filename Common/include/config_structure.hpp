@@ -107,7 +107,8 @@ private:
 	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
 	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
 	DebugMode, /*!< \brief Flag for debug mode */
-  ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
+  ionization, /*!< \brief Flag for determining if free electron gas is in the mixture */
+  Heat_Inc; /*!< \brief Flag for heat equation for incompressible flow.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
@@ -5488,6 +5489,12 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Get the heat equation.
+   * \return YES if heat equation for inc. flow is enabled.
+   */
+  bool GetHeat_Inc(void);
 };
 
 #include "config_structure.inl"
