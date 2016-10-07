@@ -8708,30 +8708,21 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 		cout << endl << "----------------------------- Blade " << iMarker_Monitoring + 1 << " -----------------------------------" << endl;
 		inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
 		outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
-		inlet 	= false;
-		outlet  = false;
 		mixing  = false;
-//TODO (turbo) generilize for multi-zone by using marker mixing_plane interface
-		if(config->GetMarker_All_TurbomachineryFlag(iMarker_Monitoring) == INFLOW) inlet = true;
-		if(config->GetMarker_All_TurbomachineryFlag(iMarker_Monitoring) == OUTFLOW) outlet = true;
 
 		if(config->GetBoolNRBC() || config->GetBoolRiemann()){
 			if(config->GetBoolRiemann()){
 				if(config->GetKind_Data_Riemann(outMarker_Tag) == MIXING_OUT) 				 {
 					mixing = true;
-					inlet  = false;
-					outlet = false;
 				}
 			}
 			else{
 				if(config->GetKind_Data_NRBC(outMarker_Tag) == MIXING_OUT){
 					mixing = true;
-					inlet  = false;
-					outlet = false;
 				}
 			}
 		}
-		if(inlet){
+		if(iMarker_Monitoring == 0){
 			cout << "BC Inlet convergence monitoring marker " << inMarker_Tag << " : "<<endl;
 			cout << endl;
 			cout << "     Inlet Total Enthalpy" << "     Inlet Total Enthalpy BC" << "     err(%)" <<  endl;
@@ -8753,7 +8744,7 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 			cout << endl;
 			cout << endl;
 		}
-		if(outlet){
+		if(iMarker_Monitoring == config->GetnMarker_Turbomachinery() -1 ){
 			// if BC outlet
 			cout << "BC outlet convergence monitoring  marker " << outMarker_Tag << " : "<<endl;
 			cout << endl;

@@ -5705,12 +5705,12 @@ su2double CConfig::GetPressureOut_BC() {
   unsigned short iMarker_BC;
   su2double pres_out;
   for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
-    if (Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == GLOBAL_STATIC_PRESSURE ){
+    if (Kind_Data_NRBC[iMarker_BC] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == GLOBAL_STATIC_PRESSURE || Kind_Data_NRBC[iMarker_BC] == RADIAL_EQUILIBRIUM ){
     	pres_out = NRBC_Var1[iMarker_BC];
     }
   }
   for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
-  	if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE){
+  	if (Kind_Data_Riemann[iMarker_BC] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker_BC] == RADIAL_EQUILIBRIUM){
   		pres_out = Riemann_Var1[iMarker_BC];
   	}
   }
