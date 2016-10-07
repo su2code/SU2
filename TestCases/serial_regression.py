@@ -528,8 +528,8 @@ def main():
     channel_3D           = TestCase('channel_3D')
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_NN.cfg"
-    channel_3D.test_iter = 2
-    channel_3D.test_vals = [-1.998322, 3.957678, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_iter = 1
+    channel_3D.test_vals = [-3.253344, 3.793506, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
@@ -540,8 +540,8 @@ def main():
     pipe           = TestCase('pipe')
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
-    pipe.test_iter = 10
-    pipe.test_vals = [-12.316828, -6.934901, 0.000000, 0.000000] #last 4 columns
+    pipe.test_iter = 2
+    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
     pipe.su2_exec  = "SU2_CFD"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
@@ -861,7 +861,7 @@ def main():
     coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
     coupled_FSI.test_iter  = 1
     coupled_FSI.su2_exec   = "fsi_computation.py"
-    coupled_FSI.timeout    = 6400
+    coupled_FSI.timeout    = 3200
     coupled_FSI.reference_file = "StructHistory.dat.ref_serial"
     coupled_FSI.test_file  = "StructHistory.dat"
     pass_list.append(coupled_FSI.run_filediff())
