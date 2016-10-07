@@ -8711,16 +8711,24 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 		inlet 	= false;
 		outlet  = false;
 		mixing  = false;
+//TODO (turbo) generilize for multi-zone by using marker mixing_plane interface
+		if(config->GetMarker_All_TurbomachineryFlag(iMarker_Monitoring) == INFLOW) inlet = true;
+		if(config->GetMarker_All_TurbomachineryFlag(iMarker_Monitoring) == OUTFLOW) outlet = true;
+
 		if(config->GetBoolNRBC() || config->GetBoolRiemann()){
 			if(config->GetBoolRiemann()){
-				if(config->GetKind_Data_Riemann(inMarker_Tag) == TOTAL_CONDITIONS_PT) inlet  = true;
-				if(config->GetKind_Data_Riemann(outMarker_Tag) == STATIC_PRESSURE) 	 outlet = true;
-				if(config->GetKind_Data_Riemann(outMarker_Tag) == MIXING_OUT) 				 mixing = true;
+				if(config->GetKind_Data_Riemann(outMarker_Tag) == MIXING_OUT) 				 {
+					mixing = true;
+					inlet  = false;
+					outlet = false;
+				}
 			}
 			else{
-				if(config->GetKind_Data_NRBC(inMarker_Tag) == TOTAL_CONDITIONS_PT || config->GetKind_Data_NRBC(inMarker_Tag) == GLOBAL_TOTAL_CONDITIONS_PT ) inlet  = true;
-				if(config->GetKind_Data_NRBC(outMarker_Tag) == STATIC_PRESSURE || config->GetKind_Data_NRBC(outMarker_Tag) == GLOBAL_STATIC_PRESSURE) 	  outlet = true;
-				if(config->GetKind_Data_NRBC(outMarker_Tag) == MIXING_OUT) 				mixing = true;
+				if(config->GetKind_Data_NRBC(outMarker_Tag) == MIXING_OUT){
+					mixing = true;
+					inlet  = false;
+					outlet = false;
+				}
 			}
 		}
 		if(inlet){

@@ -5719,18 +5719,21 @@ su2double CConfig::GetPressureOut_BC() {
 
 su2double CConfig::GetTotalPressureIn_BC() {
 	unsigned short iMarker_BC;
-	su2double tot_pres_out;
+	su2double tot_pres_in;
 	for (iMarker_BC = 0; iMarker_BC < nMarker_NRBC; iMarker_BC++){
 		if (Kind_Data_NRBC[iMarker_BC] == TOTAL_CONDITIONS_PT ){
-			tot_pres_out = NRBC_Var1[iMarker_BC];
+			tot_pres_in = NRBC_Var1[iMarker_BC];
 		}
 	}
 	for (iMarker_BC = 0; iMarker_BC < nMarker_Riemann; iMarker_BC++){
 		if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
-			tot_pres_out = Riemann_Var1[iMarker_BC];
+			tot_pres_in = Riemann_Var1[iMarker_BC];
 		}
 	}
-	return tot_pres_out/Pressure_Ref;
+	if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+		tot_pres_in = Inlet_Ptotal[0];
+	}
+	return tot_pres_in/Pressure_Ref;
 }
 
 su2double CConfig::GetTotalTemperatureIn_BC() {
@@ -5745,6 +5748,10 @@ su2double CConfig::GetTotalTemperatureIn_BC() {
   	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
   		tot_temp_in = Riemann_Var2[iMarker_BC];
   	}
+  }
+
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  	tot_temp_in = Inlet_Ttotal[0];
   }
   return tot_temp_in/Temperature_Ref;
 }
@@ -5761,6 +5768,10 @@ su2double CConfig::GetFlowAngleIn_BC() {
   	if (Kind_Data_Riemann[iMarker_BC] == TOTAL_CONDITIONS_PT ){
   		alpha_in = atan(Riemann_FlowDir[iMarker_BC][1]/Riemann_FlowDir[iMarker_BC][0]);
   	}
+  }
+
+  if(nMarker_Inlet == 1 && Kind_Inlet == TOTAL_CONDITIONS){
+  	alpha_in = atan(Inlet_FlowDir[0][1]/Inlet_FlowDir[0][0]);
   }
 
   return alpha_in;
