@@ -8694,7 +8694,6 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 
 	unsigned short iMarker_Monitoring;
 	string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
-	bool inlet, outlet, mixing;
 	unsigned short nZone       = config->GetnZone();
 
 	unsigned short nBladesRow, nStages;
@@ -8708,20 +8707,6 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 		cout << endl << "----------------------------- Blade " << iMarker_Monitoring + 1 << " -----------------------------------" << endl;
 		inMarker_Tag = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
 		outMarker_Tag = config->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
-		mixing  = false;
-
-		if(config->GetBoolNRBC() || config->GetBoolRiemann()){
-			if(config->GetBoolRiemann()){
-				if(config->GetKind_Data_Riemann(outMarker_Tag) == MIXING_OUT) 				 {
-					mixing = true;
-				}
-			}
-			else{
-				if(config->GetKind_Data_NRBC(outMarker_Tag) == MIXING_OUT){
-					mixing = true;
-				}
-			}
-		}
 		if(iMarker_Monitoring == 0){
 			cout << "BC Inlet convergence monitoring marker " << inMarker_Tag << " : "<<endl;
 			cout << endl;
@@ -8818,7 +8803,7 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 		cout << endl;
 		cout << endl << "-------------------------------------------------------------------------" << endl;
 		cout << endl;
-		if(mixing){
+		if(iMarker_Monitoring > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1){
 			cout << endl << "---------- Mixing-Plane Interface between Blade " << iMarker_Monitoring + 1 << " and Blade " << iMarker_Monitoring + 2 << " -----------" << endl;
 			cout << endl;
 			inMarkerTag_Mix = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring + 1);
