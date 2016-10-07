@@ -1863,15 +1863,19 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       
     }
     
-    /*--- Compute the max and the min dt (in parallel) ---*/
+    /*--- Compute the max and the min dt (in parallel). Note that we only
+     so this for steady calculations if the high verbosity is set, but we
+     always perform the reduction for unsteady calculations where the CFL
+     limit is used to set the global time step. ---*/
+    if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
 #ifdef HAVE_MPI
-    su2double rbuf_time = Min_Delta_Time;
-    SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    
-    rbuf_time = Max_Delta_Time;
-    SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      su2double rbuf_time = Min_Delta_Time;
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      
+      rbuf_time = Max_Delta_Time;
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
-    
+    }
     /*--- For explicit time stepping with an unsteady CFL imposed, 
      use the minimum delta time of the entire mesh. ---*/
     if (time_stepping) {
@@ -2489,9 +2493,11 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   }
 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
-  SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                     MPI_SUM, MPI_COMM_WORLD);
-
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
+                       MPI_SUM, MPI_COMM_WORLD);
+  }
+  
   /*--- Copy the data back from globBuf into the required variables. ---*/
   ii = 0;
   AllBound_CD_Inv  = globBuf[ii++]; AllBound_CL_Inv  = globBuf[ii++];
@@ -2599,17 +2605,21 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   vector<su2double> rbuf(nVar);
-  SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-
-    if (rbuf[iVar] != rbuf[iVar]) {
-      if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
+  
+  /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      
+      if (rbuf[iVar] != rbuf[iVar]) {
+        if (rank == MASTER_NODE)
+          cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+      
+      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
-
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
   }
 
   /*--- Communicate the information about the maximum residual. ---*/
@@ -2691,17 +2701,21 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   vector<su2double> rbuf(nVar);
-  SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+  /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     
-    if (rbuf[iVar] != rbuf[iVar]) {
-      if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      
+      if (rbuf[iVar] != rbuf[iVar]) {
+        if (rank == MASTER_NODE)
+          cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+      
+      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
-    
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
   }
   
   /*--- Communicate the information about the maximum residual. ---*/
@@ -4018,9 +4032,11 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   }
 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
-  SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                     MPI_SUM, MPI_COMM_WORLD);
-
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
+                       MPI_SUM, MPI_COMM_WORLD);
+  }
+  
   /*--- Copy the data back from globBuf into the required variables. ---*/
   ii = 0;
   AllBound_CD_Visc  = globBuf[ii++]; AllBound_CL_Visc       = globBuf[ii++];
@@ -4043,8 +4059,10 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Determine the maximum heat flux over all ranks. */
   su2double localMax = AllBound_MaxHeatFlux_Visc;
-  SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
-                     MPI_MAX, MPI_COMM_WORLD);
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
+                       MPI_MAX, MPI_COMM_WORLD);
+  }
 #endif
 
   /*--- Update the total coefficients (note that all the nodes have the same value)---*/
