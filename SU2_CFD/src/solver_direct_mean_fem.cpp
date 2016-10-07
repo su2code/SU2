@@ -1969,6 +1969,7 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. ---*/
   su2double *solIntL, *solIntR, *fluxes;
+  su2double tick = 0.0;
 
 #ifdef HAVE_MKL
   solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
@@ -1996,7 +1997,8 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
     /*--- Step 1: Compute the inviscid fluxes in the integration points of ---*/
     /*---         this matching face multiplied by the integration weight. ---*/
     /*------------------------------------------------------------------------*/
-
+    
+    config->Tick(&tick);
     /* Compute the inviscid fluxes in the integration points. */
     InviscidFluxesInternalMatchingFace(config, &matchingInternalFaces[l],
                                        solIntL, solIntR, fluxes, numerics);
@@ -2015,12 +2017,14 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
       for(unsigned short j=0; j<nVar; ++j)
         flux[j] *= weights[i];
     }
+    config->Tock(tick, "ER_1_1", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the contribution to the residuals from the       ---*/
     /*---         integration over this internal matching face.            ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /* Easier storage of the position in the residual array for side 0 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
@@ -2064,6 +2068,7 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
           resFace1[i] = -resFace1[i];
       }
     }
+    config->Tock(tick, "ER_1_2", 4);
   }
   
   /*--------------------------------------------------------------------------*/
@@ -2072,9 +2077,12 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
   /*---         mass matrix.                                               ---*/
   /*--------------------------------------------------------------------------*/
 
+  config->Tick(&tick);
   /* Call the function CreateFinalResidual to carry out the task. The array
      fluxes is passed as temporary storage. */
   CreateFinalResidual(fluxes);
+    
+  config->Tock(tick, "ER_2_1", 4);
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
 #ifdef HAVE_MKL
@@ -2096,6 +2104,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
      same memory can be used for the storage of the solution of the DOFs of
      the face and the fluxes. */
   su2double *solFace = fluxes;
+  su2double tick = 0.0;
 
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the left state in the integration points of  ---*/
@@ -2119,9 +2128,11 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       sol[j] = solDOF[j];
   }
 
+  config->Tick(&tick);
   /* Compute the left states. Call the general function to
      carry out the matrix product. */
   MatrixProduct(nInt, nVar, nDOFsFace0, basisFace0, solFace, solIntL);
+  config->Tock(tick, "ER_1_1_1", 5);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 2: Interpolate the right state in the integration points of ---*/
@@ -2143,9 +2154,11 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       sol[j] = solDOF[j];
   }
 
+  config->Tick(&tick);
   /* Compute the right states. Call the general function to
      carry out the matrix product. */
   MatrixProduct(nInt, nVar, nDOFsFace1, basisFace1, solFace, solIntR);
+  config->Tock(tick, "ER_1_1_2", 5);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the fluxes in the integration points using the   ---*/
@@ -3870,6 +3883,7 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
         internal residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. ---*/
   su2double *solAndGradInt, *fluxes;
+  su2double tick = 0.0;
 
 #ifdef HAVE_MKL
   solAndGradInt = (su2double *) mkl_malloc(nIntegrationMax*nVar*(nDim+1)*sizeof(su2double), 64);
@@ -3903,11 +3917,13 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         points of the element.                                   ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /* Easier storage of the solution variables for this element. */
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
     MatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, solDOFs, solAndGradInt);
+    config->Tock(tick, "IR_1_1", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the total fluxes (inviscid fluxes minus the      ---*/
@@ -3915,6 +3931,7 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         weight, in the integration points.                       ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /* Determine the offset between the solution variables and the r-derivatives,
        which is also the offset between the r- and s-derivatives and the offset
        between s- and t-derivatives. */
@@ -4043,17 +4060,20 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
         }
       }
     }
+    config->Tock(tick, "IR_2_1", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the contribution to the residuals from the       ---*/
     /*---         integration over the volume element.                     ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
     MatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
+    config->Tock(tick, "IR_3_1", 4);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -4074,6 +4094,8 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
         purposes. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes;
   su2double *viscosityIntL, *viscosityIntR;
+  su2double tick = 0.0;
+  su2double tick1 = 0.0;
 
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
@@ -4119,9 +4141,11 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         this matching face.                                      ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /* Compute the inviscid fluxes in the integration points. */
     InviscidFluxesInternalMatchingFace(config, &matchingInternalFaces[l],
                                        solIntL, solIntR, fluxes, numerics);
+    config->Tock(tick, "ER_1_1", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the viscous fluxes in the integration points of  ---*/
@@ -4129,6 +4153,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         computed inviscid fluxes.                                ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /*--- Get the information from the standard face to compute the viscous
           fluxes in the integration points on the left side, i.e. side 0. ---*/
     const unsigned short ind          = matchingInternalFaces[l].indStandardElement;
@@ -4164,6 +4189,8 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
     for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
+    
+    config->Tock(tick, "ER_1_2", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the penalty terms in the integration points of   ---*/
@@ -4171,6 +4198,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         inviscid and viscous fluxes.                             ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /* Get the required constants needed for the penalty terms. */
     const su2double ConstPenFace = standardMatchingFacesSol[ind].GetPenaltyConstant();
     const su2double lenScale0    = volElem[matchingInternalFaces[l].elemID0].lenScale;
@@ -4195,12 +4223,14 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
       for(unsigned short j=0; j<nVar; ++j)
         flux[j] *= weights[i];
     }
+    config->Tock(tick, "ER_1_3", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 4: Compute the contribution to the residuals from the       ---*/
     /*---         integration over this internal matching face.            ---*/
     /*------------------------------------------------------------------------*/
 
+    config->Tick(&tick);
     /* Easier storage of the position in the residual array for side 0 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
@@ -4244,6 +4274,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
           resFace1[i] = -resFace1[i];
       }
     }
+    config->Tock(tick, "ER_1_4", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 5: Compute the symmetrizing terms, if present, in the       ---*/
@@ -4252,6 +4283,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
 
     if( symmetrizingTermsPresent ) {
 
+      config->Tick(&tick);
       /* Compute the symmetrizing fluxes in the nDim directions. */
       SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
                              matchingInternalFaces[l].metricNormalsFace, fluxes);
@@ -4270,6 +4302,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
         for(unsigned short j=0; j<(nVar*nDim); ++j)
           flux[j] *= wTheta;
       }
+      config->Tock(tick, "ER_1_5", 4);
 
       /*------------------------------------------------------------------------*/
       /*--- Step 6: Distribute the symmetrizing terms to the DOFs. Note that ---*/
@@ -4277,6 +4310,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
       /*---         adjacent elements, not only to the DOFs of the face.     ---*/
       /*------------------------------------------------------------------------*/
 
+      config->Tick(&tick);
       /* Get the element information of side 0 of the face. */
       const unsigned short nDOFsElem0    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
       const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
@@ -4351,12 +4385,15 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
         su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
         indResFaces        += nDOFsElem1;
 
+        config->Tick(&tick1);
         /* Call the general function to carry out the matrix product to compute
            the residual for side 1. Note that the symmetrizing residual should not
            be negated, because two minus signs enter the formulation for side 1,
            which cancel each other. */
         MatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
+        config->Tock(tick, "ER_1_6_1", 5);
       }
+      config->Tock(tick, "ER_1_6", 4);
     }
   }
 
@@ -4366,9 +4403,11 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   /*---         mass matrix.                                               ---*/
   /*--------------------------------------------------------------------------*/
 
+  config->Tick(&tick);
   /* Call the function CreateFinalResidual to carry out the task. The array
      fluxes is passed as temporary storage. */
   CreateFinalResidual(fluxes);
+  config->Tock(tick, "ER_2_1", 4);
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
 #ifdef HAVE_MKL
