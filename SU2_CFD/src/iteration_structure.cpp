@@ -984,10 +984,11 @@ void CFEMFlowIteration::Preprocess(COutput *output,
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  const bool restart = (config_container[ZONE_0]->GetRestart() ||
+                        config_container[ZONE_0]->GetRestart_Flow());
   
-  /*--- Set the initial condition ---*/
-  
-  if (ExtIter == 0)
+  /*--- Set the initial condition if this is not a restart. ---*/
+  if (ExtIter == 0 && !restart)
     solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone],
                                                                        solver_container[val_iZone],
                                                                        config_container[val_iZone],
