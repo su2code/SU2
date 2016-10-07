@@ -1562,14 +1562,49 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
     }
   }
 
-#endif
+#elif RINGLEB
 
-#ifdef TAYLOR_GREEN
+  /* The initial conditions are set to the exact solution of the Ringleb flow.
+     The reason for doing so, is that the Ringleb flow is an isolated solution
+     of the Euler equations. If the initialization is too far off from the
+     final solution, shocks develop, which may destabilize the solution and it
+     is impossible to obtain a converged solution. */
+
+  solutionSet = true;
+
+  /* Write a message that the solution is initialized for the Ringleb test case. */
+  if(rank == MASTER_NODE) {
+    cout << endl;
+    cout << "Warning: Solution is initialized for the Ringleb test case!!!" << endl;
+    cout << endl << flush;
+  }
+
+  /* Loop over the owned elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Loop over the DOFs of this element. */
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+
+      /* Set the pointer to the solution of this DOF and to the
+         coordinates of its corresponding node ID of the grid. */
+      su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+
+      const unsigned long ind = volElem[i].nodeIDsGrid[j];
+      const su2double *coor   = meshPoints[ind].coor;
+
+      /* Compute the conservative flow variables of the Ringleb solution for the
+         given coordinates. Note that it is possible to run this case in both 2D
+         and 3D, where the z-direction is assumed to be the inactive direction. */
+      RinglebSolution(coor, solDOF);
+    }
+  }
+
+#elif TAYLOR_GREEN
   
   solutionSet = true;
   
-  /* Write a message that the solution is initialized for the inviscid vortex
-   test case. */
+  /* Write a message that the solution is initialized for the Taylor-Green vortex
+     test case. */
   if(rank == MASTER_NODE) {
     cout << endl;
     cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
@@ -1828,15 +1863,19 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       
     }
     
-    /*--- Compute the max and the min dt (in parallel) ---*/
+    /*--- Compute the max and the min dt (in parallel). Note that we only
+     so this for steady calculations if the high verbosity is set, but we
+     always perform the reduction for unsteady calculations where the CFL
+     limit is used to set the global time step. ---*/
+    if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
 #ifdef HAVE_MPI
-    su2double rbuf_time = Min_Delta_Time;
-    SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    
-    rbuf_time = Max_Delta_Time;
-    SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      su2double rbuf_time = Min_Delta_Time;
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      
+      rbuf_time = Max_Delta_Time;
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
-    
+    }
     /*--- For explicit time stepping with an unsteady CFL imposed, 
      use the minimum delta time of the entire mesh. ---*/
     if (time_stepping) {
@@ -2467,9 +2506,11 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   }
 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
-  SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                     MPI_SUM, MPI_COMM_WORLD);
-
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
+                       MPI_SUM, MPI_COMM_WORLD);
+  }
+  
   /*--- Copy the data back from globBuf into the required variables. ---*/
   ii = 0;
   AllBound_CD_Inv  = globBuf[ii++]; AllBound_CL_Inv  = globBuf[ii++];
@@ -2577,17 +2618,21 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   vector<su2double> rbuf(nVar);
-  SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
-
-    if (rbuf[iVar] != rbuf[iVar]) {
-      if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
+  
+  /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      
+      if (rbuf[iVar] != rbuf[iVar]) {
+        if (rank == MASTER_NODE)
+          cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+      
+      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
-
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
   }
 
   /*--- Communicate the information about the maximum residual. ---*/
@@ -2669,17 +2714,21 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   vector<su2double> rbuf(nVar);
-  SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
-  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+  /*--- Disable the reduce for the residual to avoid overhead if requested. ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     
-    if (rbuf[iVar] != rbuf[iVar]) {
-      if (rank == MASTER_NODE)
-        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
+    for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+      
+      if (rbuf[iVar] != rbuf[iVar]) {
+        if (rank == MASTER_NODE)
+          cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+      
+      SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
-    
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
   }
   
   /*--- Communicate the information about the maximum residual. ---*/
@@ -2761,7 +2810,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
       /* If the normal velocity must be mirrored instead of set to zero,
          the normal component that must be subtracted must be doubled. If the
          normal velocity must be set to zero, simply comment this line. */
-      rVn *= 2.0;
+      //rVn *= 2.0;
 
       /* Set the right state. The initial value of the total energy is the
          energy of the left state. */
@@ -3139,26 +3188,96 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
 void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  /* No compiler directive specified. Write an error message and exit. */
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. ---*/
+  su2double *solIntL, *solIntR, *fluxes;
 
-  if (rank == MASTER_NODE) {
-    cout << endl;
-    cout << "In function CFEM_DG_EulerSolver::BC_Custom. " << endl;
-    cout << "No or wrong compiler directive specified. This is necessary "
-            "for customized boundary conditions." << endl << endl;
-  }
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
+#ifdef HAVE_MKL
+  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
 #else
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
+  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
+  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  solIntL = helpSolIntL.data();
+  solIntR = helpSolIntR.data();
+  fluxes  = helpFluxes.data();
 #endif
 
+  /* Set the starting position in the vector for the face residuals for
+     this boundary marker. */
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+
+  /* Easier storage of the boundary faces for this boundary marker. */
+  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
+  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
+
+  /*--- Loop over the boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=0; l<nSurfElem; ++l) {
+
+    /* Compute the left states in the integration points of the face.
+       Use fluxes as a temporary storage array. */
+    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+
+    /*--- Apply the subsonic inlet boundary conditions to compute the right
+          state in the integration points. ---*/
+    const unsigned short ind  = surfElem[l].indStandardElement;
+    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+    for(unsigned short i=0; i<nInt; ++i) {
+
+#ifdef RINGLEB
+
+      /* Ringleb case. Specify the exact solution for the right solution.
+         First determine the pointer to the coordinates of this integration
+         point and the pointer to the solution. Afterwards call the function
+         RinglebSolution to do the actual job. */
+      const su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
+            su2double *UR   = solIntR + i*nVar;
+
+      RinglebSolution(coor, UR);
+
+#else
+      /* No compiler directive specified. Write an error message and exit. */
+      int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+      if (rank == MASTER_NODE) {
+        cout << endl;
+        cout << "In function CFEM_DG_EulerSolver::BC_Custom. " << endl;
+        cout << "No or wrong compiler directive specified. This is necessary "
+                "for customized boundary conditions." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+
+#endif
+
+    }
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualInviscidBoundaryFace(config, numerics, &surfElem[l], solIntL,
+                                 solIntR, fluxes, resFaces, indResFaces);
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solIntL);
+  mkl_free(solIntR);
+  mkl_free(fluxes);
+#endif
 }
 
 void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
@@ -3356,6 +3475,123 @@ void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        
 
 #endif
 }
+
+#ifdef RINGLEB
+
+void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
+                                                su2double *sol) {
+
+  /* Compute several expononts involving Gamma. */
+  const su2double gm1     = Gamma_Minus_One;
+  const su2double tovgm1  = 2.0/gm1;
+  const su2double tgovgm1 = Gamma*tovgm1;
+
+  /* Easier storage of the coordinates and abbreviate y*y. */
+  const su2double x  = coor[0], y = coor[1];
+  const su2double y2 = y*y;
+
+  /* Initial guess for q (velocity magnitude) and k (streamline parameter). */
+  su2double k = 1.2;
+  su2double q = 1.0;
+
+  /* Newton algorithm to solve for the variables q and k for the given x and y. */
+  const int iterMax = 500;
+  su2double duMaxPrev = 10.0;
+
+  int iter;
+  for(iter=0; iter<iterMax; ++iter) {
+
+    /* Compute the speed of sound, the density, the parameter JJ
+       and its derivatives w.r.t. q. */
+    const su2double a   = sqrt(1.0 - 0.5*gm1*q*q);
+    const su2double rho = pow(a,tovgm1);
+    const su2double JJ  = 1.0/a + 1.0/(3.0*a*a*a) + 1.0/(5.0*a*a*a*a*a)
+                        - 0.5*log((1.0+a)/(1.0-a));
+
+    const su2double dadq   = -0.5*gm1*q/a;
+    const su2double drhodq =  2.0*rho*dadq/(gm1*a);
+    const su2double dJJdq  =  dadq/(pow(a,6)*(a*a-1.0));
+
+    /* Determine the values of the nonlinear equations to solve
+       and its corresponding Jacobian matrix. */
+    const su2double y2c = (k*k - q*q)/(k*k*k*k*rho*rho*q*q);
+    const su2double f[] = {(2.0/(k*k) - 1.0/(q*q))/(2.0*rho) - 0.5*JJ - x,
+                           y2c - y2};
+    su2double Jac[2][2];
+    Jac[0][0] = -(1.0/(k*k) - 0.50/(q*q))*drhodq/(rho*rho)
+              + 1.0/(rho*q*q*q) - 0.5*dJJdq;
+    Jac[0][1] = -2.0/(rho*k*k*k);
+    Jac[1][0] = -2.0/(k*k*rho*rho*q*q*q) - 2.0*y2c*drhodq/rho;
+    Jac[1][1] = (4.0*q*q - 2.0*k*k)/(k*k*k*k*k*rho*rho*q*q);
+
+    /* Determine the update dU. */
+    const su2double det  = Jac[0][0]*Jac[1][1] - Jac[0][1]*Jac[1][0];
+    const su2double dU[] = {(f[0]*Jac[1][1] - f[1]*Jac[0][1])/det,
+                            (f[1]*Jac[0][0] - f[0]*Jac[1][0])/det};
+
+    /* Determine the underrelaxation coefficient alp. */
+    const su2double dUMax = max(fabs(dU[0]), fabs(dU[1]));
+    su2double alp = 1.0;
+    if(     dUMax > 1.0) alp = 0.04;
+    else if(dUMax > 0.1) alp = 0.2;
+
+    /* Update q and k. */
+    q -= alp*dU[0];
+    k -= alp*dU[1];
+
+    /* Convergence check, which is independent of the precision used. */
+    if((dUMax < 1.e-3) && (dUMax >= duMaxPrev)) break;
+    duMaxPrev = dUMax;
+  }
+
+  /* Check if the Newton algorithm actually converged. */
+  if(iter == iterMax) {
+    cout << "In function CFEM_DG_EulerSolver::RinglebSolution: "
+         << "Newton algorithm did not converge." << endl << flush;
+    exit(1);
+  }
+
+  /* Compute the speed of sound, density and pressure. */
+  const su2double a   = sqrt(1.0 - 0.5*gm1*q*q);
+  const su2double rho = pow(a,tovgm1);
+  const su2double p   = pow(a,tgovgm1)/Gamma;
+
+  /* Initialize the velocity direction to (0,-1), which corresponds to the
+     direction on the symmetry line. */
+  su2double velDir[] = {0.0, -1.0};
+
+  /* Check for a point away from the symmetry line. */
+  if(fabs(y) > 1.e-8) {
+
+    /*--- Determine the derivatives of x and y w.r.t. q, such that the direction
+          of the streamline can be determined. This direction is identical to the
+          velocity direction. ---*/
+    const su2double dadq   = -0.5*gm1*q/a;
+    const su2double drhodq =  2.0*rho*dadq/(gm1*a);
+    const su2double dJJdq  =  dadq/(pow(a,6)*(a*a-1.0));
+
+    const su2double dxdq = -(1.0/(k*k) - 0.5/(q*q))*drhodq/(rho*rho)
+                         +   1.0/(rho*q*q*q) - 0.5*dJJdq;
+
+    const su2double dydq = y > 0.0 ? -y*drhodq/rho - 1.0/(rho*q*q*sqrt(k*k - q*q))
+                                   : -y*drhodq/rho + 1.0/(rho*q*q*sqrt(k*k - q*q));
+
+    const su2double vecLen = sqrt(dxdq*dxdq + dydq*dydq);
+
+    velDir[0] = dxdq/vecLen; velDir[1] = dydq/vecLen;
+    if(velDir[1] > 0.0){velDir[0] = -velDir[0]; velDir[1] = -velDir[1];}
+  }
+
+  /* Compute the conservative variables. Note that both 2D and 3D
+     cases are treated correctly. */
+  sol[0]      = rho;
+  sol[1]      = rho*q*velDir[0];
+  sol[2]      = rho*q*velDir[1];
+  sol[3]      = 0.0;
+  sol[nVar-1] = p/gm1 + 0.5*rho*q*q;
+}
+
+#endif
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
   
@@ -3809,9 +4045,11 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   }
 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
-  SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
-                     MPI_SUM, MPI_COMM_WORLD);
-
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
+                       MPI_SUM, MPI_COMM_WORLD);
+  }
+  
   /*--- Copy the data back from globBuf into the required variables. ---*/
   ii = 0;
   AllBound_CD_Visc  = globBuf[ii++]; AllBound_CL_Visc       = globBuf[ii++];
@@ -3834,8 +4072,10 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Determine the maximum heat flux over all ranks. */
   su2double localMax = AllBound_MaxHeatFlux_Visc;
-  SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
-                     MPI_MAX, MPI_COMM_WORLD);
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
+                       MPI_MAX, MPI_COMM_WORLD);
+  }
 #endif
 
   /*--- Update the total coefficients (note that all the nodes have the same value)---*/
