@@ -861,7 +861,7 @@ def main():
     coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
     coupled_FSI.test_iter  = 1
     coupled_FSI.su2_exec   = "fsi_computation.py"
-    coupled_FSI.timeout    = 3200
+    coupled_FSI.timeout    = 6400
     coupled_FSI.reference_file = "StructHistory.dat.ref_serial"
     coupled_FSI.test_file  = "StructHistory.dat"
     pass_list.append(coupled_FSI.run_filediff())
