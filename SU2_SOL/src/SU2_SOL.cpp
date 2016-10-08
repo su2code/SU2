@@ -63,6 +63,9 @@ int main(int argc, char *argv[]) {
    file is specified, default.cfg is used) ---*/
   
   if (argc == 2) { strcpy(config_file_name,argv[1]); }
+  else if (argc == 3) {
+	  strcpy(config_file_name,argv[1]);
+	  nZone = atoi(argv[2]);}
   else { strcpy(config_file_name, "default.cfg"); }
 
   CConfig *config = NULL;
