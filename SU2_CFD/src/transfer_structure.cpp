@@ -228,6 +228,16 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     if(Target_check == -1 || Donor_check == -1){
 		continue;
 	}
+	
+	nLocalVertexDonor  = 0;
+	nLocalVertexTarget = 0;
+	
+	if( Marker_Donor != -1 )
+		nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+		
+	if( Marker_Target != -1 )
+		nLocalVertexTarget = target_geometry->GetnVertex(Marker_Target);
+
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;							   // Retrieve total number of vertices on Target marker
@@ -647,6 +657,19 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     if(Target_check == -1 || Donor_check == -1){
 		continue;
 	}
+	
+	nLocalVertexDonorOwned = 0;
+	nLocalVertexDonor      = 0;
+	
+	if( Marker_Donor != -1 ){
+		nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+	
+		for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
+			  Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+			  if (donor_geometry->node[Point_Donor]->GetDomain())
+				nLocalVertexDonorOwned++;
+			}
+    }
 
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
@@ -859,6 +882,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
+  unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor;
   unsigned long iLocalVertex = 0;
   unsigned long nLocalVertexDonor = 0, nLocalVertexDonorOwned = 0;
   
@@ -884,12 +908,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
     
+    Buffer_Recv_nVertexDonor = NULL;
     
     Marker_Donor = -1;
     Marker_Target = -1;
-    
-    /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
-    unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;//out
     
     /*--- The donor and target markers are tagged with the same index.
      *--- This is independent of the MPI domain decomposition.
@@ -973,7 +995,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 	}
 	
 	nLocalVertexDonorOwned = 0;
-	nLocalVertexDonor = 0;
+	nLocalVertexDonor      = 0;
 	
 	if( Marker_Donor != -1 ){
 		nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
@@ -1332,7 +1354,11 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     if(Target_check == -1 || Donor_check == -1){
 		continue;
 	}
-	
+
+	nLocalVertexDonor = 0;
+
+	if( Marker_Donor != -1 )
+		nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
     Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
