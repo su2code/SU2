@@ -529,7 +529,7 @@ def main():
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
     channel_3D.cfg_file  = "channel_3D_NN.cfg"
     channel_3D.test_iter = 1
-    channel_3D.test_vals = [-3.253344, 3.793506, 0.000000, 0.000000] #last 4 columns
+    channel_3D.test_vals = [-1.899948, 4.032874, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
     channel_3D.timeout   = 1600
     channel_3D.tol       = 0.00001
