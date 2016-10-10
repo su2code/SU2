@@ -493,8 +493,8 @@ def main():
     pipe           = TestCase('pipe')
     pipe.cfg_dir   = "sliding_interface/pipe"
     pipe.cfg_file  = "pipe_NN.cfg"
-    pipe.test_iter = 10
-    pipe.test_vals = [-12.316854, -6.935001, 0.000000, 0.000000] #last 4 columns
+    pipe.test_iter = 2
+    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
     pipe.su2_exec  = "parallel_computation.py -f"
     pipe.timeout   = 1600
     pipe.tol       = 0.00001
