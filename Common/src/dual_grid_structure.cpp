@@ -59,7 +59,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 	Coord = new su2double[nDim];
 
 	/*--- Indicator if the control volume has been agglomerated ---*/
-  
+    Parent_CV = 0;
 	Agglomerate = false;
 	
   /*--- Flip the normal orientation ---*/
