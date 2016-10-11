@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - a.rubino@tudelft.nl
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - fix_parallelFSIsol
+        - develop
 
 env:
     global:
