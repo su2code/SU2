@@ -61,6 +61,9 @@ using namespace std;
  */
 class CGridMovement {
 public:
+	unsigned short count;
+
+public:
 
 	/*! 
 	 * \brief Constructor of the class. 

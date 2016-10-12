@@ -2481,6 +2481,19 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 	deltaX[1] = xDot[1]*(time_new-time_old);
 	deltaX[2] = xDot[2]*(time_new-time_old);
 
+	su2double L;
+	if (iter == 0){
+		count = 0;
+	  L = 0.0;
+	}
+
+	L = xDot[1]*time_new - 0.105*count;
+
+	if ( L > 0.105){
+		count++;
+		deltaX[1] = (L-0.105) - 0.105;
+	}
+
   if (rank == MASTER_NODE) {
     cout << " New physical time: " << time_new << " seconds." << endl;
     if (iter == 0) {
