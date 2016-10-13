@@ -33,6 +33,7 @@ SU2_PY/pySU2/*.py
 
 # Compiled Makefiles
 Makefile
+Makefile.in
 
 # Emacs temporary files
 *~
