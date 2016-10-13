@@ -15,21 +15,25 @@ File: dir,	Node: Top	This is the top of the INFO tree
 * Menu:
 
 Individual utilities
-* aclocal-invocation: (automake)aclocal Invocation.   Generating aclocal.m4.
+* aclocal-invocation: (automake)aclocal Invocation.
+                                                Generating aclocal.m4.
 * autoconf-invocation: (autoconf)autoconf Invocation.
-                                How to create configuration scripts
-* autoheader: (autoconf)autoheader Invocation.
-                                How to create configuration templates
-* autom4te: (autoconf)autom4te Invocation.
-                                The Autoconf executables backbone
-* automake-invocation: (automake)automake Invocation. Generating Makefile.in.
-* autoreconf: (autoconf)autoreconf Invocation.
-                                Remaking multiple `configure' scripts
-* autoscan: (autoconf)autoscan Invocation.
-                                Semi-automatic `configure.ac' writing
-* autoupdate: (autoconf)autoupdate Invocation.
-                                Automatic update of `configure.ac'
-* config.status: (autoconf)config.status Invocation. Recreating configurations.
+                                                How to create configuration 
+                                                  scripts
+* autoheader: (autoconf)autoheader Invocation.  How to create configuration 
+                                                  templates
+* autom4te: (autoconf)autom4te Invocation.      The Autoconf executables 
+                                                  backbone
+* automake-invocation: (automake)automake Invocation.
+                                                Generating Makefile.in.
+* autoreconf: (autoconf)autoreconf Invocation.  Remaking multiple `configure' 
+                                                  scripts
+* autoscan: (autoconf)autoscan Invocation.      Semi-automatic `configure.ac' 
+                                                  writing
+* autoupdate: (autoconf)autoupdate Invocation.  Automatic update of 
+                                                  `configure.ac'
+* config.status: (autoconf)config.status Invocation.
+                                                Recreating configurations.
 * configure: (autoconf)configure Invocation.    Configuring a package.
 * ifnames: (autoconf)ifnames Invocation.        Listing conditionals in source.
 * libtool-invocation: (libtool)Invoking libtool.
