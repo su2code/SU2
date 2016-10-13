@@ -994,15 +994,6 @@ public:
 	void Rigid_Translation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
   
   /*!
-	 * \brief Unsteady translational grid movement using periodic rigid mesh motion.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] iZone - Zone number in the mesh.
-   * \param[in] iter - Physical time iteration number.
-	 */
-	void Rigid_PeriodicTranslation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
-
-  /*!
    * \brief Scale the volume grid by a multiplicative factor.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
