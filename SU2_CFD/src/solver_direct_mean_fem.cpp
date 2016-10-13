@@ -1476,11 +1476,6 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /* Initialize solutionSet. If a solution is set below, this boolean must be
      set to true, such that the solution is communicated to the halo elements
      at the end of this function. */
@@ -1489,6 +1484,10 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 #ifdef INVISCID_VORTEX
 
   solutionSet = true;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   /* Write a message that the solution is initialized for the inviscid vortex
      test case. */
@@ -1571,6 +1570,10 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
      is impossible to obtain a converged solution. */
 
   solutionSet = true;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   /* Write a message that the solution is initialized for the Ringleb test case. */
   if(rank == MASTER_NODE) {
@@ -1602,6 +1605,10 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 #elif TAYLOR_GREEN
   
   solutionSet = true;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
   
   /* Write a message that the solution is initialized for the Taylor-Green vortex
      test case. */
@@ -5102,7 +5109,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       /* If the normal velocity must be mirrored instead of set to zero,
          the normal component that must be subtracted must be doubled. If the
          normal velocity must be set to zero, simply comment this line. */
-      rVn *= 2.0;
+      //rVn *= 2.0;
 
       /* Set the right state. The initial value of the total energy is the
          energy of the left state. */
