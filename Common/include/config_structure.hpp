@@ -96,26 +96,27 @@ private:
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
-  EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
-  InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
+  EquivArea,				      /*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+  InvDesign_Cp,				    /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_HeatFlux,			/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  Grid_Movement,			    /*!< \brief Flag to know if there is grid movement. */
+  Periodic_Rigid_Movement,/*!< \brief Flag to know if there is periodic rigid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
   Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
-  Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
-	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
-	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
-	Low_Mach_Corr,			/*!< \brief Flag to know if we are using a low Mach number correction. */
-	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
-	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
-	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
-	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
-	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
+  Rotating_Frame,			    /*!< \brief Flag to know if there is a rotating frame. */
+	PoissonSolver,			    /*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
+	Low_Mach_Precon,		    /*!< \brief Flag to know if we are using a low Mach number preconditioner. */
+	Low_Mach_Corr,			    /*!< \brief Flag to know if we are using a low Mach number correction. */
+	GravityForce,			      /*!< \brief Flag to know if the gravity force is incuded in the formulation. */
+	SmoothNumGrid,			    /*!< \brief Smooth the numerical grid. */
+	AdaptBoundary,			    /*!< \brief Adapt the elements on the boundary. */
+	Engine_Intake,			    /*!< \brief Engine intake subsonic region. */
+	Frozen_Visc,			      /*!< \brief Flag for adjoint problem with/without frozen viscosity. */
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
-	Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
-	Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-	DebugMode, /*!< \brief Flag for debug mode */
-  ionization;  /*!< \brief Flag for determining if free electron gas is in the mixture */
+	Hold_GridFixed,	        /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
+	Axisymmetric,           /*!< \brief Flag for axisymmetric calculations */
+	DebugMode,              /*!< \brief Flag for debug mode */
+  ionization;             /*!< \brief Flag for determining if free electron gas is in the mixture */
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Bleed;	/*!< \brief Damping factor for the engine bleed. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
@@ -4153,6 +4154,12 @@ public:
 	 * \return <code>TRUE</code> if there is a grid movement; otherwise <code>FALSE</code>.
 	 */
 	bool GetGrid_Movement(void);
+
+	/*!
+	 * \brief Get information about periodic rigid movement.
+	 * \return <code>TRUE</code> if there is a periodic rigid movement; otherwise <code>FALSE</code>.
+	 */
+	bool GetPeriodic_Rigid_Movement(void);
 
 	/*!
 	 * \brief Get the type of dynamic mesh motion.

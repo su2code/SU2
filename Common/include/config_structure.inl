@@ -997,6 +997,8 @@ inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 
+inline bool CConfig::GetPeriodic_Rigid_Movement(void) { return Periodic_Rigid_Movement; }
+
 inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }
 
 inline bool CConfig::GetAxisymmetric(void) { return Axisymmetric; }

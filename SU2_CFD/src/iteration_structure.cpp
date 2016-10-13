@@ -144,8 +144,15 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
        of rigid mesh motion. These routines also compute analytic grid
        velocities for the fine mesh. ---*/
 
-      grid_movement[val_iZone]->Rigid_Translation(geometry_container[val_iZone][MESH_0],
-                                       config_container[val_iZone], val_iZone, ExtIter);
+      if (config_container[val_iZone]->GetPeriodic_Rigid_Movement()){
+      	grid_movement[val_iZone]->Rigid_PeriodicTranslation(geometry_container[val_iZone][MESH_0],
+      			config_container[val_iZone], val_iZone, ExtIter);
+      }
+      else{
+      	grid_movement[val_iZone]->Rigid_Translation(geometry_container[val_iZone][MESH_0],
+      			config_container[val_iZone], val_iZone, ExtIter);
+      }
+
       grid_movement[val_iZone]->Rigid_Plunging(geometry_container[val_iZone][MESH_0],
                                     config_container[val_iZone], val_iZone, ExtIter);
       grid_movement[val_iZone]->Rigid_Pitching(geometry_container[val_iZone][MESH_0],

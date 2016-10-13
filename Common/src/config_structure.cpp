@@ -1161,6 +1161,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Mesh motion for unsteady simulations */
   addBoolOption("GRID_MOVEMENT", Grid_Movement, false);
+  /* DESCRIPTION: Periodic mesh movement for rigid mesh motion */
+  addBoolOption("PERIODIC_RIGID_MOVEMENT", Periodic_Rigid_Movement, false);
   /* DESCRIPTION: Type of mesh motion */
   addEnumListOption("GRID_MOVEMENT_KIND", nGridMovement, Kind_GridMovement, GridMovement_Map);
   /* DESCRIPTION: Marker(s) of moving surfaces (MOVING_WALL or DEFORMING grid motion). */
