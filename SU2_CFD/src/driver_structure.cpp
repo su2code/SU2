@@ -474,9 +474,9 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (geometry_container[iZone]!=NULL) {
+    if (geometry_container[iZone] != NULL) {
       for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
-        if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
+        if (geometry_container[iZone][iMGlevel] != NULL) delete geometry_container[iZone][iMGlevel];
       }
       delete [] geometry_container[iZone];
     }
@@ -504,9 +504,9 @@ void CDriver::Postprocessing() {
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
-  if (config_container!=NULL) {
+  if (config_container!= NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone]!=NULL) {
+      if (config_container[iZone] != NULL) {
         delete config_container[iZone];
       }
     }
@@ -515,7 +515,7 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
   /*--- Deallocate output container ---*/
-  if (output!=NULL) delete output;
+  if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
