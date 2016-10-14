@@ -2495,9 +2495,9 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
   	su2double periodicX[3];
 
-    periodicX[0] = 0.0;
+    periodicX[0] = config->GetPeriodicity_X(iZone);
     periodicX[1] = config->GetPeriodicity_Y(iZone);
-    periodicX[2] = 0.0;
+    periodicX[2] = config->GetPeriodicity_Z(iZone);
 
 
   	su2double deltaX_Periodic[3];
@@ -2516,15 +2516,15 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   	deltaX_Periodic[1] = fabs(xDot[1]*time_new) - periodicX[1]*periodic_count[1];
   	deltaX_Periodic[2] = fabs(xDot[2]*time_new) - periodicX[2]*periodic_count[2];
 
-  	if ( deltaX_Periodic[0] >= periodicX[0] && periodicX[0] !=0 ){
+  	if ( deltaX_Periodic[0] >= periodicX[0] && deltaX[0] !=0. ){
   		periodic_count[0]++;
   		(xDot[0] < 0.) ? (deltaX[0] += periodicX[0]) : (deltaX[0] -= periodicX[0]);
   	}
-  	if ( deltaX_Periodic[1] >= periodicX[1] && periodicX[1] !=0 ){
+  	if ( deltaX_Periodic[1] >= periodicX[1] && deltaX[1] !=0. ){
   		periodic_count[1]++;
   		(xDot[1] < 0.) ? (deltaX[1] += periodicX[1]) : (deltaX[1] -= periodicX[1]);
   	}
-  	if ( deltaX_Periodic[2] >= periodicX[2] && periodicX[2] !=0 ){
+  	if ( deltaX_Periodic[2] >= periodicX[2] && deltaX[2] !=0. ){
   		periodic_count[2]++;
   		(xDot[2] < 0.) ? (deltaX[2] += periodicX[2]) : (deltaX[2] -= periodicX[2]);
   	}
