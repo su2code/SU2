@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - giulio.gori@polimi.it
+            - a.rubino@tudelft.nl
   
 branches:
     only:
-        - feature_driver_prototype
+        - feature_turboSM
 
 env:
     global:
