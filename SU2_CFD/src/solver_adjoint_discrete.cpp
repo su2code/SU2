@@ -422,6 +422,19 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
   case MASS_FLOW_RATE:
     ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
     break;
+  case NET_THRUST_COEFFICIENT:
+    ObjFunc_Value = direct_solver->GetTotal_NetCThrust();
+    break;
+  case IDC_COEFFICIENT:
+    ObjFunc_Value = direct_solver->GetTotal_IDC();
+    break;
+  case PROPULSIVE_EFFICIENCY:
+    ObjFunc_Value = direct_solver->GetTotal_Prop_Eff();
+    break;
+  case CUSTOM_COEFFICIENT:
+    ObjFunc_Value = direct_solver->GetTotal_Custom();
+    break;
+
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and

@@ -534,14 +534,26 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   
 	VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
 
+  /*--- Set periodic points to zero ---*/
+  
+  PeriodicPoint[0] = -1; PeriodicPoint[1] = -1; PeriodicPoint[2] = -1;
+  PeriodicPoint[3] = -1; PeriodicPoint[4] = -1;
+
+  /*--- Identify the points at the perimeter of the actuatrod disk ---*/
+  
+  ActDisk_Perimeter = false;
+
 	/*--- Set to NULL variation of the rotation  ---*/
+  
 	VarRot = NULL;
 
 	/*--- Set to NULL donor arrays for interpolation ---*/
+  
   	Donor_Points = NULL;
   	Donor_Proc = NULL;
   	Donor_Coeff = NULL;
   	nDonor_Points = 1;
+
 }
 
 CVertex::~CVertex() {
@@ -554,7 +566,7 @@ CVertex::~CVertex() {
   if (Donor_Proc != NULL) delete[] Donor_Proc;
   if (Donor_Points != NULL) delete[] Donor_Points;
 
-  if (VarRot!=NULL)
+  if (VarRot!= NULL)
     delete[] VarRot;
 
 

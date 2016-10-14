@@ -138,17 +138,17 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 CNumerics::~CNumerics(void) {
 
-  if (UnitNormal!=NULL) delete [] UnitNormal;
-  if (UnitNormald!=NULL) delete [] UnitNormald;
+  if (UnitNormal!= NULL) delete [] UnitNormal;
+  if (UnitNormald!= NULL) delete [] UnitNormald;
 
-  if (U_n!=NULL) delete [] U_n;
-  if (U_nM1!=NULL) delete [] U_nM1;
-  if (U_nP1!=NULL) delete [] U_nP1;
+  if (U_n!= NULL) delete [] U_n;
+  if (U_nM1!= NULL) delete [] U_nM1;
+  if (U_nP1!= NULL) delete [] U_nP1;
 
 	// visc
-  if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
+  if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
 
-  if (Flux_Tensor!=NULL) {
+  if (Flux_Tensor!= NULL) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }

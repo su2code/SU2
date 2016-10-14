@@ -10,12 +10,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../../SU2_CFD/src/solver_direct_mean.cpp"
-            timestampString = "494307600.366008"
+            timestampString = "498174184.640314"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "5134"
-            endingLineNumber = "5134"
-            landmarkName = "CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config)"
+            startingLineNumber = "5142"
+            endingLineNumber = "5142"
+            landmarkName = "CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh)"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
