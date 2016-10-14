@@ -994,16 +994,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("CUSTOM_COEFFICIENT", CUSTOM_COEFFICIENT);
 
 /*!
- * \brief types of objective custom functions
- */
-enum ENUM_OBJECTIVE_CUSTOM {
-  IDC_MFR_PENALTY = 1 	      /*!< \brief Lift objective function definition. */
-};
-
-static const map<string, ENUM_OBJECTIVE_CUSTOM> ObjectiveCustom_Map = CCreateMap<string, ENUM_OBJECTIVE_CUSTOM>
-("IDC_MFR_PENALTY", IDC_MFR_PENALTY);
-
-/*!
  * \brief types of residual criteria equations
  */
 

@@ -47,7 +47,7 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "/Users/fpalacios/Desktop/test"
+      customWorkingDirectory = "/Users/fpalacios/SU2/TestCases/rans/propeller"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
@@ -64,7 +64,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "default.cfg"
+            argument = "propeller.cfg"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

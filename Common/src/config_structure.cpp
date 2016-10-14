@@ -891,11 +891,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
-  /*!\brief OBJECTIVE_FUNCTION_CUSTOM
-   *  \n DESCRIPTION: Definition of the custom boundary condition \ingroup Config*/
-  addEnumOption("OBJECTIVE_FUNCTION_CUSTOM", Kind_ObjFunc_Custom, ObjectiveCustom_Map, IDC_MFR_PENALTY);
-  /* DESCRIPTION: Runge-Kutta alpha coefficients */
-  addDoubleListOption("OBJECTIVE_FUNCTION_CUSTOM_PARAM", nOFCustomParam, OFCustomParam);
 
   default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
   default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
