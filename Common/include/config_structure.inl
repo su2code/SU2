@@ -229,7 +229,7 @@ inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
 
-inline su2double CConfig::GetTimeSpectral_Period(void) { return TimeSpectral_Period; }
+inline su2double CConfig::GetHarmonicBalance_Period(void) { return HarmonicBalance_Period; }
 
 inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
@@ -736,6 +736,8 @@ inline su2double CConfig::GetPlunging_Ampl_X(unsigned short val_iZone) { return 
 inline su2double CConfig::GetPlunging_Ampl_Y(unsigned short val_iZone) { return  Plunging_Ampl_Y[val_iZone]; }
 
 inline su2double CConfig::GetPlunging_Ampl_Z(unsigned short val_iZone) { return  Plunging_Ampl_Z[val_iZone]; }
+
+inline su2double* CConfig::GetOmega_HB(void) { return  Omega_HB; }
 
 inline unsigned short CConfig::GetMoveMotion_Origin(unsigned short val_marker) {return MoveMotion_Origin[val_marker]; }
 

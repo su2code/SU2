@@ -42,7 +42,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
-
 #include <ctime>
 
 #include "geometry_structure.hpp"
@@ -530,7 +529,7 @@ public:
 	 * \param[in] n - Upper coefficient.
 	 * \param[in] m - Lower coefficient.
 	 * \return Value of the binomial coefficient n over m.
-	 */		
+	 */
 	su2double Binomial(unsigned short n, unsigned short m);
 	
 	/*! 
