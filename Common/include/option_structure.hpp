@@ -1288,12 +1288,12 @@ static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMa
  * \brief types of schemes for unsteady computations
  */
 enum ENUM_UNSTEADY {
-  STEADY = 0,             /*!< \brief A steady computation. */
-  TIME_STEPPING = 1,		/*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,	/*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,	/*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
-  ROTATIONAL_FRAME = 4,   /*!< \brief Use a rotational source term. */
-  TIME_SPECTRAL = 5       	/*!< \brief Use a time spectral source term. */
+  STEADY = 0,            /*!< \brief A steady computation. */
+  TIME_STEPPING = 1,		 /*!< \brief Use a time stepping strategy for unsteady computations. */
+  DT_STEPPING_1ST = 2,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND = 3,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
+  HARMONIC_BALANCE = 5    /*!< \brief Use a harmonic balance source term. */
 
 };
 static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
@@ -1301,7 +1301,7 @@ static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_U
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
 ("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
-("TIME_SPECTRAL", TIME_SPECTRAL)
+("HARMONIC_BALANCE", HARMONIC_BALANCE)
 ("ROTATIONAL_FRAME", ROTATIONAL_FRAME);
 
 /*!

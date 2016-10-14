@@ -3139,7 +3139,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
   /*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       
       /*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
@@ -3148,6 +3148,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
       Solution[iVar]=(1 / (1 - alpha_f))*(node[iPoint]->GetSolution(iVar) -
                                           alpha_f * node[iPoint]->GetSolution_time_n(iVar));
       
+
     }
     
     /*--- Set the solution in the node structure ---*/
