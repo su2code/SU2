@@ -4002,8 +4002,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
     
     cout << "Magnitude: "	<< config->GetModVel_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
+    if (config->GetSystemMeasurements() == SI) cout << " m/s (" << config->GetModVel_FreeStream()*1.94384 << " KTS)." << endl;
+    else if (config->GetSystemMeasurements() == US) cout << " ft/s (" << config->GetModVel_FreeStream()*0.592484 << " KTS)." << endl;
     
     if (compressible) {
       cout << "Free-stream total energy per unit mass: " << config->GetEnergy_FreeStream();
@@ -8230,17 +8230,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
         su2double mu_polytropic = ((Gamma-1.0)/Gamma)/((poly_coeff-1.0)/poly_coeff);
         SetTotal_Poly_Eff(mu_polytropic);
         
-        /*--- The custom objective function depends on the Mach number ---*/
-        
-        if (config->GetKind_ObjFunc_Custom() == IDC_MFR_PENALTY) {
-          su2double PenaltyFunction = 0.0;
-          su2double MFR_Target = config->Get_OFCustomParam(0);
-          su2double Penalty_Scale = config->Get_OFCustomParam(1);
-          if (MFR < MFR_Target) PenaltyFunction = - Penalty_Scale*(MFR-MFR_Target)*(MFR-MFR_Target)*(MFR-MFR_Target);
-          else PenaltyFunction = 0.0;
-          SetTotal_Custom(PenaltyFunction,  1.0);
-        }
-        
         if (write_heads && Output) {
           
           if (iMarker_Inlet > 0) cout << endl;
@@ -9111,10 +9100,6 @@ void CEulerSolver::GetActDisk_Distortion(CGeometry *geometry, CConfig *config, u
       config->SetActDisk_IDC(0, IDC);
       
       SetTotal_IDC(IDC);
-      
-      if (config->GetKind_ObjFunc_Custom() == IDC_MFR_PENALTY) {
-        AddTotal_Custom(IDC, 1.0);
-      }
       
       IDR = 0.0;
       for (iStation = 0; iStation < nStation; iStation++) {

@@ -132,7 +132,6 @@ private:
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
-  unsigned short Kind_ObjFunc_Custom;  /*!< \brief Kind of objective function. */
   unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
   su2double *Weight_ObjFunc;    /*!< \brief Weight applied to objective function. */
   unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
@@ -340,8 +339,6 @@ private:
   long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
   unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
-  unsigned short nOFCustomParam;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
-  su2double *OFCustomParam;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
 	su2double
@@ -2490,13 +2487,6 @@ public:
 	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
 	 */
 	su2double Get_Alpha_RKStep(unsigned short val_step);
-  
-  /*!
-   * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
-   * \param[in] val_step - Index of the step.
-   * \return Alpha coefficient for the Runge-Kutta integration scheme.
-   */
-  su2double Get_OFCustomParam(unsigned short val_index);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -3664,14 +3654,6 @@ public:
 	 * \return Kind of objective function.
 	 */
 	unsigned short GetKind_ObjFunc(void);
-  
-  /*!
-   * \brief Get the kind of objective function. There are several options: Drag coefficient,
-   *        Lift coefficient, efficiency, etc.
-   * \note The objective function will determine the boundary condition of the adjoint problem.
-   * \return Kind of objective function.
-   */
-  unsigned short GetKind_ObjFunc_Custom(void);
 
 	/*!
 	 * \author H. Kline

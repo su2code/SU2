@@ -604,8 +604,6 @@ inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
 
-inline su2double CConfig::Get_OFCustomParam(unsigned short val_index) { return OFCustomParam[val_index]; }
-
 inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {	
 	if (nMG_PreSmooth == 0) return 1;
 	else return MG_PreSmooth[val_mesh]; 
@@ -938,8 +936,6 @@ inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
 inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc[0]; }
-
-inline unsigned short CConfig::GetKind_ObjFunc_Custom(void) {return Kind_ObjFunc_Custom; }
 
 inline unsigned short CConfig::GetKind_ObjFunc(unsigned short val_obj) {return Kind_ObjFunc[val_obj]; }
 
