@@ -61,7 +61,7 @@ using namespace std;
  */
 class CGridMovement {
 public:
-	unsigned short count;
+	unsigned short periodic_count[3];
 
 public:
 

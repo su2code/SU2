@@ -2492,19 +2492,43 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
 	/*--- Update periodic mesh taking into account periodicity ---*/
   if (config->GetPeriodic_Rigid_Movement()){
-  	su2double L;
+
+  	su2double periodicX[3];
+
+    periodicX[0] = 0.0;
+    periodicX[1] = config->GetPeriodicity_Y(iZone);
+    periodicX[2] = 0.0;
+
+
+  	su2double deltaX_Periodic[3];
 
   	if (iter == 0){
-  		count = 0;
-  		L = 0.0;
+
+  		periodic_count[0]  = 0;
+  		periodic_count[1]  = 0;
+  		periodic_count[2]  = 0;
+  		deltaX_Periodic[0] = 0.0;
+  		deltaX_Periodic[1] = 0.0;
+  		deltaX_Periodic[2] = 0.0;
   	}
 
-  	L = xDot[1]*time_new - 0.105*count;
+  	deltaX_Periodic[0] = fabs(xDot[0]*time_new) - periodicX[0]*periodic_count[0];
+  	deltaX_Periodic[1] = fabs(xDot[1]*time_new) - periodicX[1]*periodic_count[1];
+  	deltaX_Periodic[2] = fabs(xDot[2]*time_new) - periodicX[2]*periodic_count[2];
 
-  	if ( L >= 0.105){
-  		count++;
-  		deltaX[1] = - 0.105  + deltaX[1];
+  	if ( deltaX_Periodic[0] >= periodicX[0] && periodicX[0] !=0 ){
+  		periodic_count[0]++;
+  		(xDot[0] < 0.) ? (deltaX[0] += periodicX[0]) : (deltaX[0] -= periodicX[0]);
   	}
+  	if ( deltaX_Periodic[1] >= periodicX[1] && periodicX[1] !=0 ){
+  		periodic_count[1]++;
+  		(xDot[1] < 0.) ? (deltaX[1] += periodicX[1]) : (deltaX[1] -= periodicX[1]);
+  	}
+  	if ( deltaX_Periodic[2] >= periodicX[2] && periodicX[2] !=0 ){
+  		periodic_count[2]++;
+  		(xDot[2] < 0.) ? (deltaX[2] += periodicX[2]) : (deltaX[2] -= periodicX[2]);
+  	}
+
   }
   
 	/*--- Loop over and move each node in the volume mesh ---*/

@@ -655,7 +655,8 @@ private:
   *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
   *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
   *Plunging_Ampl_Z,           /*!< \brief Plunging amplitude in the z-direction. */
-  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
+  *Periodicity_Y;              /*!< \brief Periodic distance in y-direction. */
+  su2double *Omega_HB;        /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
 	nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
 	nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
@@ -680,6 +681,7 @@ private:
 	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+	nPeriodicity_Y,             /*!< \brief Number of periodic option distance y-direction. */
     nOmega_HB,                /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
@@ -4180,6 +4182,13 @@ public:
 	 * \return Mach number based on the mesh velocity and freestream quantities.
 	 */
 	su2double GetMach_Motion(void);
+
+	/*!
+	 * \brief Get periodicity in Y-direction.
+	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+	 * \return Y-distance of periodicity.
+	 */
+	su2double GetPeriodicity_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get x-coordinate of the mesh motion origin.

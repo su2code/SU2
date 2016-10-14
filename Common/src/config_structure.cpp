@@ -360,6 +360,7 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X 	= NULL;     Plunging_Ampl_Y 	= NULL;     Plunging_Ampl_Z 		= NULL;
   RefOriginMoment_X 	= NULL;     RefOriginMoment_Y 	= NULL;     RefOriginMoment_Z 		= NULL;
   MoveMotion_Origin 	= NULL;
+  Periodicity_Y = NULL;
   Periodic_Translate	= NULL;     Periodic_Rotation 	= NULL;     Periodic_Center		= NULL;
   Periodic_Translation	= NULL;     Periodic_RotAngles	= NULL;	    Periodic_RotCenter		= NULL;
 
@@ -1217,6 +1218,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
   addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  /* DESCRIPTION: Periodicity distance in Y-direction */
+  addDoubleListOption("PERIODICITY_Y", nPeriodicity_Y, Periodicity_Y);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
@@ -2394,6 +2397,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*-- Setting grid movement periodicity from the config file */
+  if (Periodicity_Y == NULL) {
+  	Periodicity_Y = new su2double[nMoving];
+  	for (iZone = 0; iZone < nMoving; iZone++ )
+  		Periodicity_Y[iZone] = 0.0;
+  } else {
+  	if (Grid_Movement && (nPeriodicity_Y != nGridMovement)) {
+  		cout << "Length of PERIODICITY_Y must match GRID_MOVEMENT_KIND!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  }
+
   /*-- Setting Harmonic Balance period from the config file */
 
   if (Unsteady_Simulation == HARMONIC_BALANCE) {
@@ -4891,6 +4906,10 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_X != NULL) delete [] RefOriginMoment_X;
   if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
   if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
+
+  /*--- reference origin for moments ---*/
+
+  if (Periodicity_Y != NULL) delete [] Periodicity_Y;
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
     
