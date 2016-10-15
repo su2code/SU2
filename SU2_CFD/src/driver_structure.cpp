@@ -2435,67 +2435,61 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
 
 
 bool CDriver::Monitor(unsigned long ExtIter) {
-
-    /*--- Synchronization point after a single solver iteration. Compute the
-     wall clock time required. ---*/
-
+  
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+  
 #ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StopTime = MPI_Wtime();
+  StopTime = MPI_Wtime();
 #endif
-
-    UsedTime = (StopTime - StartTime);
-
-    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-
-    if (config_container[ZONE_0]->GetEquivArea() == YES) {
-      output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-    }
-
-    /*--- Check if there is any change in the runtime parameters ---*/
-
-    CConfig *runtime = NULL;
-    strcpy(runtime_file_name, "runtime.dat");
-    runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-    runtime->SetExtIter(ExtIter);
-    delete runtime;
-
-    /*--- Update the convergence history file (serial and parallel computations). ---*/
-
-    if (!fsi) {
-      output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-				config_container, integration_container, false, UsedTime, ZONE_0);
-
-    }
-
-
-    /*--- Evaluate the new CFL number (adaptive). ---*/
-
-    if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-      output->SetCFL_Number(solver_container, config_container, ZONE_0);
-    }
-
-    /*--- Check whether the current simulation has reached the specified
-     convergence criteria, and set StopCalc to true, if so. ---*/
-
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-      case EULER: case NAVIER_STOKES: case RANS:
-        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-      case WAVE_EQUATION:
-        StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
-      case HEAT_EQUATION:
-        StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
-      case FEM_ELASTICITY:
-	StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-    }
-
-    return StopCalc;
-
+  
+  UsedTime = (StopTime - StartTime);
+  
+  
+  /*--- Check if there is any change in the runtime parameters ---*/
+  
+  CConfig *runtime = NULL;
+  strcpy(runtime_file_name, "runtime.dat");
+  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+  runtime->SetExtIter(ExtIter);
+  delete runtime;
+  
+  /*--- Update the convergence history file (serial and parallel computations). ---*/
+  
+  if (!fsi) {
+    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+                                config_container, integration_container, false, UsedTime, ZONE_0);
+    
+  }
+  
+  
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  
+  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+    output->SetCFL_Number(solver_container, config_container, ZONE_0);
+  }
+  
+  /*--- Check whether the current simulation has reached the specified
+   convergence criteria, and set StopCalc to true, if so. ---*/
+  
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+    case WAVE_EQUATION:
+      StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
+    case HEAT_EQUATION:
+      StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+    case FEM_ELASTICITY:
+      StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+  }
+  
+  return StopCalc;
+  
 }
 
 
@@ -2563,6 +2557,22 @@ void CDriver::Output(unsigned long ExtIter) {
 
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 
+      /*--- For specific applications, evaluate and plot the actuator disk fan face. ---*/
+      
+      if (config_container[ZONE_0]->GetnMarker_ActDiskInlet() != 0) {
+        
+        output->WriteActDisk_FanFace(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0],
+                                     solver_container[ZONE_0][MESH_0][FLOW_SOL]);
+      }
+      
+      /*--- For specific applications, evaluate and plot the equivalent area. ---*/
+      
+      if (config_container[ZONE_0]->GetEquivArea() == YES) {
+        
+        output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+      }
+      
       /*--- Execute the routine for writing restart, volume solution,
        surface solution, and surface comma-separated value files. ---*/
 
