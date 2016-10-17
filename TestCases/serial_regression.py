@@ -201,7 +201,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [0.723141, -4.557869, -0.143910, 0.522880] #last 4 columns
+    propeller.test_vals = [-3.379448, -8.620821, 0.000042, 0.070027] #last 4 columns
     propeller.su2_exec  = "SU2_CFD"
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
