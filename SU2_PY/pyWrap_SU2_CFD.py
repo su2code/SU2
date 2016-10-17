@@ -81,7 +81,7 @@ def main():
     raise Exception("No config file provided. Use -f flag")
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  if (options.nZone == 1) and ( (options.fem or or or ):
+  if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
     SU2Driver = SU2Solver.CGeneralDriver(options.filename, options.nZone, options.nDim);
   elif options.harmonic_balance:
     SU2Driver = SU2Solver.CHBDriver(options.filename, options.nZone, options.nDim);
