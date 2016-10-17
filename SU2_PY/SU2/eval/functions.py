@@ -79,9 +79,14 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     
+    # check for multiple objectives
     multi_objective = (type(func_name)==list)
+    # func_name_string is only used to check whether the function has already been evaluated. 
+    func_name_string = func_name
+    if multi_objective:   func_name_string = func_name[0]  
+
     # redundancy check
-    if multi_objective or not state['FUNCTIONS'].has_key(func_name):
+    if not state['FUNCTIONS'].has_key(func_name_string):
 
         # Aerodynamics
         if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
