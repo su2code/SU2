@@ -54,16 +54,20 @@ def main():
                     metavar="DIMENSIONS")
   parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
                     metavar="ZONES")
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver",
-                    help="Launch the FSI driver", metavar="FSI")
-  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver",
-                    help="Launch the FEM driver (General driver)", metavar="FEM")
+
+  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
+
+  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
+
   parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
                     help="Launch the Harmonic Balance (HB) driver", metavar="HB")
+
   parser.add_option("--poisson_equation", dest="poisson_equation", default="False",
                     help="Launch the poisson equation driver (General driver)", metavar="POIS_EQ")
+
   parser.add_option("--wave_equation", dest="wave_equation", default="False",
                     help="Launch the wave equation driver (General driver)", metavar="WAVE_EQ")
+
   parser.add_option("--heat_equation", dest="heat_equation", default="False",
                     help="Launch the heat equation driver (General driver)", metavar="HEAT_EQ")
 
