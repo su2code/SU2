@@ -81,7 +81,7 @@ def main():
   # --- Initialize the fluid solver --- #
   if myid == rootProcess:
     print('\n***************************** Initializing fluid solver *****************************')
-  FluidSolver = SU2Solver.CMultiZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'])
+  FluidSolver = SU2Solver.CGeneralDriver(CFD_ConFile, 1, FSI_config['NDIM'])
 
   comm.barrier()
   
