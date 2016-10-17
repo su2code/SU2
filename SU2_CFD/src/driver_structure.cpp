@@ -3083,14 +3083,14 @@ su2double CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short iVer
 
 }
 
-CSingleZoneDriver::CSingleZoneDriver(char* confFile, unsigned short val_nZone,
+CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
                                      unsigned short val_nDim) : CDriver(confFile,
                                                                         val_nZone,
                                                                         val_nDim) { }
 
-CSingleZoneDriver::~CSingleZoneDriver(void) { }
+CGeneralDriver::~CGeneralDriver(void) { }
 
-void CSingleZoneDriver::Run() {
+void CGeneralDriver::Run() {
 
 
   unsigned short iZone;
@@ -3123,7 +3123,7 @@ void CSingleZoneDriver::Run() {
 }
 
 
-void CSingleZoneDriver::Update() {
+void CGeneralDriver::Update() {
 
   iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
@@ -3131,7 +3131,7 @@ void CSingleZoneDriver::Update() {
 
 }
 
-void CSingleZoneDriver::ResetConvergence() {
+void CGeneralDriver::ResetConvergence() {
 
   switch (config_container[ZONE_0]->GetKind_Solver()) {
 
@@ -3166,7 +3166,7 @@ void CSingleZoneDriver::ResetConvergence() {
 
 }
 
-void CSingleZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 
@@ -3177,7 +3177,7 @@ void CSingleZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 }
 
-void CSingleZoneDriver::StaticMeshUpdate() {
+void CGeneralDriver::StaticMeshUpdate() {
 
   int rank = MASTER_NODE;
 
@@ -3195,7 +3195,7 @@ void CSingleZoneDriver::StaticMeshUpdate() {
 
 }
 
-void CSingleZoneDriver::SetInitialMesh() {
+void CGeneralDriver::SetInitialMesh() {
 
   unsigned long iPoint;
 
@@ -3217,11 +3217,11 @@ void CSingleZoneDriver::SetInitialMesh() {
 
 }
 
-CMultiZoneDriver::CMultiZoneDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim) : CDriver(confFile, val_nZone, val_nDim) { }
+CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, unsigned short val_nDim) : CDriver(confFile, val_nZone, val_nDim) { }
 
-CMultiZoneDriver::~CMultiZoneDriver(void) { }
+CFluidDriver::~CFluidDriver(void) { }
 
-void CMultiZoneDriver::Run() {
+void CFluidDriver::Run() {
   
   unsigned short iZone, jZone, checkConvergence;
   unsigned long IntIter, nIntIter;
@@ -3290,7 +3290,7 @@ void CMultiZoneDriver::Run() {
 
 }
 
-void CMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone){
+void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone){
 
 #ifdef HAVE_MPI
 	int rank;
@@ -3350,7 +3350,7 @@ void CMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short ta
 
 }
 
-void CMultiZoneDriver::Update() {
+void CFluidDriver::Update() {
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
@@ -3362,7 +3362,7 @@ void CMultiZoneDriver::Update() {
 
 }
 
-void CMultiZoneDriver::ResetConvergence() {
+void CFluidDriver::ResetConvergence() {
 
   for(iZone = 0; iZone < nZone; iZone++) {
     switch (config_container[iZone]->GetKind_Solver()) {
@@ -3398,7 +3398,7 @@ void CMultiZoneDriver::ResetConvergence() {
 
 }
 
-void CMultiZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
+void CFluidDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
   bool harmonic_balance;
 
@@ -3412,7 +3412,7 @@ void CMultiZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 }
 
-void CMultiZoneDriver::StaticMeshUpdate() {
+void CFluidDriver::StaticMeshUpdate() {
 
   int rank = MASTER_NODE;
 
@@ -3431,7 +3431,7 @@ void CMultiZoneDriver::StaticMeshUpdate() {
   }
 }
 
-void CMultiZoneDriver::SetInitialMesh() {
+void CFluidDriver::SetInitialMesh() {
 
   unsigned long iPoint;
 

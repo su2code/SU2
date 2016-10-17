@@ -298,12 +298,12 @@ public:
 
 };
 /*!
- * \class CSingleZoneDriver
+ * \class CGeneralDriver
  * \brief Class for driving a structural iteration of the physics within multiple zones.
  * \author T. Economon
  * \version 4.3.0 "Cardinal"
  */
-class CSingleZoneDriver : public CDriver {
+class CGeneralDriver : public CDriver {
 public:
 	
 	/*! 
@@ -312,7 +312,7 @@ public:
 	 * \param[in] val_nZone - Total number of zones.
 	 * \param[in] val_nDim - Number of dimensions.
 	 */
-  CSingleZoneDriver(char* confFile,
+  CGeneralDriver(char* confFile,
 
                     unsigned short val_nZone,
                     unsigned short val_nDim);
@@ -320,7 +320,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CSingleZoneDriver(void);
+	~CGeneralDriver(void);
 	
 	/*! 
 	 * \brief Run a single iteration of the physics within a single zone.
@@ -356,12 +356,12 @@ public:
 
 
 /*!
- * \class CMultiZoneDriver
+ * \class CFluidDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon, G. Gori
  * \version 4.3.0 "Cardinal"
  */
-class CMultiZoneDriver : public CDriver {
+class CFluidDriver : public CDriver {
 public:
   
   /*!
@@ -370,14 +370,14 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
    */
-  CMultiZoneDriver(char* confFile,
+  CFluidDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultiZoneDriver(void);
+  ~CFluidDriver(void);
   
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
