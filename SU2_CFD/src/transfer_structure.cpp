@@ -104,12 +104,12 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     Buffer_Recv_mark = new int[size];
 #endif
   
-  unsigned long nLocalVertexDonor = 0, nLocalVertexTarget= 0;
+  unsigned long nLocalVertexDonor   = 0, nLocalVertexTarget   = 0;
   unsigned long MaxLocalVertexDonor = 0, MaxLocalVertexTarget = 0;
   
   unsigned long nBuffer_DonorVariables = 0, nBuffer_TargetVariables = 0;
-  unsigned long nBuffer_DonorIndices = 0, nBuffer_TargetIndices = 0;
-  
+  unsigned long nBuffer_DonorIndices   = 0, nBuffer_TargetIndices   = 0;
+
   unsigned long Processor_Target;
   
   int iProcessor, nProcessor = 0;
@@ -498,14 +498,14 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     Buffer_Recv_mark = new int[size];
 #endif
   
-  unsigned long iLocalVertex = 0;
+  unsigned long iLocalVertex      = 0;
   unsigned long nLocalVertexDonor = 0, nLocalVertexDonorOwned = 0;
   
   unsigned long MaxLocalVertexDonor = 0;
-  unsigned long TotalVertexDonor = 0;
+  unsigned long TotalVertexDonor    = 0;
   
   unsigned long nBuffer_DonorVariables = 0;
-  unsigned long nBuffer_DonorIndices = 0;
+  unsigned long nBuffer_DonorIndices   = 0;
   
   unsigned long nBuffer_BcastVariables = 0, nBuffer_BcastIndices = 0;
   
@@ -513,7 +513,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = ( donor_config->GetMarker_n_FSIinterface() ) / 2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -524,45 +524,18 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
     
-    Marker_Donor = -1;
+    Marker_Donor  = -1;
     Marker_Target = -1;
     
     /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
     unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
     
-    /*--- The donor and target markers are tagged with the same index.
-     *--- This is independent of the MPI domain decomposition.
-     *--- We need to loop over all markers on both sides and get the number of nodes
-     *--- that belong to each FSI marker for each processor ---*/
-    
-    /*--- On the donor side ---*/
-    
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
       /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
       if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
-        /*--- We have identified the local index of the Donor marker ---*/
-        /*--- Now we are going to store the number of local points that belong to Marker_Donor on each processor ---*/
-        /*--- This are the number of points that will be sent from this particular processor ---*/
-        /*--- nLocalVertexDonorOwned WILL NOT include halo nodes ---*/
-        /*--- nLocalVertexDonor WILL include halo nodes ---*/
-        nLocalVertexDonorOwned = 0;
-        for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarkerDonor); iVertex++) {
-          Point_Donor = donor_geometry->vertex[iMarkerDonor][iVertex]->GetNode();
-          if (donor_geometry->node[Point_Donor]->GetDomain()) {
-            nLocalVertexDonorOwned++;
-          }
-        }
-        nLocalVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
-        /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        nLocalVertexDonor = 0;
-        nLocalVertexDonorOwned = 0;
-        Marker_Donor = -1;
       }
     }
     
@@ -575,10 +548,6 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        Marker_Target = -1;
       }
     }
     
@@ -625,7 +594,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     }
 
     nLocalVertexDonorOwned = 0;
-    nLocalVertexDonor = 0;
+    nLocalVertexDonor      = 0;
 
     if( Marker_Donor != -1 ){
       nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
@@ -695,14 +664,15 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
       /*--- If this processor owns the node ---*/
       if (donor_geometry->node[Point_Donor]->GetDomain()) {
-        Point_Target = donor_geometry->vertex[Marker_Donor][iVertex]->GetDonorPoint();
-
+        
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
 
         for (iVar = 0; iVar < nVar; iVar++) 
           Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
+          
+        Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
 
-        Buffer_Send_DonorIndices[2*iVertex]     = Point_Target;
+        Buffer_Send_DonorIndices[iVertex] = Point_Donor_Global;
       }
 
     }
@@ -950,7 +920,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     }
 
     nLocalVertexDonorOwned = 0;
-    nLocalVertexDonor = 0;
+    nLocalVertexDonor      = 0;
 	
 	if( Marker_Donor != -1 ){
 		nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
@@ -1226,26 +1196,10 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
       /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
       if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
-        /*--- We have identified the local index of the Donor marker ---*/
-        /*--- Now we are going to store the number of local points that belong to Marker_Donor on each processor ---*/
-        /*--- This are the number of points that will be sent from this particular processor ---*/
-        /*--- nLocalVertexDonor WILL NOT include halo nodes ---*/
-        nLocalVertexDonor = 0;
-        for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarkerDonor); iVertex++) {
-          Point_Donor = donor_geometry->vertex[iMarkerDonor][iVertex]->GetNode();
-          if (donor_geometry->node[Point_Donor]->GetDomain()) {
-            nLocalVertexDonor++;
-          }
-        }
         /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        nLocalVertexDonor = 0;
-        Marker_Donor = -1;
       }
     }
     
@@ -1258,10 +1212,6 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        Marker_Target = -1;
       }
     }
     
