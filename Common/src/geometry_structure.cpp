@@ -4722,6 +4722,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+      config->SetMarker_All_DeformNormal(iMarker, config->GetMarker_CfgFile_DeformNormal(Marker_Tag));
+      config->SetMarker_All_DeformTangential(iMarker, config->GetMarker_CfgFile_DeformTangential(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
       config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
 
@@ -4739,6 +4741,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
 	  config->SetMarker_All_FSIinterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
+      config->SetMarker_All_DeformNormal(iMarker, NO);
+      config->SetMarker_All_DeformTangential(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
       config->SetMarker_All_Out_1D(iMarker, NO);
       
@@ -5752,6 +5756,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+            config->SetMarker_All_DeformNormal(iMarker, config->GetMarker_CfgFile_DeformNormal(Marker_Tag));
+            config->SetMarker_All_DeformTangential(iMarker, config->GetMarker_CfgFile_DeformTangential(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_SendRecv(iMarker, NONE);
             config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));

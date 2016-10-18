@@ -188,14 +188,6 @@ inline void CFreeFormDefBox::SetOriginalControlPoints() {
   nControlPoints = nControlPoints_Copy;
 }
 
-inline void CFreeFormDefBox::CrossProduct (su2double *v1, su2double *v2, su2double *v3) {
-	v3[0] = v1[1]*v2[2]-v1[2]*v2[1];
-	v3[1] = v1[2]*v2[0]-v1[0]*v2[2];
-	v3[2] = v1[0]*v2[1]-v1[1]*v2[0];
-}
-
-inline su2double CFreeFormDefBox::DotProduct (su2double *v1, su2double *v2) { su2double scalar = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]; return scalar; }
-
 inline su2double CFreeFormDefBox::GetNorm(su2double *a) { su2double  norm = sqrt(a[0]*a[0] + a[1]*a[1]+ a[2]*a[2]); return norm; }
 
 inline void CFreeFormDefBox::SetTag(string val_tag) { Tag = val_tag; }
@@ -224,3 +216,12 @@ inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned sh
   }
   return false;
 }
+
+inline void CGridMovement::CrossProduct (su2double *v1, su2double *v2, su2double *v3) {
+  v3[0] = v1[1]*v2[2]-v1[2]*v2[1];
+  v3[1] = v1[2]*v2[0]-v1[0]*v2[2];
+  v3[2] = v1[0]*v2[1]-v1[1]*v2[0];
+}
+
+inline su2double CGridMovement::DotProduct (su2double *v1, su2double *v2) { su2double scalar = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]; return scalar; }
+

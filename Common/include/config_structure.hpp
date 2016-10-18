@@ -466,14 +466,18 @@ private:
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
 	nMarker_FSIinterface,					/*!< \brief Number of markers in the FSI interface. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_DV,               /*!< \brief Number of markers affected by the design variables. */
+  nMarker_DeformNormal,
+  nMarker_DeformTangential;
   string *Marker_Monitoring,     /*!< \brief Markers to monitor. */
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
   *Marker_Plotting,          /*!< \brief Markers to plot. */
   *Marker_FSIinterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
-  *Marker_DV;            /*!< \brief Markers affected by the design variables. */
+  *Marker_DV,            /*!< \brief Markers affected by the design variables. */
+  *Marker_DeformNormal,
+  *Marker_DeformTangential;
   unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
@@ -490,7 +494,9 @@ private:
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
-  *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_PerBound,     /*!< \brief Global index for periodic boundaries using the config information. */
+  *Marker_CfgFile_DeformNormal,
+  *Marker_CfgFile_DeformTangential;
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
@@ -2572,6 +2578,22 @@ public:
 	void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
 
 	/*!
+   * \brief Set if a marker <i>val_marker</i> is going to be moved <i>val_moving</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
+   */
+  void SetMarker_All_DeformNormal(unsigned short val_marker, unsigned short val_def_tan);
+
+  /*!
+   * \brief Set if a marker <i>val_marker</i> is going to be moved <i>val_moving</i>
+   *        (read from the config file).
+   * \param[in] val_marker - Index of the marker in which we are interested.
+   * \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
+   */
+  void SetMarker_All_DeformTangential(unsigned short val_marker, unsigned short val_def_tan);
+
+	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be periodic <i>val_perbound</i>
 	 *        (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
@@ -2658,6 +2680,20 @@ public:
 	 * \return 0 or 1 depending if the marker is going to be moved.
 	 */
 	unsigned short GetMarker_All_Moving(unsigned short val_marker);
+
+	/*!
+   * \brief Get the motion information for a marker <i>val_marker</i>.
+   * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
+   * \return 0 or 1 depending if the marker is going to be moved.
+   */
+  unsigned short GetMarker_All_DeformNormal(unsigned short val_marker);
+
+  /*!
+   * \brief Get the motion information for a marker <i>val_marker</i>.
+   * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
+   * \return 0 or 1 depending if the marker is going to be moved.
+   */
+  unsigned short GetMarker_All_DeformTangential(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the number of pre-smoothings in a multigrid strategy.
@@ -4536,6 +4572,18 @@ public:
 	 * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_Moving(string val_marker);
+
+	/*!
+   * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
+   * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_DeformNormal(string val_marker);
+
+  /*!
+   * \brief Get the motion information from the config definition for the marker <i>val_marker</i>.
+   * \return Motion information of the boundary in the config information for the marker <i>val_marker</i>.
+   */
+  unsigned short GetMarker_CfgFile_DeformTangential(string val_marker);
 
 	/*!
 	 * \brief Get the periodic information from the config definition of the marker <i>val_marker</i>.

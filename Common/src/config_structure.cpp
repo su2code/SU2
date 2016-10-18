@@ -278,6 +278,8 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Moving = NULL;       Marker_All_Moving = NULL;
   Marker_CfgFile_PerBound = NULL;     Marker_All_PerBound = NULL;   Marker_PerBound = NULL;
   Marker_CfgFile_FSIinterface = NULL;
+  Marker_CfgFile_DeformNormal=NULL; Marker_All_DeformNormal=NULL; Marker_DeformNormal=NULL;
+  Marker_CfgFile_DeformTangential=NULL; Marker_All_DeformTangential=NULL; Marker_DeformTangential=NULL;
   
   Marker_DV = NULL;  Marker_Moving = NULL;  Marker_Monitoring = NULL;
   Marker_Designing = NULL;  Marker_GeoEval = NULL;  Marker_Plotting = NULL;
@@ -1354,6 +1356,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DEFORM_POISSONS_RATIO", Deform_PoissonRatio, 0.3);
   /*  DESCRIPTION: Linear solver for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER", Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
+
+  addStringListOption("MARKER_DEFORM_NORMAL", nMarker_DeformNormal, Marker_DeformNormal);
+  addStringListOption("MARKER_DEFORM_TANGENTIAL", nMarker_DeformTangential, Marker_DeformTangential);
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/
@@ -2911,7 +2916,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
+  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D, iMarker_DeformNormal, iMarker_DeformTangential;
 
   int size = SINGLE_NODE;
   
@@ -2954,6 +2959,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Moving     = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
   Marker_All_PerBound   = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Out_1D     = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_DeformNormal           = new unsigned short[nMarker_All];
+  Marker_All_DeformTangential       = new unsigned short[nMarker_All];
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
@@ -2983,6 +2990,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Moving       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound     = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Out_1D       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DeformNormal         = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DeformTangential     = new unsigned short[nMarker_CfgFile];
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]   = "SEND_RECEIVE";
@@ -2996,6 +3005,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_Moving[iMarker_CfgFile]     = 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]   = 0;
     Marker_CfgFile_Out_1D[iMarker_CfgFile]     = 0;
+    Marker_CfgFile_DeformNormal[iMarker_CfgFile]          = 0;
+    Marker_CfgFile_DeformTangential[iMarker_CfgFile]      = 0;
   }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
@@ -3252,6 +3263,20 @@ void CConfig::SetMarkers(unsigned short val_software) {
     for (iMarker_Out_1D = 0; iMarker_Out_1D < nMarker_Out_1D; iMarker_Out_1D++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Out_1D[iMarker_Out_1D])
         Marker_CfgFile_Out_1D[iMarker_CfgFile] = YES;
+  }
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_DeformNormal[iMarker_CfgFile] = NO;
+    for (iMarker_DeformNormal = 0; iMarker_DeformNormal < nMarker_DeformNormal; iMarker_DeformNormal++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DeformNormal[iMarker_DeformNormal])
+        Marker_CfgFile_DeformNormal[iMarker_CfgFile] = YES;
+  }
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_DeformTangential[iMarker_CfgFile] = NO;
+    for (iMarker_DeformTangential = 0; iMarker_DeformTangential < nMarker_DeformTangential; iMarker_DeformTangential++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DeformTangential[iMarker_DeformTangential])
+        Marker_CfgFile_DeformTangential[iMarker_CfgFile] = YES;
   }
 
 }
@@ -4761,6 +4786,20 @@ unsigned short CConfig::GetMarker_CfgFile_Moving(string val_marker) {
   return Marker_CfgFile_Moving[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_DeformNormal(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_DeformNormal[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_DeformTangential(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_DeformTangential[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -4885,11 +4924,18 @@ CConfig::~CConfig(void) {
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
   
+  if (Marker_CfgFile_DeformNormal != NULL) delete [] Marker_CfgFile_DeformNormal;
+  if (Marker_All_DeformNormal  != NULL) delete [] Marker_All_DeformNormal ;
+  if (Marker_CfgFile_DeformTangential != NULL) delete [] Marker_CfgFile_DeformTangential;
+  if (Marker_All_DeformTangential != NULL) delete [] Marker_All_DeformTangential ;
+
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
 
   if (Marker_DV!=NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
+  if (Marker_DeformNormal != NULL) delete [] Marker_DeformNormal;
+  if (Marker_DeformTangential != NULL) delete [] Marker_DeformTangential;
   if (Marker_Monitoring != NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing != NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
