@@ -171,151 +171,151 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
 unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
 
-	string text_line, Marker_Tag;
-	ifstream mesh_file;
-	short nDim = 3;
-	unsigned short iLine, nLine = 10;
-	char cstr[200];
-	string::size_type position;
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nDim = 3;
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
 
-	/*--- Open grid file ---*/
+  /*--- Open grid file ---*/
 
-	strcpy (cstr, val_mesh_filename.c_str());
-	mesh_file.open(cstr, ios::in);
+  strcpy (cstr, val_mesh_filename.c_str());
+  mesh_file.open(cstr, ios::in);
 
-	switch (val_format) {
-	case SU2:
+  switch (val_format) {
+  case SU2:
 
-		/*--- Read SU2 mesh file ---*/
+    /*--- Read SU2 mesh file ---*/
 
-		for (iLine = 0; iLine < nLine ; iLine++) {
+    for (iLine = 0; iLine < nLine ; iLine++) {
 
-			getline (mesh_file, text_line);
+      getline (mesh_file, text_line);
 
-			/*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+      /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
 
-			position = text_line.find ("NDIME=",0);
-			if (position != string::npos) {
-				text_line.erase (0,6); nDim = atoi(text_line.c_str());
-			}
-		}
-		break;
+      position = text_line.find ("NDIME=",0);
+      if (position != string::npos) {
+        text_line.erase (0,6); nDim = atoi(text_line.c_str());
+      }
+    }
+    break;
 
-	case CGNS:
+  case CGNS:
 
 #ifdef HAVE_CGNS
 
-		/*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+    /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
 
-		int fn, nbases = 0, nzones = 0, file_type;
-		int cell_dim = 0, phys_dim = 0;
-		char basename[CGNS_STRING_SIZE];
+    int fn, nbases = 0, nzones = 0, file_type;
+    int cell_dim = 0, phys_dim = 0;
+    char basename[CGNS_STRING_SIZE];
 
-		/*--- Check whether the supplied file is truly a CGNS file. ---*/
+    /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
-		if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-			printf( "\n\n   !!! Error !!!\n" );
-			printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
-			printf( " Now exiting...\n\n");
-			exit(EXIT_FAILURE);
-		}
+    if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+      printf( "\n\n   !!! Error !!!\n" );
+      printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+      printf( " Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
 
-		/*--- Open the CGNS file for reading. The value of fn returned
+    /*--- Open the CGNS file for reading. The value of fn returned
        is the specific index number for this file and will be
        repeatedly used in the function calls. ---*/
 
-		if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+    if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
 
-		/*--- Get the number of databases. This is the highest node
+    /*--- Get the number of databases. This is the highest node
        in the CGNS heirarchy. ---*/
 
-		if (cg_nbases(fn, &nbases)) cg_error_exit();
+    if (cg_nbases(fn, &nbases)) cg_error_exit();
 
-		/*--- Check if there is more than one database. Throw an
+    /*--- Check if there is more than one database. Throw an
        error if there is because this reader can currently
        only handle one database. ---*/
 
-		if ( nbases > 1 ) {
-			printf("\n\n   !!! Error !!!\n" );
-			printf("CGNS reader currently incapable of handling more than 1 database.");
-			printf("Now exiting...\n\n");
-			exit(EXIT_FAILURE);
-		}
+    if ( nbases > 1 ) {
+      printf("\n\n   !!! Error !!!\n" );
+      printf("CGNS reader currently incapable of handling more than 1 database.");
+      printf("Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
 
-		/*--- Read the databases. Note that the indexing starts at 1. ---*/
+    /*--- Read the databases. Note that the indexing starts at 1. ---*/
 
-		for ( int i = 1; i <= nbases; i++ ) {
+    for ( int i = 1; i <= nbases; i++ ) {
 
-			if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+      if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
 
-			/*--- Get the number of zones for this base. ---*/
+      /*--- Get the number of zones for this base. ---*/
 
-			if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+      if (cg_nzones(fn, i, &nzones)) cg_error_exit();
 
-		}
+    }
 
-		/*--- Set the problem dimension as read from the CGNS file ---*/
+    /*--- Set the problem dimension as read from the CGNS file ---*/
 
-		nDim = cell_dim;
+    nDim = cell_dim;
 
 #endif
 
-		break;
+    break;
 
-	}
+  }
 
-	mesh_file.close();
+  mesh_file.close();
 
-	return (unsigned short) nDim;
+  return (unsigned short) nDim;
 }
 void CConfig::SetPointersNull(void) {
 
-  Marker_CfgFile_Out_1D		= NULL;     Marker_All_Out_1D		= NULL;
-  Marker_CfgFile_GeoEval	= NULL;     Marker_All_GeoEval		= NULL;
-  Marker_CfgFile_Monitoring	= NULL;     Marker_All_Monitoring	= NULL;
-  Marker_CfgFile_Designing	= NULL;     Marker_All_Designing    	= NULL;
-  Marker_CfgFile_Plotting	= NULL;     Marker_All_Plotting		= NULL;
-  Marker_CfgFile_DV		= NULL;     Marker_All_DV		= NULL;
-  Marker_CfgFile_Moving		= NULL;     Marker_All_Moving		= NULL;
-  Marker_CfgFile_PerBound	= NULL;	    Marker_All_PerBound		= NULL;   Marker_PerBound = NULL;
+  Marker_CfgFile_Out_1D     = NULL;     Marker_All_Out_1D       = NULL;
+  Marker_CfgFile_GeoEval    = NULL;     Marker_All_GeoEval      = NULL;
+  Marker_CfgFile_Monitoring = NULL;     Marker_All_Monitoring   = NULL;
+  Marker_CfgFile_Designing  = NULL;     Marker_All_Designing    = NULL;
+  Marker_CfgFile_Plotting   = NULL;     Marker_All_Plotting     = NULL;
+  Marker_CfgFile_DV         = NULL;     Marker_All_DV           = NULL;
+  Marker_CfgFile_Moving		= NULL;     Marker_All_Moving       = NULL;
+  Marker_CfgFile_PerBound	= NULL;	    Marker_All_PerBound     = NULL;  Marker_PerBound    = NULL;
 
-  Marker_DV			= NULL;  Marker_Moving	   = NULL;  Marker_Monitoring 	= NULL;
-  Marker_Designing		= NULL;  Marker_GeoEval	   = NULL;  Marker_Plotting	= NULL;
-  Marker_CfgFile_KindBC 	= NULL;  Marker_All_KindBC = NULL;
+  Marker_DV                 = NULL;     Marker_Moving           = NULL;  Marker_Monitoring  = NULL;
+  Marker_Designing          = NULL;     Marker_GeoEval	        = NULL;  Marker_Plotting    = NULL;
+  Marker_CfgFile_KindBC     = NULL;     Marker_All_KindBC       = NULL;
+  
   /*--- Marker Pointers ---*/
 
-  Marker_Euler				= NULL;     Marker_FarField 		= NULL;     Marker_Custom 		= NULL;
-  Marker_SymWall 			= NULL;     Marker_Pressure 		= NULL;     Marker_PerBound 		= NULL;
-  Marker_PerDonor 			= NULL;     Marker_NearFieldBound	= NULL;	    Marker_InterfaceBound 	= NULL;
-  Marker_Fluid_InterfaceBound 		= NULL;
-  Marker_Dirichlet 			= NULL;     Marker_Inlet 		= NULL;
-  Marker_Supersonic_Inlet 		= NULL;	    Marker_Outlet 		= NULL;     Marker_Out_1D 		= NULL;
-  Marker_Isothermal 			= NULL;     Marker_HeatFlux 		= NULL;     Marker_EngineInflow 	= NULL;
-  Marker_EngineBleed 			= NULL;     Marker_Supersonic_Outlet    = NULL;
-  Marker_EngineExhaust 			= NULL;     Marker_Displacement 	= NULL;     Marker_Load 		= NULL;
-  Marker_Load_Dir 			= NULL;     Marker_Load_Sine 		= NULL;     Marker_Clamped 		= NULL;
-  Marker_FlowLoad 			= NULL;     Marker_Neumann 		= NULL;
-  Marker_All_TagBound 			= NULL;     Marker_CfgFile_TagBound     = NULL;     Marker_All_KindBC 		= NULL;
-  Marker_CfgFile_KindBC 		= NULL;     Marker_All_SendRecv 	= NULL;     Marker_All_PerBound 	= NULL;
-  Marker_FSIinterface 			= NULL;     Marker_All_FSIinterface     = NULL;     Marker_Riemann          	= NULL;
-  Marker_Load 				= NULL;     Marker_CfgFile_FSIinterface = NULL;
+  Marker_Euler              = NULL;     Marker_FarField             = NULL;     Marker_Custom         = NULL;
+  Marker_SymWall            = NULL;     Marker_Pressure             = NULL;     Marker_PerBound       = NULL;
+  Marker_PerDonor           = NULL;     Marker_NearFieldBound       = NULL;	    Marker_InterfaceBound = NULL;
+  Marker_Dirichlet          = NULL;     Marker_Fluid_InterfaceBound = NULL;     Marker_Inlet          = NULL;
+  Marker_Supersonic_Inlet   = NULL;	    Marker_Outlet               = NULL;     Marker_Out_1D         = NULL;
+  Marker_Isothermal         = NULL;     Marker_HeatFlux             = NULL;     Marker_EngineInflow   = NULL;
+  Marker_EngineBleed        = NULL;     Marker_Supersonic_Outlet    = NULL;
+  Marker_EngineExhaust      = NULL;     Marker_Displacement         = NULL;     Marker_Load           = NULL;
+  Marker_Load_Dir           = NULL;     Marker_Load_Sine            = NULL;     Marker_Clamped        = NULL;
+  Marker_FlowLoad           = NULL;     Marker_Neumann              = NULL;
+  Marker_All_TagBound       = NULL;     Marker_CfgFile_TagBound     = NULL;     Marker_All_KindBC     = NULL;
+  Marker_CfgFile_KindBC     = NULL;     Marker_All_SendRecv         = NULL;     Marker_All_PerBound   = NULL;
+  Marker_FSIinterface       = NULL;     Marker_All_FSIinterface     = NULL;     Marker_Riemann        = NULL;
+  Marker_Load               = NULL;     Marker_CfgFile_FSIinterface = NULL;
   
   /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value 		= NULL;     Exhaust_Temperature_Target	= NULL;	    Exhaust_Temperature 	= NULL;
-  Exhaust_Pressure_Target 	= NULL;		Inlet_Ttotal 		= NULL;	    Inlet_Ptotal 		= NULL;
-  Inlet_FlowDir 		= NULL;     Inlet_Temperature 		= NULL;     Inlet_Pressure 		= NULL;
-  Inlet_Velocity 		= NULL;     Inflow_Mach_Target 		= NULL;     Inflow_Mach 		= NULL;
-  Inflow_Pressure 		= NULL;     Bleed_Temperature_Target 	= NULL;     Bleed_Temperature		= NULL;
-  Bleed_MassFlow_Target 	= NULL;   	Bleed_MassFlow 		= NULL;     Exhaust_Pressure 		= NULL; 
-  Bleed_Pressure 		= NULL;     Outlet_Pressure		= NULL;     Isothermal_Temperature	= NULL;
-  Heat_Flux 			= NULL;     Displ_Value 		= NULL;     Load_Value 			= NULL;
-  FlowLoad_Value 		= NULL;     Periodic_RotCenter 		= NULL;     Periodic_RotAngles 		= NULL;
-  Periodic_Translation 		= NULL;     Periodic_Center 		= NULL;     Periodic_Rotation 		= NULL;
-  Periodic_Translate		= NULL;
+  Dirichlet_Value           = NULL;     Exhaust_Temperature_Target	= NULL;	    Exhaust_Temperature   = NULL;
+  Exhaust_Pressure_Target   = NULL;		Inlet_Ttotal                = NULL;	    Inlet_Ptotal          = NULL;
+  Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
+  Inlet_Velocity            = NULL;     Inflow_Mach_Target          = NULL;     Inflow_Mach           = NULL;
+  Inflow_Pressure           = NULL;     Bleed_Temperature_Target    = NULL;     Bleed_Temperature     = NULL;
+  Bleed_MassFlow_Target     = NULL;   	Bleed_MassFlow              = NULL;     Exhaust_Pressure      = NULL; 
+  Bleed_Pressure            = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
+  Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
+  FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
+  Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
+  Periodic_Translate        = NULL;
 
-  Load_Dir 			= NULL;	      Load_Dir_Value	  = NULL;     Load_Dir_Multiplier = NULL;
-  Load_Sine_Dir 		= NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
+  Load_Dir            = NULL;    Load_Dir_Value      = NULL;    Load_Dir_Multiplier = NULL;
+  Load_Sine_Dir       = NULL;    Load_Sine_Amplitude = NULL;    Load_Sine_Frequency = NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
@@ -331,7 +331,7 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow	      = NULL;    
   Kappa_AdjFlow       = NULL;
   Section_Location    = NULL;
-  ParamDV	      = NULL;     
+  ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
   Subsonic_Engine_Box = NULL;
@@ -342,7 +342,7 @@ void CConfig::SetPointersNull(void) {
   MG_CorrecSmooth     = NULL;
   MG_PreSmooth        = NULL;
   MG_PostSmooth       = NULL;
-  Int_Coeffs	      = NULL;
+  Int_Coeffs          = NULL;
 
   Kind_ObjFunc   = NULL;
   Weight_ObjFunc = NULL;
@@ -365,7 +365,6 @@ void CConfig::SetPointersNull(void) {
   Periodic_Translate = NULL;  Periodic_Rotation 	= NULL;     Periodic_Center		= NULL;
   Periodic_Translation = NULL;Periodic_RotAngles	= NULL;	    Periodic_RotCenter		= NULL;
 
-
   /* Harmonic Balance Frequency pointer */
   Omega_HB = NULL;
     
@@ -382,25 +381,25 @@ void CConfig::SetPointersNull(void) {
   default_grid_fix      = NULL;
   default_inc_crit      = NULL;
   
-  Riemann_FlowDir	= NULL;
-  NRBC_FlowDir 		= NULL;
-  ActDisk_Origin	= NULL;
-  CoordFFDBox		= NULL;
-  DegreeFFDBox		= NULL;
-  FFDTag 		= NULL;
-  nDV_Value 		= NULL;
-  TagFFDBox 		= NULL;
+  Riemann_FlowDir       = NULL;
+  NRBC_FlowDir          = NULL;
+  ActDisk_Origin        = NULL;
+  CoordFFDBox           = NULL;
+  DegreeFFDBox          = NULL;
+  FFDTag                = NULL;
+  nDV_Value             = NULL;
+  TagFFDBox             = NULL;
  
-  Kind_Data_Riemann 	= NULL;
-  Riemann_Var1 		= NULL;
-  Riemann_Var2 		= NULL;
-  Kind_Data_NRBC 	= NULL;
-  NRBC_Var1 		= NULL;
-  NRBC_Var2 		= NULL;
-  Marker_TurboBoundIn 	= NULL;
-  Marker_TurboBoundOut 	= NULL;
+  Kind_Data_Riemann     = NULL;
+  Riemann_Var1          = NULL;
+  Riemann_Var2          = NULL;
+  Kind_Data_NRBC        = NULL;
+  NRBC_Var1             = NULL;
+  NRBC_Var2             = NULL;
+  Marker_TurboBoundIn   = NULL;
+  Marker_TurboBoundOut  = NULL;
   Kind_TurboPerformance = NULL;
-  Marker_NRBC 		= NULL;
+  Marker_NRBC           = NULL;
   
   /*--- Variable initialization ---*/
   
@@ -1872,7 +1871,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nObj == 1 )
       Weight_ObjFunc[0] = 1.0;
 
-  /*--- Maker sure that nMarker = nObj ---*/
   /*--- Maker sure that nMarker = nObj ---*/
   if (nObj>0) {
     if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL) {
@@ -5251,11 +5249,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
       }
     }
-    else {
-      if (DiscreteAdjoint) {
-        cout << endl << "Combined objective not yet compatible with discrete adjoint. Specify only one OBJECTIVE_FUNCTION." << endl << endl;
-        exit(EXIT_FAILURE);
-      }
+    else{
       AdjExt = "_combo";
     }
     Filename.append(AdjExt);

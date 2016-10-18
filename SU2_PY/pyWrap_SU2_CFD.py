@@ -54,12 +54,22 @@ def main():
                     metavar="DIMENSIONS")
   parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
                     metavar="ZONES")
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver",
-                    metavar="FSI")
-  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver",
-                    metavar="FEM")
+
+  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
+
+  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
+
   parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
                     help="Launch the Harmonic Balance (HB) driver", metavar="HB")
+
+  parser.add_option("--poisson_equation", dest="poisson_equation", default="False",
+                    help="Launch the poisson equation driver (General driver)", metavar="POIS_EQ")
+
+  parser.add_option("--wave_equation", dest="wave_equation", default="False",
+                    help="Launch the wave equation driver (General driver)", metavar="WAVE_EQ")
+
+  parser.add_option("--heat_equation", dest="heat_equation", default="False",
+                    help="Launch the heat equation driver (General driver)", metavar="HEAT_EQ")
 
   (options, args) = parser.parse_args()
   options.nDim  = int( options.nDim )
@@ -67,19 +77,22 @@ def main():
   options.fsi = options.fsi.upper() == 'TRUE'
   options.fem = options.fem.upper() == 'TRUE'
   options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
+  options.poisson_equation = options.poisson_equation.upper() == 'TRUE'
+  options.wave_equation    = options.wave_equation.upper()    == 'TRUE'
+  options.heat_equation    = options.heat_equation.upper()    == 'TRUE'
 
   if options.filename == None:
     raise Exception("No config file provided. Use -f flag")
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  if (options.nZone == 1) and (options.fem):
-    SU2Driver = SU2Solver.CSingleZoneDriver(options.filename, options.nZone, options.nDim);
+  if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
+    SU2Driver = SU2Solver.CGeneralDriver(options.filename, options.nZone, options.nDim);
   elif options.harmonic_balance:
     SU2Driver = SU2Solver.CHBDriver(options.filename, options.nZone, options.nDim);
   elif (options.nZone == 2) and (options.fsi):
     SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim);
   else:
-    SU2Driver = SU2Solver.CMultiZoneDriver(options.filename, options.nZone, options.nDim);
+    SU2Driver = SU2Solver.CFluidDriver(options.filename, options.nZone, options.nDim);
 
   # Launch the solver for the entire computation
   SU2Driver.StartSolver()
