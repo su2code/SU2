@@ -1333,23 +1333,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
           Density = U[0];
           if (nDim == 2)
         	  StaticEnergy = U[3]/U[0] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]*U[0]);
-//            Pressure = Gamma_Minus_One*(U[3] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]));
           else
         	  StaticEnergy = U[4]/U[0] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3] )/(2.0*U[0]*U[0]);
-//        	  Pressure = Gamma_Minus_One*(U[4] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3])/(2.0*U[0]));
-
-//          Temperature = Pressure/(Gas_Constant*Density);
-//
-//
-//          Temperature_Dim = Temperature*Temperature_Ref;
-//
-//          if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
-//          if (config->GetSystemMeasurements() == US) { T_ref = 518.7; S = 198.72; Mu_ref = 3.62E-7; }
-//
-//          /*--- Calculate viscosity from a non-dim. Sutherland's Law ---*/
-//
-//          Laminar_Viscosity = Mu_ref*(pow(Temperature_Dim/T_ref, 1.5) * (T_ref+S)/(Temperature_Dim+S));
-//          Laminar_Viscosity = Laminar_Viscosity/Viscosity_Ref;
 
           FluidModel->SetTDState_rhoe(Density, StaticEnergy);
           Laminar_Viscosity = FluidModel->GetLaminarViscosity();
