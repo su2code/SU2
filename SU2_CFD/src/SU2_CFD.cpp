@@ -77,9 +77,8 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
 
-  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = GetnDim(config->GetMesh_FileName(),  config->GetMesh_FileFormat());
-
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi = config->GetFSI_Simulation();
 
   /*--- First, given the basic information about the number of zones and the
@@ -92,11 +91,11 @@ int main(int argc, char *argv[]) {
 
     driver = new CSingleZoneDriver(config_file_name, nZone, nDim);
 
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
-    /*--- Use the spectral method driver. ---*/
+    /*--- Use the Harmonic Balance driver. ---*/
 
-    driver = new CSpectralDriver(config_file_name, nZone, nDim);
+    driver = new CHBDriver(config_file_name, nZone, nDim);
 
   } else if ((nZone == 2) && fsi) {
 

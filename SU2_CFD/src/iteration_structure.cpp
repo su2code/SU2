@@ -52,11 +52,11 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
   unsigned long iPoint;
   bool stat_mesh = true;
   bool adjoint = config_container[val_iZone]->GetContinuous_Adjoint();
-  bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 
-  /*--- For a time-spectral case, set "iteration number" to the zone number,
+  /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
-  if (time_spectral) {
+  if (harmonic_balance) {
     ExtIter = val_iZone;
     Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
   }
@@ -1594,7 +1594,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
                                        unsigned short val_iZone) {
   
   unsigned short iMesh;
-  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool dynamic_mesh = config_container[ZONE_0]->GetGrid_Movement();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -1606,7 +1606,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
   
-  if (((dynamic_mesh && ExtIter == 0) || config_container[val_iZone]->GetUnsteady_Simulation()) && !time_spectral) {
+  if (((dynamic_mesh && ExtIter == 0) || config_container[val_iZone]->GetUnsteady_Simulation()) && !harmonic_balance) {
     int Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
     if (rank == MASTER_NODE && val_iZone == ZONE_0 && config_container[val_iZone]->GetUnsteady_Simulation())
       cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
@@ -2165,12 +2165,20 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Register flow variables and objective function as output ---*/
   
   /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
-  if (config_container[val_iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
-    output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                 geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
-  
+  for (unsigned short iObj=0; iObj<config_container[val_iZone]->GetnObj(); iObj++){
+    if (config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_OUTLET_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_TOTAL_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==MASS_FLOW_RATE){
+      output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                   geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+      break;
+    }
+  }
+  /*--- For a combined objective function, the total should be computed and stored ---*/
+  if (config_container[val_iZone]->GetnObj()>0){
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[val_iZone]);
+  }
+
   RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
   
   /*--- Stop the recording ---*/
@@ -2278,6 +2286,7 @@ void CDiscAdjMeanFlowIteration::Update(COutput *output,
 void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
 void CDiscAdjMeanFlowIteration::Postprocess() { }
+
 
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   	  	  	  	 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,

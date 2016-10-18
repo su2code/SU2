@@ -562,4 +562,13 @@ public:
    */
   void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
 
+  /*!
+   * \brief Write the output file for harmonic balance for each time-instance.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Number of Zones.
+   * \param[in] val_iZone - Zone index.
+   */
+  void HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
+
 };

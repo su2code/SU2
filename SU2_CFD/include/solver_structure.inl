@@ -234,6 +234,10 @@ inline su2double CSolver::GetCSF_Inv(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetCEff_Inv(unsigned short val_marker) { return 0; }
 
+inline su2double CSolver::GetSurface_HF_Visc(unsigned short val_marker) { return 0; }
+
+inline su2double CSolver::GetSurface_MaxHF_Visc(unsigned short val_marker) { return 0; }
+
 inline su2double CSolver::GetCL_Visc(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetCMz_Visc(unsigned short val_marker) { return 0; }
@@ -764,12 +768,21 @@ inline su2double CSolver::GetRes_RMS(unsigned short val_var) { return Residual_R
 
 inline void CSolver::SetRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; }
 
-inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, const su2double* val_coord) {
+inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord) {
   if (val_residual > Residual_Max[val_var]) {
   Residual_Max[val_var] = val_residual;
   Point_Max[val_var] = val_point;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Point_Max_Coord[val_var][iDim] = val_coord[iDim];
+  }
+}
+
+inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, const su2double* val_coord) {
+  if (val_residual > Residual_Max[val_var]) {
+    Residual_Max[val_var] = val_residual;
+    Point_Max[val_var] = val_point;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Point_Max_Coord[val_var][iDim] = val_coord[iDim];
   }
 }
 
@@ -1186,6 +1199,10 @@ inline void CEulerSolver::StoreTurboPerformance(CSolver *solver, unsigned short 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CNSSolver::GetTke_Inf(void) { return Tke_Inf; }
+
+inline su2double CNSSolver::GetSurface_HF_Visc(unsigned short val_marker) { return Surface_HF_Visc[val_marker]; }
+
+inline su2double CNSSolver::GetSurface_MaxHF_Visc(unsigned short val_marker) { return Surface_MaxHF_Visc[val_marker]; }
 
 inline su2double CNSSolver::GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
 

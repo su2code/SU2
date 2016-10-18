@@ -70,7 +70,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
-  su2double RefVel2, Mach2Vel, obj_weight, factor;
+  su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
   su2double *Velocity_Inf;
   string Marker_Tag, Monitoring_Tag;
   unsigned short iMarker_Monitoring, jMarker, ObjFunc;
@@ -401,7 +401,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     /*--- Objective scaling: a factor must be applied to certain objectives ---*/
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+        Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
         factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 
@@ -413,8 +413,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
        if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
            (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
 
-       obj_weight = obj_weight*factor;
-       config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+       Weight_ObjFunc = Weight_ObjFunc*factor;
+       config->SetWeight_ObjFunc(iMarker_Monitoring, Weight_ObjFunc);
     }
   }
 
@@ -1124,7 +1124,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   unsigned short iMarker,jMarker,iMarker_Monitoring, iDim;
   unsigned long iVertex, iPoint;
   string Marker_Tag, Monitoring_Tag;
-  su2double obj_weight=1.0;
+  su2double Weight_ObjFunc=1.0;
   su2double *ForceProj_Vector2;
   
   int rank = MASTER_NODE;
@@ -1167,7 +1167,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   }
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
     /*--- Find the matching iMarker ---*/
     Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
     for (jMarker=0; jMarker<nMarker; jMarker++) {
@@ -1194,85 +1194,85 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 
         switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += obj_weight*cos(Alpha); ForceProj_Vector[1] += obj_weight*sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*cos(Alpha)*cos(Beta); ForceProj_Vector[1] += obj_weight*sin(Beta); ForceProj_Vector[2] += obj_weight*sin(Alpha)*cos(Beta); }
+            if (nDim == 2) { ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha)*cos(Beta); ForceProj_Vector[1] += Weight_ObjFunc*sin(Beta); ForceProj_Vector[2] += Weight_ObjFunc*sin(Alpha)*cos(Beta); }
             break;
           case LIFT_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*sin(Alpha); ForceProj_Vector[1] += obj_weight*cos(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] += obj_weight*cos(Alpha); }
+            if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] += Weight_ObjFunc*cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*sin(Beta) * cos(Alpha); ForceProj_Vector[1] += obj_weight*cos(Beta); ForceProj_Vector[2] += -obj_weight*sin(Beta) * sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*sin(Beta) * cos(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*cos(Beta); ForceProj_Vector[2] += -Weight_ObjFunc*sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
             Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker, iVertex);
             CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker, iVertex);
             Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
             if (nDim == 3) Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
-            ForceProj_Vector[0] += -obj_weight*2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] += -obj_weight*2.0*(Cp-CpTarget)*Normal[1]/Area;
-            if (nDim == 3) ForceProj_Vector[2] += -obj_weight*2.0*(Cp-CpTarget)*Normal[2]/Area;
+            ForceProj_Vector[0] += -Weight_ObjFunc*2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] += -Weight_ObjFunc*2.0*(Cp-CpTarget)*Normal[1]/Area;
+            if (nDim == 3) ForceProj_Vector[2] += -Weight_ObjFunc*2.0*(Cp-CpTarget)*Normal[2]/Area;
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -obj_weight*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] += obj_weight*(y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -obj_weight*(x - x_origin)/RefLengthMoment;}
+            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment;}
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += obj_weight*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += obj_weight*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
+            if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += Weight_ObjFunc*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += obj_weight*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] += -obj_weight*CLCD2*sin(Beta); ForceProj_Vector[2] += obj_weight*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += Weight_ObjFunc*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] += -Weight_ObjFunc*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] += -Weight_ObjFunc*CLCD2*sin(Beta); ForceProj_Vector[2] += Weight_ObjFunc*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
-            WDrag = obj_weight*config->GetWeightCd();
+            WDrag = Weight_ObjFunc*config->GetWeightCd();
             if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
             if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case NEARFIELD_PRESSURE :
-            WDrag = obj_weight*config->GetWeightCd();
+            WDrag = Weight_ObjFunc*config->GetWeightCd();
             if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
             if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case FORCE_X_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += obj_weight*1.0; ForceProj_Vector[1] += 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*1.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += Weight_ObjFunc*1.0; ForceProj_Vector[1] += 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*1.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Y_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += obj_weight*1.0; }
-            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += obj_weight*1.0; ForceProj_Vector[2] += 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += Weight_ObjFunc*1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += Weight_ObjFunc*1.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += obj_weight*1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += Weight_ObjFunc*1.0; }
             break;
           case THRUST_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += obj_weight*1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += Weight_ObjFunc*1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) {  ForceProj_Vector[0] += obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -obj_weight*(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -obj_weight*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
+            if (nDim == 2) {  ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -Weight_ObjFunc*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
-              ForceProj_Vector[0] += -obj_weight*invCQ;
-              ForceProj_Vector[1] += -obj_weight*CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] +=  obj_weight*CTRCQ2*(y - y_origin);
+              ForceProj_Vector[0] += -Weight_ObjFunc*invCQ;
+              ForceProj_Vector[1] += -Weight_ObjFunc*CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] +=  Weight_ObjFunc*CTRCQ2*(y - y_origin);
             }
             break;
           default :
@@ -1969,7 +1969,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   //	bool gravity        = (config->GetGravityForce() == YES);
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   //	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Initialize the source residual to zero ---*/
@@ -1999,7 +1999,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
   }
   
-  if (time_spectral) {
+  if (harmonic_balance) {
     
     su2double Volume, Source;
     
@@ -2009,9 +2009,9 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Get control volume ---*/
       Volume = geometry->node[iPoint]->GetVolume();
       
-      /*--- Get stored time spectral source term ---*/
+      /*--- Get stored harmonic balance source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       
@@ -4580,7 +4580,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double epsilon          = config->GetFreeSurface_Thickness();
   su2double RatioDensity     = config->GetRatioDensity();
   su2double Froude           = config->GetFroude();
-  su2double obj_weight = 1.0;
+  su2double Weight_ObjFunc = 1.0;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   string Monitoring_Tag;
   unsigned short jMarker=0, iMarker_Monitoring=0;
@@ -4595,7 +4595,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       iMarker_Monitoring = jMarker;
   }
 
-  obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+  Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
   /*--- Loop over all the vertices ---*/
 
@@ -4686,7 +4686,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim=0; iDim<nDim; iDim++) velocity_gradient += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
             density_gradient = config->GetCoeff_ObjChainRule(0);
             pressure_gradient = config->GetCoeff_ObjChainRule(4);
-            Psi_outlet[nDim+1]+=obj_weight*(a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density));
+            Psi_outlet[nDim+1]+=Weight_ObjFunc*(a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density));
             break;
           case AVG_TOTAL_PRESSURE:
             /*--- Total Pressure term. NOTE: this is AREA averaged
@@ -4702,12 +4702,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim=0; iDim<nDim; iDim++)
               velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
             pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
-            Psi_outlet[nDim+1]+=obj_weight*a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+            Psi_outlet[nDim+1]+=Weight_ObjFunc*a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
             break;
           case AVG_OUTLET_PRESSURE:
             /*Area averaged static pressure*/
             /*--- Note: further terms are NOT added later for this case, only energy term is modified ---*/
-            Psi_outlet[nDim+1]+=obj_weight*(a1*Vn_Exit);
+            Psi_outlet[nDim+1]+=Weight_ObjFunc*(a1*Vn_Exit);
             break;
           default:
             break;
@@ -4812,7 +4812,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
        *     Terms which are added to the energy term are taken care of in the supersonic section above ---*/
       switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
       case MASS_FLOW_RATE:
-        Psi_outlet[0]+=obj_weight;
+        Psi_outlet[0]+=Weight_ObjFunc;
         break;
       case OUTFLOW_GENERALIZED:
         density_gradient = config->GetCoeff_ObjChainRule(0);
@@ -4821,9 +4821,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         for (iDim=0; iDim<nDim; iDim++)
           velocity_gradient += Velocity[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
         /*Pressure-fixed version*/
-        Psi_outlet[0]+=obj_weight*(density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit);
+        Psi_outlet[0]+=Weight_ObjFunc*(density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit);
         for (iDim=0; iDim<nDim; iDim++) {
-          Psi_outlet[iDim+1]+=obj_weight*(config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit);
+          Psi_outlet[iDim+1]+=Weight_ObjFunc*(config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit);
 
         }
         break;
@@ -4836,10 +4836,10 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/(Gamma_Minus_One));
           density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
           velocity_gradient=a2*Gamma_Minus_One*Density/(Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
-          Psi_outlet[0]+=obj_weight*(density_gradient*2.0/Vn_Exit);
+          Psi_outlet[0]+=Weight_ObjFunc*(density_gradient*2.0/Vn_Exit);
           for (iDim=0; iDim<nDim; iDim++) {
-            Psi_outlet[0]-=obj_weight*(velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit));
-            Psi_outlet[iDim+1] += obj_weight*(velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit));
+            Psi_outlet[0]-=Weight_ObjFunc*(velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit));
+            Psi_outlet[iDim+1] += Weight_ObjFunc*(velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit));
           }
         }
         break;
@@ -5293,7 +5293,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
   su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
-  su2double RefVel2, Mach2Vel, obj_weight, factor;
+  su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
   su2double *Velocity_Inf;
 
   string Marker_Tag, Monitoring_Tag;
@@ -5593,7 +5593,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
      /*--- Objective scaling: a factor must be applied to certain objectives ---*/
      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-         obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+         Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
          factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 
@@ -5605,8 +5605,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
         if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
             (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
 
-        obj_weight = obj_weight*factor;
-        config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+        Weight_ObjFunc = Weight_ObjFunc*factor;
+        config->SetWeight_ObjFunc(iMarker_Monitoring, Weight_ObjFunc);
 
      }
    }
@@ -6981,7 +6981,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   string Monitoring_Tag;
   unsigned short jMarker, iMarker_Monitoring=0;
-  su2double obj_weight = 1.0;
+  su2double Weight_ObjFunc = 1.0;
   
   /*--- Identify marker monitoring index ---*/
   for (jMarker = 0; jMarker < config->GetnMarker_Monitoring(); jMarker++) {
@@ -6990,7 +6990,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       iMarker_Monitoring = jMarker;
   }
   /*-- Get objective weight --*/
-  obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+  Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
   heat_flux_obj  = ((config->GetKind_ObjFunc(iMarker_Monitoring) == TOTAL_HEATFLUX) ||
                            (config->GetKind_ObjFunc(iMarker_Monitoring) == MAXIMUM_HEATFLUX) ||
                            (config->GetKind_ObjFunc(iMarker_Monitoring) == INVERSE_DESIGN_HEATFLUX));
@@ -7077,7 +7077,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         Xi = pow(Xi, 1.0/pnorm-1.0)/pnorm;
 
         /*--- Boundary condition value ---*/
-        q = Xi * pnorm * pow(kGTdotn, pnorm-1.0)*Area*obj_weight;
+        q = Xi * pnorm * pow(kGTdotn, pnorm-1.0)*Area*Weight_ObjFunc;
       }
       
       /*--- Strong BC enforcement of the energy equation ---*/

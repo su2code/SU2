@@ -112,14 +112,10 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10)   && (SU2_TYPE::Int(val_iZone) < 100))   SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100)  && (SU2_TYPE::Int(val_iZone) < 1000))  SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
-    
-  } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+
+  }else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.csv",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.csv",   SU2_TYPE::Int(iExtIter));
@@ -336,12 +332,8 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
-    if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-      if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
-      if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
-      if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
-      if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
-      if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+      SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -462,12 +454,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   /*--- Write file name with extension if unsteady ---*/
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
     
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -704,12 +692,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     
-    if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-      if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(val_iZone));
-      if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.csv", SU2_TYPE::Int(val_iZone));
-      if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.csv", SU2_TYPE::Int(val_iZone));
-      if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.csv", SU2_TYPE::Int(val_iZone));
-      if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    	SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -4831,7 +4815,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename= config->GetMultizone_FileName(filename, val_iZone);
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -9003,15 +8987,13 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U,// local values at each node (Velocity2 = V^2). U = normal velocity
   AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
-  su2double TotalArea=0.0, obj_weight=0.0;
+  su2double TotalArea=0.0;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
-  unsigned short iMarker_Monitoring = 0;
-  string Marker_Tag, Monitoring_Tag;
   
   /*--- Loop over the markers ---*/
   
@@ -9071,26 +9053,6 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
         }
       }
-      
-    }
-    // TODO: make sure this works in parallel (potential solution: move combination across processors to be pe-marker. will be called more times, but may be needed )
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    for (unsigned short jMarker_Monitoring=0; jMarker_Monitoring <config->GetnMarker_Monitoring(); jMarker_Monitoring++) {
-      Monitoring_Tag = config->GetMarker_Monitoring_TagBound(jMarker_Monitoring);
-      if (Monitoring_Tag==Marker_Tag)
-        iMarker_Monitoring = jMarker_Monitoring;
-    }
-    obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    switch(config->GetKind_ObjFunc(config->GetMarker_All_Monitoring(iMarker))) {
-    case AVG_TOTAL_PRESSURE:
-      solver_container->AddTotal_ComboObj(AveragePt*obj_weight);
-      break;
-    case AVG_OUTLET_PRESSURE:
-      solver_container->AddTotal_ComboObj(PressureRef*obj_weight);
-      break;
-    case MASS_FLOW_RATE:
-      solver_container->AddTotal_ComboObj(MassFlowRate*obj_weight);
-      break;
     }
   }
   
@@ -9399,7 +9361,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
   /*--- Write file name with extension if unsteady or steady ---*/
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-      (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+      (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -9550,7 +9512,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
   /*--- Write file name with extension if unsteady or steady ---*/
   
   if ((config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) ||
-      (config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+      (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
@@ -10350,3 +10312,100 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
 }
 
+
+void COutput::HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short iZone) {
+
+	int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	/*--- Write file with flow quantities for harmonic balance HB ---*/
+	ofstream HB_output_file;
+	ofstream mean_HB_file;
+
+	/*--- MPI Send/Recv buffers ---*/
+	su2double *sbuf_var = NULL,  *rbuf_var = NULL;
+
+	/*--- Other variables ---*/
+	unsigned short iVar, kZone;
+	unsigned short nVar_output = 5;
+	unsigned long current_iter = config[ZONE_0]->GetExtIter();
+
+	/*--- Allocate memory for send buffer ---*/
+	sbuf_var = new su2double[nVar_output];
+
+	su2double *averages = new su2double[nVar_output];
+	for (iVar = 0; iVar < nVar_output; iVar++)
+		averages[iVar] = 0;
+
+	/*--- Allocate memory for receive buffer ---*/
+	if (rank == MASTER_NODE) {
+		rbuf_var = new su2double[nVar_output];
+
+		HB_output_file.precision(15);
+		HB_output_file.open("HB_output.csv", ios::out);
+		HB_output_file <<  "\"time_instance\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\"" << endl;
+
+		mean_HB_file.precision(15);
+		if (current_iter == 0 && iZone == 1) {
+			mean_HB_file.open("history_HB.plt", ios::trunc);
+			mean_HB_file << "TITLE = \"SU2 HARMONIC BALANCE SIMULATION\"" << endl;
+			mean_HB_file <<  "VARIABLES = \"Iteration\",\"CLift\",\"CDrag\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
+			mean_HB_file << "ZONE T= \"Average Convergence History\"" << endl;
+		}
+		else
+			mean_HB_file.open("history_HB.plt", ios::out | ios::app);
+	}
+
+	if (rank == MASTER_NODE) {
+
+		/*--- Run through the zones, collecting the output variables
+	     N.B. Summing across processors within a given zone is being done
+	     elsewhere. ---*/
+		for (kZone = 0; kZone < val_nZone; kZone++) {
+
+			/*--- Flow solution coefficients (parallel) ---*/
+			sbuf_var[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CL();
+			sbuf_var[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CD();
+			sbuf_var[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
+			sbuf_var[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
+			sbuf_var[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
+
+			for (iVar = 0; iVar < nVar_output; iVar++) {
+				rbuf_var[iVar] = sbuf_var[iVar];
+			}
+
+			HB_output_file << kZone << ", ";
+			for (iVar = 0; iVar < nVar_output; iVar++)
+				HB_output_file << rbuf_var[iVar] << ", ";
+			HB_output_file << endl;
+
+			/*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
+			for (iVar = 0; iVar < nVar_output; iVar++) {
+				averages[iVar] += (1.0/su2double(val_nZone))*rbuf_var[iVar];
+			}
+		}
+	}
+
+	if (rank == MASTER_NODE && iZone == ZONE_0) {
+
+		mean_HB_file << current_iter << ", ";
+		for (iVar = 0; iVar < nVar_output; iVar++) {
+			mean_HB_file << averages[iVar];
+			if (iVar < nVar_output-1)
+				mean_HB_file << ", ";
+		}
+		mean_HB_file << endl;
+	}
+
+	if (rank == MASTER_NODE) {
+		HB_output_file.close();
+		mean_HB_file.close();
+		delete [] rbuf_var;
+	}
+
+	delete [] sbuf_var;
+	delete [] averages;
+}
