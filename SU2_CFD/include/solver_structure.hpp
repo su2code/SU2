@@ -6798,17 +6798,15 @@ private:
    * \param[in]     conv_numerics       - Description of the numerical method.
    * \param[in]     surfElem            - Surface boundary element for which the
                                           contribution to the residual must be computed.
-   * \param[in]     Wall_HeatFlux       - Value of the prescribed heat flux, if relevant.
-   * \param[in]     HeatFlux_Prescribed - Whether or not the heat flux is prescribed.
    * \param[in]     solInt0             - Solution in the integration points of side 0.
    * \param[in]     solInt1             - Solution in the integration points of side 1.
-   * \param[out]    gradSolInt          - Temporary storage for the gradients of the
-                                          solution variables in the integration points.
+   * \param[out]    gradSolInt          - Array used for temporary storage.
    * \param[out]    fluxes              - Temporary storage for the fluxes in the
                                           integration points.
-   * \param[out]    viscFluxes          - Temporary storage for the viscous fluxes in
-                                          the integration points.
-   * \param[out]    viscosityInt        - Temporary storage for the viscosity in the
+   * \param[in,out] viscFluxes          - On input this array contains the viscous fluxes
+                                          in the integration points. It is also used for
+                                          temporary storage.
+   * \param[in]     viscosityInt        - Temporary storage for the viscosity in the
                                           integration points.
    * \param[out]    resFaces            - Array to store the residuals of the face.
    * \param[in,out] indResFaces         - Index in resFaces, where the current residual
@@ -6818,14 +6816,12 @@ private:
   void ResidualViscousBoundaryFace(CConfig                  *config,
                                    CNumerics                *conv_numerics,
                                    const CSurfaceElementFEM *surfElem,
-                                   const su2double          Wall_HeatFlux,
-                                   const bool               HeatFlux_Prescribed,
                                    const su2double          *solInt0,
                                    const su2double          *solInt1,
                                    su2double                *gradSolInt,
                                    su2double                *fluxes,
                                    su2double                *viscFluxes,
-                                   su2double                *viscosityInt,
+                                   const su2double          *viscosityInt,
                                    su2double                *resFaces,
                                    unsigned long            &indResFaces);
 
@@ -6884,6 +6880,27 @@ private:
                              su2double            *gradSolInt,
                              su2double            *viscNormFluxes,
                              su2double            *viscosityInt);
+
+  /*!
+   * \brief Function to compute the viscous normal flux in one integration point.
+   * \param[in]  sol          - Conservative variables.
+   * \param[in]  solGradCart  - Cartesian gradients of the conservative variables.
+   * \param[in]  normal       - Normal vector
+   * \param[in]  HeatFlux     - Value of the prescribed heat flux. If not
+                                prescribed, this value should be zero.
+   * \param[in]  factHeatFlux - Thermal conductivity divided by viscosity, which
+                                appears in the heat flux vector. If the heat flux
+                                vector is prescribed, factHeatFlux must be zero.
+   * \param[out] Viscosity    - Laminar viscosity, to be computed.
+   * \param[out] normalFlux   - Viscous normal flux, to be computed.
+   */
+  void ViscousNormalFluxIntegrationPoint(const su2double *sol,
+                                         const su2double solGradCart[5][3],
+                                         const su2double *normal,
+                                         const su2double HeatFlux,
+                                         const su2double factHeatFlux,
+                                               su2double &Viscosity,
+                                               su2double *normalFlux);
 };
 
 /*!

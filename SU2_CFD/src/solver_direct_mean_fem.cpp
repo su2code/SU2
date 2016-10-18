@@ -2922,8 +2922,83 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
 void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  /*--- Call the Euler wall boundary condition.  ---*/
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. ---*/
+  su2double *solIntL, *solIntR, *fluxes;
+
+#ifdef HAVE_MKL
+  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
+  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  solIntL = helpSolIntL.data();
+  solIntR = helpSolIntR.data();
+  fluxes  = helpFluxes.data();
+#endif
+
+  /* Set the starting position in the vector for the face residuals for
+     this boundary marker. */
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+
+  /* Easier storage of the boundary faces for this boundary marker. */
+  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
+  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
+
+  /*--- Loop over the boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=0; l<nSurfElem; ++l) {
+
+    /* Compute the left states in the integration points of the face.
+       Use fluxes as a temporary storage array. */
+    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+
+    /* Loop over the integration points to apply the symmetry condition. */
+    const unsigned short ind  = surfElem[l].indStandardElement;
+    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      /* Easier storage of the left and right solution and the normals
+         for this integration point. */
+      const su2double *UL      = solIntL + i*nVar;
+            su2double *UR      = solIntR + i*nVar;
+      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+
+      /* Compute the normal component of the momentum variables. */
+      su2double rVn = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        rVn += UL[iDim+1]*normals[iDim];
+
+      /* The normal velocity must be mirrored in order to get a true symmetry
+         condition. This is accomplished by multiplying rVn by two. */
+      rVn *= 2.0;
+
+      /* Set the right state. Note that the total energy of the right state is
+         identical to the left state, because the magnitude of the velocity
+         remains the same. */
+      UR[0]      = UL[0];
+      UR[nDim+1] = UL[nDim+1];
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
+    }
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                 solIntR, fluxes, resFaces, indResFaces);
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solIntL);
+  mkl_free(solIntR);
+  mkl_free(fluxes);
+#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
@@ -4732,88 +4807,102 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
       }
     }
 
-    /*--- Compute the velocities and static energy in this integration point. ---*/
-    const su2double DensityInv = 1.0/sol[0];
-    su2double vel[3], Velocity2 = 0.0;
-    for(unsigned short j=0; j<nDim; ++j) {
-      vel[j]     = sol[j+1]*DensityInv;
-      Velocity2 += vel[j]*vel[j];
-    }
-
-    const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
-    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
-
-    /*--- Compute the Cartesian gradients of the velocities and static energy
-          in this integration point and also the divergence of the velocity. ---*/
-    su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
-    for(unsigned short k=0; k<nDim; ++k) {
-      StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
-                          -             TotalEnergy*solGradCart[0][k]);
-      for(unsigned short j=0; j<nDim; ++j) {
-        velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
-                             -      vel[j]*solGradCart[0][k]);
-        StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
-      }
-      divVel += velGrad[k][k];
-    }
-
-    /*--- Compute the laminar viscosity, which is stored for later use. ---*/
-    FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-    const su2double Viscosity = FluidModel->GetLaminarViscosity();
-    viscosityInt[i] = Viscosity;
-
-    /*--- Set the value of the second viscosity and compute the divergence
-          term in the viscous normal stresses. ---*/
-    const su2double lambda     = -2.0*Viscosity/3.0;
-    const su2double lamDivTerm =  lambda*divVel;
-
-    /*--- Compute the viscous stress tensor. ---*/
-    su2double tauVis[3][3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
-      for(unsigned short j=(k+1); j<nDim; ++j) {
-        tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
-        tauVis[k][j] = tauVis[j][k];
-      }
-    }
-
-    /*--- Compute the Cartesian viscous flux vectors in this
-          integration point. ---*/
-    su2double fluxCart[5][3];
-    for(unsigned short k=0; k<nDim; ++k) {
-
-      /* Momentum flux vector. */
-      for(unsigned short j=0; j<nDim; ++j)
-        fluxCart[j+1][k] = tauVis[j][k];
-
-      /* Energy flux vector. */
-      fluxCart[nDim+1][k] = Viscosity*factHeatFlux*StaticEnergyGrad[k]; // Heat flux part
-      for(unsigned short j=0; j<nDim; ++j)
-        fluxCart[nDim+1][k] += tauVis[j][k]*vel[j];    // Work of the viscous forces part
-    }
-
-    /*--- Set the pointer to the normals and the pointer to the
-          viscous normal fluxes of this integration point.
-          Initialize the fluxes to zero. ---*/
-    const su2double *normal = metricNormalsFace + i*(nDim+1);
+    /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
+          actual normal viscous flux. The viscosity is stored for later use. ---*/
+    const su2double *normal = metricNormalsFace + i*(nDim+1); 
     su2double *normalFlux   = viscNormFluxes + i*nVar;
-    for(unsigned short j=0; j<nVar; ++j) normalFlux[j] = 0.0;
+    su2double Viscosity;
 
-    /* Set the energy flux to the prescribed heat flux. If the heat flux is
-       not prescribed HeatFlux is equal to zero. */
-    normalFlux[nVar-1] = normal[nDim]*HeatFlux;
-      
-    /*--- Loop over the number of dimensions to compute the fluxes in the
-          direction of the parametric coordinates. ---*/
-    for(unsigned short k=0; k<nDim; ++k) {
-      const su2double unscaledNorm = normal[k]*normal[nDim];
+    ViscousNormalFluxIntegrationPoint(sol, solGradCart, normal, HeatFlux,
+                                      factHeatFlux, Viscosity, normalFlux);
+    viscosityInt[i] = Viscosity;
+  }
+}
 
-      /*--- Loop over the variables to update the normal flux. Note
-            that the loop starts at 1, because the mass conservation
-            does not have a viscous contribution. ---*/
-      for(unsigned short j=1; j<nVar; ++j) 
-        normalFlux[j] += fluxCart[j][k]*unscaledNorm;
+void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
+                                                         const su2double solGradCart[5][3],
+                                                         const su2double *normal,
+                                                         const su2double HeatFlux,
+                                                         const su2double factHeatFlux,
+                                                               su2double &Viscosity,
+                                                               su2double *normalFlux) {
+
+  /*--- Compute the velocities and static energy in this integration point. ---*/
+  const su2double DensityInv = 1.0/sol[0];
+  su2double vel[3], Velocity2 = 0.0;
+  for(unsigned short j=0; j<nDim; ++j) {
+    vel[j]     = sol[j+1]*DensityInv;
+    Velocity2 += vel[j]*vel[j];
+  }
+
+  const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
+  const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+
+  /*--- Compute the Cartesian gradients of the velocities and static energy
+        in this integration point and also the divergence of the velocity. ---*/
+  su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
+  for(unsigned short k=0; k<nDim; ++k) {
+    StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
+                        -             TotalEnergy*solGradCart[0][k]);
+    for(unsigned short j=0; j<nDim; ++j) {
+      velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
+                           -      vel[j]*solGradCart[0][k]);
+      StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
     }
+    divVel += velGrad[k][k];
+  }
+
+  /*--- Compute the laminar viscosity. ---*/
+  FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+  Viscosity = FluidModel->GetLaminarViscosity();
+
+  /*--- Set the value of the second viscosity and compute the divergence
+        term in the viscous normal stresses. ---*/
+  const su2double lambda     = -2.0*Viscosity/3.0;
+  const su2double lamDivTerm =  lambda*divVel;
+
+  /*--- Compute the viscous stress tensor. ---*/
+  su2double tauVis[3][3];
+  for(unsigned short k=0; k<nDim; ++k) {
+    tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
+    for(unsigned short j=(k+1); j<nDim; ++j) {
+      tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
+      tauVis[k][j] = tauVis[j][k];
+    }
+  }
+
+  /*--- Compute the Cartesian viscous flux vectors in this
+        integration point. ---*/
+  su2double fluxCart[5][3];
+  for(unsigned short k=0; k<nDim; ++k) {
+
+    /* Momentum flux vector. */
+    for(unsigned short j=0; j<nDim; ++j)
+      fluxCart[j+1][k] = tauVis[j][k];
+
+    /* Energy flux vector. */
+    fluxCart[nDim+1][k] = Viscosity*factHeatFlux*StaticEnergyGrad[k]; // Heat flux part
+    for(unsigned short j=0; j<nDim; ++j)
+      fluxCart[nDim+1][k] += tauVis[j][k]*vel[j];    // Work of the viscous forces part
+  }
+
+  /*--- Initialize the fluxes to zero. ---*/
+  for(unsigned short j=0; j<nVar; ++j) normalFlux[j] = 0.0;
+
+  /* Set the energy flux to the prescribed heat flux. If the heat flux is
+     not prescribed HeatFlux is equal to zero. */
+  normalFlux[nVar-1] = normal[nDim]*HeatFlux;
+      
+  /*--- Loop over the number of dimensions to compute the fluxes in the
+        direction of the parametric coordinates. ---*/
+  for(unsigned short k=0; k<nDim; ++k) {
+    const su2double unscaledNorm = normal[k]*normal[nDim];
+
+    /*--- Loop over the variables to update the normal flux. Note
+          that the loop starts at 1, because the mass conservation
+          does not have a viscous contribution. ---*/
+    for(unsigned short j=1; j<nVar; ++j) 
+      normalFlux[j] += fluxCart[j][k]*unscaledNorm;
   }
 }
 
@@ -5044,12 +5133,22 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         UR[j] = ConsVarFreeStream[j];
     }
 
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
+                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
+                          viscosityInt);
+
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], 0.0,
-                                false, solIntL, solIntR, gradSolInt, fluxes,
-                                viscFluxes, viscosityInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, resFaces, indResFaces);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -5064,10 +5163,205 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
-  /*--- Call the Euler wall boundary condition.  ---*/
-  CFEM_DG_NSSolver::BC_Euler_Wall(geometry, solver_container, conv_numerics,
-                                  config, val_marker);
+
+  /* Constant factor present in the heat flux vector, namely the ratio of
+     thermal conductivity and viscosity. */
+  const su2double factHeatFlux = Gamma/Prandtl_Lam;
+
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. Furthermore, note
+        the size for fluxes and and gradSolIntL and the max function for the
+        viscFluxes. This is because these arrays are also used as temporary
+        storage for the other purposes. ---*/
+  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
+
+  unsigned short sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+
+#ifdef HAVE_MKL
+  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
+  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
+  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
+  vector<su2double> helpGradSolInt(sizeGradSolInt);
+  vector<su2double> helpFluxes(sizeFluxes);
+  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  vector<su2double> helpViscosityInt(nIntegrationMax);
+  solIntL      = helpSolIntL.data();
+  solIntR      = helpSolIntR.data();
+  gradSolInt   = helpGradSolInt.data();
+  fluxes       = helpFluxes.data();
+  viscFluxes   = helpViscFluxes.data();
+  viscosityInt = helpViscosityInt.data();
+#endif
+
+  /* Set the pointer solElem to fluxes. This is just for readability, as the
+     same memory can be used for the storage of the solution of the DOFs of
+     the element and the fluxes to be computed. */
+  su2double *solElem = fluxes;
+
+  /* Set the starting position in the vector for the face residuals for
+     this boundary marker. */
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+
+  /* Easier storage of the boundary faces for this boundary marker. */
+  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
+  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
+
+  /*--- Loop over the boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=0; l<nSurfElem; ++l) {
+
+    /* Compute the left states in the integration points of the face.
+       Use fluxes as a temporary storage array. */
+    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+
+    /* Get the required information from the standard element. */
+    const unsigned short ind          = surfElem[l].indStandardElement;
+    const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    /* Determine the offset between r- and -s-derivatives, which is also the
+       offset between s- and t-derivatives. */
+    const unsigned short offDeriv = nVar*nInt;
+
+    /* Store the solution of the DOFs of the adjacent element in contiguous
+       memory such that the function MatrixProduct can be used to compute the
+       gradients solution variables in the integration points of the face. */
+    for(unsigned short i=0; i<nDOFsElem; ++i) {
+      const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
+      su2double       *sol    = solElem + nVar*i;
+      for(unsigned short j=0; j<nVar; ++j)
+        sol[j] = solDOF[j];
+    }
+
+    /* Compute the left gradients in the integration points. Call the general
+       function to carry out the matrix product. */
+    MatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
+
+    /*--- Loop over the integration points to apply the symmetry condition
+          and to compute the viscous normal fluxes. This is done in the same
+          loop, because the gradients in the right integration points are
+          constructed using the symmetry boundary condition. ---*/
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      /* Easier storage of the left and right solution and the normals
+         for this integration point. */
+      const su2double *UL      = solIntL + i*nVar;
+            su2double *UR      = solIntR + i*nVar;
+      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+
+      /* Compute the normal component of the momentum variables. */
+      su2double rVn = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        rVn += UL[iDim+1]*normals[iDim];
+
+      /* The normal velocity must be mirrored in order to get a true symmetry
+         condition. This is accomplished by multiplying rVn by two. */
+      rVn *= 2.0;
+
+      /* Set the right state. Note that the total energy of the right state is
+         identical to the left state, because the magnitude of the velocity
+         remains the same. */
+      UR[0]      = UL[0];
+      UR[nDim+1] = UL[nDim+1];
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
+
+      /* Easier storage of the metric terms and left gradients of this
+         integration point. */
+      const su2double *metricTerms = surfElem[l].metricCoorDerivFace + i*nDim*nDim;
+      const su2double *ULGrad      = gradSolInt + nVar*i;
+
+      /* Compute the Cartesian gradients of the left solution. */
+      su2double ULGradCart[5][3];
+      for(unsigned short k=0; k<nDim; ++k) {
+        for(unsigned short j=0; j<nVar; ++j) {
+          ULGradCart[j][k] = 0.0;
+          for(unsigned short ll=0; ll<nDim; ++ll)
+            ULGradCart[j][k] += ULGrad[j+ll*offDeriv]*metricTerms[k+ll*nDim];
+        }
+      }
+
+      /* Determine the normal gradients of all variables. */
+      su2double ULGradNorm[5];
+      for(unsigned short j=0; j<nVar; ++j) {
+        ULGradNorm[j] = 0.0;
+        for(unsigned short k=0; k<nDim; ++k)
+          ULGradNorm[j] += ULGradCart[j][k]*normals[k];
+      }
+
+      /* For the construction of the gradients of the right solution, also
+         the Cartesian gradients and the normal gradient of the normal
+         momentum is needed. This is computed below. */
+      su2double GradCartNormMomL[3], GradNormNormMomL = 0.0;
+      for(unsigned short j=0; j<nDim; ++j) {
+        GradNormNormMomL   += ULGradNorm[j+1]*normals[j];
+        GradCartNormMomL[j] = 0.0;
+        for(unsigned short k=0; k<nDim; ++k)
+          GradCartNormMomL[j] += ULGradCart[k+1][j]*normals[k];
+      }
+
+      /*--- Construct the gradients of the right solution. The tangential
+            gradients of the normal momentum and normal gradients of the other
+            variables, density, energy and tangential momentum, must be negated.
+            For the common situation that the symmetry plane coincides with an
+            x-, y- or z-plane this boils down to a multiplication by -1 or +1,
+            depending on the variable and gradient. However, the implementation
+            below is valid for an arbitrary orientation of the symmetry plane. ---*/
+      su2double URGradCart[5][3];
+      for(unsigned short k=0; k<nDim; ++k) {
+        URGradCart[0][k]      = ULGradCart[0][k]      - 2.0*normals[k]*ULGradNorm[0];
+        URGradCart[nDim+1][k] = ULGradCart[nDim+1][k] - 2.0*normals[k]*ULGradNorm[nDim+1];
+
+        for(unsigned short j=0; j<nDim; ++j)
+          URGradCart[j+1][k] = ULGradCart[j+1][k] - 2.0*normals[k]*ULGradNorm[j+1]
+                             - 2.0*normals[j]*GradCartNormMomL[k]
+                             + 4.0*normals[j]*normals[k]*GradNormNormMomL;
+      }
+
+      /*--- Compute the viscous fluxes of the left and right state and average
+            them to compute the correct viscous flux for a symmetry boundary. ---*/
+      su2double viscFluxL[5], viscFluxR[5];
+      su2double Viscosity;
+
+      ViscousNormalFluxIntegrationPoint(UR, URGradCart, normals, 0.0,
+                                        factHeatFlux, Viscosity, viscFluxR);
+      ViscousNormalFluxIntegrationPoint(UL, ULGradCart, normals, 0.0,
+                                        factHeatFlux, Viscosity, viscFluxL);
+      viscosityInt[i] = Viscosity;
+
+      su2double *viscNormalFlux = viscFluxes + i*nVar;
+      for(unsigned short j=0; j<nVar; ++j)
+        viscNormalFlux[j] = 0.5*(viscFluxL[j] + viscFluxR[j]);
+    }
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, resFaces, indResFaces);
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solIntL);
+  mkl_free(solIntR);
+  mkl_free(gradSolInt);
+  mkl_free(fluxes);
+  mkl_free(viscFluxes);
+  mkl_free(viscosityInt);
+#endif
 }
 
 void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
@@ -5172,12 +5466,22 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
       UR[nDim+1] -= 0.5*UL[0]*diffKin;
     }
 
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
+                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
+                          viscosityInt);
+
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, numerics, &surfElem[l], 0.0,
-                                false, solIntL, solIntR, gradSolInt, fluxes,
-                                viscFluxes, viscosityInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, numerics, &surfElem[l], solIntL, solIntR,
+                                gradSolInt, fluxes, viscFluxes, viscosityInt,
+                                resFaces, indResFaces);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -5345,12 +5649,22 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         UR[iDim+1] = Density*Vel_Mag*Flow_Dir[iDim];
     }
 
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
+                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
+                          viscosityInt);
+
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], 0.0,
-                                false, solIntL, solIntR, gradSolInt, fluxes,
-                                viscFluxes, viscosityInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, resFaces, indResFaces);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -5480,12 +5794,22 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
       UR[nDim+1] = Pressure/Gamma_Minus_One + 0.5*Density*Velocity2;
     }
 
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
+                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
+                          viscosityInt);
+
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], 0.0,
-                                false, solIntL, solIntR, gradSolInt, fluxes,
-                                viscFluxes, viscosityInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, resFaces, indResFaces);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -5598,12 +5922,22 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
       UR[nDim+1] -= 0.5*UR[0]*diffKin;
     }
 
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(nInt, nDOFsElem, Wall_HeatFlux, true, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
+                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
+                          viscosityInt);
+
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], Wall_HeatFlux,
-                                true, solIntL, solIntR, gradSolInt, fluxes,
-                                viscFluxes, viscosityInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, resFaces, indResFaces);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -5716,12 +6050,22 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
       UR[nDim+1] = UR[0]*(StaticEnergy + 0.5*kinEner);
     }
 
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
+                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
+                          viscosityInt);
+
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], 0.0,
-                                false, solIntL, solIntR, gradSolInt, fluxes,
-                                viscFluxes, viscosityInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
+                                solIntR, gradSolInt, fluxes, viscFluxes,
+                                viscosityInt, resFaces, indResFaces);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -5849,12 +6193,22 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
 #endif
     }
 
+    /* Call the general function to compute the viscous flux in normal
+       direction for the face. */
+    const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
+                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
+                          viscosityInt);
+
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
-    ResidualViscousBoundaryFace(config, numerics, &surfElem[l], 0.0,
-                                false, solIntL, solIntR, gradSolInt, fluxes,
-                                viscFluxes, viscosityInt, resFaces, indResFaces);
+    ResidualViscousBoundaryFace(config, numerics, &surfElem[l], solIntL, solIntR,
+                                gradSolInt, fluxes, viscFluxes, viscosityInt,
+                                resFaces, indResFaces);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -5872,14 +6226,12 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       CConfig                  *config,
                                       CNumerics                *conv_numerics,
                                       const CSurfaceElementFEM *surfElem,
-                                      const su2double          Wall_HeatFlux,
-                                      const bool               HeatFlux_Prescribed,
                                       const su2double          *solInt0,
                                       const su2double          *solInt1,
                                       su2double                *gradSolInt,
                                       su2double                *fluxes,
                                       su2double                *viscFluxes,
-                                      su2double                *viscosityInt,
+                                      const su2double          *viscosityInt,
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
@@ -5889,24 +6241,12 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   const unsigned short nDOFs        = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
   const su2double      ConstPenFace = standardBoundaryFacesSol[ind].GetPenaltyConstant();
-  const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
   const su2double     *weights      = standardBoundaryFacesSol[ind].GetWeightsIntegration();
-
-  /*------------------------------------------------------------------------*/
-  /*--- Step 1: Compute the fluxes in the integration points.            ---*/
-  /*------------------------------------------------------------------------*/
 
   /* General function to compute the inviscid fluxes, using an approximate
      Riemann solver in the integration points. */
   ComputeInviscidFluxesFace(config, nInt, surfElem->metricNormalsFace,
                             solInt0, solInt1, fluxes, conv_numerics);
-
-  /* Call the general function to compute the viscous flux in normal
-     direction for the face. */
-  ViscousNormalFluxFace(nInt, nDOFsElem, Wall_HeatFlux, HeatFlux_Prescribed,
-                        derBasisElem, solInt0, surfElem->DOFsSolElement,
-                        surfElem->metricCoorDerivFace, surfElem->metricNormalsFace,
-                        gradSolInt, viscFluxes, viscosityInt);
 
   /* Subtract the viscous fluxes from the inviscid fluxes. */
   for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] -= viscFluxes[j];
