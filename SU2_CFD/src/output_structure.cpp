@@ -8621,7 +8621,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 	unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
   FluidModel = solver_container->GetFluidModel();
-  su2double area, absVel2;
+  su2double area, absVel2, soundSpeed, mach;
 
 
   /*--- Compute BC imposed value for convergence monitoring ---*/
@@ -8658,6 +8658,15 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			MassFlowIn[iMarkerTP][iSpan]         = DensityIn[iMarkerTP][iSpan]*TurboVelocityIn[iMarkerTP][iSpan][0]*area;
 			AbsFlowAngleIn[iMarkerTP][iSpan]     = atan(TurboVelocityIn[iMarkerTP][iSpan][1]/TurboVelocityIn[iMarkerTP][iSpan][0]);
 			EnthalpyIn[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureIn[iMarkerTP][iSpan]/DensityIn[iMarkerTP][iSpan];
+			soundSpeed                           = FluidModel->GetSoundSpeed();
+
+			mach          = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++){
+				MachIn[iMarkerTP][iSpan][iDim]       = TurboVelocityIn[iMarkerTP][iSpan][iDim]/soundSpeed;
+				mach 																 = MachIn[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
+			}
+			MachIn[iMarkerTP][iSpan][4]            = sqrt(mach);
+
 
 			/*--- Compute Total Inflow quantities ---*/
 			TotalEnthalpyIn[iMarkerTP][iSpan]    = EnthalpyIn[iMarkerTP][iSpan] + 0.5*absVel2;
@@ -8682,6 +8691,15 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			EntropyOut[iMarkerTP][iSpan]				 = FluidModel->GetEntropy();
 			MassFlowOut[iMarkerTP][iSpan]         = DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
 			AbsFlowAngleOut[iMarkerTP][iSpan]     = atan(TurboVelocityOut[iMarkerTP][iSpan][1]/TurboVelocityOut[iMarkerTP][iSpan][0]);
+
+			soundSpeed                           = FluidModel->GetSoundSpeed();
+
+			mach          = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++){
+				MachOut[iMarkerTP][iSpan][iDim]       = TurboVelocityOut[iMarkerTP][iSpan][iDim]/soundSpeed;
+				mach 																 = MachOut[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
+			}
+			MachOut[iMarkerTP][iSpan][4]            = sqrt(mach);
 
 			/*--- Compute turbo-performance ---*/
 			EntropyGen[iMarkerTP][iSpan]				 = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
