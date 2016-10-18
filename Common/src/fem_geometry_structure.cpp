@@ -4882,7 +4882,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   }
   else if(config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
           config->GetUnsteady_Simulation() == DT_STEPPING_2ND ||
-          config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+          config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     FullMassMatrix        = LumpedMassMatrix = true;
     FullInverseMassMatrix = false;
   }

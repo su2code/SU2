@@ -417,64 +417,61 @@ public:
 
 
 /*!
- * \class CSpectralDriver
- * \brief Class for driving an iteration of a spectral method problem using multiple zones.
+ * \class CHBDriver
+ * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  * \version 4.3.0 "Cardinal"
  */
-class CSpectralDriver : public CDriver {
+class CHBDriver : public CDriver {
+
+private:
+
+	su2double **D; /*!< \brief Harmonic Balance operator. */
+
 public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Number of dimensions.
-   */
-  CSpectralDriver(char* confFile,
-                  unsigned short val_nZone,
-                  unsigned short val_nDim);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSpectralDriver(void);
-  
-  /*!
-   * \brief Run a single iteration of a spectral method problem.
-   */
-  
-  void Run();
-  
-  /*!
-   * \brief Computation and storage of the time spectral source terms.
-   * \author T. Economon, K. Naik
-   * \param[in] iZone - Current zone number.
-   */
-  void SetTimeSpectral(unsigned short iZone);
-  
-  /*!
-   * \brief Computation of the Time-Spectral operator matrix.
-   * \author K. Naik
-   * \param[in] D - su2double pointer to the operator matrix.
-   */
-  void ComputeTimeSpectral_Operator(su2double **D, su2double period);
-  
-  /*!
-   * \brief Computation and storage of the time-spectral mesh velocities.
-   * \author K. Naik, T. Economon
-   */
-  void SetTimeSpectral_Velocities();
-  
-  /*!
-   * \brief Update the solution for the spectral method.
-   */
-  void Update();
-  
-  /*!
-   * \brief Reset the convergence flag (set to false) of the solver for the spectral method.
-   */
-  void ResetConvergence();
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] confFile - Configuration file name.
+	 * \param[in] val_nZone - Total number of zones.
+	 * \param[in] val_nDim - Number of dimensions.
+	 */
+	CHBDriver(char* confFile,
+			unsigned short val_nZone,
+			unsigned short val_nDim);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CHBDriver(void);
+
+	/*!
+	 * \brief Run a single iteration of a Harmonic Balance problem.
+	 */
+	void Run();
+
+	/*!
+	 * \brief Computation and storage of the Harmonic Balance method source terms.
+	 * \author T. Economon, K. Naik
+	 * \param[in] iZone - Current zone number.
+	 */
+	void SetHarmonicBalance(unsigned short iZone);
+
+	/*!
+	 * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
+	 * \author A. Rubino, S. Nimmagadda
+	 */
+	void ComputeHB_Operator();
+
+	/*!
+	 * \brief Update the solution for the Harmonic Balance.
+	 */
+	void Update();
+
+	/*!
+	 * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
+	 */
+	void ResetConvergence();
 };
 
 
@@ -486,35 +483,35 @@ public:
  */
 class CFSIDriver : public CDriver {
 public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   */
-  CFSIDriver(char* confFile,
-             unsigned short val_nZone,
-             unsigned short val_nDim);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFSIDriver(void);
-  
-  /*!
-   * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
-   */
-  
-  void Run();
-  
-  /*!
-   * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
-   * \param[in] donorZone - zone in which the displacements will be predicted.
-   * \param[in] targetZone - zone which receives the predicted displacements.
-   */
-  void Predict_Displacements(unsigned short donorZone, unsigned short targetZone);
-  
-  /*!
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] confFile - Configuration file name.
+	 * \param[in] val_nZone - Total number of zones.
+	 */
+	CFSIDriver(char* confFile,
+			unsigned short val_nZone,
+			unsigned short val_nDim);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFSIDriver(void);
+
+	/*!
+	 * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
+	 */
+
+	void Run();
+
+	/*!
+	 * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
+	 * \param[in] donorZone - zone in which the displacements will be predicted.
+	 * \param[in] targetZone - zone which receives the predicted displacements.
+	 */
+	void Predict_Displacements(unsigned short donorZone, unsigned short targetZone);
+
+	/*!
    * \brief Predict the fluid tractions to pass them into the structural solver on a BGS implementation.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.

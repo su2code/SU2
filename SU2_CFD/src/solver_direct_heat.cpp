@@ -146,7 +146,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 			node[iPoint] = new CHeatVariable(Solution, nDim, nVar, config);
 		}
 		restart_file.close();
-    
 	}
   
 }
