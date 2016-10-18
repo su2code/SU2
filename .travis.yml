@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - economon@stanford.edu
   
 branches:
     only:
-        - develop
+        - feature_hom
 
 env:
     global:
@@ -26,11 +26,11 @@ env:
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
           TEST_SCRIPT=parallel_regression.py
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
-          TEST_SCRIPT=serial_regression_AD.py
+        #- CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+        #  TEST_SCRIPT=serial_regression_AD.py
         # Parallel build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
-          TEST_SCRIPT=parallel_regression_AD.py
+        #- CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+        #  TEST_SCRIPT=parallel_regression_AD.py
 
 
 
