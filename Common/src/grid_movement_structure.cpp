@@ -1946,8 +1946,9 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   su2double dt, Center_Moment[3] = {0.0,0.0,0.0};
   su2double *GridVel, newGridVel[3] = {0.0,0.0,0.0};
 	su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
-	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
+	su2double dTheta, dPhi, dPsi, cosTheta, sinTheta;
 	su2double cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double time;
 	bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 	bool adjoint = config->GetContinuous_Adjoint();
 
@@ -1964,15 +1965,20 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   
   /*--- For the unsteady adjoint, use reverse time ---*/
   if (adjoint) {
+    unsigned long nFlowIter  = config->GetnExtIter();
+    unsigned long directIter = nFlowIter - iter - 1;
+    time = static_cast<su2double>(directIter)*dt;
     /*--- Set the first adjoint mesh position to the final direct one ---*/
     if (iter == 0) dt = ((su2double)config->GetnExtIter()-1)*dt;
     /*--- Reverse the rotation direction for the adjoint ---*/
     else dt = -1.0*dt;
   } else {
     /*--- No rotation at all for the first direct solution ---*/
+    time = static_cast<su2double>(iter)*dt;
     if (iter == 0) dt = 0;
   }
-  
+
+
   /*--- Center of rotation & angular velocity vector from config ---*/
   
   Center[0] = config->GetMotion_Origin_X(iZone);
@@ -1992,9 +1998,52 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   
   /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
 
-  dtheta = Omega[0]*dt;
-  dphi   = Omega[1]*dt;
-  dpsi   = Omega[2]*dt;
+  dTheta = Omega[0]*dt;
+  dPhi   = Omega[1]*dt;
+  dPsi   = Omega[2]*dt;
+
+	/*--- update periodic mesh taking into account periodicity ---*/
+  if (config->GetPeriodic_Rigid_Movement()){
+
+  	su2double periodicTheta, periodicPhi, periodicPsi;
+    periodicTheta = config->GetPeriodicityRotation_X(iZone)/180*PI_NUMBER;
+    periodicPhi   = config->GetPeriodicityRotation_Y(iZone)/180*PI_NUMBER;
+    periodicPsi   = config->GetPeriodicityRotation_Z(iZone)/180*PI_NUMBER;
+
+  	su2double dTheta_Periodic, dPhi_Periodic, dPsi_Periodic;
+
+  	if (iter == 0){
+
+  		/*--- Initialize variable at first iteration for periodic movement ---*/
+  		periodic_count[0] = 0;
+  		periodic_count[1] = 0;
+  		periodic_count[2] = 0;
+  		dTheta_Periodic = 0.0;
+  		dPhi_Periodic   = 0.0;
+  		dPsi_Periodic   = 0.0;
+  	}
+
+  	/*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
+  	dTheta_Periodic = fabs(Omega[0]*time) - periodicTheta * periodic_count[0];
+  	dPhi_Periodic   = fabs(Omega[1]*time) - periodicPhi   * periodic_count[1];
+  	dPsi_Periodic   = fabs(Omega[2]*time) - periodicPsi   * periodic_count[2];
+
+  	/*--- Reset grid movement according the given periodicity ---*/
+  	if ( dTheta_Periodic >= periodicTheta && dTheta !=0. ){
+  		periodic_count[0]++;
+  		(Omega[0] < 0.) ? (dTheta += periodicTheta) : (dTheta -= periodicTheta);
+  	}
+  	if ( dPhi_Periodic >= periodicPhi && dPhi !=0. ){
+  		periodic_count[1]++;
+  		(Omega[1] < 0.) ? (dPhi += periodicPhi) : (dPhi -= periodicPhi);
+  	}
+  	if ( dPsi_Periodic >= periodicPsi && dPsi !=0. ){
+  		periodic_count[2]++;
+  		(Omega[2] < 0.) ? (dPsi += periodicPsi) : (dPsi -= periodicPsi);
+  	}
+
+  }
+
 
   if (rank == MASTER_NODE && iter == 0) {
     cout << " Angular velocity: (" << Omega[0] << ", " << Omega[1];
@@ -2003,8 +2052,8 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
   
 	/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
   
-	cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
-	sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+	cosTheta = cos(dTheta);  cosPhi = cos(dPhi);  cosPsi = cos(dPsi);
+	sinTheta = sin(dTheta);  sinPhi = sin(dPhi);  sinPsi = sin(dPsi);
   
 	/*--- Compute the rotation matrix. Note that the implicit
    ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
@@ -2490,20 +2539,20 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   }
 
 
-	/*--- Update periodic mesh taking into account periodicity ---*/
+	/*--- update periodic mesh taking into account periodicity ---*/
   if (config->GetPeriodic_Rigid_Movement()){
 
-  	su2double periodicX[3];
 
+  	su2double periodicX[3];
     periodicX[0] = config->GetPeriodicity_X(iZone);
     periodicX[1] = config->GetPeriodicity_Y(iZone);
     periodicX[2] = config->GetPeriodicity_Z(iZone);
-
 
   	su2double deltaX_Periodic[3];
 
   	if (iter == 0){
 
+  		/*--- Initialize variable at first iteration for periodic movement ---*/
   		periodic_count[0]  = 0;
   		periodic_count[1]  = 0;
   		periodic_count[2]  = 0;
@@ -2512,10 +2561,12 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   		deltaX_Periodic[2] = 0.0;
   	}
 
+  	/*--- Compute the global displacement, taking into account the prescribed periodicity ---*/
   	deltaX_Periodic[0] = fabs(xDot[0]*time_new) - periodicX[0]*periodic_count[0];
   	deltaX_Periodic[1] = fabs(xDot[1]*time_new) - periodicX[1]*periodic_count[1];
   	deltaX_Periodic[2] = fabs(xDot[2]*time_new) - periodicX[2]*periodic_count[2];
 
+  	/*--- Reset grid movement according the given periodicity ---*/
   	if ( deltaX_Periodic[0] >= periodicX[0] && deltaX[0] !=0. ){
   		periodic_count[0]++;
   		(xDot[0] < 0.) ? (deltaX[0] += periodicX[0]) : (deltaX[0] -= periodicX[0]);

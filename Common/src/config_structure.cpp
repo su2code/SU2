@@ -350,7 +350,7 @@ void CConfig::SetPointersNull(void) {
   /*--- Moving mesh pointers ---*/
 
   Kind_GridMovement	 = NULL;
-  Motion_Origin_X	   = NULL;  Motion_Origin_Y 	 = NULL;	 Motion_Origin_Z	 = NULL;
+  Motion_Origin_X	   = NULL;  Motion_Origin_Y 	 = NULL;	Motion_Origin_Z	   = NULL;
   Translation_Rate_X = NULL;	Translation_Rate_Y = NULL;  Translation_Rate_Z = NULL;
   Rotation_Rate_X 	 = NULL;  Rotation_Rate_Y 	 = NULL;  Rotation_Rate_Z 	 = NULL;
   Pitching_Omega_X 	 = NULL;  Pitching_Omega_Y 	 = NULL;  Pitching_Omega_Z 	 = NULL;
@@ -360,7 +360,10 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X 	 = NULL;  Plunging_Ampl_Y 	 = NULL;  Plunging_Ampl_Z 	 = NULL;
   RefOriginMoment_X  = NULL;  RefOriginMoment_Y  = NULL;  RefOriginMoment_Z  = NULL;
   MoveMotion_Origin  = NULL;
-  Periodicity_X      = NULL;  Periodicity_Y = NULL; Periodicity_Z = NULL;
+
+  /* Periodic grid movement pointers */
+  Periodicity_X         = NULL;  Periodicity_Y         = NULL; Periodicity_Z         = NULL;
+  PeriodicityRotation_X = NULL;  PeriodicityRotation_Y = NULL; PeriodicityRotation_Z = NULL;
 
   Periodic_Translate = NULL;  Periodic_Rotation 	= NULL;     Periodic_Center		= NULL;
   Periodic_Translation = NULL;Periodic_RotAngles	= NULL;	    Periodic_RotCenter		= NULL;
@@ -1218,6 +1221,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("PLUNGING_AMPL_Y", nPlunging_Ampl_Y, Plunging_Ampl_Y);
   /* DESCRIPTION: Plunging amplitude (m) in x, y, & z directions (RIGID_MOTION only) */
   addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
+  /* DESCRIPTION: Angular periodicity for a rotation about x-axis */
+  addDoubleListOption("PERIODICITY_ROTATION_X", nPeriodicityRotation_X, PeriodicityRotation_X);
+  /* DESCRIPTION: Angular periodicity for a rotation about y-axis */
+  addDoubleListOption("PERIODICITY_ROTATION_Y", nPeriodicityRotation_Y, PeriodicityRotation_Y);
+  /* DESCRIPTION: Angular periodicity for a rotation about z-axis */
+  addDoubleListOption("PERIODICITY_ROTATION_Z", nPeriodicityRotation_Z, PeriodicityRotation_Z);
   /* DESCRIPTION: Periodicity distance in X-direction */
   addDoubleListOption("PERIODICITY_X", nPeriodicity_X, Periodicity_X);
   /* DESCRIPTION: Periodicity distance in Y-direction */
@@ -2408,7 +2417,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		Periodicity_X[iZone] = 0.0;
   } else {
   	if (Grid_Movement && (nPeriodicity_X != nGridMovement)) {
-  		cout << "Length of PERIODICITY_Y must match GRID_MOVEMENT_KIND!!" << endl;
+  		cout << "Length of PERIODICITY_X must match GRID_MOVEMENT_KIND!!" << endl;
   		exit(EXIT_FAILURE);
   	}
   }
@@ -2434,6 +2443,40 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		exit(EXIT_FAILURE);
   	}
   }
+
+  if (PeriodicityRotation_X == NULL) {
+  	PeriodicityRotation_X = new su2double[nMoving];
+  	for (iZone = 0; iZone < nMoving; iZone++ )
+  		PeriodicityRotation_X[iZone] = 0.0;
+  } else {
+  	if (Grid_Movement && (nPeriodicityRotation_X != nGridMovement)) {
+  		cout << "Length of PERIODICITY_ROTATION_X must match GRID_MOVEMENT_KIND!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  }
+
+  if (PeriodicityRotation_Y == NULL) {
+  	PeriodicityRotation_Y = new su2double[nMoving];
+  	for (iZone = 0; iZone < nMoving; iZone++ )
+  		PeriodicityRotation_Y[iZone] = 0.0;
+  } else {
+  	if (Grid_Movement && (nPeriodicityRotation_Y != nGridMovement)) {
+  		cout << "Length of PERIODICITY_ROTATION_Y must match GRID_MOVEMENT_KIND!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  }
+
+  if (PeriodicityRotation_Z == NULL) {
+  	PeriodicityRotation_Z = new su2double[nMoving];
+  	for (iZone = 0; iZone < nMoving; iZone++ )
+  		PeriodicityRotation_Z[iZone] = 0.0;
+  } else {
+  	if (Grid_Movement && (nPeriodicityRotation_Z != nGridMovement)) {
+  		cout << "Length of PERIODICITY_ROTATION_Z must match GRID_MOVEMENT_KIND!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  }
+
 
   /*-- Setting Harmonic Balance period from the config file */
 
@@ -4933,11 +4976,15 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
   if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
 
-  /*--- periodic rigid grid movement ---*/
+  /*--- periodic grid movement ---*/
 
   if (Periodicity_X != NULL) delete [] Periodicity_X;
   if (Periodicity_Y != NULL) delete [] Periodicity_Y;
   if (Periodicity_Z != NULL) delete [] Periodicity_Z;
+
+  if (PeriodicityRotation_X != NULL) delete [] PeriodicityRotation_X;
+  if (PeriodicityRotation_Y != NULL) delete [] PeriodicityRotation_Y;
+  if (PeriodicityRotation_Z != NULL) delete [] PeriodicityRotation_Z;
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
     

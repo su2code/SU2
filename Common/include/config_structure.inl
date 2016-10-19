@@ -507,6 +507,12 @@ inline void CConfig::SetKind_GridMovement(unsigned short val_iZone, unsigned sho
 
 inline su2double CConfig::GetMach_Motion(void) { return Mach_Motion; }
 
+inline su2double CConfig::GetPeriodicityRotation_X(unsigned short val_iZone) { return PeriodicityRotation_X[val_iZone]; }
+
+inline su2double CConfig::GetPeriodicityRotation_Y(unsigned short val_iZone) { return PeriodicityRotation_Y[val_iZone]; }
+
+inline su2double CConfig::GetPeriodicityRotation_Z(unsigned short val_iZone) { return PeriodicityRotation_Z[val_iZone]; }
+
 inline su2double CConfig::GetPeriodicity_X(unsigned short val_iZone) { return Periodicity_X[val_iZone]; }
 
 inline su2double CConfig::GetPeriodicity_Y(unsigned short val_iZone) { return Periodicity_Y[val_iZone]; }
