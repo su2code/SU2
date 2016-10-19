@@ -3439,7 +3439,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0;
-  
+  su2double Mu_RefND, Mu_Temperature_RefND, Mu_SND;
+
   unsigned short iDim;
   
   int rank = MASTER_NODE;
@@ -3598,15 +3599,21 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         /*--- Change of measurement system, hard coded value working only with STANDAR AIR model ---*/
         
         if (standard_air) {
+          Mu_RefND = 1.716E-5;
+          Mu_Temperature_RefND = 273.15; // 273.0
+          Mu_SND = 110.4;                // 111.0
           if (config->GetSystemMeasurements() == SI) {
-            config->SetMu_RefND(1.716E-5);
-            config->SetMu_SND(110.4);
-            config->SetMu_Temperature_RefND(273.15);
+            config->SetMu_RefND(Mu_RefND);
+            config->SetMu_Temperature_RefND(Mu_Temperature_RefND);
+            config->SetMu_SND(Mu_SND);
           }
           if (config->GetSystemMeasurements() == US) {
-            config->SetMu_RefND(3.62E-7);
-            config->SetMu_SND(198.72);
-            config->SetMu_Temperature_RefND(518.7);
+            Mu_RefND = Mu_RefND/47.88025898;
+            Mu_Temperature_RefND = (Mu_Temperature_RefND - 273.15) * 1.8 + 491.67;
+            Mu_SND = (Mu_SND - 273.15) * 1.8 + 491.67;
+            config->SetMu_RefND(Mu_RefND);
+            config->SetMu_Temperature_RefND(Mu_Temperature_RefND);
+            config->SetMu_SND(Mu_SND);
           }
         }
         
@@ -3984,6 +3991,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       cout << "Free-stream temperature: " << config->GetTemperature_FreeStream();
       if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
+
+      cout << "Free-stream total temperature: " << config->GetTemperature_FreeStream() * (1.0+Mach*Mach*0.5*(Gamma-1.0));
+       if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
+       else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
     }
     
     cout << "Free-stream density: " << config->GetDensity_FreeStream();
