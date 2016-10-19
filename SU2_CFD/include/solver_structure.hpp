@@ -464,7 +464,7 @@ public:
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Set_OldSolution(CGeometry *geometry);
+  virtual void Set_OldSolution(CGeometry *geometry);
 
   /*!
    * \brief Set the new solution variables to the current solution value for classical RK.
