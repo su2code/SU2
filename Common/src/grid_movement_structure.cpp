@@ -2892,8 +2892,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
                 case FFD_CAMBER_2D :        SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_THICKNESS_2D :     SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iDV, false); break;
-                case FFD_DIHEDRAL_ANGLE :   SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iDV, false); break;
-                case FFD_TWIST_ANGLE :      SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_TWIST_ANGLE :      SetFFDTwist(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, false); break;
@@ -4115,6 +4114,15 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 	
 }
 
+void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
+                                           unsigned short iDV, bool ResetDef) {
+  
+  su2double Ampl = config->GetDV_Value(iDV);
+  
+  config->SetAoA_Offset(Ampl);
+  
+}
+
 void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			 unsigned short iDV, bool ResetDef) {
 	su2double Ampl, movement[3] = {0.0,0.0,0.0};
@@ -4150,42 +4158,7 @@ void CSurfaceMovement::SetFFDThickness(CGeometry *geometry, CConfig *config, CFr
 	
 }
 
-
-void CSurfaceMovement::SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
-																					 unsigned short iDV, bool ResetDef) {
-	unsigned short iOrder, jOrder, kOrder, index[3];
-	su2double movement[3] = {0.0,0.0,0.0}, theta;
-	string design_FFDBox;
-  
-  /*--- Set control points to its original value (even if the
-   design variable is not in this box) ---*/
-  
-  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
-
-	design_FFDBox = config->GetFFDTag(iDV);
-	
-	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
-    
-		/*--- The angle of rotation. ---*/
-    
-		theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
-		
-		/*--- Change the value of the control point if move is true ---*/
-		for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
-			for (jOrder = 0; jOrder < FFDBox->GetmOrder(); jOrder++)
-				for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
-					index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
-					su2double *coord = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
-					movement[0] = 0.0; movement[1] = 0.0; movement[2] = coord[1]*tan(theta);
-					
-					FFDBox->SetControlPoints(index, movement);
-				}
-		
-	}
-
-}
-
-void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
+void CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																				unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
 	su2double  x, y, z, movement[3] = {0.0,0.0,0.0};
@@ -4401,6 +4374,14 @@ void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
 				}
 	}
 	
+}
+
+void CSurfaceMovement::SetAngleOfAttack(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+  
+  su2double Ampl = config->GetDV_Value(iDV);
+  
+  config->SetAoA_Offset(Ampl);
+  
 }
 
 void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {

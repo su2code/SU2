@@ -3848,6 +3848,18 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << "\n";
   }
   
+  /*--- Write the general header and flow conditions ----*/
+  
+  restart_file <<"AoA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+  restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+  restart_file <<"IH= " << config->GetiH() << endl;
+  restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+  restart_file <<"DCL_DALPHA= " << config->GetdCL_dAlpha() << endl;
+  restart_file <<"DCM_DHI= " << config->GetdCM_diH() << endl;
+  restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+  restart_file <<"DCD_DCM_VALUE= " << config->GetdCD_dCM() << endl;
+  restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+  
   restart_file.close();
   
 }

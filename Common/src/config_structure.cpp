@@ -393,7 +393,9 @@ void CConfig::SetPointersNull(void) {
   
   ExtIter = 0;
   IntIter = 0;
-  
+  AoA_Offset = 0;
+  AoS_Offset = 0;
+
   nMarker_PerBound = 0;
   nPeriodic_Index = 0;
 
@@ -567,12 +569,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("AOA", AoA, 0.0);
   /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
+  /* DESCRIPTION: Activate fixed CM mode (specify a CM instead of iH). */
+  addBoolOption("FIXED_CM_MODE", Fixed_CM_Mode, false);
+  /* DESCRIPTION: Activate fixed CL mode (specify a CL instead of AoA). */
+  addBoolOption("EVAL_DCD_DCX", Eval_dCD_dCX, false);
+  /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
+  addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
-  /* DESCRIPTION: Lift cure slope for fixed CL mode (0.2 per deg by default). */
-  addDoubleOption("DCL_DALPHA", dCl_dAlpha, 0.2);
-  /* DESCRIPTION: Iterations to re-evaluate the angle of attack. */
-  addUnsignedLongOption("ITER_FIXED_CL", Iter_Fixed_CL, 500);
+  /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
+  addDoubleOption("TARGET_CM", Target_CM, 0.0);
+  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  addDoubleOption("DCL_DALPHA", dCL_dAlpha, 0.2);
+  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  addDoubleOption("DCM_DIH", dCM_diH, 0.05);
+  /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
+  addUnsignedLongOption("UPDATE_ALPHA", Update_Alpha, 5);
+  /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
+  addUnsignedLongOption("UPDATE_IH", Update_iH, 5);
 
 
   /*!\par CONFIG_CATEGORY: Reference Conditions \ingroup Config*/
@@ -1819,6 +1833,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
   
+  /*--- Fixed CM mode requires a static movement of the grid ---*/
+  
+  if (Fixed_CM_Mode) {
+    Grid_Movement= true;
+  	 nGridMovement = 1;
+  	 Kind_GridMovement = new unsigned short[nGridMovement];
+  	 Kind_GridMovement[0] = MOVING_HTP;
+  }
+
   /*--- Store the SU2 module that we are executing. ---*/
   
   Kind_SU2 = val_software;
@@ -2804,6 +2827,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  /*--- Check for constant lift mode. Initialize the update flag for
+   the AoA with each iteration to false  ---*/
+  
+  if (Fixed_CL_Mode) Update_AoA = false;
+  if (Fixed_CM_Mode) Update_HTPIncidence = false;
+
   if (DirectDiff != NO_DERIVATIVE) {
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD) {
@@ -3398,7 +3427,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
-        cout << "Reynolds number: " << Reynolds <<"."<< endl;
+        cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
+      if (Fixed_CL_Mode) cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
+      if (Fixed_CM_Mode) {
+      		cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
+        cout << "HTP rotation axis (X,Z): ("<< HTP_Axis[0] <<", "<< HTP_Axis[1] <<")."<< endl;
+      }
     }
 
     if (EquivArea) {
@@ -3692,7 +3726,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
-        case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
+        case DRAG_COEFFICIENT:
+          cout << "CD objective function." << endl;
+          if (Fixed_CL_Mode) cout << "dCD/dCL = " << dCD_dCL << "." << endl;
+          if (Fixed_CM_Mode) cout << "dCD/dCM = " << dCD_dCM << "." << endl;
+          break;
         case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
         case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
         case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;

@@ -302,16 +302,22 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     long iPoint_Local; unsigned long iPoint_Global = 0;
     
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
+      
       iPoint_Local = Global2Local[iPoint_Global];
+      
       if (iPoint_Local >= 0) {
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
@@ -327,30 +333,72 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
         }
         node[iPoint_Local] = new CAdjEulerVariable(Solution, nDim, nVar, config);
       }
-      iPoint_Global++;
+
+    }
+    
+    while (getline (restart_file, text_line)) {
+      
+      if (config->GetEval_dCD_dCX() == true) {
+        
+        /*--- dCD_dCL coefficient ---*/
+        
+        position = text_line.find ("DCD_DCL_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          cout << text_line <<endl;
+          if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+          config->SetdCD_dCL(dCD_dCL_);
+        }
+        
+        /*--- dCD_dCM coefficient ---*/
+        
+        position = text_line.find ("DCD_DCM_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
+          config->SetdCD_dCM(dCD_dCM_);
+        }
+        
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        config->SetExtIter_OffSet(ExtIter_);
+      }
+      
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
+    
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       node[iPoint] = new CAdjEulerVariable(Solution, nDim, nVar, config);
     }
     
     /*--- Close the restart file ---*/
+    
     restart_file.close();
     
     /*--- Free memory needed for the transformation ---*/
+    
     delete [] Global2Local;
+    
   }
   
   /*--- Define solver parameters needed for execution of destructor ---*/
+  
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
   else space_centered = false;
 
-  
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
+  
   myArea_Monitored = 0.0;
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
@@ -5501,7 +5549,10 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      getline (restart_file, text_line);
+
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -5524,9 +5575,45 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
         }
         node[iPoint_Local] = new CAdjNSVariable(Solution, nDim, nVar, config);
       }
-      iPoint_Global++;
+
     }
     
+    while (getline (restart_file, text_line)) {
+      
+      if (config->GetEval_dCD_dCX() ==  true) {
+        
+        /*--- dCD_dCL coefficient ---*/
+        
+        position = text_line.find ("DCD_DCL_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+          config->SetdCD_dCL(dCD_dCL_);
+        }
+        
+        /*--- dCD_dCM coefficient ---*/
+        
+        position = text_line.find ("DCD_DCM_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjointsolution file: " << dCD_dCM_ << " ." << endl;
+          config->SetdCD_dCM(dCD_dCM_);
+        }
+        
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        config->SetExtIter_OffSet(ExtIter_);
+      }
+      
+    }
+
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/

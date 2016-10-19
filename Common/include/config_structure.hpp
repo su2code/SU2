@@ -437,13 +437,28 @@ private:
 	su2double Reynolds;	/*!< \brief Reynolds number. */
 	su2double Froude;	/*!< \brief Froude number. */
 	su2double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
-	su2double AoA,			/*!< \brief Angle of attack (just external flow). */
-	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
+  su2double AoA,			/*!< \brief Angle of attack (just external flow). */
+  iH, AoS, AoA_Offset, AoS_Offset, AoA_Sens;		/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Fixed_CM_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Eval_dCD_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Discard_InFiles; /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double dCl_dAlpha;			/*!< \brief Lift curve slope for fixed CL mode (1/deg, external flow only). */
+  su2double Target_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Total_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Total_CD;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double dCL_dAlpha;        /*!< \brief value of dCl/dAlpha. */
+  su2double dCM_diH;        /*!< \brief value of dCM/dHi. */
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  su2double dNetThrust_dBCThrust;        /*!< \brief value of dCl/dAlpha. */
+  bool Update_BCThrust_Bool;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  bool Update_HTPIncidence;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -1971,12 +1986,68 @@ public:
 	 * \return Value of the angle of attack.
 	 */
 	su2double GetAoA(void);
+  
+  /*!
+   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
+   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
+   *        lifting body and the fluid through which it is moving.
+   * \return Value of the angle of attack.
+   */
+  su2double GetiH(void);
+  
+  /*!
+   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
+   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
+   *        lifting body and the fluid through which it is moving.
+   * \return Value of the angle of attack.
+   */
+  su2double GetAoA_Offset(void);
+  
+  /*!
+   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
+   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
+   *        lifting body and the fluid through which it is moving.
+   * \return Value of the angle of attack.
+   */
+  su2double GetAoS_Offset(void);
+  
+  /*!
+   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
+   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
+   *        lifting body and the fluid through which it is moving.
+   * \return Value of the angle of attack.
+   */
+  su2double GetAoA_Sens(void);
 
 	/*!
 	 * \brief Set the angle of attack.
 	 * \param[in] val_AoA - Value of the angle of attack.
 	 */
 	void SetAoA(su2double val_AoA);
+  
+  /*!
+   * \brief Set the angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetiH(su2double val_iH);
+  
+  /*!
+   * \brief Set the angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetAoA_Offset(su2double val_AoA_offset);
+  
+  /*!
+   * \brief Set the angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetAoS_Offset(su2double val_AoS_offset);
+  
+  /*!
+   * \brief Set the angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetAoA_Sens(su2double val_AoA_sens);
 
   /*!
 	 * \brief Set the angle of attack.
@@ -5342,6 +5413,24 @@ public:
 	 * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
 	 */
 	bool GetFixed_CL_Mode(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetFixed_CM_Mode(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetEval_dCD_dCX(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetDiscard_InFiles(void);
 
   /*!
 	 * \brief Get the value specified for the target CL.

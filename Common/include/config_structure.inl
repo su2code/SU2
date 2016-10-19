@@ -374,9 +374,23 @@ inline su2double CConfig::GetAoA(void) { return AoA; }
 
 inline void CConfig::SetAoA(su2double val_AoA) { AoA = val_AoA; }
 
+inline void CConfig::SetiH(su2double val_iH) { iH = val_iH; }
+
+inline void CConfig::SetAoA_Offset(su2double val_AoA_offset) { AoA_Offset = val_AoA_offset; }
+
+inline void CConfig::SetAoS_Offset(su2double val_AoS_offset) { AoS_Offset = val_AoS_offset; }
+
+inline void CConfig::SetAoA_Sens(su2double val_AoA_sens) { AoA_Sens = val_AoA_sens; }
+
 inline void CConfig::SetAoS(su2double val_AoS) { AoS = val_AoS; }
 
 inline su2double CConfig::GetAoS(void) { return AoS; }
+
+inline su2double CConfig::GetAoA_Offset(void) { return AoA_Offset; }
+
+inline su2double CConfig::GetAoS_Offset(void) { return AoS_Offset; }
+
+inline su2double CConfig::GetAoA_Sens(void) { return AoA_Sens; }
 
 inline unsigned short CConfig::GetnMGLevels(void) { return nMGLevels; }
 
@@ -1140,6 +1154,12 @@ inline su2double CConfig::GetFFD_Tol(void) {return FFD_Tol; }
 inline long CConfig::GetVisualize_CV(void) {return Visualize_CV; }
 
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
+
+inline bool CConfig::GetFixed_CM_Mode(void) { return Fixed_CM_Mode; }
+
+inline bool CConfig::GetEval_dCD_dCX(void) { return Eval_dCD_dCX; }
+
+inline bool CConfig::GetDiscard_InFiles(void) { return Discard_InFiles; }
 
 inline su2double CConfig::GetTarget_CL(void) {return Target_CL; }
 
