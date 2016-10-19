@@ -6297,6 +6297,10 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file << "Free-stream temperature: " << config[val_iZone]->GetTemperature_FreeStream();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
+
+      Breakdown_file << "Free-stream total temperature: " << config[val_iZone]->GetTemperature_FreeStream() * (1.0 + config[val_iZone]->GetMach() * config[val_iZone]->GetMach() * 0.5 * (config[val_iZone]->GetGamma() - 1.0));
+       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " K." << "\n";
+       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " R." << "\n";
     }
     
     Breakdown_file << "Free-stream density: " << config[val_iZone]->GetDensity_FreeStream();
