@@ -1103,7 +1103,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() { }
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel) : CTurbSolver() {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
-  su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, dull_val;
+  su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk, dull_val;
   
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
@@ -1243,6 +1243,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
+
+  /*--- Factor_nu_ActDisk ---*/
+  Factor_nu_ActDisk = config->GetNuFactor_ActDisk();
+  nu_tilde_ActDisk  = Factor_nu_ActDisk*Viscosity_Inf/Density_Inf;
 
   /*--- Eddy viscosity at infinity ---*/
   su2double Ji, Ji_3, fv1, cv1_3 = 7.1*7.1*7.1;

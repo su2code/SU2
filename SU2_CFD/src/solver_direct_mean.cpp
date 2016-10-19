@@ -4536,21 +4536,11 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
+  bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
+  bool interface        = (config->GetnMarker_InterfaceBound() != 0);
+//  bool control_volume   = (config->GetnMarker_ControlVolume() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
 
-  /*--- Compute the engine properties ---*/
-  
-  if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
-  
-  /*--- Compute the actuator disk properties and distortion levels ---*/
-  
-  if (actuator_disk) {
-    Set_MPI_ActDisk(solver_container, geometry, config);
-    GetPower_Properties(geometry, config, iMesh, Output);
-    GetActDisk_Distortion(geometry, config, iMesh, Output);
-    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
-  }
-  
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
   if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
@@ -4562,7 +4552,37 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Set the primitive variables ---*/
   
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
-  
+ 
+  /*--- Set the primitive variables ---*/
+
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+
+  /*--- Compute the engine properties ---*/
+
+  if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
+
+  /*--- Compute the control volume properties ---*/
+
+//  if (control_volume) { GetControlVolume_Properties(geometry, NULL, NULL, config, iMesh, Output); }
+
+  /*--- Compute the actuator disk properties and distortion levels ---*/
+
+  if (actuator_disk) {
+    Set_MPI_ActDisk(solver_container, geometry, config);
+    GetPower_Properties(geometry, config, iMesh, Output);
+    GetActDisk_Distortion(geometry, config, iMesh, Output);
+    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+  }
+
+  /*--- Compute Interface MPI ---*/
+
+  if (interface) { Set_MPI_Interface(geometry, config); }
+
+  /*--- Compute NearField MPI ---*/
+
+  if (nearfield) { Set_MPI_Nearfield(geometry, config); }
+
+ 
   /*--- Upwind second order reconstruction ---*/
   
   if ((second_order && !center) && ((iMesh == MESH_0) || low_fidelity) && !Output) {
@@ -15839,20 +15859,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool engine               = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk        = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
-  
-  /*--- Compute the engine properties ---*/
-  
-  if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
-  
-  /*--- Compute the actuator disk properties ---*/
-  
-  if (actuator_disk) {
-    Set_MPI_ActDisk(solver_container, geometry, config);
-    GetPower_Properties(geometry, config, iMesh, Output);
-    GetActDisk_Distortion(geometry, config, iMesh, Output);
-    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
-  }
-  
+  bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
+  bool interface            = (config->GetnMarker_InterfaceBound() != 0);
+//  bool control_volume       = (config->GetnMarker_ControlVolume() != 0);
+
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
   if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
@@ -15864,7 +15874,32 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Set the primitive variables ---*/
   
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
-  
+ 
+  /*--- Compute the engine properties ---*/
+
+  if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
+
+  /*--- Compute the control volume properties ---*/
+
+//  if (control_volume) { GetControlVolume_Properties(geometry, NULL, NULL, config, iMesh, Output); }
+
+  /*--- Compute the actuator disk properties and distortion levels ---*/
+
+  if (actuator_disk) {
+    Set_MPI_ActDisk(solver_container, geometry, config);
+    GetPower_Properties(geometry, config, iMesh, Output);
+    GetActDisk_Distortion(geometry, config, iMesh, Output);
+    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+  }
+
+  /*--- Compute Interface MPI ---*/
+
+  if (interface) { Set_MPI_Interface(geometry, config); }
+
+  /*--- Compute NearField MPI ---*/
+
+  if (nearfield) { Set_MPI_Nearfield(geometry, config); }
+ 
   /*--- Artificial dissipation ---*/
   
   if (center && !Output) {
