@@ -181,6 +181,159 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+  
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+    
+    /*--- Modify file name for an unsteady restart (check this part...) ---*/
+    
+    if (dual_time) {
+      
+      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
+    /*--- Open the restart file, throw an error if this fails. ---*/
+    
+    restart_file.open(filename.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    unsigned long iPoint_Global = 0;
+    string text_line;
+    
+    /*--- The first line is the header (General description) ---*/
+    
+    getline (restart_file, text_line);
+    
+    /*--- Space for the solution ---*/
+    
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
+    }
+    
+    /*--- Space for extra info (if any) ---*/
+    
+    while (getline (restart_file, text_line)) {
+      
+      /*--- Angle of attack ---*/
+      
+      position = text_line.find ("AoA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+            cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+          }
+          config->SetAoA(AoA_ + config->GetAoA_Offset());
+        }
+        else {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+        }
+      }
+      
+      /*--- Sideslip angle ---*/
+      
+      position = text_line.find ("SIDESLIP_ANGLE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+            cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+          }
+          config->SetAoS(AoS_ + config->GetAoS_Offset());
+        }
+        else {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+        }
+      }
+      
+      /*--- iH angle ---*/
+      
+      position = text_line.find ("IH=",0);
+      if (position != string::npos) {
+        text_line.erase (0,3); iH_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the iH provided in the solution file: " << iH_ << " deg." << endl;
+          config->SetiH(iH_);
+        }
+        else {
+          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the iH in the solution file." << endl;
+        }
+      }
+      
+      /*--- BCThrust angle ---*/
+      
+      position = text_line.find ("INITIAL_BCTHRUST=",0);
+      if (position != string::npos) {
+        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+          config->SetInitial_BCThrust(BCThrust_);
+        }
+        else {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+        }
+      }
+      
+      /*--- dCL/dAlpha ---*/
+      
+      position = text_line.find ("DCL_DALPHA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,11); dCL_dAlpha_ = atof(text_line.c_str());
+        if ((config->GetdCL_dAlpha() != dCL_dAlpha_) &&  (rank == MASTER_NODE))
+          cout <<"WARNING: ACDC will use the dCL/dAlpha provided in the solution file: " << dCL_dAlpha_ << " 1/deg." << endl;
+        config->SetdCL_dAlpha(dCL_dAlpha_);
+      }
+      
+      /*--- dCM/dHi ---*/
+      
+      position = text_line.find ("DCM_DIH=",0);
+      if (position != string::npos) {
+        text_line.erase (0,11); dCM_diH_ = atof(text_line.c_str());
+        if ((config->GetdCM_diH() != dCM_diH_) &&  (rank == MASTER_NODE))
+          cout <<"WARNING: ACDC will use the dCM/dHi provided in the solution file: " << dCM_diH_ << " 1/deg." << endl;
+        config->SetdCM_diH(dCM_diH_);
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+          config->SetExtIter_OffSet(ExtIter_);
+      }
+      
+    }
+    
+    /*--- Close the restart file... we will open this file again... ---*/
+    
+    restart_file.close();
+    
+  }
+
   /*--- Array initialization ---*/
   
   /*--- Basic array initialization ---*/
@@ -12724,6 +12877,159 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Check for a restart file to check if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+  
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+    
+    /*--- Modify file name for an unsteady restart (check this part...) ---*/
+    
+    if (dual_time) {
+      
+      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
+    /*--- Open the restart file, throw an error if this fails. ---*/
+    
+    restart_file.open(filename.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    unsigned long iPoint_Global = 0;
+    string text_line;
+    
+    /*--- The first line is the header (General description) ---*/
+    
+    getline (restart_file, text_line);
+    
+    /*--- Space for the solution ---*/
+    
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
+    }
+    
+    /*--- Space for extra info (if any) ---*/
+    
+    while (getline (restart_file, text_line)) {
+      
+      /*--- Angle of attack ---*/
+      
+      position = text_line.find ("AoA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+            cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+          }
+          config->SetAoA(AoA_ + config->GetAoA_Offset());
+        }
+        else {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+        }
+      }
+      
+      /*--- Sideslip angle ---*/
+      
+      position = text_line.find ("SIDESLIP_ANGLE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+            cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+          }
+          config->SetAoS(AoS_ + config->GetAoS_Offset());
+        }
+        else {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+        }
+      }
+      
+      /*--- iH angle ---*/
+      
+      position = text_line.find ("IH=",0);
+      if (position != string::npos) {
+        text_line.erase (0,3); iH_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the iH provided in the solution file: " << iH_ << " deg." << endl;
+          config->SetiH(iH_);
+        }
+        else {
+          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the iH in the solution file." << endl;
+        }
+      }
+      
+      /*--- BCThrust angle ---*/
+      
+      position = text_line.find ("INITIAL_BCTHRUST=",0);
+      if (position != string::npos) {
+        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+          config->SetInitial_BCThrust(BCThrust_);
+        }
+        else {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+        }
+      }
+      
+      /*--- dCL/dAlpha ---*/
+      
+      position = text_line.find ("DCL_DALPHA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,11); dCL_dAlpha_ = atof(text_line.c_str());
+        if ((config->GetdCL_dAlpha() != dCL_dAlpha_) &&  (rank == MASTER_NODE))
+          cout <<"WARNING: ACDC will use the dCL/dAlpha provided in the solution file: " << dCL_dAlpha_ << " 1/deg." << endl;
+        config->SetdCL_dAlpha(dCL_dAlpha_);
+      }
+      
+      /*--- dCM/dHi ---*/
+      
+      position = text_line.find ("DCM_DIH=",0);
+      if (position != string::npos) {
+        text_line.erase (0,11); dCM_diH_ = atof(text_line.c_str());
+        if ((config->GetdCM_diH() != dCM_diH_) &&  (rank == MASTER_NODE))
+          cout <<"WARNING: ACDC will use the dCM/dHi provided in the solution file: " << dCM_diH_ << " 1/deg." << endl;
+        config->SetdCM_diH(dCM_diH_);
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+          config->SetExtIter_OffSet(ExtIter_);
+      }
+      
+    }
+    
+    /*--- Close the restart file... we will open this file again... ---*/
+    
+    restart_file.close();
+    
+  }
+
   /*--- Array initialization ---*/
   
   CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;

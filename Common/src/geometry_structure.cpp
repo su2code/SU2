@@ -4791,7 +4791,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long i;
   long local_index;
   char cstr[200];
-  su2double Coord_2D[2], Coord_3D[3];
+  su2double Coord_2D[2], Coord_3D[3], AoA_Offset, AoS_Offset, AoA_Current, AoS_Current;
   string::size_type position;
   int rank = MASTER_NODE, size = SINGLE_NODE;
   bool domain_flag = false;
@@ -4884,6 +4884,58 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         }
         domain_flag = true;
       } else { break; }
+    }
+    
+    /*--- Read if there is any offset in the mesh parameters ---*/
+    
+    position = text_line.find ("AOA_OFFSET=",0);
+    if (position != string::npos) {
+      AoA_Offset = 0.0;
+      text_line.erase (0,11); AoA_Offset = atof(text_line.c_str());
+      
+      /*--- The offset is in deg ---*/
+      
+      AoA_Current = config->GetAoA() + AoA_Offset;
+      
+      if (config->GetDiscard_InFiles() == false) {
+        if ((rank == MASTER_NODE) && (AoA_Offset != 0.0))  {
+          cout.precision(6);
+          cout << fixed <<"WARNING: AoA in the config file (" << config->GetAoA() << " deg.) +" << endl;
+          cout << "         AoA offset in mesh file (" << AoA_Offset << " deg.) = " << AoA_Current << " deg." << endl;
+        }
+        config->SetAoA_Offset(AoA_Offset);
+        config->SetAoA(AoA_Current);
+      }
+      else {
+        if ((rank == MASTER_NODE) && (AoA_Offset != 0.0))
+          cout <<"WARNING: Discarding the AoA offset in the geometry file." << endl;
+      }
+      
+    }
+    
+    position = text_line.find ("AOS_OFFSET=",0);
+    if (position != string::npos) {
+      AoS_Offset = 0.0;
+      text_line.erase (0,11); AoS_Offset = atof(text_line.c_str());
+      
+      /*--- The offset is in deg ---*/
+      
+      AoS_Current = config->GetAoS() + AoS_Offset;
+      
+      if (config->GetDiscard_InFiles() == false) {
+        if ((rank == MASTER_NODE) && (AoS_Offset != 0.0))  {
+          cout.precision(6);
+          cout << fixed <<"WARNING: AoS in the config file (" << config->GetAoS() << " deg.) +" << endl;
+          cout << "         AoS offset in mesh file (" << AoS_Offset << " deg.) = " << AoS_Current << " deg." << endl;
+        }
+        config->SetAoS_Offset(AoS_Offset);
+        config->SetAoS(AoS_Current);
+      }
+      else {
+        if ((rank == MASTER_NODE) && (AoS_Offset != 0.0))
+          cout <<"WARNING: Discarding the AoS offset in the geometry file." << endl;
+      }
+      
     }
     
     /*--- Read number of points ---*/
