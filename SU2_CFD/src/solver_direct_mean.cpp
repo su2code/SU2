@@ -9283,7 +9283,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
   RefDensity, RefAreaCoeff, RefVel2, Factor, Ref;
   unsigned short iter;
   string ActDiskInlet_TagBound, ActDiskOutlet_TagBound, Marker_Tag;
-  su2double *Origin, R_root, R_tip, Omega;
+  su2double Omega;
   su2double Target_Force, Force, Target_Power, Power, NetThrust, BCThrust_old, Initial_BCThrust;
   bool ActDisk_Info;
   su2double MyBCThrust, BCThrust_Init;
@@ -9315,10 +9315,6 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
         
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        
-        Origin            = config->GetActDisk_Origin(Marker_Tag);
-        R_root          = config->GetActDisk_RootRadius(Marker_Tag);
-        R_tip            = config->GetActDisk_TipRadius(Marker_Tag);
         
         if (ratio) {
           if (config->GetMach()  < 0.5) {

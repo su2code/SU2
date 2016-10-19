@@ -298,7 +298,6 @@ private:
   su2double *ActDiskOutlet_GrossThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDiskOutlet_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDiskOutlet_Power;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double **ActDisk_Origin, *ActDisk_RootRadius, *ActDisk_TipRadius;
   su2double **ActDisk_PressJump, **ActDisk_TempJump,  **ActDisk_Omega;
   su2double *ActDisk_DeltaPress;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_DeltaTemp;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -4802,11 +4801,6 @@ public:
   /*!
    * \brief Get the origin of the actuator disk.
    */
-  su2double* GetActDisk_Origin(string val_marker);
-  
-  /*!
-   * \brief Get the origin of the actuator disk.
-   */
   su2double GetActDisk_NetThrust(string val_marker);
   
   /*!
@@ -4836,16 +4830,6 @@ public:
    * \brief Get the origin of the actuator disk.
    */
   su2double GetActDisk_BCThrust_Old(string val_marker);
-  
-  /*!
-   * \brief Get the root radius of the actuator disk.
-   */
-  su2double GetActDisk_RootRadius(string val_marker);
-  
-  /*!
-   * \brief Get the tip radius of th actuator disk.
-   */
-  su2double GetActDisk_TipRadius(string val_marker);
   
   /*!
    * \brief Get the tip radius of th actuator disk.
