@@ -411,7 +411,6 @@ void CConfig::SetPointersNull(void) {
   
   Riemann_FlowDir= NULL;
   NRBC_FlowDir = NULL;
-  ActDisk_Origin= NULL;
   CoordFFDBox= NULL;
   DegreeFFDBox= NULL;
   FFDTag = NULL;
@@ -2678,24 +2677,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
   
-  /*--- Allocate memory for ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius ---*/
-  
-  if (nMarker_ActDiskInlet != 0) {
-    ActDisk_RootRadius = new su2double [nMarker_ActDiskInlet];
-    ActDisk_TipRadius = new su2double [nMarker_ActDiskInlet];
-    ActDisk_Origin = new su2double* [nMarker_ActDiskInlet];
-    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++) {
-      ActDisk_Origin[iMarker] = new su2double [3];
-    }
-    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++) {
-      ActDisk_RootRadius[iMarker] = 0.0;
-      ActDisk_TipRadius[iMarker] = 1.0;
-      for (iDim = 0; iDim < 3; iDim++) {
-        ActDisk_Origin[iMarker][iDim] = 0.0;
-      }
-    }
-  }
-  
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
   
@@ -2894,13 +2875,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SubsonicEngine_Cyl[4] = SubsonicEngine_Cyl[4]/12.0;
     SubsonicEngine_Cyl[5] = SubsonicEngine_Cyl[5]/12.0;
     SubsonicEngine_Cyl[6] = SubsonicEngine_Cyl[6]/12.0;
-
-    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++) {
-      for (iDim = 0; iDim < val_nDim; iDim++)
-        ActDisk_Origin[iMarker][iDim] = ActDisk_Origin[iMarker][iDim]/12.0;
-      ActDisk_RootRadius[iMarker] = ActDisk_RootRadius[iMarker]/12.0;
-      ActDisk_TipRadius[iMarker] = ActDisk_TipRadius[iMarker]/12.0;
-    }
     
   }
   
@@ -5232,12 +5206,6 @@ CConfig::~CConfig(void) {
     delete [] Load_Dir;
   }
   
-  if (ActDisk_Origin != NULL) {
-    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++)
-      delete [] ActDisk_Origin[iMarker];
-    delete [] ActDisk_Origin;
-  }
-  
   if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
   if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
   if (Outlet_Pressure != NULL)    delete[] Outlet_Pressure;
@@ -5630,14 +5598,6 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
   return kMarker_All;
 }
 
-su2double* CConfig::GetActDisk_Origin(string val_marker) {
-  unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_Origin[iMarker_ActDisk];
-}
-
 su2double CConfig::GetActDisk_NetThrust(string val_marker) {
   unsigned short iMarker_ActDisk;
   for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
@@ -5708,22 +5668,6 @@ void CConfig::SetActDisk_BCThrust_Old(string val_marker, su2double val_actdisk_b
     if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
         (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   ActDisk_BCThrust_Old[iMarker_ActDisk] = val_actdisk_bcthrust_old;
-}
-
-su2double CConfig::GetActDisk_RootRadius(string val_marker) {
-  unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_RootRadius[iMarker_ActDisk];
-}
-
-su2double CConfig::GetActDisk_TipRadius(string val_marker) {
-  unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
-    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_TipRadius[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_Area(string val_marker) {
