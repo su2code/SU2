@@ -655,9 +655,9 @@ private:
   *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
   *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
   *Plunging_Ampl_Z,           /*!< \brief Plunging amplitude in the z-direction. */
-  *Periodicity_X,              /*!< \brief Periodic distance in y-direction. */
-  *Periodicity_Y,              /*!< \brief Periodic distance in y-direction. */
-  *Periodicity_Z,             /*!< \brief Periodic distance in y-direction. */
+  *PeriodicityTranslation_X,  /*!< \brief Periodic distance in y-direction. */
+  *PeriodicityTranslation_Y,  /*!< \brief Periodic distance in y-direction. */
+  *PeriodicityTranslation_Z,  /*!< \brief Periodic distance in y-direction. */
   *PeriodicityRotation_X,     /*!< \brief Periodic distance in y-direction. */
   *PeriodicityRotation_Y,     /*!< \brief Periodic distance in y-direction. */
   *PeriodicityRotation_Z;     /*!< \brief Periodic distance in y-direction. */
@@ -686,9 +686,9 @@ private:
 	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
-	nPeriodicity_X,             /*!< \brief Number of periodic option distance y-direction. */
-	nPeriodicity_Y,             /*!< \brief Number of periodic option distance y-direction. */
-	nPeriodicity_Z,             /*!< \brief Number of periodic option distance y-direction. */
+	nPeriodicityTranslation_X,  /*!< \brief Number of periodic option distance y-direction. */
+	nPeriodicityTranslation_Y,  /*!< \brief Number of periodic option distance y-direction. */
+	nPeriodicityTranslation_Z,  /*!< \brief Number of periodic option distance y-direction. */
 	nPeriodicityRotation_X,     /*!< \brief Number of periodic option distance y-direction. */
 	nPeriodicityRotation_Y,     /*!< \brief Number of periodic option distance y-direction. */
 	nPeriodicityRotation_Z,     /*!< \brief Number of periodic option distance y-direction. */
@@ -4218,21 +4218,21 @@ public:
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return X-distance of periodicity.
 	 */
-	su2double GetPeriodicity_X(unsigned short val_iZone);
+	su2double GetPeriodicityTranslation_X(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get periodicity in y-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Y-distance of periodicity.
 	 */
-	su2double GetPeriodicity_Y(unsigned short val_iZone);
+	su2double GetPeriodicityTranslation_Y(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get periodicity in z-direction.
 	 * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
 	 * \return Z-distance of periodicity.
 	 */
-	su2double GetPeriodicity_Z(unsigned short val_iZone);
+	su2double GetPeriodicityTranslation_Z(unsigned short val_iZone);
 
 	/*!
 	 * \brief Get x-coordinate of the mesh motion origin.

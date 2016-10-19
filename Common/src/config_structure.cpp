@@ -362,11 +362,15 @@ void CConfig::SetPointersNull(void) {
   MoveMotion_Origin  = NULL;
 
   /* Periodic grid movement pointers */
-  Periodicity_X         = NULL;  Periodicity_Y         = NULL; Periodicity_Z         = NULL;
-  PeriodicityRotation_X = NULL;  PeriodicityRotation_Y = NULL; PeriodicityRotation_Z = NULL;
+  PeriodicityTranslation_X = NULL;
+  PeriodicityTranslation_Y = NULL;
+  PeriodicityTranslation_Z = NULL;
+  PeriodicityRotation_X    = NULL;
+  PeriodicityRotation_Y    = NULL;
+  PeriodicityRotation_Z    = NULL;
 
-  Periodic_Translate = NULL;  Periodic_Rotation 	= NULL;     Periodic_Center		= NULL;
-  Periodic_Translation = NULL;Periodic_RotAngles	= NULL;	    Periodic_RotCenter		= NULL;
+  Periodic_Translate   = NULL; Periodic_Rotation 	= NULL; Periodic_Center		 = NULL;
+  Periodic_Translation = NULL; Periodic_RotAngles	= NULL; Periodic_RotCenter = NULL;
 
   /* Harmonic Balance Frequency pointer */
   Omega_HB = NULL;
@@ -1228,11 +1232,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Angular periodicity for a rotation about z-axis */
   addDoubleListOption("PERIODICITY_ROTATION_Z", nPeriodicityRotation_Z, PeriodicityRotation_Z);
   /* DESCRIPTION: Periodicity distance in X-direction */
-  addDoubleListOption("PERIODICITY_X", nPeriodicity_X, Periodicity_X);
+  addDoubleListOption("PERIODICITY_TRANSLATION_X", nPeriodicityTranslation_X, PeriodicityTranslation_X);
   /* DESCRIPTION: Periodicity distance in Y-direction */
-  addDoubleListOption("PERIODICITY_Y", nPeriodicity_Y, Periodicity_Y);
+  addDoubleListOption("PERIODICITY_TRANSALTION_Y", nPeriodicityTranslation_Y, PeriodicityTranslation_Y);
   /* DESCRIPTION: Periodicity distance in Z-direction */
-  addDoubleListOption("PERIODICITY_Z", nPeriodicity_Z, Periodicity_Z);
+  addDoubleListOption("PERIODICITY_TRANSLATION_Z", nPeriodicityTranslation_Z, PeriodicityTranslation_Z);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
   /* DESCRIPTION:  */
@@ -2411,35 +2415,35 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*-- Setting grid movement periodicity from the config file */
 
-  if (Periodicity_X == NULL) {
-  	Periodicity_X = new su2double[nMoving];
+  if (PeriodicityTranslation_X == NULL) {
+  	PeriodicityTranslation_X = new su2double[nMoving];
   	for (iZone = 0; iZone < nMoving; iZone++ )
-  		Periodicity_X[iZone] = 0.0;
+  		PeriodicityTranslation_X[iZone] = 0.0;
   } else {
-  	if (Grid_Movement && (nPeriodicity_X != nGridMovement)) {
-  		cout << "Length of PERIODICITY_X must match GRID_MOVEMENT_KIND!!" << endl;
+  	if (Grid_Movement && (nPeriodicityTranslation_X != nGridMovement)) {
+  		cout << "Length of PeriodicityTranslation_X must match GRID_MOVEMENT_KIND!!" << endl;
   		exit(EXIT_FAILURE);
   	}
   }
 
-  if (Periodicity_Y == NULL) {
-  	Periodicity_Y = new su2double[nMoving];
+  if (PeriodicityTranslation_Y == NULL) {
+  	PeriodicityTranslation_Y = new su2double[nMoving];
   	for (iZone = 0; iZone < nMoving; iZone++ )
-  		Periodicity_Y[iZone] = 0.0;
+  		PeriodicityTranslation_Y[iZone] = 0.0;
   } else {
-  	if (Grid_Movement && (nPeriodicity_Y != nGridMovement)) {
-  		cout << "Length of PERIODICITY_Y must match GRID_MOVEMENT_KIND!!" << endl;
+  	if (Grid_Movement && (nPeriodicityTranslation_Y != nGridMovement)) {
+  		cout << "Length of PeriodicityTranslation_Y must match GRID_MOVEMENT_KIND!!" << endl;
   		exit(EXIT_FAILURE);
   	}
   }
 
-  if (Periodicity_Z == NULL) {
-  	Periodicity_Z = new su2double[nMoving];
+  if (PeriodicityTranslation_Z == NULL) {
+  	PeriodicityTranslation_Z = new su2double[nMoving];
   	for (iZone = 0; iZone < nMoving; iZone++ )
-  		Periodicity_Z[iZone] = 0.0;
+  		PeriodicityTranslation_Z[iZone] = 0.0;
   } else {
-  	if (Grid_Movement && (nPeriodicity_Z != nGridMovement)) {
-  		cout << "Length of PERIODICITY_Z must match GRID_MOVEMENT_KIND!!" << endl;
+  	if (Grid_Movement && (nPeriodicityTranslation_Z != nGridMovement)) {
+  		cout << "Length of PeriodicityTranslation_Z must match GRID_MOVEMENT_KIND!!" << endl;
   		exit(EXIT_FAILURE);
   	}
   }
@@ -2450,7 +2454,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		PeriodicityRotation_X[iZone] = 0.0;
   } else {
   	if (Grid_Movement && (nPeriodicityRotation_X != nGridMovement)) {
-  		cout << "Length of PERIODICITY_ROTATION_X must match GRID_MOVEMENT_KIND!!" << endl;
+  		cout << "Length of PeriodicityTranslation_ROTATION_X must match GRID_MOVEMENT_KIND!!" << endl;
   		exit(EXIT_FAILURE);
   	}
   }
@@ -2461,7 +2465,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		PeriodicityRotation_Y[iZone] = 0.0;
   } else {
   	if (Grid_Movement && (nPeriodicityRotation_Y != nGridMovement)) {
-  		cout << "Length of PERIODICITY_ROTATION_Y must match GRID_MOVEMENT_KIND!!" << endl;
+  		cout << "Length of PeriodicityTranslation_ROTATION_Y must match GRID_MOVEMENT_KIND!!" << endl;
   		exit(EXIT_FAILURE);
   	}
   }
@@ -2472,7 +2476,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   		PeriodicityRotation_Z[iZone] = 0.0;
   } else {
   	if (Grid_Movement && (nPeriodicityRotation_Z != nGridMovement)) {
-  		cout << "Length of PERIODICITY_ROTATION_Z must match GRID_MOVEMENT_KIND!!" << endl;
+  		cout << "Length of PeriodicityTranslation_ROTATION_Z must match GRID_MOVEMENT_KIND!!" << endl;
   		exit(EXIT_FAILURE);
   	}
   }
@@ -4978,9 +4982,9 @@ CConfig::~CConfig(void) {
 
   /*--- periodic grid movement ---*/
 
-  if (Periodicity_X != NULL) delete [] Periodicity_X;
-  if (Periodicity_Y != NULL) delete [] Periodicity_Y;
-  if (Periodicity_Z != NULL) delete [] Periodicity_Z;
+  if (PeriodicityTranslation_X != NULL) delete [] PeriodicityTranslation_X;
+  if (PeriodicityTranslation_Y != NULL) delete [] PeriodicityTranslation_Y;
+  if (PeriodicityTranslation_Z != NULL) delete [] PeriodicityTranslation_Z;
 
   if (PeriodicityRotation_X != NULL) delete [] PeriodicityRotation_X;
   if (PeriodicityRotation_Y != NULL) delete [] PeriodicityRotation_Y;

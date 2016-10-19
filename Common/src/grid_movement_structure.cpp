@@ -2544,9 +2544,9 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
 
 
   	su2double periodicX[3];
-    periodicX[0] = config->GetPeriodicity_X(iZone);
-    periodicX[1] = config->GetPeriodicity_Y(iZone);
-    periodicX[2] = config->GetPeriodicity_Z(iZone);
+    periodicX[0] = config->GetPeriodicityTranslation_X(iZone);
+    periodicX[1] = config->GetPeriodicityTranslation_Y(iZone);
+    periodicX[2] = config->GetPeriodicityTranslation_Z(iZone);
 
   	su2double deltaX_Periodic[3];
 
