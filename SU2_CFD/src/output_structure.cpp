@@ -8933,7 +8933,7 @@ void COutput::WriteActDisk_FanFace(CConfig *config, CGeometry *geometry, CSolver
   
   nLocalVertex_Surface = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_ControlVolume(iMarker) == YES) {
+    if (config->GetMarker_All_Analyze(iMarker) == YES) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         if (geometry->node[iPoint]->GetDomain()) nLocalVertex_Surface++;
@@ -9119,7 +9119,7 @@ void COutput::WriteActDisk_FanFace(CConfig *config, CGeometry *geometry, CSolver
   
   nVertex_Surface = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_ControlVolume(iMarker) == YES) {
+    if (config->GetMarker_All_Analyze(iMarker) == YES) {
       
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
