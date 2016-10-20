@@ -2698,6 +2698,16 @@ unsigned int CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned shor
 
 }
 
+bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex){
+ 
+  unsigned long iPoint; 
+  
+  iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+  if(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain()) return false;
+  else return true;
+
+}
+
 su2double CDriver::GetVertexCoordX(unsigned short iMarker, unsigned short iVertex){
 
   su2double* Coord;
