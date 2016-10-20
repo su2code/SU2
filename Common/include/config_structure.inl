@@ -97,13 +97,15 @@ inline void CConfig::SetActDisk_Mach(unsigned short val_imarker, su2double val_a
 
 inline void CConfig::SetActDisk_Force(unsigned short val_imarker, su2double val_actdisk_force) { ActDisk_Force[val_imarker] = val_actdisk_force; }
 
-inline void CConfig::SetActDisk_DC60(unsigned short val_imarker, su2double val_actdisk_Distortion) { ActDisk_DC60[val_imarker] = val_actdisk_Distortion; }
+inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion) { Surface_DC60[val_imarker] = val_surface_distortion; }
 
-inline void CConfig::SetActDisk_IDC(unsigned short val_imarker, su2double val_actdisk_Distortion) { ActDisk_IDC[val_imarker] = val_actdisk_Distortion; }
+inline void CConfig::SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow) { Surface_MassFlow[val_imarker] = val_surface_massflow; }
 
-inline void CConfig::SetActDisk_IDC_Mach(unsigned short val_imarker, su2double val_actdisk_Distortion) { ActDisk_IDC_Mach[val_imarker] = val_actdisk_Distortion; }
+inline void CConfig::SetSurface_IDC(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC[val_imarker] = val_surface_distortion; }
 
-inline void CConfig::SetActDisk_IDR(unsigned short val_imarker, su2double val_actdisk_Distortion) { ActDisk_IDR[val_imarker] = val_actdisk_Distortion; }
+inline void CConfig::SetSurface_IDC_Mach(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC_Mach[val_imarker] = val_surface_distortion; }
+
+inline void CConfig::SetSurface_IDR(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDR[val_imarker] = val_surface_distortion; }
 
 inline void CConfig::SetActDisk_DeltaTemp(unsigned short val_imarker, su2double val_actdisk_deltatemp) { ActDisk_DeltaTemp[val_imarker] = val_actdisk_deltatemp; }
 
@@ -147,13 +149,13 @@ inline su2double CConfig::GetActDisk_Mach(unsigned short val_imarker) { return A
 
 inline su2double CConfig::GetActDisk_Force(unsigned short val_imarker) { return ActDisk_Force[val_imarker]; }
 
-inline su2double CConfig::GetActDisk_DC60(unsigned short val_imarker) { return ActDisk_DC60[val_imarker]; }
+inline su2double CConfig::GetSurface_DC60(unsigned short val_imarker) { return Surface_DC60[val_imarker]; }
 
-inline su2double CConfig::GetActDisk_IDC(unsigned short val_imarker) { return ActDisk_IDC[val_imarker]; }
+inline su2double CConfig::GetSurface_IDC(unsigned short val_imarker) { return Surface_IDC[val_imarker]; }
 
-inline su2double CConfig::GetActDisk_IDC_Mach(unsigned short val_imarker) { return ActDisk_IDC_Mach[val_imarker]; }
+inline su2double CConfig::GetSurface_IDC_Mach(unsigned short val_imarker) { return Surface_IDC_Mach[val_imarker]; }
 
-inline su2double CConfig::GetActDisk_IDR(unsigned short val_imarker) { return ActDisk_IDR[val_imarker]; }
+inline su2double CConfig::GetSurface_IDR(unsigned short val_imarker) { return Surface_IDR[val_imarker]; }
 
 inline su2double CConfig::GetActDisk_NetThrust(unsigned short val_imarker) { return ActDisk_NetThrust[val_imarker]; }
 

@@ -197,7 +197,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void WriteActDisk_FanFace(CConfig *config, CGeometry *geometry, CSolver *FlowSolver);
+  void WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolver *FlowSolver);
 
   /*!
    * \brief Writes mass flow rate output at monitored marker.

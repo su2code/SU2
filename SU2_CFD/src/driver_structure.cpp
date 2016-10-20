@@ -2557,11 +2557,11 @@ void CDriver::Output(unsigned long ExtIter) {
 
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 
-      /*--- For specific applications, evaluate and plot the actuator disk fan face. ---*/
+      /*--- For specific applications, evaluate and plot the surface. ---*/
       
-      if (config_container[ZONE_0]->GetnMarker_ActDiskInlet() != 0) {
+      if (config_container[ZONE_0]->GetnMarker_Analyze() != 0) {
         
-        output->WriteActDisk_FanFace(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0],
+        output->WriteSurface_Analysis(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0],
                                      solver_container[ZONE_0][MESH_0][FLOW_SOL]);
       }
       

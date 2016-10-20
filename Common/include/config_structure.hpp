@@ -311,10 +311,11 @@ private:
   su2double *ActDisk_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_DC60;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_IDC;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_IDC_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
-  su2double *ActDisk_IDR;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Surface_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Surface_DC60;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Surface_IDC;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Surface_IDC_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Surface_IDR;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_NetThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_BCThrust;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_BCThrust_Old;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -5739,28 +5740,35 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_DC60(unsigned short val_imarker, su2double val_actdisk_Distortion);
+  void SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_IDC(unsigned short val_imarker, su2double val_actdisk_Distortion);
+  void SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetSurface_IDC(unsigned short val_imarker, su2double val_surface_distortion);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_IDC_Mach(unsigned short val_imarker, su2double val_actdisk_Distortion);
+  void SetSurface_IDC_Mach(unsigned short val_imarker, su2double val_surface_distortion);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  void SetActDisk_IDR(unsigned short val_imarker, su2double val_actdisk_Distortion);
+  void SetSurface_IDR(unsigned short val_imarker, su2double val_surface_distortion);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
@@ -5907,28 +5915,35 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_DC60(unsigned short val_imarker);
+  su2double GetSurface_DC60(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_IDC(unsigned short val_imarker);
+  su2double GetSurface_MassFlow(unsigned short val_imarker);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetSurface_IDC(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_IDC_Mach(unsigned short val_imarker);
+  su2double GetSurface_IDC_Mach(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
-  su2double GetActDisk_IDR(unsigned short val_imarker);
+  su2double GetSurface_IDR(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.

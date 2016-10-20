@@ -353,8 +353,8 @@ void CConfig::SetPointersNull(void) {
   ActDisk_TotalPressRatio = NULL;       ActDisk_TotalTempRatio = NULL;     ActDisk_StaticPressRatio = NULL;
   ActDisk_StaticTempRatio = NULL;       ActDisk_NetThrust = NULL;          ActDisk_GrossThrust = NULL;
   ActDisk_Power = NULL;                 ActDisk_MassFlow = NULL;           ActDisk_Area = NULL;
-  ActDisk_ReverseMassFlow = NULL;       ActDisk_DC60 = NULL;               ActDisk_IDC = NULL;
-  ActDisk_IDC_Mach = NULL;              ActDisk_IDR = NULL;                ActDisk_Mach = NULL;
+  ActDisk_ReverseMassFlow = NULL;       Surface_MassFlow = NULL;           Surface_DC60 = NULL;               Surface_IDC = NULL;
+  Surface_IDC_Mach = NULL;              Surface_IDR = NULL;                ActDisk_Mach = NULL;
   ActDisk_Force = NULL;                 ActDisk_BCThrust = NULL;           ActDisk_BCThrust_Old = NULL;
   
   /*--- Miscellaneous/unsorted ---*/
@@ -3067,7 +3067,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Monitoring    = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Designing     = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Plotting      = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Analyze = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Analyze       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_GeoEval       = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_FSIinterface	 = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_DV            = new unsigned short[nMarker_CfgFile];
@@ -3089,6 +3089,21 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_PerBound[iMarker_CfgFile]      = 0;
     Marker_CfgFile_Out_1D[iMarker_CfgFile]        = 0;
   }
+
+  /*--- Allocate memory to store surface information (Analyze BC) ---*/
+
+  Surface_MassFlow = new su2double[nMarker_Analyze];
+  Surface_DC60 = new su2double[nMarker_Analyze];
+  Surface_IDC = new su2double[nMarker_Analyze];
+  Surface_IDC_Mach = new su2double[nMarker_Analyze];
+  Surface_IDR = new su2double[nMarker_Analyze];
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+     Surface_MassFlow[iMarker_Analyze] = 0.0;
+   	 Surface_DC60[iMarker_Analyze] = 0.0;
+     Surface_IDC[iMarker_Analyze] = 0.0;
+     Surface_IDC_Mach[iMarker_Analyze] = 0.0;
+     Surface_IDR[iMarker_Analyze] = 0.0;
+   }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
 
@@ -3134,10 +3149,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   ActDisk_MassFlow = new su2double[nMarker_ActDiskInlet];
   ActDisk_Mach = new su2double[nMarker_ActDiskInlet];
   ActDisk_Force = new su2double[nMarker_ActDiskInlet];
-  ActDisk_DC60 = new su2double[nMarker_ActDiskInlet];
-  ActDisk_IDC = new su2double[nMarker_ActDiskInlet];
-  ActDisk_IDC_Mach = new su2double[nMarker_ActDiskInlet];
-  ActDisk_IDR = new su2double[nMarker_ActDiskInlet];
   ActDisk_NetThrust = new su2double[nMarker_ActDiskInlet];
   ActDisk_BCThrust = new su2double[nMarker_ActDiskInlet];
   ActDisk_BCThrust_Old = new su2double[nMarker_ActDiskInlet];
@@ -3156,9 +3167,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     ActDisk_MassFlow[iMarker_ActDiskInlet] = 0.0;
     ActDisk_Mach[iMarker_ActDiskInlet] = 0.0;
     ActDisk_Force[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_DC60[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_IDC[iMarker_ActDiskInlet] = 0.0;
-    ActDisk_IDR[iMarker_ActDiskInlet] = 0.0;
     ActDisk_NetThrust[iMarker_ActDiskInlet] = 0.0;
     ActDisk_BCThrust[iMarker_ActDiskInlet] = 0.0;
     ActDisk_BCThrust_Old[iMarker_ActDiskInlet] = 0.0;
@@ -3337,7 +3345,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   }
   
   for (iMarker_Internal = 0; iMarker_Internal < nMarker_Internal; iMarker_Internal++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Internal[iMarker_Neumann];
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Internal[iMarker_Internal];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = INTERNAL_BOUNDARY;
     iMarker_CfgFile++;
   }
@@ -5214,10 +5222,6 @@ CConfig::~CConfig(void) {
   if (ActDisk_MassFlow != NULL)    delete[]  ActDisk_MassFlow;
   if (ActDisk_Mach != NULL)    delete[]  ActDisk_Mach;
   if (ActDisk_Force != NULL)    delete[]  ActDisk_Force;
-  if (ActDisk_DC60 != NULL)    delete[]  ActDisk_DC60;
-  if (ActDisk_IDC != NULL)    delete[]  ActDisk_IDC;
-  if (ActDisk_IDC_Mach != NULL)    delete[]  ActDisk_IDC_Mach;
-  if (ActDisk_IDR != NULL)    delete[]  ActDisk_IDR;
   if (ActDisk_NetThrust != NULL)    delete[]  ActDisk_NetThrust;
   if (ActDisk_BCThrust != NULL)    delete[]  ActDisk_BCThrust;
   if (ActDisk_BCThrust_Old != NULL)    delete[]  ActDisk_BCThrust_Old;
@@ -5225,6 +5229,12 @@ CConfig::~CConfig(void) {
   if (ActDisk_Area != NULL)    delete[]  ActDisk_Area;
   if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
   
+  if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
+  if (Surface_DC60 != NULL)    delete[]  Surface_DC60;
+  if (Surface_IDC != NULL)    delete[]  Surface_IDC;
+  if (Surface_IDC_Mach != NULL)    delete[]  Surface_IDC_Mach;
+  if (Surface_IDR != NULL)    delete[]  Surface_IDR;
+
   if (Inlet_Ttotal != NULL) delete[]  Inlet_Ttotal;
   if (Inlet_Ptotal != NULL) delete[]  Inlet_Ptotal;
   if (Inlet_FlowDir != NULL) {
