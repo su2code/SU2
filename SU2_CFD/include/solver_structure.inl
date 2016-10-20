@@ -773,9 +773,12 @@ inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_cont
 		                              vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex) {}
 inline void CSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker) { }
 
+inline void CSolver::GetControlVolume_Properties(CGeometry *geometry, CNumerics *conv_numerics,
+                                                 CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
-inline void CSolver::GetActDisk_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+inline void CSolver::GetControlVolume_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh, bool Output) { }

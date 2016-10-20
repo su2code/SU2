@@ -379,7 +379,7 @@ public:
    * \brief Compute the Green-Gauss gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SetAuxVar_Gradient_GG(CGeometry *geometry);
+  void SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute the Least Squares gradient of the auxiliary variable.
@@ -448,7 +448,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] PressureLaplacian - Pressure laplacian.
    */
-  void SetPressureLaplacian(CGeometry *geometry, su2double *PressureLaplacian);
+  void SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian);
   
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -2022,6 +2022,15 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  virtual void GetControlVolume_Properties(CGeometry *geometry, CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
    */
   virtual void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
 
@@ -2030,7 +2039,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  virtual void GetActDisk_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void GetControlVolume_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -4701,6 +4710,15 @@ public:
    * \brief Compute the Fan face Mach number.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void GetControlVolume_Properties(CGeometry *geometry, CNumerics *conv_numerics,
+                                   CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Compute the Fan face Mach number.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
    */
   void GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
@@ -4709,7 +4727,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  void GetActDisk_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  void GetControlVolume_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
