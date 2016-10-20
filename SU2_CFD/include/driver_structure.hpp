@@ -281,6 +281,7 @@ public:
   unsigned short GetMovingMarker();
   unsigned long GetNumberVertices(unsigned short iMarker);
   unsigned int GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
+  bool IsAHaloNode(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordX(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordY(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex);
