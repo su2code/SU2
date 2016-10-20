@@ -1966,11 +1966,6 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
   /*--- Copy the function arguments to the member variables. ---*/
   nPoly = val_nPoly;
 
-  /*--- Set the pointers matBasisIntegration and matDerBasisIntTrans to NULL to
-        avoid problems when it is not used. ---*/
-  matBasisIntegration = NULL;
-  matDerBasisIntTrans = NULL;
-
   /*--- Determine the element type and compute the other member variables. ---*/
   switch( VTK_Type ) {
     case LINE:          DataStandardLine();          break;
@@ -1998,20 +1993,13 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
 
   /*--- If the BLAS routines are used it is beneficial to store lagBasisIntegration,
         drLagBasisIntegration, dsLagBasisIntegration and dtLagBasisIntegration in
-        one array for efficiency reasons. Note that for the MKL the memory allocation
-        of the MKL itself is used and that the matrices are aligned on a 64-byte
-        boundary to increase performance. ---*/
+        one array for efficiency reasons. ---*/
   unsigned long sizeDerMat = drLagBasisIntegration.size() + dsLagBasisIntegration.size()
                            + dtLagBasisIntegration.size();
   unsigned long sizeMat    = lagBasisIntegration.size() + sizeDerMat;
 
-#ifdef HAVE_MKL
-  matBasisIntegration = (su2double *) mkl_malloc(sizeMat   *sizeof(su2double), 64);
-  matDerBasisIntTrans = (su2double *) mkl_malloc(sizeDerMat*sizeof(su2double), 64);
-#else
-  matBasisIntegration = new su2double[sizeMat];
-  matDerBasisIntTrans = new su2double[sizeDerMat];
-#endif
+  matBasisIntegration.resize(sizeMat);
+  matDerBasisIntTrans.resize(sizeDerMat);
 
   unsigned int ii = 0;
   for(unsigned long i=0; i<lagBasisIntegration.size(); ++i, ++ii)
@@ -2044,17 +2032,6 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
       }
     }
   }
-}
-
-FEMStandardElementClass::~FEMStandardElementClass() {
-
-#ifdef HAVE_MKL
-  if( matBasisIntegration ) mkl_free(matBasisIntegration);
-  if( matDerBasisIntTrans ) mkl_free(matDerBasisIntTrans);
-#else
-  if( matBasisIntegration ) delete[] matBasisIntegration;
-  if( matDerBasisIntTrans ) delete[] matDerBasisIntTrans;
-#endif
 }
 
 bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
@@ -2101,23 +2078,8 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   subConn1ForPlotting = other.subConn1ForPlotting;
   subConn2ForPlotting = other.subConn2ForPlotting;
 
-  unsigned long sizeDerMat = drLagBasisIntegration.size() + dsLagBasisIntegration.size()
-                           + dtLagBasisIntegration.size();
-  unsigned long sizeMat    = lagBasisIntegration.size() + sizeDerMat;
-
-#ifdef HAVE_MKL
-  matBasisIntegration = (su2double *) mkl_malloc(sizeMat   *sizeof(su2double), 64);
-  matDerBasisIntTrans = (su2double *) mkl_malloc(sizeDerMat*sizeof(su2double), 64);
-#else
-  matBasisIntegration = new su2double[sizeMat];
-  matDerBasisIntTrans = new su2double[sizeDerMat];
-#endif
-
-  for(unsigned long i=0; i<sizeMat; ++i)
-    matBasisIntegration[i] = other.matBasisIntegration[i];
-
-  for(unsigned long i=0; i<sizeDerMat; ++i)
-    matDerBasisIntTrans[i] = other.matDerBasisIntTrans[i];
+  matBasisIntegration = other.matBasisIntegration;
+  matDerBasisIntTrans = other.matDerBasisIntTrans;
 }
 
 void FEMStandardElementClass::DataStandardLine(void) {
@@ -3390,28 +3352,19 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
                                                 dtLagBasisElemIntegrationSide1);
 
   /*--- If the BLAS routines are used it is beneficial to store all the
-        derivatives of the element basis functions in one array. Note that for
-        the MKL the memory allocation of the MKL itself is used and that the
-        matrices are aligned on a 64-byte boundary to increase performance. ---*/
+        derivatives of the element basis functions in one array. ---*/
   unsigned long sizeMatSide0 = drLagBasisElemIntegrationSide0.size()
                              + dsLagBasisElemIntegrationSide0.size()
                              + dtLagBasisElemIntegrationSide0.size();
   unsigned long sizeMatSide1 = drLagBasisElemIntegrationSide1.size()
                              + dsLagBasisElemIntegrationSide1.size()
                              + dtLagBasisElemIntegrationSide1.size();
-#ifdef HAVE_MKL
-  matDerBasisElemIntegrationSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
-  matDerBasisElemIntegrationSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
 
-  matDerBasisElemIntegrationTransposeSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
-  matDerBasisElemIntegrationTransposeSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
-#else
-  matDerBasisElemIntegrationSide0 = new su2double[sizeMatSide0];
-  matDerBasisElemIntegrationSide1 = new su2double[sizeMatSide1];
+  matDerBasisElemIntegrationSide0.resize(sizeMatSide0);
+  matDerBasisElemIntegrationSide1.resize(sizeMatSide1);
 
-  matDerBasisElemIntegrationTransposeSide0 = new su2double[sizeMatSide0];
-  matDerBasisElemIntegrationTransposeSide1 = new su2double[sizeMatSide1];
-#endif
+  matDerBasisElemIntegrationTransposeSide0.resize(sizeMatSide0);
+  matDerBasisElemIntegrationTransposeSide1.resize(sizeMatSide1);
 
   ii = 0;
   for(unsigned long i=0; i<drLagBasisElemIntegrationSide0.size(); ++i, ++ii)
@@ -3457,23 +3410,6 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
       }
     }
   }
-}
-
-FEMStandardInternalFaceClass::~FEMStandardInternalFaceClass() {
-
-#ifdef HAVE_MKL
-  if( matDerBasisElemIntegrationSide0 ) mkl_free(matDerBasisElemIntegrationSide0);
-  if( matDerBasisElemIntegrationSide1 ) mkl_free(matDerBasisElemIntegrationSide1);
-
-  if( matDerBasisElemIntegrationTransposeSide0 ) mkl_free(matDerBasisElemIntegrationTransposeSide0);
-  if( matDerBasisElemIntegrationTransposeSide1 ) mkl_free(matDerBasisElemIntegrationTransposeSide1);
-#else
-  if( matDerBasisElemIntegrationSide0 ) delete[] matDerBasisElemIntegrationSide0;
-  if( matDerBasisElemIntegrationSide1 ) delete[] matDerBasisElemIntegrationSide1;
-
-  if( matDerBasisElemIntegrationTransposeSide0 ) delete[] matDerBasisElemIntegrationTransposeSide0;
-  if( matDerBasisElemIntegrationTransposeSide1 ) delete[] matDerBasisElemIntegrationTransposeSide1;
-#endif
 }
 
 bool FEMStandardInternalFaceClass::SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
@@ -3543,35 +3479,11 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
   dtLagBasisElemIntegrationSide0 = other.dtLagBasisElemIntegrationSide0;
   dtLagBasisElemIntegrationSide1 = other.dtLagBasisElemIntegrationSide1;
 
-  unsigned long sizeMatSide0 = drLagBasisElemIntegrationSide0.size()
-                             + dsLagBasisElemIntegrationSide0.size()
-                             + dtLagBasisElemIntegrationSide0.size();
-  unsigned long sizeMatSide1 = drLagBasisElemIntegrationSide1.size()
-                             + dsLagBasisElemIntegrationSide1.size()
-                             + dtLagBasisElemIntegrationSide1.size();
-#ifdef HAVE_MKL
-  matDerBasisElemIntegrationSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
-  matDerBasisElemIntegrationSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
+  matDerBasisElemIntegrationSide0          = other.matDerBasisElemIntegrationSide0;
+  matDerBasisElemIntegrationTransposeSide0 = other.matDerBasisElemIntegrationTransposeSide0;
 
-  matDerBasisElemIntegrationTransposeSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
-  matDerBasisElemIntegrationTransposeSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
-#else
-  matDerBasisElemIntegrationSide0 = new su2double[sizeMatSide0];
-  matDerBasisElemIntegrationSide1 = new su2double[sizeMatSide1];
-
-  matDerBasisElemIntegrationTransposeSide0 = new su2double[sizeMatSide0];
-  matDerBasisElemIntegrationTransposeSide1 = new su2double[sizeMatSide1];
-#endif
-
-  for(unsigned long i=0; i<sizeMatSide0; ++i) {
-    matDerBasisElemIntegrationSide0[i]          = other.matDerBasisElemIntegrationSide0[i];
-    matDerBasisElemIntegrationTransposeSide0[i] = other.matDerBasisElemIntegrationTransposeSide0[i];
-  }
-
-  for(unsigned long i=0; i<sizeMatSide1; ++i) {
-    matDerBasisElemIntegrationSide1[i]          = other.matDerBasisElemIntegrationSide1[i];
-    matDerBasisElemIntegrationTransposeSide1[i] = other.matDerBasisElemIntegrationTransposeSide1[i];
-  }
+  matDerBasisElemIntegrationSide1          = other.matDerBasisElemIntegrationSide1;
+  matDerBasisElemIntegrationTransposeSide1 = other.matDerBasisElemIntegrationTransposeSide1;
 }
 
 /*----------------------------------------------------------------------------------*/
@@ -3674,19 +3586,13 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
                                                 dtLagBasisElemIntegration);
 
   /*--- If the BLAS routines are used it is beneficial to store all the
-        derivatives of the element basis functions in one array. Note that for
-        the MKL the memory allocation of the MKL itself is used and that the
-        matrices are aligned on a 64-byte boundary to increase performance. ---*/
+        derivatives of the element basis functions in one array. ---*/
   unsigned long sizeMat = drLagBasisElemIntegration.size()
                         + dsLagBasisElemIntegration.size()
                         + dtLagBasisElemIntegration.size();
-#ifdef HAVE_MKL
-  matDerBasisElemIntegration          = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
-  matDerBasisElemIntegrationTranspose = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
-#else
-  matDerBasisElemIntegration          = new su2double[sizeMat];
-  matDerBasisElemIntegrationTranspose = new su2double[sizeMat];
-#endif
+
+  matDerBasisElemIntegration.resize(sizeMat);
+  matDerBasisElemIntegrationTranspose.resize(sizeMat);
 
   ii = 0;
   for(unsigned long i=0; i<drLagBasisElemIntegration.size(); ++i, ++ii)
@@ -3712,17 +3618,6 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
       }
     }
   }
-}
-
-FEMStandardBoundaryFaceClass::~FEMStandardBoundaryFaceClass() {
-
-#ifdef HAVE_MKL
-  if( matDerBasisElemIntegration )          mkl_free(matDerBasisElemIntegration);
-  if( matDerBasisElemIntegrationTranspose ) mkl_free(matDerBasisElemIntegrationTranspose);
-#else
-  if( matDerBasisElemIntegration )          delete[] matDerBasisElemIntegration;
-  if( matDerBasisElemIntegrationTranspose ) delete[] matDerBasisElemIntegrationTranspose;
-#endif
 }
 
 unsigned short FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace(void) const {
@@ -3792,21 +3687,8 @@ void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &othe
   dsLagBasisElemIntegration = other.dsLagBasisElemIntegration;
   dtLagBasisElemIntegration = other.dtLagBasisElemIntegration;
 
-  unsigned long sizeMat = drLagBasisElemIntegration.size()
-                        + dsLagBasisElemIntegration.size()
-                        + dtLagBasisElemIntegration.size();
-#ifdef HAVE_MKL
-  matDerBasisElemIntegration          = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
-  matDerBasisElemIntegrationTranspose = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
-#else
-  matDerBasisElemIntegration          = new su2double[sizeMat];
-  matDerBasisElemIntegrationTranspose = new su2double[sizeMat];
-#endif
-
-  for(unsigned long i=0; i<sizeMat; ++i) {
-    matDerBasisElemIntegration[i]          = other.matDerBasisElemIntegration[i];
-    matDerBasisElemIntegrationTranspose[i] = other.matDerBasisElemIntegrationTranspose[i];
-  }
+  matDerBasisElemIntegration          = other.matDerBasisElemIntegration;
+  matDerBasisElemIntegrationTranspose = other.matDerBasisElemIntegrationTranspose;
 
   subConnForPlotting = other.subConnForPlotting;
 }

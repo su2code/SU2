@@ -1397,15 +1397,9 @@ void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration
                                                const unsigned long  *DOFs,
                                                su2double            *derivCoor) {
 
-  /* Allocate the memory to store the values of dxdr, dydr, etc. When the
-     MKL is used a specialized allocation is used to increase performance. */
-  su2double *dxdrVec;
-#ifdef HAVE_MKL
-  dxdrVec = (su2double *) mkl_malloc(nIntegration*nDim*nDim*sizeof(su2double), 64);
-#else
+  /* Allocate the memory to store the values of dxdr, dydr, etc. */
   vector<su2double> helpDxdrVec(nIntegration*nDim*nDim);
-  dxdrVec = helpDxdrVec.data();
-#endif
+  su2double *dxdrVec = helpDxdrVec.data();
 
   /* Determine the gradients of the Cartesian coordinates w.r.t. the
      parametric coordinates. */
@@ -1476,11 +1470,6 @@ void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration
       break;
     }
   }
-
-  /* Release the memory when the MKL is used. */
-#ifdef HAVE_MKL
-  mkl_free(dxdrVec);
-#endif
 }
 
 void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
@@ -1493,16 +1482,9 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
         out the multiplication or a standard implementation must be used. ---*/
 #if defined (HAVE_CBLAS) || defined(HAVE_MKL) || defined(HAVE_LIBXSMM)
 
-  /* Allocate the memory to store the coordinates as right hand side. When
-     the MKL is used, a specialized allocation is used to increase performance. */
-  su2double *vecRHS;
-
-#ifdef HAVE_MKL
-  vecRHS = (su2double *) mkl_malloc(nDOFs*nDim*sizeof(su2double), 64);
-#else
+  /* Allocate the memory to store the coordinates as right hand side. */
   vector<su2double> helpVecRHS(nDOFs*nDim);
-  vecRHS = helpVecRHS.data();
-#endif
+  su2double *vecRHS = helpVecRHS.data();
 
   /* Loop over the grid DOFs of the element and copy the coordinates in
      vecRHS in row major order. */
@@ -1522,11 +1504,6 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
 #else
   cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim,
               nDOFs, 1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, derivCoor, nDim);
-#endif
-
-  /* Release the memory of vecRHS in case the MKL was used. */
-#ifdef HAVE_MKL
-  mkl_free(vecRHS);
 #endif
 
 #else
@@ -4948,16 +4925,9 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     const su2double *matBasisInt    = standardElementsGrid[ind].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisInt = &matBasisInt[nDOFs*nInt];
 
-    /* Allocate the memory for the result vector. In case the MKL is used
-       a specialized allocation is used to optimize performance. */
-    su2double *vecResult;
-
-#ifdef HAVE_MKL
-    vecResult = (su2double *) mkl_malloc(nInt*nDim*nDim*sizeof(su2double), 64);
-#else
+    /* Allocate the memory for the result vector. */
     vector<su2double> helpVecResult(nInt*nDim*nDim);
-    vecResult = helpVecResult.data();
-#endif
+    su2double *vecResult = helpVecResult.data();
 
     /* Compute the gradient of the coordinates w.r.t. the parametric
        coordinates for this element. */
@@ -5021,11 +4991,6 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         break;
       }
     }
-
-    /* If the MKL is used, the help array must be deallocated. */
-#ifdef HAVE_MKL
-    mkl_free(vecResult);
-#endif
 
     /* Check for negative Jacobians in the integrations points. */
     for(unsigned short j=0; j<nInt; ++j) {

@@ -1897,19 +1897,12 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
                                             CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        internal residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solInt, *fluxes;
-
-#ifdef HAVE_MKL
-  solInt = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-#else
+        internal residual efficiently. ---*/
   vector<su2double> helpSolInt(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(nIntegrationMax*nVar*nDim);
-  solInt = helpSolInt.data();
-  fluxes = helpFluxes.data();
-#endif
+
+  su2double *solInt = helpSolInt.data();
+  su2double *fluxes = helpFluxes.data();
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -2000,35 +1993,22 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
     /* Call the general function to carry out the matrix product. */
     MatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solInt);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solIntR, *fluxes;
+        residual efficiently. ---*/
   su2double tick = 0.0;
 
-#ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  solIntL = helpSolIntL.data();
-  solIntR = helpSolIntR.data();
-  fluxes  = helpFluxes.data();
-#endif
+
+  su2double *solIntL = helpSolIntL.data();
+  su2double *solIntR = helpSolIntR.data();
+  su2double *fluxes  = helpFluxes.data();
 
   /*--------------------------------------------------------------------------*/
   /*--- Part 1: Compute the contribution to the contour integral in the    ---*/
@@ -2129,13 +2109,6 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
   CreateFinalResidual(fluxes);
     
   config->Tock(tick, "ER_2_1", 4);
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
@@ -2268,19 +2241,12 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
 void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
   /*--- Allocate the memory for the storage of the solution in the DOFs
-        and in the integration points. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solInt, *solDOFs;
-
-#ifdef HAVE_MKL
-  solInt  = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solDOFs = (su2double *) mkl_malloc(nDOFsMax*nVar*sizeof(su2double), 64);
-#else
+        and in the integration points. ---*/
   vector<su2double> helpSolInt(nIntegrationMax*nVar);
   vector<su2double> helpSolDOFs(nDOFsMax*nVar);
-  solInt  = helpSolInt.data();
-  solDOFs = helpSolDOFs.data();
-#endif
+
+  su2double *solInt  = helpSolInt.data();
+  su2double *solDOFs = helpSolDOFs.data();
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -2567,12 +2533,6 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
     Surface_CMy[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solInt);
-  mkl_free(solDOFs);
-#endif
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -2760,22 +2720,14 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
                                         CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solIntR, *fluxes;
-
-#ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-#else
+        residual efficiently. ---*/
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  solIntL = helpSolIntL.data();
-  solIntR = helpSolIntR.data();
-  fluxes  = helpFluxes.data();
-#endif
+
+  su2double *solIntL = helpSolIntL.data();
+  su2double *solIntR = helpSolIntR.data();
+  su2double *fluxes  = helpFluxes.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -2847,35 +2799,20 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
     ResidualInviscidBoundaryFace(config, numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solIntR, *fluxes;
-
-#ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-#else
+        residual efficiently. ---*/
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  solIntL = helpSolIntL.data();
-  solIntR = helpSolIntR.data();
-  fluxes  = helpFluxes.data();
-#endif
+
+  su2double *solIntL = helpSolIntL.data();
+  su2double *solIntR = helpSolIntR.data();
+  su2double *fluxes  = helpFluxes.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -2910,35 +2847,20 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
     ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solIntR, *fluxes;
-
-#ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-#else
+        residual efficiently. ---*/
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  solIntL = helpSolIntL.data();
-  solIntR = helpSolIntR.data();
-  fluxes  = helpFluxes.data();
-#endif
+
+  su2double *solIntL = helpSolIntL.data();
+  su2double *solIntR = helpSolIntR.data();
+  su2double *fluxes  = helpFluxes.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -2992,13 +2914,6 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
     ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
@@ -3019,22 +2934,14 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
   su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solIntR, *fluxes;
-
-#ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-#else
+        residual efficiently. ---*/
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  solIntL = helpSolIntL.data();
-  solIntR = helpSolIntR.data();
-  fluxes  = helpFluxes.data();
-#endif
+
+  su2double *solIntL = helpSolIntL.data();
+  su2double *solIntR = helpSolIntR.data();
+  su2double *fluxes  = helpFluxes.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3144,13 +3051,6 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
     ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
@@ -3164,22 +3064,14 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
   P_Exit = P_Exit/config->GetPressure_Ref();
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solIntR, *fluxes;
-
-#ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-#else
+        residual efficiently. ---*/
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  solIntL = helpSolIntL.data();
-  solIntR = helpSolIntR.data();
-  fluxes  = helpFluxes.data();
-#endif
+
+  su2double *solIntL = helpSolIntL.data();
+  su2double *solIntR = helpSolIntR.data();
+  su2double *fluxes  = helpFluxes.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3258,35 +3150,20 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
     ResidualInviscidBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solIntR, *fluxes;
-
-#ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-#else
+        residual efficiently. ---*/
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  solIntL = helpSolIntL.data();
-  solIntR = helpSolIntR.data();
-  fluxes  = helpFluxes.data();
-#endif
+
+  su2double *solIntL = helpSolIntL.data();
+  su2double *solIntR = helpSolIntR.data();
+  su2double *fluxes  = helpFluxes.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3353,13 +3230,6 @@ void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_contai
     ResidualInviscidBoundaryFace(config, numerics, &surfElem[l], solIntL,
                                  solIntR, fluxes, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
@@ -3811,23 +3681,14 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
  
   /*--- Allocate the memory for the storage of the solution in the DOFs
-        and the solution and its gradients in the integration points.
-        Note that when the MKL library is used a special allocation is used
-        to optimize performance. ---*/
-  su2double *solDOFs, *solInt, *gradSolInt;
-
-#ifdef HAVE_MKL
-  solInt     = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  solDOFs    = (su2double *) mkl_malloc(nDOFsMax*nVar*sizeof(su2double), 64);
-#else
+        and the solution and its gradients in the integration points. ---*/
   vector<su2double> helpSolInt(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
   vector<su2double> helpSolDOFs(nDOFsMax*nVar);
-  solInt     = helpSolInt.data();
-  gradSolInt = helpGradSolInt.data();
-  solDOFs    = helpSolDOFs.data();
-#endif
+
+  su2double *solInt     = helpSolInt.data();
+  su2double *gradSolInt = helpGradSolInt.data();
+  su2double *solDOFs    = helpSolDOFs.data();
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -4186,13 +4047,6 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMy[iMarker_Monitoring]  += Surface_CMy_Visc[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]  += Surface_CMz_Visc[iMarker_Monitoring];
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solInt);
-  mkl_free(gradSolInt);
-  mkl_free(solDOFs);
-#endif
 }
 
 void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -4202,20 +4056,14 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        internal residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. ---*/
-  su2double *solAndGradInt, *fluxes;
+        internal residual efficiently. ---*/
   su2double tick = 0.0;
 
-#ifdef HAVE_MKL
-  solAndGradInt = (su2double *) mkl_malloc(nIntegrationMax*nVar*(nDim+1)*sizeof(su2double), 64);
-  fluxes        = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim    *sizeof(su2double), 64);
-#else
   vector<su2double> helpSolInt(nIntegrationMax*nVar*(nDim+1));
   vector<su2double> helpFluxes(nIntegrationMax*nVar*nDim);
-  solAndGradInt = helpSolInt.data();
-  fluxes        = helpFluxes.data();
-#endif
+
+  su2double *solAndGradInt = helpSolInt.data();
+  su2double *fluxes        = helpFluxes.data();
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -4397,25 +4245,15 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
     MatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->Tock(tick, "IR_3_1", 4);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solAndGradInt);
-  mkl_free(fluxes);
-#endif
 }
 
 void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes;
-  su2double *viscosityIntL, *viscosityIntR;
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
   su2double tick = 0.0;
   su2double tick1 = 0.0;
 
@@ -4424,15 +4262,6 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt    = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes        = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes    = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityIntL = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-  viscosityIntR = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
@@ -4440,14 +4269,14 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityIntL(nIntegrationMax);
   vector<su2double> helpViscosityIntR(nIntegrationMax);
-  solIntL       = helpSolIntL.data();
-  solIntR       = helpSolIntR.data();
-  gradSolInt    = helpGradSolInt.data();
-  fluxes        = helpFluxes.data();
-  viscFluxes    = helpViscFluxes.data();
-  viscosityIntL = helpViscosityIntL.data();
-  viscosityIntR = helpViscosityIntR.data();
-#endif
+
+  su2double *solIntL       = helpSolIntL.data();
+  su2double *solIntR       = helpSolIntR.data();
+  su2double *gradSolInt    = helpGradSolInt.data();
+  su2double *fluxes        = helpFluxes.data();
+  su2double *viscFluxes    = helpViscFluxes.data();
+  su2double *viscosityIntL = helpViscosityIntL.data();
+  su2double *viscosityIntR = helpViscosityIntR.data();
 
   /*--------------------------------------------------------------------------*/
   /*--- Part 1: Compute the contribution to the contour integral in the    ---*/
@@ -4730,17 +4559,6 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
      fluxes is passed as temporary storage. */
   CreateFinalResidual(fluxes);
   config->Tock(tick, "ER_2_1", 4);
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityIntL);
-  mkl_free(viscosityIntR);
-#endif
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
@@ -5071,39 +4889,27 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
 void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
-
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5150,16 +4956,6 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
                                 solIntR, gradSolInt, fluxes, viscFluxes,
                                 viscosityInt, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -5169,39 +4965,27 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and and gradSolIntL and the max function for the
-        viscFluxes. This is because these arrays are also used as temporary
-        storage for the other purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
-
+        residual efficiently. Note the size for fluxes and and gradSolIntL and
+        the max function for the viscFluxes. This is because these arrays are
+        also used as temporary storage for other purposes. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the pointer solElem to fluxes. This is just for readability, as the
      same memory can be used for the storage of the solution of the DOFs of
@@ -5352,54 +5136,32 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
                                 solIntR, gradSolInt, fluxes, viscFluxes,
                                 viscosityInt, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
-
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5483,16 +5245,6 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
                                 gradSolInt, fluxes, viscFluxes, viscosityInt,
                                 resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
@@ -5513,39 +5265,27 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
-
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5666,16 +5406,6 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 solIntR, gradSolInt, fluxes, viscFluxes,
                                 viscosityInt, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, 
@@ -5689,39 +5419,27 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   P_Exit = P_Exit/config->GetPressure_Ref();
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
-
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5811,16 +5529,6 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
                                 solIntR, gradSolInt, fluxes, viscFluxes,
                                 viscosityInt, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -5837,39 +5545,28 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
   const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
 
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5939,16 +5636,6 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
                                 solIntR, gradSolInt, fluxes, viscFluxes,
                                 viscosityInt, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -5970,39 +5657,27 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   const su2double StaticEnergy = Cv*TWall;
   
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
-
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -6067,16 +5742,6 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
                                 solIntR, gradSolInt, fluxes, viscFluxes,
                                 viscosityInt, resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
@@ -6093,39 +5758,27 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
 #endif
 
   /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note that when the MKL library is used
-        a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and gradSolInt and the max function for the viscFluxes.
-        This is because these arrays are also used as temporary storage for the other
-        purposes. ---*/
-  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
-
+        residual efficiently. Note the size for fluxes and gradSolInt and the
+        max function for the viscFluxes. This is because these arrays are also
+        used as temporary storage for other purposes. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-#ifdef HAVE_MKL
-  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
-  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
-  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
-#else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(sizeGradSolInt);
   vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
-  solIntL      = helpSolIntL.data();
-  solIntR      = helpSolIntR.data();
-  gradSolInt   = helpGradSolInt.data();
-  fluxes       = helpFluxes.data();
-  viscFluxes   = helpViscFluxes.data();
-  viscosityInt = helpViscosityInt.data();
-#endif
+
+  su2double *solIntL      = helpSolIntL.data();
+  su2double *solIntR      = helpSolIntR.data();
+  su2double *gradSolInt   = helpGradSolInt.data();
+  su2double *fluxes       = helpFluxes.data();
+  su2double *viscFluxes   = helpViscFluxes.data();
+  su2double *viscosityInt = helpViscosityInt.data();
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -6210,16 +5863,6 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
                                 gradSolInt, fluxes, viscFluxes, viscosityInt,
                                 resFaces, indResFaces);
   }
-
-  /*--- If the MKL is used the temporary storage must be released again. ---*/
-#ifdef HAVE_MKL
-  mkl_free(solIntL);
-  mkl_free(solIntR);
-  mkl_free(gradSolInt);
-  mkl_free(fluxes);
-  mkl_free(viscFluxes);
-  mkl_free(viscosityInt);
-#endif
 }
 
 void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(

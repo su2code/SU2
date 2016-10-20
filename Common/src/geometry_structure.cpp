@@ -12049,18 +12049,10 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
   unsigned long sizeResult = nDim*nDim*nIntMax;
   unsigned long sizeRHS    = nDim*nDOFsMax;
 
-  /* Allocate the memory. In case the MKL is used, a specialized allocation
-     is used to optimize performance. */
-  su2double *vecResult, *vecRHS;
-
-#ifdef HAVE_MKL
-  vecResult = (su2double *) mkl_malloc(sizeResult*sizeof(su2double), 64);
-  vecRHS    = (su2double *) mkl_malloc(sizeRHS   *sizeof(su2double), 64);
-#else
+  /* Allocate the memory. */
   vector<su2double> helpVecResult(sizeResult), helpVecRHS(sizeRHS);
-  vecResult = helpVecResult.data();
-  vecRHS    = helpVecRHS.data();
-#endif
+  su2double *vecResult = helpVecResult.data();
+  su2double *vecRHS    = helpVecRHS.data();
 
   /*--- Define the vector to store the normals of the integration points
         of the faces. In this way it is not needed to allocate the memory
@@ -12444,12 +12436,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                + workSurfaceDOF*nDOFs;
     }
   }
-
-  /* If the MKL is used, the help arrays must be deallocated. */
-#ifdef HAVE_MKL
-  mkl_free(vecResult);
-  mkl_free(vecRHS);
-#endif
 
   /*--- Determine the minimum vertex weight over the entire domain. ---*/
   su2double minvwgt = vwgt[0];
