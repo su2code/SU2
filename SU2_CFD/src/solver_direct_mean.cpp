@@ -7631,19 +7631,25 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
     cout.precision(4);
     cout.setf(ios::fixed, ios::floatfield);
     
-    cout << endl << "---------------------- Control Volume properties ---------------------" << endl;
+    cout << endl << "--------------------------- Surface Analysis -------------------------" << endl;
+
     for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
       cout << "Surface ("<< config->GetMarker_Analyze_TagBound(iMarker_Analyze);
-      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): ";
-      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): ";
-      cout << Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref() * 32.174;
+
+      su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
+      if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
+
+      if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): " << MassFlow;
+      else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): " << MassFlow;
+      config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
+
       cout << ", Mach: ";
       cout << Surface_Mach_Total[iMarker_Analyze];
-      if (config->GetSystemMeasurements() == SI) cout << ", Temp (K): ";
-      else if (config->GetSystemMeasurements() == US) cout << ", Temp (R): ";
+      if (config->GetSystemMeasurements() == SI) cout << ", T(K): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", T(R): ";
       cout << Surface_Temperature_Total[iMarker_Analyze] * config->GetTemperature_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << ".\nPressure (Pa): ";
-      else if (config->GetSystemMeasurements() == US) cout << ".\nPressure (psf): ";
+      if (config->GetSystemMeasurements() == SI) cout << ", P(Pa): ";
+      else if (config->GetSystemMeasurements() == US) cout << ", P(psf): ";
       cout << Surface_Pressure_Total[iMarker_Analyze] * config->GetPressure_Ref();
       if (config->GetSystemMeasurements() == SI) cout << ", Area (m^2): ";
       else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): ";
@@ -7686,13 +7692,12 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
   su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
   su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
-  unsigned short iMarkerAnalyze, nMarkerAnalyze = 0;
+  unsigned short iMarker_Analyze, nMarkerAnalyze = 0;
   int rank, iProcessor, nProcessor;
   rank = MASTER_NODE;
   nProcessor = SINGLE_NODE;
   unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
-  unsigned long nVertex_Surface, nLocalVertex_Surface;
-  unsigned long MaxLocalVertex_Surface;
+  unsigned long nVertex_Surface, nLocalVertex_Surface, MaxLocalVertex_Surface;
   unsigned long Total_Index;
   unsigned short nDim = geometry->GetnDim();
   unsigned short Theta_DC60 = 60, nStation_DC60 = 5;
@@ -7704,17 +7709,13 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
   
-  bool *Surface_Analyze = new bool[nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Surface_Analyze[iMarker] = true;
-  }
-  
   if (Evaluate_ActDisk) {
     
-    for (iMarkerAnalyze = 0; iMarkerAnalyze < config->GetnMarker_Analyze(); iMarkerAnalyze++) {
+    for (iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++) {
+
+    	string Analyze_TagBound = config->GetMarker_Analyze_TagBound(iMarker_Analyze);
       
-      nVertex_Surface = 0, nLocalVertex_Surface = 0;
-      MaxLocalVertex_Surface = 0;
+      nVertex_Surface = 0, nLocalVertex_Surface = 0; MaxLocalVertex_Surface = 0;
       
       /*--- Find the max number of surface vertices among all
        partitions and set up buffers. The master node will handle the
@@ -7722,12 +7723,12 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
       
       nLocalVertex_Surface = 0;
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if ((config->GetMarker_All_Analyze(iMarker) == YES) && (Surface_Analyze[iMarker])) {
+      	string Marker_TagBound = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_TagBound == Analyze_TagBound) {
           for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             if (geometry->node[iPoint]->GetDomain()) nLocalVertex_Surface++;
           }
-          break;
         }
       }
       
@@ -7795,8 +7796,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
       su2double *Buffer_Send_Area = NULL, *Buffer_Recv_Area = NULL;
       Buffer_Send_Area = new su2double [MaxLocalVertex_Surface];
       
-      unsigned long *Buffer_Send_GlobalIndex = NULL;
-      unsigned long *Buffer_Recv_GlobalIndex = NULL;
+      unsigned long *Buffer_Send_GlobalIndex = NULL, *Buffer_Recv_GlobalIndex = NULL;
       Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
       
       /*--- Prepare the receive buffers on the master node only. ---*/
@@ -7827,8 +7827,10 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
       
       nVertex_Surface = 0;
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if ((config->GetMarker_All_Analyze(iMarker) == YES) && (Surface_Analyze[iMarker])) {
-          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      	string Marker_TagBound = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_TagBound == Analyze_TagBound) {
+
+        	for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
             
             if (geometry->node[iPoint]->GetDomain()) {
@@ -7837,21 +7839,24 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
               Buffer_Send_Coord_y[nVertex_Surface] = geometry->node[iPoint]->GetCoord(1);
               if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
               
-              Pressure = node[iPoint]->GetPressure();
-              Temperature = node[iPoint]->GetTemperature();
-              Density = node[iPoint]->GetDensity();
-              SoundSpeed = node[iPoint]->GetSoundSpeed();
-              Velocity2         = node[iPoint]->GetVelocity2();
-              Mach               = sqrt(Velocity2)/SoundSpeed;
-              Gamma          = config->GetGamma();
-              Gas_Constant     = config->GetGas_ConstantND();
-              Mach_Inf          = config->GetMach();
-              Pressure_Inf     = config->GetPressure_FreeStreamND();
+              Pressure     = node[iPoint]->GetPressure();
+              Temperature  = node[iPoint]->GetTemperature();
+              Density      = node[iPoint]->GetDensity();
+              SoundSpeed   = node[iPoint]->GetSoundSpeed();
+              Velocity2    = node[iPoint]->GetVelocity2();
+              Mach         = sqrt(Velocity2)/SoundSpeed;
+              Gamma        = config->GetGamma();
+              Gas_Constant = config->GetGas_ConstantND();
+              Mach_Inf     = config->GetMach();
+              Pressure_Inf = config->GetPressure_FreeStreamND();
               
               Buffer_Send_Mach[nVertex_Surface] = Mach;
-              dMach_dVel_x = node[iPoint]->GetVelocity(0) / (Mach * sqrt(Velocity2));
-              dMach_dVel_y = node[iPoint]->GetVelocity(1) / (Mach * sqrt(Velocity2));
-              dMach_dVel_z = node[iPoint]->GetVelocity(2) / (Mach * sqrt(Velocity2));
+              dMach_dVel_x = 0.0; dMach_dVel_y = 0.0; dMach_dVel_z = 0.0;
+              if ((Velocity2 != 0.0) && (Mach != 0.0)) {
+            	  dMach_dVel_x = node[iPoint]->GetVelocity(0) / (Mach * sqrt(Velocity2));
+            	  dMach_dVel_y = node[iPoint]->GetVelocity(1) / (Mach * sqrt(Velocity2));
+            	  if (nDim == 3) { dMach_dVel_z = node[iPoint]->GetVelocity(2) / (Mach * sqrt(Velocity2)); }
+              }
               Aux = Gas_Constant*Temperature;
               dMach_dT = - Gas_Constant * sqrt(Velocity2) / (2.0 * sqrt(Gamma) * pow(Aux, 1.5));
               
@@ -7881,7 +7886,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
               Buffer_Send_dPT_dx[nVertex_Surface] = dPT_dP*node[iPoint]->GetGradient_Primitive(nDim+1, 0) + dPT_dMach * dMach_dx;
               Buffer_Send_dPT_dy[nVertex_Surface] = dPT_dP*node[iPoint]->GetGradient_Primitive(nDim+1, 1) + dPT_dMach * dMach_dy;
               if (nDim == 3) { Buffer_Send_dPT_dz[nVertex_Surface] = dPT_dP*node[iPoint]->GetGradient_Primitive(nDim+1, 2) + dPT_dMach * dMach_dz; }
-              
+
               Buffer_Send_q[nVertex_Surface] = 0.5*Density*Velocity2;
               Buffer_Send_dq_dx[nVertex_Surface] = 0.0;
               Buffer_Send_dq_dy[nVertex_Surface] = 0.0;
@@ -7918,7 +7923,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
               
             }
           }
-          break;
         }
       }
       
@@ -7973,6 +7977,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         /*--- Compute center of gravity ---*/
         
         TotalArea = 0.0; xCoord_CG = 0.0; yCoord_CG = 0.0; zCoord_CG = 0.0; PT_Mean = 0.0; Mach_Mean = 0.0;  q_Mean = 0.0;
+
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
           for (iVertex = 0; iVertex < Buffer_Recv_nVertex[iProcessor]; iVertex++) {
             
@@ -7990,14 +7995,14 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
             Mach = Buffer_Recv_Mach[Total_Index];
             q = Buffer_Recv_q[Total_Index];
             
-            Area = Buffer_Recv_Area[Total_Index];
+            Area       = Buffer_Recv_Area[Total_Index];
             TotalArea += Area;
             xCoord_CG += xCoord*Area;
             yCoord_CG += yCoord*Area;
             zCoord_CG += zCoord*Area;
             PT_Mean   += PT*Area;
-            Mach_Mean   += PT*Area;
-            q_Mean   += q*Area;
+            Mach_Mean += PT*Area;
+            q_Mean    += q*Area;
             
           }
         }
@@ -8129,9 +8134,10 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                   MinDistance = Distance;
                   ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy;
                   if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
-                  
-                  ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index] + Buffer_Recv_dq_dx[Total_Index]*dx + Buffer_Recv_dq_dy[Total_Index]*dy;
+
+                  ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index]  + Buffer_Recv_dq_dx[Total_Index]*dx + Buffer_Recv_dq_dy[Total_Index]*dy;
                   if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dq_dz[Total_Index]*dz;
+                  
                 }
                 
               }
@@ -8181,14 +8187,15 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
         /*--- Set the value of the distortion, it only works for one surface ---*/
         
-        Mach_Inf          = config->GetMach();
-        Gamma          = config->GetGamma();
+        Mach_Inf           = config->GetMach();
+        Gamma              = config->GetGamma();
         TotalPressure_Inf  = config->GetPressure_FreeStreamND() * pow( 1.0 + Mach_Inf * Mach_Inf *
                                                                       0.5 * (Gamma - 1.0), Gamma 	/ (Gamma - 1.0));
         
-        DC60 = ((PT_Mean - PT_Sector_Min)*TotalPressure_Inf)/q_Mean;
+        if (q_Mean != 0.0) DC60 = ((PT_Mean - PT_Sector_Min)*TotalPressure_Inf)/q_Mean;
+        else DC60 = 0.0;
         
-        config->SetActDisk_DC60(0, DC60);
+        config->SetSurface_DC60(iMarker_Analyze, DC60);
         
         SetTotal_DC60(DC60);
         
@@ -8330,7 +8337,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
           
         }
         
-        config->SetActDisk_IDC(0, IDC);
+        config->SetSurface_IDC(iMarker_Analyze, IDC);
         
         SetTotal_IDC(IDC);
         
@@ -8339,7 +8346,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
           IDR = max (IDR, (PT_Mean-PT_Station[iStation])/PT_Mean);
         }
         
-        config->SetActDisk_IDR(0, IDR);
+        config->SetSurface_IDR(iMarker_Analyze, IDR);
         
         SetTotal_IDR(IDR);
         
@@ -8423,12 +8430,13 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
         IDC_Mach = 0.0;
         for (iStation = 0; iStation < nStation-1; iStation++) {
-          IDC_Mach = max (IDC_Mach, 0.5*((Mach_Station[iStation] - Mach_Station_Min[iStation])/Mach_Mean
+        	if (Mach_Mean!=0)
+        		IDC_Mach = max (IDC_Mach, 0.5*((Mach_Station[iStation] - Mach_Station_Min[iStation])/Mach_Mean
                                          + (Mach_Station[iStation+1] - Mach_Station_Min[iStation+1])/Mach_Mean)   );
           
         }
         
-        config->SetActDisk_IDC_Mach(0, IDC_Mach);
+        config->SetSurface_IDC_Mach(iMarker_Analyze, IDC_Mach);
         
         SetTotal_IDC_Mach(IDC_Mach);
         
@@ -8476,19 +8484,13 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
       
       if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
         
-        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-          if ((config->GetMarker_All_Analyze(iMarker) == YES) && (Surface_Analyze[iMarker])) {
-            cout << "Surface ("<< config->GetMarker_All_TagBound(iMarker) << "): ";
-            break;
-          }
-        }
-
+        cout << "Surface ("<< Analyze_TagBound << "): ";
         cout.precision(4);
         cout.setf(ios::fixed, ios::floatfield);
-        cout << setprecision(1) << "Dist. coeff.: IDC " << 100*config->GetActDisk_IDC(0)
-        << "%. IDC Mach " << 100*config->GetActDisk_IDC_Mach(0)
-        << "%. IDR " << 100*config->GetActDisk_IDR(0)
-        << "%. DC60 " << config->GetActDisk_DC60(0) << "." << endl;
+        cout << setprecision(1) << "Dist. coeff.: IDC " << 100*config->GetSurface_IDC(iMarker_Analyze)
+        << "%. IDC Mach " << 100*config->GetSurface_IDC_Mach(iMarker_Analyze)
+        << "%. IDR " << 100*config->GetSurface_IDR(iMarker_Analyze)
+        << "%. DC60 " << config->GetSurface_DC60(iMarker_Analyze) << "." << endl;
         
       }
       
@@ -8517,12 +8519,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
       
       delete [] Buffer_Send_GlobalIndex;
       
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if ((config->GetMarker_All_Analyze(iMarker) == YES) && (Surface_Analyze[iMarker])) {
-          Surface_Analyze[iMarker] = false; break;
-        }
-      }
-      
     }
     
   }
@@ -8532,7 +8528,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
     cout << "-------------------------------------------------------------------------" << endl;
     
   }
-  delete [] Surface_Analyze;
   
 }
 
