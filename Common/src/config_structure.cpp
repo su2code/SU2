@@ -1234,7 +1234,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Periodicity distance in X-direction */
   addDoubleListOption("PERIODICITY_TRANSLATION_X", nPeriodicityTranslation_X, PeriodicityTranslation_X);
   /* DESCRIPTION: Periodicity distance in Y-direction */
-  addDoubleListOption("PERIODICITY_TRANSALTION_Y", nPeriodicityTranslation_Y, PeriodicityTranslation_Y);
+  addDoubleListOption("PERIODICITY_TRANSLATION_Y", nPeriodicityTranslation_Y, PeriodicityTranslation_Y);
   /* DESCRIPTION: Periodicity distance in Z-direction */
   addDoubleListOption("PERIODICITY_TRANSLATION_Z", nPeriodicityTranslation_Z, PeriodicityTranslation_Z);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
