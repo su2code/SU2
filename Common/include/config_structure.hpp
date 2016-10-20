@@ -522,7 +522,7 @@ private:
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
 	nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
 	nMarker_Plotting,					/*!< \brief Number of markers to plot. */
-  nMarker_ControlVolume,					/*!< \brief Number of markers to plot. */
+  nMarker_Analyze,					/*!< \brief Number of markers to plot. */
 	nMarker_FSIinterface,					/*!< \brief Number of markers in the FSI interface. */
   nMarker_Moving,               /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
 	nMarker_DV;               /*!< \brief Number of markers affected by the design variables. */
@@ -530,14 +530,14 @@ private:
   *Marker_Designing,         /*!< \brief Markers to plot. */
   *Marker_GeoEval,         /*!< \brief Markers to plot. */
   *Marker_Plotting,          /*!< \brief Markers to plot. */
-  *Marker_ControlVolume,          /*!< \brief Markers to plot. */
+  *Marker_Analyze,          /*!< \brief Markers to plot. */
   *Marker_FSIinterface,          /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,            /*!< \brief Markers in motion (DEFORMING, MOVING_WALL, or FLUID_STRUCTURE). */
   *Marker_DV;            /*!< \brief Markers affected by the design variables. */
   unsigned short  *Marker_All_Monitoring,        /*!< \brief Global index for monitoring using the grid information. */
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
-  *Marker_All_ControlVolume,        /*!< \brief Global index for plotting using the grid information. */
+  *Marker_All_Analyze,        /*!< \brief Global index for plotting using the grid information. */
   *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
@@ -547,7 +547,7 @@ private:
   *Marker_CfgFile_Designing,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
-  *Marker_CfgFile_ControlVolume,     /*!< \brief Global index for plotting using the config information. */
+  *Marker_CfgFile_Analyze,     /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_FSIinterface,     /*!< \brief Global index for FSI interface using the config information. */
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
@@ -2308,7 +2308,7 @@ public:
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */
-  unsigned short GetnMarker_ControlVolume(void);
+  unsigned short GetnMarker_Analyze(void);
 
 	/*!
    * \brief Get the total number of objectives in kind_objective list
@@ -2659,7 +2659,7 @@ public:
    * \param[in] val_marker - Index of the marker in which we are interested.
    * \param[in] val_plotting - 0 or 1 depending if the the marker is going to be plot.
    */
-  void SetMarker_All_ControlVolume(unsigned short val_marker, unsigned short val_controlvolume);
+  void SetMarker_All_Analyze(unsigned short val_marker, unsigned short val_analyze);
 
 	/*!
 	 * \brief Set if a marker <i>val_marker</i> is part of the FSI interface <i>val_plotting</i>
@@ -2749,7 +2749,7 @@ public:
    * \param[in] val_marker - 0 or 1 depending if the the marker is going to be moved.
    * \return 0 or 1 depending if the marker is going to be plotted.
    */
-  unsigned short GetMarker_All_ControlVolume(unsigned short val_marker);
+  unsigned short GetMarker_All_Analyze(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the FSI interface information for a marker <i>val_marker</i>.
@@ -4661,7 +4661,7 @@ public:
    * \brief Get the plotting information from the config definition for the marker <i>val_marker</i>.
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
-  unsigned short GetMarker_CfgFile_ControlVolume(string val_marker);
+  unsigned short GetMarker_CfgFile_Analyze(string val_marker);
 
 	/*!
 	 * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
@@ -4920,7 +4920,7 @@ public:
    * \return Name that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_ControlVolume_TagBound(unsigned short val_marker);
+  string GetMarker_Analyze_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.

@@ -977,7 +977,7 @@ inline string CConfig::GetMarker_Monitoring_TagBound(unsigned short val_marker) 
 
 inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline string CConfig::GetMarker_ControlVolume_TagBound(unsigned short val_marker) { return Marker_ControlVolume[val_marker]; }
+inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
 
 inline short CConfig::GetMarker_All_TagBound(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
@@ -1000,7 +1000,7 @@ inline void CConfig::SetMarker_All_Designing(unsigned short val_marker, unsigned
 
 inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned short val_plotting) { Marker_All_Plotting[val_marker] = val_plotting; }
 
-inline void CConfig::SetMarker_All_ControlVolume(unsigned short val_marker, unsigned short val_controlvolume) { Marker_All_ControlVolume[val_marker] = val_controlvolume; }
+inline void CConfig::SetMarker_All_Analyze(unsigned short val_marker, unsigned short val_analyze) { Marker_All_Analyze[val_marker] = val_analyze; }
 
 inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
 
@@ -1028,7 +1028,7 @@ inline void CConfig::SetMarker_All_SendRecv(unsigned short val_marker, short val
 
 inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker) { return Marker_All_Plotting[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_All_ControlVolume(unsigned short val_marker) { return Marker_All_ControlVolume[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_Analyze(unsigned short val_marker) { return Marker_All_Analyze[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
 
@@ -1054,7 +1054,7 @@ inline unsigned short CConfig::GetnMarker_Out_1D(void) { return nMarker_Out_1D; 
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
-inline unsigned short CConfig::GetnMarker_ControlVolume(void) { return nMarker_ControlVolume; }
+inline unsigned short CConfig::GetnMarker_Analyze(void) { return nMarker_Analyze; }
 
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 

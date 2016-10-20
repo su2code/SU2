@@ -2024,7 +2024,7 @@ public:
    * \param[in] solution - Container vector with all the solutions.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  virtual void GetControlVolume_Properties(CGeometry *geometry, CNumerics *conv_numerics,
+  virtual void GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
                                            CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
@@ -2039,7 +2039,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  virtual void GetControlVolume_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  virtual void GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -4712,7 +4712,7 @@ public:
    * \param[in] solution - Container vector with all the solutions.
    * \param[in] Output - boolean to determine whether to print output.
    */
-  void GetControlVolume_Properties(CGeometry *geometry, CNumerics *conv_numerics,
+  void GetSurface_Properties(CGeometry *geometry, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
@@ -4727,7 +4727,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
-  void GetControlVolume_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  void GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
