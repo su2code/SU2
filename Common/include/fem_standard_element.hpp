@@ -802,10 +802,10 @@ private:
   vector<su2double> dsLagBasisIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the integration points. */
   vector<su2double> dtLagBasisIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the integration points. */
 
-  su2double *matBasisIntegration;  /*!< \brief Matrix of lagBasisIntegration, drLagBasisIntegration, dsLagBasisIntegration
-                                               and dtLagBasisIntegration combined for efficiency when using BLAS routines. */
-  su2double *matDerBasisIntTrans;  /*!< \brief Matrix of the transpose of the derivative part of matBasisIntegration. It is
-                                               stored such that the volume residual can be computed in one matrix multiplication. */
+  vector<su2double> matBasisIntegration;  /*!< \brief Matrix of lagBasisIntegration, drLagBasisIntegration, dsLagBasisIntegration
+                                                      and dtLagBasisIntegration combined for efficiency when using BLAS routines. */
+  vector<su2double> matDerBasisIntTrans;  /*!< \brief Matrix of the transpose of the derivative part of matBasisIntegration. It is
+                                                      stored such that the volume residual can be computed in one matrix multiplication. */
 
   vector<unsigned short> connFace0; /*!< \brief Local connectivity of face 0 of the element. The numbering of the DOFs is
                                                 such that the element is to the left of the face. */
@@ -1158,19 +1158,19 @@ private:
   vector<su2double> dtLagBasisElemIntegrationSide1; /*!< \brief t-derivatives of the element Lagrangian basis functions
                                                                 of side 1 in the integration points. */
 
-  su2double *matDerBasisElemIntegrationSide0;       /*!< \brief Matrix of drLagBasisElemIntegrationSide0, dsLagBasisElemIntegrationSide0
-                                                                and dtLagBasisElemIntegrationSide0 combined for efficiency
-                                                                when using BLAS routines. */
-  su2double *matDerBasisElemIntegrationSide1;       /*!< \brief Matrix of drLagBasisElemIntegrationSide1, dsLagBasisElemIntegrationSide1
-                                                                and dtLagBasisElemIntegrationSide1 combined for efficiency
-                                                                when using BLAS routines. */
+  vector<su2double> matDerBasisElemIntegrationSide0;       /*!< \brief Matrix of drLagBasisElemIntegrationSide0, dsLagBasisElemIntegrationSide0
+                                                                       and dtLagBasisElemIntegrationSide0 combined for efficiency
+                                                                       when using BLAS routines. */
+  vector<su2double> matDerBasisElemIntegrationSide1;       /*!< \brief Matrix of drLagBasisElemIntegrationSide1, dsLagBasisElemIntegrationSide1
+                                                                       and dtLagBasisElemIntegrationSide1 combined for efficiency
+                                                                       when using BLAS routines. */
 
-  su2double *matDerBasisElemIntegrationTransposeSide0; /*!< \brief Transpose of matDerBasisElemIntegrationSide0, such that
-                                                                   the residuals of the symmetrizing terms can be computed
-                                                                   with a single matrix multiplication. */
-  su2double *matDerBasisElemIntegrationTransposeSide1; /*!< \brief Transpose of matDerBasisElemIntegrationSide1, such that
-                                                                   the residuals of the symmetrizing terms can be computed
-                                                                   with a single matrix multiplication. */
+  vector<su2double> matDerBasisElemIntegrationTransposeSide0; /*!< \brief Transpose of matDerBasisElemIntegrationSide0, such that
+                                                                          the residuals of the symmetrizing terms can be computed
+                                                                          with a single matrix multiplication. */
+  vector<su2double> matDerBasisElemIntegrationTransposeSide1; /*!< \brief Transpose of matDerBasisElemIntegrationSide1, such that
+                                                                          the residuals of the symmetrizing terms can be computed
+                                                                          with a single matrix multiplication. */
 public:
   /*!
   * \brief Standard Constructor. Initialize some pointers to NULL.
@@ -1462,13 +1462,13 @@ private:
   vector<su2double> dtLagBasisElemIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the
                                                            integration points of the element adjacent to the face. */
 
-  su2double *matDerBasisElemIntegration;       /*!< \brief Matrix of drLagBasisElemIntegration, dsLagBasisElemIntegration
-                                                           and dtLagBasisElemIntegration combined for efficiency
-                                                           when using BLAS routines. */
+  vector<su2double> matDerBasisElemIntegration;       /*!< \brief Matrix of drLagBasisElemIntegration, dsLagBasisElemIntegration
+                                                                  and dtLagBasisElemIntegration combined for efficiency
+                                                                  when using BLAS routines. */
 
-  su2double *matDerBasisElemIntegrationTranspose; /*!< \brief Transpose of matDerBasisElemIntegration, such that
-                                                              the residuals of the symmetrizing terms can be computed
-                                                              with a single matrix multiplication. */
+  vector<su2double> matDerBasisElemIntegrationTranspose; /*!< \brief Transpose of matDerBasisElemIntegration, such that
+                                                                     the residuals of the symmetrizing terms can be computed
+                                                                     with a single matrix multiplication. */
 
 
   vector<unsigned short> subConnForPlotting; /*!< \brief Local subconnectivity of the high order element.
