@@ -8437,11 +8437,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
   
   unsigned long Point_1, Point_2, Point_3, Point_4, Point_5, Point_6,
-  iElem;
+  iElem, triangle_flip = 0, quad_flip = 0, tet_flip = 0, prism_flip = 0,
+  hexa_flip = 0, pyram_flip = 0;
   su2double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
   *Coord_5, *Coord_6, a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, test;
   unsigned short iDim;
   
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- Loop over all the elements ---*/
   
   for (iElem = 0; iElem < nElem; iElem++) {
@@ -8459,7 +8465,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
         b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]); }
       test = a[0]*b[1]-b[0]*a[1];
       
-      if (test < 0.0) elem[iElem]->Change_Orientation();
+      if (test < 0.0) {
+    	  elem[iElem]->Change_Orientation();
+    	  triangle_flip++;
+      }
     }
     
     /*--- 2D grid, quadrilateral case ---*/
@@ -8491,8 +8500,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
         b[iDim] = 0.5*(Coord_3[iDim]-Coord_4[iDim]); }
       test_4 = a[0]*b[1]-b[0]*a[1];
       
-      if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0))
+      if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
         elem[iElem]->Change_Orientation();
+        quad_flip++;
+      }
     }
     
     /*--- 3D grid, tetrahedron case ---*/
@@ -8513,7 +8524,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
       n[2] = a[0]*b[1]-b[0]*a[1];
       
       test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-      if (test < 0.0) elem[iElem]->Change_Orientation();
+      if (test < 0.0) {
+    	  elem[iElem]->Change_Orientation();
+    	  tet_flip++;
+      }
       
     }
     
@@ -8558,8 +8572,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
       
       test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
       
-      if ((test_1 < 0.0) || (test_2 < 0.0))
-        elem[iElem]->Change_Orientation();
+      if ((test_1 < 0.0) || (test_2 < 0.0)) {
+          elem[iElem]->Change_Orientation();
+          prism_flip++;
+      }
       
     }
     
@@ -8626,7 +8642,10 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
       test_4 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
       
       if ((test_1 < 0.0) || (test_2 < 0.0) || (test_3 < 0.0)
-          || (test_4 < 0.0)) elem[iElem]->Change_Orientation();
+          || (test_4 < 0.0)) {
+    	  elem[iElem]->Change_Orientation();
+      	  hexa_flip++;
+      }
       
     }
     
@@ -8662,142 +8681,205 @@ void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
       
       test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
       
-      if ((test_1 < 0.0) || (test_2 < 0.0))
-        elem[iElem]->Change_Orientation();
+      if ((test_1 < 0.0) || (test_2 < 0.0)) {
+          elem[iElem]->Change_Orientation();
+      	  pyram_flip++;
+      }
       
     }
     
   }
   
+#ifdef HAVE_MPI
+  unsigned long Mytriangle_flip  = triangle_flip;
+  unsigned long Myquad_flip      = quad_flip;
+  unsigned long Mytet_flip       = tet_flip;
+  unsigned long Myprism_flip     = prism_flip;
+  unsigned long Myhexa_flip      = hexa_flip;
+  unsigned long Mypyram_flip     = pyram_flip;
+
+  SU2_MPI::Allreduce(&Mytriangle_flip, &triangle_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Myquad_flip, &quad_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Mytet_flip, &tet_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Myprism_flip, &prism_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Myhexa_flip, &hexa_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Mypyram_flip, &pyram_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  if (rank == MASTER_NODE) {
+  	if (triangle_flip > 0) cout << "There has been a re-orientation of the TRIANGLE volume elements." << endl;
+  	if (quad_flip > 0) cout << "There has been a re-orientation of the QUADRILATERAL volume elements." << endl;
+  	if (tet_flip > 0) cout << "There has been a re-orientation of the TETRAHEDRON volume elements." << endl;
+  	if (prism_flip > 0) cout << "There has been a re-orientation of the PRISM volume elements." << endl;
+  	if (hexa_flip > 0) cout << "There has been a re-orientation of the HEXAHEDRON volume elements." << endl;
+  	if (pyram_flip > 0) cout << "There has been a re-orientation of the PYRAMID volume elements." << endl;
+  }
+
 }
 
 void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
   
   unsigned long Point_1_Surface, Point_2_Surface, Point_3_Surface, Point_4_Surface,
-  iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface;
+  iElem_Domain, Point_Domain = 0, Point_Surface, iElem_Surface,
+  line_flip = 0, triangle_flip = 0, quad_flip = 0;
   su2double test_1, test_2, test_3, test_4, *Coord_1, *Coord_2, *Coord_3, *Coord_4,
   *Coord_5, a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, c[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, test;
   unsigned short iDim, iMarker, iNode_Domain, iNode_Surface;
   bool find;
-  
-  /*--- Surface elements ---*/
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) {
       
-      iElem_Domain = bound[iMarker][iElem_Surface]->GetDomainElement();
-      for (iNode_Domain = 0; iNode_Domain < elem[iElem_Domain]->GetnNodes(); iNode_Domain++) {
-        Point_Domain = elem[iElem_Domain]->GetNode(iNode_Domain);
-        find = false;
-        for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
-          Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
-          if (Point_Surface == Point_Domain) {find = true; break;}
-        }
-        if (!find) break;
-      }
-      
-      /*--- 2D grid, line case ---*/
-      
-      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == LINE) {
+      for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
         
-        Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
-        Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
-        Coord_3 = node[Point_Domain]->GetCoord();
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-          b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]); }
-        test = a[0]*b[1]-b[0]*a[1];
-        
-        if (test < 0.0) {
-          bound[iMarker][iElem_Surface]->Change_Orientation();
-          node[Point_1_Surface]->SetFlip_Orientation();
-          node[Point_2_Surface]->SetFlip_Orientation();
+        iElem_Domain = bound[iMarker][iElem_Surface]->GetDomainElement();
+        for (iNode_Domain = 0; iNode_Domain < elem[iElem_Domain]->GetnNodes(); iNode_Domain++) {
+          Point_Domain = elem[iElem_Domain]->GetNode(iNode_Domain);
+          find = false;
+          for (iNode_Surface = 0; iNode_Surface < bound[iMarker][iElem_Surface]->GetnNodes(); iNode_Surface++) {
+            Point_Surface = bound[iMarker][iElem_Surface]->GetNode(iNode_Surface);
+            if (Point_Surface == Point_Domain) {find = true; break;}
+          }
+          if (!find) break;
         }
         
-      }
-      
-      /*--- 3D grid, triangle case ---*/
-      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == TRIANGLE) {
+        /*--- 2D grid, line case ---*/
         
-        Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
-        Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
-        Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = node[Point_3_Surface]->GetCoord();
-        Coord_4 = node[Point_Domain]->GetCoord();
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-          b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-          c[iDim] = Coord_4[iDim]-Coord_1[iDim]; }
-        n[0] = a[1]*b[2]-b[1]*a[2];
-        n[1] = -(a[0]*b[2]-b[0]*a[2]);
-        n[2] = a[0]*b[1]-b[0]*a[1];
-        
-        test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-        if (test < 0.0) {
-          bound[iMarker][iElem_Surface]->Change_Orientation();
-          node[Point_1_Surface]->SetFlip_Orientation();
-          node[Point_2_Surface]->SetFlip_Orientation();
-          node[Point_3_Surface]->SetFlip_Orientation();
+        if (bound[iMarker][iElem_Surface]->GetVTK_Type() == LINE) {
+
+          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
+          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
+          Coord_3 = node[Point_Domain]->GetCoord();
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
+            b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
+          }
+          test = a[0]*b[1]-b[0]*a[1];
+
+          if (test < 0.0) {
+            bound[iMarker][iElem_Surface]->Change_Orientation();
+            node[Point_1_Surface]->SetFlip_Orientation();
+            node[Point_2_Surface]->SetFlip_Orientation();
+            line_flip++;
+          }
+
         }
         
-      }
-      
-      if (bound[iMarker][iElem_Surface]->GetVTK_Type() == QUADRILATERAL) {
+        /*--- 3D grid, triangle case ---*/
         
-        Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
-        Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
-        Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = node[Point_3_Surface]->GetCoord();
-        Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3); Coord_4 = node[Point_4_Surface]->GetCoord();
-        Coord_5 = node[Point_Domain]->GetCoord();
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
-          b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
-          c[iDim] = Coord_5[iDim]-Coord_1[iDim]; }
-        n[0] = a[1]*b[2]-b[1]*a[2];
-        n[1] = -(a[0]*b[2]-b[0]*a[2]);
-        n[2] = a[0]*b[1]-b[0]*a[1];
-        test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = 0.5*(Coord_3[iDim]-Coord_2[iDim]);
-          b[iDim] = 0.5*(Coord_4[iDim]-Coord_2[iDim]);
-          c[iDim] = Coord_5[iDim]-Coord_2[iDim]; }
-        n[0] = a[1]*b[2]-b[1]*a[2];
-        n[1] = -(a[0]*b[2]-b[0]*a[2]);
-        n[2] = a[0]*b[1]-b[0]*a[1];
-        test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = 0.5*(Coord_4[iDim]-Coord_3[iDim]);
-          b[iDim] = 0.5*(Coord_1[iDim]-Coord_3[iDim]);
-          c[iDim] = Coord_5[iDim]-Coord_3[iDim]; }
-        n[0] = a[1]*b[2]-b[1]*a[2];
-        n[1] = -(a[0]*b[2]-b[0]*a[2]);
-        n[2] = a[0]*b[1]-b[0]*a[1];
-        test_3 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          a[iDim] = 0.5*(Coord_1[iDim]-Coord_4[iDim]);
-          b[iDim] = 0.5*(Coord_3[iDim]-Coord_4[iDim]);
-          c[iDim] = Coord_5[iDim]-Coord_4[iDim]; }
-        n[0] = a[1]*b[2]-b[1]*a[2];
-        n[1] = -(a[0]*b[2]-b[0]*a[2]);
-        n[2] = a[0]*b[1]-b[0]*a[1];
-        test_4 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
-        
-        if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
-          bound[iMarker][iElem_Surface]->Change_Orientation();
-          node[Point_1_Surface]->SetFlip_Orientation();
-          node[Point_2_Surface]->SetFlip_Orientation();
-          node[Point_3_Surface]->SetFlip_Orientation();
-          node[Point_4_Surface]->SetFlip_Orientation();
+        if (bound[iMarker][iElem_Surface]->GetVTK_Type() == TRIANGLE) {
+
+          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
+          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
+          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = node[Point_3_Surface]->GetCoord();
+          Coord_4 = node[Point_Domain]->GetCoord();
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
+            b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
+            c[iDim] = Coord_4[iDim]-Coord_1[iDim];
+          }
+          n[0] = a[1]*b[2]-b[1]*a[2];
+          n[1] = -(a[0]*b[2]-b[0]*a[2]);
+          n[2] = a[0]*b[1]-b[0]*a[1];
+
+          test = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
+          if (test < 0.0) {
+            bound[iMarker][iElem_Surface]->Change_Orientation();
+            node[Point_1_Surface]->SetFlip_Orientation();
+            node[Point_2_Surface]->SetFlip_Orientation();
+            node[Point_3_Surface]->SetFlip_Orientation();
+            triangle_flip++;
+          }
+
         }
         
+        /*--- 3D grid, rectangle case ---*/
+        
+        if (bound[iMarker][iElem_Surface]->GetVTK_Type() == QUADRILATERAL) {
+
+          Point_1_Surface = bound[iMarker][iElem_Surface]->GetNode(0); Coord_1 = node[Point_1_Surface]->GetCoord();
+          Point_2_Surface = bound[iMarker][iElem_Surface]->GetNode(1); Coord_2 = node[Point_2_Surface]->GetCoord();
+          Point_3_Surface = bound[iMarker][iElem_Surface]->GetNode(2); Coord_3 = node[Point_3_Surface]->GetCoord();
+          Point_4_Surface = bound[iMarker][iElem_Surface]->GetNode(3); Coord_4 = node[Point_4_Surface]->GetCoord();
+          Coord_5 = node[Point_Domain]->GetCoord();
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a[iDim] = 0.5*(Coord_2[iDim]-Coord_1[iDim]);
+            b[iDim] = 0.5*(Coord_3[iDim]-Coord_1[iDim]);
+            c[iDim] = Coord_5[iDim]-Coord_1[iDim];
+          }
+          n[0] = a[1]*b[2]-b[1]*a[2];
+          n[1] = -(a[0]*b[2]-b[0]*a[2]);
+          n[2] = a[0]*b[1]-b[0]*a[1];
+          test_1 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a[iDim] = 0.5*(Coord_3[iDim]-Coord_2[iDim]);
+            b[iDim] = 0.5*(Coord_4[iDim]-Coord_2[iDim]);
+            c[iDim] = Coord_5[iDim]-Coord_2[iDim];
+          }
+          n[0] = a[1]*b[2]-b[1]*a[2];
+          n[1] = -(a[0]*b[2]-b[0]*a[2]);
+          n[2] = a[0]*b[1]-b[0]*a[1];
+          test_2 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a[iDim] = 0.5*(Coord_4[iDim]-Coord_3[iDim]);
+            b[iDim] = 0.5*(Coord_1[iDim]-Coord_3[iDim]);
+            c[iDim] = Coord_5[iDim]-Coord_3[iDim];
+          }
+          n[0] = a[1]*b[2]-b[1]*a[2];
+          n[1] = -(a[0]*b[2]-b[0]*a[2]);
+          n[2] = a[0]*b[1]-b[0]*a[1];
+          test_3 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a[iDim] = 0.5*(Coord_1[iDim]-Coord_4[iDim]);
+            b[iDim] = 0.5*(Coord_3[iDim]-Coord_4[iDim]);
+            c[iDim] = Coord_5[iDim]-Coord_4[iDim];
+          }
+          n[0] = a[1]*b[2]-b[1]*a[2];
+          n[1] = -(a[0]*b[2]-b[0]*a[2]);
+          n[2] = a[0]*b[1]-b[0]*a[1];
+          test_4 = n[0]*c[0]+n[1]*c[1]+n[2]*c[2];
+
+          if ((test_1 < 0.0) && (test_2 < 0.0) && (test_3 < 0.0) && (test_4 < 0.0)) {
+            bound[iMarker][iElem_Surface]->Change_Orientation();
+            node[Point_1_Surface]->SetFlip_Orientation();
+            node[Point_2_Surface]->SetFlip_Orientation();
+            node[Point_3_Surface]->SetFlip_Orientation();
+            node[Point_4_Surface]->SetFlip_Orientation();
+            quad_flip++;
+          }
+
+        }
       }
     }
+  }
+
+#ifdef HAVE_MPI
+  unsigned long Myline_flip   = line_flip;
+  unsigned long Mytriangle_flip  = triangle_flip;
+  unsigned long Myquad_flip   = quad_flip;
+  SU2_MPI::Allreduce(&Myline_flip, &line_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Mytriangle_flip, &triangle_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Myquad_flip, &quad_flip, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  if (rank == MASTER_NODE) {
+	if (line_flip > 0) cout << "There has been a re-orientation of the LINE surface elements." << endl;
+  	if (triangle_flip > 0) cout << "There has been a re-orientation of the TRIANGLE surface elements." << endl;
+  	if (quad_flip > 0) cout << "There has been a re-orientation of the QUADRILATERAL surface elements." << endl;
+  }
+
 }
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {

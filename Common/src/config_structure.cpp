@@ -751,8 +751,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, EngineInflow_Target);
   /* DESCRIPTION: Highlite area */
   addDoubleOption("HIGHLITE_AREA", Highlite_Area, 1.0);
-  /* DESCRIPTION: Fan radius */
-  addDoubleOption("FAN_RADIUS", Fan_Radius, 1.0);
   /* DESCRIPTION: Fan poly efficiency */
   addDoubleOption("FAN_POLY_EFF", Fan_Poly_Eff, 1.0);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
@@ -2874,7 +2872,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else RefAreaCoeff = RefAreaCoeff/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
-    
+    Highlite_Area = Highlite_Area/144.0;
+
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;

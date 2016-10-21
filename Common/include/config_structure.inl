@@ -397,8 +397,6 @@ inline su2double CConfig::GetConductivity_Ref(void) { return Conductivity_Ref; }
 
 inline su2double CConfig::GetHighlite_Area(void) { return Highlite_Area; }
 
-inline su2double CConfig::GetFan_Radius(void) { return Fan_Radius; }
-
 inline su2double CConfig::GetFan_Poly_Eff(void) { return Fan_Poly_Eff; }
 
 inline su2double CConfig::GetOmega_Ref(void) { return Omega_Ref; }
