@@ -9644,12 +9644,15 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 				Filtered_Beta = (4.0*Beta_ij+Beta_ip1j+Beta_im1j+Beta_ijp1+Beta_ijm1)/8.0;
 
 
-				SurfFlow_file
-				<< " "  << ProbeArray[iAngle][iStation][1]-yCoord_CG
-				<<" " << ProbeArray[iAngle][iStation][2]-zCoord_CG
-				<<" " << ProbeArray[iAngle][iStation][3] <<" " << ProbeArray[iAngle][iStation][4]
+        SurfFlow_file
+        << " "  << ProbeArray[iAngle][iStation][1]-yCoord_CG
+        <<" " << ProbeArray[iAngle][iStation][2]-zCoord_CG
+        <<" " << ProbeArray[iAngle][iStation][3] <<" " << ProbeArray[iAngle][iStation][4]
         <<" " << ProbeArray[iAngle][iStation][5] <<" " << ProbeArray[iAngle][iStation][6]
-        <<" " << ProbeArray[iAngle][iStation][8] <<" " << ProbeArray[iAngle][iStation][9]				                                                                                                                                                                                                                                                                                                                                                       <<" " << Filtered_Alpha <<" " << Filtered_Beta << " " << Filtered_Mach << endl;
+        <<" " << ProbeArray[iAngle][iStation][8] <<" " << ProbeArray[iAngle][iStation][9]
+        <<" " << ProbeArray[iAngle][iStation][10]
+        <<" " << Alpha <<" " << Beta << " " << ProbeArray[iAngle][iStation][7]
+        <<" " << Filtered_Alpha <<" " << Filtered_Beta << " " << Filtered_Mach << endl;
 
 			}
 		}

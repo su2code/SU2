@@ -73,7 +73,6 @@ private:
   unsigned short *Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
-  su2double Fan_Radius; /*!< \brief Highlite area. */
   su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -1515,12 +1514,6 @@ public:
    * \return Reference viscosity for non-dimensionalization.
    */
   su2double GetHighlite_Area(void);
-  
-  /*!
-   * \brief Get the value of the reference viscosity for non-dimensionalization.
-   * \return Reference viscosity for non-dimensionalization.
-   */
-  su2double GetFan_Radius(void);
   
   /*!
    * \brief Get the value of the reference viscosity for non-dimensionalization.
