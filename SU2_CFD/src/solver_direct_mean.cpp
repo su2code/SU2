@@ -10863,6 +10863,8 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *S_i = new su2double[8];
+  su2double *S_j = new su2double[8];
   
   int rank = MASTER_NODE, irank = 1;
   
@@ -10874,15 +10876,18 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (geometry->node[iPoint]->GetDomain()) {
-
+            S_i = node[iPoint]->GetSecondary();
+            S_j = node[iPoint]->GetSecondary();
           for (iVar = 0; iVar < nPrimVar; iVar++) {
             PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
             PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
+
           }
 
           /*--- Set primitive variables ---*/
 
           numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+          numerics->SetSecondary(S_i, S_j);
 
           /*--- Set the normal vector ---*/
 
@@ -12784,6 +12789,8 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
   
+
+
 }
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
@@ -12829,6 +12836,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
   CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
   
+
+
   /*--- Set the gamma value ---*/
   
   Gamma = config->GetGamma();
@@ -12849,6 +12858,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     nSecondaryVar = 8; nSecondaryVarGrad = 2;
   }
   
+
   /*--- Initialize nVarGrad for deallocation ---*/
   
   nVarGrad = nPrimVarGrad;
@@ -13239,6 +13249,26 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Bleed_Area[iMarker]          = 0.0;
   }
   
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+
+  SlidingState = new su2double** [nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+		if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+			SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+
+			for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++){
+					SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+					for (iVar = 0; iVar < nVar; iVar++)
+						SlidingState[iMarker][iPoint][iVar] = -1;
+			}
+		}
+		else
+			SlidingState[iMarker] = NULL;
+  }
+
   /*--- Initializate quantities for the mixing process*/
   
   AveragedVelocity = new su2double* [nMarker];
