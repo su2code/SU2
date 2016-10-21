@@ -176,6 +176,22 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 ("HIGH", VERB_HIGH);
 
 /*!
+ * \brief Type of One-Dimensionalization
+ */
+enum ONED_TYPE {
+  ONED_NONE = 0, /*!< \brief no one-dimensionalization. */
+  ONED_AREA = 1, /*!< \brief Area-weighted average. */
+  ONED_FLUX = 2, /*!< \brief Mass-flux weighted average. */
+  ONED_LANGLEY = 3 /*!< \brief Langley Distortion method */
+};
+static const map<string, ONED_TYPE> OneD_Map = CCreateMap<string, ONED_TYPE>
+("NONE", ONED_NONE)
+("AREA", ONED_AREA)
+("FLUX", ONED_FLUX)
+("LANGLEY", ONED_LANGLEY);
+
+
+/*!
  * \brief different solver types for the CFD component
  */
 enum ENUM_SOLVER {
