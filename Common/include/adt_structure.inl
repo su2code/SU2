@@ -2,7 +2,7 @@
  * \file adt_structure.inl
  * \brief In-Line subroutines of the <i>adt_structure.hpp</i> file.
  * \author E. van der Weide
- * \version 4.2.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

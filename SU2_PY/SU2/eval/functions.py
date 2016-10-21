@@ -79,9 +79,13 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     
+    # check for multiple objectives
     multi_objective = (type(func_name)==list)
-    if multi_objective: func_name_string = 'COMBO'
-    else: func_name_string = func_name
+
+    # func_name_string is only used to check whether the function has already been evaluated. 
+    func_name_string = func_name
+    if multi_objective:   func_name_string = func_name[0]  
+
     # redundancy check
     if not state['FUNCTIONS'].has_key(func_name_string):
 
