@@ -1137,7 +1137,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /*!\brief ONE_D_OUTPUT
    *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
-  addBoolOption("ONE_D_OUTPUT", Wrt_1D_Output, false);
+  addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, NONE); // Wrt_1D_Output
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
