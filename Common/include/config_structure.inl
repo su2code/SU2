@@ -149,6 +149,8 @@ inline su2double CConfig::GetActDisk_Mach(unsigned short val_imarker) { return A
 
 inline su2double CConfig::GetActDisk_Force(unsigned short val_imarker) { return ActDisk_Force[val_imarker]; }
 
+inline su2double CConfig::GetSurface_MassFlow(unsigned short val_imarker) { return Surface_MassFlow[val_imarker]; }
+
 inline su2double CConfig::GetSurface_DC60(unsigned short val_imarker) { return Surface_DC60[val_imarker]; }
 
 inline su2double CConfig::GetSurface_IDC(unsigned short val_imarker) { return Surface_IDC[val_imarker]; }

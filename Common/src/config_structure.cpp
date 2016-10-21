@@ -5797,12 +5797,12 @@ unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) {
 unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) {
   unsigned short iMarker_Engine, kMarker_All;
   
-  /*--- Find the marker for this actuator disk inlet. ---*/
+  /*--- Find the marker for this engine inflow. ---*/
   
   for (iMarker_Engine = 0; iMarker_Engine < nMarker_EngineInflow; iMarker_Engine++)
     if (Marker_EngineInflow[iMarker_Engine] == val_marker) break;
   
-  /*--- Find and return global marker index for the actuator disk outlet. ---*/
+  /*--- Find and return global marker index for the engine exhaust. ---*/
   
   for (kMarker_All = 0; kMarker_All < nMarker_CfgFile; kMarker_All++)
     if (Marker_EngineExhaust[iMarker_Engine] == Marker_CfgFile_TagBound[kMarker_All]) break;
