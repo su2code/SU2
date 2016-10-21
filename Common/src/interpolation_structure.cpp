@@ -401,6 +401,40 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     /*-- Collect coordinates, global points, and normal vectors ---*/
     Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
 
+    //TEMPORARY FOR TEST ONLY!
+    su2double Coord_i_min, Coord_i_max, Coord_j_min, Coord_j_max, dist_p;
+
+    Coord_i_min = HUGE;
+    Coord_j_min = HUGE;
+    iDim = 1;
+    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
+    	/*--- Compute the min ---*/
+    	Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+    	if (target_geometry->node[Point_Target]->GetDomain()) {
+    		Coord_i = target_geometry->node[Point_Target]->GetCoord();
+    		if (Coord_i[iDim] < Coord_i_min)
+    			Coord_i_min = Coord_i[iDim];
+    		else
+    			Coord_i_max = Coord_i[iDim];
+    	}
+    }
+    su2double *Coord_j_global;
+    unsigned long Point_Donor;
+    for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+    	Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+    	if (donor_geometry->node[Point_Donor]->GetDomain()) {
+    		Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
+    		if (Coord_j_global[iDim] < Coord_j_min)
+    			Coord_j_min = Coord_j_global[iDim];
+    		else
+    			Coord_j_max = Coord_j_global[iDim];
+    	}
+    }
+
+
+
+
+
     /*--- Compute the closest point to a Near-Field boundary point ---*/
     maxdist = 0.0;
 
@@ -422,22 +456,31 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
         /*--- Loop over all the boundaries to find the pair ---*/
 
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-          for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
-            Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
+        	for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+        		Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
-            /*--- Compute the dist ---*/
-            dist = 0.0; 
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-              dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
-            }
+        		/*--- Compute the dist ---*/
+        		dist = 0.0;
+        		for (iDim = 0; iDim < nDim; iDim++) {
+        			Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
+//        			if ( iDim == 1 && Coord_i[1] > Coord_j_max   ){
+//        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]-0.105 ),2.0);
+//        			}
+//        			else if ( iDim == 1 && Coord_i[1] <=  Coord_j_min  ){
+//        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]+0.105),2.0);
+//        			}
+//        			else
+        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
+//        			cout << "Coord_i->" << Coord_i[iDim] << "Coord_j->" << Coord_j[iDim] << endl;
+//        			cout << "Coord_i->" << fmod(Coord_i[iDim], 0.105) << "Coord_j->" << Coord_j[iDim] << endl;
+        		}
 
-            if (dist < mindist) {
-              mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
-            }
+        		if (dist < mindist) {
+        			mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+        		}
 
-            if (dist == 0.0) break;
-          }
+        		if (dist == 0.0) break;
+        	}
 
         } 
 
