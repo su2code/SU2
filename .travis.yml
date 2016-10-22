@@ -37,7 +37,7 @@ env:
 before_install:
     # install the necessary packages
     - sudo apt-get update -qq
-    - sudo apt-get install -qq python-numpy python-scipy python-pip mpich-bin swig
+    - sudo apt-get install -qq python-numpy python-scipy python-pip libcr-dev mpich2 mpich2-doc swig
 
 install:
     - sudo pip install mpi4py
