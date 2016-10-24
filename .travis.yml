@@ -10,7 +10,7 @@ notifications:
     email:
         recipients:
             - economon@stanford.edu
-            - e.t.a.vanderweide@utwente.nl
+           # - e.t.a.vanderweide@utwente.nl
   
 branches:
     only:
