@@ -292,7 +292,8 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         (config->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
         (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
-        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
+        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
+        (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
 
         /*--- Read the FFD information in the first iteration ---*/
 
@@ -343,6 +344,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
           case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_ANGLE_OF_ATTACK :  Gradient[iDV][0] = config->GetAoA_Sens(); break;
           }
 
           /*--- Recompute cartesian coordinates using the new control points position ---*/
@@ -368,6 +370,12 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
     else if (config->GetDesign_Variable(iDV) == TRANSLATION) {
       surface_movement->SetTranslation(geometry, config, iDV, true);
+      }
+
+    /*--- Angle of Attack design variable ---*/
+    
+    else if (config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) {
+      Gradient[iDV][0] = config->GetAoA_Sens();
       }
 
       /*--- Scale design variable ---*/
@@ -402,54 +410,59 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
       else { cout << "Design Variable not implement yet" << endl; }
 
-      /*--- Load the delta change in the design variable (finite difference step). ---*/
-
-    delta_eps = config->GetDV_Value(iDV);
-    my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
+    /*--- Load the delta change in the design variable (finite difference step). ---*/
+    
+    if ((config->GetDesign_Variable(iDV) != ANGLE_OF_ATTACK) &&
+        (config->GetDesign_Variable(iDV) != FFD_ANGLE_OF_ATTACK)) {
+      
+      delta_eps = config->GetDV_Value(iDV);
+      my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
       
       /*--- Reset update points ---*/
-
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
         UpdatePoint[iPoint] = true;
       
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_DV(iMarker) == YES) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if ((iPoint < geometry->GetnPointDomain()) && UpdatePoint[iPoint]) {
-
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-            Sensitivity = geometry->vertex[iMarker][iVertex]->GetAuxVar();
-
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_DV(iMarker) == YES) {
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            if ((iPoint < geometry->GetnPointDomain()) && UpdatePoint[iPoint]) {
+              
+              Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+              VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+              Sensitivity = geometry->vertex[iMarker][iVertex]->GetAuxVar();
+              
               dS = 0.0;
-            for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+              for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                 dS += Normal[iDim]*Normal[iDim];
                 deps[iDim] = VarCoord[iDim] / delta_eps;
               }
               dS = sqrt(dS);
-
+              
               dalpha_deps = 0.0;
-            for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+              for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                 dalpha[iDim] = Normal[iDim] / dS;
                 dalpha_deps -= dalpha[iDim]*deps[iDim];
               }
-
+              
               my_Gradient += Sensitivity*dalpha_deps;
               UpdatePoint[iPoint] = false;
             }
           }
         }
       }
-
+      
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][0], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][0], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-    Gradient[iDV][0] = my_Gradient;
+      Gradient[iDV][0] = my_Gradient;
 #endif
+    }
+    
   }
-
+  
   /* --- Print gradients to screen and file ---*/
 
   OutputGradient(Gradient, config, Gradient_file);
@@ -571,6 +584,15 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 #else
       Gradient[iDV][iDV_Value] = my_Gradient;
 #endif
+      
+      /*--- Angle of Attack design variable (this is different,
+       the value comes form the input file) ---*/
+      
+      if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
+          (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
+        Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
+      }
+
     }
   }
 

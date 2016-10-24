@@ -8091,6 +8091,131 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   
 }
 
+void CPhysicalGeometry::SetHTP_Incidence(CConfig *config) {
+//  
+//  su2double *coord, XCoord, YCoord, ZCoord, *Min_XCoord, *Min_YCoord, DeltaX, DeltaZ, iH;
+//  unsigned short iDim, iMarker;
+//  unsigned long iPoint, iVertex, nVertex_HTP;
+//  unsigned short Kind_SU2 = config->GetKind_SU2();
+//  
+//  Min_XCoord = config->GetHTP_Min_XCoord();
+//  Min_YCoord = config->GetHTP_Min_YCoord();
+//  
+//  Min_XCoord[0] = 1E6; Min_XCoord[1] = 0.0; Min_XCoord[2] = 0.0;
+//  Min_YCoord[0] = 0.0; Min_YCoord[1] = 1E6; Min_YCoord[2] = 0.0;
+//  
+//  /*--- Variables and buffers needed for MPI ---*/
+//  
+//  int iProcessor = 0, nProcessor = SINGLE_NODE, rank = MASTER_NODE;
+//  
+//#ifdef HAVE_MPI
+//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+//#endif
+//  
+//  unsigned long nLocalVertex_HTP = 0, nGlobalVertex_HTP = 0, MaxLocalVertex_HTP = 0;
+//  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
+//  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
+//  
+//  /*--- Count the total number of nodes on NTPboundaries within the
+//   local partition. ---*/
+//  
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+//    if (((config->GetMarker_All_HTP(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+//        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
+//      nLocalVertex_HTP += GetnVertex(iMarker);
+//  
+//  /*--- Communicate to all processors the total number of no-slip boundary
+//   nodes, the maximum number of no-slip boundary nodes on any single single
+//   partition, and the number of no-slip nodes on each partition. ---*/
+//  
+//  Buffer_Send_nVertex[0] = nLocalVertex_HTP;
+//#ifdef HAVE_MPI
+//  SU2_MPI::Allreduce(&nLocalVertex_HTP, &nGlobalVertex_HTP,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+//  SU2_MPI::Allreduce(&nLocalVertex_HTP, &MaxLocalVertex_HTP, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+//  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+//#else
+//  nGlobalVertex_HTP = nLocalVertex_HTP;
+//  MaxLocalVertex_HTP = nLocalVertex_HTP;
+//  Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
+//#endif
+//  
+//  
+//  /*--- Create and initialize to zero some buffers to hold the coordinates
+//   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
+//  
+//  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_HTP*nDim];
+//  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_HTP*nDim];
+//  unsigned long nBuffer = MaxLocalVertex_HTP*nDim;
+//  
+//  for (iVertex = 0; iVertex < MaxLocalVertex_HTP; iVertex++)
+//    for (iDim = 0; iDim < nDim; iDim++)
+//      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
+//  
+//  /*--- Retrieve and store the coordinates of the no-slip boundary nodes on
+//   the local partition and broadcast them to all partitions. ---*/
+//  
+//  nVertex_HTP = 0;
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if (((config->GetMarker_All_HTP(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+//        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF))) {
+//      for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+//        iPoint = vertex[iMarker][iVertex]->GetNode();
+//        for (iDim = 0; iDim < nDim; iDim++)
+//          Buffer_Send_Coord[nVertex_HTP*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+//        nVertex_HTP++;
+//      }
+//    }
+//  }
+//  
+//#ifdef HAVE_MPI
+//  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+//#else
+//  for (iVertex = 0; iVertex < nBuffer; iVertex++)
+//    Buffer_Receive_Coord[iVertex] = Buffer_Send_Coord[iVertex];
+//#endif
+//  
+//  /*--- Loop over all interior mesh nodes on the local partition and compute
+//   the distances to each of the no-slip boundary nodes in the entire mesh.
+//   Store the minimum distance to the wall for each interior mesh node. ---*/
+//  
+//  nVertex_HTP = 0;
+//  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+//    nVertex_HTP += Buffer_Receive_nVertex[iProcessor];
+//  }
+//  
+//  if (nVertex_HTP != 0) {
+//    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
+//      coord = node[iPoint]->GetCoord();
+//      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+//        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
+//          XCoord = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_HTP+iVertex)*nDim+0];
+//          YCoord = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_HTP+iVertex)*nDim+1];
+//          ZCoord = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_HTP+iVertex)*nDim+2];
+//          if (XCoord < Min_XCoord[0]) { Min_XCoord[0] = XCoord; Min_XCoord[1] = YCoord; Min_XCoord[2] = ZCoord; }
+//          if (YCoord < Min_YCoord[1]) { Min_YCoord[0] = XCoord; Min_YCoord[1] = YCoord; Min_YCoord[2] = ZCoord; }
+//        }
+//    }
+//  }
+//  
+//  DeltaX =  -(Min_YCoord[0] - Min_XCoord[0]);
+//  DeltaZ =  Min_YCoord[2] - Min_XCoord[2];
+//  iH = atan(DeltaZ/DeltaX)*180/PI_NUMBER;
+//  
+//  if (rank == MASTER_NODE)
+//    cout << "Incidence angle (iH) of the Horizonal Tailplane (HTP): " << iH <<" deg."<<endl;
+//  
+//  config->SetiH(iH);
+//  
+//  /*--- Deallocate the buffers needed for the MPI communication. ---*/
+//  
+//  delete[] Buffer_Send_Coord;
+//  delete[] Buffer_Receive_Coord;
+//  delete[] Buffer_Send_nVertex;
+//  delete[] Buffer_Receive_nVertex;
+//  
+}
+
 void CPhysicalGeometry::SetPoint_Connectivity(void) {
   
   unsigned short Node_Neighbor, iNode, iNeighbor;

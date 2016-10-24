@@ -2800,7 +2800,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       (config->GetDesign_Variable(0) == FFD_ROTATION) ||
       (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
       (config->GetDesign_Variable(0) == FFD_CAMBER) ||
-      (config->GetDesign_Variable(0) == FFD_THICKNESS)) {
+      (config->GetDesign_Variable(0) == FFD_THICKNESS) ||
+      (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)) {
     
     /*--- Definition of the FFD deformation class ---*/
     
@@ -2897,6 +2898,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
                 case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
               }
             }
             
@@ -2991,9 +2993,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
   }
   
-  /*--- 2D airfoil Hicks-Henne bump functions ---*/
+  /*--- 2D functions ---*/
 
-  else if (config->GetDesign_Variable(0) == HICKS_HENNE) {
+  else if ((config->GetDesign_Variable(0) == ROTATION) ||
+           (config->GetDesign_Variable(0) == HTP_INCIDENCE) ||
+           (config->GetDesign_Variable(0) == TRANSLATION) ||
+           (config->GetDesign_Variable(0) == SCALE) ||
+           (config->GetDesign_Variable(0) == HICKS_HENNE)  ||
+           (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK) ) {
     
     /*--- Apply rotation, displacement and stretching design variables (this
      should be done before the bump function design variables) ---*/
@@ -3001,8 +3008,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     for (iDV = 0; iDV < config->GetnDV(); iDV++) {
 			switch ( config->GetDesign_Variable(iDV) ) {
         case SCALE :  SetScale(geometry, config, iDV, false); break;
-        case TRANSLATION :  SetTranslation(geometry, config, iDV, false); break;
-        case ROTATION :     SetRotation(geometry, config, iDV, false); break;
+        case TRANSLATION :   SetTranslation(geometry, config, iDV, false); break;
+        case ROTATION :      SetRotation(geometry, config, iDV, false); break;
+        case HTP_INCIDENCE : SetHTP_Incidence(geometry, config, iDV, false); break;
 			}
 		}
 
@@ -3013,6 +3021,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 				case HICKS_HENNE :  SetHicksHenne(geometry, config, iDV, false); break;
 			}
 		}
+
+    /*--- Apply the angle of attack design variable ---*/
+    
+    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+      switch ( config->GetDesign_Variable(iDV) ) {
+        case ANGLE_OF_ATTACK :  SetAngleOfAttack(geometry, config, iDV, false); break;
+      }
+    }
 
 	}
   
@@ -3062,6 +3078,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   /*--- Scale, Translate, and Rotate will be done with rigid mesh transforms. ---*/
   
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
+           (config->GetDesign_Variable(0) == HTP_INCIDENCE) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE)) {
     
@@ -3083,6 +3100,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       /*---Only some markers are moving, use the surface method ---*/
       if (config->GetDesign_Variable(0) == ROTATION)
         SetRotation(geometry, config, iDV, false);
+      if (config->GetDesign_Variable(0) == HTP_INCIDENCE)
+        SetHTP_Incidence(geometry, config, iDV, false);
       if (config->GetDesign_Variable(0) == SCALE)
         SetScale(geometry, config, iDV, false);
       if (config->GetDesign_Variable(0) == TRANSLATION)
@@ -4738,6 +4757,91 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 	}
 }
 
+void CSurfaceMovement::SetHTP_Incidence(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+  unsigned long iVertex;
+  unsigned short iMarker;
+  su2double VarCoord[3] = {0.0,0.0,0.0}, *Coord;
+  su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
+  
+  if ((iDV == 0) || (ResetDef == true)) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+        boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+      }
+  }
+  
+  /*--- xyz-coordinates of a point on the line of rotation. */
+  
+  su2double a = config->GetParamDV(iDV, 0);
+  su2double b = 0.0;
+  su2double c = config->GetParamDV(iDV, 1);
+  
+  /*--- xyz-coordinate of the line's direction vector. ---*/
+  
+  su2double u = 0.0;
+  su2double v = 1.0;
+  su2double w = 0.0;
+  
+  /*--- The angle of rotation. ---*/
+  
+  su2double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+  
+  /*--- Print to the console. ---*/
+  
+  if (rank == MASTER_NODE) {
+    cout << "Rotation axis vector: (" << u << ", ";
+    cout << v << ", " << w << ")." << endl;
+    cout << "Angle of rotation: " << config->GetDV_Value(iDV);
+    cout << " degrees." << endl;
+  }
+  
+  /*--- An intermediate value used in computations. ---*/
+  
+  su2double u2=u*u; su2double v2=v*v; su2double w2=w*w;
+  su2double cosT = cos(theta); su2double sinT = sin(theta);
+  su2double l2 = u2 + v2 + w2; su2double l = sqrt(l2);
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+      VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+        x = Coord[0]; y = Coord[1]; z = Coord[2];
+        
+        movement[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
+        + (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
+        + l*(-c*v + b*w - w*y + v*z)*sinT;
+        movement[0] = movement[0]/l2 - x;
+        
+        movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z)
+        + (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
+        + l*(c*u - a*w + w*x - u*z)*sinT;
+        movement[1] = movement[1]/l2 - y;
+        
+        movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z)
+        + (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
+        + l*(-b*u + a*v - v*x + u*y)*sinT;
+        if (boundary->GetnDim() == 3) movement[2] = movement[2]/l2 - z;
+        else movement[2] = 0.0;
+        
+        VarCoord[0] = movement[0];
+        VarCoord[1] = movement[1];
+        VarCoord[2] = movement[2];
+        
+      }
+      boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+    }
+  
+}
+
 void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
 	unsigned short iMarker;
@@ -5573,6 +5677,165 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     config->SetRefOriginMoment_Y(jMarker, Center_Aux[1]+VarCoord[1]);
     config->SetRefOriginMoment_Z(jMarker, Center_Aux[2]+VarCoord[2]);
   }
+}
+
+void CSurfaceMovement::HTP_Rotation(CGeometry *geometry, CConfig *config,
+                                    unsigned long iter, unsigned short iZone) {
+//  
+// 	unsigned long iVertex, iPoint;
+//  unsigned short iMarker;
+//  su2double Total_CD = 0.0, Total_CM = 0.0, Target_CM = 0.0, iH_inc = 0.0, Delta_iH, Old_iH, dCM_diH_, dCD_dCM_;
+//  su2double VarCoord[3] = {0.0,0.0,0.0}, *Coord;
+//  su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
+//  su2double iH = config->GetiH();
+//  unsigned long Iter_Fixed_CM = config->GetIter_Fixed_CM();
+//  unsigned long Update_iH = config->GetUpdate_iH();
+//  unsigned long ExtIter       = config->GetExtIter();
+//  bool write_heads = ((ExtIter % Iter_Fixed_CM == 0) && (ExtIter != 0));
+//  su2double dCM_diH           = config->GetdCM_diH()*180.0/PI_NUMBER;
+//  bool Update_HTPIncidence;
+//  
+//  int rank = MASTER_NODE;
+//#ifdef HAVE_MPI
+//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//#endif
+//  
+//  if (ExtIter == 0) iH_Counter = 0;
+//  
+//  /*--- Initialize the update flag to false ---*/
+//  
+//  Update_HTPIncidence = false;
+//  
+//  /*--- Reevaluate iH at a fix number of iterations ---*/
+//  
+//  if ((ExtIter % Iter_Fixed_CM == 0) && (ExtIter != 0)) {
+//    iH_Counter++;
+//    if ((iH_Counter != 0) &&
+//      		(iH_Counter != 1) &&
+//      		(iH_Counter != Update_iH) &&
+//      		(iH_Counter != Update_iH + 2) &&
+//        (iH_Counter != Update_iH + 4) ) Update_HTPIncidence = true;
+//    else Update_HTPIncidence = false;
+//  };
+//  
+//  config->SetUpdate_HTPIncidence(Update_HTPIncidence);
+//  
+//  if (Update_HTPIncidence) {
+//    
+//    /*--- Retrieve the specified target CM value. ---*/
+//    
+//    Target_CM = config->GetTarget_CM();
+//    Total_CM = config->GetTotal_CM();
+//    Total_CD= config->GetTotal_CD();
+//    
+//    /*--- Retrieve the old AoA (radians) ---*/
+//    
+//    iH_old = config->GetiH()*PI_NUMBER/180.0;
+//    
+//    /*--- Estimate the increment in AoA based on dCL_dAlpha (radians) ---*/
+//    
+//    iH_inc = (1.0/dCM_diH)*(Target_CM - Total_CM);
+//    
+//    /*--- Compute and store a new value for AoA on the fine mesh only (radians)---*/
+//    
+//    iH = iH_old + iH_inc;
+//    
+//    config->SetiH(iH*180.0/PI_NUMBER);
+//    
+//    /*--- Output some information to the console with the headers ---*/
+//    
+//    if ((rank == MASTER_NODE) && write_heads) {
+//      
+//      Old_iH = config->GetiH() - iH_inc*(180.0/PI_NUMBER);
+//      Delta_iH = Old_iH - iH_Prev;
+//      
+//      cout.precision(7);
+//      cout.setf(ios::fixed, ios::floatfield);
+//      cout << endl << "----------------------------- Fixed CM Mode -----------------------------" << endl;
+//      cout << "CM: " << Total_CM;
+//      cout << " (target: " << config->GetTarget_CM() <<")." << endl;
+//      cout.precision(4);
+//      cout << "Previous iH: " << Old_iH << " deg";
+//      cout << ", new iH: " << config->GetiH() << " deg." << endl;
+//      
+//      cout.precision(7);
+//      if ((fabs(Delta_iH) > EPS) && (iH_Counter != 2))  {
+//        
+//        dCM_diH_ = (Total_CM -Total_CM_Prev)/Delta_iH;
+//        dCD_dCM_ = (Total_CD-Total_CD_Prev)/(Total_CM-Total_CM_Prev);
+//        
+//        cout << "Approx. Delta CM / Delta iH: " << dCM_diH_ << " (1/deg)." << endl;
+//        cout << "Approx. Delta CD / Delta CM: " << dCD_dCM_ << ". " << endl;
+//        
+//        if (iH_Counter >= Update_iH)  {
+//          config->SetdCM_diH(dCM_diH_);
+//          config->SetdCD_dCM(dCD_dCM_);
+//        }
+//        
+//      }
+//      
+//      Total_CD_Prev = Total_CD;
+//      Total_CM_Prev = Total_CM;
+//      iH_Prev =config->GetiH() - iH_inc*(180.0/PI_NUMBER);
+//      
+//    }
+//    
+//    /*--- xyz-coordinates of a point on the line of rotation. */
+//    
+//    su2double a = config->GetHTP_Axis(0);
+//    su2double b = 0.0;
+//    su2double c = config->GetHTP_Axis(1);
+//    
+//    /*--- xyz-coordinate of the line's direction vector. ---*/
+//    
+//    su2double u = 0.0;
+//    su2double v = 1.0;
+//    su2double w = 0.0;
+//    
+//    /*--- The angle of rotation (radians). ---*/
+//    
+//    su2double theta = -iH_inc;
+//    
+//    /*--- An intermediate value used in computations. ---*/
+//    
+//    su2double u2=u*u; su2double v2=v*v; su2double w2=w*w;
+//    su2double cosT = cos(theta); su2double sinT = sin(theta);
+//    su2double l2 = u2 + v2 + w2; su2double l = sqrt(l2);
+//    
+//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//        VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+//        if (config->GetMarker_All_HTP(iMarker) == YES)  {
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          Coord = geometry->node[iPoint]->GetCoord();
+//          x = Coord[0]; y = Coord[1]; z = Coord[2];
+//          
+//          movement[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
+//          + (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
+//          + l*(-c*v + b*w - w*y + v*z)*sinT;
+//          movement[0] = movement[0]/l2 - x;
+//          
+//          movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z)
+//          + (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
+//          + l*(c*u - a*w + w*x - u*z)*sinT;
+//          movement[1] = movement[1]/l2 - y;
+//          
+//          movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z)
+//          + (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
+//          + l*(-b*u + a*v - v*x + u*y)*sinT;
+//          movement[2] = movement[2]/l2 - z;
+//          
+//          VarCoord[0] = movement[0];
+//          VarCoord[1] = movement[1];
+//          VarCoord[2] = movement[2];
+//          
+//        }
+//        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+//      }
+//    }
+//    
+//  }
+//  
 }
 
 void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, unsigned long ExtIter, unsigned short iMarker, unsigned short iMarker_Monitoring, vector<su2double>& displacements) {

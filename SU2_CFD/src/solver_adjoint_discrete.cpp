@@ -389,9 +389,11 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
   /*--- Here we can add new (scalar) objective functions ---*/
   if (config->GetnObj()==1){
     switch (config->GetKind_ObjFunc()){
-    case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CD();
-      break;
+      case DRAG_COEFFICIENT:
+        ObjFunc_Value = direct_solver->GetTotal_CD();
+        if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
+        if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
+        break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
       break;

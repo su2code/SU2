@@ -380,7 +380,7 @@ inline unsigned short CVertex::GetnDonorPoints(void) { return nDonor_Points;}
 
 inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
 
-inline su2double *CVertex::GetVarRot(void) {return VarRot;}
+inline su2double *CVertex::GetVarRot(void) { return VarRot;}
 
 inline void CVertex::SetVarRot(su2double* val) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
