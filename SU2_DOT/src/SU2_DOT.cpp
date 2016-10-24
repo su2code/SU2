@@ -338,8 +338,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
           case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_DIHEDRAL_ANGLE :   surface_movement->SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwist(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_ROTATION :         surface_movement->SetFFDRotation(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, true); break;
