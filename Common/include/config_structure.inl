@@ -265,6 +265,8 @@ inline su2double CConfig::GetNuFactor_Engine(void) { return NuFactor_Engine; }
 
 inline su2double CConfig::GetInitial_BCThrust(void) { return Initial_BCThrust; }
 
+inline void CConfig::SetInitial_BCThrust(su2double val_bcthrust) { Initial_BCThrust = val_bcthrust; }
+
 inline su2double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
 
 inline su2double CConfig::GetTurbulenceIntensity_FreeStream(void) { return TurbulenceIntensity_FreeStream; }
@@ -379,6 +381,8 @@ inline void CConfig::SetConductivity_Ref(su2double val_conductivity_ref) { Condu
 inline void CConfig::SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
 inline su2double CConfig::GetAoA(void) { return AoA; }
+
+inline su2double CConfig::GetiH(void) { return iH; }
 
 inline void CConfig::SetAoA(su2double val_AoA) { AoA = val_AoA; }
 
@@ -1192,6 +1196,8 @@ inline su2double CConfig::GetdCL_dAlpha(void) { return dCL_dAlpha; }
 inline su2double CConfig::GetdCM_diH(void) {return dCM_diH; }
 
 inline unsigned long CConfig::GetIter_Fixed_CL(void) { return Iter_Fixed_CL; }
+
+inline unsigned long CConfig::GetUpdate_Alpha(void) {return Update_Alpha; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 

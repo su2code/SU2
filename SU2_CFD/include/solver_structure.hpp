@@ -3333,8 +3333,11 @@ protected:
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
+  AoA_Prev, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
+  Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
   Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */

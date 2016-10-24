@@ -1598,6 +1598,12 @@ public:
    * \return Non-dimensionalized actuator disk intensity.
    */
   su2double GetInitial_BCThrust(void);
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
+   * \return Non-dimensionalized actuator disk intensity.
+   */
+  void SetInitial_BCThrust(su2double val_bcthrust);
 
 	/*!
 	 * \brief Get the value of the Reynolds length.
@@ -5525,6 +5531,12 @@ public:
 	 */
 	su2double GetdCL_dAlpha(void);
   
+  /*!
+   * \brief Get the value of iterations to re-evaluate the angle of attack.
+   * \return Number of iterations.
+   */
+  unsigned long GetUpdate_Alpha(void);
+
   /*!
    * \brief Get the value of the damping coefficient for fixed CL mode.
    * \return Damping coefficient for fixed CL mode.
