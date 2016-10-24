@@ -2491,7 +2491,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   
 	/*--- Loop over and move each node in the volume mesh ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    
+    if (geometry->node[iPoint]->GetDomain()){
     /*--- Coordinates of the current point ---*/
     Coord = geometry->node[iPoint]->GetCoord();
     
@@ -2506,6 +2506,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
       geometry->node[iPoint]->SetCoord(iDim, newCoord[iDim]);
       if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim,xDot[iDim]);
     }
+}
   }
   
   /*--- Set the mesh motion center to the new location after

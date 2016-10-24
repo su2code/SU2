@@ -3151,13 +3151,15 @@ void CGeneralDriver::ResetConvergence() {
 
 void CGeneralDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-
-  /*--- Dynamic mesh update ---*/
-  if ((config_container[ZONE_0]->GetGrid_Movement()) && (!harmonic_balance)) {
-    iteration_container[ZONE_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, 0, ExtIter );
+  bool harmonic_balance;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+   harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+    /*--- Dynamic mesh update ---*/
+    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
+      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
+    }
   }
-
 }
 
 void CGeneralDriver::StaticMeshUpdate() {
