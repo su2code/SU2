@@ -185,8 +185,8 @@ CDriver::CDriver(char* confFile,
 
   fsi = config_container[ZONE_0]->GetFSI_Simulation();
 
-  if(nZone == SINGLE_ZONE && config_container[0]->GetKind_Solver() == FEM_ELASTICITY) {
-    if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
+  if ( (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY || config_container[ZONE_0]->GetKind_Solver() == POISSON_EQUATION || config_container[ZONE_0]->GetKind_Solver() == WAVE_EQUATION || config_container[ZONE_0]->GetKind_Solver() == HEAT_EQUATION) ) {
+    if (rank == MASTER_NODE) cout << "A General driver has been instantiated." << endl;
   }
   else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     if (rank == MASTER_NODE) cout << "A Harmonic Balance driver has been instantiated." << endl;
@@ -195,7 +195,7 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE) cout << "A Fluid-Structure Interaction driver has been instantiated." << endl;
   }
   else {
-    if (rank == MASTER_NODE) cout << "A multi-zone driver has been instantiated." << endl;
+    if (rank == MASTER_NODE) cout << "A Fluid driver has been instantiated." << endl;
   }
   
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -281,9 +281,9 @@ CDriver::CDriver(char* confFile,
         interpolator_container[iZone][jZone] = NULL;
       }
     }
+    
+    Interface_Preprocessing();
   }
-  
-  Interface_Preprocessing();
 
 	/*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically
@@ -3100,16 +3100,6 @@ void CGeneralDriver::Run() {
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
-    
-    iteration_container[iZone]->Update(output, integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
-    
-    iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
-    
-    iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
-    
-    iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
-    
   }
   
 }
@@ -3117,7 +3107,8 @@ void CGeneralDriver::Run() {
 
 void CGeneralDriver::Update() {
 
-  iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
+  for (iZone = 0; iZone < nZone; iZone++)
+    iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, ZONE_0);
 
@@ -3343,14 +3334,10 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
 
 void CFluidDriver::Update() {
 
-  for(iZone = 0; iZone < nZone; iZone++) {
-
+  for(iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, iZone);
-
-  }
-
 }
 
 void CFluidDriver::ResetConvergence() {
