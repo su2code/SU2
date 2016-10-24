@@ -172,8 +172,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  su2double AoA_, AoS_, iH_, dCL_dAlpha_, dCM_diH_, BCThrust_;
   string filename = config->GetSolution_FlowFileName();
-  
+  string::size_type position;
+  unsigned long ExtIter_;
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   int rank = MASTER_NODE;
@@ -7318,12 +7320,18 @@ void CEulerSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *conf
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  su2double Target_CL, AoA, Vel_Infty[3], AoA_inc, Vel_Infty_Mag;
+  su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA,
+  dCL_dAlpha_, dCD_dCL_;
+  
   unsigned short iDim;
+  
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
+  unsigned long Update_Alpha = config->GetUpdate_Alpha();
+  
   unsigned long ExtIter       = config->GetExtIter();
-  su2double Beta              = config->GetAoS()*PI_NUMBER/180.0;
-  su2double dCl_dAlpha        = config->GetdCl_dAlpha()*180.0/PI_NUMBER;
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
+  su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
+  su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   bool Update_AoA             = false;
   
   int rank = MASTER_NODE;
@@ -7345,7 +7353,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
-      if (AoA_Counter >= 2) Update_AoA = true;
+      if ((AoA_Counter != 0) &&
+          (AoA_Counter != 1) &&
+          (AoA_Counter != Update_Alpha) &&
+          (AoA_Counter != Update_Alpha + 2) &&
+          (AoA_Counter != Update_Alpha + 4) ) Update_AoA = true;
       else Update_AoA = false;
     };
     
@@ -7359,10 +7371,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Update_AoA = config->GetUpdate_AoA();
   }
   
-  /*--- If we are within two digits of convergence in the CL coefficient,
- *    compute an updated value for the AoA at the farfield. We are iterating
- *       on the AoA in order to match the specified fixed lift coefficient. ---*/
-  
   if (Update_AoA && Output) {
     
     /*--- Retrieve the specified target CL value. ---*/
@@ -7373,9 +7381,9 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     
-    /*--- Estimate the increment in AoA based on dCl_dAlpha (radians) ---*/
+    /*--- Estimate the increment in AoA based on dCL_dAlpha (radians) ---*/
     
-    AoA_inc = (1.0/dCl_dAlpha)*(Target_CL - Total_CL);
+    AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
     
     /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
     
@@ -7383,11 +7391,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
     
     /*--- Only the fine mesh stores the updated values for AoA in config ---*/
-
+    
     if (iMesh == MESH_0) {
       config->SetAoA(AoA*180.0/PI_NUMBER);
     }
-
+    
     /*--- Update the freestream velocity vector at the farfield ---*/
     
     for (iDim = 0; iDim < nDim; iDim++)
@@ -7425,21 +7433,45 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
     }
     
+    /*--- Output some information to the console with the headers ---*/
+    
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads) {
+      Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
+      Delta_AoA = Old_AoA - AoA_Prev;
+      
+      cout.precision(7);
+      cout.setf(ios::fixed, ios::floatfield);
+      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+      cout << "CL: " << Total_CL;
+      cout << " (target: " << config->GetTarget_CL() <<")." << endl;
+      cout.precision(4);
+      cout << "Previous AoA: " << Old_AoA << " deg";
+      cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
+      
+      cout.precision(7);
+      if ((fabs(Delta_AoA) > EPS) && (AoA_Counter != 2))  {
+        
+        dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/Delta_AoA;
+        dCD_dCL_ = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
+        
+        cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
+        cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
+        
+        if (AoA_Counter >= Update_Alpha)  {
+          config->SetdCL_dAlpha(dCL_dAlpha_);
+          config->SetdCD_dCL(dCD_dCL_);
+        }
+        
+      }
+      
+      Total_CD_Prev = Total_CD;
+      Total_CL_Prev = Total_CL;
+      AoA_Prev =config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
+      
+      cout << "-------------------------------------------------------------------------" << endl << endl;
+    }
+    
   }
-  
-  /*--- Output some information to the console with the headers ---*/
-  
-  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
-    cout.precision(7);
-    cout.setf(ios::fixed, ios::floatfield);
-    cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-    cout << "Target CL: " << config->GetTarget_CL();
-    cout << ", current CL: " << Total_CL;
-    cout << ", current AoA: " << config->GetAoA() << " deg." << endl;
-    cout << "-------------------------------------------------------------------------" << endl << endl;
-  }
-  
   
 }
 
@@ -12868,7 +12900,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
-  
+  su2double AoA_, AoS_, dCL_dAlpha_, dCM_diH_, iH_, BCThrust_;
+
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   

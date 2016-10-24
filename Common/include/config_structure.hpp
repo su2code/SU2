@@ -120,6 +120,11 @@ private:
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCM; /*!< \brief Weight of the drag coefficient. */
+  su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
+  su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
+  su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
@@ -283,6 +288,7 @@ private:
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
+  unsigned long ExtIter_OffSet;			/*!< \brief External iteration number offset. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long FSIIter;			/*!< \brief Current Fluid Structure Interaction sub-iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
@@ -523,6 +529,7 @@ private:
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
   *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
   *CFL,
+  *HTP_Axis,      /*!< \brief Location of the HTP axis. */
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
 	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
@@ -598,6 +605,7 @@ private:
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
+  Initial_BCThrust,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
 	Temperature_FreeStream,  /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream,  /*!< \brief Total vibrational-electronic temperature of the fluid.  */
@@ -747,6 +755,7 @@ private:
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1264,6 +1273,12 @@ public:
   bool GetCFL_Adapt(void);
   
   /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  su2double GetHTP_Axis(unsigned short val_index);
+
+  /*!
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.
 	 */
@@ -1577,6 +1592,12 @@ public:
 	 * \return Ratio of species mass to mixture mass.
 	 */
 	su2double* GetMassFrac_FreeStream(void);
+  
+  /*!
+   * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
+   * \return Non-dimensionalized actuator disk intensity.
+   */
+  su2double GetInitial_BCThrust(void);
 
 	/*!
 	 * \brief Get the value of the Reynolds length.
@@ -2346,6 +2367,12 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void SetExtIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Set the current external iteration number.
+   * \param[in] val_iter - Current external iteration number.
+   */
+  void SetExtIter_OffSet(unsigned long val_iter);
 
 	/*!
 	 * \brief Set the current FSI iteration number.
@@ -2364,6 +2391,12 @@ public:
 	 * \return Current external iteration.
 	 */
 	unsigned long GetExtIter(void);
+  
+  /*!
+   * \brief Get the current internal iteration number.
+   * \return Current external iteration.
+   */
+  unsigned long GetExtIter_OffSet(void);
 
 	/*!
 	 * \brief Get the current FSI iteration number.
@@ -4722,7 +4755,55 @@ public:
 	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
 	 */
 	su2double GetFixAzimuthalLine(void);
-
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCD_dCM(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetCM_Target(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCD_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCD_dCL(su2double val_dcd_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCL_dAlpha(su2double val_dcl_dalpha);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCM_diH(su2double val_dcm_dhi);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCD_dCM(su2double val_dcd_dcm);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetCL_Target(void);
+  
 	/*!
 	 * \brief Set the global parameters of each simulation for each runtime system.
 	 * \param[in] val_solver - Solver of the simulation.
@@ -5442,8 +5523,14 @@ public:
 	 * \brief Get the value for the lift curve slope for fixed CL mode.
 	 * \return Lift curve slope for fixed CL mode.
 	 */
-	su2double GetdCl_dAlpha(void);
+	su2double GetdCL_dAlpha(void);
   
+  /*!
+   * \brief Get the value of the damping coefficient for fixed CL mode.
+   * \return Damping coefficient for fixed CL mode.
+   */
+  su2double GetdCM_diH(void);
+
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
    * \return Number of iterations.

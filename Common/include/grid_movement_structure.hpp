@@ -1106,6 +1106,15 @@ public:
 	 */
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
+  /*!
+   * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  void SetAngleOfAttack(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
 	/*! 
 	 * \brief Set a deformation based on a change in the Kulfan parameters for an airfoil.
 	 * \param[in] boundary - Geometry of the boundary.
@@ -1145,6 +1154,15 @@ public:
 	 */
 	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
+  /*!
+   * \brief Set a rotation for surface movement.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  void SetHTP_Incidence(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
   /*!
 	 * \brief Set the translational/rotational velocity for a moving wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1193,6 +1211,16 @@ public:
 	 */
 	void Surface_Rotating(CGeometry *geometry, CConfig *config,
                         unsigned long iter, unsigned short iZone);
+  
+  /*!
+   * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
+   */
+  void HTP_Rotation(CGeometry *geometry, CConfig *config,
+                    unsigned long iter, unsigned short iZone);
 
     /*!
 	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.

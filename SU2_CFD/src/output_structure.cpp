@@ -4175,7 +4175,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     unsigned long iIntIter = config[val_iZone]->GetIntIter();
     unsigned long iExtIter = config[val_iZone]->GetExtIter();
-    
+    unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
+
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
      may have to adjust them to be larger if adding more entries. ---*/
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
@@ -4687,7 +4688,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       if (!DualTime_Iteration) {
         
         /*--- Write the begining of the history file ---*/
-        SPRINTF (begin, "%12d", SU2_TYPE::Int(iExtIter));
+        SPRINTF(begin, "%12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet));
         
         /*--- Write the end of the history file ---*/
         SPRINTF (end, ", %12.10f, %12.10f, %12.10f\n", su2double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
@@ -5316,7 +5317,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       if (!fem) {
         if (!Unsteady) {
-          cout.width(5); cout << iExtIter;
+          cout.width(5); cout << iExtIter + ExtIter_OffSet;
           cout.width(11); cout << timeiter;
           
         } else if (Unsteady && DualTime_Iteration) {

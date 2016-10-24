@@ -162,6 +162,10 @@ CDriver::CDriver(char* confFile,
      the calculation of force coefficient (non-dimensionalization). ---*/
 
     geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
+      
+    /*--- Estimate the HTP incidence . ---*/
+      
+    geometry_container[iZone][MESH_0]->SetHTP_Incidence(config_container[iZone]);
 
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
 
@@ -474,9 +478,9 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (geometry_container[iZone]!=NULL) {
+    if (geometry_container[iZone] != NULL) {
       for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
-        if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
+        if (geometry_container[iZone][iMGlevel] != NULL) delete geometry_container[iZone][iMGlevel];
       }
       delete [] geometry_container[iZone];
     }
@@ -506,7 +510,7 @@ void CDriver::Postprocessing() {
 
   if (config_container!=NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone]!=NULL) {
+      if (config_container[iZone] != NULL) {
         delete config_container[iZone];
       }
     }

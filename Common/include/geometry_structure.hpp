@@ -331,7 +331,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void SetPositive_ZArea(CConfig *config);
-
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetHTP_Incidence(CConfig *config);
+  
 	/*! 
 	 * \brief A virtual member.
 	 */	
@@ -1045,7 +1051,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPositive_ZArea(CConfig *config);
-
+  
+  /*!
+   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHTP_Incidence(CConfig *config);
+  
 	/*! 
 	 * \brief Set points which surround a point.
 	 */
