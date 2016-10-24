@@ -401,38 +401,89 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     /*-- Collect coordinates, global points, and normal vectors ---*/
     Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
 
-    //TEMPORARY FOR TEST ONLY!
-    su2double Coord_i_min, Coord_i_max, Coord_j_min, Coord_j_max, dist_p;
+//    //TEMPORARY FOR TEST ONLY! TRANSLATION
+//    su2double Coord_i_min, Coord_i_max, Coord_j_min, Coord_j_max;
+//
+//    Coord_i_min = HUGE;
+//    Coord_j_min = HUGE;
+//    iDim = 1;
+//    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
+//    	/*--- Compute the min ---*/
+//    	Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+//    	if (target_geometry->node[Point_Target]->GetDomain()) {
+//    		Coord_i = target_geometry->node[Point_Target]->GetCoord();
+//    		if (Coord_i[iDim] < Coord_i_min)
+//    			Coord_i_min = Coord_i[iDim];
+//    		else
+//    			Coord_i_max = Coord_i[iDim];
+//    	}
+//    }
+//    su2double *Coord_j_global;
+//    unsigned long Point_Donor;
+//    for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+//    	Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+//    	if (donor_geometry->node[Point_Donor]->GetDomain()) {
+//    		Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
+//    		if (Coord_j_global[iDim] < Coord_j_min)
+//    			Coord_j_min = Coord_j_global[iDim];
+//    		else
+//    			Coord_j_max = Coord_j_global[iDim];
+//    	}
+//    }
 
-    Coord_i_min = HUGE;
-    Coord_j_min = HUGE;
-    iDim = 1;
+
+    //TEMPORARY FOR TEST ONLY! ROTATION
+    su2double Theta_i_min, Theta_i_max, Theta_j_min, Theta_j_max, *Coord_j_global;
+    unsigned long Point_Donor;
+    Theta_i_min = HUGE;  Theta_i_max = -HUGE;
+    Theta_j_min = HUGE;  Theta_j_max = -HUGE;
+
     for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
     	/*--- Compute the min ---*/
     	Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
     	if (target_geometry->node[Point_Target]->GetDomain()) {
     		Coord_i = target_geometry->node[Point_Target]->GetCoord();
-    		if (Coord_i[iDim] < Coord_i_min)
-    			Coord_i_min = Coord_i[iDim];
-    		else
-    			Coord_i_max = Coord_i[iDim];
+
+    		//    	  ofstream myfile;
+    		//    	  myfile.open ("out.txt",  ios::app);
+    		//    	  myfile << "x: " << Coord_i[0] << "\n";
+    		//    	  myfile << "y: " << Coord_i[1] << "\n";
+    		//    	  myfile << "theta: " << atan2(Coord_i[1],Coord_i[0])*180/PI_NUMBER << "\n";
+    		if (atan2(Coord_i[1],Coord_i[0]) < Theta_i_min)
+    			Theta_i_min = atan2(Coord_i[1], Coord_i[0]);
+    		if (atan2(Coord_i[1],Coord_i[0]) > Theta_i_max)
+    			Theta_i_max = atan2(Coord_i[1], Coord_i[0]);
     	}
-    }
-    su2double *Coord_j_global;
-    unsigned long Point_Donor;
-    for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-    	Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-    	if (donor_geometry->node[Point_Donor]->GetDomain()) {
-    		Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
-    		if (Coord_j_global[iDim] < Coord_j_min)
-    			Coord_j_min = Coord_j_global[iDim];
-    		else
-    			Coord_j_max = Coord_j_global[iDim];
-    	}
+
     }
 
+//   cout << "Theta min i : "<< Theta_i_min*180/PI_NUMBER << endl;
+//   cout << "Theta max i : "<< Theta_i_max*180/PI_NUMBER << endl;
+//   cout << "Radius i : "<< sqrt(pow(Coord_i[1],2)+pow(Coord_i[0],2)) << endl;
 
 
+   for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+  	 Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+  	 if (donor_geometry->node[Point_Donor]->GetDomain()) {
+  		 Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
+
+//   		    	  ofstream myfile;
+//   		    	  myfile.open ("out.txt",  ios::app);
+//   		    	  myfile << "x: " << Coord_j_global[0] << "\n";
+//   		    	  myfile << "y: " << Coord_j_global[1] << "\n";
+//   		    	  myfile << "theta: " << atan2(Coord_j_global[1],Coord_j_global[0])*180/PI_NUMBER << "\n";
+
+
+  		 if (atan2(Coord_j_global[1],Coord_j_global[0]) < Theta_j_min)
+  			 Theta_j_min = atan2(Coord_j_global[1], Coord_j_global[0]);
+  		 if (atan2(Coord_j_global[1], Coord_j_global[0]) > Theta_j_max)
+  			 Theta_j_max = atan2(Coord_j_global[1], Coord_j_global[0]);
+  	 }
+   }
+
+//   cout << "Theta min j : "<< Theta_j_min*180/PI_NUMBER << endl;
+//   cout << "Theta max j : "<< Theta_j_max*180/PI_NUMBER << endl;
+//   cout << "Radius j : "<< sqrt(pow(Coord_j_global[1],2)+pow(Coord_j_global[0],2)) << endl;
 
 
     /*--- Compute the closest point to a Near-Field boundary point ---*/
@@ -467,7 +518,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 //        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]-0.105 ),2.0);
 //        			}
 //        			else if ( iDim == 1 && Coord_i[1] <=  Coord_j_min  ){
-//        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]+0.105),2.0);
+//        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]+0.105 ),2.0);
 //        			}
 //        			else
         				dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);

@@ -10865,6 +10865,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double *PrimVar_j = new su2double[nPrimVar];
   su2double *S_i = new su2double[8];
   su2double *S_j = new su2double[8];
+  su2double P_static, rho_static;
   
   int rank = MASTER_NODE, irank = 1;
   
@@ -10876,21 +10877,28 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           if (geometry->node[iPoint]->GetDomain()) {
-            S_i = node[iPoint]->GetSecondary();
-            S_j = node[iPoint]->GetSecondary();
-          for (iVar = 0; iVar < nPrimVar; iVar++) {
-            PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-            PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
+          	for (iVar = 0; iVar < nPrimVar; iVar++) {
+          		PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+          		PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
+          	}
 
-          }
+          	Secondary_i = node[iPoint]->GetSecondary();
+
+          	P_static   = PrimVar_j[nDim+1];
+          	rho_static = PrimVar_j[nDim+2];
+          	FluidModel->SetTDState_Prho(P_static, rho_static);
+
+          	Secondary_j[0] = FluidModel->GetdPdrho_e();
+          	Secondary_j[1] = FluidModel->GetdPde_rho();
+
 
           /*--- Set primitive variables ---*/
-
           numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-          numerics->SetSecondary(S_i, S_j);
+
+          /*--- Set secondary variables ---*/
+          numerics->SetSecondary(Secondary_i, Secondary_j);
 
           /*--- Set the normal vector ---*/
-
           geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
           for (iDim = 0; iDim < nDim; iDim++) 
             Normal[iDim] = -Normal[iDim];
