@@ -737,7 +737,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
+  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;  AoA_Prev           = 0.0;
+  Total_CL_Prev = 0.0;  Total_CD_Prev      = 0.0;
   
   /*--- Read farfield conditions ---*/
   
@@ -12901,6 +12902,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   su2double AoA_, AoS_, dCL_dAlpha_, dCM_diH_, iH_, BCThrust_;
+  string::size_type position;
+  unsigned long ExtIter_;
 
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
@@ -13428,7 +13431,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
+  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;  AoA_Prev           = 0.0;
+  Total_CD_Prev = 0.0;  Total_CL_Prev   = 0.0;
   
   /*--- Read farfield conditions from config ---*/
   
