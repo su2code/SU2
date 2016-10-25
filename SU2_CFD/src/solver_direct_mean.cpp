@@ -10889,26 +10889,23 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
             PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
           }
-
+          
           /*--- Set primitive variables ---*/
 
           numerics->SetPrimitive( PrimVar_i, PrimVar_j );
           
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ){
+	        Secondary_i = node[iPoint]->GetSecondary();
+
 		    P_static   = PrimVar_j[nDim+1];
 		    rho_static = PrimVar_j[nDim+2];			  
-			FluidModel->SetTDState_Prho(P_static, rho_static);
-			  			  
-		    P_static   = PrimVar_i[nDim+1];
-		    rho_static = PrimVar_i[nDim+2];
-			FluidModel->SetTDState_Prho(P_static, rho_static);
-            node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
-
-            Secondary_i[0] = FluidModel->GetdPdrho_e();
-            Secondary_i[1] = FluidModel->GetdPde_rho();              
-
+            FluidModel->SetTDState_Prho(P_static, rho_static);
+			
+            Secondary_j[0] = FluidModel->GetdPdrho_e();
+            Secondary_j[1] = FluidModel->GetdPde_rho();  
+                   
             numerics->SetSecondary(Secondary_i, Secondary_j);
-          }
+	      }
 
           /*--- Set the normal vector ---*/
 
