@@ -34,18 +34,6 @@
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
-
-/* MKL or BLAS include files, if supported. */
-#ifdef HAVE_MKL
-#include "mkl.h"
-#elif HAVE_CBLAS
-#include "cblas.h"
-#endif
-
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
@@ -100,6 +88,7 @@ FaceOfElementClass::FaceOfElementClass(){
   faceIndicator   = 0;
 
   JacFaceIsConsideredConstant = false;
+  elem0IsOwner                = false;
 }
 
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
@@ -143,6 +132,7 @@ void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
   faceIndicator = other.faceIndicator;
 
   JacFaceIsConsideredConstant = other.JacFaceIsConsideredConstant;
+  elem0IsOwner                = other.elem0IsOwner;
 }
 
 void FaceOfElementClass::CreateUniqueNumberingWithOrientation(void) {
@@ -319,7 +309,7 @@ void MatchingFaceClass::SortFaceCoordinates(void) {
     }
   }
 
-  tolForMatching *= 1.e-4;
+  tolForMatching *= 1.e-6;
 
   /*--- Sort the points in increasing order based on the coordinates.
         An insertion sort algorithm is used, which is quite efficient
@@ -352,6 +342,7 @@ void MatchingFaceClass::Copy(const MatchingFaceClass &other) {
   nDim          = other.nDim;
   nPoly         = other.nPoly;
   nDOFsElem     = other.nDOFsElem;
+  elemType      = other.elemType;
   elemID        = other.elemID;
 
   for(unsigned short k=0; k<nCornerPoints; ++k) {
@@ -11228,6 +11219,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       thisFace.elemID0    = starting_node[rank] + k;
       thisFace.nPolySol0  = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
+      thisFace.elemType0  = elem[k]->GetVTK_Type();
 
       thisFace.CreateUniqueNumbering();
       localFaces.push_back(thisFace);
@@ -11275,9 +11267,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(unsigned long i=1; i<nFacesLoc; ++i) {
     if(localFaces[i] == localFaces[i-1]) {
       localFaces[i-1].elemID1    = localFaces[i].elemID0;
-      localFaces[i-1].nPolySol0  = max(localFaces[i-1].nPolySol0,
-                                       localFaces[i].nPolySol0);
+      localFaces[i-1].nPolySol1  = localFaces[i].nPolySol0;
       localFaces[i-1].nDOFsElem1 = localFaces[i].nDOFsElem0;
+      localFaces[i-1].elemType1  = localFaces[i].elemType0;
       localFaces[i].elemID0      = Global_nElem + 10;
     }
   }
@@ -11345,7 +11337,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine the number of faces that has to be sent to each rank.
         Note that the rank is stored in elemID1, such that the search
-        does not have to be repeated below.                          ---*/
+        does not have to be repeated below.               ---*/
   vector<unsigned long> nFacesComm(size, 0);
   for(unsigned long i=0; i<nFacesLocComm; ++i) {
     vector<unsigned long>::iterator low;
@@ -11359,16 +11351,16 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   }
 
   /*--- Create the send buffer for the faces to be communicated. ---*/
-  vector<unsigned long> sendBufFace(8*nFacesLocComm);
+  vector<unsigned long> sendBufFace(9*nFacesLocComm);
   vector<unsigned long> counter(size);
   counter[0] = 0;
   for(unsigned long i=1; i<(unsigned long)size; ++i)
-    counter[i] = counter[i-1] + 8*nFacesComm[i-1];
+    counter[i] = counter[i-1] + 9*nFacesComm[i-1];
 
   for(unsigned long i=0; i<nFacesLocComm; ++i) {
     unsigned long rankFace = localFacesComm[i].elemID1;
     unsigned long ii = counter[rankFace];
-    counter[rankFace] += 8;
+    counter[rankFace] += 9;
 
     sendBufFace[ii]   = localFacesComm[i].nCornerPoints;
     sendBufFace[ii+1] = localFacesComm[i].cornerPoints[0];
@@ -11378,6 +11370,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sendBufFace[ii+5] = localFacesComm[i].elemID0;
     sendBufFace[ii+6] = localFacesComm[i].nPolySol0;
     sendBufFace[ii+7] = localFacesComm[i].nDOFsElem0;
+    sendBufFace[ii+8] = localFacesComm[i].elemType0;
   }
 
   /*--- Determine the number of ranks from which I receive a message. */
@@ -11399,7 +11392,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   unsigned long indSend = 0;
   for(unsigned long i=0; i<(unsigned long)size; ++i) {
     if( nFacesComm[i] ) {
-      unsigned long count = 8*nFacesComm[i];
+      unsigned long count = 9*nFacesComm[i];
       SU2_MPI::Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i,
                      MPI_COMM_WORLD, &commReqs[nMessSend]);
       ++nMessSend;
@@ -11424,10 +11417,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
                   rankRecv[i], rank, MPI_COMM_WORLD, &status);
 
-    nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/8;
+    nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/9;
     facesRecv.resize(nFacesRecv[i+1]);
     unsigned long ii = 0;
-    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=8) {
+    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=9) {
       facesRecv[j].nCornerPoints   = recvBuf[ii];
       facesRecv[j].cornerPoints[0] = recvBuf[ii+1];
       facesRecv[j].cornerPoints[1] = recvBuf[ii+2];
@@ -11436,6 +11429,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       facesRecv[j].elemID0         = recvBuf[ii+5];
       facesRecv[j].nPolySol0       = recvBuf[ii+6];
       facesRecv[j].nDOFsElem0      = recvBuf[ii+7];
+      facesRecv[j].elemType0       = recvBuf[ii+8];
     }
   }
 
@@ -11450,9 +11444,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(unsigned long i=1; i<localFacesComm.size(); ++i) {
     if(localFacesComm[i] == localFacesComm[i-1]) {
       localFacesComm[i-1].elemID1    = localFacesComm[i].elemID0;
-      localFacesComm[i-1].nPolySol0  = max(localFacesComm[i-1].nPolySol0,
-                                           localFacesComm[i].nPolySol0);
+      localFacesComm[i-1].nPolySol1  = localFacesComm[i].nPolySol0;
       localFacesComm[i-1].nDOFsElem1 = localFacesComm[i].nDOFsElem0;
+      localFacesComm[i-1].elemType1  = localFacesComm[i].elemType0;
 
       localFacesComm[i].nCornerPoints = 4;
       localFacesComm[i].cornerPoints[0] = Global_nPoint;
@@ -11470,28 +11464,31 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   SU2_MPI::Waitall(nMessSend, commReqs.data(), MPI_STATUSES_IGNORE);
 
   /*--- Send the data back to the requesting ranks. ---*/
-  sendBufFace.resize(8*nFacesRecv[nMessRecv]);
+  sendBufFace.resize(9*nFacesRecv[nMessRecv]);
   indSend = 0;
   for(unsigned long i=0; i<nMessRecv; ++i) {
     unsigned long ii = indSend;
-    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=8) {
+    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=9) {
       sendBufFace[ii]   = facesRecv[j].nCornerPoints;
       sendBufFace[ii+1] = facesRecv[j].cornerPoints[0];
       sendBufFace[ii+2] = facesRecv[j].cornerPoints[1];
       sendBufFace[ii+3] = facesRecv[j].cornerPoints[2];
       sendBufFace[ii+4] = facesRecv[j].cornerPoints[3];
-      sendBufFace[ii+6] = facesRecv[j].nPolySol0;
 
       vector<FaceOfElementClass>::iterator low;
       low = lower_bound(localFacesComm.begin(), localFacesComm.end(),
                         facesRecv[j]);
       if(facesRecv[j].elemID0 == low->elemID0) {
         sendBufFace[ii+5] = low->elemID1;
+        sendBufFace[ii+6] = facesRecv[j].nPolySol1;
         sendBufFace[ii+7] = low->nDOFsElem1;
+        sendBufFace[ii+8] = low->elemType1;
       }
       else {
         sendBufFace[ii+5] = low->elemID0;
+        sendBufFace[ii+6] = facesRecv[j].nPolySol0;
         sendBufFace[ii+7] = low->nDOFsElem0;
+        sendBufFace[ii+8] = low->elemType0;
       }
     }
 
@@ -11514,9 +11511,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
                   status.MPI_SOURCE, rank+1, MPI_COMM_WORLD, &status);
 
-    sizeMess /= 8;
+    sizeMess /= 9;
     unsigned long jj = 0;
-    for(unsigned long j=0; j<(unsigned long) sizeMess; ++j, jj+=8) {
+    for(unsigned long j=0; j<(unsigned long) sizeMess; ++j, jj+=9) {
       FaceOfElementClass thisFace;
       thisFace.nCornerPoints   = recvBuf[jj];
       thisFace.cornerPoints[0] = recvBuf[jj+1];
@@ -11526,11 +11523,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
       vector<FaceOfElementClass>::iterator low;
       low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-      low->elemID1 = recvBuf[jj+5];
-
-      if(recvBuf[jj+6] > low->nPolySol0) low->nPolySol0 = recvBuf[jj+6];
-
+      low->elemID1    = recvBuf[jj+5];
+      low->nPolySol1  = recvBuf[jj+6];
       low->nDOFsElem1 = recvBuf[jj+7];
+      low->elemType1  = recvBuf[jj+8];
     }
   }
 
@@ -11578,6 +11574,24 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
          << "These are ignored in the partitioning." << endl;
   }
 
+  /*--- Determine the ownership of the internal faces, i.e. which adjacent
+        element is responsible for computing the fluxes through the face. ---*/
+  for(unsigned long i=0; i<nFacesLoc; ++i) {
+
+    /* For the time being just a very simple decision which element is the
+       owner of the face. This must be modified later, especially when time
+       accurate local time stepping is employed. */
+    const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
+    if( sumElemID%2 ) {
+      if(localFaces[i].elemID0 < localFaces[i].elemID1) localFaces[i].elem0IsOwner = true;
+      else                                              localFaces[i].elem0IsOwner = false;
+    }
+    else {
+      if(localFaces[i].elemID0 < localFaces[i].elemID1) localFaces[i].elem0IsOwner = false;
+      else                                              localFaces[i].elem0IsOwner = true;
+    }
+  }
+
   /*--- All the matching face information is known now, including periodic
         faces. Store the information of the neighbors in the data structure
         for the local elements.     ---*/
@@ -11604,10 +11618,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         vector<FaceOfElementClass>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-        if(low->elemID0 == thisFace.elemID0)
+        if(low->elemID0 == thisFace.elemID0) {
           elem[k]->SetNeighbor_Elements(low->elemID1, i);
-        else
+          elem[k]->SetOwnerFace(low->elem0IsOwner, i);
+        }
+        else {
           elem[k]->SetNeighbor_Elements(low->elemID0, i);
+          elem[k]->SetOwnerFace(!(low->elem0IsOwner), i);
+        }
 
         if(low->periodicIndex > 0)
           elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
@@ -11644,6 +11662,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   for(unsigned long i=0; i<nElem; ++i)
     sort(adjacency_l.begin()+xadj_l[i], adjacency_l.begin()+xadj_l[i+1]);
+
+  /*--- Determine whether or not the Jacobians of the elements and faces
+        can be considered constant. ---*/
+  DetermineFEMConstantJacobiansAndLenScale(config);
 
   /*--- Compute the weigts of the graph. ---*/
   vector<su2double> vwgt(nElem);
@@ -11728,26 +11750,28 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
   MatchingFaceClass thisMatchingFace;
 
 #ifdef HAVE_MPI
-  int blockLen[] = {1, 1, 1, 1, 1, 12, 1};
+  int blockLen[] = {1, 1, 1, 1, 1, 1, 12, 1};
   MPI_Datatype type[] = {MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
                          MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
-                         MPI_UNSIGNED_LONG,  MPI_DOUBLE, MPI_DOUBLE};
-  MPI_Aint disp[7];
+                         MPI_UNSIGNED_SHORT, MPI_UNSIGNED_LONG,
+                         MPI_DOUBLE,         MPI_DOUBLE};
+  MPI_Aint disp[8];
   MPI_Get_address(&thisMatchingFace.nCornerPoints,  disp);
   MPI_Get_address(&thisMatchingFace.nDim,           disp+1);
   MPI_Get_address(&thisMatchingFace.nPoly,          disp+2);
   MPI_Get_address(&thisMatchingFace.nDOFsElem,      disp+3);
-  MPI_Get_address(&thisMatchingFace.elemID,         disp+4);
-  MPI_Get_address( thisMatchingFace.cornerCoor,     disp+5);
-  MPI_Get_address(&thisMatchingFace.tolForMatching, disp+6);
+  MPI_Get_address(&thisMatchingFace.elemType,       disp+4);
+  MPI_Get_address(&thisMatchingFace.elemID,         disp+5);
+  MPI_Get_address( thisMatchingFace.cornerCoor,     disp+6);
+  MPI_Get_address(&thisMatchingFace.tolForMatching, disp+7);
 
   MPI_Aint base;
   MPI_Get_address(&thisMatchingFace, &base);
-  // for(unsigned short i=0; i<7; ++i) disp[i] = MPI_Aint_diff(disp[i], base);
-  for(unsigned short i=0; i<7; ++i) disp[i] = disp[i] - base;
+  // for(unsigned short i=0; i<8; ++i) disp[i] = MPI_Aint_diff(disp[i], base);
+  for(unsigned short i=0; i<8; ++i) disp[i] = disp[i] - base;
 
   MPI_Datatype MPI_MATCHINGFACE_TYPE_HELP;
-  MPI_Type_create_struct(7, blockLen, disp, type, &MPI_MATCHINGFACE_TYPE_HELP);
+  MPI_Type_create_struct(8, blockLen, disp, type, &MPI_MATCHINGFACE_TYPE_HELP);
 
   MPI_Datatype MPI_MATCHINGFACE_TYPE;
   MPI_Aint sizeofentry = sizeof(thisMatchingFace);
@@ -11839,6 +11863,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         facesDonor[k].elemID        = low->elemID0;
         facesDonor[k].nPoly         = low->nPolySol0;
         facesDonor[k].nDOFsElem     = low->nDOFsElem0;
+        facesDonor[k].elemType      = low->elemType0;
 
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
           map<unsigned long,unsigned long>::const_iterator MI;
@@ -11935,6 +11960,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         thisMatchingFace.elemID        = low->elemID0;
         thisMatchingFace.nPoly         = low->nPolySol0;
         thisMatchingFace.nDOFsElem     = low->nDOFsElem0;
+        thisMatchingFace.elemType      = low->elemType0;
 
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
           map<unsigned long,unsigned long>::const_iterator MI;
@@ -11965,8 +11991,9 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
           donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
           low->elemID1    = donorLow->elemID;
-          low->nPolySol0  = max(low->nPolySol0, donorLow->nPoly);
+          low->nPolySol1  = donorLow->nPoly;
           low->nDOFsElem1 = donorLow->nDOFsElem;
+          low->elemType1  = donorLow->elemType;
         }
       }
     }
@@ -11979,97 +12006,59 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 #endif
 }
 
-void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          *config,
-                                               const vector<FaceOfElementClass> &localFaces,
-                                               const vector<unsigned long>      &xadj_l,
-                                               const vector<unsigned long>      &adjacency_l,
-                                               vector<su2double>                &vwgt,
-                                               vector<su2double>                &adjwgt){
-
-  /*--- Factors, which determine the amount of work for a volume element, which
-        corresponds to a vertex in the graph for ParMETIS. ---*/
-  const su2double workVolumeIntegrationPoint  = 1.0;
-  const su2double workSurfaceIntegrationPoint = 1.1;
-  const su2double workVolumeDOF               = 0.1;
-  const su2double workSurfaceDOF              = 0.05;
-
-  /*--- Althought this will (almost) never happen, check for an empty initial
-        partition. If present, return immediately to avoid problems.   ---*/
-  if(nElem == 0) return;
-
-  /*--- Determine my rank. ---*/
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  /*--- Determine the standard elements for the volume elements. These standard
-        elements are created based on the polynomial degree of the grid.      ---*/
-  vector<FEMStandardElementClass> standardElements;
-  vector<unsigned short> standElemForElem(nElem);
-
-  unsigned short nStandardElements = 0;
-  for(unsigned long i=0; i<nElem; ++i) {
-
-    unsigned short VTK_Type  = elem[i]->GetVTK_Type();
-    unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
-
-    unsigned short j;
-    for(j=0; j<nStandardElements; ++j) {
-      if( standardElements[j].SameStandardElement(VTK_Type, nPolyGrid, true) ) {
-        standElemForElem[i] = j;
-        break;
-      }
-    }
-
-    if(j == nStandardElements) {
-      standElemForElem[i] = nStandardElements;
-      ++nStandardElements;
-      standardElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
-                                                         true, config));
-    }
-  }
+void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config) {
 
   /*--- Determine a mapping from the global point ID to the local index
-        of the points.            ---*/
+        of the points.    ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned long i=0; i<nPoint; ++i) {
     globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
   }
 
-  /*--- Determine the maximum number of DOFs and integration points in an
-        element and determine the size  for the help vectors  accordingly. ---*/
-  unsigned short nDOFsMax = 0, nIntMax = 0;
-  for(unsigned short i=0; i<nStandardElements; ++i) {
-    nDOFsMax = max(nDOFsMax, standardElements[i].GetNDOFs());
-    nIntMax  = max(nIntMax,  standardElements[i].GetNIntegration());
-  }
+  /*--- Define the vectors to store the standard elements for the volume elements
+        and surface faces. These standard elements will be created based on the
+        polynomial degree of the grid.      ---*/
+  vector<FEMStandardElementClass> standardVolumeElements, standardFaceElements;
 
-  unsigned long sizeResult = nDim*nDim*nIntMax;
-  unsigned long sizeRHS    = nDim*nDOFsMax;
+  unsigned short nStandardVolumeElements = 0, nStandardFaceElements = 0;
 
-  /* Allocate the memory. */
-  vector<su2double> helpVecResult(sizeResult), helpVecRHS(sizeRHS);
-  su2double *vecResult = helpVecResult.data();
-  su2double *vecRHS    = helpVecRHS.data();
-
-  /*--- Define the vector to store the normals of the integration points
-        of the faces. In this way it is not needed to allocate the memory
-        inside the loop all the time.  ---*/
-  vector<su2double> normalsFace;
-
-  /*--- Loop over the elements to determine the amount of computational work.
-        This amount has a contribution from both the volume integral and
-        surface integral to allow for Discontinuous and Continuous Galerkin
-        schemes. For the latter the contribution of the surface integral will
-        be negligible to the total amount of work.         ---*/
+  /*--- Loop over the local volume elements. ---*/
   for(unsigned long i=0; i<nElem; ++i) {
 
-    /*--- Get the necessary data from the corresponding standard element. ---*/
-    unsigned short ii           = standElemForElem[i];
-    unsigned short nDOFs        = standardElements[ii].GetNDOFs();
-    unsigned short nIntegration = standardElements[ii].GetNIntegration();
+    /*------------------------------------------------------------------------*/
+    /*--- Compute the Jacobians of the volume element and determine        ---*/
+    /*--- whether the Jacobians can be considered constant.                ---*/
+    /*------------------------------------------------------------------------*/
+
+    /*--- Determine the standard element of the volume element. If it does not
+          exist yet, it will be created. Note that it suffices to indicate that
+          the Jacobians are constant, because the only task here is to determine
+          whether or not the Jacobians are constant. ---*/
+    unsigned short VTK_Type  = elem[i]->GetVTK_Type();
+    unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
+
+    unsigned short ii;
+    for(ii=0; ii<nStandardVolumeElements; ++ii) {
+      if( standardVolumeElements[ii].SameStandardElement(VTK_Type, nPolyGrid, true) )
+        break;
+    }
+
+    if(ii == nStandardVolumeElements) {
+      ++nStandardVolumeElements;
+      standardVolumeElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
+                                                               true, config));
+    }
+
+    /*--- Allocate the memory for some help vectors to carry out the matrix
+          product to determine the derivatives of the coordinates w.r.t.
+          the parametric coordinates. ---*/
+    unsigned short nDOFs        = standardVolumeElements[ii].GetNDOFs();
+    unsigned short nIntegration = standardVolumeElements[ii].GetNIntegration();
+
+    unsigned long sizeResult = nDim*nDim*nIntegration;
+    unsigned long sizeRHS    = nDim*nDOFs;
+
+    vector<su2double> vecResult(sizeResult), vecRHS(sizeRHS);
 
     /* Store the coordinates in vecRHS. */
     unsigned int jj = 0;
@@ -12082,31 +12071,22 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         vecRHS[jj] = node[ind]->GetCoord(k);
     }
 
-    /*--- Make a distinction whether libxsmm/blas routines must be used to carry
-          out the multiplication or a standard implementation must be used. ---*/
-#if defined (HAVE_CBLAS) || defined(HAVE_MKL) || defined(HAVE_LIBXSMM)
-
-    /*--- Libxsmm/blas routines must be used to compute the matrix product.
-          Get the pointer to the matrix storage of the basis functions and its
+    /*--- Get the pointer to the matrix storage of the basis functions and its
           derivatives. The first nDOFs*nIntegration entries of this matrix
           correspond to the interpolation data to the integration points
           and are not needed. Hence this part is skipped. ---*/
-    const su2double *matBasisInt    = standardElements[ii].GetMatBasisFunctionsIntegration();
+    const su2double *matBasisInt    = standardVolumeElements[ii].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisInt = &matBasisInt[nDOFs*nIntegration];
 
-    /* Carry out the matrix matrix product using the libxsmm routine libxsmm_gemm
-       or the blas routine dgemm. Note that libxsmm_gemm expects the matrices in
-       column major order. That's why the calling sequence is different from
-       cblas_dgemm. */
-#ifdef HAVE_LIBXSMM
-    libxsmm_gemm(NULL, NULL, nDim, nDim*nIntegration, nDOFs, NULL, vecRHS, NULL,
-                 matDerBasisInt, NULL, NULL, vecResult, NULL);
-#else
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim, nDOFs,
-                1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, vecResult, nDim);
-#endif
+    /* Carry out the matrix matrix product. */
+    DenseMatrixProduct(nDim*nIntegration, nDim, nDOFs,
+                       matDerBasisInt, vecRHS.data(), vecResult.data());
 
-    /*--- Make a distinction between a 2D and 3D element. ---*/
+    /*--- Compute the Jacobians in the integration points and determine
+          the minimum and maximum values. Make a distinction between
+          a 2D and 3D element. ---*/
+    su2double jacMin, jacMax;
+
     switch( nDim ) {
       case 2: {
 
@@ -12119,7 +12099,10 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
           const su2double dxdr = vecResult[jx],     dydr = vecResult[jy];
           const su2double dxds = vecResult[jx+off], dyds = vecResult[jy+off];
 
-          vecResult[j] = dxdr*dyds - dxds*dydr;
+          const su2double Jac = dxdr*dyds - dxds*dydr;
+
+          if(j == 0) jacMin = jacMax = Jac;
+          else {jacMin = min(jacMin, Jac); jacMax = max(jacMax, Jac);}
         }
 
         break;
@@ -12136,129 +12119,47 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
           const su2double dxds = vecResult[jx+offS], dyds = vecResult[jy+offS], dzds = vecResult[jz+offS];
           const su2double dxdt = vecResult[jx+offT], dydt = vecResult[jy+offT], dzdt = vecResult[jz+offT];
 
-          vecResult[j] = dxdr*(dyds*dzdt - dzds*dydt) - dxds*(dydr*dzdt - dzdr*dydt)
-                       + dxdt*(dydr*dzds - dzdr*dyds);
+          const su2double Jac = dxdr*(dyds*dzdt - dzds*dydt) - dxds*(dydr*dzdt - dzdr*dydt)
+                              + dxdt*(dydr*dzds - dzdr*dyds);
+
+          if(j == 0) jacMin = jacMax = Jac;
+          else {jacMin = min(jacMin, Jac); jacMax = max(jacMax, Jac);}
         }
 
         break;
       }
     }
 
-    /* Define the variables dr and ds, which are used later in this function. */
-    const su2double *dr, *ds;
+    /*--- Check for negative Jacobians. ---*/
+    if(jacMin <= 0.0) {
 
-#else
-    /*--- Standard implementation to compute the derivatives of the
-          coordinates in the integration points. ---*/
-
-    const su2double *dr = standardElements[ii].GetDrBasisFunctionsIntegration();
-    const su2double *ds = standardElements[ii].GetDsBasisFunctionsIntegration();
-    const su2double *dt = standardElements[ii].GetDtBasisFunctionsIntegration();
-
-    /*--- Make a distinction between 2D and 3D and compute the Jacobians. ---*/
-    switch( nDim ) {
-      case 2: {
-
-        /*--- Loop over the integration points to compute the Jacobians. ---*/
-        for(unsigned short j=0; j<nIntegration; ++j) {
-
-          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
-          su2double dxdr = 0.0, dydr = 0.0, dxds = 0.0, dyds = 0.0;
-          for(unsigned short k=0; k<nDOFs; ++k) {
-            const su2double x = vecRHS[2*k], y = vecRHS[2*k+1];
-
-            dxdr += x*drr[k]; dxds += x*dss[k];
-            dydr += y*drr[k]; dyds += y*dss[k];
-          }
-
-          vecResult[j] = dxdr*dyds - dxds*dydr;
-        }
-
-        break;
-      }
-
-      case 3: {
-
-        /*--- Loop over the integration points to compute the Jacobians. ---*/
-        for(unsigned short j=0; j<nIntegration; ++j) {
-
-          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs], *dtt = &dt[j*nDOFs];
-          su2double dxdr = 0.0, dxds = 0.0, dxdt = 0.0;
-          su2double dydr = 0.0, dyds = 0.0, dydt = 0.0;
-          su2double dzdr = 0.0, dzds = 0.0, dzdt = 0.0;
-
-          for(unsigned short k=0; k<nDOFs; ++k) {
-            const su2double x = vecRHS[3*k], y = vecRHS[3*k+1], z = vecRHS[3*k+2];
-            dxdr += x*drr[k]; dxds += x*dss[k]; dxdt += x*dtt[k];
-            dydr += y*drr[k]; dyds += y*dss[k]; dydt += y*dtt[k];
-            dzdr += z*drr[k]; dzds += z*dss[k]; dzdt += z*dtt[k];
-          }
-
-          vecResult[j] = dxdr*(dyds*dzdt - dzds*dydt)
-                       - dxds*(dydr*dzdt - dzdr*dydt)
-                       + dxdt*(dydr*dzds - dzdr*dyds);
-        }
-
-        break;
-      }
-    }
-#endif
-
-    /*--- Determine the minimum and maximum value of the Jacobian in the
-          integration points. Also check for negative Jacobians. ---*/
-    su2double jacMin, jacMax;
-    for(unsigned short j=0; j<nIntegration; ++j) {
-
-      const su2double Jac = vecResult[j];
-
-      if(Jac <= 0.0) {
-        cout << "Negative Jacobian found" << endl;
+      cout << "Negative Jacobian found" << endl;
 #ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
+      exit(EXIT_FAILURE);
 #else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #endif
-      }
-
-      if(j == 0) jacMin = jacMax = Jac;
-      else {
-        jacMin = min(jacMin, Jac);
-        jacMax = max(jacMax, Jac);
-      }
     }
 
     /*--- Determine the ratio of the maximum and minimum value of the Jacobian.
           From this ratio, determine whether or not the element is considered to
-          have a constant Jacobian and the total number of volume integration
-          points necessary. Note that in order to determine this value the degree
-          of the solution must be taken and not the degree of the grid. ---*/
+          have a constant Jacobian. ---*/
     bool constJacobian = (jacMax/jacMin) <= 1.000001;
     elem[i]->SetJacobianConsideredConstant(constJacobian);
 
-    unsigned short nPolySol = elem[i]->GetNPolySol();
+    /*------------------------------------------------------------------------*/
+    /*--- Compute the normal vectors of the faces of the element and check ---*/
+    /*--- for constant Jacobians of the faces.                             ---*/
+    /*------------------------------------------------------------------------*/
 
-    unsigned short orderExact;
-    if( constJacobian )
-       orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
-    else
-       orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
-
-    nIntegration = FEMStandardElementClass::GetNIntegrationStatic(elem[i]->GetVTK_Type(),
-                                                                  orderExact, config);
-
-    /*--- Initialize the computational work for this element. ---*/
-    vwgt[i] = workVolumeIntegrationPoint*nIntegration
-            + workVolumeDOF*elem[i]->GetNDOFsSol();
-
-    /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
+    /*--- Get the global IDs of the corner points of all the faces
+          of this element. ---*/
     unsigned short nFaces;
     unsigned short nPointsPerFace[6];
     unsigned long  faceConn[6][4];
 
     elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
-
-    unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
 
     /*--- Initialize the array, which stores whether or not the faces are
           considered to have a constant Jacobian. ---*/
@@ -12267,49 +12168,47 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     /*--- Loop over the number of faces of this element. ---*/
     for(unsigned short j=0; j<nFaces; ++j) {
 
-      /*--- Determine the index jj in the standard elements for this face. ---*/
-      unsigned short VTK_Type;
+      /*--- Determine the index jj in the standard face elements for this face.
+            If not present, create the standard element. ---*/
       switch( nPointsPerFace[j] ) {
         case 2: VTK_Type = LINE;          break;
         case 3: VTK_Type = TRIANGLE;      break;
         case 4: VTK_Type = QUADRILATERAL; break;
       }
 
-      unsigned short jj;
-      for(jj=0; jj<nStandardElements; ++jj) {
-        if( standardElements[jj].SameStandardElement(VTK_Type, nPolyGrid, true) ) {
+      for(jj=0; jj<nStandardFaceElements; ++jj) {
+        if( standardFaceElements[jj].SameStandardElement(VTK_Type, nPolyGrid, true) )
           break;
-        }
       }
 
-      if(jj == nStandardElements) {
-        ++nStandardElements;
-        standardElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
-                                                           true, config));
+      if(jj == nStandardFaceElements) {
+        ++nStandardFaceElements;
+        standardFaceElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
+                                                               true, config));
       }
 
-      /*--- Possibly resize the vector to store the normals in the integration
-            points of the face and set the pointer to the correct
-            vector to store the face connectivity of this face.       ---*/
-      normalsFace.resize((nDim+1)*standardElements[jj].GetNIntegration());
-
+      /*--- Set the pointer to store the face connectivity of this face. ---*/
       unsigned short *connFace;
       switch( j) {
-        case 0: connFace = standardElements[ii].GetConnFace0(); break;
-        case 1: connFace = standardElements[ii].GetConnFace1(); break;
-        case 2: connFace = standardElements[ii].GetConnFace2(); break;
-        case 3: connFace = standardElements[ii].GetConnFace3(); break;
-        case 4: connFace = standardElements[ii].GetConnFace4(); break;
-        case 5: connFace = standardElements[ii].GetConnFace5(); break;
+        case 0: connFace = standardVolumeElements[ii].GetConnFace0(); break;
+        case 1: connFace = standardVolumeElements[ii].GetConnFace1(); break;
+        case 2: connFace = standardVolumeElements[ii].GetConnFace2(); break;
+        case 3: connFace = standardVolumeElements[ii].GetConnFace3(); break;
+        case 4: connFace = standardVolumeElements[ii].GetConnFace4(); break;
+        case 5: connFace = standardVolumeElements[ii].GetConnFace5(); break;
       }
 
       /*--- Store the relevant derivative vectors of the standard element of
             the face as well as the number of DOFs and integration points. ---*/
-      nDOFs        = standardElements[jj].GetNDOFs();
-      nIntegration = standardElements[jj].GetNIntegration();
+      nDOFs        = standardFaceElements[jj].GetNDOFs();
+      nIntegration = standardFaceElements[jj].GetNIntegration();
 
-      dr = standardElements[jj].GetDrBasisFunctionsIntegration();
-      ds = standardElements[jj].GetDsBasisFunctionsIntegration();
+      const su2double *dr = standardFaceElements[jj].GetDrBasisFunctionsIntegration();
+      const su2double *ds = standardFaceElements[jj].GetDsBasisFunctionsIntegration();
+
+      /*--- Allocate the memory for the vector to store the normals in the
+            integration points of the face. */
+      vector<su2double> normalsFace((nDim+1)*nIntegration);
 
       /*--- Compute the unit normals in the integration points. Make a
             distinction between two and three dimensions.  ---*/
@@ -12338,7 +12237,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
         case 3: {
 
-          /*--- Three dimensional case, for which the faces are triangles and
+          /*--- Three dimensional case, for which the faces are triangles or
                 quadrilaterals. The normal is the vector obtained via the
                 cross product of two tangent vectors.
                 Loop over the integration points.               ---*/
@@ -12400,14 +12299,104 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                       maxRatioLenFaceNormals <= 1.000001;
 
       elem[i]->SetJacobianConstantFace(constJacobian, j);
+    }
 
-      /*--- Determine the polynomial degree of the face. If a face is shared
-            between elements, it is possible that the polynomial degree of the
-            face is different from the degree of the current element. Hence a
-            search is carried out in localFaces to see if the face is shared
-            between elements.                       ---*/
-      unsigned short nPolyFace = nPolySol;
+    /*------------------------------------------------------------------------*/
+    /*--- Determine the length scale of the element. This is needed to     ---*/
+    /*--- compute the computational weights of an element when time        ---*/
+    /*--- accurate local time stepping is employed.                        ---*/
+    /*------------------------------------------------------------------------*/
 
+    /* TEMPORARY IMPLEMENTATION. */
+    elem[i]->SetLengthScale(-1.0);
+  }
+}
+
+void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          *config,
+                                               const vector<FaceOfElementClass> &localFaces,
+                                               const vector<unsigned long>      &xadj_l,
+                                               const vector<unsigned long>      &adjacency_l,
+                                               vector<su2double>                &vwgt,
+                                               vector<su2double>                &adjwgt){
+  /*--- Determine my rank. ---*/
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Define the standard elements for the volume elements, the boundary faces
+        and the matching internal faces. ---*/
+  vector<FEMStandardElementClass>      standardElements;
+  vector<FEMStandardBoundaryFaceClass> standardBoundaryFaces;
+  vector<FEMStandardInternalFaceClass> standardMatchingFaces;
+
+  unsigned short nStandardElements = 0, nStandardBoundaryFaces = 0,
+                 nStandardMatchingFaces = 0;
+
+  /*--- Loop over the elements to determine the amount of computational work.
+        This amount has a contribution from both the volume integral and
+        surface integral to allow for Discontinuous and Continuous Galerkin
+        schemes. For the latter the contribution of the surface integral will
+        be negligible to the total amount of work.         ---*/
+  for(unsigned long i=0; i<nElem; ++i) {
+
+    /*------------------------------------------------------------------------*/
+    /*--- Determine the computational weight of the volume integral in the ---*/
+    /*--- (DG-)FEM formulation.                                            ---*/
+    /*------------------------------------------------------------------------*/
+
+    /*--- Determine the corresponding standard element for this volume element.
+          Create it, if it does not exist. ---*/
+    unsigned short VTK_Type = elem[i]->GetVTK_Type();
+    unsigned short nPolySol = elem[i]->GetNPolySol();
+    bool JacIsConstant      = elem[i]->GetJacobianConsideredConstant();
+
+    unsigned short ii;
+    for(ii=0; ii<nStandardElements; ++ii) {
+      if( standardElements[ii].SameStandardElement(VTK_Type, nPolySol,
+                                                   JacIsConstant) ) break;
+    }
+
+    if(ii == nStandardElements) {
+      ++nStandardElements;
+      standardElements.push_back(FEMStandardElementClass(VTK_Type, nPolySol,
+                                                         JacIsConstant, config));
+    }
+
+    /*--- Initialize the computational work for this element. ---*/
+    vwgt[i] = standardElements[ii].WorkEstimateMetis(config);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Determine the computational weight of the surface integral in    ---*/
+    /*--- the (DG-)FEM formulation.                                        ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Determine the global element ID of this element. */
+    unsigned long elemID = starting_node[rank] + i;
+
+    /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /*--- Loop over the number of faces of this element. ---*/
+    for(unsigned short j=0; j<nFaces; ++j) {
+
+      /* Determine the VTK type of the face. */
+      unsigned short VTK_Type_Face;
+      switch( nPointsPerFace[j] ) {
+        case 2: VTK_Type_Face = LINE;          break;
+        case 3: VTK_Type_Face = TRIANGLE;      break;
+        case 4: VTK_Type_Face = QUADRILATERAL; break;
+      }
+
+      /* Easier storage whether or not the Jacobian is constant. */
+      JacIsConstant = elem[i]->GetJacobianConstantFace(j);
+
+      /*--- Check if this is a matching internal face. ---*/
       FaceOfElementClass thisFace;
       thisFace.nCornerPoints = nPointsPerFace[j];
       for(unsigned short k=0; k<nPointsPerFace[j]; ++k)
@@ -12417,23 +12406,59 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
         vector<FaceOfElementClass>::const_iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-        nPolyFace = low->nPolySol0;
+
+        /* Check if this internal matching face is owned by this element. */
+        bool faceIsOwned;
+        if(elemID == low->elemID0) faceIsOwned =  low->elem0IsOwner;
+        else                       faceIsOwned = !low->elem0IsOwner;
+
+        if( faceIsOwned ) {
+
+          /*--- Determine the index of the corresponding standard matching
+                face. If it does not exist, create it. ---*/
+          for(ii=0; ii<nStandardMatchingFaces; ++ii) {
+            if( standardMatchingFaces[ii].SameStandardMatchingFace(VTK_Type_Face, JacIsConstant,
+                                                                   low->elemType0, low->nPolySol0,
+                                                                   low->elemType1, low->nPolySol1,
+                                                                   false, false) )
+              break;
+          }
+
+          if(ii == nStandardMatchingFaces) {
+            ++nStandardMatchingFaces;
+            standardMatchingFaces.push_back(FEMStandardInternalFaceClass(VTK_Type_Face,
+                                                                         low->elemType0, low->nPolySol0,
+                                                                         low->elemType1, low->nPolySol1,
+                                                                         JacIsConstant, false, false,
+                                                                         config));
+          }
+
+          /*--- Update the computational work for this element. ---*/
+          vwgt[i] += standardMatchingFaces[ii].WorkEstimateMetis(config);
+        }
       }
+      else {
 
-      /*--- Determine the number of integration points for this face as well as
-            the number of DOFs.           ---*/
-      if( constJacobian )
-         orderExact = (unsigned short) ceil(nPolyFace*config->GetQuadrature_Factor_Straight());
-      else
-         orderExact = (unsigned short) ceil(nPolyFace*config->GetQuadrature_Factor_Curved());
+        /*--- This is a boundary face, which is owned by definition. Determine
+              the index of the corresponding standard boundary face. If it
+              does not exist, create it. ---*/
+        for(ii=0; ii<nStandardBoundaryFaces; ++ii) {
+          if(standardBoundaryFaces[ii].SameStandardBoundaryFace(VTK_Type_Face, JacIsConstant,
+                                                                VTK_Type, nPolySol, false) )
+            break;
+        }
 
-      nIntegration = FEMStandardElementClass::GetNIntegrationStatic(VTK_Type, orderExact,
-                                                                    config);
-      nDOFs = FEMStandardElementBaseClass::GetNDOFsStatic(VTK_Type, nPolyFace);
+        if(ii == nStandardBoundaryFaces) {
+          ++nStandardBoundaryFaces;
+          standardBoundaryFaces.push_back(FEMStandardBoundaryFaceClass(VTK_Type_Face,
+                                                                       VTK_Type, nPolySol,
+                                                                       JacIsConstant, false,
+                                                                       config));
+        }
 
-      /*--- Update the amount of work for this element with the work for this face. ---*/
-      vwgt[i] += workSurfaceIntegrationPoint*nIntegration
-               + workSurfaceDOF*nDOFs;
+        /*--- Update the computational work for this element. ---*/
+        vwgt[i] += standardBoundaryFaces[ii].WorkEstimateMetis(config);
+      }
     }
   }
 

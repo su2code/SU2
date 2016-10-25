@@ -60,6 +60,7 @@
 #include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
+#include "../../Common/include/dense_matrix_product.hpp"
 
 using namespace std;
 
@@ -9385,17 +9386,6 @@ protected:
   void LeftStatesIntegrationPointsBoundaryFace(const CSurfaceElementFEM *surfElem,
                                                su2double *solFace, su2double *solIntL);
   
-  /*!
-   * \brief Function, which carries out a matrix product.
-   * \param[in]  M  - Number of rows of A and C.
-   * \param[in]  N  - Number of columns of B and C.
-   * \param[in]  K  - Number of columns of A and number of rows of B.
-   * \param[in]  A  - Input matrix in the multiplication.
-   * \param[in]  B  - Input matrix in the multiplication.
-   * \param[out] C  - Result of the matrix product A*B.
-   */
-  void MatrixProduct(const int M,        const int N,        const int K,
-                     const su2double *A, const su2double *B, su2double *C);
 private:
   /*!
    * \brief Function, which sets up the persistent communication of the flow

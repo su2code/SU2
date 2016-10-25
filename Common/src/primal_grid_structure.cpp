@@ -40,6 +40,7 @@ CPrimalGrid::CPrimalGrid(void) {
   /*--- Set the default values for the pointers ---*/
   Nodes = NULL;
  Neighbor_Elements = NULL;
+ ElementOwnsFace = NULL;
  PeriodIndexNeighbors = NULL;
  Coord_CG = NULL;
  Coord_FaceElems_CG = NULL;
@@ -52,6 +53,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (Nodes != NULL) delete[] Nodes;
  if (Coord_CG != NULL) delete[] Coord_CG;
  if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
+ if (ElementOwnsFace != NULL) delete[] ElementOwnsFace;
  if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
  if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant;
 }
@@ -105,12 +107,14 @@ void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {
 
   /*--- Allocate the memory for Neighbor_Elements and PeriodIndexNeighbors and
         initialize the arrays to -1 to indicate that no neighbor is present and
-        that no periodic transformation is needed to the neighbor. */
+        that no periodic transformation is needed to the neighbor. ---*/
   Neighbor_Elements    = new long[val_nFaces];
+  ElementOwnsFace      = new bool[val_nFaces];
   PeriodIndexNeighbors = new short[val_nFaces];
 
   for(unsigned short i=0; i<val_nFaces; ++i) {
     Neighbor_Elements[i]    = -1;
+    ElementOwnsFace[i]      =  false;
     PeriodIndexNeighbors[i] = -1;
   }
 }

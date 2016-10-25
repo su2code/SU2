@@ -69,6 +69,8 @@ protected:
   su2double Volume;    /*!< \brief Volume of the element. */
   bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
                                             constant in the transformation to the standard element. */
+  bool *ElementOwnsFace; /*!< \brief Whether or not the element owns the face. */
+  su2double LenScale;    /*!< \brief Length scale of the element. */
 public:
 	
 	/*!
@@ -88,20 +90,34 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	virtual ~CPrimalGrid(void);
-	
-	/*!
-	 * \brief Get the elements that surround an element.
-	 * \param[in] val_face - Local index of the face.
-	 * \return Global index of the element.
-	 */
-	long GetNeighbor_Elements(unsigned short val_face);
-	
-	/*!
-	 * \brief Set the elements that surround an element.
-	 * \param[in] val_elem - Global index of the element.
-	 * \param[in] val_face - Local index of the face.
-	 */
-	void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face);
+
+  /*!
+   * \brief Get the elements that surround an element.
+   * \param[in] val_face - Local index of the face.
+   * \return Global index of the element.
+   */
+  long GetNeighbor_Elements(unsigned short val_face);
+
+  /*!
+   * \brief Set the elements that surround an element.
+   * \param[in] val_elem - Global index of the element.
+   * \param[in] val_face - Local index of the face.
+   */
+  void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face);
+
+  /*!
+   * \brief Set the length scale of the element.
+   * \param[in] val_lenScale - Length scale of the element.
+   */
+  void SetLengthScale(su2double val_lenScale);
+
+ /*!
+  * \brief Set the boolean to indicate whether or not this element owns the face
+           between the current and the adjacent element with index val_face.
+  * \param[in] val_owner - Whether or not this element owns the face.
+  * \param[in] val_face  - Local index of the face.
+  */
+ void SetOwnerFace(bool val_owner, unsigned short val_face);
 
  /*!
   * \brief Get the index of the periodic transformation to the neighboring element.

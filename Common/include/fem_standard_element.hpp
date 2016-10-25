@@ -120,17 +120,6 @@ public:
   unsigned short GetNIntegration(void) const;
 
   /*!
-  * \brief Static function, which makes available the number of integration points for an element
-           corresponding to the arguments.
-  * \param[in] VTK_Type   - Type of the element using the VTK convention.
-  * \param[in] orderExact - Polynomial degree that must be integrated exactly.
-  * \param[in] config     - Object, which contains the input parameters.
-  * \return  The number of integration points.
-  */
-  static unsigned short GetNIntegrationStatic(unsigned short VTK_Type,
-                                              unsigned short nPoly,
-                                              CConfig        *config);
-  /*!
   * \brief Function, which makes available the polynomial order that must be integrated exactly.
   * \return  The polynomial order that must be integrated exactly.
   */
@@ -999,6 +988,13 @@ public:
   bool SameStandardElement(unsigned short val_VTK_Type,
                            unsigned short val_nPoly,
                            bool           val_constJac);
+
+  /*!
+  * \brief Function, which estimates the amount of work for an element of this
+           type. This information is used to determine a well balanced partition.
+  * \param[in] config - Object, which contains the input parameters.
+  */
+  su2double WorkEstimateMetis(CConfig *config);
   
 private:
   /*!
@@ -1404,8 +1400,8 @@ public:
                                             be swapped w.r.t. the connectivity of face of the
                                             element on side 0.
   * \param[in] val_swapFaceInElementSide1 - Whether or not the connectivity of the face must
-  *                                         be swapped w.r.t. the connectivity of face of the
-  *                                         element on side 1.
+                                            be swapped w.r.t. the connectivity of face of the
+                                            element on side 1.
   */
   bool SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
                                 bool           val_constJac,
@@ -1415,6 +1411,14 @@ public:
                                 unsigned short val_nPolySide1,
                                 bool           val_swapFaceInElementSide0,
                                 bool           val_swapFaceInElementSide1);
+
+  /*!
+  * \brief Function, which estimates the amount of work for an element of this
+           type. This information is used to determine a well balanced partition.
+  * \param[in] config - Object, which contains the input parameters.
+  */
+  su2double WorkEstimateMetis(CConfig *config);
+
 private:
   /*!
   * \brief Function, which copies the data of the given object into the current object.
@@ -1635,6 +1639,13 @@ public:
                                 unsigned short val_VTK_TypeElem,
                                 unsigned short val_nPolyElem,
                                 bool           val_swapFaceInElem);
+  /*!
+  * \brief Function, which estimates the amount of work for an element of this
+           type. This information is used to determine a well balanced partition.
+  * \param[in] config - Object, which contains the input parameters.
+  */
+  su2double WorkEstimateMetis(CConfig *config);
+
 private:
   /*!
   * \brief Function, which copies the data of the given object into the current object.
