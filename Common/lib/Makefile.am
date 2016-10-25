@@ -60,6 +60,7 @@ lib_sources = \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
+  ../include/dense_matrix_product.hpp \
   ../include/dual_grid_structure.hpp \
   ../include/dual_grid_structure.inl \
   ../include/fem_geometry_structure.hpp \
@@ -97,11 +98,13 @@ lib_sources = \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
   ../src/config_structure.cpp \
+  ../src/dense_matrix_product.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/fem_geometry_structure.cpp \
   ../src/fem_integration_rules.cpp \
   ../src/fem_standard_element.cpp \
   ../src/fem_wall_distance.cpp \
+  ../src/fem_work_estimate_metis.cpp \
   ../src/gelite.cpp \
   ../src/geometry_structure.cpp \
   ../src/grid_adaptation_structure.cpp \

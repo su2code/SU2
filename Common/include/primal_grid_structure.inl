@@ -49,6 +49,10 @@ inline unsigned long CPrimalGrid::GetDomainElement(void) { return DomainElement;
 
 inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) { Neighbor_Elements[val_face] = val_elem; }
 
+inline void CPrimalGrid::SetLengthScale(su2double val_lenScale) { LenScale = val_lenScale; }
+
+inline void CPrimalGrid::SetOwnerFace(bool val_owner, unsigned short val_face) { ElementOwnsFace[val_face] = val_owner; }
+
 inline short CPrimalGrid::GetPeriodicIndex(unsigned short val_face) {return PeriodIndexNeighbors[val_face];}
 
 inline void CPrimalGrid::SetPeriodicIndex(unsigned short val_periodic, unsigned short val_face) {PeriodIndexNeighbors[val_face] = val_periodic; }

@@ -1,8 +1,8 @@
 /*!
  * \file fem_geometry_structure.cpp
- * \brief Main subroutines for creating the primal grid for the FEM solver.
+ * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 4.1.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,23 +31,11 @@
 
 #include "../include/fem_geometry_structure.hpp"
 
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
-
-/* MKL, BLAS and LAPACK include files, if supported. */
+/* MKL or LAPACK include files, if supported. */
 #ifdef HAVE_MKL
 #include "mkl.h"
-#else
-
-#ifdef HAVE_LAPACK
+#elif HAVE_LAPACK
 #include "lapacke.h"
-#endif
-#ifdef HAVE_CBLAS
-#include "cblas.h"
-#endif
-
 #endif
 
 bool SortFacesClass::operator()(const FaceOfElementClass &f0,
@@ -1478,13 +1466,8 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
                                             const unsigned long  *DOFs,
                                             su2double            *derivCoor) {
 
-  /*--- Make a distinction whether libxsmm/blas routines must be used to carry
-        out the multiplication or a standard implementation must be used. ---*/
-#if defined (HAVE_CBLAS) || defined(HAVE_MKL) || defined(HAVE_LIBXSMM)
-
   /* Allocate the memory to store the coordinates as right hand side. */
-  vector<su2double> helpVecRHS(nDOFs*nDim);
-  su2double *vecRHS = helpVecRHS.data();
+  vector<su2double> vecRHS(nDOFs*nDim);
 
   /* Loop over the grid DOFs of the element and copy the coordinates in
      vecRHS in row major order. */
@@ -1494,35 +1477,9 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
       vecRHS[ic] = meshPoints[DOFs[j]].coor[k];
   }
 
-  /* Carry out the matrix matrix product using the libxsmm routine libxsmm_gemm
-     or the blas routine dgemm. Note that libxsmm_gemm expects the matrices in
-     column major order. That's why the calling sequence is different from
-     cblas_dgemm. */
-#ifdef HAVE_LIBXSMM
-  libxsmm_gemm(NULL, NULL, nDim, nDim*nIntegration, nDOFs, NULL, vecRHS, NULL,
-               matDerBasisInt, NULL, NULL, derivCoor, NULL);
-#else
-  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim,
-              nDOFs, 1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, derivCoor, nDim);
-#endif
-
-#else
-
-  /* Standard implementation of the matrix matrix multiplication. */
-  const unsigned short m = nDim*nIntegration;
-
-  for(unsigned short i=0; i<m; ++i) {
-    const unsigned short jj = i*nDOFs;
-    const unsigned short kk = i*nDim;
-    for(unsigned short j=0; j<nDim; ++j) {
-      const unsigned short ii = kk + j;
-      derivCoor[ii] = 0.0;
-      for(unsigned short k=0; k<nDOFs; ++k)
-        derivCoor[ii] += matDerBasisInt[jj+k]*meshPoints[DOFs[k]].coor[j];
-    }
-  }
-
-#endif
+  /* Carry out the matrix matrix product */
+  DenseMatrixProduct(nDim*nIntegration, nDim, nDOFs,
+                     matDerBasisInt, vecRHS.data(), derivCoor);
 }
 
 void CMeshFEM::ComputeMetricTermsSIP(const unsigned short nIntegration,

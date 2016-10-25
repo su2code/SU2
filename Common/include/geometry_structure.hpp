@@ -61,6 +61,7 @@ extern "C" {
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"
 #include "fem_standard_element.hpp"
+#include "dense_matrix_product.hpp"
 
 using namespace std;
 
@@ -121,6 +122,8 @@ public:
                                                      element and -2 indicates a face of an unowned element. */
   bool JacFaceIsConsideredConstant;      /*!< \brief Whether or not the Jacobian of the transformation
                                                      to the standard element is considered constant. */
+  bool elem0IsOwner;                     /*!< \brief Whether or not the neighboring element 0 is the owner
+                                                     of the face. If false, element 1 is the owner. */
 
   /* Standard constructor and destructor. */
   FaceOfElementClass();
@@ -187,6 +190,7 @@ class MatchingFaceClass {
   unsigned short nDim;                   /*!< \brief Number of spatial dimensions. */
   unsigned short nPoly;                  /*!< \brief Polynomial degree of the face. */
   unsigned short nDOFsElem;              /*!< \brief Number of DOFs of the relevant adjacent element. */
+  unsigned short elemType;               /*!< \brief Type of the adjacent element. */
   unsigned long  elemID;                 /*!< \brief The relevant adjacent element ID. */
   su2double cornerCoor[4][3];            /*!< \brief Coordinates of the corner points of the face. */
   su2double tolForMatching;              /*!< \brief Tolerance for this face for matching points. */
@@ -1372,6 +1376,13 @@ public:
                               const vector<unsigned long>      &adjacency_l,
                               vector<su2double>                &vwgt,
                               vector<su2double>                &adjwgt);
+
+  /*!
+   * \brief Determine whether or not the Jacobians of the elements and faces
+            are constant and a length scale of the elements. 
+   * \param[in]  config - Definition of the particular problem.
+   */
+  void DetermineFEMConstantJacobiansAndLenScale(CConfig *config);
 
   /*!
    * \brief Determine the neighboring information for periodic faces of a FEM grid.

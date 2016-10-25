@@ -31,18 +31,6 @@
 
 #include "../include/solver_structure.hpp"
 
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
-
-/* MKL or BLAS include files, if supported. */
-#ifdef HAVE_MKL
-#include "mkl.h"
-#elif HAVE_CBLAS
-#include "cblas.h"
-#endif
-
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   
   /*--- Basic array initialization ---*/
@@ -1929,7 +1917,7 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
-    MatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
+    DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
@@ -1991,7 +1979,7 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
-    MatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
+    DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
   }
 }
 
@@ -2062,7 +2050,7 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
     const su2double *basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide0();
 
     /* Call the general function to carry out the matrix product. */
-    MatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
+    DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
 
     /* Check if the element to the right is an owned element. Only then
        the residual needs to be computed. */
@@ -2088,7 +2076,7 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
               the residual. Afterwards the residual is negated, because the
               normal is pointing into the adjacent element. ---*/
         basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-        MatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
+        DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
 
         for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
           resFace1[i] = -resFace1[i];
@@ -2137,7 +2125,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   const su2double     *basisFace0 = standardMatchingFacesSol[ind].GetBasisFaceIntegrationSide0();
 
   /*--- Store the solution of the DOFs of side 0 of the face in contiguous memory
-        such that the function MatrixProduct can be used to compute the left
+        such that the function DenseMatrixProduct can be used to compute the left
         states in the integration points of the face, i.e. side 0. ---*/
   const unsigned long *DOFs = internalFace->DOFsSolFaceSide0;
   for(unsigned short i=0; i<nDOFsFace0; ++i) {
@@ -2150,7 +2138,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   config->Tick(&tick);
   /* Compute the left states. Call the general function to
      carry out the matrix product. */
-  MatrixProduct(nInt, nVar, nDOFsFace0, basisFace0, solFace, solIntL);
+  DenseMatrixProduct(nInt, nVar, nDOFsFace0, basisFace0, solFace, solIntL);
   config->Tock(tick, "ER_1_1_1", 5);
 
   /*------------------------------------------------------------------------*/
@@ -2163,7 +2151,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   const su2double     *basisFace1 = standardMatchingFacesSol[ind].GetBasisFaceIntegrationSide1();
 
   /*--- Store the solution of the DOFs of side 1 of the face in contiguous memory
-        such that the function MatrixProduct can be used to compute the right
+        such that the function DenseMatrixProduct can be used to compute the right
         states in the integration points of the face, i.e. side 1. ---*/
   DOFs = internalFace->DOFsSolFaceSide1;
   for(unsigned short i=0; i<nDOFsFace1; ++i) {
@@ -2176,7 +2164,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   config->Tick(&tick);
   /* Compute the right states. Call the general function to
      carry out the matrix product. */
-  MatrixProduct(nInt, nVar, nDOFsFace1, basisFace1, solFace, solIntR);
+  DenseMatrixProduct(nInt, nVar, nDOFsFace1, basisFace1, solFace, solIntR);
   config->Tock(tick, "ER_1_1_2", 5);
 
   /*------------------------------------------------------------------------*/
@@ -2232,8 +2220,8 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
       /* Multiply the residual with the inverse of the mass matrix.
          Use the array tmpRes as temporary storage. */
       memcpy(tmpRes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
-      MatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
-                    volElem[l].massMatrix, tmpRes, res);
+      DenseMatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
+                         volElem[l].massMatrix, tmpRes, res);
     }
   }
 }
@@ -3281,7 +3269,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   const su2double *basisFaceTrans = standardBoundaryFacesSol[ind].GetBasisFaceIntegrationTranspose();
 
   /* Call the general function to carry out the matrix product. */
-  MatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
 }
 
 void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(const CSurfaceElementFEM *surfElem,
@@ -3306,7 +3294,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(const CSurface
   }
 
   /* Call the general function to carry out the matrix product. */
-  MatrixProduct(nInt, nVar, nDOFs, basisFace, solFace, solIntL);
+  DenseMatrixProduct(nInt, nVar, nDOFs, basisFace, solFace, solIntL);
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
@@ -3394,38 +3382,6 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
 
   Jacobian_i = NULL;
   Jacobian_j = NULL;
-}
-
-void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        const int K,
-                                        const su2double *A, const su2double *B, su2double *C) {
-
-#ifdef HAVE_LIBXSMM
-
-  /* The gemm function of libxsmm is used to carry out the multiplication.
-     Note that libxsmm_gemm expects the matrices in column major order. That's
-     why the calling sequence is different from cblas_dgemm. */
-  libxsmm_gemm(NULL, NULL, N, M, K, NULL, B, NULL, A, NULL, NULL, C, NULL);
-
-#elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
-
-  /* The standard blas routine dgemm is used for the multiplication. */
-  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K,
-              1.0, A, K, B, N, 0.0, C, N);
-#else
-
-  /* Standard internal implementation of the matrix matrix multiplication. */
-  for(int i=0; i<M; ++i) {
-    const int jj = i*K;
-    const int kk = i*N;
-    for(int j=0; j<N; ++j) {
-      const int ii = kk + j;
-      C[ii] = 0.0;
-      for(int k=0; k<K; ++k)
-        C[ii] += A[jj+k]*B[k*nVar+j];
-    }
-  }
-
-#endif
 }
 
 #ifdef RINGLEB
@@ -3785,8 +3741,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           const su2double     *weights      = standardBoundaryFacesSol[ind].GetWeightsIntegration();
 
           /*--- Store the solution of the DOFs of the adjacent element in contiguous
-                memory such that the function MatrixProduct can be used to compute the
-                gradients solution variables in the integration points of the face. ---*/
+                memory such that the function DenseMatrixProduct can be used to compute
+                the gradients solution variables in the integration points of the face. ---*/
           for(unsigned short i=0; i<nDOFsElem; ++i) {
             const su2double *solDOFElem = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
             su2double       *sol        = solDOFs + nVar*i;
@@ -3796,7 +3752,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /* Compute the gradients in the integration points. Call the general function to
              carry out the matrix product. */
-          MatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solDOFs, gradSolInt);
+          DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solDOFs, gradSolInt);
 
           /* Determine the offset between r- and -s-derivatives, which is also the
              offset between s- and t-derivatives. */
@@ -4092,7 +4048,7 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
-    MatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, solDOFs, solAndGradInt);
+    DenseMatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, solDOFs, solAndGradInt);
     config->Tock(tick, "IR_1_1", 4);
 
     /*------------------------------------------------------------------------*/
@@ -4242,7 +4198,7 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
-    MatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
+    DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->Tock(tick, "IR_3_1", 4);
   }
 }
@@ -4393,7 +4349,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     const su2double *basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide0();
 
     /* Call the general function to carry out the matrix product. */
-    MatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
+    DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
 
     /* Check if the element to the right is an owned element. Only then
        the residual needs to be computed. */
@@ -4419,7 +4375,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
               the residual. Afterwards the residual is negated, because the
               normal is pointing into the adjacent element. ---*/
         basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-        MatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
+        DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
 
         for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
           resFace1[i] = -resFace1[i];
@@ -4497,7 +4453,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
 
       /* Call the general function to carry out the matrix product to compute
          the residual for side 0. */
-      MatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
+      DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
     
       /* Check if the element to the right is an owned element. Only then
          the residual needs to be computed. */
@@ -4541,7 +4497,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
            the residual for side 1. Note that the symmetrizing residual should not
            be negated, because two minus signs enter the formulation for side 1,
            which cancel each other. */
-        MatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
+        DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
         config->Tock(tick, "ER_1_6_1", 5);
       }
       config->Tock(tick, "ER_1_6", 4);
@@ -4587,8 +4543,8 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
   su2double *solElem = viscNormFluxes;
 
   /*--- Store the solution of the DOFs of the adjacent element in contiguous
-        memory such that the function MatrixProduct can be used to compute the
-        gradients solution variables in the integration points of the face. ---*/
+        memory such that the function DenseMatrixProduct can be used to compute
+        the gradients solution variables in the integration points of the face. ---*/
   for(unsigned short i=0; i<nDOFsElem; ++i) {
     const su2double *solDOF = VecSolDOFs.data() + nVar*DOFsElem[i];
     su2double       *sol    = solElem + nVar*i;
@@ -4598,7 +4554,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
 
   /* Compute the gradients in the integration points. Call the general function to
      carry out the matrix product. */
-  MatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
+  DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
 
   /* Determine the offset between r- and -s-derivatives, which is also the
      offset between s- and t-derivatives. */
@@ -5019,8 +4975,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
     const unsigned short offDeriv = nVar*nInt;
 
     /* Store the solution of the DOFs of the adjacent element in contiguous
-       memory such that the function MatrixProduct can be used to compute the
-       gradients solution variables in the integration points of the face. */
+       memory such that the function DenseMatrixProduct can be used to compute
+       the gradients solution variables in the integration points of the face. */
     for(unsigned short i=0; i<nDOFsElem; ++i) {
       const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
       su2double       *sol    = solElem + nVar*i;
@@ -5030,7 +4986,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
     /* Compute the left gradients in the integration points. Call the general
        function to carry out the matrix product. */
-    MatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
+    DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
 
     /*--- Loop over the integration points to apply the symmetry condition
           and to compute the viscous normal fluxes. This is done in the same
@@ -5931,7 +5887,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   const su2double *basisFaceTrans = standardBoundaryFacesSol[ind].GetBasisFaceIntegrationTranspose();
 
   /* Call the general function to carry out the matrix product. */
-  MatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the symmetrizing terms, if present, in the       ---*/
@@ -6000,6 +5956,6 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
     /* Call the general function to carry out the matrix product to compute
        the residual. */
-    MatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
+    DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
   }
 }
