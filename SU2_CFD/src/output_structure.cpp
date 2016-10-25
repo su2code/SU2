@@ -59,6 +59,11 @@ COutput::COutput(void) {
   Conn_Hexa = NULL;     Conn_Pris = NULL;       Conn_Pyra = NULL;
   Data = NULL;
   
+  /*--- Initialize parallel pointers to NULL ---*/
+  
+  nParallel_Tria = 0;
+  Conn_Tria_Par = NULL;
+  
   /*--- Initialize CGNS write flag ---*/
   
   wrote_base_file = false;
@@ -1548,6 +1553,629 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         exit(EXIT_FAILURE); break;
     }
   }
+  
+}
+
+void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+  
+  unsigned long iProcessor;
+  unsigned short NODES_PER_ELEMENT;
+  unsigned long iPoint, nElem_Total = 0, Global_Index;
+  
+  int *Conn_Elem = NULL;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Request *send_req, *recv_req;
+  MPI_Status status;
+  int ind;
+#endif
+  
+  /*--- Store the local number of this element type and the number of nodes
+   per this element type. In serial, this will be the total number of this
+   element type in the entire mesh. In parallel, it is the number on only
+   the current partition. ---*/
+  
+  switch (Elem_Type) {
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case QUADRILATERAL:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    case TETRAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
+      break;
+    case HEXAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
+      break;
+    case PRISM:
+      NODES_PER_ELEMENT = N_POINTS_PRISM;
+      break;
+    case PYRAMID:
+      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
+      break;
+    default:
+      cout << "Error: Unrecognized element type \n";
+      exit(EXIT_FAILURE); break;
+  }
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  unsigned long *npoint_procs  = new unsigned long[size];
+  unsigned long *starting_node = new unsigned long[size];
+  unsigned long *ending_node   = new unsigned long[size];
+  unsigned long *nPoint_Linear = new unsigned long[size+1];
+
+  unsigned long total_pt_accounted = 0;
+  for (int ii = 0; ii < size; ii++) {
+    npoint_procs[ii] = geometry->GetGlobal_nPoint()/size;
+    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
+  }
+  
+  /*--- Get the number of remainder points after the even division. ---*/
+  
+  unsigned long rem_points = geometry->GetGlobal_nPoint()-total_pt_accounted;
+  for (unsigned long ii = 0; ii < rem_points; ii++) {
+    npoint_procs[ii]++;
+  }
+  
+  /*--- Store the local number of nodes and the beginning/end index ---*/
+  
+  starting_node[0] = 0;
+  ending_node[0]   = starting_node[0] + npoint_procs[0];
+  nPoint_Linear[0] = 0;
+  for (int ii = 1; ii < size; ii++) {
+    starting_node[ii] = ending_node[ii-1];
+    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
+    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
+  }
+  nPoint_Linear[size] = geometry->GetGlobal_nPoint();
+  
+  /*--- We start with the connectivity distributed across all procs with
+   no particular ordering assumed. We need to loop through our local partition
+   and decide how many elements we must send to each other rank in order to 
+   have all elements sorted according to a linear partitioning of the grid
+   nodes, i.e., rank 0 holds the first nPoint()/nProcessors nodes. 
+   First, initialize a counter and flag. ---*/
+  
+  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
+  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size];
+  
+  for (int ii=0; ii < size; ii++) {
+    nElem_Send[ii] = 0;
+    nElem_Recv[ii] = 0;
+    nElem_Flag[ii]= -1;
+  }
+  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+  
+  for (int ii = 0; ii < (int)geometry->GetnElem(); ii++ ) {
+    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
+      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+        
+        /*--- Get the index of the current point. ---*/
+        
+        iPoint = geometry->elem[ii]->GetNode(jj);
+        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        
+        /*--- Search for the processor that owns this point ---*/
+        
+        iProcessor = Global_Index/npoint_procs[0];
+        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+        if (Global_Index >= nPoint_Linear[iProcessor])
+          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+        else
+          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        
+        /*--- If we have not visted this element yet, increment our
+         number of elements that must be sent to a particular proc. ---*/
+        
+        if (nElem_Flag[iProcessor] != ii) {
+          nElem_Flag[iProcessor] = ii;
+          nElem_Send[iProcessor+1]++;
+        }
+      }
+    }
+  }
+  
+  /*--- Communicate the number of cells to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+#else
+  nElem_Recv[1] = nElem_Send[1];
+#endif
+  
+  /*--- Prepare to send connectivities. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  int nSends = 0, nRecvs = 0;
+  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  
+  for (int ii = 0; ii < size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+    
+    nElem_Send[ii+1] += nElem_Send[ii];
+    nElem_Recv[ii+1] += nElem_Recv[ii];
+  }
+  
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+  
+  unsigned long *connSend = NULL;
+  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
+    connSend[ii] = 0;
+  
+  /*--- Create an index variable to keep track of our index
+   position as we load up the send buffer. ---*/
+  
+  unsigned long *index = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  
+  /*--- Loop through our elements and load the elems and their
+   additional data that we will send to the other procs. ---*/
+  
+  for ( int ii = 0; ii < (int)geometry->GetnElem(); ii++ ) {
+    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
+      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+      
+      /*--- Get the index of the current point. ---*/
+      
+      iPoint = geometry->elem[ii]->GetNode(jj);
+      Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+      
+      /*--- Search for the processor that owns this point ---*/
+      
+      iProcessor = Global_Index/npoint_procs[0];
+      if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+      if (Global_Index >= nPoint_Linear[iProcessor])
+        while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+      else
+        while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+      
+      /*--- Load connectivity into the buffer for sending ---*/
+      
+      if (nElem_Flag[iProcessor] != ii) {
+        
+        nElem_Flag[iProcessor] = ii;
+        unsigned long nn = index[iProcessor];
+        
+        /*--- Load the connectivity values. ---*/
+        
+        for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+          iPoint = geometry->elem[ii]->GetNode(kk);
+          connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
+        }
+        
+        /*--- Increment the index by the message length ---*/
+        
+        index[iProcessor] += NODES_PER_ELEMENT;
+        
+      }
+      }
+    }
+  }
+  
+  /*--- Free memory after loading up the send buffer. ---*/
+
+  delete [] index;
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+  
+  unsigned long *connRecv = NULL;
+  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
+    connRecv[ii] = 0;
+  
+#ifdef HAVE_MPI
+  send_req = new MPI_Request[nSends];
+  recv_req = new MPI_Request[nRecvs];
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+#endif
+  
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  
+  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
+  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
+  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+  
+#ifdef HAVE_MPI
+  int number = nSends;
+  for (int ii = 0; ii < nSends; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+  
+  number = nRecvs;
+  for (int ii = 0; ii < nRecvs; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+  
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+  
+  /*--- Store the connectivity for this rank in the proper data
+   structure before post-processing below. First, allocate the
+   appropriate amount of memory for this section. ---*/
+  
+  Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
+  int count = 0;
+  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+      Conn_Elem[count] = (int)connRecv[ii*NODES_PER_ELEMENT+jj];
+      count++;
+    }
+  }
+  
+  /*--- Store the total number of elements I now have for
+   the current section after completing the communications. ---*/
+  
+  nElem_Total = nElem_Recv[size];
+  
+  /*--- Store the particular global element count in the class data,
+   and set the class data pointer to the connectivity array. ---*/
+  
+    switch (Elem_Type) {
+      case TRIANGLE:
+        nParallel_Tria = nElem_Total;
+        if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
+        break;
+//      case QUADRILATERAL:
+//        nGlobal_Quad = nElem_Total;
+//        if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
+//        break;
+//      case TETRAHEDRON:
+//        nGlobal_Tetr = nElem_Total;
+//        if (nGlobal_Tetr > 0) Conn_Tetr = Conn_Elem;
+//        break;
+//      case HEXAHEDRON:
+//        nGlobal_Hexa = nElem_Total;
+//        if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
+//        break;
+//      case PRISM:
+//        nGlobal_Pris = nElem_Total;
+//        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
+//        break;
+//      case PYRAMID:
+//        nGlobal_Pyra = nElem_Total;
+//        if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
+//        break;
+      default:
+        cout << "Error: Unrecognized element type \n";
+        exit(EXIT_FAILURE); break;
+    }
+  
+  /*--- Free temporary memory from communications ---*/
+  
+  delete [] connSend;
+  delete [] connRecv;
+  delete [] nElem_Recv;
+  delete [] nElem_Send;
+  delete [] nElem_Flag;
+  
+  cout << " SUCCCESS CONN " << nParallel_Tria << endl;
+  
+}
+
+void COutput::SortCoordinates(CConfig *config, CGeometry *geometry) {
+  
+  unsigned long iProcessor;
+  unsigned long Global_Index;
+  
+  int NODES_PER_ELEMENT = 2;
+  if (geometry->GetnDim() > 2) NODES_PER_ELEMENT = 3;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Request *send_req, *recv_req;
+  MPI_Status status;
+  int ind;
+#endif
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  unsigned long *npoint_procs  = new unsigned long[size];
+  unsigned long *starting_node = new unsigned long[size];
+  unsigned long *ending_node   = new unsigned long[size];
+  unsigned long *nPoint_Linear = new unsigned long[size+1];
+  
+  unsigned long total_pt_accounted = 0;
+  for (int ii = 0; ii < size; ii++) {
+    npoint_procs[ii] = geometry->GetGlobal_nPoint()/size;
+    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
+  }
+  
+  /*--- Get the number of remainder points after the even division. ---*/
+  
+  unsigned long rem_points = geometry->GetGlobal_nPoint()-total_pt_accounted;
+  for (unsigned long ii = 0; ii < rem_points; ii++) {
+    npoint_procs[ii]++;
+  }
+  
+  /*--- Store the local number of nodes and the beginning/end index ---*/
+  
+  starting_node[0] = 0;
+  ending_node[0]   = starting_node[0] + npoint_procs[0];
+  nPoint_Linear[0] = 0;
+  for (int ii = 1; ii < size; ii++) {
+    starting_node[ii] = ending_node[ii-1];
+    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
+    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
+  }
+  nPoint_Linear[size] = geometry->GetGlobal_nPoint();
+  
+  /*--- We start with the grid nodes distributed across all procs with
+   no particular ordering assumed. We need to loop through our local partition
+   and decide how many nodes we must send to each other rank in order to
+   have all nodes sorted according to a linear partitioning of the grid
+   nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
+   First, initialize a counter and flag. ---*/
+  
+  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
+  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size];
+  
+  for (int ii=0; ii < size; ii++) {
+    nElem_Send[ii] = 0;
+    nElem_Recv[ii] = 0;
+    nElem_Flag[ii]= -1;
+  }
+  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+  
+  for (int ii = 0; ii < (int)geometry->GetnPoint(); ii++ ) {
+    
+    /*--- Get the global index of the current point. ---*/
+    
+    Global_Index = geometry->node[ii]->GetGlobalIndex();
+    
+    /*--- Search for the processor that owns this point ---*/
+    
+    iProcessor = Global_Index/npoint_procs[0];
+    if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+    if (Global_Index >= nPoint_Linear[iProcessor])
+      while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+    else
+      while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+    
+    /*--- If we have not visted this node yet, increment our
+     number of elements that must be sent to a particular proc. ---*/
+    
+    if (nElem_Flag[iProcessor] != ii) {
+      nElem_Flag[iProcessor] = ii;
+      nElem_Send[iProcessor+1]++;
+    }
+  }
+  
+  /*--- Communicate the number of nodes to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+#else
+  nElem_Recv[1] = nElem_Send[1];
+#endif
+  
+  /*--- Prepare to send coordinates. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  int nSends = 0, nRecvs = 0;
+  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  
+  for (int ii = 0; ii < size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+    
+    nElem_Send[ii+1] += nElem_Send[ii];
+    nElem_Recv[ii+1] += nElem_Recv[ii];
+  }
+  
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+  
+  su2double *connSend = NULL;
+  connSend = new su2double[NODES_PER_ELEMENT*nElem_Send[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
+    connSend[ii] = 0;
+  
+  /*--- Create an index variable to keep track of our index
+   position as we load up the send buffer. ---*/
+  
+  unsigned long *index = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  
+  /*--- Loop through our elements and load the elems and their
+   additional data that we will send to the other procs. ---*/
+  
+  for (int ii = 0; ii < (int)geometry->GetnPoint(); ii++) {
+        
+        /*--- Get the index of the current point. ---*/
+        
+    Global_Index = geometry->node[ii]->GetGlobalIndex();
+    
+        /*--- Search for the processor that owns this point ---*/
+        
+        iProcessor = Global_Index/npoint_procs[0];
+        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+        if (Global_Index >= nPoint_Linear[iProcessor])
+          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+        else
+          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        
+        /*--- Load connectivity into the buffer for sending ---*/
+        
+        if (nElem_Flag[iProcessor] != ii) {
+          
+          nElem_Flag[iProcessor] = ii;
+          unsigned long nn = index[iProcessor];
+          
+          /*--- Load the coordinate values. ---*/
+          
+          for (unsigned short kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+            connSend[nn] = geometry->node[ii]->GetCoord(kk); nn++;
+          }
+          
+          /*--- Increment the index by the message length ---*/
+          
+          index[iProcessor] += NODES_PER_ELEMENT;
+          
+        }
+  }
+  
+  /*--- Free memory after loading up the send buffer. ---*/
+  
+  delete [] index;
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+  
+  su2double *connRecv = NULL;
+  connRecv = new su2double[NODES_PER_ELEMENT*nElem_Recv[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
+    connRecv[ii] = 0;
+  
+#ifdef HAVE_MPI
+  send_req = new MPI_Request[nSends];
+  recv_req = new MPI_Request[nRecvs];
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+#endif
+  
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  
+  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
+  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
+  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+  
+#ifdef HAVE_MPI
+  int number = nSends;
+  for (int ii = 0; ii < nSends; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+  
+  number = nRecvs;
+  for (int ii = 0; ii < nRecvs; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+  
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+  
+  /*--- Store the connectivity for this rank in the proper data
+   structure before post-processing below. First, allocate the
+   appropriate amount of memory for this section. ---*/
+  
+  Parallel_Coords = new su2double*[NODES_PER_ELEMENT];
+      for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+      Parallel_Coords[jj] = new su2double[nElem_Recv[size]];
+      for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+
+      Parallel_Coords[jj][ii] = connRecv[ii*NODES_PER_ELEMENT+jj];
+    }
+  }
+  
+  /*--- Store the total number of elements I now have for
+   the current section after completing the communications. ---*/
+  
+  nParallel_Poin = nElem_Recv[size];
+  
+  /*--- Free temporary memory from communications ---*/
+  
+  delete [] connSend;
+  delete [] connRecv;
+  delete [] nElem_Recv;
+  delete [] nElem_Send;
+  delete [] nElem_Flag;
+  
+  cout << " SUCCCESS COORDS " << nParallel_Poin << endl;
   
 }
 
@@ -3897,6 +4525,9 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
       if (Conn_Hexa != NULL) delete [] Conn_Hexa;
       if (Conn_Pris != NULL) delete [] Conn_Pris;
       if (Conn_Pyra != NULL) delete [] Conn_Pyra;
+      
+      if (nGlobal_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+
     }
     
   }
@@ -7183,6 +7814,10 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       if (rank == MASTER_NODE) cout << "Merging connectivities in the Master node." << endl;
       MergeConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
     }
+    
+    //SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TRIANGLE    );
+    //SortCoordinates(config[iZone], geometry[iZone][MESH_0]);
+
     
     /*--- Merge coordinates of all grid nodes (excluding ghost points).
      The grid coordinates are always merged and included first in the

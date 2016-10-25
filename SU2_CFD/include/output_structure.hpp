@@ -87,6 +87,11 @@ class COutput {
 	int *Conn_Hexa;
 	int *Conn_Pris;
 	int *Conn_Pyra;
+  
+  unsigned long nParallel_Poin, nParallel_Tria;
+  int *Conn_Tria_Par;	// triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
+  su2double **Parallel_Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+
 	su2double **Data;
 	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
 	bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
@@ -235,12 +240,27 @@ public:
 	void MergeCoordinates(CConfig *config, CGeometry *geometry);
   
   /*!
+   * \brief Sort the coordinates for each grid node into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SortCoordinates(CConfig *config, CGeometry *geometry);
+  
+  /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] Elem_Type - VTK index of the element type being merged.
 	 */
 	void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+   * \brief Sort the connectivity for a single element type into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
