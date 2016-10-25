@@ -5258,9 +5258,6 @@ private:
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   
-  /* Sliding meshes variables */
-
-  su2double ***SlidingState;
   
 public:
   
