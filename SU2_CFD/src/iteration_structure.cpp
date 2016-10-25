@@ -2032,17 +2032,9 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   }
 
   /*--- Run the direct iteration ---*/
-/*cout << " ECCOLOOOOO   ";// transfer??
 
-int nIntIter;
-if (unsteady) 
-		nIntIter = config_container[val_iZone]->GetUnst_nIntIter();
-	else
-		nIntIter = 1;
-
-	for (IntIter = 0; IntIter < nIntIter; IntIter++){*/
-		config_container[val_iZone]->SetIntIter(0);
-		meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
+  config_container[val_iZone]->SetIntIter(0);
+  meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
 
   config_container[val_iZone]->SetExtIter(ExtIter);
