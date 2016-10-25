@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
 			output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iZone, nZone);
 		}
     
-    else if (config_container[ZONE_0]->GetWrt_Dynamic()){
+        else if (config_container[ZONE_0]->GetWrt_Dynamic()){
 
 			/*--- Dynamic simulation: merge all unsteady time steps. First,
 			 find the frequency and total number of files to write. ---*/
