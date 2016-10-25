@@ -10882,7 +10882,14 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           		PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
           	}
 
-          	Secondary_i = node[iPoint]->GetSecondary();
+//          	Secondary_i = node[iPoint]->GetSecondary();
+//
+          	P_static   = PrimVar_i[nDim+1];
+          	rho_static = PrimVar_i[nDim+2];
+          	FluidModel->SetTDState_Prho(P_static, rho_static);
+
+          	Secondary_i[0] = FluidModel->GetdPdrho_e();
+          	Secondary_i[1] = FluidModel->GetdPde_rho();
 
           	P_static   = PrimVar_j[nDim+1];
           	rho_static = PrimVar_j[nDim+2];

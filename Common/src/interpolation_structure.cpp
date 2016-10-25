@@ -501,6 +501,10 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
         /*--- Coordinates of the boundary point ---*/
         Coord_i = target_geometry->node[Point_Target]->GetCoord();
 
+        su2double Theta_i, R_i;
+        Theta_i = atan2(Coord_i[1],Coord_i[0]);
+        R_i = sqrt(pow(Coord_i[1],2)+pow(Coord_i[0],2));
+
         mindist    = 1E6; 
         pProcessor = 0;
 
@@ -514,16 +518,22 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
         		dist = 0.0;
         		for (iDim = 0; iDim < nDim; iDim++) {
         			Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-//        			if ( iDim == 1 && Coord_i[1] > Coord_j_max   ){
-//        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]-0.105 ),2.0);
-//        			}
-//        			else if ( iDim == 1 && Coord_i[1] <=  Coord_j_min  ){
-//        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]+0.105 ),2.0);
-//        			}
-//        			else
+        			if ( iDim == 0 && Theta_i > Theta_j_max   ){
+        				dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i - 12.41/180*PI_NUMBER)),2.0);
+        			}
+        			else if ( iDim == 0 && Theta_i <=  Theta_j_min  ){
+        				dist += pow(Coord_j[iDim] - (R_i * cos(Theta_i + 12.41/180*PI_NUMBER)),2.0);
+        			}
+        			else if ( iDim == 1 && Theta_i > Theta_j_max   ){
+        				dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i - 12.41/180*PI_NUMBER)),2.0);
+        			}
+        			else if ( iDim == 1 && Theta_i <=  Theta_j_min  ){
+        				dist += pow(Coord_j[iDim] - (R_i * sin(Theta_i + 12.41/180*PI_NUMBER)),2.0);
+        			}
+        			else
         				dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
-//        			cout << "Coord_i->" << Coord_i[iDim] << "Coord_j->" << Coord_j[iDim] << endl;
-//        			cout << "Coord_i->" << fmod(Coord_i[iDim], 0.105) << "Coord_j->" << Coord_j[iDim] << endl;
+        			//        			cout << "Coord_i->" << Coord_i[iDim] << "Coord_j->" << Coord_j[iDim] << endl;
+        			//        			cout << "Coord_i->" << fmod(Coord_i[iDim], 0.105) << "Coord_j->" << Coord_j[iDim] << endl;
         		}
 
         		if (dist < mindist) {
