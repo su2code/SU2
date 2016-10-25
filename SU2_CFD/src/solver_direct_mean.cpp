@@ -645,6 +645,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   SlidingState = new su2double** [nMarker];
   
   for (iMarker = 0; iMarker < nMarker; iMarker++){
+	
+	SlidingState[iMarker] = NULL;
 	  
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
@@ -1101,6 +1103,18 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CharacPrimVar;
   }
   
+  if ( SlidingState != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      if ( SlidingState[iMarker] != NULL ){
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] SlidingState[iMarker][iVertex];
+          
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+  }
+  
   if (nVertex!=NULL)  delete [] nVertex;
 
   if (HeatFlux != NULL) {
@@ -1182,14 +1196,6 @@ CEulerSolver::~CEulerSolver(void) {
   if (NormalMachOut         != NULL) delete [] NormalMachOut;
   if (VelocityOutIs         != NULL) delete [] VelocityOutIs;
   
-  if ( SlidingState != NULL ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      if ( SlidingState[iMarker] != NULL )
-        delete [] SlidingState[iMarker];
-    }
-    delete [] SlidingState;
-  }
-
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -13318,6 +13324,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   SlidingState = new su2double** [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
+	  
+	SlidingState[iMarker] = NULL;
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 
@@ -13616,7 +13624,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker, iDim;
+  unsigned short iMarker, iDim, iVertex;
   
   if (CD_Visc != NULL)       delete [] CD_Visc;
   if (CL_Visc != NULL)       delete [] CL_Visc;
@@ -13660,15 +13668,6 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] CSkinFriction;
   }
-  
-  if ( SlidingState != NULL ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      if ( SlidingState[iMarker] != NULL )
-        delete [] SlidingState[iMarker];
-    }
-    delete [] SlidingState;
-  }
-  
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
