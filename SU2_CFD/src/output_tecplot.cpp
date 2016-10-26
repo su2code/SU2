@@ -933,6 +933,145 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool su
   
 }
 
+void COutput::SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file) {
+  
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint, iElem, iNode;
+  unsigned long *LocalIndex = NULL;
+  bool *SurfacePoint = NULL;
+  char cstr[200];
+  ofstream Tecplot_File;
+  
+  int iProcessor;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  if (surf_sol) strcpy(cstr, "surface_grid.dat");
+  else strcpy(cstr, "volumetric_grid.dat");
+  
+  /*--- Open Tecplot ASCII file and write the header. ---*/
+  
+  if (rank == MASTER_NODE) {
+    Tecplot_File.open(cstr, ios::out);
+    Tecplot_File.precision(6);
+     Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
+    
+    if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\"";
+    else Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
+  Tecplot_File << endl;
+  
+  /*--- Write the header ---*/
+  
+  Tecplot_File << "ZONE T= ";
+  if (new_file) Tecplot_File << "\"Original grid\", ";
+  else Tecplot_File << "\"Deformed grid\", ";
+  
+  // WARNING: NEED TO CHECK THESE COUNTERS FOR PARALLEL VERSION
+  
+  if (nDim == 2) {
+     Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+  } else {
+     Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+  }
+    Tecplot_File.close();
+
+  }
+  
+  //Try to have every proc open the file at the same time.
+  
+  Tecplot_File.open(cstr, ios::out | ios::app);
+  
+  /*--- Write surface and volumetric solution data. ---*/
+  
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+        
+        /*--- Write the node coordinates from this proc ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Tecplot_File << scientific << Parallel_Coords[iDim][iPoint] << "\t";
+        
+        Tecplot_File << endl;
+        
+      }
+    }
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  }
+  
+  /*--- Write connectivity data. ---*/
+  
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      
+    for (iElem = 0; iElem < nParallel_Tria; iElem++) {
+      iNode = iElem*N_POINTS_TRIANGLE;
+      Tecplot_File << Conn_Tria_Par[iNode+0] << "\t";
+      Tecplot_File << Conn_Tria_Par[iNode+1] << "\t";
+      Tecplot_File << Conn_Tria_Par[iNode+2] << "\t";
+      Tecplot_File << Conn_Tria_Par[iNode+2] << "\n";
+    }
+    
+    for (iElem = 0; iElem < nParallel_Quad; iElem++) {
+      iNode = iElem*N_POINTS_QUADRILATERAL;
+      Tecplot_File << Conn_Quad_Par[iNode+0] << "\t";
+      Tecplot_File << Conn_Quad_Par[iNode+1] << "\t";
+      Tecplot_File << Conn_Quad_Par[iNode+2] << "\t";
+      Tecplot_File << Conn_Quad_Par[iNode+3] << "\n";
+    }
+    
+    for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
+      iNode = iElem*N_POINTS_TETRAHEDRON;
+      Tecplot_File << Conn_Tetr_Par[iNode+0] << "\t" << Conn_Tetr_Par[iNode+1] << "\t";
+      Tecplot_File << Conn_Tetr_Par[iNode+2] << "\t" << Conn_Tetr_Par[iNode+2] << "\t";
+      Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\t";
+      Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\n";
+    }
+    
+    for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
+      iNode = iElem*N_POINTS_HEXAHEDRON;
+      Tecplot_File << Conn_Hexa_Par[iNode+0] << "\t" << Conn_Hexa_Par[iNode+1] << "\t";
+      Tecplot_File << Conn_Hexa_Par[iNode+2] << "\t" << Conn_Hexa_Par[iNode+3] << "\t";
+      Tecplot_File << Conn_Hexa_Par[iNode+4] << "\t" << Conn_Hexa_Par[iNode+5] << "\t";
+      Tecplot_File << Conn_Hexa_Par[iNode+6] << "\t" << Conn_Hexa_Par[iNode+7] << "\n";
+    }
+    
+    for (iElem = 0; iElem < nParallel_Pris; iElem++) {
+      iNode = iElem*N_POINTS_PRISM;
+      Tecplot_File << Conn_Pris_Par[iNode+0] << "\t" << Conn_Pris_Par[iNode+1] << "\t";
+      Tecplot_File << Conn_Pris_Par[iNode+1] << "\t" << Conn_Pris_Par[iNode+2] << "\t";
+      Tecplot_File << Conn_Pris_Par[iNode+3] << "\t" << Conn_Pris_Par[iNode+4] << "\t";
+      Tecplot_File << Conn_Pris_Par[iNode+4] << "\t" << Conn_Pris_Par[iNode+5] << "\n";
+    }
+    
+    for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
+      iNode = iElem*N_POINTS_PYRAMID;
+      Tecplot_File << Conn_Pyra_Par[iNode+0] << "\t" << Conn_Pyra_Par[iNode+1] << "\t";
+      Tecplot_File << Conn_Pyra_Par[iNode+2] << "\t" << Conn_Pyra_Par[iNode+3] << "\t";
+      Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\t";
+      Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\n";
+    }
+  
+    }
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  }
+  
+  Tecplot_File.close();
+  
+  
+}
+
 void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
 #ifdef HAVE_TECIO
