@@ -10105,8 +10105,9 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
                   jVertex_ = Buffer_Receive_Vertex[iProcessor*MaxLocalVertex_ActDisk+jVertex];
                   jMarker = Buffer_Receive_Marker[iProcessor*MaxLocalVertex_ActDisk+jVertex];
                   
-                  if (jPointGlobal != iPointGlobal) {
-                    
+ //                 if (jPointGlobal != iPointGlobal) {
+ //                 ActDisk_Perimeter
+
                     /*--- Compute the distance ---*/
                     
                     dist = 0.0;
@@ -10122,11 +10123,9 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
                       if (dist == 0.0) break;
                     }
                     
-                  }
-                  
-                  else { Perimeter = true; mindist = 0.0; dist = 0.0; break; }
-                  
-                }
+//                  }
+//                  else { Perimeter = true; mindist = 0.0; dist = 0.0; break; }
+               }
               }
               
               /*--- Store the value of the pair ---*/
