@@ -960,27 +960,27 @@ void COutput::SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry
   if (rank == MASTER_NODE) {
     Tecplot_File.open(cstr, ios::out);
     Tecplot_File.precision(6);
-     Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
+    Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
     
     if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\"";
     else Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
-  Tecplot_File << endl;
-  
-  /*--- Write the header ---*/
-  
-  Tecplot_File << "ZONE T= ";
-  if (new_file) Tecplot_File << "\"Original grid\", ";
-  else Tecplot_File << "\"Deformed grid\", ";
-  
-  // WARNING: NEED TO CHECK THESE COUNTERS FOR PARALLEL VERSION
-  
-  if (nDim == 2) {
-     Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
-  } else {
-     Tecplot_File << "NODES= "<< nGlobal_Poin <<", ELEMENTS= "<< nGlobal_Elem <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
-  }
+    Tecplot_File << endl;
+    
+    /*--- Write the header ---*/
+    
+    Tecplot_File << "ZONE T= ";
+    if (new_file) Tecplot_File << "\"Original grid\", ";
+    else Tecplot_File << "\"Deformed grid\", ";
+    
+    // WARNING: NEED TO CHECK THESE COUNTERS FOR PARALLEL VERSION
+    
+    if (nDim == 2) {
+      Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+    } else {
+      Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+    }
     Tecplot_File.close();
-
+    
   }
   
   //Try to have every proc open the file at the same time.
@@ -991,18 +991,16 @@ void COutput::SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry
   
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
-      
       for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
         
         /*--- Write the node coordinates from this proc ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
           Tecplot_File << scientific << Parallel_Coords[iDim][iPoint] << "\t";
-        
         Tecplot_File << endl;
-        
       }
     }
+    Tecplot_File.flush();
 #ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -1013,62 +1011,62 @@ void COutput::SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry
   for (iProcessor = 0; iProcessor < size; iProcessor++) {
     if (rank == iProcessor) {
       
-    for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-      iNode = iElem*N_POINTS_TRIANGLE;
-      Tecplot_File << Conn_Tria_Par[iNode+0] << "\t";
-      Tecplot_File << Conn_Tria_Par[iNode+1] << "\t";
-      Tecplot_File << Conn_Tria_Par[iNode+2] << "\t";
-      Tecplot_File << Conn_Tria_Par[iNode+2] << "\n";
+      for (iElem = 0; iElem < nParallel_Tria; iElem++) {
+        iNode = iElem*N_POINTS_TRIANGLE;
+        Tecplot_File << Conn_Tria_Par[iNode+0] << "\t";
+        Tecplot_File << Conn_Tria_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Tria_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Tria_Par[iNode+2] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Quad; iElem++) {
+        iNode = iElem*N_POINTS_QUADRILATERAL;
+        Tecplot_File << Conn_Quad_Par[iNode+0] << "\t";
+        Tecplot_File << Conn_Quad_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Quad_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Quad_Par[iNode+3] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
+        iNode = iElem*N_POINTS_TETRAHEDRON;
+        Tecplot_File << Conn_Tetr_Par[iNode+0] << "\t" << Conn_Tetr_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Tetr_Par[iNode+2] << "\t" << Conn_Tetr_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\t";
+        Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
+        iNode = iElem*N_POINTS_HEXAHEDRON;
+        Tecplot_File << Conn_Hexa_Par[iNode+0] << "\t" << Conn_Hexa_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Hexa_Par[iNode+2] << "\t" << Conn_Hexa_Par[iNode+3] << "\t";
+        Tecplot_File << Conn_Hexa_Par[iNode+4] << "\t" << Conn_Hexa_Par[iNode+5] << "\t";
+        Tecplot_File << Conn_Hexa_Par[iNode+6] << "\t" << Conn_Hexa_Par[iNode+7] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Pris; iElem++) {
+        iNode = iElem*N_POINTS_PRISM;
+        Tecplot_File << Conn_Pris_Par[iNode+0] << "\t" << Conn_Pris_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Pris_Par[iNode+1] << "\t" << Conn_Pris_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Pris_Par[iNode+3] << "\t" << Conn_Pris_Par[iNode+4] << "\t";
+        Tecplot_File << Conn_Pris_Par[iNode+4] << "\t" << Conn_Pris_Par[iNode+5] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
+        iNode = iElem*N_POINTS_PYRAMID;
+        Tecplot_File << Conn_Pyra_Par[iNode+0] << "\t" << Conn_Pyra_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Pyra_Par[iNode+2] << "\t" << Conn_Pyra_Par[iNode+3] << "\t";
+        Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\t";
+        Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\n";
+      }
+      
     }
-    
-    for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-      iNode = iElem*N_POINTS_QUADRILATERAL;
-      Tecplot_File << Conn_Quad_Par[iNode+0] << "\t";
-      Tecplot_File << Conn_Quad_Par[iNode+1] << "\t";
-      Tecplot_File << Conn_Quad_Par[iNode+2] << "\t";
-      Tecplot_File << Conn_Quad_Par[iNode+3] << "\n";
-    }
-    
-    for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-      iNode = iElem*N_POINTS_TETRAHEDRON;
-      Tecplot_File << Conn_Tetr_Par[iNode+0] << "\t" << Conn_Tetr_Par[iNode+1] << "\t";
-      Tecplot_File << Conn_Tetr_Par[iNode+2] << "\t" << Conn_Tetr_Par[iNode+2] << "\t";
-      Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\t";
-      Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\n";
-    }
-    
-    for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-      iNode = iElem*N_POINTS_HEXAHEDRON;
-      Tecplot_File << Conn_Hexa_Par[iNode+0] << "\t" << Conn_Hexa_Par[iNode+1] << "\t";
-      Tecplot_File << Conn_Hexa_Par[iNode+2] << "\t" << Conn_Hexa_Par[iNode+3] << "\t";
-      Tecplot_File << Conn_Hexa_Par[iNode+4] << "\t" << Conn_Hexa_Par[iNode+5] << "\t";
-      Tecplot_File << Conn_Hexa_Par[iNode+6] << "\t" << Conn_Hexa_Par[iNode+7] << "\n";
-    }
-    
-    for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-      iNode = iElem*N_POINTS_PRISM;
-      Tecplot_File << Conn_Pris_Par[iNode+0] << "\t" << Conn_Pris_Par[iNode+1] << "\t";
-      Tecplot_File << Conn_Pris_Par[iNode+1] << "\t" << Conn_Pris_Par[iNode+2] << "\t";
-      Tecplot_File << Conn_Pris_Par[iNode+3] << "\t" << Conn_Pris_Par[iNode+4] << "\t";
-      Tecplot_File << Conn_Pris_Par[iNode+4] << "\t" << Conn_Pris_Par[iNode+5] << "\n";
-    }
-    
-    for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-      iNode = iElem*N_POINTS_PYRAMID;
-      Tecplot_File << Conn_Pyra_Par[iNode+0] << "\t" << Conn_Pyra_Par[iNode+1] << "\t";
-      Tecplot_File << Conn_Pyra_Par[iNode+2] << "\t" << Conn_Pyra_Par[iNode+3] << "\t";
-      Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\t";
-      Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\n";
-    }
-  
-    }
+    Tecplot_File.flush();
 #ifdef HAVE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
   }
   
   Tecplot_File.close();
-  
   
 }
 

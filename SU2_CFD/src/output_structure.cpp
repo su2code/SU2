@@ -1884,6 +1884,9 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   unsigned long *index = new unsigned long[size];
   for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
 
+  unsigned long *haloIndex = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
+  
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
   
@@ -1921,6 +1924,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           
           nElem_Flag[iProcessor] = ii;
           unsigned long nn = index[iProcessor];
+          unsigned long mm = haloIndex[iProcessor];
           
           /*--- Load the connectivity values. ---*/
           
@@ -1932,13 +1936,14 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
              as a halo cell. We will use this later to sort and remove
              any duplicates from the connectivity list. ---*/
             
-            if (Local_Halo[iPoint]) haloSend[ii] = true;
+            if (Local_Halo[iPoint]) haloSend[mm] = true;
             
           }
           
           /*--- Increment the index by the message length ---*/
           
           index[iProcessor]    += NODES_PER_ELEMENT;
+          haloIndex[iProcessor]++;
           
         }
       }
@@ -1948,6 +1953,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- Free memory after loading up the send buffer. ---*/
   
   delete [] index;
+  delete [] haloIndex;
   
   /*--- Allocate the memory that we need for receiving the conn
    values and then cue up the non-blocking receives. Note that
@@ -8120,26 +8126,31 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     }
     
     
-//    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TRIANGLE    );
-//    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], QUADRILATERAL    );
-//    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TETRAHEDRON    );
-//    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], HEXAHEDRON    );
-//    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PRISM    );
-//    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PYRAMID    );
-//
-//    SortCoordinates(config[iZone], geometry[iZone][MESH_0]);
-//
-//    // hack
-//    nGlobal_Poin = geometry[iZone][MESH_0]->GetGlobal_nPointDomain();
-//    
-//#ifndef HAVE_MPI
-//    nGlobal_Elem = geometry[iZone][MESH_0]->GetGlobal_nElem();
-//#else
-//    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-//    SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-//#endif
-//    
-//    SetTecplotASCII_Mesh_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
+    /*--- Hacking in the parallel output straight here in line for now... ---*/
+    
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TRIANGLE      );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], QUADRILATERAL );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TETRAHEDRON   );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], HEXAHEDRON    );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PRISM         );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PYRAMID       );
+
+    SortCoordinates(config[iZone], geometry[iZone][MESH_0]);
+    
+    /*--- Reduce the total number of points and cells we will be writing in the output files. ---*/
+    
+#ifndef HAVE_MPI
+    nGlobal_Poin_Par = geometry[iZone][MESH_0]->GetGlobal_nPointDomain();
+    nGlobal_Elem_Par = geometry[iZone][MESH_0]->GetGlobal_nElem();
+#else
+    SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
+    SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    
+    /*--- Write naive parallel ASCII files. ---*/
+    
+    SetTecplotASCII_Mesh_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
     
     
     /*--- Merge coordinates of all grid nodes (excluding ghost points).
