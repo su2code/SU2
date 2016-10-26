@@ -76,12 +76,12 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
                                       CGeometry *donor_geometry, CGeometry *target_geometry,
                                       CConfig *donor_config, CConfig *target_config) {
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
   int Target_check, Donor_check;
   
-  unsigned long iVertex;							// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                            // Variables for iteration over vertices and nodes
   
   unsigned short iVar;
   
@@ -175,7 +175,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
         if( Buffer_Recv_mark[iRank] != -1 ){
           Donor_check = Buffer_Recv_mark[iRank];
           break;
-        }		
+        }       
       }
     }
 
@@ -188,7 +188,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
         if( Buffer_Recv_mark[iRank] != -1 ){
           Target_check = Buffer_Recv_mark[iRank];
           break;
-        }	
+        }   
       }
     }
 
@@ -196,7 +196,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     #else
     Donor_check  = Marker_Donor;
-    Target_check = Marker_Target;	
+    Target_check = Marker_Target;   
     #endif
 
     if(Target_check == -1 || Donor_check == -1){
@@ -212,8 +212,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     if( Marker_Target != -1 )
       nLocalVertexTarget = target_geometry->GetnVertex(Marker_Target);
 
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
-    Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;							   // Retrieve total number of vertices on Target marker
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                               // Retrieve total number of vertices on Donor marker
+    Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;                             // Retrieve total number of vertices on Target marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     if (rank == MASTER_NODE) Buffer_Recv_nVertexTarget = new unsigned long[size];  // Allocate memory to receive how many vertices are on each rank on the fluid side
 #ifdef HAVE_MPI
@@ -469,12 +469,12 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
                                                  CGeometry *donor_geometry, CGeometry *target_geometry,
                                                  CConfig *donor_config, CConfig *target_config) {
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
   int Target_check, Donor_check;
   
-  unsigned long iVertex;								// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                                // Variables for iteration over vertices and nodes
   
   unsigned short iVar;
   
@@ -565,7 +565,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         if( Buffer_Recv_mark[iRank] != -1 ){
           Donor_check = Buffer_Recv_mark[iRank];
           break;
-        }		
+        }       
       }
     }
 
@@ -578,7 +578,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         if( Buffer_Recv_mark[iRank] != -1 ){
           Target_check = Buffer_Recv_mark[iRank];
           break;
-        }	
+        }   
       }
     }
 
@@ -586,7 +586,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     #else
     Donor_check  = Marker_Donor;
-    Target_check = Marker_Target;	
+    Target_check = Marker_Target;   
     #endif
 
     if(Target_check == -1 || Donor_check == -1){
@@ -606,7 +606,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         }
     }
 
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                               // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
 
 #ifdef HAVE_MPI
@@ -756,7 +756,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
             Target_Variable[iVar] = Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
           
           if (Point_Target_Check >= 0)
-			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
           
         }
         
@@ -788,12 +788,12 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
                                                     CConfig *donor_config, CConfig *target_config) {
   
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
   int Marker_Donor, Marker_Target;
   int Target_check, Donor_check;
   
-  unsigned long iVertex;							// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                            // Variables for iteration over vertices and nodes
   
   unsigned short iVar;
   
@@ -891,7 +891,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
         if( Buffer_Recv_mark[iRank] != -1 ){
           Donor_check = Buffer_Recv_mark[iRank];
           break;
-        }		
+        }       
       }
     }
 
@@ -904,7 +904,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
         if( Buffer_Recv_mark[iRank] != -1 ){
           Target_check = Buffer_Recv_mark[iRank];
           break;
-        }	
+        }   
       }
     }
 
@@ -912,7 +912,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     #else
     Donor_check  = Marker_Donor;
-    Target_check = Marker_Target;	
+    Target_check = Marker_Target;   
     #endif
 
     if(Target_check == -1 || Donor_check == -1){
@@ -921,18 +921,18 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     nLocalVertexDonorOwned = 0;
     nLocalVertexDonor      = 0;
-	
-	if( Marker_Donor != -1 ){
-		nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
-	
-		for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
-			  Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
-			  if (donor_geometry->node[Point_Donor]->GetDomain())
-				nLocalVertexDonorOwned++;
-			}
+    
+    if( Marker_Donor != -1 ){
+        nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+    
+        for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
+              Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+              if (donor_geometry->node[Point_Donor]->GetDomain())
+                nLocalVertexDonorOwned++;
+            }
     }
     
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;				   // Retrieve total number of vertices on Donor marker
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
 #ifdef HAVE_MPI
@@ -986,20 +986,20 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     
 
     for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
-	Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
-	
-	/*--- If this processor owns the node ---*/
-		
-	if (donor_geometry->node[Point_Donor]->GetDomain()) {
-	
-		GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
-	
-		for (iVar = 0; iVar < nVar; iVar++) 
-			Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
-		
-		Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
-		Buffer_Send_DonorIndices[iVertex]     = Point_Donor_Global;
-	}
+    Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+    
+    /*--- If this processor owns the node ---*/
+        
+    if (donor_geometry->node[Point_Donor]->GetDomain()) {
+    
+        GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
+    
+        for (iVar = 0; iVar < nVar; iVar++) 
+            Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
+        
+        Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
+        Buffer_Send_DonorIndices[iVertex]     = Point_Donor_Global;
+    }
 
     }
       
@@ -1019,29 +1019,29 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     
     if (rank == MASTER_NODE) {
 
-    	/*--- For all the data we have received ---*/
+        /*--- For all the data we have received ---*/
         /*--- We initialize a counter to determine the position in the broadcast vector ---*/
         iLocalVertex = 0;
       
         for (iVertex = 0; iVertex < nProcessor*nBuffer_DonorIndices; iVertex++) {
         
-        	/*--- If the donor index is not -1 (this is, if the node is not originally a halo node) ---*/
-        	if (Buffer_Recv_DonorIndices[iVertex] != -1) {
+            /*--- If the donor index is not -1 (this is, if the node is not originally a halo node) ---*/
+            if (Buffer_Recv_DonorIndices[iVertex] != -1) {
           
-        		/*--- We set the donor index ---*/
-        		Buffer_Bcast_Indices[iLocalVertex] = Buffer_Recv_DonorIndices[iVertex];
+                /*--- We set the donor index ---*/
+                Buffer_Bcast_Indices[iLocalVertex] = Buffer_Recv_DonorIndices[iVertex];
           
-        		for (iVar = 0; iVar < nVar; iVar++)
-        			Buffer_Bcast_Variables[iLocalVertex*nVar+iVar] = Buffer_Recv_DonorVariables[iVertex*nVar + iVar];
-        		
+                for (iVar = 0; iVar < nVar; iVar++)
+                    Buffer_Bcast_Variables[iLocalVertex*nVar+iVar] = Buffer_Recv_DonorVariables[iVertex*nVar + iVar];
+                
           
-        		iLocalVertex++;
+                iLocalVertex++;
           
-        	}
+            }
         
-        	if (iLocalVertex == TotalVertexDonor) break;
+            if (iLocalVertex == TotalVertexDonor) break;
         
-      	}
+        }
       
     }
     
@@ -1097,7 +1097,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
           }
 
           if (Point_Target_Check >= 0)
-			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
         }
         
       }
@@ -1128,12 +1128,12 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
                                         CConfig *donor_config, CConfig *target_config) {
   
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
   int Target_check, Donor_check;
   
-  unsigned long iVertex;								// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                                // Variables for iteration over vertices and nodes
   unsigned short iVar;
   
   GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
@@ -1229,7 +1229,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
         if( Buffer_Recv_mark[iRank] != -1 ){
           Donor_check = Buffer_Recv_mark[iRank];
           break;
-        }		
+        }       
       }
     }
 
@@ -1242,7 +1242,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
         if( Buffer_Recv_mark[iRank] != -1 ){
           Target_check = Buffer_Recv_mark[iRank];
           break;
-        }	
+        }   
       }
     }
 
@@ -1250,7 +1250,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     #else
     Donor_check  = Marker_Donor;
-    Target_check = Marker_Target;	
+    Target_check = Marker_Target;   
     #endif
 
     if(Target_check == -1 || Donor_check == -1){
@@ -1259,10 +1259,10 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     nLocalVertexDonor  = 0;
 
-	if( Marker_Donor != -1 )
-		nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+    if( Marker_Donor != -1 )
+        nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
     
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;      // Retrieve total number of vertices on Donor marker
     Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
 #ifdef HAVE_MPI
@@ -1385,7 +1385,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
           }
           
           if (Point_Target_Check >= 0)
-			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);          
+            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);          
           
         }
         

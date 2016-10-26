@@ -78,12 +78,12 @@ int main(int argc, char *argv[]) {
   if ( (config->GetKind_Solver() == FEM_ELASTICITY || config->GetKind_Solver() == POISSON_EQUATION || config->GetKind_Solver() == WAVE_EQUATION || config->GetKind_Solver() == HEAT_EQUATION) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
-	
-	if(nZone > 1 ) {
-	  cout << "The required solver doesn't support multizone simulations" << endl; 
-	  exit(EXIT_FAILURE);
-	}
-	
+    
+    if(nZone > 1 ) {
+      cout << "The required solver doesn't support multizone simulations" << endl; 
+      exit(EXIT_FAILURE);
+    }
+    
     driver = new CGeneralDriver(config_file_name, nZone, nDim);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
