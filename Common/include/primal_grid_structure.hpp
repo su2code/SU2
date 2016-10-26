@@ -112,6 +112,14 @@ public:
   void SetLengthScale(su2double val_lenScale);
 
  /*!
+  * \brief Get the boolean to indicate whether or not this element owns the face
+           between the current and the adjacent element with index val_face.
+  * \param[in] val_face - Local index of the face.
+  * \return   Boolean to indicate whether or not the face is owned by this element.
+  */
+ bool GetOwnerFace(unsigned short val_face);
+
+ /*!
   * \brief Set the boolean to indicate whether or not this element owns the face
            between the current and the adjacent element with index val_face.
   * \param[in] val_owner - Whether or not this element owns the face.

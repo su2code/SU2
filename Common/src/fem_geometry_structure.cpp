@@ -298,7 +298,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- Determine the ranks to which I have to send my elements. ---*/
   vector<int> sendToRank(nRank, 0);
 
-  for(unsigned long i=0; i<geometry->GetnElem(); i++) {
+  for(unsigned long i=0; i<geometry->GetnElem(); ++i) {
     sendToRank[geometry->elem[i]->GetColor()] = 1;
   }
 
@@ -359,6 +359,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     for(unsigned short j=0; j<geometry->elem[i]->GetnFaces(); ++j) {
       shortSendBuf[ind].push_back(geometry->elem[i]->GetPeriodicIndex(j));
       shortSendBuf[ind].push_back( (short) geometry->elem[i]->GetJacobianConstantFace(j));
+      shortSendBuf[ind].push_back( (short) geometry->elem[i]->GetOwnerFace(j));
     }
   }
 
@@ -374,7 +375,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     unsigned long indS = 3;
     for(long j=0; j<longSendBuf[i][0]; ++j) {
       short nDOFsGrid = shortSendBuf[i][indS], nFaces = shortSendBuf[i][indS+2];
-      indS += 2*nFaces+7;
+      indS += 3*nFaces+7;
 
       for(short k=0; k<nDOFsGrid; ++k, ++indL)
         nodeIDs.push_back(longSendBuf[i][indL]);
@@ -460,8 +461,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /*--- Communicate the data to the correct ranks. Make a distinction
         between parallel and sequential mode.    ---*/
-
   map<int,int>::const_iterator MI;
+
 #ifdef HAVE_MPI
 
   /*--- Parallel mode. Send all the data using non-blocking sends. ---*/
@@ -561,7 +562,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       unsigned short nDOFsGrid = shortRecvBuf[i][indS+3];
       unsigned short nFaces    = shortRecvBuf[i][indS+5];
-      indS += 2*nFaces + 7;
+      indS += 3*nFaces + 7;
       indL += nDOFsGrid + nFaces + 2;
     }
 
@@ -598,10 +599,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       indS += 7;
       indL += nDOFsGrid + 2;
-      for(unsigned short k=0; k<nFaces; ++k, indS+=2, ++indL) {
-        if(longRecvBuf[i][indL] != -1) {
+      for(unsigned short k=0; k<nFaces; ++k, indS+=3, ++indL) {
+
+        if(longRecvBuf[i][indL] != -1) {  /* -1 indicates a boundary face. */
+
+          bool FaceIsOwned = (bool) shortRecvBuf[i][indS+2];
+
           bool neighborIsInternal = false;
-          if(shortRecvBuf[i][indS] == -1) {
+          if(shortRecvBuf[i][indS] == -1) { /* -1 indicates no periodic transformation. */
             neighborIsInternal = binary_search(globalElemID.begin(),
                                                globalElemID.end(),
                                                longRecvBuf[i][indL]);
@@ -609,8 +614,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
           if( !neighborIsInternal )
             haloElements.push_back(unsignedLong2T(longRecvBuf[i][indL],
-                                                  shortRecvBuf[i][indS]+1));
-        }
+                                                  shortRecvBuf[i][indS]+1));  /* The +1, because haloElements */
+        }                                                                     /* are unsigned longs.          */
       }
     }
   }
@@ -683,19 +688,21 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       volElem[ind].nodeIDsGrid.resize(volElem[ind].nDOFsGrid);
       volElem[ind].JacFacesIsConsideredConstant.resize(volElem[ind].nFaces);
+      volElem[ind].ElementOwnsFaces.resize(volElem[ind].nFaces);
 
       for(unsigned short k=0; k<volElem[ind].nDOFsGrid; ++k)
         volElem[ind].nodeIDsGrid[k] = longRecvBuf[i][indL++];
 
-      /* Update the counter indL with nFaces, because at this location in
-         the long buffer the global ID of the neighboring element is stored.
-         This data is not stored in volElem. */
-      indL += volElem[ind].nFaces;
-
       for(unsigned short k=0; k<volElem[ind].nFaces; ++k) {
+        long neighBorID = longRecvBuf[i][indL++];
+
         ++indS; // At this location the periodic index of the face is stored in
                 // shortRecvBuf, which is not stored in volElem.
         volElem[ind].JacFacesIsConsideredConstant[k] = (bool) shortRecvBuf[i][indS++];
+        volElem[ind].ElementOwnsFaces[k]             = (bool) shortRecvBuf[i][indS++];
+
+        if(neighBorID == -1)
+          volElem[ind].ElementOwnsFaces[k] = true;  // Boundary faces are always owned.
       }
     }
 
@@ -905,7 +912,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Vector with node IDs that must be returned to this calling rank.
        Note that also the periodic index must be stored, hence use an
        unsignedLong2T for this purpose. As -1 cannot be stored for an
-       unsigned long a 1 is added to the periodic transformation.     */
+       unsigned long a 1 is added to the periodic transformation when
+       stored in nodeIDs. */
     vector<unsignedLong2T> nodeIDs;
 
     /* Determine the number of elements present in longRecvBuf[i] and loop over
@@ -1124,6 +1132,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       volElem[indV].elemIsOwned             = false;
       volElem[indV].JacIsConsideredConstant = false;
       volElem[indV].offsetDOFsSolGlobal     = ULONG_MAX;
+
+      /* Halo elements do not own a face per definition. */
+      volElem[indV].ElementOwnsFaces.assign(volElem[indV].nFaces, false);
     }
 
     /* Store the information of the points in haloPoints. */
