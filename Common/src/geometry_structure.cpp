@@ -11574,6 +11574,65 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
          << "These are ignored in the partitioning." << endl;
   }
 
+  /*--- In case of a periodic boundaries with only one element in the periodic
+        direction, there are faces for which both adjacent elements are the
+        same. This also means that these faces are still present twice and one
+        must be removed. This is done below. ---*/
+  map<unsignedLong2T, unsigned long> mapFaceToInd;
+
+  nFacesLocOr = nFacesLoc;
+  for(unsigned long i=0; i<nFacesLoc; ++i) {
+    if(localFaces[i].elemID0 == localFaces[i].elemID1) {
+
+      /* Search for this entry in mapFaceToInd. */
+      unsignedLong2T thisFace(localFaces[i].elemID0, localFaces[i].periodicIndex);
+      map<unsignedLong2T, unsigned long>::const_iterator MMI;
+      MMI = mapFaceToInd.find(thisFace);
+
+      if(MMI == mapFaceToInd.end()) {
+
+        /* This face is not stored in the map yet. Do so now. */
+        mapFaceToInd[thisFace] = i;
+      }
+      else {
+
+        /* This face is already stored in the map, which means that it is
+           already present in the list of faces. Invalidate this face. */
+        localFaces[i].nCornerPoints = 4;
+        localFaces[i].cornerPoints[0] = Global_nPoint;
+        localFaces[i].cornerPoints[1] = Global_nPoint;
+        localFaces[i].cornerPoints[2] = Global_nPoint;
+        localFaces[i].cornerPoints[3] = Global_nPoint;
+        --nFacesLoc;
+      }
+    }
+  }
+
+  /*--- Check if the number of faces removed is identical to the number
+        of faces stored in the map mapFaceToInd. ---*/
+  nFacesLocOr -= nFacesLoc;
+  if(nFacesLocOr != mapFaceToInd.size()) {
+
+    cout << "Something wrong with periodic faces for which elements are "
+         << "their own neighbors" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Remove the invalidated faces, if any present. ---*/
+  if( nFacesLocOr ) {
+    sort(localFaces.begin(), localFaces.end());
+    localFaces.resize(nFacesLoc);
+  }
+
+  /*--- Determine whether or not the Jacobians of the elements and faces
+        can be considered constant. ---*/
+  DetermineFEMConstantJacobiansAndLenScale(config);
+
   /*--- Determine the ownership of the internal faces, i.e. which adjacent
         element is responsible for computing the fluxes through the face. ---*/
   for(unsigned long i=0; i<nFacesLoc; ++i) {
@@ -11582,14 +11641,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
        owner of the face. This must be modified later, especially when time
        accurate local time stepping is employed. */
     const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
-    if( sumElemID%2 ) {
-      if(localFaces[i].elemID0 < localFaces[i].elemID1) localFaces[i].elem0IsOwner = true;
-      else                                              localFaces[i].elem0IsOwner = false;
-    }
-    else {
-      if(localFaces[i].elemID0 < localFaces[i].elemID1) localFaces[i].elem0IsOwner = false;
-      else                                              localFaces[i].elem0IsOwner = true;
-    }
+    if( sumElemID%2 )
+      localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
+    else
+      localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
   }
 
   /*--- All the matching face information is known now, including periodic
@@ -11662,10 +11717,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   for(unsigned long i=0; i<nElem; ++i)
     sort(adjacency_l.begin()+xadj_l[i], adjacency_l.begin()+xadj_l[i+1]);
-
-  /*--- Determine whether or not the Jacobians of the elements and faces
-        can be considered constant. ---*/
-  DetermineFEMConstantJacobiansAndLenScale(config);
 
   /*--- Compute the weigts of the graph. ---*/
   vector<su2double> vwgt(nElem);

@@ -151,6 +151,8 @@ public:
 
   vector<bool> JacFacesIsConsideredConstant; /*!< \brief Vector with the booleans whether the Jacobian of the
                                                   transformation to the standard element is constant for the faces. */
+  vector<bool> ElementOwnsFaces;             /*!< \brief Vector with the booleans whether the element is the
+                                                         owner of the faces. */
 
   vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
 

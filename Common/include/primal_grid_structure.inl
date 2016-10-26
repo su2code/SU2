@@ -51,6 +51,8 @@ inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned s
 
 inline void CPrimalGrid::SetLengthScale(su2double val_lenScale) { LenScale = val_lenScale; }
 
+inline bool CPrimalGrid::GetOwnerFace(unsigned short val_face) { return ElementOwnsFace[val_face]; }
+
 inline void CPrimalGrid::SetOwnerFace(bool val_owner, unsigned short val_face) { ElementOwnsFace[val_face] = val_owner; }
 
 inline short CPrimalGrid::GetPeriodicIndex(unsigned short val_face) {return PeriodIndexNeighbors[val_face];}
