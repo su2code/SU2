@@ -88,6 +88,9 @@ class COutput {
 	int *Conn_Pris;
 	int *Conn_Pyra;
   
+  
+  unsigned long nGlobal_Poin_Par;   // Global number of nodes with halos
+  unsigned long nGlobal_Elem_Par;  // Global number of elems without halos
   unsigned long nParallel_Poin;
   unsigned long nParallel_Line,
   nParallel_BoundTria,
