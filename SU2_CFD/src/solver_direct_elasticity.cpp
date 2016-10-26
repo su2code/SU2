@@ -641,7 +641,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
    if (config->GetDirectDiff() == D_YOUNG ||
        config->GetDirectDiff() == D_POISSON ||
        config->GetDirectDiff() == D_RHO ||
-       config->GetDirectDiff() == D_RHO_DL){
+       config->GetDirectDiff() == D_RHO_DL ||
+       config->GetDirectDiff() == D_EFIELD ||
+       config->GetDirectDiff() == D_MACH ||
+       config->GetDirectDiff() == D_PRESSURE){
 
      /*--- Header of the temporary output file ---*/
      ofstream myfile_res;
@@ -650,6 +653,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
      if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt");
      if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt");
      if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt");
+     if (config->GetDirectDiff() == D_EFIELD) myfile_res.open ("Output_Direct_Diff_EField.txt");
+
+     if (config->GetDirectDiff() == D_MACH) myfile_res.open ("Output_Direct_Diff_Mach.txt");
+     if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
 
      myfile_res << "Objective Function " << "\t";
 
@@ -5024,7 +5031,10 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
                       (config->GetDirectDiff() == D_RHO) ||
-                      (config->GetDirectDiff() == D_RHO_DL));
+                      (config->GetDirectDiff() == D_RHO_DL) ||
+                      (config->GetDirectDiff() == D_EFIELD) ||
+                      (config->GetDirectDiff() == D_MACH) ||
+                      (config->GetDirectDiff() == D_PRESSURE));
 
   if ((direct_diff) && (rank == MASTER_NODE)){
 
@@ -5034,6 +5044,10 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt", ios::app);
     if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt", ios::app);
     if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt", ios::app);
+    if (config->GetDirectDiff() == D_EFIELD) myfile_res.open ("Output_Direct_Diff_EField.txt", ios::app);
+
+    if (config->GetDirectDiff() == D_MACH) myfile_res.open ("Output_Direct_Diff_Mach.txt");
+    if (config->GetDirectDiff() == D_PRESSURE) myfile_res.open ("Output_Direct_Diff_Pressure.txt");
 
     myfile_res.precision(15);
 
@@ -5062,7 +5076,9 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << Total_ForwardGradient << "." << endl;
     if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the structural density: " << Total_ForwardGradient << "." << endl;
     if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << Total_ForwardGradient << "." << endl;
-
+    if (config->GetDirectDiff() == D_EFIELD)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the electric field: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_MACH)    cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Mach number: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_PRESSURE) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the freestream Pressure: " << Total_ForwardGradient << "." << endl;
   }
   else {
 

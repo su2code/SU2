@@ -172,6 +172,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		if (nEField_Read == 1){
 			for (iVar = 0; iVar < nElectric_Field; iVar++) {
 				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(0);
+			  if (config->GetDirectDiff() == D_EFIELD)   SU2_TYPE::SetDerivative(EField_Ref_Mod[iVar],1.0);
 			}
 		}
 		else{

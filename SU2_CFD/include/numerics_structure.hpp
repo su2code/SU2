@@ -1493,7 +1493,6 @@ public:
 
   /*!
    * \brief A virtual member to set the material properties
-   * \param[in] pseudo_static - Controls whether we consider inertial effects or not
    * \param[in] val_Rho - Value of the density (inertial effects).
    * \param[in] val_Rho_DL - Value of the density (dead load effects).
    */

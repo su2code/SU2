@@ -2428,9 +2428,15 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \return Value of the Mach sensitivity for the Poisson's ratio Nu
+   * \return Value of the sensitivity coefficient for the Poisson's ratio Nu
    */
   virtual su2double GetGlobal_Sens_Nu(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
+   */
+  virtual su2double GetGlobal_Sens_EField(unsigned short iEField);
 
   /*!
    * \brief A virtual member.
@@ -2455,6 +2461,18 @@ public:
    * \return Value of the density for dead loads, from the adjoint solver
    */
   virtual su2double GetVal_Rho_DL(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Number of electric field variables from the adjoint solver
+   */
+  virtual unsigned short Get_nEField(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Pointer to the values of the Electric Field
+   */
+  virtual su2double GetVal_EField(unsigned short iVal);
 
 	/*!
 	 * \brief A virtual member.
@@ -8649,6 +8667,13 @@ private:
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
 
+  bool de_effects;              /*!< \brief Determines if DE effects are considered. */
+  su2double *EField;            /*!< \brief Array that stores the electric field as design variables. */
+  unsigned short n_EField;    /*!< \brief Number of electric field areas in the code. */
+  su2double *Local_Sens_EField, /*!< \brief Local sensitivity of the Electric Field. */
+            *Global_Sens_EField;  /*!< \brief Global sensitivity of the Electric Field. */
+
+
 public:
 
   /*!
@@ -8814,6 +8839,12 @@ public:
   su2double GetGlobal_Sens_Nu(void);
 
   /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the Electric Field in the region iEField
+   */
+  su2double GetGlobal_Sens_EField(unsigned short iEField);
+
+  /*!
    * \brief Get the value of the Young modulus from the adjoint solver
    * \return Value of the Young modulus from the adjoint solver
    */
@@ -8836,6 +8867,18 @@ public:
    * \return Value of the density for dead loads, from the adjoint solver
    */
   su2double GetVal_Rho_DL(void);
+
+  /*!
+   * \brief Get the number of variables for the Electric Field of the density from the adjoint solver, for dead loads
+   * \return Number of electric field variables from the adjoint solver
+   */
+  unsigned short Get_nEField(void);
+
+  /*!
+   * \brief Get the value of the Electric Field from the adjoint solver, for dead loads
+   * \return Pointer to the values of the Electric Field
+   */
+  su2double GetVal_EField(unsigned short iVal);
 
   /*!
    * \brief Set the value of the max residual and RMS residual.

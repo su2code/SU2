@@ -410,6 +410,8 @@ inline su2double CSolver::GetGlobal_Sens_E(void) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_Nu(void) { return 0.0; }
 
+inline su2double CSolver::GetGlobal_Sens_EField(unsigned short iEField) { return 0.0; }
+
 inline su2double CSolver::GetVal_Young(void) { return 0.0; }
 
 inline su2double CSolver::GetVal_Poisson(void) { return 0.0; }
@@ -417,6 +419,10 @@ inline su2double CSolver::GetVal_Poisson(void) { return 0.0; }
 inline su2double CSolver::GetVal_Rho(void) { return 0.0; }
 
 inline su2double CSolver::GetVal_Rho_DL(void) { return 0.0; }
+
+inline unsigned short CSolver::Get_nEField(void) { return 0; }
+
+inline su2double CSolver::GetVal_EField(unsigned short iVal) { return 0.0; }
 
 inline su2double* CSolver::GetConstants() {return NULL;}
 
@@ -1270,13 +1276,19 @@ inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(void) { return Global_Sens_
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Nu(void) { return Global_Sens_Nu; }
 
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
+
 inline su2double CDiscAdjFEASolver::GetVal_Young(void) { return E; }
 
 inline su2double CDiscAdjFEASolver::GetVal_Poisson(void) { return Nu; }
 
-inline su2double CDiscAdjFEASolver::GetVal_Rho(void) { return Rho; }
+inline su2double CDiscAdjFEASolver::GetVal_Rho(void) { return n_EField; }
 
 inline su2double CDiscAdjFEASolver::GetVal_Rho_DL(void) { return Rho_DL; }
+
+inline unsigned short CDiscAdjFEASolver::Get_nEField(void) { return n_EField; }
+
+inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return EField[iVal]; }
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
