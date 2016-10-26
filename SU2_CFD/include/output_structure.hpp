@@ -110,8 +110,12 @@ class COutput {
   int *Conn_Hexa_Par;
   int *Conn_Pris_Par;
   int *Conn_Pyra_Par;
-  su2double **Parallel_Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
-
+  
+  unsigned short nVar_Par;
+  su2double **Local_Data;
+  su2double **Parallel_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  vector<string> Variable_Names;
+  
 	su2double **Data;
 	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
 	bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
@@ -264,7 +268,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void SortCoordinates(CConfig *config, CGeometry *geometry);
+  void SortOutputData(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
   
   /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
@@ -382,12 +395,12 @@ public:
   void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
 
   /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file in parallel.
+   * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  void SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
