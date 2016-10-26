@@ -2144,13 +2144,12 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   
 }
 
-void COutput::SortCoordinates(CConfig *config, CGeometry *geometry) {
+void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   unsigned long iProcessor;
   unsigned long Global_Index;
   
-  int NODES_PER_ELEMENT = 2;
-  if (geometry->GetnDim() > 2) NODES_PER_ELEMENT = 3;
+  int NODES_PER_ELEMENT = nVar_Par;
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -2314,10 +2313,10 @@ void COutput::SortCoordinates(CConfig *config, CGeometry *geometry) {
       nElem_Flag[iProcessor] = ii;
       unsigned long nn = index[iProcessor];
       
-      /*--- Load the coordinate values. ---*/
+      /*--- Load the data values. ---*/
       
       for (unsigned short kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-        connSend[nn] = geometry->node[ii]->GetCoord(kk); nn++;
+        connSend[nn] = Local_Data[ii][kk]; nn++;
       }
       
       /*--- Load the global ID (minus offset) for sorting the
@@ -2456,11 +2455,11 @@ void COutput::SortCoordinates(CConfig *config, CGeometry *geometry) {
    structure before post-processing below. First, allocate the
    appropriate amount of memory for this section. ---*/
   
-  Parallel_Coords = new su2double*[NODES_PER_ELEMENT];
+  Parallel_Data = new su2double*[NODES_PER_ELEMENT];
   for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-    Parallel_Coords[jj] = new su2double[nElem_Recv[size]];
+    Parallel_Data[jj] = new su2double[nElem_Recv[size]];
     for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-      Parallel_Coords[jj][idRecv[ii]] = connRecv[ii*NODES_PER_ELEMENT+jj];
+      Parallel_Data[jj][idRecv[ii]] = connRecv[ii*NODES_PER_ELEMENT+jj];
     }
   }
   
@@ -2485,8 +2484,89 @@ void COutput::SortCoordinates(CConfig *config, CGeometry *geometry) {
   delete [] nElem_Send;
   delete [] nElem_Flag;
   
+  // Need to deallocate local data here to save memory
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+    delete [] Local_Data[iPoint];
+  delete [] Local_Data;
+  
   //  cout << " SUCCCESS COORDS " << nParallel_Poin << endl;
   
+}
+
+void COutput::LoadLocalData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  unsigned short iDim;
+  unsigned long iVar, jVar;
+  unsigned long iPoint, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
+  
+  /*--- Use this switch for now. Eventually, we want to have a routine like
+   this one for all solvers in their own classes. ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
+    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; ThirdIndex = NONE; break;
+    default: SecondIndex = NONE; ThirdIndex = NONE; break;
+  }
+  
+  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
+  nVar_First = solver[FirstIndex]->GetnVar();
+  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
+  if (ThirdIndex != NONE) nVar_Third = solver[ThirdIndex]->GetnVar();
+  unsigned long nVar_Consv_Par = nVar_First + nVar_Second + nVar_Third;
+  
+  /*--- Set the number of variables and allocate the container. ---*/
+  
+  nVar_Par = 2;
+  if (geometry->GetnDim() == 3) nVar_Par = 3;
+  
+  nVar_Par += nVar_Consv_Par;
+  
+  // Add other variable counts here.
+  
+  Local_Data = new su2double*[geometry->GetnPointDomain()];
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Local_Data[iPoint] = new su2double[nVar_Par];
+  }
+  
+  /*--- Loop over all grid nodes and load up the desired data for
+   the restart and vizualization files. Note that we need to increment
+   the iVar variable after each variable load. ---*/
+  
+  // Need to eventually do all points (including halos) in case of periodic
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+
+    /*--- Restart column index with each new point. ---*/
+    
+    iVar = 0;
+
+    /*--- Load the coordinate values. ---*/
+    
+    for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+      Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+      iVar++;
+    }
+    
+    /*--- Load the conservative variable states. ---*/
+    
+    for (jVar = 0; jVar < nVar_Consv_Par; jVar++) {
+      Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
+      iVar++;
+    }
+    
+  }
+  
+  // Also build the variable name list too!
+
+  Variable_Names.push_back("x");
+  Variable_Names.push_back("y");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("z");
+  Variable_Names.push_back("Density");
+  Variable_Names.push_back("X-Momentum");
+  Variable_Names.push_back("Y-Momentum");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  Variable_Names.push_back("Energy");
+
 }
 
 void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
@@ -8134,9 +8214,11 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], HEXAHEDRON    );
     SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PRISM         );
     SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PYRAMID       );
-
-    SortCoordinates(config[iZone], geometry[iZone][MESH_0]);
     
+    LoadLocalData(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+
+    SortOutputData(config[iZone], geometry[iZone][MESH_0]);
+
     /*--- Reduce the total number of points and cells we will be writing in the output files. ---*/
     
 #ifndef HAVE_MPI
@@ -8150,8 +8232,9 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     /*--- Write naive parallel ASCII files. ---*/
     
-    SetTecplotASCII_Mesh_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
-    
+    SetTecplotASCII_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
+
+    Variable_Names.clear();
     
     /*--- Merge coordinates of all grid nodes (excluding ghost points).
      The grid coordinates are always merged and included first in the

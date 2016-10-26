@@ -933,10 +933,10 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool su
   
 }
 
-void COutput::SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file) {
+void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, iElem, iNode;
+  unsigned long iPoint, iElem, iNode, iVar;
   unsigned long *LocalIndex = NULL;
   bool *SurfacePoint = NULL;
   char cstr[200];
@@ -962,17 +962,15 @@ void COutput::SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry
     Tecplot_File.precision(6);
     Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
     
-    if (nDim == 2) Tecplot_File << "VARIABLES = \"x\",\"y\"";
-    else Tecplot_File << "VARIABLES = \"x\",\"y\",\"z\"";
-    Tecplot_File << endl;
+    Tecplot_File << "VARIABLES = ";
+    for (iVar = 0; iVar < Variable_Names.size()-1; iVar++) {
+      Tecplot_File << "\"" << Variable_Names[iVar] << "\",";
+    }
+    Tecplot_File << "\"" << Variable_Names[Variable_Names.size()-1] << "\"" << endl;
     
     /*--- Write the header ---*/
     
-    Tecplot_File << "ZONE T= ";
-    if (new_file) Tecplot_File << "\"Original grid\", ";
-    else Tecplot_File << "\"Deformed grid\", ";
-    
-    // WARNING: NEED TO CHECK THESE COUNTERS FOR PARALLEL VERSION
+    Tecplot_File << "ZONE ";
     
     if (nDim == 2) {
       Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
@@ -993,10 +991,10 @@ void COutput::SetTecplotASCII_Mesh_Parallel(CConfig *config, CGeometry *geometry
     if (rank == iProcessor) {
       for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
         
-        /*--- Write the node coordinates from this proc ---*/
+        /*--- Write the node data from this proc ---*/
         
-        for (iDim = 0; iDim < nDim; iDim++)
-          Tecplot_File << scientific << Parallel_Coords[iDim][iPoint] << "\t";
+        for (iVar = 0; iVar < nVar_Par; iVar++)
+          Tecplot_File << scientific << Parallel_Data[iVar][iPoint] << "\t";
         Tecplot_File << endl;
       }
     }
