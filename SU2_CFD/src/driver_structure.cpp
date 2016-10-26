@@ -3354,6 +3354,8 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(CIteration **iteration_container,
     if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
       myfile_res << "Sens_E\t";
       myfile_res << "Sens_Nu\t";
+      myfile_res << "Sens_Mach\t";
+      myfile_res << "Sens_Pressure_FS\t";
     }
 
     myfile_res << endl;
@@ -5038,6 +5040,8 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(CIntegration ***integration_container
       if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
         myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E() << "\t";
         myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu() << "\t";
+        myfile_res << scientific << solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Mach() << "\t";
+        myfile_res << scientific << solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Press() << "\t";
       }
 
       myfile_res << endl;

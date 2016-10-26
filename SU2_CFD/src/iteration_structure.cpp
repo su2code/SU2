@@ -2691,25 +2691,47 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 //
 //  }
 
-  // Temporary output only for standalone structural problems
+  // TEMPORARY output only for standalone structural problems
   if (!config_container[val_iZone]->GetFSI_Simulation()){
+
+
+    bool de_effects = config_container[val_iZone]->GetDE_Effects();
+
     /*--- Header of the temporary output file ---*/
     ofstream myfile_res;
     myfile_res.open ("Results_Reverse_Adjoint.txt");
 
-    myfile_res << scientific << "Young_Mod" << " ";
-    myfile_res << scientific << "Obj_Func" << " ";
-    myfile_res << scientific << "Sens_E" << " ";
-    myfile_res << scientific << "Sens_Nu" << " ";
+//    myfile_res << scientific << "Young_Mod" << " ";
+    myfile_res << "Obj_Func" << " ";
+    myfile_res << "Sens_E" << " ";
+    myfile_res << "Sens_Nu" << " ";
+    if (de_effects){
+      /*--- Number of electric field variables ---*/
+      unsigned short n_EField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
+
+      for (unsigned short iEField; iEField < n_EField; iEField++) myfile_res << "Sens_EF_" << iEField << " ";
+
+    }
 
     myfile_res << endl;
 
     myfile_res.precision(15);
 
-    myfile_res << scientific << config_container[val_iZone]->GetElasticyMod() << " ";
+//    myfile_res << scientific << config_container[val_iZone]->GetElasticyMod() << " ";
     myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << " ";
     myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E() << " ";
     myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu() << " ";
+
+    if (de_effects){
+      /*--- Number of electric field variables ---*/
+      unsigned short n_EField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
+
+      n_EField = 1;
+
+      for (unsigned short iEField; iEField < n_EField; iEField++)
+        myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(iEField) << " ";
+
+    }
 
     myfile_res << endl;
 
@@ -2838,9 +2860,6 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry
 void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
 
-//  /*--- If we are recording a FEM problem, we need to set the dependencies with E, Nu, Rho and Rho_DL ---*/
-//  if (kind_recording == FEM_VARIABLES){
-
     /*--- Add dependencies for E and Nu ---*/
 
     numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
@@ -2849,8 +2868,16 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeomet
 
     numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
 
-//  }
-//  /*--- If we are recording the crossed flow terms of a fluid problem, we need to set the dependencies with E, Nu, Rho and Rho_DL ---*/
+    /*--- Add dependencies for the Electric Field ---*/
+
+    if (config_container[iZone]->GetDE_Effects()){
+
+      unsigned short n_EField = solver_container[iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
+
+      for (unsigned short iEField; iEField < n_EField; iEField++)
+        numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField, solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
+
+    }
 
 
 

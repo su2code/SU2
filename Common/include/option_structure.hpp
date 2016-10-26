@@ -1345,7 +1345,8 @@ enum ENUM_DIRECTDIFF_VAR {
   D_YOUNG = 11,
   D_POISSON = 12,
   D_RHO = 13,
-  D_RHO_DL = 14
+  D_RHO_DL = 14,
+  D_EFIELD = 15
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
 ("NONE", NO_DERIVATIVE)
@@ -1362,7 +1363,8 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 ("YOUNG_MODULUS", D_YOUNG)
 ("POISSON_RATIO", D_POISSON)
 ("STRUCTURAL_DENSITY", D_RHO)
-("STRUCTURAL_DEAD_LOAD", D_RHO_DL);
+("STRUCTURAL_DEAD_LOAD", D_RHO_DL)
+("ELECTRIC_FIELD", D_EFIELD);
 
 /*!
  * \brief types of schemes for dynamic structural computations

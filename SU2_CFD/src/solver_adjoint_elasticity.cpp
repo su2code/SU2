@@ -1957,6 +1957,24 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   Total_Sens_Rho      = 0.0;
   Total_Sens_Rho_DL   = 0.0;
 
+  /*--- Implementation for Dielectric Elastomers ---*/
+
+  de_effects = config->GetDE_Effects();
+
+  EField = NULL;
+  Local_Sens_EField = NULL;
+  Global_Sens_EField = NULL;
+  if(de_effects){
+
+    if (nDim == 2) n_EField = config->GetnDV_X() * config->GetnDV_Y();
+    else n_EField = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
+
+    EField             = new su2double[n_EField];
+    Local_Sens_EField  = new su2double[n_EField];
+    Global_Sens_EField = new su2double[n_EField];
+  }
+
+
 }
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
@@ -1974,6 +1992,10 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
   if (Sens_E        != NULL) delete [] Sens_E;
   if (Sens_Nu       != NULL) delete [] Sens_Nu;
   if (Sens_nL       != NULL) delete [] Sens_nL;
+
+  if (EField        != NULL) delete [] EField;
+  if (Local_Sens_EField        != NULL) delete [] Local_Sens_EField;
+  if (Global_Sens_EField       != NULL) delete [] Global_Sens_EField;
 
   if (Solution_Vel   != NULL) delete [] Solution_Vel;
   if (Solution_Accel != NULL) delete [] Solution_Accel;
@@ -2352,11 +2374,35 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
     Rho_DL      = config->GetMaterialDensity();     // For dead loads
     if (pseudo_static) Rho = 0.0;                   // Pseudo-static: no inertial effects considered
 
+    /*--- Read the values of the electric field ---*/
+    if(de_effects){
+      unsigned short nEField_Read, i_DV;
+
+      /*--- This is the number of values read ---*/
+      nEField_Read = config->GetnElectric_Field();
+      /*--- If there are different input values ---*/
+      if (nEField_Read == n_EField){
+        for (i_DV = 0; i_DV < n_EField; i_DV++){
+          EField[i_DV] = config->Get_Electric_Field_Mod(i_DV);
+        }
+      } /*--- Or if they are all the same ---*/
+      else if (nEField_Read == 1){
+        for (i_DV = 0; i_DV < n_EField; i_DV++){
+          EField[i_DV] = config->Get_Electric_Field_Mod(0);
+        }
+      }
+    }
+
     if (!reset){
       AD::RegisterInput(E);
       AD::RegisterInput(Nu);
       AD::RegisterInput(Rho);
       AD::RegisterInput(Rho_DL);
+
+      if(de_effects){
+        for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++) AD::RegisterInput(EField[i_DV]);
+      }
+
     }
 
   }
@@ -2636,9 +2682,24 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
     Global_Sens_Rho_DL   = Local_Sens_Rho_DL;
 #endif
 
+    /*--- Extract here the adjoint values of the electric field in the case that it is a design variable. ---*/
+
+    if(de_effects){
+
+      for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++)
+        Local_Sens_EField[i_DV] = SU2_TYPE::GetDerivative(EField[i_DV]);
+
+  #ifdef HAVE_MPI
+      SU2_MPI::Allreduce(Local_Sens_EField,  Global_Sens_EField, n_EField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  #else
+      for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++) Global_Sens_EField[i_DV] = Local_Sens_EField[i_DV];
+  #endif
+
+    }
+
   }
 
-  /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
+
 
 }
 
@@ -2757,10 +2818,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 }
 
 void CDiscAdjFEASolver::AddAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
-
-
-
-
 
 
 
