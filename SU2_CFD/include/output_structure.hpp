@@ -88,8 +88,25 @@ class COutput {
 	int *Conn_Pris;
 	int *Conn_Pyra;
   
-  unsigned long nParallel_Poin, nParallel_Tria;
+  unsigned long nParallel_Poin;
+  unsigned long nParallel_Line,
+  nParallel_BoundTria,
+  nParallel_BoundQuad,
+  nParallel_Tria,
+  nParallel_Quad,
+  nParallel_Tetr,
+  nParallel_Hexa,
+  nParallel_Pris,
+  nParallel_Pyra;
+  int *Conn_Line_Par;
+  int *Conn_BoundTria_Par;
+  int *Conn_BoundQuad_Par;
   int *Conn_Tria_Par;	// triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
+  int *Conn_Quad_Par;
+  int *Conn_Tetr_Par;
+  int *Conn_Hexa_Par;
+  int *Conn_Pris_Par;
+  int *Conn_Pyra_Par;
   su2double **Parallel_Coords;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
 
 	su2double **Data;
