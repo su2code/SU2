@@ -5126,355 +5126,355 @@ public:
 	su2double GetWall_HeatFlux(string val_index);
 
 	/*!
-	 * \brief Get the back pressure (static) at an outlet boundary.
-	 * \param[in] val_index - Index corresponding to the outlet boundary.
-	 * \return The outlet pressure.
+	 * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
+	 * \param[in] val_index - Index corresponding to the engine inflow boundary.
+	 * \return Target (pressure, massflow, etc) .
 	 */
 	su2double GetEngineInflow_Target(string val_marker);
 
-    /*!
-	 * \brief Get the back pressure (static) at an outlet boundary.
-	 * \param[in] val_index - Index corresponding to the outlet boundary.
-	 * \return The outlet pressure.
-	 */
+  /*!
+   * \brief Get the fan face Mach number at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The fan face Mach number.
+   */
 	su2double GetInflow_Mach(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine inflow pressure.
+   */
+  su2double GetInflow_Pressure(string val_marker);
+  
+  /*!
+   * \brief Get the mass flow rate at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine mass flow rate.
+   */
+  su2double GetInflow_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the percentage of reverse flow at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The percentage of reverse flow.
+   */
+  su2double GetInflow_ReverseMassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the percentage of reverse flow at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \return The percentage of reverse flow.
+   */
+  su2double GetInflow_ReverseMassFlow(unsigned short val_marker);
 
-    /*!
+  /*!
+   * \brief Get the total pressure at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The total pressure.
+   */
+  su2double GetInflow_TotalPressure(string val_marker);
+  
+  /*!
+   * \brief Get the temperature (static) at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine inflow temperature.
+   */
+  su2double GetInflow_Temperature(string val_marker);
+  
+  /*!
+   * \brief Get the total temperature at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine inflow total temperature.
+   */
+  su2double GetInflow_TotalTemperature(string val_marker);
+  
+  /*!
+   * \brief Get the ram drag at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine inflow ram drag.
+   */
+  su2double GetInflow_RamDrag(string val_marker);
+  
+  /*!
+   * \brief Get the force balance at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine inflow force balance.
+   */
+  su2double GetInflow_Force(string val_marker);
+  
+  /*!
+   * \brief Get the power at an engine inflow boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine inflow power.
+   */
+  su2double GetInflow_Power(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine exhaust pressure.
+   */
+  su2double GetExhaust_Pressure(string val_marker);
+  
+  /*!
+   * \brief Get the temperature (static) at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine exhaust temperature.
+   */
+  su2double GetExhaust_Temperature(string val_marker);
+  
+  /*!
+   * \brief Get the massflow at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine exhaust massflow.
+   */
+  su2double GetExhaust_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the total pressure at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The engine exhaust total pressure.
+   */
+  su2double GetExhaust_TotalPressure(string val_marker);
+  
+  /*!
+   * \brief Get the total temperature at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return The total temperature.
+   */
+  su2double GetExhaust_TotalTemperature(string val_marker);
+  
+  /*!
+   * \brief Get the gross thrust at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return Gross thrust.
+   */
+  su2double GetExhaust_GrossThrust(string val_marker);
+  
+  /*!
+   * \brief Get the force balance at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return Force balance.
+   */
+  su2double GetExhaust_Force(string val_marker);
+  
+  /*!
+   * \brief Get the power at an engine exhaust boundary.
+   * \param[in] val_marker - Name of the boundary.
+   * \return Power.
+   */
+  su2double GetExhaust_Power(string val_marker);
+
+  /*!
 	 * \brief Get the back pressure (static) at an outlet boundary.
 	 * \param[in] val_index - Index corresponding to the outlet boundary.
 	 * \return The outlet pressure.
 	 */
 	void SetInflow_Mach(unsigned short val_imarker, su2double val_fanface_mach);
-
-    /*!
-	 * \brief Get the back pressure (static) at an outlet boundary.
-	 * \param[in] val_index - Index corresponding to the outlet boundary.
-	 * \return The outlet pressure.
-	 */
-	su2double GetInflow_Pressure(string val_marker);
-
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_MassFlow(string val_marker);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_ReverseMassFlow(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_TotalPressure(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_Temperature(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_TotalTemperature(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_RamDrag(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_Force(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_Power(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the fan face static pressure at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_pressure - Fan face static pressure.
    */
   void SetInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the massflow at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_massflow - Massflow.
    */
   void SetInflow_MassFlow(unsigned short val_imarker, su2double val_fanface_massflow);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the reverse flow at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_reversemassflow - reverse flow.
    */
   void SetInflow_ReverseMassFlow(unsigned short val_imarker, su2double val_fanface_reversemassflow);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the fan face total pressure at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_totalpressure - Fan face total pressure.
    */
   void SetInflow_TotalPressure(unsigned short val_imarker, su2double val_fanface_totalpressure);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the fan face static temperature at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_pressure - Fan face static temperature.
    */
   void SetInflow_Temperature(unsigned short val_imarker, su2double val_fanface_temperature);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the fan face total temperature at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_totaltemperature - Fan face total temperature.
    */
   void SetInflow_TotalTemperature(unsigned short val_imarker, su2double val_fanface_totaltemperature);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the ram drag temperature at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_ramdrag - Ram drag value.
    */
   void SetInflow_RamDrag(unsigned short val_imarker, su2double val_fanface_ramdrag);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the force balance at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_force - Fan face force.
    */
   void SetInflow_Force(unsigned short val_imarker, su2double val_fanface_force);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the power at an engine inflow boundary.
+   * \param[in] val_index - Index corresponding to the engine inflow boundary.
+   * \param[in] val_fanface_force - Power.
    */
   void SetInflow_Power(unsigned short val_imarker, su2double val_fanface_power);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetInflow_ReverseMassFlow(unsigned short val_marker);
-
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetExhaust_Pressure(string val_marker);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetExhaust_Temperature(string val_marker);
-  
-  /*!
-   * \brief Get the total temperature at a nacelle boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetExhaust_MassFlow(string val_index);
-  
-  /*!
-   * \brief Get the total temperature at a nacelle boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetExhaust_TotalPressure(string val_index);
-  
-  /*!
-   * \brief Get the total temperature at a nacelle boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetExhaust_TotalTemperature(string val_index);
-  
-  /*!
-   * \brief Get the total temperature at a nacelle boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetExhaust_GrossThrust(string val_index);
-  
-  /*!
-   * \brief Get the total temperature at a nacelle boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetExhaust_Force(string val_index);
-  
-  /*!
-   * \brief Get the total temperature at a nacelle boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The total temperature.
-   */
-  su2double GetExhaust_Power(string val_index);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_pressure - Exhaust static pressure.
    */
   void SetExhaust_Pressure(unsigned short val_imarker, su2double val_exhaust_pressure);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the temperature (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_temp - Exhaust static temperature.
    */
   void SetExhaust_Temperature(unsigned short val_imarker, su2double val_exhaust_temp);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the back pressure (static) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_temp - Exhaust static temperature.
    */
   void SetExhaust_MassFlow(unsigned short val_imarker, su2double val_exhaust_massflow);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the back pressure (total) at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_totalpressure - Exhaust total pressure.
    */
   void SetExhaust_TotalPressure(unsigned short val_imarker, su2double val_exhaust_totalpressure);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the total temperature at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_totaltemp - Exhaust total temperature.
    */
   void SetExhaust_TotalTemperature(unsigned short val_imarker, su2double val_exhaust_totaltemp);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the gross thrust at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_grossthrust - Exhaust gross thrust temperature.
    */
   void SetExhaust_GrossThrust(unsigned short val_imarker, su2double val_exhaust_grossthrust);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the force balance at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_force - Exhaust force balance.
    */
   void SetExhaust_Force(unsigned short val_imarker, su2double val_exhaust_force);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
+   * \brief Set the power at an engine exhaust boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_exhaust_power - Exhaust power.
    */
   void SetExhaust_Power(unsigned short val_imarker, su2double val_exhaust_power);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the back pressure (static) at an outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_mach - Exhaust power.
    */
   void SetEngine_Mach(unsigned short val_imarker, su2double val_engine_mach);
   
   /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \brief Set the back pressure (static) at an outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_force - Exhaust power.
    */
   void SetEngine_Force(unsigned short val_imarker, su2double val_engine_force);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_power - Exhaust power.
    */
   void SetEngine_Power(unsigned short val_imarker, su2double val_engine_power);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_netthrust - Exhaust power.
    */
   void SetEngine_NetThrust(unsigned short val_imarker, su2double val_engine_netthrust);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_grossthrust - Exhaust power.
    */
   void SetEngine_GrossThrust(unsigned short val_imarker, su2double val_engine_grossthrust);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
+   * \param[in] val_engine_area - Exhaust power.
    */
   void SetEngine_Area(unsigned short val_imarker, su2double val_engine_area);
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Mach(unsigned short val_marker);
+  su2double GetEngine_Mach(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Force(unsigned short val_marker);
+  su2double GetEngine_Force(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Power(unsigned short val_marker);
+  su2double GetEngine_Power(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
   
-  su2double GetEngine_NetThrust(unsigned short val_marker);
+  su2double GetEngine_NetThrust(unsigned short val_imarker);
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
   
-  su2double GetEngine_GrossThrust(unsigned short val_marker);
+  su2double GetEngine_GrossThrust(unsigned short val_imarker);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \param[in] val_imarker - Index corresponding to a particular engine boundary.
    * \return The outlet pressure.
    */
-  su2double GetEngine_Area(unsigned short val_marker);
+  su2double GetEngine_Area(unsigned short val_imarker);
 
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
