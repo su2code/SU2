@@ -2288,8 +2288,9 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
           ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
-            Buffer_Send_nPointTotal++;
+//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+          	Buffer_Send_nPointTotal++;
           }
         }
       }
@@ -2393,7 +2394,8 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
           ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
           
-          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
+//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
             
             for (iVar = 0; iVar < nPrimVar; iVar++) {
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetPrimitive(iVar);
@@ -13660,9 +13662,11 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
 		/*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
-		if ((geometry->node[iPoint]->GetDomain()) &&
-				(GlobalIndex != GlobalIndex_donor) &&
-				(!ActDisk_Perimeter)) {
+//		if ((geometry->node[iPoint]->GetDomain()) &&
+//				(GlobalIndex != GlobalIndex_donor) && (!ActDisk_Perimeter)) {
+
+			if ((geometry->node[iPoint]->GetDomain()) &&
+					(GlobalIndex != GlobalIndex_donor)) {
 
 			/*--- Normal vector for this vertex (negative for outward convention) ---*/
 
