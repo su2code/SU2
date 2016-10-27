@@ -422,6 +422,19 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
       break;
+    case NET_THRUST_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_NetCThrust();
+      break;
+    case IDC_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_IDC();
+      break;
+    case PROPULSIVE_EFFICIENCY:
+      ObjFunc_Value = direct_solver->GetTotal_Prop_Eff();
+      break;
+    case CUSTOM_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_Custom();
+      break;
+
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()
@@ -442,7 +455,6 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     AD::RegisterOutput(ObjFunc_Value);
   }
 }
-
 
 void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
   int rank = MASTER_NODE;
