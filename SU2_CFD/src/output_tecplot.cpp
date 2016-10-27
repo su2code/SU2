@@ -981,6 +981,10 @@ void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, boo
     
   }
   
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
   //Try to have every proc open the file at the same time.
   
   Tecplot_File.open(cstr, ios::out | ios::app);
