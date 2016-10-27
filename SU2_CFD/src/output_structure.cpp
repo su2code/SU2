@@ -61,11 +61,29 @@ COutput::COutput(void) {
   
   /*--- Initialize parallel pointers to NULL ---*/
   
-  nParallel_Tria = 0;
-  Conn_Tria_Par = NULL;
+  nGlobal_Poin_Par    = 0;
+  nGlobal_Elem_Par    = 0;
+  nParallel_Poin      = 0;
+  //nSurf_Poin        = 0;
+  //nSurf_Elem        = 0;
+  nParallel_Tria      = 0;
+  nParallel_Quad      = 0;
+  nParallel_Tetr      = 0;
+  nParallel_Hexa      = 0;
+  nParallel_Pris      = 0;
+  nParallel_Pyra      = 0;
+  nParallel_Line      = 0;
+  nParallel_BoundTria = 0;
+  nParallel_BoundQuad = 0;
   
-  nParallel_Quad = 0;
-  Conn_Quad_Par = NULL;
+  /*--- Initialize pointers to NULL ---*/
+  
+  Conn_Line_Par = NULL;  Conn_BoundTria_Par = NULL;  Conn_BoundQuad_Par = NULL;
+  Conn_Tria_Par = NULL;  Conn_Quad_Par = NULL;       Conn_Tetr_Par = NULL;
+  Conn_Hexa_Par = NULL;  Conn_Pris_Par = NULL;       Conn_Pyra_Par = NULL;
+  
+  Local_Data    = NULL;
+  Parallel_Data = NULL;
   
   /*--- Initialize CGNS write flag ---*/
   
@@ -4870,6 +4888,108 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
 }
 
+void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short nZone = geometry->GetnZone();
+  unsigned short iVar;
+  unsigned long iPoint, jPoint, iExtIter = config->GetExtIter();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  ofstream restart_file;
+  string filename;
+  
+  int iProcessor;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Retrieve filename from config ---*/
+  
+  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+    filename = config->GetRestart_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else if (fem) {
+    filename = config->GetRestart_FEMFileName();
+  } else {
+    filename = config->GetRestart_FlowFileName();
+  }
+  
+  /*--- Append the zone number if multizone problems ---*/
+  if (nZone > 1)
+    filename= config->GetMultizone_FileName(filename, val_iZone);
+  
+  /*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
+  } else if (config->GetWrt_Unsteady()) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if ((fem) && (config->GetWrt_Dynamic())) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  }
+  
+  //hack for now
+  
+  filename = "restart_parallel.dat";
+  
+  /*--- Only the master node writes the header. ---*/
+  
+  if (rank == MASTER_NODE) {
+    restart_file.open(filename.c_str(), ios::out);
+    restart_file.precision(15);
+    restart_file << "\"PointID\"";
+    for (iVar = 0; iVar < Variable_Names.size()-1; iVar++)
+      restart_file << "\t\"" << Variable_Names[iVar] << "\"";
+    restart_file << "\t\"" << Variable_Names[Variable_Names.size()-1] << "\"" << endl;
+    restart_file.close();
+  }
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
+  /*--- All processors open the file. ---*/
+  
+  restart_file.open(filename.c_str(), ios::out | ios::app);
+  restart_file.precision(15);
+  
+  /*--- Write the restart file in parallel, processor by processor. ---*/
+  
+  unsigned long myPoint = 0, offset = 0;
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+        
+        /*--- Index of the point (note outer loop over procs) ---*/
+        
+        restart_file << iPoint + offset << "\t";
+        myPoint++;
+        
+        /*--- Loop over the variables and write the values to file ---*/
+        
+        for (iVar = 0; iVar < nVar_Par; iVar++) {
+          restart_file << scientific << Parallel_Data[iVar][iPoint] << "\t";
+        }
+        restart_file << "\n";
+      }
+    }
+    /*--- Flush the file and wait for all processors to arrive. ---*/
+    restart_file.flush();
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    
+  }
+  
+  restart_file.close();
+  
+}
+
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -4916,11 +5036,30 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
       if (Conn_Pris != NULL) delete [] Conn_Pris;
       if (Conn_Pyra != NULL) delete [] Conn_Pyra;
       
-      if (nGlobal_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-
     }
     
   }
+}
+
+void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
+  
+  /*--- Deallocate memory for connectivity data on each processor. ---*/
+  
+  if (surf_sol) {
+    if (nParallel_Line > 0      && Conn_Line_Par      != NULL) delete [] Conn_Line_Par;
+    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
+    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
+  }
+  else {
+    if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    
+  }
+  
 }
 
 void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
@@ -4940,6 +5079,17 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
     delete [] Data;
     
   }
+}
+
+void COutput::DeallocateParallelData(CConfig *config, CGeometry *geometry) {
+  
+  /*--- Deallocate memory for solution data ---*/
+  
+  for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
+    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
+  }
+  if (Parallel_Data != NULL) delete [] Parallel_Data;
+  
 }
 
 void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
@@ -8234,6 +8384,13 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     SetTecplotASCII_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
 
+    SetRestart_Parallel(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+    
+    /*--- Clean up the parallel data that was allocated for output. ---*/
+    
+    DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
+    DeallocateParallelData(config[iZone], geometry[iZone][MESH_0]);
+    
     Variable_Names.clear();
     
     /*--- Merge coordinates of all grid nodes (excluding ghost points).

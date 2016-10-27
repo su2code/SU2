@@ -330,6 +330,14 @@ public:
 	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
+   * \brief Write a native SU2 restart file (ASCII) in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -506,11 +514,25 @@ public:
 	void DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol);
   
   /*!
+   * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol);
+  
+  /*!
 	 * \brief Deallocate temporary memory needed for merging and writing solution variables.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void DeallocateSolution(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateParallelData(CConfig *config, CGeometry *geometry);
   
 	/*! 
 	 * \brief Write the header of the history file.
