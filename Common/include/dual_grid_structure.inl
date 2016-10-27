@@ -332,6 +332,15 @@ inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor, l
 	PeriodicPoint[2] = val_globalindex;
 }
 
+inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_periodicglobalindex, long val_periodicvertex, long val_periodicmarker, long val_processor) {
+  PeriodicPoint[0] = val_periodicpoint;
+  PeriodicPoint[1] = val_processor;
+  PeriodicPoint[2] = val_periodicglobalindex;
+  PeriodicPoint[3] = val_periodicvertex;
+  PeriodicPoint[4] = val_periodicmarker;
+}
+
+inline void CVertex::SetActDisk_Perimeter(bool val_actdisk_perimeter) { ActDisk_Perimeter = val_actdisk_perimeter; }
 
 inline void CVertex::SetDonorElem(long val_donorelem) { Donor_Elem = val_donorelem; }
 
@@ -345,13 +354,21 @@ inline long CVertex::GetDonorPoint(void) { return PeriodicPoint[0]; }
 
 inline long CVertex::GetDonorProcessor(void) { return PeriodicPoint[1]; }
 
+inline long CVertex::GetDonorVertex(void) { return PeriodicPoint[3]; }
+
+inline long CVertex::GetDonorGlobalIndex(void) { return PeriodicPoint[2]; }
+
 inline long CVertex::GetGlobalDonorPoint(void) { return PeriodicPoint[2]; }
+
+inline long CVertex::GetDonorMarker(void) { return PeriodicPoint[4]; }
 
 inline void CVertex::SetBasisFunction(unsigned short val_node, su2double val_basis) { Basis_Function[val_node] = val_basis; }
 
 inline su2double CVertex::GetBasisFunction(unsigned short val_node) { return Basis_Function[val_node]; }
 
 inline long *CVertex::GetPeriodicPointDomain(void) { return PeriodicPoint; }
+
+inline bool CVertex::GetActDisk_Perimeter(void) { return ActDisk_Perimeter; }
 
 inline void CVertex::SetZeroValues(void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim ++) 

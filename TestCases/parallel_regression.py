@@ -197,6 +197,17 @@ def main():
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
 
+    # PROPELLER
+    propeller           = TestCase('propeller')
+    propeller.cfg_dir   = "rans/propeller"
+    propeller.cfg_file  = "propeller.cfg"
+    propeller.test_iter = 10
+    propeller.test_vals = [-3.380312, -8.129519, 0.000043, 0.070031] #last 4 columns
+    propeller.su2_exec  = "parallel_computation.py -f"
+    propeller.timeout   = 3200
+    propeller.tol       = 0.00001
+    test_list.append(propeller)
+
     ############################
     ### Incompressible RANS  ###
     ############################

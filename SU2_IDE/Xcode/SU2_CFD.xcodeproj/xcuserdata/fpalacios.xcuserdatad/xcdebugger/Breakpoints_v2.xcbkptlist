@@ -15,7 +15,11 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "5016"
             endingLineNumber = "5016"
+<<<<<<< HEAD
             landmarkName = "CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config)"
+=======
+            landmarkName = "CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh)"
+>>>>>>> develop
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
