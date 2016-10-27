@@ -7646,7 +7646,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
   su2double *Normal = NULL, Area = 0.0, UnitNormal[3],
-  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U,// local values at each node (Velocity2 = V^2). U = normal velocity
+  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, Vn,// local values at each node (Velocity2 = V^2). U = normal velocity
   AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   Velocity1D = 0.0, Enthalpy1D = 0.0, Density1D = 0.0, Pressure1D = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
   su2double TotalArea=0.0;
@@ -7688,9 +7688,9 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
           /*-- Find velocity normal to the marked surface/opening --*/
           
-          U = 0.0; RhoUA = 0.0;
+          Vn = 0.0; RhoUA = 0.0;
           for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-            U += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
+            Vn += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
             RhoUA -=Normal[iDim]*solver_container->node[iPoint]->GetSolution(iDim+1);
           }
           
@@ -7707,19 +7707,19 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           switch (OneD_Type){
           case ONED_FLUX:
             Pressure1D += RhoUA*Pressure;
-            Velocity1D+=RhoUA*U*U; // Velocity Magnitude
+            Velocity1D+=RhoUA*Vn*Vn; // V.n Magnitude
             Enthalpy1D+=RhoUA*Enthalpy;
             Density1D+=RhoUA*Density;
             break;
           case ONED_AREA:
             Pressure1D += Pressure * Area;
             AverageTemperature += Temperature*Area;
-            Velocity1D+=U*U*Area; // Velocity magnitude
+            Velocity1D+=Vn*Vn*Area; // V.n magnitude
             Enthalpy1D+=Enthalpy*Area;
             break;
           case ONED_LANGLEY:
             Pressure1D += Pressure * Area;
-            Velocity1D+=RhoUA*U*U; // Velocity magnitude
+            Velocity1D+=RhoUA*Vn*Vn; // V.n magnitude
             Enthalpy1D+=RhoUA*Enthalpy;
             // Density determined from others
             break;
@@ -7761,29 +7761,29 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
 #endif
   
   /*--- Scaling by Total Values ---*/
-  switch OneD_Type{
-    /*Flux averaged values*/
-    case ONED_FLUX:
-      Velocity1D=sqrt(Velocity1D/MassFlowRate);
-      Pressure1D/=MassFlowRate;
-      Enthalpy1D/=MassFlowRate;
-      Density1D/=MassFlowRate;
-      break;
+  switch (OneD_Type) {
+  /*Flux averaged values*/
+  case ONED_FLUX:
+    Velocity1D=sqrt(Velocity1D/MassFlowRate);
+    Pressure1D/=MassFlowRate;
+    Enthalpy1D/=MassFlowRate;
+    Density1D/=MassFlowRate;
+    break;
     /*Area averaged values*/
-    case ONED_AREA:
-      Velocity1D=sqrt(Velocity1D/TotalArea);
-      Pressure1D/=TotalArea;
-      Enthalpy1D/=TotalArea;
-      Density1D/=TotalArea;
-      break;
-    case ONED_LANGLEY:
-      /*---Area-averaged pressure, mass flux averaged enthalpy and momentum, density from thermo ---*/
-      Pressure1D=Pressure1D/TotalArea;
-      Velocity1D=sqrt(Velocity1D/MassFlowRate);
-      Enthalpy1D=Enthalpy1D/MassFlowRate;
-      /*--- Density1D depends on the final values of other flux avg variables ---*/
-      Density1D =Pressure1D*Gamma/(Gamma-1)/(Enthalpy1D-0.5*Velocity1D*Velocity1D);
-      break;
+  case ONED_AREA:
+    Velocity1D=sqrt(Velocity1D/TotalArea);
+    Pressure1D/=TotalArea;
+    Enthalpy1D/=TotalArea;
+    Density1D/=TotalArea;
+    break;
+  case ONED_LANGLEY:
+    /*---Area-averaged pressure, mass flux averaged enthalpy and momentum, density from thermo ---*/
+    Pressure1D=Pressure1D/TotalArea;
+    Velocity1D=sqrt(Velocity1D/MassFlowRate);
+    Enthalpy1D=Enthalpy1D/MassFlowRate;
+    /*--- Density1D depends on the final values of other flux avg variables ---*/
+    Density1D =Pressure1D*Gamma/(Gamma-1)/(Enthalpy1D-0.5*Velocity1D*Velocity1D);
+    break;
   }
 
   /*-- Always area-averaged ---*/
