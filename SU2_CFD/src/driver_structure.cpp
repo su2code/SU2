@@ -3325,8 +3325,8 @@ void CHBDriver::ResetConvergence() {
 
 void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
-	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
