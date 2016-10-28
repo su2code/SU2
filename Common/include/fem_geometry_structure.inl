@@ -43,8 +43,7 @@ inline CPointCompare::CPointCompare(const CPointCompare &other) { Copy(other); }
 
 inline CPointCompare& CPointCompare::operator=(const CPointCompare &other) { Copy(other); return (*this); }
 
-inline CVolumeElementFEM::CVolumeElementFEM(void) {metricTerms = massMatrix = lumpedMassMatrix =
-                                                   coorIntegrationPoints = wallDistance = NULL;}
+inline CVolumeElementFEM::CVolumeElementFEM(void) { }
 
 inline CVolumeElementFEM::~CVolumeElementFEM(void) { }
 
@@ -56,15 +55,11 @@ inline CPointFEM::CPointFEM(const CPointFEM &other) { Copy(other); }
 
 inline CPointFEM& CPointFEM::operator=(const CPointFEM &other) { Copy(other); return (*this); }
 
-inline CInternalFaceElementFEM::CInternalFaceElementFEM(void) {metricNormalsFace = metricCoorDerivFace0 = metricCoorDerivFace1 =
-                                                               metricElemSide0 = metricElemSide1 = wallDistance =
-                                                               coorIntegrationPoints =  NULL;}
+inline CInternalFaceElementFEM::CInternalFaceElementFEM(void) { }
 
 inline CInternalFaceElementFEM::~CInternalFaceElementFEM(void) { }
 
-inline CSurfaceElementFEM::CSurfaceElementFEM(void) {indStandardElement = -1;
-                                                     metricNormalsFace = metricCoorDerivFace   =
-                                                     metricElem        = coorIntegrationPoints = wallDistance = NULL;}
+inline CSurfaceElementFEM::CSurfaceElementFEM(void) {indStandardElement = -1;}
 
 inline CSurfaceElementFEM::~CSurfaceElementFEM(void) { }
 
@@ -98,9 +93,11 @@ inline unsigned short CMeshFEM::GetNStandardBoundaryFacesSol(void) {return stand
 
 inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
 
-inline const vector<int>& CMeshFEM::GetRanksComm(void) const {return ranksComm;}
+inline const vector<int>& CMeshFEM::GetRanksRecv(void) const {return ranksRecv;}
 
-inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesReceive(void) const {return entitiesReceive;}
+inline const vector<int>& CMeshFEM::GetRanksSend(void) const {return ranksSend;}
+
+inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesRecv(void) const {return entitiesRecv;}
 
 inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesSend(void) const {return entitiesSend;}
 

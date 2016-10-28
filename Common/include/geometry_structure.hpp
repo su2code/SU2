@@ -118,8 +118,8 @@ public:
                                                      periodic face. A value larger than 0 gives the index of
                                                      the periodic boundary + 1. */
   short faceIndicator;                   /*!< \brief The corresponding boundary marker if this face is on a
-                                                     boundary. If not, a -1 indicates a face of an owned
-                                                     element and -2 indicates a face of an unowned element. */
+                                                     boundary. For an internal face the value is -1,
+                                                     while an invalidated face has the value -2. */
   bool JacFaceIsConsideredConstant;      /*!< \brief Whether or not the Jacobian of the transformation
                                                      to the standard element is considered constant. */
   bool elem0IsOwner;                     /*!< \brief Whether or not the neighboring element 0 is the owner

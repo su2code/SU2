@@ -1234,12 +1234,15 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   /*--- Get the communication information from DG_Geometry. Note that for a
         FEM DG discretization the communication entities of FEMGeometry contain
         the volume elements. ---*/
-  const vector<int>                    &ranksComm       = FEMGeometry->GetRanksComm();
-  const vector<vector<unsigned long> > &elementsSend    = FEMGeometry->GetEntitiesSend();
-  const vector<vector<unsigned long> > &elementsReceive = FEMGeometry->GetEntitiesReceive();
+  const vector<int>                    &ranksSend    = FEMGeometry->GetRanksSend();
+  const vector<int>                    &ranksRecv    = FEMGeometry->GetRanksRecv();
+  const vector<vector<unsigned long> > &elementsSend = FEMGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsRecv = FEMGeometry->GetEntitiesRecv();
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 1. Find out whether or not self communicationn is present.    ---*/
+  /*--- Step 1. Find out whether or not self communication is present.     ---*/
+  /*---         This can only be the case when periodic boundaries are     ---*/
+  /*---         present in the grid.                                       ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Determine the rank inside MPI_COMM_WORLD. */
@@ -1248,15 +1251,18 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /* Loop over the entries of ranksComm and check for self communication. */
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
-    if(ranksComm[i] == rank) {
+  /* Store the send information of the self communication in
+     elementsSendSelfComm, if present. */
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    if(ranksSend[i] == rank)
+      elementsSendSelfComm = elementsSend[i];
+  }
 
-      /* The send and receive elements for this entry in elementsSend and
-         elementsReceive correspond to self communication. Copy the data. */
-      elementsReceiveSelfComm = elementsReceive[i];
-      elementsSendSelfComm    = elementsSend[i];
-    }
+  /* Store the receive information of the self communication in
+     elementsRecvSelfComm, if present. */
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    if(ranksRecv[i] == rank) 
+      elementsRecvSelfComm = elementsRecv[i];
   }
 
   /*--------------------------------------------------------------------------*/
@@ -1265,21 +1271,21 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
 
 #ifdef HAVE_MPI
 
-  /*--- Determine the number of ranks with which communication takes place,
-        multiply this number by two to obtain the number of communication
-        requests (send and receive) and allocate the necessary memory. ---*/
-  nCommRequests = ranksComm.size();
-  if( elementsReceiveSelfComm.size() ) --nCommRequests;
-  nCommRequests *= 2;
+  /*--- Determine the number of communication requests that take place
+        for the exchange of the halo data. These requests are both send and
+        receive requests. Allocate the necessary memory. ---*/
+  nCommRequests = ranksSend.size() + ranksRecv.size();
+  if( elementsRecvSelfComm.size() ) --nCommRequests;
+  if( elementsSendSelfComm.size() ) --nCommRequests;
 
   commRequests.resize(nCommRequests);
   commTypes.resize(nCommRequests);
 
-  /*--- Loop over the ranks for which communication takes place and exclude
-        the self communication. ---*/
+  /*--- Loop over the ranks to which this rank has to send data and create
+        the send requests. Exclude self communication. ---*/
   unsigned int nn = 0;
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
-    if(ranksComm[i] != rank) {
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    if(ranksSend[i] != rank) {
 
       /*--- Determine the derived data type for sending the data. ---*/
       const unsigned int nElemSend = elementsSend[i].size();
@@ -1295,19 +1301,24 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
                        MPI_DOUBLE, &commTypes[nn]);
       MPI_Type_commit(&commTypes[nn]);
 
-      /* Create the communication request for this send operation. Afterwards
+      /* Create the communication request for this send operation and
          update the counter nn for the next request. */
-      MPI_Send_init(VecSolDOFs.data(), 1, commTypes[nn], ranksComm[i],
-                    ranksComm[i], MPI_COMM_WORLD, &commRequests[nn]);
-      ++nn;
+      MPI_Send_init(VecSolDOFs.data(), 1, commTypes[nn], ranksSend[i],
+                    ranksSend[i], MPI_COMM_WORLD, &commRequests[nn++]);
+    }
+  }
+
+  /*--- Loop over the ranks from which this rank has to receive data and create
+        the receive requests. Exclude self communication. ---*/
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    if(ranksRecv[i] != rank) {
 
       /*--- Determine the derived data type for receiving the data. ---*/
-      const unsigned int nElemRecv = elementsReceive[i].size();
-      blockLen.resize(nElemRecv);
-      displ.resize(nElemRecv);
+      const unsigned int nElemRecv = elementsRecv[i].size();
+      vector<int> blockLen(nElemRecv), displ(nElemRecv);
 
       for(unsigned int j=0; j<nElemRecv; ++j) {
-        const unsigned long jj = elementsReceive[i][j];
+        const unsigned long jj = elementsRecv[i][j];
         blockLen[j] = nVar*volElem[jj].nDOFsSol;
         displ[j]    = nVar*volElem[jj].offsetDOFsSolLocal;
       }
@@ -1316,11 +1327,10 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
                        MPI_DOUBLE, &commTypes[nn]);
       MPI_Type_commit(&commTypes[nn]);
 
-      /* Create the communication request for this receive operation. Afterwards
+      /* Create the communication request for this receive operation and
          update the counter nn for the next request. */
-      MPI_Recv_init(VecSolDOFs.data(), 1, commTypes[nn], ranksComm[i],
-                    rank, MPI_COMM_WORLD, &commRequests[nn]);
-      ++nn;
+      MPI_Recv_init(VecSolDOFs.data(), 1, commTypes[nn], ranksRecv[i],
+                    rank, MPI_COMM_WORLD, &commRequests[nn++]);
     }
   }
 
@@ -1429,7 +1439,7 @@ void CFEM_DG_EulerSolver::SelfCommunication(void) {
   const unsigned long nSelfElements = elementsSendSelfComm.size();
   for(unsigned long i=0; i<nSelfElements; ++i) {
     const unsigned long indS   = nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
-    const unsigned long indR   = nVar*volElem[elementsReceiveSelfComm[i]].offsetDOFsSolLocal;
+    const unsigned long indR   = nVar*volElem[elementsRecvSelfComm[i]].offsetDOFsSolLocal;
     const unsigned long nBytes = volElem[elementsSendSelfComm[i]].nDOFsSol * sizeEntity;
 
     memcpy(VecSolDOFs.data()+indR, VecSolDOFs.data()+indS, nBytes);
@@ -1946,7 +1956,8 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
       /* Easier storage of the metric terms in this integration point. The +1
          is present, because the first element of the metric terms is the
          Jacobian in the integration point. */
-      const su2double *metricTerms = volElem[l].metricTerms + i*nMetricPerPoint + 1;
+      const su2double *metricTerms = volElem[l].metricTerms.data()
+                                   + i*nMetricPerPoint + 1;
 
       /*--- Loop over the number of dimensions to compute the fluxes in the
             direction of the parametric coordinates. ---*/
@@ -2127,7 +2138,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   /*--- Store the solution of the DOFs of side 0 of the face in contiguous memory
         such that the function DenseMatrixProduct can be used to compute the left
         states in the integration points of the face, i.e. side 0. ---*/
-  const unsigned long *DOFs = internalFace->DOFsSolFaceSide0;
+  const unsigned long *DOFs = internalFace->DOFsSolFaceSide0.data();
   for(unsigned short i=0; i<nDOFsFace0; ++i) {
     const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
     su2double       *sol    = solFace + nVar*i;
@@ -2153,7 +2164,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   /*--- Store the solution of the DOFs of side 1 of the face in contiguous memory
         such that the function DenseMatrixProduct can be used to compute the right
         states in the integration points of the face, i.e. side 1. ---*/
-  DOFs = internalFace->DOFsSolFaceSide1;
+  DOFs = internalFace->DOFsSolFaceSide1.data();
   for(unsigned short i=0; i<nDOFsFace1; ++i) {
     const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
     su2double       *sol    = solFace + nVar*i;
@@ -2173,7 +2184,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   /*------------------------------------------------------------------------*/
 
   /* General function to compute the fluxes in the integration points. */
-  ComputeInviscidFluxesFace(config, nInt, internalFace->metricNormalsFace,
+  ComputeInviscidFluxesFace(config, nInt, internalFace->metricNormalsFace.data(),
                             solIntL, solIntR, fluxes, numerics);
 }
 
@@ -2202,10 +2213,10 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
 
     /* Check whether a multiplication must be carried out with the inverse of
        the lumped mass matrix or the full mass matrix. Note that it is crucial
-       that the test is performed with the pointer lumpedMassMatrix and not
-       with massMatrix. The reason is that for implicit time stepping schemes
+       that the test is performed with the lumpedMassMatrix and not with
+       massMatrix. The reason is that for implicit time stepping schemes
        both arrays are in use. */
-    if( volElem[l].lumpedMassMatrix ) {
+    if( volElem[l].lumpedMassMatrix.size() ) {
 
       /* Multiply the residual with the inverse of the lumped mass matrix. */
       for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
@@ -2221,7 +2232,7 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
          Use the array tmpRes as temporary storage. */
       memcpy(tmpRes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
       DenseMatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
-                         volElem[l].massMatrix, tmpRes, res);
+                         volElem[l].massMatrix.data(), tmpRes, res);
     }
   }
 }
@@ -2343,8 +2354,10 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
             /* Easier storage of the solution, the normals and the coordinates
                for this integration point. */
             const su2double *sol     = solInt + i*nVar;
-            const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
-            const su2double *Coord   = surfElem[l].coorIntegrationPoints + i*nDim;
+            const su2double *normals = surfElem[l].metricNormalsFace.data()
+                                     + i*(nDim+1);
+            const su2double *Coord   = surfElem[l].coorIntegrationPoints.data()
+                                     + i*nDim;
 
             /*--- Compute the velocities and pressure in this integration point. ---*/
             const su2double DensityInv = 1.0/sol[0];
@@ -2747,7 +2760,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /* Compute the normal component of the momentum variables. */
       su2double rVn = 0.0;
@@ -2876,7 +2889,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /* Compute the normal component of the momentum variables. */
       su2double rVn = 0.0;
@@ -2958,7 +2971,7 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /*--- Compute the normal velocity, the speed of sound squared and
             the pressure in this integration point. ---*/
@@ -3088,7 +3101,7 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /*--- Compute the normal velocity, the speed of sound squared and
             the pressure in this integration point. ---*/
@@ -3242,7 +3255,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   /*------------------------------------------------------------------------*/
 
   /* General function to compute the fluxes in the integration points. */
-  ComputeInviscidFluxesFace(config, nInt, surfElem->metricNormalsFace,
+  ComputeInviscidFluxesFace(config, nInt, surfElem->metricNormalsFace.data(),
                             solInt0, solInt1, fluxes, conv_numerics);
 
   /* Multiply the fluxes with the integration weight of the corresponding
@@ -3282,7 +3295,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(const CSurface
   const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
 
   /* Easier storage of the DOFs of the face. */
-  const unsigned long *DOFs = surfElem->DOFsSolFace;
+  const unsigned long *DOFs = surfElem->DOFsSolFace.data();
 
   /* Copy the solution of the DOFs of the face such that it is contigious
      in memory. */
@@ -3765,9 +3778,12 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
                metric terms and the coordinates for this integration point. */
             const su2double *sol         = solInt     + i*nVar;
             const su2double *gradSol     = gradSolInt + nVar*i;
-            const su2double *normals     = surfElem[l].metricNormalsFace + i*(nDim+1);
-            const su2double *metricTerms = surfElem[l].metricCoorDerivFace + i*nDim*nDim;
-            const su2double *Coord       = surfElem[l].coorIntegrationPoints + i*nDim;
+            const su2double *normals     = surfElem[l].metricNormalsFace.data()
+                                         + i*(nDim+1);
+            const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
+                                         + i*nDim*nDim;
+            const su2double *Coord       = surfElem[l].coorIntegrationPoints.data()
+                                         + i*nDim;
 
             /*--- Compute the Cartesian gradients of the solution. ---*/
             su2double solGradCart[5][3];
@@ -4071,7 +4087,8 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
       /* Easier storage of the metric terms in this integration point. First
          compute the inverse of the Jacobian, the Jacobian is the first entry
          in the metric terms, and afterwards update the metric terms by 1. */
-      const su2double *metricTerms = volElem[l].metricTerms + i*nMetricPerPoint;
+      const su2double *metricTerms = volElem[l].metricTerms.data()
+                                   + i*nMetricPerPoint;
       const su2double Jac          = metricTerms[0];
       const su2double JacInv       = 1.0/Jac;
       metricTerms                 += 1;
@@ -4271,9 +4288,9 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /* Call the general function to compute the viscous flux in normal
        direction for side 0. */
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          matchingInternalFaces[l].DOFsSolElementSide0,
-                          matchingInternalFaces[l].metricCoorDerivFace0,
-                          matchingInternalFaces[l].metricNormalsFace,
+                          matchingInternalFaces[l].DOFsSolElementSide0.data(),
+                          matchingInternalFaces[l].metricCoorDerivFace0.data(),
+                          matchingInternalFaces[l].metricNormalsFace.data(),
                           gradSolInt, viscFluxes, viscosityIntL);
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. The
@@ -4289,9 +4306,9 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /* Call the general function to compute the viscous flux in normal
        direction for side 1. */
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntR,
-                          matchingInternalFaces[l].DOFsSolElementSide1,
-                          matchingInternalFaces[l].metricCoorDerivFace1,
-                          matchingInternalFaces[l].metricNormalsFace,
+                          matchingInternalFaces[l].DOFsSolElementSide1.data(),
+                          matchingInternalFaces[l].metricCoorDerivFace1.data(),
+                          matchingInternalFaces[l].metricNormalsFace.data(),
                           gradSolInt, viscFluxes, viscosityIntR);
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
@@ -4315,7 +4332,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
        terms. Use the array viscFluxes as storage. */
     PenaltyTermsFluxFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
                          ConstPenFace, lenScale0, lenScale1,
-                         matchingInternalFaces[l].metricNormalsFace,
+                         matchingInternalFaces[l].metricNormalsFace.data(),
                          viscFluxes);
 
     /* Add the penalty fluxes to the earlier computed fluxes. */
@@ -4393,7 +4410,8 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
       config->Tick(&tick);
       /* Compute the symmetrizing fluxes in the nDim directions. */
       SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
-                             matchingInternalFaces[l].metricNormalsFace, fluxes);
+                             matchingInternalFaces[l].metricNormalsFace.data(),
+                             fluxes);
 
       /*--- Multiply the fluxes just computed by their integration weights and
             -theta/2. The parameter theta is the parameter in the Interior Penalty
@@ -4433,7 +4451,8 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
              derivatives of the basis functions, and the metric terms in this
              integration point. */
           const su2double *derParam    = derBasisElemTrans + ii;
-          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0 + i*nDim*nDim;
+          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
+                                       + i*nDim*nDim;
                 su2double *derCar      = gradSolInt + ii;
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
@@ -4474,7 +4493,8 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
                derivatives of the basis functions, and the metric terms in this
                integration point. */
             const su2double *derParam    = derBasisElemTrans + ii;
-            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1 + i*nDim*nDim;
+            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
+                                         + i*nDim*nDim;
                   su2double *derCar      = gradSolInt + ii;
 
             /*--- Loop over the dimensions to compute the Cartesian derivatives
@@ -4901,9 +4921,10 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
-                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
-                          viscosityInt);
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          gradSolInt, viscFluxes, viscosityInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -4998,7 +5019,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /* Compute the normal component of the momentum variables. */
       su2double rVn = 0.0;
@@ -5019,7 +5040,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
       /* Easier storage of the metric terms and left gradients of this
          integration point. */
-      const su2double *metricTerms = surfElem[l].metricCoorDerivFace + i*nDim*nDim;
+      const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
+                                   + i*nDim*nDim;
       const su2double *ULGrad      = gradSolInt + nVar*i;
 
       /* Compute the Cartesian gradients of the left solution. */
@@ -5150,7 +5172,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /* Compute the normal component of the momentum variables. */
       su2double rVn = 0.0;
@@ -5190,9 +5212,10 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
-                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
-                          viscosityInt);
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          gradSolInt, viscFluxes, viscosityInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -5270,7 +5293,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /*--- Compute the normal velocity, the speed of sound squared and
             the pressure in this integration point. ---*/
@@ -5351,9 +5374,10 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
-                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
-                          viscosityInt);
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          gradSolInt, viscFluxes, viscosityInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -5424,7 +5448,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
          for this integration point. */
       const su2double *UL      = solIntL + i*nVar;
             su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
 
       /*--- Compute the normal velocity, the speed of sound squared and
             the pressure in this integration point. ---*/
@@ -5474,9 +5498,10 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
-                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
-                          viscosityInt);
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          gradSolInt, viscFluxes, viscosityInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -5581,9 +5606,10 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(nInt, nDOFsElem, Wall_HeatFlux, true, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
-                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
-                          viscosityInt);
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          gradSolInt, viscFluxes, viscosityInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -5687,9 +5713,10 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
-                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
-                          viscosityInt);
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          gradSolInt, viscFluxes, viscosityInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -5808,9 +5835,10 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
-                          surfElem[l].DOFsSolElement, surfElem[l].metricCoorDerivFace,
-                          surfElem[l].metricNormalsFace, gradSolInt, viscFluxes,
-                          viscosityInt);
+                          surfElem[l].DOFsSolElement.data(),
+                          surfElem[l].metricCoorDerivFace.data(),
+                          surfElem[l].metricNormalsFace.data(),
+                          gradSolInt, viscFluxes, viscosityInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -5844,7 +5872,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
   /* General function to compute the inviscid fluxes, using an approximate
      Riemann solver in the integration points. */
-  ComputeInviscidFluxesFace(config, nInt, surfElem->metricNormalsFace,
+  ComputeInviscidFluxesFace(config, nInt, surfElem->metricNormalsFace.data(),
                             solInt0, solInt1, fluxes, conv_numerics);
 
   /* Subtract the viscous fluxes from the inviscid fluxes. */
@@ -5857,7 +5885,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
      terms. Use the array viscFluxes as storage. */
   PenaltyTermsFluxFace(nInt, solInt0, solInt1, viscosityInt, viscosityInt,
                        ConstPenFace, lenScale, lenScale,
-                       surfElem->metricNormalsFace, viscFluxes);
+                       surfElem->metricNormalsFace.data(), viscFluxes);
 
   /* Add the penalty fluxes to the earlier computed fluxes. */
   for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] += viscFluxes[j];
@@ -5898,7 +5926,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
     /* Compute the symmetrizing fluxes in the nDim directions. */
     SymmetrizingFluxesFace(nInt, solInt0, solInt1, viscosityInt, viscosityInt,
-                           surfElem->metricNormalsFace, fluxes);
+                           surfElem->metricNormalsFace.data(), fluxes);
 
     /*--- Multiply the fluxes just computed by their integration weights and
           -theta/2. The parameter theta is the parameter in the Interior Penalty
@@ -5941,7 +5969,8 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
            derivatives of the basis functions, and the metric terms in this
            integration point. */
         const su2double *derParam    = derBasisElemTrans + ii;
-        const su2double *metricTerms = surfElem->metricCoorDerivFace + i*nDim*nDim;
+        const su2double *metricTerms = surfElem->metricCoorDerivFace.data()
+                                     + i*nDim*nDim;
               su2double *derCar      = gradSolInt + ii;
 
         /*--- Loop over the dimensions to compute the Cartesian derivatives
