@@ -1317,18 +1317,25 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     /*--- Read all lines in the restart file ---*/
+    
     long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
     
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
+      
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
+      
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
         if (compressible) {
@@ -1366,7 +1373,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         /*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
         node[iPoint_Local] = new CTurbSAVariable(Solution[0], muT, nDim, nVar, config);
       }
-      iPoint_Global++;
+
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
@@ -2765,8 +2772,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     getline (restart_file, text_line);
     
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
+      
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
@@ -2791,7 +2802,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
         node[iPoint_Local] = new CTurbSSTVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
       }
-      iPoint_Global++;
+
     }
     
     /*--- Instantiate the variable class with an arbitrary solution

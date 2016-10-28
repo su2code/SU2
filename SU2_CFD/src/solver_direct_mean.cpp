@@ -1017,7 +1017,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    /*--- Solution ---*/
+    
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -1047,7 +1052,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
         node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
     /*--- Detect a wrong solution file ---*/
@@ -7850,7 +7855,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
   su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
   su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
-  unsigned short iMarker_Analyze, nMarkerAnalyze = 0;
+  unsigned short iMarker_Analyze;
   int rank, iProcessor, nProcessor;
   rank = MASTER_NODE;
   nProcessor = SINGLE_NODE;
@@ -9411,8 +9416,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           if (nDim == 3)  DmTVector[2] = GetTotal_CFz()/ModDmT;
           
           
-          su2double Drag = DmT + NetThrust;
-          su2double CD = Drag / Factor;
+//          su2double Drag = DmT + NetThrust;
+//          su2double CD = Drag / Factor;
           
           su2double SolidSurf_Drag = DmT - Force;
           su2double SolidSurf_CD = SolidSurf_Drag / Factor;
@@ -10206,7 +10211,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Update_AoA = false;
     
     /*--- Reevaluate Angle of Attack at a fix number of iterations ---*/
-    
+
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
       if ((AoA_Counter != 0) &&
@@ -10215,7 +10220,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
           (AoA_Counter != Update_Alpha + 2) &&
           (AoA_Counter != Update_Alpha + 4) ) Update_AoA = true;
       else Update_AoA = false;
-    };
+    }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
     
@@ -16198,7 +16203,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -16230,7 +16238,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
     /*--- Detect a wrong solution file ---*/
