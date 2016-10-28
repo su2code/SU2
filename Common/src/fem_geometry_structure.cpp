@@ -292,7 +292,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Communicate the elements and the boundary elements to the    ---*/
-  /*---         ranks where they will stored during the computation.         ---*/
+  /*---         ranks where they will be stored during the computation.      ---*/
   /*----------------------------------------------------------------------------*/
 
   /*--- Determine the ranks to which I have to send my elements. ---*/
@@ -603,19 +603,23 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
         if(longRecvBuf[i][indL] != -1) {  /* -1 indicates a boundary face. */
 
+          /*--- Check if this element owns the face. Only for owned faces
+                halo elements must be created. ---*/
           bool FaceIsOwned = (bool) shortRecvBuf[i][indS+2];
 
-          bool neighborIsInternal = false;
-          if(shortRecvBuf[i][indS] == -1) { /* -1 indicates no periodic transformation. */
-            neighborIsInternal = binary_search(globalElemID.begin(),
-                                               globalElemID.end(),
-                                               longRecvBuf[i][indL]);
-          }
+          if( FaceIsOwned ) {
+            bool neighborIsInternal = false;
+            if(shortRecvBuf[i][indS] == -1) { /* -1 indicates no periodic transformation. */
+              neighborIsInternal = binary_search(globalElemID.begin(),
+                                                 globalElemID.end(),
+                                                 longRecvBuf[i][indL]);
+            }
 
-          if( !neighborIsInternal )
-            haloElements.push_back(unsignedLong2T(longRecvBuf[i][indL],
-                                                  shortRecvBuf[i][indS]+1));  /* The +1, because haloElements */
-        }                                                                     /* are unsigned longs.          */
+            if( !neighborIsInternal )
+              haloElements.push_back(unsignedLong2T(longRecvBuf[i][indL],
+                                                    shortRecvBuf[i][indS]+1));  /* The +1, because haloElements */
+          }                                                                     /* are unsigned longs.          */
+        }
       }
     }
   }
@@ -1658,51 +1662,16 @@ void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
 
 void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary) {
 
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Determine the size of the vector, which stores the metric  ---*/
-  /*---         terms of the boundary face elements. This is a large,      ---*/
-  /*---         contiguous vector to increase the performance.             ---*/
-  /*---         Each boundary face element has pointers, which point to    ---*/
-  /*---         particular regions of the large vector.                     ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Loop over the boundary faces stored on this rank and determine
-        the size of the metric vector for the faces. Note that the normal
-        gradient of the basis functions of the adjacent element must be stored.
-        These terms enter the formulation in the Symmetric Interior Penalty
-        (SIP) treatment of the viscous terms. ---*/
-  unsigned long sizeMetric = 0;
+  /*--- Loop over the boundary faces stored on this rank. ---*/
   for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
 
-    /* Determine the corresponding standard face element, the number of
-       integration points for this face element and the number of DOFS
-       of the adjacent volume element. */
-    const unsigned short ind       = boundary->surfElem[i].indStandardElement;
-    const unsigned short nInt      = standardBoundaryFacesSol[ind].GetNIntegration();
-    const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
-
-    /* Update the counter sizeMetric by adding the required number for
-       this face element. For each integration point the following data
-       is stored: - Unit normals + area (nDim+1).
-                  - drdx, dsdx, etc. (nDim*nDim).
-                  - Normal derivatives of the element basis functions
-                    (nDOFsElem). */
-    sizeMetric += nInt*(nDim + 1 + nDim*nDim + nDOFsElem);
-  }
-
-  /* Allocate the memory for the vector to store the metric terms.
-     Get its pointer to improve readability. */
-  boundary->VecMetricTermsBoundaryFaces.resize(sizeMetric);
-  su2double *VecMetricBoundary = boundary->VecMetricTermsBoundaryFaces.data();
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 2: Set the pointers for storing the metric terms to the       ---*/
-  /*---         correct locations in VecMetricBoundary.                    ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Loop over the boundary faces. */
-  sizeMetric = 0;
-  for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
+    /*--------------------------------------------------------------------------*/
+    /*--- Step 1: Allocate the memory for the face metric terms.             ---*/
+    /*---         - Unit normals + area (nDim+1 per integration point)       ---*/
+    /*---         - drdx, dsdx, etc. (nDim*nDim per integration point)       ---*/
+    /*---         - Normal derivatives of the element basis functions        ---*/
+    /*---           (nDOFsElem0 per integration point)                       ---*/
+    /*--------------------------------------------------------------------------*/
 
     /* Determine the corresponding standard face element and get the
        relevant information from it. */
@@ -1710,30 +1679,15 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary) {
     const unsigned short nInt      = standardBoundaryFacesSol[ind].GetNIntegration();
     const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
 
-    /* Set the pointers to the locations in VecMetricBoundary
-       where the actual metric data for this boundary face is stored. */
-    boundary->surfElem[i].metricNormalsFace = VecMetricBoundary + sizeMetric;
-    sizeMetric += nInt*(nDim+1);
+    /*--- Allocate the several metric terms. ---*/
+    boundary->surfElem[i].metricNormalsFace.resize(nInt*(nDim+1));
+    boundary->surfElem[i].metricCoorDerivFace.resize(nInt*nDim*nDim);
+    boundary->surfElem[i].metricElem.resize(nInt*nDOFsElem);
 
-    boundary->surfElem[i].metricCoorDerivFace = VecMetricBoundary + sizeMetric;
-    sizeMetric += nInt*nDim*nDim;
-
-    boundary->surfElem[i].metricElem = VecMetricBoundary + sizeMetric;
-    sizeMetric += nInt*nDOFsElem;
-  }
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 3: Determine the actual metric data in the integration points ---*/
-  /*---         of the faces.                                              ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Loop over the boundary faces. */
-  for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
-
-    /* Determine the corresponding standard face and its number of integration
-       points. Note that the standard element of the grid must be used here. */
-    const unsigned short ind  = boundary->surfElem[i].indStandardElement;
-    const unsigned short nInt = standardBoundaryFacesGrid[ind].GetNIntegration();
+    /*--------------------------------------------------------------------------*/
+    /*--- Step 2: Determine the actual metric data in the integration points ---*/
+    /*---         of the faces.                                              ---*/
+    /*--------------------------------------------------------------------------*/
 
     /* Call the function ComputeNormalsFace to compute the unit normals and
        its corresponding area in the integration points. */
@@ -1741,8 +1695,8 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary) {
     const su2double *dr = standardBoundaryFacesGrid[ind].GetDrBasisFaceIntegration();
     const su2double *ds = standardBoundaryFacesGrid[ind].GetDsBasisFaceIntegration();
 
-    ComputeNormalsFace(nInt, nDOFs, dr, ds, boundary->surfElem[i].DOFsGridFace,
-                       boundary->surfElem[i].metricNormalsFace);
+    ComputeNormalsFace(nInt, nDOFs, dr, ds, boundary->surfElem[i].DOFsGridFace.data(),
+                       boundary->surfElem[i].metricNormalsFace.data());
 
     /* Compute the derivatives of the parametric coordinates w.r.t. the
        Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
@@ -1751,8 +1705,8 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary) {
     dr = standardBoundaryFacesGrid[ind].GetMatDerBasisElemIntegration();
 
     ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
-                                    boundary->surfElem[i].DOFsGridElement,
-                                    boundary->surfElem[i].metricCoorDerivFace);
+                                    boundary->surfElem[i].DOFsGridElement.data(),
+                                    boundary->surfElem[i].metricCoorDerivFace.data());
 
     /* Compute the metric terms needed for the SIP treatment of the viscous
        terms. Note that now the standard element of the solution must be taken. */
@@ -1763,9 +1717,9 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary) {
     dt = standardBoundaryFacesSol[ind].GetDtBasisElemIntegration();
 
     ComputeMetricTermsSIP(nInt, nDOFs, dr, ds, dt,
-                          boundary->surfElem[i].metricNormalsFace,
-                          boundary->surfElem[i].metricCoorDerivFace,
-                          boundary->surfElem[i].metricElem);
+                          boundary->surfElem[i].metricNormalsFace.data(),
+                          boundary->surfElem[i].metricCoorDerivFace.data(),
+                          boundary->surfElem[i].metricElem.data());
   }
 }
 
@@ -1855,21 +1809,8 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
   /*--- Step 1: The integration points of the owned volume elements. ---*/
   /*--------------------------------------------------------------------*/
 
-  /* Loop over the locally owned volume elements and determine the
-     total number of integration points in these elements. */
-  unsigned long nIntPoints = 0;
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-    const unsigned short ind = volElem[l].indStandardElement;
-    nIntPoints += standardElementsGrid[ind].GetNIntegration();
-  }
-
-  /* Allocate the memory for the large vector to store the coordinates
-     of the integration points of the volume elements. */
-  VecCoorIntegrationPointsElements.resize(nDim*nIntPoints);
-
   /*--- Loop over the owned elements to compute the coordinates
         in the integration points. ---*/
-  nIntPoints = 0;
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
     /* Get the required data from the corresponding standard element. */
@@ -1877,10 +1818,8 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
     const unsigned short nInt = standardElementsGrid[ind].GetNIntegration();
     const su2double      *lag = standardElementsGrid[ind].GetBasisFunctionsIntegration();
 
-    /* Set the pointer for the coordinates of the integration points for
-       this element and update the counter nIntPoints. */
-    volElem[l].coorIntegrationPoints = VecCoorIntegrationPointsElements.data() + nIntPoints;
-    nIntPoints += nDim*nInt;
+    /* Allocate the memory for the coordinates of the integration points. */
+    volElem[l].coorIntegrationPoints.resize(nDim*nInt);
 
     /* Store the grid DOFs of this element a bit easier. */
     const unsigned short nDOFs = volElem[l].nDOFsGrid;
@@ -1890,7 +1829,7 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
           the coordinates of the integration points. */
     for(unsigned short i=0; i<nInt; ++i) {
 
-      su2double *coor = volElem[l].coorIntegrationPoints + i*nDim;
+      su2double *coor = volElem[l].coorIntegrationPoints.data() + i*nDim;
       const unsigned short jj = i*nDOFs;
       for(unsigned short j=0; j<nDim; ++j) {
         coor[j] = 0.0;
@@ -1904,21 +1843,8 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
   /*--- Step 2: The integration points of the internal matching faces. ---*/
   /*----------------------------------------------------------------------*/
 
-  /* Loop over the locally owned internal matching faces and determine the
-     total number of integration points in these faces. */
-  nIntPoints = 0;
-  for(unsigned long l=0; l<matchingFaces.size(); ++l) {
-    const unsigned short ind = matchingFaces[l].indStandardElement;
-    nIntPoints += standardMatchingFacesGrid[ind].GetNIntegration();
-  }
-
-  /* Allocate the memory for the large vector to store the coordinates
-     of the integration points of the matching faces. */
-  VecCoorIntegrationPointsMatchingFaces.resize(nDim*nIntPoints);
-
   /*--- Loop over the internal matching faces to compute the coordinates
         in the integration points. ---*/
-  nIntPoints = 0;
   for(unsigned long l=0; l<matchingFaces.size(); ++l) {
 
     /* Get the required data from the corresponding standard element. */
@@ -1927,20 +1853,17 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
     const unsigned short nDOFs = standardMatchingFacesGrid[ind].GetNDOFsFaceSide0();
     const su2double      *lag  = standardMatchingFacesGrid[ind].GetBasisFaceIntegrationSide0();
 
-    /* Set the pointer for the coordinates of the integration points for
-       this face and update the counter nIntPoints. */
-    matchingFaces[l].coorIntegrationPoints = VecCoorIntegrationPointsMatchingFaces.data()
-                                           + nIntPoints;
-    nIntPoints += nDim*nInt;
+    /* Allocate the memory for the coordinates of the integration points. */
+    matchingFaces[l].coorIntegrationPoints.resize(nDim*nInt);
 
     /* Store the grid DOFs of this face a bit easier. */
-    const unsigned long *DOFs = matchingFaces[l].DOFsGridFaceSide0;
+    const unsigned long *DOFs = matchingFaces[l].DOFsGridFaceSide0.data();
 
     /*--- Loop over the integration points of this face and compute
           the coordinates of the integration points. */
     for(unsigned short i=0; i<nInt; ++i) {
 
-      su2double *coor = matchingFaces[l].coorIntegrationPoints + i*nDim;
+      su2double *coor = matchingFaces[l].coorIntegrationPoints.data() + i*nDim;
       const unsigned short jj = i*nDOFs;
       for(unsigned short j=0; j<nDim; ++j) {
         coor[j] = 0.0;
@@ -1959,21 +1882,11 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
   for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
     if( !boundaries[iMarker].periodicBoundary ) {
 
-      /* Determine the number of integration points for this boundary. */
-      nIntPoints = 0;
+      /* Abbreviate the surface elements a bit easier. */
       vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
-      for(unsigned long l=0; l<surfElem.size(); ++l) {
-        const unsigned short ind = surfElem[l].indStandardElement;
-        nIntPoints += standardBoundaryFacesGrid[ind].GetNIntegration();
-      }
-
-      /* Allocate the memory for the large vector to store the coordinates
-         of the integration points of the boundary faces. */
-      boundaries[iMarker].VecCoorIntegrationPointsBoundaryFaces.resize(nDim*nIntPoints);
 
       /* Loop over the boundary faces and determine the coordinates
          in the integration points. */
-      nIntPoints = 0;
       for(unsigned long l=0; l<surfElem.size(); ++l) {
 
         /* Get the required data from the corresponding standard element. */
@@ -1982,20 +1895,17 @@ void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
         const unsigned short nDOFs = surfElem[l].nDOFsGrid;
         const su2double      *lag  = standardBoundaryFacesGrid[ind].GetBasisFaceIntegration();
 
-        /* Set the pointer for the coordinates of the integration points for
-           this face and update the counter nIntPoints. */
-        surfElem[l].coorIntegrationPoints = boundaries[iMarker].VecCoorIntegrationPointsBoundaryFaces.data()
-                                          + nIntPoints;
-        nIntPoints += nDim*nInt;
+        /* Allocate the memory for the coordinates of the integration points. */
+        surfElem[l].coorIntegrationPoints.resize(nDim*nInt);
 
         /* Store the grid DOFs of this face a bit easier. */
-        const unsigned long *DOFs = surfElem[l].DOFsGridFace;
+        const unsigned long *DOFs = surfElem[l].DOFsGridFace.data();
 
         /*--- Loop over the integration points of this face and compute
               the coordinates of the integration points. */
         for(unsigned short i=0; i<nInt; ++i) {
 
-          su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
+          su2double *coor = surfElem[l].coorIntegrationPoints.data() + i*nDim;
           const unsigned short jj = i*nDOFs;
           for(unsigned short j=0; j<nDim; ++j) {
             coor[j] = 0.0;
@@ -2034,15 +1944,16 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
 
-      thisFace.elemID0       = k;
-      thisFace.nPolyGrid0    = volElem[k].nPolyGrid;
-      thisFace.nPolySol0     = volElem[k].nPolySol;
-      thisFace.nDOFsElem0    = volElem[k].nDOFsSol;
-      thisFace.elemType0     = volElem[k].VTK_Type;
-      thisFace.faceID0       = i;
-      thisFace.faceIndicator = volElem[k].elemIsOwned ? -1 : -2;
+      thisFace.elemID0       =  k;
+      thisFace.nPolyGrid0    =  volElem[k].nPolyGrid;
+      thisFace.nPolySol0     =  volElem[k].nPolySol;
+      thisFace.nDOFsElem0    =  volElem[k].nDOFsSol;
+      thisFace.elemType0     =  volElem[k].VTK_Type;
+      thisFace.faceID0       =  i;
+      thisFace.faceIndicator = -2;   // Initialized to an invalid face.
 
       thisFace.JacFaceIsConsideredConstant = volElem[k].JacFacesIsConsideredConstant[i];
+      thisFace.elem0IsOwner                = volElem[k].ElementOwnsFaces[i];
 
       thisFace.CreateUniqueNumberingWithOrientation();
 
@@ -2053,29 +1964,26 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*--- Sort the the local faces in increasing order. ---*/
   sort(localFaces.begin(), localFaces.end());
 
-  /*--- Loop over the faces to merge the matching faces. As only one of the
-        faces is kept, the other face is invalidated by setting its faceIndicator
-        to -2, i.e. an unowned faces. In this way these faces can be removed
-        easily later on. ---*/
+  /*--- Loop over the faces to merge the matching faces. ---*/
   for(unsigned long i=1; i<localFaces.size(); ++i) {
 
     /* Check for a matching face with the previous face in the vector.
        Note that the == operator only checks the node IDs. */
     if(localFaces[i] == localFaces[i-1]) {
 
-      /* Faces are matching. First check if at least one face belongs to an
-         owned element. In that case the face should be stored, because it
-         contributes to the surface integral of an owned element. */
-      if(localFaces[i].faceIndicator == -1 || localFaces[i-1].faceIndicator == -1) {
+      /* Faces are matching. Check if it should be kept, i.e. if one
+         of the elements owns the face. */
+      if(localFaces[i].elem0IsOwner || localFaces[i-1].elem0IsOwner) {
 
-        /* Store the of the neighboring elemen in faces[i-1]. */
+        /* Store the data for this matching face in faces[i-1]. */
         if(localFaces[i].elemID0 < nVolElemTot) {
-          localFaces[i-1].elemID0    = localFaces[i].elemID0;
-          localFaces[i-1].nPolyGrid0 = localFaces[i].nPolyGrid0;
-          localFaces[i-1].nPolySol0  = localFaces[i].nPolySol0;
-          localFaces[i-1].nDOFsElem0 = localFaces[i].nDOFsElem0;
-          localFaces[i-1].elemType0  = localFaces[i].elemType0;
-          localFaces[i-1].faceID0    = localFaces[i].faceID0;
+          localFaces[i-1].elemID0      = localFaces[i].elemID0;
+          localFaces[i-1].nPolyGrid0   = localFaces[i].nPolyGrid0;
+          localFaces[i-1].nPolySol0    = localFaces[i].nPolySol0;
+          localFaces[i-1].nDOFsElem0   = localFaces[i].nDOFsElem0;
+          localFaces[i-1].elemType0    = localFaces[i].elemType0;
+          localFaces[i-1].faceID0      = localFaces[i].faceID0;
+          localFaces[i-1].elem0IsOwner = localFaces[i].elem0IsOwner;
         }
         else {
           localFaces[i-1].elemID1    = localFaces[i].elemID1;
@@ -2094,34 +2002,13 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
           localFaces[i-1].JacFaceIsConsideredConstant = false;
         }
 
-        /* Set this face indicator to -1 to indicate that this face must be kept
-           and invalidate localFace[i] by setting its face indicator to -2. */
+        /* Set this face indicator to -1 to indicate an internal face
+           and set elem0IsOwner for localFaces[i] to false. */
         localFaces[i-1].faceIndicator = -1;
-        localFaces[i].faceIndicator   = -2;
+        localFaces[i].elem0IsOwner    = false;
       }
     }
   }
-
-  /*--- Remove the invalidated faces. This is accomplished by giving the
-        face four points a global node ID that is larger than the largest
-        local point ID in the grid. In this way the sorting operator puts
-        these faces at the end of the vector, see also the < operator
-        of FaceOfElementClass. ---*/
-  unsigned long nFacesLoc = localFaces.size();
-  for(unsigned long i=0; i<localFaces.size(); ++i) {
-    if(localFaces[i].faceIndicator == -2) {
-      unsigned long invalID = meshPoints.size();
-      localFaces[i].nCornerPoints = 4;
-      localFaces[i].cornerPoints[0] = invalID;
-      localFaces[i].cornerPoints[1] = invalID;
-      localFaces[i].cornerPoints[2] = invalID;
-      localFaces[i].cornerPoints[3] = invalID;
-      --nFacesLoc;
-    }
-  }
-
-  sort(localFaces.begin(), localFaces.end());
-  localFaces.resize(nFacesLoc);
 
   /*--- Loop over the boundary markers and its boundary elements to search for
         the corresponding faces in localFaces. These faces should be found.
@@ -2169,7 +2056,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
           }
 
           /* Store the local index of the boundary face in the variable for the
-             polynomial degree, which is not used for in localFaces. */
+             polynomial degree, which is not used in localFaces. */
           if( side0IsBoundary ) low->nPolyGrid1 = k;
           else                  low->nPolyGrid0 = k;
         }
@@ -2186,6 +2073,35 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       }
     }
   }
+
+  /*--- It is possible that owned non-matching faces are present in the list.
+        These faces are indicated by and owned face and a faceIndicator of -2.
+        To avoid that these faces are removed afterwards, set their
+        faceIndicator to -1. ---*/
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -2 && localFaces[i].elem0IsOwner)
+      localFaces[i].faceIndicator = -1;
+  }
+
+  /*--- Remove the invalid faces. This is accomplished by giving the face four
+        points and global node ID's that are larger than the largest local point
+        ID in the grid. In this way the sorting operator puts these faces at the
+        end of the vector, see also the < operator of FaceOfElementClass. ---*/
+  unsigned long nFacesLoc = localFaces.size();
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -2) {
+      unsigned long invalID = meshPoints.size();
+      localFaces[i].nCornerPoints = 4;
+      localFaces[i].cornerPoints[0] = invalID;
+      localFaces[i].cornerPoints[1] = invalID;
+      localFaces[i].cornerPoints[2] = invalID;
+      localFaces[i].cornerPoints[3] = invalID;
+      --nFacesLoc;
+    }
+  }
+
+  sort(localFaces.begin(), localFaces.end());
+  localFaces.resize(nFacesLoc);
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 2: Preparation of the localFaces vector, such that the info    ---*/
@@ -2260,6 +2176,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         swap(localFaces[i].cornerPoints[0], localFaces[i].cornerPoints[1]);
       else
         swap(localFaces[i].cornerPoints[0], localFaces[i].cornerPoints[2]);
+
+      localFaces[i].elem0IsOwner = !localFaces[i].elem0IsOwner;
     }
   }
 
@@ -2360,70 +2278,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*---         integral in DG-FEM.                                         ---*/
   /*---------------------------------------------------------------------------*/
 
-  /*--- Determine the sizes of the vectors, which store the connectivity of the faces.
-        Note that these sizes must be determined beforehand, such that no resize needs
-        to be carried out when the data is actually set. ---*/
-  unsigned long sizeVecDOFsGridFaceSide0    = 0, sizeVecDOFsGridFaceSide1    = 0;
-  unsigned long sizeVecDOFsSolFaceSide0     = 0, sizeVecDOFsSolFaceSide1     = 0;
-  unsigned long sizeVecDOFsGridElementSide0 = 0, sizeVecDOFsGridElementSide1 = 0;
-  unsigned long sizeVecDOFsSolElementSide0  = 0, sizeVecDOFsSolElementSide1  = 0;
-
-  for(unsigned long i=0; i<localFaces.size(); ++i) {
-    if(localFaces[i].faceIndicator == -1 && localFaces[i].elemID1 < nVolElemTot) {
-
-      /* Determine from the face type and the polynomial degree used on both
-         sides the number of DOFs for the grid and the solution. Update the
-         corresponding counters accordingly. */
-      switch( localFaces[i].nCornerPoints ) {
-        case 2:
-          /* Face is a line. */
-          sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
-          sizeVecDOFsGridFaceSide1 += localFaces[i].nPolyGrid1 + 1;
-          sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
-          sizeVecDOFsSolFaceSide1  += localFaces[i].nPolySol1  + 1;
-          break;
-
-        case 3:
-          /* Face is a triangle. */
-          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
-          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+2)/2;
-          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
-          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +2)/2;
-          break;
-
-        case 4:
-          /* Face is a quadrilateral. */
-          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
-          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+1);
-          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
-          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +1);
-          break;
-      }
-
-      /* Update the sizes to store the DOFs of the adjacent elements. */
-      unsigned long v0 = localFaces[i].elemID0;
-      unsigned long v1 = localFaces[i].elemID1;
-
-      sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
-      sizeVecDOFsGridElementSide1 += volElem[v1].nDOFsGrid;
-      sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
-      sizeVecDOFsSolElementSide1  += volElem[v1].nDOFsSol;
-    }
-  }
-
-  /* Allocate the memory for the matching faces as well as the memory for the
-     storage of the DOFs of the connectivities of the faces. */
+  /* Allocate the memory for the matching faces. */
   matchingFaces.resize(nMatchingFaces);
-
-  VecDOFsGridFaceSide0.resize(sizeVecDOFsGridFaceSide0);
-  VecDOFsGridFaceSide1.resize(sizeVecDOFsGridFaceSide1);
-  VecDOFsSolFaceSide0.resize(sizeVecDOFsSolFaceSide0);
-  VecDOFsSolFaceSide1.resize(sizeVecDOFsSolFaceSide1);
-
-  VecDOFsGridElementSide0.resize(sizeVecDOFsGridElementSide0);
-  VecDOFsGridElementSide1.resize(sizeVecDOFsGridElementSide1);
-  VecDOFsSolElementSide0.resize(sizeVecDOFsSolElementSide0);
-  VecDOFsSolElementSide1.resize(sizeVecDOFsSolElementSide1);
 
   /*--- Loop over the volume elements to determine the maximum number
         of DOFs for the volume elements. Allocate the memory for the
@@ -2436,72 +2292,64 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
   vector<unsigned long> DOFsElem(nDOFsVolMax);
 
-  /*--- Loop again over localFaces, but now store the required information
-        in matchingFaces. ---*/
-  sizeVecDOFsGridFaceSide0    = sizeVecDOFsGridFaceSide1    = 0;
-  sizeVecDOFsSolFaceSide0     = sizeVecDOFsSolFaceSide1     = 0;
-  sizeVecDOFsGridElementSide0 = sizeVecDOFsGridElementSide1 = 0;
-  sizeVecDOFsSolElementSide0  = sizeVecDOFsSolElementSide1  = 0;
-
+  /*--- Loop over localFaces to create the connectivity information, which
+        is stored in matchingFaces. ---*/
   unsigned long ii = 0;
   for(unsigned long i=0; i<localFaces.size(); ++i) {
     if(localFaces[i].faceIndicator == -1 && localFaces[i].elemID1 < nVolElemTot) {
 
-      /* Abbreviate the adjecent element ID's and store them in matchingFaces. */
+      /*--- Determine the number of DOFs on both sides of the face for both the
+            grid and solution. This value depends on the face type. ---*/
+      unsigned short sizeDOFsGridFaceSide0, sizeDOFsGridFaceSide1;
+      unsigned short sizeDOFsSolFaceSide0,  sizeDOFsSolFaceSide1;
+
+      unsigned short VTK_Type;
+      switch( localFaces[i].nCornerPoints ) {
+        case 2:
+          /* Face is a line. */
+          VTK_Type = LINE;
+          sizeDOFsGridFaceSide0 = localFaces[i].nPolyGrid0 + 1;
+          sizeDOFsGridFaceSide1 = localFaces[i].nPolyGrid1 + 1;
+          sizeDOFsSolFaceSide0  = localFaces[i].nPolySol0  + 1;
+          sizeDOFsSolFaceSide1  = localFaces[i].nPolySol1  + 1;
+          break;
+
+        case 3:
+          /* Face is a triangle. */
+          VTK_Type = TRIANGLE;
+          sizeDOFsGridFaceSide0 = (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
+          sizeDOFsGridFaceSide1 = (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+2)/2;
+          sizeDOFsSolFaceSide0  = (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
+          sizeDOFsSolFaceSide1  = (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +2)/2;
+          break;
+
+        case 4:
+          /* Face is a quadrilateral. */
+          VTK_Type = QUADRILATERAL;
+          sizeDOFsGridFaceSide0 = (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
+          sizeDOFsGridFaceSide1 = (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+1);
+          sizeDOFsSolFaceSide0  = (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
+          sizeDOFsSolFaceSide1  = (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +1);
+          break;
+      }
+
+      /* Abbreviate the adjacent element ID's and store them in matchingFaces. */
       const unsigned long v0 = localFaces[i].elemID0;
       const unsigned long v1 = localFaces[i].elemID1;
 
       matchingFaces[ii].elemID0 = v0;
       matchingFaces[ii].elemID1 = v1;
 
-      /* Set the pointers for the connectivities of the face. */
-      matchingFaces[ii].DOFsGridFaceSide0 = VecDOFsGridFaceSide0.data() + sizeVecDOFsGridFaceSide0;
-      matchingFaces[ii].DOFsGridFaceSide1 = VecDOFsGridFaceSide1.data() + sizeVecDOFsGridFaceSide1;
-      matchingFaces[ii].DOFsSolFaceSide0  = VecDOFsSolFaceSide0.data()  + sizeVecDOFsSolFaceSide0;
-      matchingFaces[ii].DOFsSolFaceSide1  = VecDOFsSolFaceSide1.data()  + sizeVecDOFsSolFaceSide1;
+      /* Allocate the memory for the connectivities of the face. */
+      matchingFaces[ii].DOFsGridFaceSide0.resize(sizeDOFsGridFaceSide0);
+      matchingFaces[ii].DOFsGridFaceSide1.resize(sizeDOFsGridFaceSide1);
+      matchingFaces[ii].DOFsSolFaceSide0.resize(sizeDOFsSolFaceSide0);
+      matchingFaces[ii].DOFsSolFaceSide1.resize(sizeDOFsSolFaceSide1);
 
-      matchingFaces[ii].DOFsGridElementSide0 = VecDOFsGridElementSide0.data() + sizeVecDOFsGridElementSide0;
-      matchingFaces[ii].DOFsGridElementSide1 = VecDOFsGridElementSide1.data() + sizeVecDOFsGridElementSide1;
-      matchingFaces[ii].DOFsSolElementSide0  = VecDOFsSolElementSide0.data()  + sizeVecDOFsSolElementSide0;
-      matchingFaces[ii].DOFsSolElementSide1  = VecDOFsSolElementSide1.data()  + sizeVecDOFsSolElementSide1;
-
-      /* Update the counters for the face connectivities. This depends on the
-         type of surface element. */
-      unsigned short VTK_Type;
-      switch( localFaces[i].nCornerPoints ) {
-        case 2:
-          /* Face is a line. */
-          VTK_Type = LINE;
-          sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
-          sizeVecDOFsGridFaceSide1 += localFaces[i].nPolyGrid1 + 1;
-          sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
-          sizeVecDOFsSolFaceSide1  += localFaces[i].nPolySol1  + 1;
-          break;
-
-        case 3:
-          /* Face is a triangle. */
-          VTK_Type = TRIANGLE;
-          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
-          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+2)/2;
-          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
-          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +2)/2;
-          break;
-
-        case 4:
-          /* Face is a quadrilateral. */
-          VTK_Type = QUADRILATERAL;
-          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
-          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+1);
-          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
-          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +1);
-          break;
-      }
-
-      /* Update the counters for the adjacent element connectivities. */
-      sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
-      sizeVecDOFsGridElementSide1 += volElem[v1].nDOFsGrid;
-      sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
-      sizeVecDOFsSolElementSide1  += volElem[v1].nDOFsSol;
+      matchingFaces[ii].DOFsGridElementSide0.resize(volElem[v0].nDOFsGrid);
+      matchingFaces[ii].DOFsGridElementSide1.resize(volElem[v1].nDOFsGrid);
+      matchingFaces[ii].DOFsSolElementSide0.resize(volElem[v0].nDOFsSol);
+      matchingFaces[ii].DOFsSolElementSide1.resize(volElem[v1].nDOFsSol);
 
       /*--- Create the connectivities of the adjacent elements in the correct
             sequence as well as the connectivities of the face. The
@@ -2515,8 +2363,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
                                volElem[v0].VTK_Type,    volElem[v0].nPolyGrid,
                                volElem[v0].nodeIDsGrid, volElem[v0].nPolySol,
                                DOFsElem.data(),         swapFaceInElementSide0,
-                               matchingFaces[ii].DOFsSolFaceSide0,
-                               matchingFaces[ii].DOFsSolElementSide0);
+                               matchingFaces[ii].DOFsSolFaceSide0.data(),
+                               matchingFaces[ii].DOFsSolElementSide0.data());
 
       for(unsigned short j=0; j<volElem[v0].nDOFsGrid; ++j)
         DOFsElem[j] = volElem[v0].nodeIDsGrid[j];
@@ -2525,8 +2373,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
                                volElem[v0].VTK_Type,    volElem[v0].nPolyGrid,
                                volElem[v0].nodeIDsGrid, volElem[v0].nPolyGrid,
                                DOFsElem.data(),         swapFaceInElementSide0,
-                               matchingFaces[ii].DOFsGridFaceSide0,
-                               matchingFaces[ii].DOFsGridElementSide0);
+                               matchingFaces[ii].DOFsGridFaceSide0.data(),
+                               matchingFaces[ii].DOFsGridElementSide0.data());
 
       /*--- And also for side 1 of the face. ---*/
       bool swapFaceInElementSide1;
@@ -2537,8 +2385,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
                                volElem[v1].VTK_Type,    volElem[v1].nPolyGrid,
                                volElem[v1].nodeIDsGrid, volElem[v1].nPolySol,
                                DOFsElem.data(),         swapFaceInElementSide1,
-                               matchingFaces[ii].DOFsSolFaceSide1,
-                               matchingFaces[ii].DOFsSolElementSide1);
+                               matchingFaces[ii].DOFsSolFaceSide1.data(),
+                               matchingFaces[ii].DOFsSolElementSide1.data());
 
       for(unsigned short j=0; j<volElem[v1].nDOFsGrid; ++j)
         DOFsElem[j] = volElem[v1].nodeIDsGrid[j];
@@ -2547,8 +2395,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
                                volElem[v1].VTK_Type,    volElem[v1].nPolyGrid,
                                volElem[v1].nodeIDsGrid, volElem[v1].nPolyGrid,
                                DOFsElem.data(),         swapFaceInElementSide1,
-                               matchingFaces[ii].DOFsGridFaceSide1,
-                               matchingFaces[ii].DOFsGridElementSide1);
+                               matchingFaces[ii].DOFsGridFaceSide1.data(),
+                               matchingFaces[ii].DOFsGridElementSide1.data());
 
       /*--- Search in the standard elements for faces for a matching
             standard element. If not found, create a new standard element.
@@ -2628,97 +2476,51 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         if(localFaces[indEndMarker].faceIndicator != (short) iMarker) break;
       }
 
-      /*--- Determine the sizes of the vectors, which store the connectivity of the faces.
-            Note that these sizes must be determined beforehand, such that no resize needs
-            to be carried out when the data is actually set. ---*/
-      sizeVecDOFsGridFaceSide0    = sizeVecDOFsSolFaceSide0    = 0;
-      sizeVecDOFsGridElementSide0 = sizeVecDOFsSolElementSide0 = 0;
-
-      for(unsigned long i=indBegMarker; i<indEndMarker; ++i) {
-        /* Determine from the face type and the polynomial degree used the number of DOFs for
-           the grid and the solution. Update the corresponding counters accordingly. */
-        switch( localFaces[i].nCornerPoints ) {
-          case 2:
-            /* Face is a line. */
-            sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
-            sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
-            break;
-
-          case 3:
-            /* Face is a triangle. */
-            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
-            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
-            break;
-
-          case 4:
-            /* Face is a quadrilateral. */
-            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
-            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
-            break;
-        }
-
-        /* Update the sizes to store the DOFs of the adjacent elements. */
-        unsigned long v0 = localFaces[i].elemID0;
-
-        sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
-        sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
-      }
-
-      /* Allocate the memory for the storage of the DOFs of the
-         connectivities of the faces. */
-      boundaries[iMarker].VecDOFsGridFace.resize(sizeVecDOFsGridFaceSide0);
-      boundaries[iMarker].VecDOFsSolFace.resize(sizeVecDOFsSolFaceSide0);
-      boundaries[iMarker].VecDOFsGridElement.resize(sizeVecDOFsGridElementSide0);
-      boundaries[iMarker].VecDOFsSolElement.resize(sizeVecDOFsSolElementSide0);
-
       /* Easier storage of the surface elements for this boundary. */
       vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
 
-      /*--- Loop again over localFaces for this boundary, but now
-            store the required information in surfElem. ---*/
-      sizeVecDOFsGridFaceSide0    = sizeVecDOFsSolFaceSide0    = 0;
-      sizeVecDOFsGridElementSide0 = sizeVecDOFsSolElementSide0 = 0;
+      /*--- Loop over range in localFaces for this boundary marker and create
+            the connectivity information, which is stored in surfElem. ---*/
       for(unsigned long i=indBegMarker; i<indEndMarker; ++i) {
 
-        /* Set the pointers for the connectivities of the face. */
-        ii = i - indBegMarker;
-        surfElem[ii].DOFsGridFace = boundaries[iMarker].VecDOFsGridFace.data() + sizeVecDOFsGridFaceSide0;
-        surfElem[ii].DOFsSolFace  = boundaries[iMarker].VecDOFsSolFace.data()  + sizeVecDOFsSolFaceSide0;
+         /*--- Determine the number of DOFs of the face for both the grid
+               and solution. This value depends on the face type. ---*/
+        unsigned short sizeDOFsGridFace, sizeDOFsSolFace;
 
-        surfElem[ii].DOFsGridElement = boundaries[iMarker].VecDOFsGridElement.data() + sizeVecDOFsGridElementSide0;
-        surfElem[ii].DOFsSolElement  = boundaries[iMarker].VecDOFsSolElement.data()  + sizeVecDOFsSolElementSide0;
-
-        /* Update the counters for the face connectivities. This depends on the
-           type of surface element. */
         unsigned short VTK_Type;
         switch( localFaces[i].nCornerPoints ) {
           case 2:
             /* Face is a line. */
             VTK_Type = LINE;
-            sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
-            sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
+            sizeDOFsGridFace = localFaces[i].nPolyGrid0 + 1;
+            sizeDOFsSolFace  = localFaces[i].nPolySol0  + 1;
             break;
 
           case 3:
             /* Face is a triangle. */
             VTK_Type = TRIANGLE;
-            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
-            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
+            sizeDOFsGridFace = (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
+            sizeDOFsSolFace  = (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
             break;
 
           case 4:
             /* Face is a quadrilateral. */
             VTK_Type = QUADRILATERAL;
-            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
-            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
+            sizeDOFsGridFace = (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
+            sizeDOFsSolFace  = (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
             break;
         }
 
-        /* Update the counters for the adjacent element connectivities. */
-        unsigned long v0 = localFaces[i].elemID0;
+        /* Abbreviate the adjacent element ID. */
+        const unsigned long v0 = localFaces[i].elemID0;
 
-        sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
-        sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
+        /* Allocate the memory for the connectivities of the face. */
+        ii = i - indBegMarker;
+        surfElem[ii].DOFsGridFace.resize(sizeDOFsGridFace);
+        surfElem[ii].DOFsSolFace.resize(sizeDOFsSolFace);
+
+        surfElem[ii].DOFsGridElement.resize(volElem[v0].nDOFsGrid);
+        surfElem[ii].DOFsSolElement.resize(volElem[v0].nDOFsSol);
 
         /*--- Create the connectivities of the adjacent element in the correct
               sequence as well as the connectivities of the face. The
@@ -2727,20 +2529,22 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         for(unsigned short j=0; j<volElem[v0].nDOFsSol; ++j)
           DOFsElem[j] = volElem[v0].offsetDOFsSolLocal + j;
 
-        CreateConnectivitiesFace(VTK_Type,                 localFaces[i].cornerPoints,
-                                 volElem[v0].VTK_Type,     volElem[v0].nPolyGrid,
-                                 volElem[v0].nodeIDsGrid,  volElem[v0].nPolySol,
-                                 DOFsElem.data(),          swapFaceInElement,
-                                 surfElem[ii].DOFsSolFace, surfElem[ii].DOFsSolElement);
+        CreateConnectivitiesFace(VTK_Type,                localFaces[i].cornerPoints,
+                                 volElem[v0].VTK_Type,    volElem[v0].nPolyGrid,
+                                 volElem[v0].nodeIDsGrid, volElem[v0].nPolySol,
+                                 DOFsElem.data(),         swapFaceInElement,
+                                 surfElem[ii].DOFsSolFace.data(),
+                                 surfElem[ii].DOFsSolElement.data());
 
         for(unsigned short j=0; j<volElem[v0].nDOFsGrid; ++j)
           DOFsElem[j] = volElem[v0].nodeIDsGrid[j];
 
-        CreateConnectivitiesFace(VTK_Type,                  localFaces[i].cornerPoints,
-                                 volElem[v0].VTK_Type,      volElem[v0].nPolyGrid,
-                                 volElem[v0].nodeIDsGrid,   volElem[v0].nPolyGrid,
-                                 DOFsElem.data(),           swapFaceInElement,
-                                 surfElem[ii].DOFsGridFace, surfElem[ii].DOFsGridElement);
+        CreateConnectivitiesFace(VTK_Type,                localFaces[i].cornerPoints,
+                                 volElem[v0].VTK_Type,    volElem[v0].nPolyGrid,
+                                 volElem[v0].nodeIDsGrid, volElem[v0].nPolyGrid,
+                                 DOFsElem.data(),         swapFaceInElement,
+                                 surfElem[ii].DOFsGridFace.data(),
+                                 surfElem[ii].DOFsGridElement.data());
 
         /*--- Search in the standard elements for boundary faces for a matching
               standard element. If not found, create a new standard element.
@@ -2793,48 +2597,44 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
 
   /*--- Loop over the volume elements and create new standard elements if needed.
-        Note that a new standard elements is created when either the solution
+        Note that a new standard element is created when either the solution
         element or the grid element does not match. Note further that for the
-        standard element of the grid the exact order for the integration of the
+        standard element of the grid the  order for the integration of the
         solution is used, such that the metric terms are computed in the correct
         integration points in case the polynomial order of the solution differs
         from that of the grid. ---*/
-  for(unsigned long i=0; i<nVolElemTot; ++i) {
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
-    if( volElem[i].elemIsOwned ) {
-
-      /* Check the existing standard elements in the list. */
-      unsigned long j;
-      for(j=0; j<standardElementsSol.size(); ++j) {
-        if(standardElementsSol[j].SameStandardElement(volElem[i].VTK_Type,
-                                                      volElem[i].nPolySol,
-                                                      volElem[i].JacIsConsideredConstant) &&
-           standardElementsGrid[j].SameStandardElement(volElem[i].VTK_Type,
-                                                       volElem[i].nPolyGrid,
-                                                       volElem[i].JacIsConsideredConstant) ) {
-           volElem[i].indStandardElement = j;
-           break;
-        }
-      }
-
-      /* Create the new standard elements if no match was found. */
-      if(j == standardElementsSol.size()) {
-
-        standardElementsSol.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
-                                                              volElem[i].nPolySol,
-                                                              volElem[i].JacIsConsideredConstant,
-                                                              config) );
-
-        standardElementsGrid.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
-                                                               volElem[i].nPolyGrid,
-                                                               volElem[i].JacIsConsideredConstant,
-                                                               config,
-                                                               standardElementsSol[j].GetOrderExact()) );
-        volElem[i].indStandardElement = j;
+    /* Check the existing standard elements in the list. */
+    unsigned long j;
+    for(j=0; j<standardElementsSol.size(); ++j) {
+      if(standardElementsSol[j].SameStandardElement(volElem[i].VTK_Type,
+                                                    volElem[i].nPolySol,
+                                                    volElem[i].JacIsConsideredConstant) &&
+         standardElementsGrid[j].SameStandardElement(volElem[i].VTK_Type,
+                                                     volElem[i].nPolyGrid,
+                                                     volElem[i].JacIsConsideredConstant) ) {
+         volElem[i].indStandardElement = j;
+         break;
       }
     }
-  }
 
+    /* Create the new standard elements if no match was found. */
+    if(j == standardElementsSol.size()) {
+
+      standardElementsSol.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
+                                                            volElem[i].nPolySol,
+                                                            volElem[i].JacIsConsideredConstant,
+                                                            config) );
+
+      standardElementsGrid.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
+                                                             volElem[i].nPolyGrid,
+                                                             volElem[i].JacIsConsideredConstant,
+                                                             config,
+                                                             standardElementsSol[j].GetOrderExact()) );
+      volElem[i].indStandardElement = j;
+    }
+  }
 }
 
 void CMeshFEM_DG::SetSendReceive(CConfig *config) {
@@ -2849,7 +2649,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 #endif
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 1: Determine the ranks which this rank has to communicate       ---*/
+  /*--- Step 1: Determine the ranks from which this rank has to receive data ---*/
   /*---         during the actual communication of halo data, as well as the ---*/
   /*            data that must be communicated.                              ---*/
   /*----------------------------------------------------------------------------*/
@@ -2860,36 +2660,35 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
     volElem[i].offsetDOFsSolLocal = volElem[i-1].offsetDOFsSolLocal
                                   + volElem[i-1].nDOFsSol;
 
-  /* Determine the ranks which this rank will communicate. */
-  vector<bool> commWithRank(nRank, false);
-  for(unsigned long i=0; i<nVolElemTot; ++i) {
-    if( !volElem[i].elemIsOwned ) commWithRank[volElem[i].rankOriginal] = true;
-  }
+  /* Determine the ranks from which this rank will receive halo data. */
+  vector<int> recvFromRank(nRank, 0);
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i)
+    recvFromRank[volElem[i].rankOriginal] = 1;
 
-  map<int,int> rankToIndCommBuf;
+  map<int,int> rankToIndRecvBuf;
   for(int i=0; i<nRank; ++i) {
-    if( commWithRank[i] ) {
-      int ind = rankToIndCommBuf.size();
-      rankToIndCommBuf[i] = ind;
+    if( recvFromRank[i] ) {
+      int ind = rankToIndRecvBuf.size();
+      rankToIndRecvBuf[i] = ind;
     }
   }
 
-  ranksComm.resize(rankToIndCommBuf.size());
-  map<int,int>::const_iterator MI = rankToIndCommBuf.begin();
-  for(unsigned long i=0; i<rankToIndCommBuf.size(); ++i, ++MI)
-    ranksComm[i] = MI->first;
+  ranksRecv.resize(rankToIndRecvBuf.size());
+  map<int,int>::const_iterator MI = rankToIndRecvBuf.begin();
+  for(unsigned long i=0; i<rankToIndRecvBuf.size(); ++i, ++MI)
+    ranksRecv[i] = MI->first;
 
   /* Define and determine the buffers to send the global indices of my halo
      elements to the appropriate ranks and the vectors which store the
      elements that I will receive from these ranks. */
-  vector<vector<unsigned long> > longBuf(rankToIndCommBuf.size(), vector<unsigned long>(0));
-  entitiesReceive.resize(rankToIndCommBuf.size());
+  vector<vector<unsigned long> > longBuf(rankToIndRecvBuf.size(), vector<unsigned long>(0));
+  entitiesRecv.resize(rankToIndRecvBuf.size());
 
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
-    MI = rankToIndCommBuf.find(volElem[i].rankOriginal);
+    MI = rankToIndRecvBuf.find(volElem[i].rankOriginal);
     longBuf[MI->second].push_back(volElem[i].elemIDGlobal);
 
-    entitiesReceive[MI->second].push_back(i);
+    entitiesRecv[MI->second].push_back(i);
   }
 
   /* Determine the mapping from global element ID to local owned element ID. */
@@ -2897,45 +2696,53 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   for(unsigned long i=0; i<nVolElemOwned; ++i)
     globalElemIDToLocalInd[volElem[i].elemIDGlobal] = i;
 
-  /* Resize the first index of the vectors to store the elements that must be sent. */
-  entitiesSend.resize(rankToIndCommBuf.size());
-
-  /*--- Make a distinction between sequential and parallel mode to
-        determine the elements to be sent.  ---*/
-
 #ifdef HAVE_MPI
-  /*--- Parallel mode. Send all the data using non-blocking sends. ---*/
-  vector<MPI_Request> commReqs(ranksComm.size());
 
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
-    int dest = ranksComm[i];
+  /*--- Parallel mode. First determine the number of ranks to which this
+        rank has to send halo data during the actual exchange. ---*/
+  int nRankSend;
+  vector<int> sizeReduce(nRank, 1);
+
+  MPI_Reduce_scatter(recvFromRank.data(), &nRankSend, sizeReduce.data(),
+                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  /* Resize ranksSend and the first index of entitiesSend to the number of
+     ranks to which this rank has to send data. */
+  ranksSend.resize(nRankSend);
+  entitiesSend.resize(nRankSend);
+
+  /*--- Send all the data using non-blocking sends. ---*/
+  vector<MPI_Request> commReqs(ranksRecv.size());
+
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    int dest = ranksRecv[i];
     SU2_MPI::Isend(longBuf[i].data(), longBuf[i].size(), MPI_UNSIGNED_LONG,
                    dest, dest, MPI_COMM_WORLD, &commReqs[i]);
   }
 
   /* Loop over the number of ranks from which I receive data about the
-     global element ID's that I must sent. */
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+     global element ID's that I must send. */
+  for(unsigned long i=0; i<nRankSend; ++i) {
 
-    /* Receive the messages in the order specified in ranksComm.
-       First probe the message to find out the size. */
+    /* Block until a message arrivesi and determine the source. */
     MPI_Status status;
-    MPI_Probe(ranksComm[i], rank, MPI_COMM_WORLD, &status);
+    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    ranksSend[i] = status.MPI_SOURCE;
 
+    /* Determine the size of the message, allocate the memory for the
+       receive buffer and receive the message. */
     int sizeMess;
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
-    /* Allocate the memory for a buffer to receive the data
-       and receive the data using a blocking receive. */
-    vector<unsigned long> longRecvBuf(sizeMess);
-    SU2_MPI::Recv(longRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-                  ranksComm[i], rank, MPI_COMM_WORLD, &status);
+    entitiesSend[i].resize(sizeMess);
+    SU2_MPI::Recv(entitiesSend[i].data(), sizeMess, MPI_UNSIGNED_LONG,
+                  ranksSend[i], rank, MPI_COMM_WORLD, &status);
 
-    /* Loop over the elements of longRecvBuf and set the contents
-       of entitiesSend accordingly. */
+    /* Convert the global indices currently stored in entitiesSend[i]
+       to local indices. */
     for(int j=0; j<sizeMess; ++j) {
       map<unsigned long,unsigned long>::const_iterator LMI;
-      LMI = globalElemIDToLocalInd.find(longRecvBuf[j]);
+      LMI = globalElemIDToLocalInd.find(entitiesSend[i][j]);
 
       if(LMI == globalElemIDToLocalInd.end()) {
         cout << "This should not happen in CMeshFEM_DG::SetSendReceive" << endl;
@@ -2943,18 +2750,29 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
         MPI_Finalize();
       }
 
-      entitiesSend[i].push_back(LMI->second);
+      entitiesSend[i][j] = LMI->second;
     }
   }
 
-  /* Complete the non-blocking sends. */
-  SU2_MPI::Waitall(ranksComm.size(), commReqs.data(), MPI_STATUSES_IGNORE);
+  /* Complete the non-blocking sends and synchronize the rank, because
+     wild cards have been used. */
+  SU2_MPI::Waitall(ranksRecv.size(), commReqs.data(), MPI_STATUSES_IGNORE);
+  MPI_Barrier(MPI_COMM_WORLD);
 
 #else
-  /* Sequential mode. Search for the local index of the global element ID.
-     Note that in sequential mode there are only halo elements when periodic
-     boundaries are present in the grid. */
+  /* Sequential mode. Resize ranksSend and the first index of entitiesSend to
+     the number of ranks to which this rank has to send data. This number is
+     only non-zero when periodic boundaries are present in the grid. */
+  ranksSend.resize(ranksRecv.size());
+  entitiesSend.resize(ranksRecv.size());
+
+  /* Convert the global element ID's of longBuf to local indices, which are
+     stored in entitiesSend[0]. Note that an additional test for longBuf.size()
+     is necessary to avoid problems. */
   if( longBuf.size() ) {
+
+    entitiesSend[0].resize(longBuf[0].size());
+
     for(unsigned long i=0; i<longBuf[0].size(); ++i) {
       map<unsigned long,unsigned long>::const_iterator LMI;
       LMI = globalElemIDToLocalInd.find(longBuf[0][i]);
@@ -2964,7 +2782,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
         exit(EXIT_FAILURE);
       }
 
-      entitiesSend[0].push_back(LMI->second);
+      entitiesSend[0][i] = LMI->second;
     }
   }
 
@@ -4474,50 +4292,17 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
 
 void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
 
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Determine the size of the vector, which stores the metric  ---*/
-  /*---         terms of the internal matching face elements. This is a    ---*/
-  /*---         large, contiguous vector to increase the performance.      ---*/
-  /*---         Each internal face element has pointers, which point to    ---*/
-  /*---         particular regions of the large vector.                    ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Loop over the internal faces stored on this rank and determine
-        the size of the metric vector for the faces. Note that the normal
-        gradient of the basis functions of the adjacent elements must be stored.
-        These terms enter the formulation in the Symmetric Interior Penalty
-        (SIP) treatment of the viscous terms. ---*/
-  unsigned long sizeMetric = 0;
-  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
-
-    /* Determine the corresponding standard face element, the number of
-       integration points for this face element and the number of DOFS
-       of the adjacent volume elements. */
-    const unsigned short ind        = matchingFaces[i].indStandardElement;
-    const unsigned short nInt       = standardMatchingFacesSol[ind].GetNIntegration();
-    const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
-    const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
-
-    /* Update the counter sizeMetric by adding the required number for
-       this face element. For each integration point the following data
-       is stored: - Unit normals + area (nDim+1).
-                  - drdx, dsdx, etc. for both sides (2*nDim*nDim)
-                  - Normal derivatives of the element basis functions
-                    for both sides (nDOFsElem0 + nDOFsElem1. )*/
-    sizeMetric += nInt*(nDim + 1 + 2*nDim*nDim + nDOFsElem0 + nDOFsElem1);
-  }
-
-  /* Allocate the memory for the vector to store the metric terms. */
-  VecMetricTermsInternalMatchingFaces.resize(sizeMetric);
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 2: Set the pointers for storing the metric terms to the       ---*/
-  /*---         correct locations in VecMetricTermsInternalMatchingFaces.  ---*/
-  /*--------------------------------------------------------------------------*/
-
   /* Loop over the internal matching faces. */
-  sizeMetric = 0;
   for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+
+    /*--------------------------------------------------------------------------*/
+    /*--- Step 1: Allocate the memory for the face metric terms.             ---*/
+    /*---         - Unit normals + area (nDim+1 per integration point)       ---*/
+    /*---         - drdx, dsdx, etc. for both sides (nDim*nDim per           ---*/
+    /*---                                            integration point)      ---*/
+    /*---         - Normal derivatives of the element basis functions for    ---*/
+    /*---           both sides (nDOFsElem0, nDOFsElem1 per integration point)---*/
+    /*--------------------------------------------------------------------------*/
 
     /* Determine the corresponding standard face element and get the
        relevant information from it. */
@@ -4527,41 +4312,18 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
     const unsigned short nDOFsElemSol0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
     const unsigned short nDOFsElemSol1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
 
-    /* Set the pointers to the locations in VecMetricTermsInternalMatchingFaces
-       where the actual metric data for this matching face is stored. */
-    matchingFaces[i].metricNormalsFace = VecMetricTermsInternalMatchingFaces.data()
-                                       + sizeMetric;
-    sizeMetric += nInt*(nDim+1);
+    /* Allocate the memory for the vectors to store the different face
+       metric terms. */
+    matchingFaces[i].metricNormalsFace.resize(nInt*(nDim+1));
+    matchingFaces[i].metricCoorDerivFace0.resize(nInt*nDim*nDim);
+    matchingFaces[i].metricCoorDerivFace1.resize(nInt*nDim*nDim);
+    matchingFaces[i].metricElemSide0.resize(nInt*nDOFsElemSol0);
+    matchingFaces[i].metricElemSide1.resize(nInt*nDOFsElemSol1);
 
-    matchingFaces[i].metricCoorDerivFace0 = VecMetricTermsInternalMatchingFaces.data()
-                                          + sizeMetric;
-    sizeMetric += nInt*nDim*nDim;
-
-    matchingFaces[i].metricCoorDerivFace1 = VecMetricTermsInternalMatchingFaces.data()
-                                          + sizeMetric;
-    sizeMetric += nInt*nDim*nDim;
-
-    matchingFaces[i].metricElemSide0 = VecMetricTermsInternalMatchingFaces.data()
-                                     + sizeMetric;
-    sizeMetric += nInt*nDOFsElemSol0;
-
-    matchingFaces[i].metricElemSide1 = VecMetricTermsInternalMatchingFaces.data()
-                                     + sizeMetric;
-    sizeMetric += nInt*nDOFsElemSol1;
-  }
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 3: Determine the actual metric data in the integration points ---*/
-  /*---         of the faces.                                              ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /* Loop over the internal matching faces. */
-  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
-
-    /* Determine the corresponding standard face and its number of integration
-       points. Note that the standard element of the grid must be used here. */
-    const unsigned short ind  = matchingFaces[i].indStandardElement;
-    const unsigned short nInt = standardMatchingFacesGrid[ind].GetNIntegration();
+    /*--------------------------------------------------------------------------*/
+    /*--- Step 2: Determine the actual metric data in the integration points ---*/
+    /*---         of the faces.                                              ---*/
+    /*--------------------------------------------------------------------------*/
 
     /* Call the function ComputeNormalsFace to compute the unit normals and
        its corresponding area in the integration points. The data from side 0
@@ -4570,8 +4332,8 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
     const su2double *dr = standardMatchingFacesGrid[ind].GetDrBasisFaceIntegrationSide0();
     const su2double *ds = standardMatchingFacesGrid[ind].GetDsBasisFaceIntegrationSide0();
 
-    ComputeNormalsFace(nInt, nDOFs, dr, ds, matchingFaces[i].DOFsGridFaceSide0,
-                       matchingFaces[i].metricNormalsFace);
+    ComputeNormalsFace(nInt, nDOFs, dr, ds, matchingFaces[i].DOFsGridFaceSide0.data(),
+                       matchingFaces[i].metricNormalsFace.data());
 
     /* Compute the derivatives of the parametric coordinates w.r.t. the
        Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
@@ -4580,8 +4342,8 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
     dr = standardMatchingFacesGrid[ind].GetMatDerBasisElemIntegrationSide0();
 
     ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
-                                    matchingFaces[i].DOFsGridElementSide0,
-                                    matchingFaces[i].metricCoorDerivFace0);
+                                    matchingFaces[i].DOFsGridElementSide0.data(),
+                                    matchingFaces[i].metricCoorDerivFace0.data());
 
     /* Compute the metric terms on side 0 needed for the SIP treatment
        of the viscous terms. Note that now the standard element of the
@@ -4593,9 +4355,9 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
     dt = standardMatchingFacesSol[ind].GetDtBasisElemIntegrationSide0();
 
     ComputeMetricTermsSIP(nInt, nDOFs, dr, ds, dt,
-                          matchingFaces[i].metricNormalsFace,
-                          matchingFaces[i].metricCoorDerivFace0,
-                          matchingFaces[i].metricElemSide0);
+                          matchingFaces[i].metricNormalsFace.data(),
+                          matchingFaces[i].metricCoorDerivFace0.data(),
+                          matchingFaces[i].metricElemSide0.data());
 
     /* Compute the derivatives of the parametric coordinates w.r.t. the
        Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
@@ -4604,8 +4366,8 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
     dr = standardMatchingFacesGrid[ind].GetMatDerBasisElemIntegrationSide1();
 
     ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
-                                    matchingFaces[i].DOFsGridElementSide1,
-                                    matchingFaces[i].metricCoorDerivFace1);
+                                    matchingFaces[i].DOFsGridElementSide1.data(),
+                                    matchingFaces[i].metricCoorDerivFace1.data());
 
     /* Compute the metric terms on side 1 needed for the SIP treatment
        of the viscous terms. Note that now the standard element of the
@@ -4616,9 +4378,9 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
     dt = standardMatchingFacesSol[ind].GetDtBasisElemIntegrationSide1();
 
     ComputeMetricTermsSIP(nInt, nDOFs, dr, ds, dt,
-                          matchingFaces[i].metricNormalsFace,
-                          matchingFaces[i].metricCoorDerivFace1,
-                          matchingFaces[i].metricElemSide1);
+                          matchingFaces[i].metricNormalsFace.data(),
+                          matchingFaces[i].metricCoorDerivFace1.data(),
+                          matchingFaces[i].metricElemSide1.data());
   }
 }
 
@@ -4642,7 +4404,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
            for the normals of this surface element, determine the number of
            integration points for this surface element and loop over them. */
         const unsigned long  volInd   = boundaries[j].surfElem[i].volElemID;
-        const su2double      *normals = boundaries[j].surfElem[i].metricNormalsFace;
+        const su2double      *normals = boundaries[j].surfElem[i].metricNormalsFace.data();
         const unsigned short ind      = boundaries[j].surfElem[i].indStandardElement;
         const unsigned short nInt     = standardBoundaryFacesSol[ind].GetNIntegration();
 
@@ -4665,7 +4427,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
        and store the metric data of the face a bit easier. */
     const unsigned long  v0       = matchingFaces[i].elemID0;
     const unsigned long  v1       = matchingFaces[i].elemID1;
-    const su2double      *normals = matchingFaces[i].metricNormalsFace;
+    const su2double      *normals = matchingFaces[i].metricNormalsFace.data();
     const unsigned short ind      = matchingFaces[i].indStandardElement;
     const unsigned short nInt     = standardMatchingFacesSol[ind].GetNIntegration();
 
@@ -4680,7 +4442,111 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
   }
 
   /*-------------------------------------------------------------------*/
-  /*--- Step 2: Determine the minimum value of the Jacobians of the ---*/
+  /*--- Step 2: Communicate the currently stored data of the halo   ---*/
+  /*---         elements to the ranks where the original is stored. ---*/
+  /*-------------------------------------------------------------------*/
+
+  /* Determine the rank inside MPI_COMM_WORLD. */
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  /*--- Define the buffers needed for the communication. ---*/
+  vector<MPI_Request> sendRequests(ranksSend.size());
+  vector<MPI_Request> recvRequests(ranksRecv.size());
+
+  vector<vector<su2double> > sendBuf(ranksSend.size());
+  vector<vector<su2double> > recvBuf(ranksRecv.size());
+
+  /*--- Send the data using non-blocking sends. Exclude self communication.
+        Note that the inverse communication pattern must be used for this
+        purpose.  ---*/
+  unsigned long nRecvRequests = 0;
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    if(ranksRecv[i] != rank) {
+
+      /* Allocate the memory for communication buffer. */
+      recvBuf[i].resize(entitiesRecv[i].size());
+
+      /* Fill the buffer to be sent, which is the receive
+         information of the original communication pattern. */
+      for(unsigned long j=0; j<entitiesRecv[i].size(); ++j)
+        recvBuf[i][j] = volElem[entitiesRecv[i][j]].lenScale;
+
+      /* Send the data. */
+      SU2_MPI::Isend(recvBuf[i].data(), recvBuf[i].size(), MPI_DOUBLE,
+                     ranksRecv[i], ranksRecv[i]+10, MPI_COMM_WORLD,
+                     &recvRequests[nRecvRequests++]);
+    }
+  }
+
+  /*--- Post the receives using non-blocking receives. Exclude self communication.
+        Also here the inverse communication pattern must be used.  ---*/
+  unsigned long nSendRequests = 0;
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    if(ranksSend[i] != rank)  {
+
+      /* Allocate the memory for communication buffer and post the receive. */
+      sendBuf[i].resize(entitiesSend[i].size());
+
+      SU2_MPI::Irecv(sendBuf[i].data(), sendBuf[i].size(), MPI_DOUBLE,
+                     ranksSend[i], rank+10, MPI_COMM_WORLD,
+                     &sendRequests[nSendRequests++]);
+    }
+  }
+
+#endif
+
+  /*--- Carry out the self communication, if needed. Note that this part
+        is outside the MPI part. First determine if self communication
+        takes place at all. ---*/
+  bool selfComm = false;
+  unsigned long selfRecvInd, selfSendInd;
+  for(selfRecvInd=0; selfRecvInd<ranksRecv.size(); ++selfRecvInd) {
+    if(ranksRecv[selfRecvInd] == rank) {
+      selfComm = true;
+      break;
+    }
+  }
+
+  /*--- Determine the send index for self communication and update the
+        data of the owners with the halo data, if self communication
+        takes place. ---*/
+  if( selfComm ) {
+    for(selfSendInd=0; selfSendInd<ranksSend.size(); ++selfSendInd) {
+      if(ranksSend[selfSendInd] == rank) break;
+    }
+
+    for(unsigned long j=0; j<entitiesSend[selfSendInd].size(); ++j) {
+      const unsigned long v0 = entitiesSend[selfSendInd][j];
+      const unsigned long v1 = entitiesRecv[selfRecvInd][j];
+
+      volElem[v0].lenScale = max(volElem[v0].lenScale, volElem[v1].lenScale);
+    }
+  }
+
+#ifdef HAVE_MPI
+
+  /*--- Complete the nonblocking communication. ---*/
+  SU2_MPI::Waitall(nRecvRequests, recvRequests.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nSendRequests, sendRequests.data(), MPI_STATUSES_IGNORE);
+
+  /*--- Update the variable currently stored in lenScale for the
+        owned elements. ---*/
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    if(ranksSend[i] != rank) {
+      for(unsigned long j=0; j<entitiesSend[i].size(); ++j) {
+        const unsigned long ind = entitiesSend[i][j];
+        volElem[ind].lenScale = max(volElem[ind].lenScale, sendBuf[i][j]);
+      }
+    }
+  }
+
+#endif
+
+  /*-------------------------------------------------------------------*/
+  /*--- Step 3: Determine the minimum value of the Jacobians of the ---*/
   /*---         elements and from that the length scale of the      ---*/
   /*---         owned elements.                                     ---*/
   /*-------------------------------------------------------------------*/
@@ -4694,7 +4560,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
     /* Easier storage of the metric terms and determine the number of
        integration points for this element. */
-    const su2double      *metric = volElem[i].metricTerms;
+    const su2double      *metric = volElem[i].metricTerms.data();
     const unsigned short ind     = volElem[i].indStandardElement;
     const unsigned short nInt    = standardElementsSol[ind].GetNIntegration();
 
@@ -4712,49 +4578,37 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
   }
 
   /*-------------------------------------------------------------------*/
-  /*--- Step 3: Set the length scale for the external elements by   ---*/
-  /*---         communication.                                      ---*/
+  /*--- Step 4: Set the length scale for the halo elements.         ---*/
   /*-------------------------------------------------------------------*/
 
-  /* Determine the rank inside MPI_COMM_WORLD. */
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
 #ifdef HAVE_MPI
 
-  /*--- Define the buffers needed for the communication. ---*/
-  vector<MPI_Request> sendRequests(ranksComm.size());
-  vector<MPI_Request> recvRequests(ranksComm.size());
-
-  vector<vector<su2double> > sendBuf, recvBuf;
-  sendBuf.resize(ranksComm.size());
-  recvBuf.resize(ranksComm.size());
-
-  /*--- Send the data using non-blocking sends and posts the receives
-        using non-blocking receives. Exclude self communication. ---*/
-  unsigned long nCommRequests = 0;
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
-    if(ranksComm[i] != rank) {
-
-      /* Allocate the memory for communication buffers. */
-      sendBuf[i].resize(entitiesSend[i].size());
-      recvBuf[i].resize(entitiesReceive[i].size());
+  /*--- Send the data using non-blocking sends. Exclude self communication. ---*/
+  nSendRequests = 0;
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    if(ranksSend[i] != rank) {
 
       /* Fill the send buffer. */
       for(unsigned long j=0; j<entitiesSend[i].size(); ++j)
         sendBuf[i][j] = volElem[entitiesSend[i][j]].lenScale;
 
-      /* Send the data and post the nonblocking receive. */
+      /* Send the data. */
       SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_DOUBLE,
-                     ranksComm[i], ranksComm[i]+10, MPI_COMM_WORLD,
-                     &sendRequests[nCommRequests]);
+                     ranksSend[i], ranksSend[i]+20, MPI_COMM_WORLD,
+                     &sendRequests[nSendRequests++]);
+    }
+  }
 
+  /*--- Post the receives using non-blocking receives.
+        Exclude self communication. ---*/
+  nRecvRequests = 0;
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    if(ranksRecv[i] != rank) {
+
+      /* Post the nonblocking receive. */
       SU2_MPI::Irecv(recvBuf[i].data(), recvBuf[i].size(), MPI_DOUBLE,
-                     ranksComm[i], rank+10, MPI_COMM_WORLD,
-                     &recvRequests[nCommRequests]);
-      ++nCommRequests;
+                     ranksRecv[i], rank+20, MPI_COMM_WORLD,
+                     &recvRequests[nRecvRequests++]);
     }
   }
 
@@ -4762,27 +4616,25 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
 
   /*--- Carry out the self communication, if needed. Note that this part
         is outside the MPI part. ---*/
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
-    if(ranksComm[i] == rank) {
-      for(unsigned long j=0; j<entitiesSend[i].size(); ++j) {
-        const unsigned long v0 = entitiesSend[i][j];
-        const unsigned long v1 = entitiesReceive[i][j];
-        volElem[v1].lenScale = volElem[v0].lenScale;
-      }
+  if( selfComm ) {
+    for(unsigned long j=0; j<entitiesSend[selfSendInd].size(); ++j) {
+      const unsigned long v0 = entitiesSend[selfSendInd][j];
+      const unsigned long v1 = entitiesRecv[selfRecvInd][j];
+      volElem[v1].lenScale = volElem[v0].lenScale;
     }
   }
 
 #ifdef HAVE_MPI
 
   /*--- Complete the nonblocking communication. ---*/
-  SU2_MPI::Waitall(nCommRequests, sendRequests.data(), MPI_STATUSES_IGNORE);
-  SU2_MPI::Waitall(nCommRequests, recvRequests.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nSendRequests, sendRequests.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nRecvRequests, recvRequests.data(), MPI_STATUSES_IGNORE);
 
   /*--- Copy the data from the receive buffers into the volElem. ---*/
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
-    if(ranksComm[i] != rank) {
-      for(unsigned long j=0; j<entitiesReceive[i].size(); ++j)
-        volElem[entitiesReceive[i][j]].lenScale = recvBuf[i][j];
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    if(ranksRecv[i] != rank) {
+      for(unsigned long j=0; j<entitiesRecv[i].size(); ++j)
+        volElem[entitiesRecv[i][j]].lenScale = recvBuf[i][j];
     }
   }
 
@@ -4803,14 +4655,6 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(void) {
 }
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Determine the sizes of the vector, which store the metric  ---*/
-  /*---         terms and mass matrices of the volume elements. These are  ---*/
-  /*---         large, contiguous vectors to increase the performance.     ---*/
-  /*---         Each volume element has pointers, which point to a         ---*/
-  /*---         particular region of the large vectors.                    ---*/
-  /*--------------------------------------------------------------------------*/
 
   /* Find out whether or not the full mass matrix is needed. This is only the
      case for time accurate simulations. For steady simulations only a lumped
@@ -4840,38 +4684,13 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
      This depends on the number of spatial dimensions of the problem. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
 
-  /*--- Loop over the owned volume elements to determine the size of
-        the metric vector and the size of the mass matrix vector. */
-  unsigned long sizeMetric = 0, sizeMassMatrix = 0;
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    /* Determine the number of metric coefficients needed for this element
-       and update the counter sizeMetric accordingly. */
-    const unsigned short ind = volElem[i].indStandardElement;
-    sizeMetric += nMetricPerPoint*standardElementsSol[ind].GetNIntegration();
-
-    /* Update the counter sizeMassMatrix, depending on which types of the
-       mass matrix is needed. Note that it is not possible to store both
-       the mass matrix and the inverse of the mass matrix. */
-    if(FullMassMatrix || FullInverseMassMatrix)
-      sizeMassMatrix += volElem[i].nDOFsSol * volElem[i].nDOFsSol;
-
-    if( LumpedMassMatrix ) sizeMassMatrix += volElem[i].nDOFsSol;
-  }
-
-  /* Allocate the memory for the vectors to store the metric terms and
-     the mass matrices of the volume elements. */
-  VecMetricTermsElements.resize(sizeMetric);
-  VecMassMatricesElements.resize(sizeMassMatrix);
-
   /*--------------------------------------------------------------------------*/
-  /*--- Step 2: Determine the metric terms, drdx, drdy, drdz, dsdx, etc.   ---*/
+  /*--- Step 1: Determine the metric terms, drdx, drdy, drdz, dsdx, etc.   ---*/
   /*---         and the Jacobian in the integration points of the owned    ---*/
   /*---         volume elements.                                           ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Loop over the owned volume elements. */
-  sizeMetric = 0;
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
     /* Easier storage of the index of the corresponding standard element
@@ -4881,10 +4700,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     const unsigned short nInt  = standardElementsGrid[ind].GetNIntegration();
     const unsigned short nDOFs = volElem[i].nDOFsGrid;
 
-    /* Store the pointer for the metric terms for this element and update
-       sizeMetric for the next element. */
-    volElem[i].metricTerms = VecMetricTermsElements.data() + sizeMetric;
-    sizeMetric += nMetricPerPoint*nInt;
+    /* Allocate the memory for the metric terms of this element. */
+    volElem[i].metricTerms.resize(nMetricPerPoint*nInt);
 
     /* Get the pointer to the matrix storage of the basis functions
        and its derivatives. The first nDOFs*nInt entries of this matrix
@@ -4981,7 +4798,6 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   /*--------------------------------------------------------------------------*/
 
   /* Loop over the owned volume elements. */
-  sizeMassMatrix = 0;
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
     /* Easier storage of the index of the corresponding standard element and
@@ -4997,10 +4813,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     /*--- Check if the mass matrix or its inverse must be computed. ---*/
     if(FullMassMatrix || FullInverseMassMatrix) {
 
-      /* Store the pointer for the mass matrix for this element and update
-         the counter sizeMassMatrix. */
-      volElem[i].massMatrix = VecMassMatricesElements.data() + sizeMassMatrix;
-      sizeMassMatrix       += nDOFs*nDOFs;
+      /* Allocate the memory for the mass matrix. */
+      volElem[i].massMatrix.resize(nDOFs*nDOFs);
 
       /*--- Double loop over the DOFs to create the local mass matrix. ---*/
       unsigned short ll = 0;
@@ -5029,7 +4843,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
            a standard inverse. */
         lapack_int errorCode;
         errorCode = LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                    volElem[i].massMatrix, nDOFs);
+                                   volElem[i].massMatrix.data(), nDOFs);
         if(errorCode != 0) {
           cout << endl;
           cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
@@ -5053,7 +4867,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         }
 
         errorCode = LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                   volElem[i].massMatrix, nDOFs);
+                                   volElem[i].massMatrix.data(), nDOFs);
         if(errorCode != 0) {
           cout << endl;
           cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
@@ -5086,11 +4900,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 #else
         /* No support for Lapack. Hence an internal routine is used.
            This does not all the checking the Lapack routine does. */
-        vector<su2double> matA(nDOFs*nDOFs);
-        memcpy(matA.data(), volElem[i].massMatrix, nDOFs*nDOFs*sizeof(su2double));
-
-        FEMStandardElementBaseClass::InverseMatrix(nDOFs, matA);
-        memcpy(volElem[i].massMatrix, matA.data(), nDOFs*nDOFs*sizeof(su2double));
+        FEMStandardElementBaseClass::InverseMatrix(nDOFs, volElem[i].massMatrix);
 #endif
       }
     }
@@ -5098,10 +4908,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     /*--- Check if the lumped mass matrix is needed. ---*/
     if( LumpedMassMatrix ) {
 
-      /* Store the pointer for the lumped mass matrix for this element and update
-         the counter sizeMassMatrix. */
-      volElem[i].lumpedMassMatrix = VecMassMatricesElements.data() + sizeMassMatrix;
-      sizeMassMatrix             += nDOFs;
+      /* Allocate the memory for the lumped mass matrix. */
+      volElem[i].lumpedMassMatrix.resize(nDOFs);
 
       /*--- Loop over the DOFs to compute the diagonal elements of the local mass
             matrix. It is the sum of the absolute values of the row. ---*/

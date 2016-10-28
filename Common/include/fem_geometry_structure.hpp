@@ -157,15 +157,16 @@ public:
   vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
 
   su2double lenScale;                /*!< \brief Length scale of the element. */
-  su2double *metricTerms;            /*!< \brief Pointer to the metric terms in the
-                                                 integration points of this element. */
-  su2double *massMatrix;             /*!< \brief Pointer to the mass matrix (or the inverse) for this element. */
-  su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */
 
-  su2double *coorIntegrationPoints;  /*!< \brief Pointer to the coordinates for the integration
-                                                 points of this element. */
-  su2double *wallDistance;           /*!< \brief Pointer to the wall distance to the viscous walls for
-                                                 the integration points of this element. */
+
+  vector<su2double> metricTerms;            /*!< \brief Vector of the metric terms in the
+                                                        integration points of this element. */
+  vector<su2double> massMatrix;             /*!< \brief Mass matrix (or the inverse) for this element. */
+  vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */
+
+  vector<su2double> coorIntegrationPoints;  /*!< \brief The coordinates of the integration points of this element. */
+  vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
+                                                        the integration points of this element. */
   /*!
    * \brief Constructor of the class. Initialize the pointers to NULL.
    */
@@ -256,33 +257,32 @@ public:
   unsigned long elemID0;              /*!< \brief Element ID adjacent to side 0 of the face. */
   unsigned long elemID1;              /*!< \brief Element ID adjacent to side 1 of the face. */
 
-  unsigned long *DOFsGridFaceSide0;   /*!< \brief Pointer to the grid DOFs of side 0 of the face. */
-  unsigned long *DOFsGridFaceSide1;   /*!< \brief Pointer to the grid DOFs of side 1 of the face. */
-  unsigned long *DOFsSolFaceSide0;    /*!< \brief Pointer to the solution DOFs of side 0 of the face. */
-  unsigned long *DOFsSolFaceSide1;    /*!< \brief Pointer to the solution DOFs of side 1 of the face. */
+  vector<unsigned long> DOFsGridFaceSide0;   /*!< \brief Vector of the grid DOFs of side 0 of the face. */
+  vector<unsigned long> DOFsGridFaceSide1;   /*!< \brief Vector of the grid DOFs of side 1 of the face. */
+  vector<unsigned long> DOFsSolFaceSide0;    /*!< \brief Vector of the solution DOFs of side 0 of the face. */
+  vector<unsigned long> DOFsSolFaceSide1;    /*!< \brief Vector of the solution DOFs of side 1 of the face. */
 
-  unsigned long *DOFsGridElementSide0;   /*!< \brief Pointer to the grid DOFs of the element of side 0. */
-  unsigned long *DOFsGridElementSide1;   /*!< \brief Pointer to the grid DOFs of the element of side 1. */
-  unsigned long *DOFsSolElementSide0;    /*!< \brief Pointer to the solution DOFs of the element of side 0. */
-  unsigned long *DOFsSolElementSide1;    /*!< \brief Pointer to the solution DOFs of the element of side 1. */
+  vector<unsigned long> DOFsGridElementSide0;   /*!< \brief Vector of the grid DOFs of the element of side 0. */
+  vector<unsigned long> DOFsGridElementSide1;   /*!< \brief Vector of the grid DOFs of the element of side 1. */
+  vector<unsigned long> DOFsSolElementSide0;    /*!< \brief Vector of the solution DOFs of the element of side 0. */
+  vector<unsigned long> DOFsSolElementSide1;    /*!< \brief Vector of the solution DOFs of the element of side 1. */
 
-  su2double *metricNormalsFace;     /*!< \brief Pointer to the location of the normals in the integration
-                                                points of the face. The normals point from side 0 to side 1. */
-  su2double *metricCoorDerivFace0;  /*!< \brief Pointer to the location of the terms drdx, dsdx, etc.
-                                                of side 0 in the integration points of the face. */
-  su2double *metricCoorDerivFace1;  /*!< \brief Pointer to the location of the terms dxdr, dydr, etc.
-                                                of side 1 in the integration points of the face. */
-  su2double *metricElemSide0;       /*!< \brief Pointer to the location of the metric terms of the
-                                                adjacent element on side 0 in the integration
-                                                points of the face. Needed for the SIP term. */
-  su2double *metricElemSide1;       /*!< \brief Pointer to the location of the metric terms of the
-                                                adjacent element on side 1 in the integration
-                                                points of the face. Needed for the SIP term. */
+  vector<su2double> metricNormalsFace;     /*!< \brief The normals in the integration points of the face.
+                                                       The normals point from side 0 to side 1. */
+  vector<su2double> metricCoorDerivFace0;  /*!< \brief The terms drdx, dsdx, etc. of side 0 in the
+                                                       integration points of the face. */
+  vector<su2double> metricCoorDerivFace1;  /*!< \brief The terms dxdr, dydr, etc. of side 1 in the
+                                                       integration points of the face. */
+  vector<su2double> metricElemSide0;       /*!< \brief The metric terms of the adjacent element on
+                                                       side 0 in the integration points of the face.
+                                                       Needed for the SIP term. */
+  vector<su2double> metricElemSide1;       /*!< \brief The metric terms of the adjacent element on
+                                                       side 1 in the integration points of the face.
+                                                       Needed for the SIP term. */
 
-  su2double *coorIntegrationPoints;  /*!< \brief Pointer to the coordinates for the integration
-                                                 points of this face. */
-  su2double *wallDistance;           /*!< \brief Pointer to the wall distance to the viscous walls for
-                                                 the integration points of this face. */
+  vector<su2double> coorIntegrationPoints;  /*!< \brief Coordinates for the integration points of this face. */
+  vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
+                                                        the integration points of this face. */
 
   /*!
    * \brief Constructor of the class. Initialize some pointers to NULL.
@@ -317,26 +317,23 @@ public:
                                                  In this vector the original sequence of the grid file
                                                  is stored. */
 
-  unsigned long *DOFsGridFace;   /*!< \brief Pointer to the grid DOFs of the face. In principle
-                                             the same information as nodeIDsGrid, but the sequence
-                                             could be different. */
-  unsigned long *DOFsSolFace;    /*!< \brief Pointer to the solution DOFs of the face. */
+  vector<unsigned long> DOFsGridFace;   /*!< \brief Vector of the grid DOFs of the face. In principle
+                                                    the same information as nodeIDsGrid, but the sequence
+                                                    could be different. */
+  vector<unsigned long> DOFsSolFace;    /*!< \brief Vector of the solution DOFs of the face. */
 
-  unsigned long *DOFsGridElement;   /*!< \brief Pointer to the grid DOFs of the adjacent element. */
-  unsigned long *DOFsSolElement;    /*!< \brief Pointer to the solution DOFs of the adjacent element. */
+  vector<unsigned long> DOFsGridElement;   /*!< \brief Vector of the grid DOFs of the adjacent element. */
+  vector<unsigned long> DOFsSolElement;    /*!< \brief Vector of the solution DOFs of the adjacent element. */
 
-  su2double *metricNormalsFace;     /*!< \brief Pointer to the location of the normals in the integration
-                                                points of the face. The normals point out of the adjacent
-                                                element. */
-  su2double *metricCoorDerivFace;   /*!< \brief Pointer to the location of the terms drdx, dsdx, etc.
-                                                in the integration points of the face. */
-  su2double *metricElem;            /*!< \brief Pointer to the location of the metric terms of the
-                                                adjacent element in the integration points of the face.
-                                                Needed for the SIP term. */
-  su2double *coorIntegrationPoints; /*!< \brief Pointer to the coordinates of the integration points
-                                                of the face. */
-  su2double *wallDistance;          /*!< \brief Pointer to wall distances of the integration points
-                                                of the face. */
+  vector<su2double> metricNormalsFace;     /*!< \brief The normals in the integration points of the face.
+                                                       The normals point out of the adjacent element. */
+  vector<su2double> metricCoorDerivFace;   /*!< \brief The terms drdx, dsdx, etc. in the integration
+                                                       points of the face. */
+  vector<su2double> metricElem;            /*!< \brief The metric terms of the adjacent element in the
+                                                       integration points of the face. Needed for the SIP term. */
+  vector<su2double> coorIntegrationPoints; /*!< \brief The coordinates of the integration points of the face. */
+  vector<su2double> wallDistance;          /*!< \brief The wall distances of the integration points
+                                                       of the face. */
 
   /*!
    * \brief Constructor of the class. Initialize some variables.
@@ -398,18 +395,6 @@ public:
 
   vector<CSurfaceElementFEM> surfElem; /*!< \brief Vector of the local surface elements. */
 
-  vector<unsigned long> VecDOFsGridFace; /*!< \brief Storage for the grid DOFs of the faces. */
-  vector<unsigned long> VecDOFsSolFace;  /*!< \brief Storage for the solution DOFs of the faces. */
-
-  vector<unsigned long> VecDOFsGridElement; /*!< \brief Storage for the grid DOFs of the adjacent elements. */
-  vector<unsigned long> VecDOFsSolElement;  /*!< \brief Storage for the solution DOFs of the adjacent elements. */
-
-  vector<su2double> VecMetricTermsBoundaryFaces;  /*!< \brief Storage for the metric terms of the boundary faces. */
-  vector<su2double> VecWallDistanceBoundaryFaces; /*!< \brief Storage for the wall distances of the boundary faces. */
-
-  vector<su2double> VecCoorIntegrationPointsBoundaryFaces; /*!< \brief Storage for the coordinates of the integration
-                                                                       points of the boundary faces. */
-
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
@@ -444,24 +429,19 @@ protected:
                                                           the halo elements for which a rotationally periodic
                                                           correction must be applied. */
 
-  vector<int> ranksComm;             /*!< \brief Vector of ranks, which this rank exchanges information.
-                                                 Self communication is included. */
+  vector<int> ranksRecv;             /*!< \brief Vector of ranks, from which this rank will receive halo
+                                                 information. Self communication is included. */
+  vector<int> ranksSend;             /*!< \brief Vector of ranks, to which this rank will send halo
+                                                 information. Self communication is included. */
 
   vector<vector<unsigned long> > entitiesSend;    /*!< \brief Vector of vector, which contains the entities that
                                                               must be sent. Self communication is included. For DG
                                                               an entitity is an element, for regular FEM an entity
                                                               is a DOF. */
-  vector<vector<unsigned long> > entitiesReceive; /*!< \brief Vector of vector, which contains the entities that
-                                                              must be received. Self communication is included. For DG
-                                                              an entity is an element, for regular FEM an entity
-                                                              is a DOF. */
-
-  vector<su2double> VecMetricTermsElements;  /*!< \brief Storage for the metric terms of the volume elements. */
-  vector<su2double> VecMassMatricesElements; /*!< \brief Storage for the mass matrices of the volume elements. */
-  vector<su2double> VecWallDistanceElements; /*!< \brief Storage for the wall distances of the volume elements. */
-
-  vector<su2double> VecCoorIntegrationPointsElements; /*!< \brief Storage for the coordinates of the integration
-                                                                  points of the volume elements. */
+  vector<vector<unsigned long> > entitiesRecv; /*!< \brief Vector of vector, which contains the entities that
+                                                           must be received. Self communication is included. For DG
+                                                           an entity is an element, for regular FEM an entity
+                                                           is a DOF. */
 
   vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
                                                                               faces used for the solution of the DG solver. */
@@ -535,18 +515,25 @@ public:
   FEMStandardBoundaryFaceClass *GetStandardBoundaryFacesSol(void);
   
   /*!
-  * \brief Function, which makes available the vector of ranks with which the
-           current rank communicates as a const reference.
+  * \brief Function, which makes available the vector of receive ranks as
+           a const reference.
   * \return  Const reference to the vector of ranks.
   */
-  const vector<int> &GetRanksComm(void) const;
+  const vector<int> &GetRanksRecv(void) const;
+
+  /*!
+  * \brief Function, which makes available the vector of send ranks as
+           a const reference.
+  * \return  Const reference to the vector of ranks.
+  */
+  const vector<int> &GetRanksSend(void) const;
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the receive
            entities as a const reference.
   * \return  Const reference to the vector of vectors of receive entities.
   */
-  const vector<vector<unsigned long> > &GetEntitiesReceive(void) const;
+  const vector<vector<unsigned long> > &GetEntitiesRecv(void) const;
 
   /*!
   * \brief Function, which makes available the vector of vectors containing the send
@@ -683,22 +670,6 @@ private:
   vector<FEMStandardInternalFaceClass> standardMatchingFacesGrid; /*!< \brief Vector that contains the standard matching
                                                                               internal faces used for the geometry of
                                                                               the DG solver. */
-
-  vector<unsigned long> VecDOFsGridFaceSide0; /*!< \brief Storage for the grid DOFs of side 0 of the faces. */
-  vector<unsigned long> VecDOFsGridFaceSide1; /*!< \brief Storage for the grid DOFs of side 1 of the faces. */
-  vector<unsigned long> VecDOFsSolFaceSide0;  /*!< \brief Storage for the solution DOFs of side 0 of the faces. */
-  vector<unsigned long> VecDOFsSolFaceSide1;  /*!< \brief Storage for the solution DOFs of side 1 of the faces. */
-
-  vector<unsigned long> VecDOFsGridElementSide0; /*!< \brief Storage for the grid DOFs of the elements adjacent to side 0. */
-  vector<unsigned long> VecDOFsGridElementSide1; /*!< \brief Storage for the grid DOFs of the elements adjacent to side 1. */
-  vector<unsigned long> VecDOFsSolElementSide0;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 0. */
-  vector<unsigned long> VecDOFsSolElementSide1;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 1. */
-
-  vector<su2double> VecMetricTermsInternalMatchingFaces;  /*!< \brief Storage for the metric terms of the internal matching faces. */
-  vector<su2double> VecWallDistanceInternalMatchingFaces; /*!< \brief Storage for the wall distances of the internal matching faces. */
-
-  vector<su2double> VecCoorIntegrationPointsMatchingFaces; /*!< \brief Storage for the coordinates of the integration
-                                                                       points of the matching internal faces. */
 
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
 

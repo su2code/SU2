@@ -8715,15 +8715,15 @@ private:
   
 #ifdef HAVE_MPI
   int nCommRequests;                 /*!< \brief Number of communication requests in the persistent communication.
-                                      These are both sending and receiving requests. */
+                                           These are both sending and receiving requests. */
   vector<MPI_Request> commRequests;  /*!< \brief Communication requests in the persistent communication.
-                                      These are both sending and receiving requests. */
+                                                 These are both sending and receiving requests. */
   vector<MPI_Datatype> commTypes;    /*!< \brief MPI derived data types for communicating the solution
-                                      variables of the DOFS. */
+                                                 variables of the DOFS. */
 #endif
   
-  vector<unsigned long> elementsReceiveSelfComm; /*!< \brief The halo elements for self communication.  */
-  vector<unsigned long> elementsSendSelfComm;    /*!< \brief The donor elements for self communication. */
+  vector<unsigned long> elementsRecvSelfComm;  /*!< \brief The halo elements for self communication.  */
+  vector<unsigned long> elementsSendSelfComm;  /*!< \brief The donor elements for self communication. */
   
   vector<su2double> rotationMatricesPeriodicity;             /*!< \brief Vector, which contains the rotation matrices
                                                               for the rotational periodic transformations. */

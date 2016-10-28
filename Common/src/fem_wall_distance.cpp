@@ -137,29 +137,16 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   /*---         locally owned volume elements.                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* Loop over the locally owned volume elements and determine the
-     total number of integration points in these elements. */
-  unsigned long nIntPoints = 0;
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-    const unsigned short ind = volElem[l].indStandardElement;
-    nIntPoints += standardElementsGrid[ind].GetNIntegration();
-  }
-
-  /* Allocate the memory for the large vector to store the wall distances. */
-  VecWallDistanceElements.resize(nIntPoints);
-
   /*--- Loop over the owned elements to compute the wall distance
         in the integration points. ---*/
-  nIntPoints = 0;
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
     /* Get the required data from the corresponding standard element. */
     const unsigned short ind  = volElem[l].indStandardElement;
     const unsigned short nInt = standardElementsGrid[ind].GetNIntegration();
 
-    /* Set the pointer for the wall distance for this element. */
-    volElem[l].wallDistance = VecWallDistanceElements.data() + nIntPoints;
-    nIntPoints += nInt;
+    /* Allocate the memory for the wall distance of this element. */
+    volElem[l].wallDistance.resize(nInt);
 
     /* Check for an empty tree. In that case the wall distance is set to zero. */
     if( WallADT.IsEmpty() ) {
@@ -174,8 +161,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
             and determine the wall distance. */
       for(unsigned short i=0; i<nInt; ++i) {
 
-        const su2double *coor = volElem[l].coorIntegrationPoints + i*nDim;
- 
+        const su2double *coor = volElem[l].coorIntegrationPoints.data() + i*nDim;
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;
@@ -192,29 +178,14 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   /*---         the internal matching faces.                               ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* Loop over the locally owned internal matching faces and determine the
-     total number of integration points in these faces. */
-  nIntPoints = 0;
-  for(unsigned long l=0; l<matchingFaces.size(); ++l) {
-    const unsigned short ind = matchingFaces[l].indStandardElement;
-    nIntPoints += standardMatchingFacesGrid[ind].GetNIntegration();
-  }
-
-  /* Allocate the memory for the large vector to store the wall distances. */
-  VecWallDistanceInternalMatchingFaces.resize(nIntPoints);
-
-  /* Loop over the internal matching faces and determine the wall distances
-     in the integration points. */
-  nIntPoints = 0;
   for(unsigned long l=0; l<matchingFaces.size(); ++l) {
 
     /* Get the required data from the corresponding standard element. */
     const unsigned short ind   = matchingFaces[l].indStandardElement;
     const unsigned short nInt  = standardMatchingFacesGrid[ind].GetNIntegration();
 
-    /* Set the pointer for the wall distance for this matching face. */
-    matchingFaces[l].wallDistance = VecWallDistanceInternalMatchingFaces.data() + nIntPoints;
-    nIntPoints += nInt;
+    /* Allocate the memory for the wall distance for this matching face. */
+    matchingFaces[l].wallDistance.resize(nInt);
 
     /* Check for an empty tree. In that case the wall distance is set to zero. */
     if( WallADT.IsEmpty() ) {
@@ -229,8 +200,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
             and determine the wall distance. */
       for(unsigned short i=0; i<nInt; ++i) {
 
-        const su2double *coor = matchingFaces[l].coorIntegrationPoints + i*nDim;
-
+        const su2double *coor = matchingFaces[l].coorIntegrationPoints.data()
+                              + i*nDim;
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;
@@ -252,33 +223,21 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
     if( !boundaries[iMarker].periodicBoundary ) {
 
-      /* Determine the number of integration points for this boundary. */
-      nIntPoints = 0;
-      vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
-      for(unsigned long l=0; l<surfElem.size(); ++l) {
-        const unsigned short ind = surfElem[l].indStandardElement;
-        nIntPoints += standardBoundaryFacesGrid[ind].GetNIntegration();
-      }
-
-      /* Allocate the memory for the large vector to store the wall distances. */
-      boundaries[iMarker].VecWallDistanceBoundaryFaces.resize(nIntPoints);
-
       /* Determine whether or not this is a viscous wall boundary. */
       const bool viscousWall = config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
                                config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL;
 
       /* Loop over the boundary faces and determine the wall distances
          in the integration points. */
-      nIntPoints = 0;
+      vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
       for(unsigned long l=0; l<surfElem.size(); ++l) {
 
         /* Get the required data from the corresponding standard element. */
         const unsigned short ind   = surfElem[l].indStandardElement;
         const unsigned short nInt  = standardBoundaryFacesGrid[ind].GetNIntegration();
 
-        /* Set the pointer for the wall distance for this boundary face. */
-        surfElem[l].wallDistance = boundaries[iMarker].VecWallDistanceBoundaryFaces.data() + nIntPoints;
-        nIntPoints += nInt;
+        /* Allocate the memory for the wall distance for this boundary face. */
+        surfElem[l].wallDistance.resize(nInt);
 
         /* Check for an empty tree or a viscous wall.
            In those case the wall distance is set to zero. */
@@ -295,8 +254,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
                 and do so. ---*/
           for(unsigned short i=0; i<nInt; ++i) {
 
-            const su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
-
+            const su2double *coor = surfElem[l].coorIntegrationPoints.data()
+                                  + i*nDim;
             unsigned short markerID;
             unsigned long  elemID;
             int            rankID;

@@ -154,7 +154,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
    vertices, ghost vertices, total elements, ghost elements, etc.,
    so that we can analyze the partition quality. ---*/
   
-  unsigned long nNeighbors = 0;
+  unsigned long nNeighSend = 0, nNeighRecv     = 0;
   unsigned long nElemOwned = 0, nElemSendTotal = 0, nElemRecvTotal = 0;
   unsigned long nDOFOwned  = 0, nDOFSendTotal  = 0, nDOFRecvTotal  = 0;
   
@@ -174,8 +174,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
   unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
   CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
   
-  /*--- Update the solution by looping over the owned volume elements. ---*/
-  
+  /*--- Determine the number of owned elements and DOFs. ---*/
   nElemOwned = nVolElemOwned;
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
     nDOFOwned += volElem[l].nDOFsSol;
@@ -184,32 +183,36 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
   /*--- Get the communication information from DG_Geometry. Note that for a
    FEM DG discretization the communication entities of FEMGeometry contain
    the volume elements. ---*/
-  const vector<int>                    &ranksComm       = DGGeometry->GetRanksComm();
-  const vector<vector<unsigned long> > &elementsSend    = DGGeometry->GetEntitiesSend();
-  const vector<vector<unsigned long> > &elementsReceive = DGGeometry->GetEntitiesReceive();
+  const vector<int>                    &ranksSend    = DGGeometry->GetRanksSend();
+  const vector<int>                    &ranksRecv    = DGGeometry->GetRanksRecv();
+  const vector<vector<unsigned long> > &elementsSend = DGGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsRecv = DGGeometry->GetEntitiesRecv();
   
-  nNeighbors = ranksComm.size();
-  
-  /*--- Loop over the ranks for which communication takes place. ---*/
-  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+  nNeighSend = ranksSend.size();
+  nNeighRecv = ranksRecv.size();
+
+  /*--- Determine the total number of elements and DOFS to be send. ---*/
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
     
-    /*--- Determine the derived data type for sending the data. ---*/
     const unsigned int nElemSend = (unsigned int)elementsSend[i].size();
-    
+
     nElemSendTotal += nElemSend;
     
     for(unsigned int j=0; j<nElemSend; ++j) {
       const unsigned long jj = elementsSend[i][j];
       nDOFSendTotal += volElem[jj].nDOFsSol;
     }
-    
-    /*--- Determine the derived data type for receiving the data. ---*/
-    const unsigned int nElemRecv = (unsigned int)elementsReceive[i].size();
+  }
+ 
+  /*--- Determine the total number of elements and DOFS to be received. ---*/
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+
+    const unsigned int nElemRecv = (unsigned int)elementsRecv[i].size();
     
     nElemRecvTotal += nElemRecv;
-    
+
     for(unsigned int j=0; j<nElemRecv; ++j) {
-      const unsigned long jj = elementsReceive[i][j];
+      const unsigned long jj = elementsRecv[i][j];
       nDOFRecvTotal += volElem[jj].nDOFsSol;
     }
     
@@ -226,7 +229,7 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
     /*--- Prepare and open the file ---*/
     Profile_File.open(cstr, ios::out);
     /*--- Create the CSV header ---*/
-    Profile_File << "\"Rank\", \"nNeighbors\", \"nElemOwned\", \"nElemSendTotal\", \"nElemRecvTotal\", \"nDOFOwned\", \"nDOFSendTotal\", \"nDOFRecvTotal\"" << endl;
+    Profile_File << "\"Rank\", \"nNeighSend\",  \"nNeighRecv\", \"nElemOwned\", \"nElemSendTotal\", \"nElemRecvTotal\", \"nDOFOwned\", \"nDOFSendTotal\", \"nDOFRecvTotal\"" << endl;
     Profile_File.close();
   }
 #ifdef HAVE_MPI
@@ -238,7 +241,9 @@ void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
   for (iRank = 0; iRank < size; iRank++) {
     if (rank == iRank) {
       Profile_File.open(cstr, ios::out | ios::app);
-      Profile_File << rank << ", " << nNeighbors << ", " << nElemOwned << ", " << nElemSendTotal << ", " << nElemRecvTotal << ", " << nDOFOwned << ", " << nDOFSendTotal << ", " << nDOFRecvTotal << endl;
+      Profile_File << rank << ", " << nNeighSend << ", " << nNeighRecv << ", " << nElemOwned << ", "
+                   << nElemSendTotal << ", " << nElemRecvTotal << ", " << nDOFOwned << ", " 
+                   << nDOFSendTotal << ", " << nDOFRecvTotal << endl;
       Profile_File.close();
     }
 #ifdef HAVE_MPI
