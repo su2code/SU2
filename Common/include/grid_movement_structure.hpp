@@ -1153,15 +1153,6 @@ public:
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
 	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
-  
-  /*!
-   * \brief Set a rotation for surface movement.
-   * \param[in] boundary - Geometry of the boundary.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iDV - Index of the design variable.
-   * \param[in] ResetDef - Reset the deformation before starting a new one.
-   */
-  void SetHTP_Incidence(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
 
   /*!
 	 * \brief Set the translational/rotational velocity for a moving wall.

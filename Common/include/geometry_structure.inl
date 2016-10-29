@@ -107,8 +107,6 @@ inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
 inline void CGeometry::SetPositive_ZArea(CConfig *config) { }
 
-inline void CGeometry::SetHTP_Incidence(CConfig *config) { }
-
 inline void CGeometry::SetPoint_Connectivity(void) { }
 
 inline void CGeometry::SetRCM_Ordering(CConfig *config) { }
