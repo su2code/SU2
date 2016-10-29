@@ -163,10 +163,6 @@ CDriver::CDriver(char* confFile,
 
     geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
       
-    /*--- Estimate the HTP incidence . ---*/
-      
-    geometry_container[iZone][MESH_0]->SetHTP_Incidence(config_container[iZone]);
-
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
 
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {

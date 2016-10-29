@@ -149,13 +149,6 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
   geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
   
-  /*--- Estimate the HTP incidence . ---*/
-  
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == HTP_INCIDENCE) {
-    if (rank == MASTER_NODE) cout << "Computing HTP incidence angle (iH)." <<endl;
-    geometry_container[ZONE_0]->SetHTP_Incidence(config_container[ZONE_0]);
-  }
-
   if (config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
     
     /*--- Compute center of gravity ---*/

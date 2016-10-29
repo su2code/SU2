@@ -262,7 +262,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -285,7 +288,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
         node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
         iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
     /*--- Detect a wrong solution file ---*/
@@ -310,6 +313,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
+      
     }
     
     /*--- Instantiate the variable class with an arbitrary solution

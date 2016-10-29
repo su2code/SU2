@@ -16263,6 +16263,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
+      
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
