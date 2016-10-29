@@ -197,6 +197,17 @@ def main():
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
 
+    # PROPELLER
+    propeller           = TestCase('propeller')
+    propeller.cfg_dir   = "rans/propeller"
+    propeller.cfg_file  = "propeller.cfg"
+    propeller.test_iter = 10
+    propeller.test_vals = [-3.380312, -8.129519, 0.000043, 0.070031] #last 4 columns
+    propeller.su2_exec  = "parallel_computation.py -f"
+    propeller.timeout   = 3200
+    propeller.tol       = 0.00001
+    test_list.append(propeller)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -243,15 +254,15 @@ def main():
     test_list.append(fem_ns_flatplate)
     
     # Steady cylinder
-    fem_ns_cylinder           = TestCase('fem_ns_cylinder')
-    fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
-    fem_ns_cylinder.cfg_file  = "fem_Cylinder_reg.cfg"
-    fem_ns_cylinder.test_iter = 10
-    fem_ns_cylinder.test_vals = [0.405820,0.921126,-0.000027,74.144949] #last 4 columns
-    fem_ns_cylinder.su2_exec  = "mpirun -n 2 SU2_CFD"
-    fem_ns_cylinder.timeout   = 1600
-    fem_ns_cylinder.tol       = 0.00001
-    test_list.append(fem_ns_cylinder)
+    #fem_ns_cylinder           = TestCase('fem_ns_cylinder')
+    #fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
+    #fem_ns_cylinder.cfg_file  = "fem_Cylinder_reg.cfg"
+    #fem_ns_cylinder.test_iter = 10
+    #fem_ns_cylinder.test_vals = [0.405820,0.921126,-0.000027,74.144949] #last 4 columns
+    #fem_ns_cylinder.su2_exec  = "mpirun -n 2 SU2_CFD"
+    #fem_ns_cylinder.timeout   = 1600
+    #fem_ns_cylinder.tol       = 0.00001
+    #test_list.append(fem_ns_cylinder)
 
     #####################################
     ### Cont. adj. compressible Euler ###
