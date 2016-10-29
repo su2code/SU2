@@ -2722,7 +2722,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
   /* Loop over the number of ranks from which I receive data about the
      global element ID's that I must send. */
-  for(unsigned long i=0; i<nRankSend; ++i) {
+  for(int i=0; i<nRankSend; ++i) {
 
     /* Block until a message arrivesi and determine the source. */
     MPI_Status status;

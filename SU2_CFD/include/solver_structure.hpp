@@ -8720,6 +8720,16 @@ private:
                                                  These are both sending and receiving requests. */
   vector<MPI_Datatype> commTypes;    /*!< \brief MPI derived data types for communicating the solution
                                                  variables of the DOFS. */
+
+  vector<MPI_Request> reverseCommRequests; /*!< \brief Communication requests in the persistent reverse communication.
+                                                       These are both sending and receiving requests. */
+  vector<MPI_Datatype> reverseCommTypes;   /*!< \brief MPI derived data types for communicating the residuals
+                                                       of the DOFs in the halo elements. */
+
+  vector<vector<unsigned long> > reverseElementsRecv; /*!< \brief Element ID's for which residuals must be 
+                                                                  updated via the reverse communication pattern. */
+  vector<vector<su2double> >     reverseCommRecvBuf;  /*!< \brief Receive buffers used to receive the residual
+                                                                  data in the reverse communication pattern. */
 #endif
   
   vector<unsigned long> elementsRecvSelfComm;  /*!< \brief The halo elements for self communication.  */
@@ -9325,11 +9335,23 @@ public:
    * \brief Routine that initiates the non-blocking communication between ranks.
    */
   void Initiate_MPI_Communication(void);
+
+  /*!
+   * \brief Routine that initiates the reverse non-blocking communication
+            between ranks.
+   */
+  void Initiate_MPI_ReverseCommunication(void);
   
   /*!
    * \brief Routine that completes the non-blocking communication between ranks.
    */
   void Complete_MPI_Communication(void);
+
+  /*!
+   * \brief Routine that completes the reverse non-blocking communication
+            between ranks.
+   */
+  void Complete_MPI_ReverseCommunication(void);
   
 protected:
   
@@ -9353,19 +9375,19 @@ protected:
   
   /*!
    * \brief Function, which creates the final residual by accumulating the
-   individual contributions and multiply the result by the inverse
-   of the (lumped) mass matrix.
+            individual contributions and multiply the result by the inverse
+            of the (lumped) mass matrix.
    * \param[in,out] tmpRes - Temporary storage array needed for multiplication
-   with the inverse of the mass matrix.
+                             with the inverse of the mass matrix.
    */
   void CreateFinalResidual(su2double *tmpRes);
   
   /*!
    * \brief Function, which computes the inviscid fluxes in face points of
-   a matching internal face.
+            a matching internal face.
    * \param[in]  config       - Definition of the particular problem.
    * \param[in]  internalFace - Internal matching face for which the inviscid
-   fluxes must be computed in the integration points.
+                                fluxes must be computed in the integration points.
    * \param[out] solIntL      - Solution in the left state of the integration points.
    * \param[out] solIntR      - Solution in the right state of the integration points.
    * \param[out] fluxes       - Inviscid fluxes in the integration points.
@@ -9421,19 +9443,6 @@ private:
                                     su2double                *fluxes,
                                     su2double                *resFaces,
                                     unsigned long            &indResFaces);
-public:
-  /*!
-   * \brief Function, which carries out the self communication. This typically
-   only occurs when periodic boundaries are present.
-   */
-  void SelfCommunication(void);
-  
-  /*!
-   * \brief Function, which corrects the vector variables for rotational
-   periodicity. This function must be called after the communication
-   is completed.
-   */
-  void CorrectForRotationalPeriodicity(void);
 };
 
 /*!
