@@ -2,7 +2,7 @@
  * \file solution_direct_mean_fem.cpp
  * \brief Main subroutines for solving finite element flow problems (Euler, Navier-Stokes, etc.).
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -261,13 +261,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
 
   VecDeltaTime.resize(nVolElemOwned);
-  VecResDOFs.resize(nVar*nDOFsLocOwned);
-  nEntriesResFaces.assign(nDOFsLocOwned+1, 0);
+  VecResDOFs.resize(nVar*nDOFsLocTot);
+  nEntriesResFaces.assign(nDOFsLocTot+1, 0);
   startLocResFacesMarkers.resize(nMarker);
 
   /*--- Determine the size of the vector to store residuals that come from the
         integral over the faces and determine the number of entries in this
-        vector for the owned DOFs. ---*/
+        vector for the local DOFs. ---*/
   symmetrizingTermsPresent = false;
   if(config->GetViscous() && (fabs(config->GetTheta_Interior_Penalty_DGFEM()) > 1.e-8))
     symmetrizingTermsPresent = true;
@@ -285,11 +285,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     for(unsigned short j=0; j<nDOFsFace0; ++j)
       ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide0[j]+1];
 
-    if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
-      sizeVecResFaces += nDOFsFace1;
-      for(unsigned short j=0; j<nDOFsFace1; ++j)
-        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
-    }
+    sizeVecResFaces += nDOFsFace1;
+    for(unsigned short j=0; j<nDOFsFace1; ++j)
+      ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
 
     /* The symmetrizing terms, if present, contribute to all
        the DOFs of the adjacent elements. */
@@ -301,11 +299,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       for(unsigned short j=0; j<nDOFsElem0; ++j)
         ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide0[j]+1];
 
-      if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
-        sizeVecResFaces += nDOFsElem1;
-        for(unsigned short j=0; j<nDOFsElem1; ++j)
-          ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
-      }
+      sizeVecResFaces += nDOFsElem1;
+      for(unsigned short j=0; j<nDOFsElem1; ++j)
+        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
     }
   }
 
@@ -345,10 +341,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Put nEntriesResFaces in cumulative storage format and allocate the
         memory for entriesResFaces and VecResFaces. ---*/
-  for(unsigned long i=0; i<nDOFsLocOwned; ++i)
+  for(unsigned long i=0; i<nDOFsLocTot; ++i)
     nEntriesResFaces[i+1] += nEntriesResFaces[i];
 
-  entriesResFaces.resize(nEntriesResFaces[nDOFsLocOwned]);
+  entriesResFaces.resize(nEntriesResFaces[nDOFsLocTot]);
   VecResFaces.resize(nVar*sizeVecResFaces);
 
   /*--- Repeat the loops over the internal and boundary faces, but now store
@@ -370,11 +366,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       entriesResFaces[jj] = sizeVecResFaces++;
     }
 
-    if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
-      for(unsigned short j=0; j<nDOFsFace1; ++j) {
-        unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide1[j]]++;
-        entriesResFaces[jj] = sizeVecResFaces++;
-      }
+    for(unsigned short j=0; j<nDOFsFace1; ++j) {
+      unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide1[j]]++;
+      entriesResFaces[jj] = sizeVecResFaces++;
     }
 
     /* The symmetrizing terms, if present, contribute to all
@@ -388,11 +382,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         entriesResFaces[jj] = sizeVecResFaces++;
       }
 
-      if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
-        for(unsigned short j=0; j<nDOFsElem1; ++j) {
-          unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide1[j]]++;
-          entriesResFaces[jj] = sizeVecResFaces++;
-        }
+      for(unsigned short j=0; j<nDOFsElem1; ++j) {
+        unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide1[j]]++;
+        entriesResFaces[jj] = sizeVecResFaces++;
       }
     }
   }
@@ -582,22 +574,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
   }
 
-  /*--- Set up the persistent communication for the conservative variables. ---*/
-
+  /*--- Set up the persistent communication for the conservative variables and
+        the reverse communication for the residuals of the halo elements. ---*/
   Prepare_MPI_Communication(DGGeometry, config);
-  
-  /*--- Perform the MPI communication of the solution including the possible
-        self communication for the periodic data. Correct for rotational
-        periodicity afterwards, if needed. ---*/
-#ifdef HAVE_MPI
-  if( nCommRequests ) {
-    MPI_Startall(nCommRequests, commRequests.data());
-    SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
-  }
-#endif
 
-  SelfCommunication();
-  CorrectForRotationalPeriodicity();
+  /*--- Perform the MPI communication of the solution. ---*/
+  Initiate_MPI_Communication();
+  Complete_MPI_Communication();
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
@@ -644,6 +627,10 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
         data types. ---*/
   for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&commRequests[i]);
   for(int i=0; i<nCommRequests; ++i) MPI_Type_free(&commTypes[i]);
+
+  for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&reverseCommRequests[i]);
+  for(unsigned int i=0; i<reverseCommTypes.size(); ++i)
+     MPI_Type_free(&reverseCommTypes[i]);
 
 #endif
 }
@@ -1265,15 +1252,16 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
       elementsRecvSelfComm = elementsRecv[i];
   }
 
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 2. Set up the persistent MPI communication.                   ---*/
-  /*--------------------------------------------------------------------------*/
-
 #ifdef HAVE_MPI
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Set up the persistent MPI communication for the halo data. ---*/
+  /*--------------------------------------------------------------------------*/
 
   /*--- Determine the number of communication requests that take place
         for the exchange of the halo data. These requests are both send and
-        receive requests. Allocate the necessary memory. ---*/
+        receive requests. Allocate the necessary memory for the communication
+        of the halo data. ---*/
   nCommRequests = ranksSend.size() + ranksRecv.size();
   if( elementsRecvSelfComm.size() ) --nCommRequests;
   if( elementsSendSelfComm.size() ) --nCommRequests;
@@ -1281,7 +1269,7 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   commRequests.resize(nCommRequests);
   commTypes.resize(nCommRequests);
 
-  /*--- Loop over the ranks to which this rank has to send data and create
+  /*--- Loop over the ranks to which this rank has to send halo data and create
         the send requests. Exclude self communication. ---*/
   unsigned int nn = 0;
   for(unsigned long i=0; i<ranksSend.size(); ++i) {
@@ -1304,7 +1292,8 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
       /* Create the communication request for this send operation and
          update the counter nn for the next request. */
       MPI_Send_init(VecSolDOFs.data(), 1, commTypes[nn], ranksSend[i],
-                    ranksSend[i], MPI_COMM_WORLD, &commRequests[nn++]);
+                    ranksSend[i], MPI_COMM_WORLD, &commRequests[nn]);
+      ++nn;
     }
   }
 
@@ -1330,14 +1319,100 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
       /* Create the communication request for this receive operation and
          update the counter nn for the next request. */
       MPI_Recv_init(VecSolDOFs.data(), 1, commTypes[nn], ranksRecv[i],
-                    rank, MPI_COMM_WORLD, &commRequests[nn++]);
+                    rank, MPI_COMM_WORLD, &commRequests[nn]);
+      ++nn;
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3. Set up the persistent reverse MPI communication for the    ---*/
+  /*---         residuals.                                                 ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Determine the number of derived data types necessary in the reverse
+     communication. This is the number of ranks to which this rank has to send
+     halo data, which corresponds to the original receive pattern. Exclude
+     self communication. */
+  nn = ranksRecv.size();
+  if( elementsRecvSelfComm.size() ) --nn;
+
+  /* Allocate the memory for the reverse communication requests. The sending and
+     receiving are reversed, but the total number of requests is the same. Also
+     allocate the memory for the derived data types for the reverse communcation
+     which are only needed for the sending of the halo data. */
+  reverseCommRequests.resize(nCommRequests);
+  reverseCommTypes.resize(nn);
+
+  /*--- Loop over the ranks to which this rank has to send residual data and
+        create the send requests. Exclude self communication. ---*/
+  nn = 0;
+  for(unsigned long i=0; i<ranksRecv.size(); ++i) {
+    if(ranksRecv[i] != rank) {
+
+      /*--- Determine the derived data type for sending the data. ---*/
+      const unsigned int nElemRecv = elementsRecv[i].size();
+      vector<int> blockLen(nElemRecv), displ(nElemRecv);
+
+      for(unsigned int j=0; j<nElemRecv; ++j) {
+        const unsigned long jj = elementsRecv[i][j];
+        blockLen[j] = nVar*volElem[jj].nDOFsSol;
+        displ[j]    = nVar*volElem[jj].offsetDOFsSolLocal;
+      }
+
+      MPI_Type_indexed(nElemRecv, blockLen.data(), displ.data(),
+                       MPI_DOUBLE, &reverseCommTypes[nn]);
+      MPI_Type_commit(&reverseCommTypes[nn]);
+
+      /* Create the communication request for this send operation and
+         update the counter nn for the next request. */
+      MPI_Send_init(VecResDOFs.data(), 1, reverseCommTypes[nn], ranksRecv[i],
+                    ranksRecv[i], MPI_COMM_WORLD, &reverseCommRequests[nn]);
+      ++nn;
+    }
+  }
+
+  /*--- Determine the number of receive buffers needed to receive the externally
+        computed part of the residuals. Allocate its first index as well as
+        the first index of reverseElementsRecv, which stores the corresponding
+        elements where the residual must be stored. */
+  unsigned int mm = ranksSend.size();
+  if( elementsSendSelfComm.size() ) --mm;
+
+  reverseCommRecvBuf.resize(mm);
+  reverseElementsRecv.resize(mm);
+
+  /*--- Loop over the ranks from which I receive residual data and
+        create the receive requests. Exclude self communication. ---*/
+  mm = 0;
+  for(unsigned long i=0; i<ranksSend.size(); ++i) {
+    if(ranksSend[i] != rank) {
+
+      /* Copy the data of elementsSend into reverseElementsRecv. */
+      reverseElementsRecv[mm] = elementsSend[i];
+
+      /* Determine the size of the receive buffer and allocate the memory. */
+      int sizeBuf = 0;
+      for(unsigned long j=0; j<elementsSend[i].size(); ++j) {
+        const unsigned long jj = elementsSend[i][j];
+        sizeBuf += volElem[jj].nDOFsSol;
+      }
+
+      sizeBuf *= nVar;
+      reverseCommRecvBuf[mm].resize(sizeBuf);
+
+      /* Create the communication request for this receive operation and
+         update the counters mm and nn for the next request. */
+      MPI_Recv_init(reverseCommRecvBuf[mm].data(), sizeBuf, MPI_DOUBLE,
+                    ranksSend[i], rank, MPI_COMM_WORLD, &reverseCommRequests[nn]);
+      ++mm;
+      ++nn;
     }
   }
 
 #endif
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 3. Store the information for the rotational periodic          ---*/
+  /*--- Step 4. Store the information for the rotational periodic          ---*/
   /*---         corrections for the halo elements.                         ---*/
   /*--------------------------------------------------------------------------*/
 
@@ -1382,7 +1457,47 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
   }
 }
 
-void CFEM_DG_EulerSolver::CorrectForRotationalPeriodicity(void) {
+void CFEM_DG_EulerSolver::Initiate_MPI_Communication(void) {
+
+  /*--- Start the MPI communication, if needed. ---*/
+
+#ifdef HAVE_MPI
+  if( nCommRequests )
+    MPI_Startall(nCommRequests, commRequests.data());
+#endif
+}
+
+void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
+
+  /*-----------------------------------------------------------------------*/
+  /*---               Carry out the self communication.                 ---*/
+  /*-----------------------------------------------------------------------*/
+
+  /* Easier storage of the number of variables times the size of su2double. */
+  const unsigned long sizeEntity = nVar*sizeof(su2double);
+
+  /* Loop over the number of elements involved and copy the data of the DOFs. */
+  const unsigned long nSelfElements = elementsSendSelfComm.size();
+  for(unsigned long i=0; i<nSelfElements; ++i) {
+    const unsigned long indS   = nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
+    const unsigned long indR   = nVar*volElem[elementsRecvSelfComm[i]].offsetDOFsSolLocal;
+    const unsigned long nBytes = volElem[elementsSendSelfComm[i]].nDOFsSol * sizeEntity;
+
+    memcpy(VecSolDOFs.data()+indR, VecSolDOFs.data()+indS, nBytes);
+  }
+
+  /*-----------------------------------------------------------------------*/
+  /*---         Complete the MPI communication, if needed.              ---*/
+  /*-----------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+  if( nCommRequests )
+    SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
+#endif
+
+  /*------------------------------------------------------------------------*/
+  /*--- Correct the vector quantities in the rotational periodic halo's. ---*/
+  /*------------------------------------------------------------------------*/
 
   /*--- Loop over the markers for which a rotational periodic
         correction must be applied to the momentum variables. ---*/
@@ -1430,47 +1545,138 @@ void CFEM_DG_EulerSolver::CorrectForRotationalPeriodicity(void) {
   }
 }
 
-void CFEM_DG_EulerSolver::SelfCommunication(void) {
+void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
 
-  /* Easier storage of the number of variables times the size of su2double. */
-  const unsigned long sizeEntity = nVar*sizeof(su2double);
+  /*------------------------------------------------------------------------*/
+  /*---            Accumulate the residuals of the halo DOFs.            ---*/
+  /*------------------------------------------------------------------------*/
 
-  /* Loop over the number of elements involved and copy the data of the DOFs. */
-  const unsigned long nSelfElements = elementsSendSelfComm.size();
-  for(unsigned long i=0; i<nSelfElements; ++i) {
-    const unsigned long indS   = nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
-    const unsigned long indR   = nVar*volElem[elementsRecvSelfComm[i]].offsetDOFsSolLocal;
-    const unsigned long nBytes = volElem[elementsSendSelfComm[i]].nDOFsSol * sizeEntity;
+  /*--- Initialize the residuals of the halo elements to zero. ---*/
+  for(unsigned long i=nVar*nDOFsLocOwned; i<nVar*nDOFsLocTot; ++i)
+    VecResDOFs[i] = 0.0;
 
-    memcpy(VecSolDOFs.data()+indR, VecSolDOFs.data()+indS, nBytes);
+  /*--- Loop over the external DOFs to accumulate the local data. ---*/
+  for(unsigned long i=nDOFsLocOwned; i<nDOFsLocTot; ++i) {
+
+    su2double *resDOF = VecResDOFs.data() + nVar*i;
+
+    for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
+      const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+      for(unsigned short k=0; k<nVar; ++k)
+        resDOF[k] += resFace[k];
+    }
   }
-}
 
-void CFEM_DG_EulerSolver::Initiate_MPI_Communication(void) {
+  /*------------------------------------------------------------------------*/
+  /*--- Correct the vector residuals in the rotational periodic halo's.  ---*/
+  /*------------------------------------------------------------------------*/
+
+  /*--- Loop over the markers for which a rotational periodic
+        correction must be applied to the momentum variables. ---*/
+  unsigned int ii;
+  const unsigned short nRotPerMarkers = halosRotationalPeriodicity.size();
+  for(unsigned short k=0; k<nRotPerMarkers; ++k) {
+
+    /* Easier storage of the transpose of the rotational matrix. */
+    su2double rotMatrix[3][3];
+
+    rotMatrix[0][0] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][0] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][0] = rotationMatricesPeriodicity[ii++];
+
+    rotMatrix[0][1] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][1] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][1] = rotationMatricesPeriodicity[ii++];
+
+    rotMatrix[0][2] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[1][2] = rotationMatricesPeriodicity[ii++];
+    rotMatrix[2][2] = rotationMatricesPeriodicity[ii++];
+
+    /* Determine the number of elements for this transformation and
+       loop over them. */
+    const unsigned long nHaloElem = halosRotationalPeriodicity[k].size();
+    for(unsigned long j=0; j<nHaloElem; ++j) {
+
+      /* Easier storage of the halo index and loop over its DOFs. */
+      const unsigned long ind = halosRotationalPeriodicity[k][j];
+      for(unsigned short i=0; i<volElem[ind].nDOFsSol; ++i) {
+
+        /* Determine the pointer in VecResDOFs where the residual of this DOF
+           is stored and copy the momentum residuals. Note that a rotational
+           correction can only take place for a 3D simulation. */
+        su2double *res = VecResDOFs.data() + nVar*(volElem[ind].offsetDOFsSolLocal + i);
+
+        const su2double ru = res[1], rv = res[2], rw = res[3];
+
+        /* Correct the momentum variables. */
+        res[1] = rotMatrix[0][0]*ru + rotMatrix[0][1]*rv + rotMatrix[0][2]*rw;
+        res[2] = rotMatrix[1][0]*ru + rotMatrix[1][1]*rv + rotMatrix[1][2]*rw;
+        res[3] = rotMatrix[2][0]*ru + rotMatrix[2][1]*rv + rotMatrix[2][2]*rw;
+      }
+    }
+  }
 
   /*--- Start the MPI communication, if needed. ---*/
 
 #ifdef HAVE_MPI
   if( nCommRequests )
-    MPI_Startall(nCommRequests, commRequests.data());
+    MPI_Startall(nCommRequests, reverseCommRequests.data());
 #endif
+
+  /*-----------------------------------------------------------------------*/
+  /*---               Carry out the self communication.                 ---*/
+  /*-----------------------------------------------------------------------*/
+
+  /*--- Loop over the number of elements involved and update the residuals
+        of the owned DOFs. ---*/
+  const unsigned long nSelfElements = elementsSendSelfComm.size();
+  for(unsigned long i=0; i<nSelfElements; ++i) {
+
+    su2double *resOwned = VecResDOFs.data()
+                        + nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
+    su2double *resHalo  = VecResDOFs.data() 
+                        + nVar*volElem[elementsRecvSelfComm[i]].offsetDOFsSolLocal;
+
+    const unsigned short nRes = nVar*volElem[elementsSendSelfComm[i]].nDOFsSol;
+    for(unsigned short j=0; j<nRes; ++j)
+      resOwned[j] += resHalo[j];
+  }
 }
 
-void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
-  /* Carry out the self communication. */
-  SelfCommunication();
+void CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(void) {
 
-  /*--- Complete the MPI communication, if needed. ---*/
+  /*-----------------------------------------------------------------------*/
+  /*---         Complete the MPI communication, if needed.              ---*/
+  /*-----------------------------------------------------------------------*/
 
 #ifdef HAVE_MPI
   if( nCommRequests )
-    SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
+    SU2_MPI::Waitall(nCommRequests, reverseCommRequests.data(), MPI_STATUSES_IGNORE);
 #endif
 
-  /* Correct the vector quantities in the rotational periodic halo's. */
-  CorrectForRotationalPeriodicity();
-}
+  /*---------------------------------------------------------------------------*/
+  /*--- Update the residuals of the owned DOFs with the data just received. ---*/
+  /*---------------------------------------------------------------------------*/
 
+  /*--- Loop over the ranks from which this rank received residual data. As
+        the reverse communication pattern is used, ranksSend must be used.
+        Exclude self communication. ---*/
+  for(unsigned long i=0; i<reverseElementsRecv.size(); ++i) {
+
+    /* Loop over the elements that must be updated. */
+    unsigned long nn = 0;
+    for(unsigned long j=0; j<reverseElementsRecv[i].size(); ++j) {
+      const unsigned long jj = reverseElementsRecv[i][j];
+
+      /* Easier storage of the starting residual of this element, loop over the
+         DOFs of this element and update the residuals of the DOFs. */
+      su2double *res = VecResDOFs.data() + nVar*volElem[jj].offsetDOFsSolLocal;
+      const unsigned short nRes = nVar*volElem[jj].nDOFsSol;
+      for(unsigned short k=0; k<nRes; ++k, ++nn)
+        res[k] += reverseCommRecvBuf[i][nn];
+    }
+  }
+}
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
 
@@ -1671,21 +1877,10 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 #endif
   
   /*--- If the solution was set in this function, perform the MPI
-        communication of the solution including the possible self
-        communication for the periodic data. Correct for rotational
-        periodicity afterwards, if needed. ---*/
-
+        communication of the solution. ---*/
   if( solutionSet ) {
-
-#ifdef HAVE_MPI
-    if( nCommRequests ) {
-      MPI_Startall(nCommRequests, commRequests.data());
-      SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
-    }
-#endif
-
-    SelfCommunication();
-    CorrectForRotationalPeriodicity();
+    Initiate_MPI_Communication();
+    Complete_MPI_Communication();
   }
 }
 
@@ -2063,35 +2258,30 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
     /* Call the general function to carry out the matrix product. */
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
 
-    /* Check if the element to the right is an owned element. Only then
-       the residual needs to be computed. */
-    if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
+    /* Easier storage of the position in the residual array for side 1 of
+       this face and update the corresponding counter. */
+    const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
+    su2double *resFace1 = VecResFaces.data() + indResFaces*nVar;
+    indResFaces        += nDOFsFace1;
 
-      /* Easier storage of the position in the residual array for side 1 of
-         this face and update the corresponding counter. */
-      const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
-      su2double *resFace1 = VecResFaces.data() + indResFaces*nVar;
-      indResFaces        += nDOFsFace1;
+    /* Check if the number of DOFs on side 1 is equal to the number of DOFs
+       of side 0. In that case the residual for side 1 is obtained by simply
+       negating the data from side 0. */
+    if(nDOFsFace1 == nDOFsFace0) {
+      for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
+        resFace1[i] = -resFace0[i];
+    }
+    else {
 
-      /* Check if the number of DOFs on side 1 is equal to the number of DOFs
-         of side 0. In that case the residual for side 1 is obtained by simply
-         negating the data from side 0. */
-      if(nDOFsFace1 == nDOFsFace0) {
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-          resFace1[i] = -resFace0[i];
-      }
-      else {
+      /*--- The number of DOFs and hence the polynomial degree of side 1 is
+            different from side. Carry out the matrix multiplication to obtain
+            the residual. Afterwards the residual is negated, because the
+            normal is pointing into the adjacent element. ---*/
+      basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
+      DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
 
-        /*--- The number of DOFs and hence the polynomial degree of side 1 is
-              different from side. Carry out the matrix multiplication to obtain
-              the residual. Afterwards the residual is negated, because the
-              normal is pointing into the adjacent element. ---*/
-        basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-        DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
-
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-          resFace1[i] = -resFace1[i];
-      }
+      for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
+        resFace1[i] = -resFace1[i];
     }
     config->Tock(tick, "ER_1_2", 4);
   }
@@ -2190,11 +2380,12 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
 
 void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
 
-  /* Loop over the owned volume elements. */
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+  /* Start the communication of the residuals, for which the
+     reverse communication must be used. */
+  Initiate_MPI_ReverseCommunication();
 
-    /* Easier storage of the residuals for this volume element. */
-    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+  /* Loop over the owned volume elements to accumulate the local data. */
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
     /*--- Loop over the DOFs of the element and accumulate the residuals.
           This accumulation is carried inside the loop over the owned volume
@@ -2202,14 +2393,25 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
           volume elements is straightforward. ---*/
     for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
 
-      su2double *resDOF      = res + nVar*i;
       const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
+      su2double *resDOF = VecResDOFs.data() + nVar*ii;
+
       for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
         const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
         for(unsigned short k=0; k<nVar; ++k)
           resDOF[k] += resFace[k];
       }
     }
+  }
+
+  /* Complete the communication of the residuals. */
+  Complete_MPI_ReverseCommunication();
+
+  /* Loop over the owned volume elements to compute the final residual. */
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Easier storage of the residuals for this volume element. */
+    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Check whether a multiplication must be carried out with the inverse of
        the lumped mass matrix or the full mass matrix. Note that it is crucial
@@ -2603,8 +2805,6 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     }
   }
 
-  /*--- Communicate the information about the maximum residual. ---*/
-
 #else
   /*--- Sequential mode. Check for a divergence of the solver and compute
         the L2-norm of the residuals. ---*/
@@ -2698,8 +2898,6 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
       SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
     }
   }
-  
-  /*--- Communicate the information about the maximum residual. ---*/
   
 #else
   /*--- Sequential mode. Check for a divergence of the solver and compute
@@ -4368,35 +4566,30 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /* Call the general function to carry out the matrix product. */
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
 
-    /* Check if the element to the right is an owned element. Only then
-       the residual needs to be computed. */
-    if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
+    /* Easier storage of the position in the residual array for side 1 of
+       this face and update the corresponding counter. */
+    const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
+    su2double *resFace1 = VecResFaces.data() + indResFaces*nVar;
+    indResFaces        += nDOFsFace1;
 
-      /* Easier storage of the position in the residual array for side 1 of
-         this face and update the corresponding counter. */
-      const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
-      su2double *resFace1 = VecResFaces.data() + indResFaces*nVar;
-      indResFaces        += nDOFsFace1;
+    /* Check if the number of DOFs on side 1 is equal to the number of DOFs
+       of side 0. In that case the residual for side 1 is obtained by simply
+       negating the data from side 0. */
+    if(nDOFsFace1 == nDOFsFace0) {
+      for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
+        resFace1[i] = -resFace0[i];
+    }
+    else {
 
-      /* Check if the number of DOFs on side 1 is equal to the number of DOFs
-         of side 0. In that case the residual for side 1 is obtained by simply
-         negating the data from side 0. */
-      if(nDOFsFace1 == nDOFsFace0) {
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-          resFace1[i] = -resFace0[i];
-      }
-      else {
+      /*--- The number of DOFs and hence the polynomial degree of side 1 is
+            different from side. Carry out the matrix multiplication to obtain
+            the residual. Afterwards the residual is negated, because the
+            normal is pointing into the adjacent element. ---*/
+      basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
+      DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
 
-        /*--- The number of DOFs and hence the polynomial degree of side 1 is
-              different from side. Carry out the matrix multiplication to obtain
-              the residual. Afterwards the residual is negated, because the
-              normal is pointing into the adjacent element. ---*/
-        basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-        DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
-
-        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
-          resFace1[i] = -resFace1[i];
-      }
+      for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
+        resFace1[i] = -resFace1[i];
     }
     config->Tock(tick, "ER_1_4", 4);
 
@@ -4474,54 +4667,49 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
          the residual for side 0. */
       DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
     
-      /* Check if the element to the right is an owned element. Only then
-         the residual needs to be computed. */
-      if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
+      /* Get the element information of side 1 of the face. */
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+      derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
 
-        /* Get the element information of side 1 of the face. */
-        const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
-        derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
+      /*--- Create the Cartesian derivatives of the basis functions in the integration
+            points. The array gradSolInt is used to store these derivatives. ---*/
+      ii = 0;
+      for(unsigned short j=0; j<nDOFsElem1; ++j) {
+        for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
 
-        /*--- Create the Cartesian derivatives of the basis functions in the integration
-              points. The array gradSolInt is used to store these derivatives. ---*/
-        ii = 0;
-        for(unsigned short j=0; j<nDOFsElem1; ++j) {
-          for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+          /* Easier storage of the derivatives of the basis function w.r.t. the
+             parametric coordinates, the location where to store the Cartesian
+             derivatives of the basis functions, and the metric terms in this
+             integration point. */
+          const su2double *derParam    = derBasisElemTrans + ii;
+          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
+                                       + i*nDim*nDim;
+                su2double *derCar      = gradSolInt + ii;
 
-            /* Easier storage of the derivatives of the basis function w.r.t. the
-               parametric coordinates, the location where to store the Cartesian
-               derivatives of the basis functions, and the metric terms in this
-               integration point. */
-            const su2double *derParam    = derBasisElemTrans + ii;
-            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
-                                         + i*nDim*nDim;
-                  su2double *derCar      = gradSolInt + ii;
-
-            /*--- Loop over the dimensions to compute the Cartesian derivatives
-                  of the basis functions. ---*/
-            for(unsigned short k=0; k<nDim; ++k) {
-              derCar[k] = 0.0;
-              for(unsigned short l=0; l<nDim; ++l)
-                derCar[k] += derParam[l]*metricTerms[k+l*nDim];
-            }
+          /*--- Loop over the dimensions to compute the Cartesian derivatives
+                of the basis functions. ---*/
+          for(unsigned short k=0; k<nDim; ++k) {
+            derCar[k] = 0.0;
+            for(unsigned short l=0; l<nDim; ++l)
+              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
           }
         }
-
-        /* Set the pointer where to store the current residual and update the
-           counter indResFaces. */
-        su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
-        indResFaces        += nDOFsElem1;
-
-        config->Tick(&tick1);
-        /* Call the general function to carry out the matrix product to compute
-           the residual for side 1. Note that the symmetrizing residual should not
-           be negated, because two minus signs enter the formulation for side 1,
-           which cancel each other. */
-        DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
-        config->Tock(tick, "ER_1_6_1", 5);
       }
-      config->Tock(tick, "ER_1_6", 4);
+
+      /* Set the pointer where to store the current residual and update the
+         counter indResFaces. */
+      su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
+      indResFaces        += nDOFsElem1;
+
+      config->Tick(&tick1);
+      /* Call the general function to carry out the matrix product to compute
+         the residual for side 1. Note that the symmetrizing residual should not
+         be negated, because two minus signs enter the formulation for side 1,
+         which cancel each other. */
+      DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
+      config->Tock(tick, "ER_1_6_1", 5);
     }
+    config->Tock(tick, "ER_1_6", 4);
   }
 
   /*--------------------------------------------------------------------------*/
