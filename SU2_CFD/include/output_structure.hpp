@@ -287,7 +287,7 @@ public:
    * \param[in] solution - Flow, adjoint or linearized solution.
    * \param[in] val_nZone - iZone index.
    */
-  void LoadLocalData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
   
   /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
