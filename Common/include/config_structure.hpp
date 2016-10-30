@@ -717,11 +717,9 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-<<<<<<< HEAD
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
-=======
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
@@ -732,7 +730,6 @@ private:
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
->>>>>>> su2code/master
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
