@@ -1,10 +1,21 @@
 /*!
  * \file numerics_template.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \author F. Palacios
+ * \version 4.3.0 "Cardinal"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,21 +42,21 @@ CConvective_Template::CConvective_Template(unsigned short val_nDim, unsigned sho
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  Diff_U = new double [nVar];
-  Velocity_i = new double [nDim];
-  Velocity_j = new double [nDim];
-  RoeVelocity = new double [nDim];
-  delta_vel  = new double [nDim];
-  delta_wave = new double [nVar];
-  ProjFlux_i = new double [nVar];
-  ProjFlux_j = new double [nVar];
-  Lambda = new double [nVar];
-  Epsilon = new double [nVar];
-  P_Tensor = new double* [nVar];
-  invP_Tensor = new double* [nVar];
+  Diff_U = new su2double [nVar];
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+  RoeVelocity = new su2double [nDim];
+  delta_vel  = new su2double [nDim];
+  delta_wave = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
+  Lambda = new su2double [nVar];
+  Epsilon = new su2double [nVar];
+  P_Tensor = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = new double [nVar];
-    invP_Tensor[iVar] = new double [nVar];
+    P_Tensor[iVar] = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
   }
 }
 
@@ -70,7 +81,7 @@ CConvective_Template::~CConvective_Template(void) {
   delete [] invP_Tensor;
 }
 
-void CConvective_Template::ComputeResidual(double *val_residual, double **val_Jacobian_i, double **val_Jacobian_j, CConfig *config) {
+void CConvective_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   Area = 0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -105,7 +116,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   Pressure_j = (SoundSpeed_j * SoundSpeed_j * Density_j) / Gamma;
   Enthalpy_j = (U_j[nDim+1] + Pressure_j) / Density_j;
   
-  /*--- Promediate Roe variables iPoint and jPoint ---*/
+  /*--- Mean Roe variables iPoint and jPoint ---*/
   R = sqrt(Density_j/Density_i);
   RoeDensity = R*Density_i;
   sq_vel = 0;
@@ -135,7 +146,7 @@ void CConvective_Template::ComputeResidual(double *val_residual, double **val_Ja
   /*--- Flow eigenvalues and Entropy correctors ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Lambda[iDim] = ProjVelocity;
-    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,ProjVelocity_j-Lambda[iDim]));
+    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
   }
   Lambda[nVar-2]  = ProjVelocity + RoeSoundSpeed;
   Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
@@ -218,10 +229,10 @@ CSource_Template::~CSource_Template(void) {
   
 }
 
-void CSource_Template::ComputeResidual(double *val_residual, double **val_Jacobian_i, CConfig *config) {}
+void CSource_Template::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {}
 
 CViscous_Template::CViscous_Template(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CViscous_Template::~CViscous_Template(void) { }
 
-void CViscous_Template::ComputeResidual(double *val_residual, double **Jacobian_i, double **Jacobian_j, CConfig *config) { }
+void CViscous_Template::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) { }

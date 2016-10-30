@@ -1,23 +1,35 @@
+#!/usr/bin/env python
+
 ## \file direct.py
 #  \brief python package for running direct solutions
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 4.3.0 "Cardinal"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -26,7 +38,6 @@
 import os, sys, shutil, copy
 
 from .. import io  as su2io
-from decompose import decompose as su2decomp
 from merge     import merge     as su2merge
 from interface import CFD       as SU2_CFD
 
@@ -43,7 +54,6 @@ def direct ( config ):
             SU2.run.merge()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             Does not rename restart filename to solution filename
             Adds 'direct' suffix to convergence filename
                         
@@ -54,7 +64,6 @@ def direct ( config ):
                 FILES.DIRECT
                 
         Updates:
-            config.DECOMPOSED
             config.MATH_PROBLEM
             
         Executes in:
@@ -64,18 +73,22 @@ def direct ( config ):
     # local copy
     konfig = copy.deepcopy(config)
 
-    # decompose
-    su2decomp(konfig)
-    
     # setup direct problem
     konfig['MATH_PROBLEM']  = 'DIRECT'
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_direct'    
     
+    direct_diff = konfig.get('DIRECT_DIFF','NO') == "YES"
+
     # Run Solution
     SU2_CFD(konfig)
     
+    # multizone cases
+    multizone_cases = su2io.get_multizone(konfig)
+
     # merge
-    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME'] 
+    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
+    if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
+        konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
     su2merge(konfig)
     
     # filenames
@@ -92,8 +105,7 @@ def direct ( config ):
     aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
     
     # update super config
-    config.update({ 'DECOMPOSED'   : konfig['DECOMPOSED']   ,
-                    'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
+    config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
                     
     # info out
     info = su2io.State()

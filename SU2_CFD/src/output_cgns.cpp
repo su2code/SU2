@@ -1,10 +1,21 @@
 /*!
  * \file output_cgns.cpp
- * \brief Main subroutines for output solver information.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \brief Main subroutines for output solver information
+ * \author T. Economon, M. Colonno
+ * \version 4.3.0 "Cardinal"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +38,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 #ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
-	int cgns_file,cgns_coord,element_dims,physical_dims,cgns_err;
+	int cgns_file, cgns_coord, element_dims, physical_dims, cgns_err;
 	unsigned long iExtIter = config->GetExtIter();
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
@@ -37,13 +48,6 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
   
-#ifdef HAVE_MPI
-	int nProcessor;
-  /*--- Remove the domain number from the CGNS filename ---*/
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-	if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
-  
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
   
@@ -52,10 +56,6 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -69,7 +69,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	if (!wrote_base_file) {
     
 		/*--- Write base file ---*/
-		cgns_err = cg_open((char *)base_file.c_str(),CG_MODE_MODIFY,&cgns_file);
+		cgns_err = cg_open((char *)base_file.c_str(), CG_MODE_MODIFY, &cgns_file);
 		if (cgns_err) cg_error_print();
     
 		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
@@ -79,19 +79,19 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		isize[1][0] = (cgsize_t)nGlobal_Elem;				// cell size
 		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
     
-    cgns_err = cg_goto(cgns_file,cgns_base,"Zone_t",cgns_zone,"end");
+    cgns_err = cg_goto(cgns_file, cgns_base,"Zone_t", cgns_zone,"end");
 		if (cgns_err) cg_error_print();
 //    
-//    cgns_err = cg_goto(cgns_file,cgns_base,cgns_zone,"end");
+//    cgns_err = cg_goto(cgns_file, cgns_base, cgns_zone,"end");
 //		if (cgns_err) cg_error_print();
     
 		/*--- write CGNS node coordinates ---*/
-		cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"x",Coords[0],&cgns_coord);
+		cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"x", Coords[0], &cgns_coord);
 		if (cgns_err) cg_error_print();
-		cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"y",Coords[1],&cgns_coord);
+		cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"y", Coords[1], &cgns_coord);
 		if (cgns_err) cg_error_print();
-		if (geometry->GetnDim() == 3){
-			cgns_err = cg_coord_write(cgns_file,cgns_base,cgns_zone,RealDouble,"z",Coords[2],&cgns_coord);
+		if (geometry->GetnDim() == 3) {
+			cgns_err = cg_coord_write(cgns_file, cgns_base, cgns_zone, RealDouble,"z", Coords[2], &cgns_coord);
 			if (cgns_err) cg_error_print();
 		}
     
@@ -105,13 +105,13 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 	/*--- Set up results file for this time step if necessary ---*/
 	if (unsteady) {
     
-		cgns_err = cg_open((char *)results_file.str().c_str(),CG_MODE_WRITE,&cgns_file);
+		cgns_err = cg_open((char *)results_file.str().c_str(), CG_MODE_WRITE, &cgns_file);
 
-		element_dims = geometry->GetnDim();		// Currently (release 3.2.1 "eagle") only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
 
-    /*--- write CGNS base data (one base assumed as of version 3.2.1 "eagle") ---*/
-		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base_results);
+    /*--- write CGNS base data (one base assumed currently) ---*/
+		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base_results);
 		if (cgns_err) cg_error_print();
 
 		isize[0][0] = (cgsize_t)geometry->GetGlobal_nPointDomain();				// vertex size
@@ -119,22 +119,22 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
 
 		/*--- write CGNS zone data ---*/
-		cgns_err = cg_zone_write(cgns_file,cgns_base_results,"SU2 Zone",isize[0],Unstructured,&cgns_zone_results);
+		cgns_err = cg_zone_write(cgns_file, cgns_base_results,"SU2 Zone", isize[0],Unstructured, &cgns_zone_results);
 		if (cgns_err) cg_error_print();
 
-		cgns_err = cg_goto(cgns_file,cgns_base_results,"Zone_t",cgns_zone_results,"end");
+		cgns_err = cg_goto(cgns_file, cgns_base_results,"Zone_t", cgns_zone_results,"end");
 		if (cgns_err) cg_error_print();
 
     /*--- Write CGNS node coordinates, if appliciable ---*/
 		if (config->GetGrid_Movement()) {
       
 			/*--- write CGNS node coordinates ---*/
-			cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"x",Coords[0],&cgns_coord);
+			cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, RealDouble,"x", Coords[0], &cgns_coord);
 			if (cgns_err) cg_error_print();
-			cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"y",Coords[1],&cgns_coord);
+			cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, RealDouble,"y", Coords[1], &cgns_coord);
 			if (cgns_err) cg_error_print();
-			if (geometry->GetnDim() == 3){
-				cgns_err = cg_coord_write(cgns_file,cgns_base_results,cgns_zone_results,RealDouble,"z",Coords[2],&cgns_coord);
+			if (geometry->GetnDim() == 3) {
+				cgns_err = cg_coord_write(cgns_file, cgns_base_results, cgns_zone_results, RealDouble,"z", Coords[2], &cgns_coord);
 				if (cgns_err) cg_error_print();
 			}
 		}
@@ -150,7 +150,7 @@ void COutput::SetCGNS_Coordinates(CConfig *config, CGeometry *geometry, unsigned
 		if (nGlobal_Tetr > 0) cgns_err = cg_link_write("Tetrahedral Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Tetrahedral Elements");
 		if (nGlobal_Hexa > 0) cgns_err = cg_link_write("Hexahedral Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Hexahedral Elements");
 		if (nGlobal_Pyra > 0) cgns_err = cg_link_write("Pyramid Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Pyramid Elements");
-		if (nGlobal_Wedg > 0) cgns_err = cg_link_write("Wedge Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Wedge Elements");
+		if (nGlobal_Pris > 0) cgns_err = cg_link_write("Prism Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Prism Elements");
 		if (nGlobal_Line > 0) cgns_err = cg_link_write("Line Elements",(char *)base_file.c_str(),"/SU2 Base/SU2 Zone/Line Elements");
 		if (cgns_err) cg_error_print();
 
@@ -176,23 +176,16 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 #ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
-	int cgns_file,element_dims,physical_dims,cgns_err;
+	int cgns_file, element_dims, physical_dims, cgns_err;
 	int cgns_section;
 	unsigned long iExtIter = config->GetExtIter();
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
 	bool unsteady = config->GetUnsteady_Simulation();
-	cgsize_t isize[3][1], elem_start, elem_end, N;
+	cgsize_t isize[3][1], elem_start, elem_end;
   
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
-  
-#ifdef HAVE_MPI
-  /*--- Remove the domain number from the CGNS filename ---*/
-  int nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
   
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
@@ -202,10 +195,6 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -219,25 +208,25 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 	if (!wrote_base_file) {
     
     /*--- Write base file ---*/
-		cgns_err = cg_open((char *)base_file.c_str(),CG_MODE_WRITE,&cgns_file);
+		cgns_err = cg_open((char *)base_file.c_str(), CG_MODE_WRITE, &cgns_file);
 		if (cgns_err) cg_error_print();
     
-		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
+		element_dims = geometry->GetnDim();		// Currently only all-2D or all-3D zones permitted
 		physical_dims = element_dims;
     
-		/*--- write CGNS base data (one base assumed as of version 3.2.1 "eagle") ---*/
-		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
+		/*--- write CGNS base data (one base assumed currently) ---*/
+		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 		if (cgns_err) cg_error_print();
     
 		/*--- write CGNS descriptor data ---*/
-		cgns_err = cg_goto(cgns_file,cgns_base,"end");
+		cgns_err = cg_goto(cgns_file, cgns_base,"end");
 		if (cgns_err) cg_error_print();
     
 		cgns_err = cg_equationset_write(physical_dims);
 		if (cgns_err) cg_error_print();
     
 		/*--- Write governing equations to CGNS file ---*/
-		cgns_err = cg_goto(cgns_file,cgns_base,"FlowEquationSet_t",1,"end");
+		cgns_err = cg_goto(cgns_file, cgns_base,"FlowEquationSet_t",1,"end");
 		if (cgns_err) cg_error_print();
     switch (config->GetKind_Solver()) {
       case EULER:
@@ -251,11 +240,11 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
     }
     if (cgns_err) cg_error_print();
     
-		if (unsteady) cgns_err = cg_simulation_type_write(cgns_file,cgns_base,TimeAccurate);
-		else cgns_err = cg_simulation_type_write(cgns_file,cgns_base,NonTimeAccurate);
+		if (unsteady) cgns_err = cg_simulation_type_write(cgns_file, cgns_base, TimeAccurate);
+		else cgns_err = cg_simulation_type_write(cgns_file, cgns_base, NonTimeAccurate);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_descriptor_write("Solver Information","SU2 version 3.2.1 \"eagle\", Stanford University Aerospace Design Lab");
+		cgns_err = cg_descriptor_write("Solver Information","SU2");
 		if (cgns_err) cg_error_print();
 		
 		isize[0][0] = (cgsize_t)geometry->GetGlobal_nPointDomain(); //;				// vertex size
@@ -263,10 +252,10 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
     
 		/*--- write CGNS zone data ---*/
-		cgns_err = cg_zone_write(cgns_file,cgns_base,"SU2 Zone",isize[0],Unstructured,&cgns_zone);
+		cgns_err = cg_zone_write(cgns_file, cgns_base,"SU2 Zone", isize[0],Unstructured, &cgns_zone);
 		if (cgns_err) cg_error_print();
 
-    cgns_err = cg_goto(cgns_file,cgns_base,"Zone_t",cgns_zone,"end");
+    cgns_err = cg_goto(cgns_file, cgns_base,"Zone_t", cgns_zone,"end");
 		if (cgns_err) cg_error_print();
     
     		/*--- Reference Note: CGNS element type list:
@@ -279,40 +268,39 @@ void COutput::SetCGNS_Connectivity(CConfig *config, CGeometry *geometry, unsigne
 		
     if (nGlobal_Tria > 0) {
 			elem_start = 1; elem_end = (int)nGlobal_Tria;
-      N = (int)nGlobal_Tria*N_POINTS_TRIANGLE;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,
-                                  "Triangle Elements",TRI_3,elem_start,elem_end,
-                                  0,(cgsize_t *)Conn_Tria,&cgns_section);
+			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,
+                                  "Triangle Elements", TRI_3, elem_start, elem_end,
+                                  0,(cgsize_t *)Conn_Tria, &cgns_section);
     }
 		if (nGlobal_Quad > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Quad; N = (int)nGlobal_Quad*N_POINTS_QUADRILATERAL;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Quadrilateral Elements",QUAD_4,
-                                  elem_start,elem_end,0,(cgsize_t *)Conn_Quad,&cgns_section);
+			elem_start = 1; elem_end = (int)nGlobal_Quad;
+			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Quadrilateral Elements", QUAD_4,
+                                  elem_start, elem_end,0,(cgsize_t *)Conn_Quad, &cgns_section);
 		}
 		if (nGlobal_Tetr > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Tetr; N = (int)nGlobal_Tetr*N_POINTS_TETRAHEDRON;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Tetrahedral Elements",TETRA_4,
-                                  elem_start,elem_end,0,(cgsize_t *)Conn_Tetr,&cgns_section);
+			elem_start = 1; elem_end = (int)nGlobal_Tetr;
+			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Tetrahedral Elements", TETRA_4,
+                                  elem_start, elem_end,0,(cgsize_t *)Conn_Tetr, &cgns_section);
 		}
 		if (nGlobal_Hexa > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Hexa; N = (int)nGlobal_Hexa*N_POINTS_HEXAHEDRON;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Hexahedral Elements",HEXA_8,
-                                  elem_start,elem_end,0,(cgsize_t *)Conn_Hexa,&cgns_section);
+			elem_start = 1; elem_end = (int)nGlobal_Hexa;
+			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Hexahedral Elements", HEXA_8,
+                                  elem_start, elem_end,0,(cgsize_t *)Conn_Hexa, &cgns_section);
 		}
 		if (nGlobal_Pyra > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Pyra; N = (int)nGlobal_Pyra*N_POINTS_PYRAMID;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Pyramid Elements",PYRA_5,
-                                  elem_start,elem_end,0,(cgsize_t *)Conn_Pyra,&cgns_section);
+			elem_start = 1; elem_end = (int)nGlobal_Pyra;
+			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Pyramid Elements", PYRA_5,
+                                  elem_start, elem_end,0,(cgsize_t *)Conn_Pyra, &cgns_section);
 		}
-		if (nGlobal_Wedg > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Wedg; N = (int)nGlobal_Wedg*N_POINTS_WEDGE;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Wedge Elements",PENTA_6,
-                                  elem_start,elem_end,0,(cgsize_t *)Conn_Wedg,&cgns_section);
+		if (nGlobal_Pris > 0) {
+			elem_start = 1; elem_end = (int)nGlobal_Pris;
+			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Prism Elements", PENTA_6,
+                                  elem_start, elem_end,0,(cgsize_t *)Conn_Pris, &cgns_section);
 		}
 		if (nGlobal_Line > 0) {
-			elem_start = 1; elem_end = (int)nGlobal_Line; N = (int)nGlobal_Line*N_POINTS_LINE;
-			cgns_err = cg_section_write(cgns_file,cgns_base,cgns_zone,"Line Elements",BAR_2,
-                                  elem_start,elem_end,0,(cgsize_t *)Conn_Line,&cgns_section);
+			elem_start = 1; elem_end = (int)nGlobal_Line;
+			cgns_err = cg_section_write(cgns_file, cgns_base, cgns_zone,"Line Elements", BAR_2,
+                                  elem_start, elem_end,0,(cgsize_t *)Conn_Line, &cgns_section);
 		}
 		if (cgns_err) cg_error_print();
     
@@ -335,24 +323,17 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 #ifdef HAVE_CGNS
   
 	/*--- local CGNS variables ---*/
-	int cgns_file,cgns_flow,cgns_field,element_dims,physical_dims,cgns_err;
+	int cgns_file, cgns_flow, cgns_field, cgns_err;
+//  int element_dims;
 	unsigned long jVar, iVar, iExtIter = config->GetExtIter();
 	string base_file, buffer, elements_name;
 	stringstream name, results_file;
 	bool unsteady = config->GetUnsteady_Simulation();
-	cgsize_t isize[3][1];
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   
 	/*--- Create CGNS base file name ---*/
 	base_file = config->GetFlow_FileName();
-  
-#ifdef HAVE_MPI
-  int nProcessor;
-  /*--- Remove the domain number from the CGNS filename ---*/
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  if (nProcessor > 1) base_file.erase (base_file.end()-2, base_file.end());
-#endif
   
 	/*--- Add CGNS extension. ---*/
 	base_file = base_file.append(".cgns");
@@ -362,10 +343,6 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
     
 		buffer = config->GetFlow_FileName();
     
-#ifdef HAVE_MPI
-    /*--- Remove the domain number from the CGNS filename ---*/
-    if (nProcessor > 1) buffer.erase (buffer.end()-2, buffer.end());
-#endif
 		results_file.str(string()); results_file << buffer;
 		if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			results_file << "_0000" << iExtIter;
 		if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		results_file << "_000" << iExtIter;
@@ -374,30 +351,24 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 		if ((int)iExtIter >= 10000)							results_file << iExtIter;
 		results_file << ".cgns";
 	}
-		
-		isize[0][0] = (cgsize_t)nGlobal_Poin;				// vertex size
-		isize[1][0] = (cgsize_t)nGlobal_Elem;				// cell size
-		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
-    
     
 		if (!unsteady) {
       
       /*--- Write base file ---*/
-      cgns_err = cg_open((char *)base_file.c_str(),CG_MODE_MODIFY,&cgns_file);
+      cgns_err = cg_open((char *)base_file.c_str(), CG_MODE_MODIFY, &cgns_file);
       if (cgns_err) cg_error_print();
       
-      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
-      physical_dims = element_dims;
+//      element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
       
       /*--- write CGNS descriptor data ---*/
-      cgns_err = cg_goto(cgns_file,cgns_base,"end");
+      cgns_err = cg_goto(cgns_file, cgns_base,"end");
       if (cgns_err) cg_error_print();
       
 			/*--- Create a CGNS solution node ---*/
-			cgns_err = cg_sol_write(cgns_file,cgns_base,cgns_zone,"Solution",Vertex,&cgns_flow);
+			cgns_err = cg_sol_write(cgns_file, cgns_base, cgns_zone,"Solution", Vertex, &cgns_flow);
 			if (cgns_err) cg_error_print();
       
-			cgns_err = cg_goto(cgns_file,cgns_base,"Zone_t",cgns_zone,"FlowSolution_t",cgns_flow,"end");
+			cgns_err = cg_goto(cgns_file, cgns_base,"Zone_t", cgns_zone,"FlowSolution_t", cgns_flow,"end");
 			if (cgns_err) cg_error_print();
       
 			cgns_err = cg_gridlocation_write(Vertex);
@@ -410,31 +381,26 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	
 	/*--- Set up results file for this time step if necessary ---*/
     
-		cgns_err = cg_open((char *)results_file.str().c_str(),CG_MODE_MODIFY,&cgns_file);
+		cgns_err = cg_open((char *)results_file.str().c_str(), CG_MODE_MODIFY, &cgns_file);
     
-		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
-		physical_dims = element_dims;
-    
-//		/*--- write CGNS base data (one base assumed as of version 3.2.1 "eagle") ---*/
-//		cgns_err = cg_base_write(cgns_file,"SU2 Base",element_dims,physical_dims,&cgns_base);
+//		element_dims = geometry->GetnDim();		// Currently (release 2.0) only all-2D or all-3D zones permitted
+//    
+//		/*--- write CGNS base data (one base assumed currently) ---*/
+//		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 //		if (cgns_err) cg_error_print();
-    
-		isize[0][0] = (cgsize_t)nGlobal_Poin;				// vertex size
-		isize[1][0] = (cgsize_t)nGlobal_Elem;				// cell size
-		isize[2][0] = 0;						// boundary vertex size (zero if elements not sorted)
     
 //		/*--- write CGNS zone data ---*/
-//		cgns_err = cg_zone_write(cgns_file,cgns_base,"SU2 Zone",isize[0],Unstructured,&cgns_zone);
+//		cgns_err = cg_zone_write(cgns_file, cgns_base,"SU2 Zone", isize[0],Unstructured, &cgns_zone);
 //		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_goto(cgns_file,cgns_base_results,"Zone_t",cgns_zone_results,"end");
+		cgns_err = cg_goto(cgns_file, cgns_base_results,"Zone_t", cgns_zone_results,"end");
 		if (cgns_err) cg_error_print();
     
 		/*--- Write a CGNS solution node for this time step ---*/
-		cgns_err = cg_sol_write(cgns_file,cgns_base_results,cgns_zone_results,"Solution",Vertex,&cgns_flow);
+		cgns_err = cg_sol_write(cgns_file, cgns_base_results, cgns_zone_results,"Solution", Vertex, &cgns_flow);
 		if (cgns_err) cg_error_print();
     
-		cgns_err = cg_goto(cgns_file,cgns_base_results,"Zone_t",cgns_zone_results,"FlowSolution_t",cgns_flow,"end");
+		cgns_err = cg_goto(cgns_file, cgns_base_results,"Zone_t", cgns_zone_results,"FlowSolution_t", cgns_flow,"end");
 		if (cgns_err) cg_error_print();
     
 		cgns_err = cg_gridlocation_write(Vertex);
@@ -446,7 +412,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 //	else {
 //    
 //		/*--- Open CGNS file for soltuion writing ---*/
-//		cgns_err = cg_open((char *)base_file.c_str(),CG_MODE_MODIFY,&cgns_file);
+//		cgns_err = cg_open((char *)base_file.c_str(), CG_MODE_MODIFY, &cgns_file);
 //		cgns_base = 1; cgns_zone = 1; cgns_flow = 1;	// fix for multiple zones
 //    
 //	}
@@ -459,36 +425,36 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 	/*--- Write conservative variables to CGNS file ---*/
 	for (iVar = 0; iVar < nVar_Consv; iVar++) {
 		name.str(string()); name << "Conservative Variable " << iVar+1;
-		cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field);
+		cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,(char *)name.str().c_str(), Data[iVar], &cgns_field);
 		if (cgns_err) cg_error_print();
 	}
   
   /*--- Write primitive variable residuals to CGNS file ---*/
-  if (config->GetWrt_Limiters()){
+  if (config->GetWrt_Limiters()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Primitive Limiter " << jVar+1;
-      cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;
+      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,(char *)name.str().c_str(), Data[iVar], &cgns_field); iVar++;
       if (cgns_err) cg_error_print();
     }
   }
   
 	/*--- Write conservative variable residuals to CGNS file ---*/
-  if (config->GetWrt_Residuals()){
+  if (config->GetWrt_Residuals()) {
     for (jVar = 0; jVar < nVar_Consv; jVar++) {
       name.str(string()); name << "Conservative Residual " << jVar+1;
-      cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,(char *)name.str().c_str(),Data[iVar],&cgns_field); iVar++;
+      cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,(char *)name.str().c_str(), Data[iVar], &cgns_field); iVar++;
       if (cgns_err) cg_error_print();
     }
   }
   
 	/*--- Write grid velocities to CGNS file, if applicable ---*/
 	if (config->GetGrid_Movement()) {
-		cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Grid Velocity X",Data[iVar],&cgns_field); iVar++;
+		cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Grid Velocity X", Data[iVar], &cgns_field); iVar++;
 		if (cgns_err) cg_error_print();
-		cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Grid Velocity Y",Data[iVar],&cgns_field); iVar++;
+		cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Grid Velocity Y", Data[iVar], &cgns_field); iVar++;
 		if (cgns_err) cg_error_print();
 		if (geometry->GetnDim() == 3) {
-			cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Grid Velocity Z",Data[iVar],&cgns_field); iVar++;
+			cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Grid Velocity Z", Data[iVar], &cgns_field); iVar++;
 			if (cgns_err) cg_error_print();
 		}
 	}
@@ -498,41 +464,41 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
         
         /*--- Write pressure and Mach data to CGNS file ---*/
       case EULER:
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Pressure",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Pressure", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Mach",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Mach", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
         break;
         
         /*--- Write temperature and laminar viscosity to CGNS file, if applicable ---*/
       case NAVIER_STOKES:
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Pressure",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Pressure", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Mach",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Mach", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Temperature",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Temperature", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Viscosity",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Viscosity", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
         break;
         
         /*--- Write eddy viscosity to CGNS file, if applicable ---*/
       case RANS:
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Pressure",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Pressure", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Mach",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Mach", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Temperature",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Temperature", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Viscosity",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Viscosity", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
-        cgns_err = cg_field_write(cgns_file,cgns_base,cgns_zone,cgns_flow,RealDouble,"Eddy Viscosity",Data[iVar],&cgns_field); iVar++;
+        cgns_err = cg_field_write(cgns_file, cgns_base, cgns_zone, cgns_flow, RealDouble,"Eddy Viscosity", Data[iVar], &cgns_field); iVar++;
         if (cgns_err) cg_error_print();
         break;
         
       default:
         cout << "Error: Unrecognized equation type \n"; 
-        exit(0); break;
+        exit(EXIT_FAILURE); break;
 		}
 	}	
   

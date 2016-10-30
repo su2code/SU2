@@ -1,10 +1,21 @@
 /*!
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.3.0 "Cardinal"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +53,7 @@ inline unsigned long CGeometry::GetGlobal_nElemTetr(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemHexa(void) { return 0; }
 
-inline unsigned long CGeometry::GetGlobal_nElemWedg(void) { return 0; }
+inline unsigned long CGeometry::GetGlobal_nElemPris(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemPyra(void) { return 0; }
 
@@ -56,7 +67,7 @@ inline unsigned long CGeometry::GetnElemTetr(void) { return 0; }
 
 inline unsigned long CGeometry::GetnElemHexa(void) { return 0; }
 
-inline unsigned long CGeometry::GetnElemWedg(void) { return 0; }
+inline unsigned long CGeometry::GetnElemPris(void) { return 0; }
 
 inline unsigned long CGeometry::GetnElemPyra(void) { return 0; }
 
@@ -66,9 +77,13 @@ inline void CGeometry::Check_BoundElem_Orientation(CConfig *config) { }
 
 inline void CGeometry::SetColorGrid(CConfig *config) { }
 
+inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
+
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
-inline void CGeometry::SetRotationalVelocity(CConfig *config) { }
+inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) { }
+
+inline void CGeometry::SetTranslationalVelocity(CConfig *config) { }
 
 inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
@@ -78,11 +93,15 @@ inline void CGeometry::Set_MPI_Coord(CConfig *config) { }
 
 inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
 
+inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
+
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
 
 inline void CGeometry::SetSendReceive(CConfig *config) { }
+
+inline void CGeometry::SetBoundaries(CConfig *config) { }
 
 inline void CGeometry::ComputeWall_Distance(CConfig *config) { }
 
@@ -92,7 +111,7 @@ inline void CGeometry::SetPoint_Connectivity(void) { }
 
 inline void CGeometry::SetRCM_Ordering(CConfig *config) { }
 
-inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, double val_smooth_coeff, CConfig *config) { }
+inline void CGeometry::SetCoord_Smoothing (unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) { }
 
 inline void CGeometry::SetCoord(CGeometry *geometry) { }
 
@@ -111,8 +130,6 @@ inline unsigned short CGeometry::GetnDim(void) { return nDim; }
 inline unsigned short CGeometry::GetnZone(void) { return nZone; }
 
 inline unsigned short CGeometry::GetnMarker(void) { return nMarker; }
-
-inline bool CGeometry::GetFinestMGLevel(void) { return FinestMGLevel; }
 
 inline string CGeometry::GetMarker_Tag(unsigned short val_marker) { return Tag_to_Marker[val_marker]; }
 
@@ -148,7 +165,7 @@ inline void CGeometry::SetVertex(CConfig *config) { }
 
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
-inline void CGeometry::SetCG(void) { }
+inline void CGeometry::SetCoord_CG(void) { }
 
 inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) { }
 
@@ -168,29 +185,27 @@ inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short act
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
 
-inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE]) { }
-
 inline void CGeometry::SetTecPlot(char config_filename[MAX_STRING_SIZE], bool new_file) { }
 
 inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename) { }
 
 inline void CGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string val_mesh_out_filename) { }
 
-inline void CGeometry::SetMeshFile(CConfig *config, string val_mesh_out_filename, string val_mesh_in_filename) { }
-
 inline void CGeometry::SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) { }
 
-inline double CGeometry::Compute_MaxThickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline void CGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) { }
 
-inline double CGeometry::Compute_AoA(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+
+inline su2double CGeometry::Compute_AoA(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
   
-inline double CGeometry::Compute_Chord(double *Plane_P0, double *Plane_Normal, unsigned short iSection, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline double CGeometry::Compute_Thickness(double *Plane_P0, double *Plane_Normal, unsigned short iSection, double Location, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline double CGeometry::Compute_Area(double *Plane_P0, double *Plane_Normal, unsigned short iSection, CConfig *config, vector<double> &Xcoord_Airfoil, vector<double> &Ycoord_Airfoil, vector<double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline double CGeometry::Compute_Volume(CConfig *config, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_Volume(CConfig *config, bool original_surface) { return 0; }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
@@ -200,7 +215,14 @@ inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeo
 
 inline void CMultiGridGeometry::SetPoint_Connectivity(void) { CGeometry::SetPoint_Connectivity(); }
 
-inline long CPhysicalGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return Global_to_Local_Point[val_ipoint]; }
+inline long CPhysicalGeometry::GetGlobal_to_Local_Point(long val_ipoint) {
+  map<long, long>::const_iterator MI = Global_to_Local_Point.find(val_ipoint);
+  if (MI != Global_to_Local_Point.end()) {
+    return Global_to_Local_Point[val_ipoint];
+  } else {
+    return -1;
+  }
+}
 
 inline unsigned short CPhysicalGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return Global_to_Local_Marker[val_imarker]; }
 
@@ -220,7 +242,7 @@ inline unsigned long CPhysicalGeometry::GetGlobal_nElemTetr(void) { return Globa
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemHexa(void) { return Global_nelem_hexa; }
 
-inline unsigned long CPhysicalGeometry::GetGlobal_nElemWedg(void) { return Global_nelem_wedge; }
+inline unsigned long CPhysicalGeometry::GetGlobal_nElemPris(void) { return Global_nelem_prism; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemPyra(void) { return Global_nelem_pyramid; }
 
@@ -234,35 +256,35 @@ inline unsigned long CPhysicalGeometry::GetnElemTetr(void) { return nelem_tetra;
 
 inline unsigned long CPhysicalGeometry::GetnElemHexa(void) { return nelem_hexa; }
 
-inline unsigned long CPhysicalGeometry::GetnElemWedg(void) { return nelem_wedge; }
+inline unsigned long CPhysicalGeometry::GetnElemPris(void) { return nelem_prism; }
 
 inline unsigned long CPhysicalGeometry::GetnElemPyra(void) { return nelem_pyramid; }
 
 inline void CGeometry::SetGeometryPlanes(CConfig *config) {}
 
-inline vector<double> CGeometry::GetGeometryPlanes() { return XCoordList; }
+inline vector<su2double> CGeometry::GetGeometryPlanes() { return XCoordList; }
 
-inline vector<double> CPhysicalGeometry::GetGeometryPlanes() { return XCoordList; }
+inline vector<su2double> CPhysicalGeometry::GetGeometryPlanes() { return XCoordList; }
 
-inline vector<double> CMultiGridGeometry::GetGeometryPlanes() { return XCoordList; }
+inline vector<su2double> CMultiGridGeometry::GetGeometryPlanes() { return XCoordList; }
 
-inline vector<vector<double> > CGeometry::GetXCoord() { return Xcoord_plane; }
+inline vector<vector<su2double> > CGeometry::GetXCoord() { return Xcoord_plane; }
 
-inline vector<vector<double> > CPhysicalGeometry::GetXCoord() { return Xcoord_plane; }
+inline vector<vector<su2double> > CPhysicalGeometry::GetXCoord() { return Xcoord_plane; }
 
-inline vector<vector<double> > CMultiGridGeometry::GetXCoord() { return Xcoord_plane; }
+inline vector<vector<su2double> > CMultiGridGeometry::GetXCoord() { return Xcoord_plane; }
 
-inline vector<vector<double> > CGeometry::GetYCoord() { return Ycoord_plane; }
+inline vector<vector<su2double> > CGeometry::GetYCoord() { return Ycoord_plane; }
 
-inline vector<vector<double> > CPhysicalGeometry::GetYCoord() { return Ycoord_plane; }
+inline vector<vector<su2double> > CPhysicalGeometry::GetYCoord() { return Ycoord_plane; }
 
-inline vector<vector<double> > CMultiGridGeometry::GetYCoord() { return Ycoord_plane; }
+inline vector<vector<su2double> > CMultiGridGeometry::GetYCoord() { return Ycoord_plane; }
 
-inline vector<vector<double> > CGeometry::GetZCoord() { return Zcoord_plane; }
+inline vector<vector<su2double> > CGeometry::GetZCoord() { return Zcoord_plane; }
 
-inline vector<vector<double> > CPhysicalGeometry::GetZCoord() { return Zcoord_plane; }
+inline vector<vector<su2double> > CPhysicalGeometry::GetZCoord() { return Zcoord_plane; }
 
-inline vector<vector<double> > CMultiGridGeometry::GetZCoord() { return Zcoord_plane; }
+inline vector<vector<su2double> > CMultiGridGeometry::GetZCoord() { return Zcoord_plane; }
 
 
 inline vector<vector<unsigned long> > CGeometry::GetPlanarPoints() { return Plane_points; }
@@ -271,3 +293,14 @@ inline vector<vector<unsigned long> > CPhysicalGeometry::GetPlanarPoints() { ret
 
 inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { return Plane_points; }
 
+inline void CGeometry::SetSensitivity(CConfig* config){}
+
+inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return 0.0;}
+
+inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim){return Sensitivity[iPoint*nDim+iDim];}
+
+inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){}
+
+inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){Sensitivity[iPoint*nDim+iDim] = val;}
+
+inline void CGeometry::Check_Periodicity(CConfig* config){}

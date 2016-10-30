@@ -1,23 +1,35 @@
+#!/usr/bin/env python
+
 ## \file projection.py
 #  \brief python package for running gradient projection
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 4.3.0 "Cardinal"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
@@ -27,7 +39,6 @@ import os, sys, shutil, copy
 
 from .. import io   as su2io
 from .. import util as su2util
-from decompose import decompose as su2decomp
 from interface import DOT as SU2_DOT
 
 
@@ -35,20 +46,20 @@ from interface import DOT as SU2_DOT
 #  Gradient Projection
 # ----------------------------------------------------------------------
 
-def projection( config, step = 1e-3 ):
-    """ info = SU2.run.projection(config,step=1e-3)
+def projection( config, state={}, step = 1e-3 ):
+    """ info = SU2.run.projection(config,state,step=1e-3)
         
         Runs an gradient projection with:
             SU2.run.decomp()
             SU2.run.DOT()
             
         Assumptions:
-            Redundant decomposition if config.DECOMPOSED == True
             Writes tecplot file of gradients
             Adds objective suffix to gradient plot filename
             
         Inputs:
             config - an SU2 config
+            state  - only required when using external custom DV
             step   - a float or list of floats for geometry sensitivity
                      finite difference step
             
@@ -57,7 +68,6 @@ def projection( config, step = 1e-3 ):
                 GRADIENTS.<config.OBJECTIVE_FUNCTION>
                 
         Updates:
-            config.DECOMPOSED
             config.MATH_PROBLEM
             
         Executes in:
@@ -65,13 +75,10 @@ def projection( config, step = 1e-3 ):
     """
     # local copy
     konfig = copy.deepcopy(config)
-    
-    # decompose
-    su2decomp(konfig)
-        
+            
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
-    n_DV          = len(Definition_DV['KIND'])
+    n_DV          = sum(Definition_DV['SIZE'])
     if isinstance(step,list):
         assert len(step) == n_DV , 'unexpected step vector length'
     else:
@@ -95,18 +102,45 @@ def projection( config, step = 1e-3 ):
     raw_gradients = su2io.read_gradients(grad_filename)
     os.remove(grad_filename)
     
+    info = su2io.State()
+     
+    if ('CUSTOM' in konfig.DV_KIND):
+        if ('OUTFLOW_GENERALIZED' in objective):
+            weight = 1.0
+            if (len(objective.split(','))>1):
+                obj = objective.split(',').index('OUTFLOW_GENERALIZED')
+                weight = float(konfig['OBJECTIVE_WEIGHT'].split(',')[obj])
+            import downstream_function # Must be defined in run folder
+            chaingrad = downstream_function.downstream_gradient(konfig,state,step)
+            n_dv = len(raw_gradients)
+            custom_dv=1
+            for idv in range(n_dv):
+                if (konfig.DV_KIND[idv] == 'CUSTOM'):
+                    raw_gradients[idv] = chaingrad[4+custom_dv]*weight
+                    custom_dv = custom_dv+1
+        else:
+            n_dv = len(raw_gradients)
+            custom_dv=1
+            for idv in range(n_dv):
+                if (konfig.DV_KIND[idv] == 'CUSTOM'):
+                    raw_gradients[idv] = 0.0
+                    custom_dv = custom_dv+1
+    
     # Write Gradients
     data_plot = su2util.ordered_bunch()
     data_plot['VARIABLE']     = range(len(raw_gradients)) 
     data_plot['GRADIENT']     = raw_gradients             
-    data_plot['FINDIFF_STEP'] = step                       
+    data_plot['FINDIFF_STEP'] = step
     su2util.write_plot(grad_plotname,output_format,data_plot)
 
     # gradient output dictionary
-    gradients = { objective : raw_gradients }
+    objective = objective.split(',')
+    if (len(objective)>1 ):
+        objective = ['COMBO']
+
+    gradients = { objective[0] : raw_gradients }
     
     # info out
-    info = su2io.State()
     info.GRADIENTS.update( gradients )
     
     return info

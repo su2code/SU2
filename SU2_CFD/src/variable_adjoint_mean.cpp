@@ -1,10 +1,21 @@
 /*!
  * \file variable_adjoint_mean.cpp
  * \brief Definition of the solution fields.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \author F. Palacios, T. Economon
+ * \version 4.3.0 "Cardinal"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +44,7 @@ CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
   
 }
 
-CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double val_psie, unsigned short val_nDim,
+CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim,
 																		 unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
@@ -51,28 +62,28 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	TS_Source = NULL;
   
 	/*--- Allocate residual structures ---*/
-  Res_TruncError = new double [nVar];
+  Res_TruncError = new su2double [nVar];
   
   for (iVar = 0; iVar < nVar; iVar++) {
 		Res_TruncError[iVar] = 0.0;
 	}
   
   /*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if (nMGSmooth > 0) {
-    Residual_Sum = new double [nVar];
-    Residual_Old = new double [nVar];
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
   }
 	
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
-		Undivided_Laplacian = new double [nVar];
+		Undivided_Laplacian = new su2double [nVar];
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
-		Limiter = new double [nVar];
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
+		Limiter = new su2double [nVar];
+		Solution_Max = new su2double [nVar];
+		Solution_Min = new su2double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Limiter[iVar] = 0.0;
 			Solution_Max[iVar] = 0.0;
@@ -122,28 +133,28 @@ CAdjEulerVariable::CAdjEulerVariable(double val_psirho, double *val_phi, double 
 	}
   
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
-	Grad_AuxVar = new double [nDim];
+	Grad_AuxVar = new su2double [nDim];
 	
 	/*--- Allocate and initialize projection vector for wall boundary condition ---*/
-	ForceProj_Vector = new double [nDim];
+	ForceProj_Vector = new su2double [nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		ForceProj_Vector[iDim] = 0.0;
   
   /*--- Allocate and initialize interior boundary jump vector for near field boundary condition ---*/
-	IntBoundary_Jump = new double [nVar];
+	IntBoundary_Jump = new su2double [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
   /*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
+		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
 			TS_Source[iVar] = 0.0;
 	}
 	
 }
 
-CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nDim,
+CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim,
                                      unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
@@ -158,28 +169,29 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nD
 	TS_Source = NULL;
   
 	/*--- Allocate residual structures ---*/
-  Res_TruncError = new double [nVar];
+  Res_TruncError = new su2double [nVar];
   
   for (iVar = 0; iVar < nVar; iVar++) {
 		Res_TruncError[iVar] = 0.0;
 	}
   
   /*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetMGLevels(); iMesh++)
+	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if (nMGSmooth > 0) {
-    Residual_Sum = new double [nVar];
-    Residual_Old = new double [nVar];
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
   }
   
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
-		Undivided_Laplacian = new double [nVar];
+		Undivided_Laplacian = new su2double [nVar];
+  
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
-		Limiter = new double [nVar];
-		Solution_Max = new double [nVar];
-		Solution_Min = new double [nVar];
+		Limiter = new su2double [nVar];
+		Solution_Max = new su2double [nVar];
+		Solution_Min = new su2double [nVar];
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Limiter[iVar] = 0.0;
 			Solution_Max[iVar] = 0.0;
@@ -195,8 +207,8 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nD
   
 	/*--- Allocate and initializate solution for dual time strategy ---*/
 	if (dual_time) {
-		Solution_time_n = new double [nVar];
-		Solution_time_n1 = new double [nVar];
+		Solution_time_n = new su2double [nVar];
+		Solution_time_n1 = new su2double [nVar];
     
 		for (iVar = 0; iVar < nVar; iVar++) {
 			Solution_time_n[iVar] = val_solution[iVar];
@@ -205,21 +217,21 @@ CAdjEulerVariable::CAdjEulerVariable(double *val_solution, unsigned short val_nD
 	}
   
   /*--- Allocate auxiliar vector for sensitivity computation ---*/
-	Grad_AuxVar = new double [nDim];
+	Grad_AuxVar = new su2double [nDim];
 	
 	/*--- Allocate and initializate projection vector for wall boundary condition ---*/
-	ForceProj_Vector = new double [nDim];
+	ForceProj_Vector = new su2double [nDim];
 	for (iDim = 0; iDim < nDim; iDim++)
 		ForceProj_Vector[iDim] = 0.0;
   
   /*--- Allocate and initializate interior boundary jump vector for near field boundary condition ---*/
-	IntBoundary_Jump = new double [nVar];
+	IntBoundary_Jump = new su2double [nVar];
 	for (iVar = 0; iVar < nVar; iVar++)
 		IntBoundary_Jump[iVar] = 0.0;
   
 	/*--- Allocate space for the time spectral source terms ---*/
 	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new double[nVar];
+		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
 			TS_Source[iVar] = 0.0;
 	}
@@ -236,11 +248,11 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
 	unsigned short iVar;
   bool check_dens = false, RightVol = true;
   
-  double adj_limit = config->GetAdjointLimit();
+  su2double adj_limit = config->GetAdjointLimit();
   
   check_dens = (fabs(Solution[0]) > adj_limit);
   
@@ -261,11 +273,11 @@ bool CAdjEulerVariable::SetPrimVar_Compressible(double SharpEdge_Distance, bool 
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
   bool check_press = false, RightVol = true;
   
-  double adj_limit = config->GetAdjointLimit();
+  su2double adj_limit = config->GetAdjointLimit();
   
   check_press = (fabs(Solution[0]) > adj_limit);
   
@@ -286,12 +298,12 @@ bool CAdjEulerVariable::SetPrimVar_Incompressible(double SharpEdge_Distance, boo
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_FreeSurface(double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
   bool check_press = false, RightVol = true;
   
-  double adj_limit = config->GetAdjointLimit();
-  double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
+  su2double adj_limit = config->GetAdjointLimit();
+  su2double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
   
   if (SharpEdge_Distance < dist_limit) {
     
@@ -316,12 +328,12 @@ bool CAdjEulerVariable::SetPrimVar_FreeSurface(double SharpEdge_Distance, bool c
 
 CAdjNSVariable::CAdjNSVariable(void) : CAdjEulerVariable() { }
 
-CAdjNSVariable::CAdjNSVariable(double *val_solution, unsigned short val_nDim,
+CAdjNSVariable::CAdjNSVariable(su2double *val_solution, unsigned short val_nDim,
                                unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
 }
 
-CAdjNSVariable::CAdjNSVariable(double val_psirho, double *val_phi, double val_psie,
+CAdjNSVariable::CAdjNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
                                unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_psirho, val_phi, val_psie, val_nDim, val_nvar, config) {
 
 }

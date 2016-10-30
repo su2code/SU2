@@ -2,24 +2,34 @@
 
 ## \file tools.py
 #  \brief file i/o functions
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 4.3.0 "Cardinal"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # -------------------------------------------------------------------
 #  Imports
@@ -194,8 +204,24 @@ def get_headerMap():
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
                  "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
+                 "FluxAvg_Pressure": "AVG_OUTLET_PRESSURE"     ,
+                 "FluxAvg_Density" : "FLUXAVG_OUTLET_DENSITY"  ,
+                 "FluxAvg_Velocity": "FLUXAVG_OUTLET_VELOCITY" ,
+                 "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
+                 "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
-                 "Time(min)"       : "TIME"         }
+                 "Time(min)"       : "TIME"                    ,
+                 "D(CLift)"        : "D_LIFT"                  ,
+                 "D(CDrag)"        : "D_DRAG"                  ,
+                 "D(CSideForce)"   : "D_SIDEFORCE"             ,
+                 "D(CMx)"          : "D_MOMENT_X"              ,
+                 "D(CMy)"          : "D_MOMENT_Y"              ,
+                 "D(CMz)"          : "D_MOMENT_Z"              ,
+                 "D(CFx)"          : "D_FORCE_X"               ,
+                 "D(CFy)"          : "D_FORCE_Y"               ,
+                 "D(CFz)"          : "D_FORCE_Z"               ,
+                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "ComboObj"        : "COMBO"}
     
     return map_dict
 
@@ -222,13 +248,18 @@ optnames_aero = [ "LIFT"                    ,
                   "TORQUE"                  ,
                   "THRUST"                  ,
                   "AVG_TOTAL_PRESSURE"      ,
+                  "AVG_OUTLET_PRESSURE"     ,
+                  "AVG_OUTLET_DENSITY"      ,
+                  "AVG_OUTLET_VELOCITY"     ,
                   "MASS_FLOW_RATE"          ,
+                  "OUTFLOW_GENERALIZED"     ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
-                  "MAXIMUM_HEATFLUX"        ]
+                  "MAXIMUM_HEATFLUX"        ,
+                  "COMBO"]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -297,6 +328,27 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "VOLUME"              ]
 #: optnames_geo
 
+grad_names_directdiff = ["D_LIFT"                  ,
+                         "D_DRAG"                  ,
+                         "D_SIDEFORCE"             ,
+                         "D_MOMENT_X"              ,
+                         "D_MOMENT_Y"              ,
+                         "D_MOMENT_Z"              ,
+                         "D_FORCE_X"               ,
+                         "D_FORCE_Y"               ,
+                         "D_FORCE_Z"               ,
+                         "D_EFFICIENCY"]
+
+grad_names_map = { "LIFT"      : "D_LIFT"           ,
+                   "DRAG"      : "D_DRAG"           ,
+                   "SIDEFORCE" : "D_SIDEFORCE" ,
+                   "MOMENT_X"  : "D_MOMENT_X"   ,
+                   "MOMENT_Y"  : "D_MOMENT_Y"   ,
+                   "MOMENT_Z"  : "D_MOMENT_Z"   ,
+                   "FORCE_X"   : "D_FORCE_X"     ,
+                   "FORCE_Y"   : "D_FORCE_Y"     ,
+                   "FORCE_Z"   : "D_FORCE_Z"     ,
+                   "EFFICIENCY" : "D_EFFICIENCY"}
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -315,7 +367,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     history_data = read_history(History_filename)
     
     # list of functions to pull
-    func_names = optnames_aero
+    func_names = optnames_aero + grad_names_directdiff
 
     # pull only these functions
     Func_Values = ordered_bunch()
@@ -324,7 +376,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'UNSTEADY_SIMULATION' in special_cases:
+    if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
         for key,value in Func_Values.iteritems():
             Func_Values[key] = sum(value)/len(value)
          
@@ -357,6 +409,8 @@ def get_objectiveSign( ObjFun_name ):
             EFFICIENCY
             THRUST
             FIGURE_OF_MERIT
+            MASS_FLOW_RATE
+            AVG_TOTAL_PRESSURE
         returns +1 otherwise
     """
     
@@ -365,6 +419,8 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
+    if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
+    if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
     
     # otherwise
     return 1.0
@@ -417,20 +473,28 @@ def get_adjointSuffix(objective_function=None):
                  "TORQUE"                  : "cq"        ,
                  "FIGURE_OF_MERIT"         : "merit"     ,
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
-                 "MASS_FLOW_RATE"          : "mfw"       ,
-                 "FREE_SURFACE"            : "fs"        }
+                 "AVG_OUTLET_PRESSURE"     : "pe"        ,
+                 "MASS_FLOW_RATE"          : "mfr"       ,
+                 "OUTFLOW_GENERALIZED"     : "chn"       ,
+                 "FREE_SURFACE"            : "fs"        ,
+                 "COMBO"                   : "combo"}
     
     # if none or false, return map
     if not objective_function:
         return name_map
-    
-    # return desired objective function suffix
-    elif name_map.has_key(objective_function):
-        return name_map[objective_function]
-    
-    # otherwise...
     else:
-        raise Exception('Unrecognized adjoint function name')
+        # remove white space
+        objective = ''.join(objective_function.split())
+        objective = objective.split(",")
+        nObj = len(objective)
+        if (nObj>1):
+            return "combo"
+        if name_map.has_key(objective[0]):
+            return name_map[objective[0]]
+    
+        # otherwise...
+        else:
+            raise Exception('Unrecognized adjoint function name')
     
 #: def get_adjointSuffix()
     
@@ -479,6 +543,7 @@ def get_dvMap():
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
+               19  : "CUSTOM"                ,
                101 : "MACH_NUMBER"           ,
                102 : "AOA"                    }
     
@@ -559,6 +624,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "INV_DESIGN_HEATFLUX"     :
                 header.append(r',"Grad_HeatFlux_Diff"')
                 write_format.append(", %.10f")
+            if key =="OUTFLOW_GENERALIZED"    :
+                header.append(r',"Grad_Chain_Rule"')
+                write_format.append(", %.10f")
 
     # otherwise...
     else: raise Exception('Unrecognized Gradient Type')          
@@ -611,6 +679,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r', %s, %s, %s')
     elif kindID == "MACH_NUMBER"        : pass
     elif kindID == "AOA"                : pass
+    elif kindID == "CUSTOM"             : pass
     
     # otherwise...
     else: raise Exception('Unrecognized Design Variable Kind') 
@@ -677,6 +746,9 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "INV_DESIGN_HEATFLUX"     :
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r', %.10f')
+        if key =="OUTFLOW_GENERALIZED"    :
+            header_list.exted(["Chain_Rule"])
+            write_format.append([r", %.10f"])
 
     # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
@@ -701,9 +773,9 @@ def get_optFileFormat(plot_format,special_cases=None):
 # -------------------------------------------------------------------
 
 def get_extension(output_format):
-    
+  
     if (output_format == "PARAVIEW")        : return ".csv"
-    if (output_format == "TECPLOT")         : return ".plt"
+    if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  
     if (output_format == "RESTART")         : return ".dat"  
@@ -729,7 +801,8 @@ def get_specialCases(config):
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
-                          'INV_DESIGN_HEATFLUX'              ]
+                          'INV_DESIGN_HEATFLUX'              ,
+                          'OUTFLOW_GENERALIZED'                ]
     
     special_cases = []
     for key in all_special_cases:
@@ -760,6 +833,25 @@ def get_specialCases(config):
     return special_cases
 
 #: def get_specialCases()
+
+# -------------------------------------------------------------------
+#  Check Fluid Structure Interaction
+# -------------------------------------------------------------------
+def get_multizone(config):
+    """ returns a list of special physical problems that were
+        specified in the config file, and set to 'yes'
+    """
+    
+    all_multizone_problems = ['FLUID_STRUCTURE_INTERACTION']
+    
+    multizone = []
+    for key in all_multizone_problems:
+        if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
+            multizone.append(key)
+            
+    return multizone
+
+#: def get_multizone()
 
 
 def next_folder(folder_format,num_format='%03d'):
@@ -802,13 +894,7 @@ def next_folder(folder_format,num_format='%03d'):
 
 
 def expand_part(name,config):
-    if config['DECOMPOSED']:
-        n_part = config['NUMBER_PART']
-        name_pat = add_suffix(name,'%i')
-        names = [name_pat%(i+1) for i in range(n_part)]
-        #names = [name] + [name_pat%(i+1) for i in range(n_part)] # hack - TWL
-    else:
-        names = [name]
+    names = [name]
     return names
 
 def expand_time(name,config):
@@ -880,7 +966,7 @@ def restart2solution(config,state={}):
         if state: state.FILES.DIRECT = solution
         
     # adjoint solution
-    elif config.MATH_PROBLEM == 'ADJOINT':
+    elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix

@@ -1,10 +1,21 @@
 /*!
  * \file variable_adjoint_levelset.cpp
  * \brief Definition of the solution fields.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \author F. Palacios
+ * \version 4.3.0 "Cardinal"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,27 +41,27 @@ CAdjLevelSetVariable::CAdjLevelSetVariable(unsigned short val_nDim, unsigned sho
 	
 	/*--- Allocate residual structures ---*/
   
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
   
-	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
 	
 }
 
-CAdjLevelSetVariable::CAdjLevelSetVariable(double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_nDim, val_nvar,config) {
+CAdjLevelSetVariable::CAdjLevelSetVariable(su2double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+: CVariable(val_nDim, val_nvar, config) {
 	
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Allocate residual structures ---*/
   
-	Residual_Sum = new double [nVar]; Residual_Old = new double [nVar];
+	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
 	
 	/*--- Allocate limiter (upwind)---*/
   
-	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new double [nVar];
+	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
 	
 	/*--- Solution and old solution initialization ---*/
   

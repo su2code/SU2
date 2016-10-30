@@ -1,10 +1,21 @@
 /*!
  * \file numerics_adjoint_levelset.cpp
  * \brief This file contains all the convective term discretization.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \author F. Palacios
+ * \version 4.3.0 "Cardinal"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,8 +37,8 @@
 CUpwLin_AdjLevelSet::CUpwLin_AdjLevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
 	implicit = (config->GetKind_TimeIntScheme_AdjLevelSet() == EULER_IMPLICIT);
-	Velocity_i = new double [nDim];
-	Velocity_j = new double [nDim];
+	Velocity_i = new su2double [nDim];
+	Velocity_j = new su2double [nDim];
   
 }
 
@@ -38,11 +49,11 @@ CUpwLin_AdjLevelSet::~CUpwLin_AdjLevelSet(void) {
   
 }
 
-void CUpwLin_AdjLevelSet::ComputeResidual (double *val_residual_i, double *val_residual_j, double **val_Jacobian_ii,
-                                       double **val_Jacobian_ij, double **val_Jacobian_ji, double **val_Jacobian_jj, CConfig *config)  {
+void CUpwLin_AdjLevelSet::ComputeResidual (su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii,
+                                       su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config) {
   
   unsigned short iDim;
-	double proj_conv_flux_i = 0.0, proj_conv_flux_j = 0.0, proj_conv_flux_ij = 0.0;
+	su2double proj_conv_flux_i = 0.0, proj_conv_flux_j = 0.0, proj_conv_flux_ij = 0.0;
   
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Velocity_i[iDim] = U_i[iDim+1]/DensityInc_i;
@@ -69,5 +80,4 @@ CSourcePieceWise_AdjLevelSet::CSourcePieceWise_AdjLevelSet(unsigned short val_nD
 
 CSourcePieceWise_AdjLevelSet::~CSourcePieceWise_AdjLevelSet(void) { }
 
-void CSourcePieceWise_AdjLevelSet::ComputeResidual(double *val_residual, CConfig *config) {}
-
+void CSourcePieceWise_AdjLevelSet::ComputeResidual(su2double *val_residual, CConfig *config) {}

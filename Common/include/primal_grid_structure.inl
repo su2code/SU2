@@ -1,10 +1,21 @@
 /*!
  * \file primal_grid_structure.inl
  * \brief In-Line subroutines of the <i>primal_grid_structure.hpp</i> file.
- * \author Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
- * \version 3.2.1 "eagle"
+ * \author F. Palacios
+ * \version 4.3.0 "Cardinal"
  *
- * SU2, Copyright (C) 2012-2014 Aerospace Design Laboratory (ADL).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+ *                      Dr. Thomas D. Economon (economon@stanford.edu).
+ *
+ * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+ *                 Prof. Piero Colonna's group at Delft University of Technology.
+ *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,9 +47,13 @@ inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned s
 
 inline long CPrimalGrid::GetNeighbor_Elements(unsigned short val_face) { return Neighbor_Elements[val_face]; }
 
-inline double CPrimalGrid::GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
+inline su2double CPrimalGrid::GetVolume(void) { return Volume; }
 
-inline double CPrimalGrid::GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }
+inline void CPrimalGrid::SetVolume(su2double val_volume) { Volume = val_volume; }
+
+inline su2double CPrimalGrid::GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
+
+inline su2double CPrimalGrid::GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }
 
 inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
 
@@ -124,31 +139,31 @@ inline void CTriangle::SetDomainElement(unsigned long val_domainelement) { Domai
 
 inline unsigned long CTriangle::GetDomainElement(void) { return DomainElement; }
 
-inline unsigned short CRectangle::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
+inline unsigned short CQuadrilateral::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
-inline unsigned short CRectangle::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
+inline unsigned short CQuadrilateral::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
 
-inline unsigned short CRectangle::GetnNodesFace(unsigned short val_face) { return nNodesFace[val_face]; }
+inline unsigned short CQuadrilateral::GetnNodesFace(unsigned short val_face) { return nNodesFace[val_face]; }
 
-inline unsigned short CRectangle::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
+inline unsigned short CQuadrilateral::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
 
-inline unsigned long CRectangle::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+inline unsigned long CQuadrilateral::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
-inline void CRectangle::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+inline void CQuadrilateral::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
 
-inline unsigned short CRectangle::GetnNodes(void) { return nNodes; }
+inline unsigned short CQuadrilateral::GetnNodes(void) { return nNodes; }
 
-inline unsigned short CRectangle::GetnFaces(void) { return nFaces; }
+inline unsigned short CQuadrilateral::GetnFaces(void) { return nFaces; }
 
-inline unsigned short CRectangle::GetVTK_Type(void) { return VTK_Type; }
+inline unsigned short CQuadrilateral::GetVTK_Type(void) { return VTK_Type; }
 
-inline unsigned short CRectangle::GetMaxNodesFace(void) { return maxNodesFace; }
+inline unsigned short CQuadrilateral::GetMaxNodesFace(void) { return maxNodesFace; }
 
-inline unsigned short CRectangle::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
+inline unsigned short CQuadrilateral::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
-inline void CRectangle::SetDomainElement(unsigned long val_domainelement) {	DomainElement = val_domainelement; }
+inline void CQuadrilateral::SetDomainElement(unsigned long val_domainelement) {	DomainElement = val_domainelement; }
 
-inline unsigned long CRectangle::GetDomainElement(void) { return DomainElement; }
+inline unsigned long CQuadrilateral::GetDomainElement(void) { return DomainElement; }
 
 inline unsigned short CTetrahedron::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
@@ -194,27 +209,27 @@ inline unsigned short CHexahedron::GetMaxNodesFace(void) { return maxNodesFace; 
 
 inline unsigned short CHexahedron::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
-inline unsigned short CWedge::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
+inline unsigned short CPrism::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
-inline unsigned short CWedge::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
+inline unsigned short CPrism::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
 
-inline unsigned short CWedge::GetnNodesFace(unsigned short val_face) { return nNodesFace[val_face]; }
+inline unsigned short CPrism::GetnNodesFace(unsigned short val_face) { return nNodesFace[val_face]; }
 
-inline unsigned short CWedge::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
+inline unsigned short CPrism::GetnNeighbor_Nodes(unsigned short val_node) { return nNeighbor_Nodes[val_node]; }
 
-inline unsigned long CWedge::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+inline unsigned long CPrism::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
-inline void CWedge::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
+inline void CPrism::SetNode(unsigned short val_node, unsigned long val_point) { Nodes[val_node] = val_point; }
 
-inline unsigned short CWedge::GetnNodes(void) { return nNodes; }
+inline unsigned short CPrism::GetnNodes(void) { return nNodes; }
 
-inline unsigned short CWedge::GetnFaces(void) { return nFaces; }
+inline unsigned short CPrism::GetnFaces(void) { return nFaces; }
 
-inline unsigned short CWedge::GetVTK_Type(void) { return VTK_Type; }
+inline unsigned short CPrism::GetVTK_Type(void) { return VTK_Type; }
 
-inline unsigned short CWedge::GetMaxNodesFace(void) { return maxNodesFace; }
+inline unsigned short CPrism::GetMaxNodesFace(void) { return maxNodesFace; }
 
-inline unsigned short CWedge::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
+inline unsigned short CPrism::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
 inline unsigned short CPyramid::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 

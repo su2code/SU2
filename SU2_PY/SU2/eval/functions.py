@@ -1,29 +1,41 @@
+#!/usr/bin/env python
+
 ## \file functions.py
 #  \brief python package for functions
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 4.3.0 "Cardinal"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # ----------------------------------------------------------------------
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy 
+import os, sys, shutil, copy, time
 from .. import run  as su2run
 from .. import io   as su2io
 from .. import util as su2util
@@ -67,11 +79,12 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     
+    multi_objective = (type(func_name)==list)
     # redundancy check
-    if not state['FUNCTIONS'].has_key(func_name):
-        
+    if multi_objective or not state['FUNCTIONS'].has_key(func_name):
+
         # Aerodynamics
-        if func_name == 'ALL' or func_name in su2io.optnames_aero:
+        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
             aerodynamics( config, state )
             
         # Stability
@@ -86,12 +99,21 @@ def function( func_name, config, state=None ):
             raise Exception, 'unknown function name, %s' % func_name
         
     #: if not redundant
-    
+
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
+    elif (multi_objective):
+        # If combine_objective is true, use the 'combo' output.
+        objectives=config.OPT_OBJECTIVE
+        func_out = 0.0
+        for func in func_name:
+            sign = su2io.get_objectiveSign(func)
+            func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
+        state['FUNCTIONS']['COMBO'] = func_out
     else:
         func_out = state['FUNCTIONS'][func_name]
+        
     
     return copy.deepcopy(func_out)
 
@@ -106,8 +128,7 @@ def aerodynamics( config, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
     
         Evaluates aerodynamics with the following:
-            SU2.run.decompose()
-	    SU2.run.deform()
+	          SU2.run.deform()
             SU2.run.direct()
         
         Assumptions:
@@ -150,7 +171,7 @@ def aerodynamics( config, state=None ):
     
     # does decomposition and deformation
     info = update_mesh(config,state)
-                
+    
     # ----------------------------------------------------    
     #  Adaptation (not implemented)
     # ----------------------------------------------------
@@ -232,14 +253,18 @@ def aerodynamics( config, state=None ):
             # heat flux files to push
             if 'TARGET_HEATFLUX' in info.FILES:
                 push.append(info.FILES['TARGET_HEATFLUX'])
-
+                
     #: with output redirection
-
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero:
+    for key in su2io.optnames_aero + su2io.grad_names_directdiff:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
+            
+    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:    
+        import downstream_function
+        state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
+
     return funcs
 
 #: def aerodynamics()
@@ -380,7 +405,6 @@ def geometry( func_name, config, state=None ):
     """ val = SU2.eval.geometry(config,state=None)
     
         Evaluates geometry with the following:
-            SU2.run.decompose()
             SU2.run.deform()
             SU2.run.geometry()
         
@@ -423,7 +447,7 @@ def geometry( func_name, config, state=None ):
     # ----------------------------------------------------
     
     # does decomposition and deformation
-    info = update_mesh(config,state)
+    #info = update_mesh(config,state)
 
 
     # ----------------------------------------------------    
@@ -481,8 +505,7 @@ def update_mesh(config,state=None):
     """ SU2.eval.update_mesh(config,state=None)
     
         updates mesh with the following:
-            SU2.run.decompose()
-	    SU2.run.deform()
+	          SU2.run.deform()
         
         Assumptions:
             Config is already setup for deformation.
@@ -520,39 +543,8 @@ def update_mesh(config,state=None):
     else:
         log_decomp = None
         log_deform = None
-        
-        
-    # ----------------------------------------------------
-    #  Decomposition    
-    # ----------------------------------------------------
     
-    # redundancy check
-    if not config.get('DECOMPOSED',False):
         
-        # files to pull
-        pull = []
-        link = config['MESH_FILENAME']
-        
-        # output redirection
-        with redirect_folder('DECOMP',pull,link) as push:    
-            with redirect_output(log_decomp):
-            
-                # # RUN DECOMPOSITION # # 
-                info = su2run.decompose(config)
-                state.update(info)
-                              
-                # files to push
-                if info.FILES.has_key('MESH'):
-                    meshname = info.FILES.MESH
-                    names = su2io.expand_part( meshname , config )
-                    push.extend( names )
-                #: if push
-        
-        #: with output redirection
-        
-    #: if not redundant
-    
-    
     # ----------------------------------------------------
     #  Deformation
     # ----------------------------------------------------

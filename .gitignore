@@ -22,6 +22,11 @@ autom4te.cache
 # Python files
 *.pyc
 
+# SWIG compilation
+SU2_PY/pySU2/*.cxx
+SU2_PY/pySU2/*.h
+SU2_PY/pySU2/*.py
+
 # Mac files
 *.DS_Store
 *.xcuserdatad
@@ -33,6 +38,19 @@ Makefile
 *~
 
 # installed autotools
-contrib/autotools/bin
-contrib/autotools/include
-contrib/autotools/share
+externals/autotools/bin
+externals/autotools/include
+externals/autotools/share
+
+#logs and errors
+*.log
+*.err
+
+# configuration sets
+SU2_AD/
+SU2_BASE/
+SU2_DIRECTDIFF/
+
+# ignore the bin/ directory
+bin/
+

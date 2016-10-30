@@ -1,11 +1,22 @@
 #!/usr/bin/env python 
 
 ## \file continuous_adjoint.py
-#  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
-#  \author Francisco Palacios, Tom Economon, Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \brief Python script for continuous adjoint computation using the SU2 suite.
+#  \author F. Palacios, T. Economon, T. Lukaczyk
+#  \version 4.3.0 "Cardinal"
 #
-# SU2, Copyright (C) 2012-2013 Aerospace Design Laboratory (ADL).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
+#
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -37,30 +48,20 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-p", "--oldpartitions", dest="oldpartitions", default="oldpartitions",
-                      help="old number of PARTITIONS (use -n instead)", metavar="OLDPARTITIONS")
     parser.add_option("-c", "--compute",    dest="compute",    default="True",
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
                       help="DOT finite difference STEP", metavar="STEP")    
-    parser.add_option("-d", "--divide_grid",dest="divide_grid",default="True",
-                      help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
     
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
-    options.divide_grid = options.divide_grid.upper() == 'TRUE'
-    
-    if options.oldpartitions != "oldpartitions":
-        print ("\n IMPORTANT: -p is no longer available in SU2 v3.2.1, use -n flag instead \n")
-        sys.exit()
     
     continuous_adjoint( options.filename    ,
                         options.partitions  ,
                         options.compute     ,
-                        options.step        ,
-                        options.divide_grid  )
+                        options.step         )
         
 #: def main()
 
@@ -72,16 +73,17 @@ def main():
 def continuous_adjoint( filename           , 
                         partitions  = 0    , 
                         compute     = True ,
-                        step        = 1e-4 , 
-                        divide_grid = True  ):
+                        step        = 1e-4  ):
     
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = not divide_grid
     
     # State
     state = SU2.io.State()
+    
+    # Force CSV output in order to compute gradients
+    config.WRT_CSV_SOL = 'YES'
     
     # check for existing files
     if not compute:
@@ -95,15 +97,24 @@ def continuous_adjoint( filename           ,
         info = SU2.run.direct(config) 
         state.update(info)
         SU2.io.restart2solution(config,state)
-    
+
     # Adjoint Solution
+    objectives      = config['OBJECTIVE_FUNCTION']
+    objectives = objectives.split(',')
+    n_obj = len(objectives)
+    marker_monitoring = config['MARKER_MONITORING']
+
+    # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
+    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
+        import downstream_function # Must be defined in run folder
+        chaingrad = downstream_function.downstream_gradient(config,state,step)
+        # Set coefficients for gradients
+        config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
+    # Run all-at-once 
     if compute:
         info = SU2.run.adjoint(config)
         state.update(info)
-        #SU2.io.restart2solution(config,state)
-    
-    # Gradient Projection
-    info = SU2.run.projection(config,step)
+    info = SU2.run.projection(config,state, step)
     state.update(info)
     
     return state
@@ -117,8 +128,7 @@ def continuous_adjoint( filename           ,
 def continuous_design( filename           , 
                        partitions  = 0    , 
                        compute     = True ,
-                       step        = 1e-4 , 
-                       divide_grid = True  ):
+                       step        = 1e-4  ):
     
     # TODO: 
     # step
@@ -126,7 +136,6 @@ def continuous_design( filename           ,
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.DECOMPOSED  = divide_grid
 
     ADJ_NAME = config.OBJECTIVE_FUNCTION
     
@@ -140,7 +149,7 @@ def continuous_design( filename           ,
         state.FILES.MESH = config.MESH_FILENAME    
     
     # Adjoint Gradient
-    grads = SU2.eval.grad( ADJ_NAME, 'ADJOINT', config, state )
+    grads = SU2.eval.grad( ADJ_NAME, 'CONTINUOUS_ADJOINT', config, state )
     
     return state
 

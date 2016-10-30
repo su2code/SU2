@@ -2,24 +2,34 @@
 
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
-#  \author Trent Lukaczyk, Aerospace Design Laboratory (Stanford University) <http://su2.stanford.edu>.
-#  \version 3.2.1 "eagle"
+#  \author T. Lukaczyk, F. Palacios
+#  \version 4.3.0 "Cardinal"
 #
-# Stanford University Unstructured (SU2) Code
-# Copyright (C) 2012 Aerospace Design Laboratory
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 # -------------------------------------------------------------------
 #  Imports
@@ -36,8 +46,8 @@ from numpy.linalg import norm
 #  Scipy SLSQP
 # -------------------------------------------------------------------
 
-def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
-    """ result = scipy_slsqp(project,x0=[],xb=[],its=100)
+def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
+    """ result = scipy_slsqp(project,x0=[],xb=[],its=100,accu=1e-10)
     
         Runs the Scipy implementation of SLSQP with 
         an SU2 project
@@ -47,6 +57,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
             x0      - optional, initial guess
             xb      - optional, design variable bounds
             its     - max outer iterations, default 100
+            accu    - accuracy, default 1e-10
         
         Outputs:
            result - the outputs from scipy.fmin_slsqp
@@ -75,7 +86,8 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
         fprime_ieqcons = con_dcieq        
     
     # number of design variables
-    n_dv = len( project.config['DEFINITION_DV']['KIND'] )
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    n_dv = sum( dv_size)
     project.n_dv = n_dv
     
     # Initial guess
@@ -83,10 +95,34 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
     
     # prescale x0
     dv_scales = project.config['DEFINITION_DV']['SCALE']
-    x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
-        
+    k = 0
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            x0[k] =x0[k]/dv_scl;
+            k = k + 1
+
+    # scale accuracy
+    obj = project.config['OPT_OBJECTIVE']
+    obj_scale = []
+    for this_obj in obj.keys():
+        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
+    
+    accu = accu*obj_scale[0]
+
+    # scale accuracy
+    eps = 1.0e-04
+
+    # optimizer summary
+    sys.stdout.write('Sequential Least SQuares Programming (SLSQP) parameters:\n')
+    sys.stdout.write('Number of design variables: ' + str(len(dv_size)) + ' ( ' + str(n_dv) + ' ) \n' )
+    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
+    sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
+    sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
+    sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
+
     # Run Optimizer
-    outputs = fmin_slsqp( x0             = x0             , 
+    outputs = fmin_slsqp( x0             = x0             ,
                           func           = func           , 
                           f_eqcons       = f_eqcons       , 
                           f_ieqcons      = f_ieqcons      ,
@@ -96,10 +132,10 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,grads=True):
                           args           = (project,)     , 
                           bounds         = xb             ,
                           iter           = its            ,
-                          iprint         = 1              ,
-                          full_output    = 2              ,
-                          acc            = 1e-10          ,
-                          epsilon        = 1.0e-06         )
+                          iprint         = 2              ,
+                          full_output    = True           ,
+                          acc            = accu           ,
+                          epsilon        = eps            )
     
     # Done
     return outputs
@@ -114,12 +150,11 @@ def obj_f(x,project):
         su2:         minimize f(x), list[nobj]
         scipy_slsqp: minimize f(x), float
     """
-    
-    print ""
-    
-    obj = project.obj_f(x)
-    
-    obj = obj[0]
+        
+    obj_list = project.obj_f(x)
+    obj = 0
+    for this_obj in obj_list:
+        obj = obj+this_obj
     
     return obj
 
@@ -133,9 +168,15 @@ def obj_df(x,project):
         scipy_slsqp: df(x), ndarray[dim]
     """    
     
-    dobj = project.obj_df(x)
+    dobj_list = project.obj_df(x)
+    dobj=[0.0]*len(dobj_list[0])
     
-    dobj = array( dobj[0] )
+    for this_dobj in dobj_list:
+        idv=0
+        for this_dv_dobj in this_dobj:
+            dobj[idv] = dobj[idv]+this_dv_dobj;
+            idv+=1
+    dobj = array( dobj )
     
     return dobj
 
