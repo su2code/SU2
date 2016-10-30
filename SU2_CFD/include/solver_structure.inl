@@ -136,6 +136,8 @@ inline su2double CSolver::GetCMz_Inv(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetCD_Inv(unsigned short val_marker) { return 0; }
 
+inline su2double CSolver::GetCL_Inv(unsigned short val_marker) { return 0; }
+
 inline su2double CSolver::GetSurface_CL(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetSurface_CD(unsigned short val_marker) { return 0; }
