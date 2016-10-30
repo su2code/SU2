@@ -2,7 +2,7 @@
  * \file solver_adjoint_discrete.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -60,6 +62,15 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
+  /*--- Initialize arrays to NULL ---*/
+
+  CSensitivity = NULL;
+
+  Sens_Geo   = NULL;
+  Sens_Mach  = NULL;
+  Sens_AoA   = NULL;
+  Sens_Press = NULL;
+  Sens_Temp  = NULL;
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
@@ -217,7 +228,24 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-CDiscAdjSolver::~CDiscAdjSolver(void){ }
+CDiscAdjSolver::~CDiscAdjSolver(void){ 
+
+  unsigned short iMarker;
+
+  if (CSensitivity != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] CSensitivity[iMarker];
+    }
+    delete [] CSensitivity;
+  }
+
+  if (Sens_Geo   != NULL) delete [] Sens_Geo;
+  if (Sens_Mach  != NULL) delete [] Sens_Mach;
+  if (Sens_AoA   != NULL) delete [] Sens_AoA;
+  if (Sens_Press != NULL) delete [] Sens_Press;
+  if (Sens_Temp  != NULL) delete [] Sens_Temp;
+
+}
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
 

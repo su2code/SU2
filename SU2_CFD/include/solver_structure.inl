@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -284,6 +286,8 @@ inline su2double CSolver::GetTotal_CFEA() { return 0; }
 
 inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 
+inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
+
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
@@ -421,6 +425,12 @@ inline void CSolver::SetOneD_FluxAvgVelocity(su2double VelocityRef) { }
 inline su2double CSolver::GetOneD_FluxAvgEntalpy(void) {return 0;}
 
 inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
+
+inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
+
+inline su2double CSolver::GetTotal_ComboObj(void) { return 0;}
+
+inline void CSolver::Compute_ComboObj(CConfig *config) {};
 
 inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
 
@@ -832,6 +842,10 @@ inline su2double CEulerSolver::GetCEff_Inv(unsigned short val_marker) { return C
 
 inline su2double CEulerSolver::GetTotal_CLift() { return Total_CLift; }
 
+inline void CEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
+
+inline su2double CEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
+
 inline su2double CEulerSolver::GetTotal_CDrag() { return Total_CDrag; }
 
 inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
@@ -875,6 +889,8 @@ inline su2double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 inline su2double CEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
 inline su2double CEulerSolver::GetTotal_CNearFieldOF() { return Total_CNearFieldOF; }
+
+inline void CEulerSolver::AddTotal_ComboObj(su2double val_obj) {Total_ComboObj +=val_obj;}
 
 inline void CEulerSolver::SetTotal_CEquivArea(su2double cequivarea) { Total_CEquivArea = cequivarea; }
 
