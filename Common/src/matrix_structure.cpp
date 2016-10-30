@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -36,6 +38,7 @@ CSysMatrix::CSysMatrix(void) {
   /*--- Array initialization ---*/
 
   matrix            = NULL;
+  ILU_matrix        = NULL;
   row_ptr           = NULL;
   col_ind           = NULL;
   block             = NULL;
@@ -44,7 +47,6 @@ CSysMatrix::CSysMatrix(void) {
   aux_vector        = NULL;
   sum_vector        = NULL;
   invM              = NULL;
-  
   block_weight      = NULL;
   block_inverse     = NULL;
 
@@ -72,6 +74,7 @@ CSysMatrix::~CSysMatrix(void) {
   /*--- Memory deallocation ---*/
   
   if (matrix != NULL)             delete [] matrix;
+  if (ILU_matrix != NULL)         delete [] ILU_matrix;
   if (row_ptr != NULL)            delete [] row_ptr;
   if (col_ind != NULL)            delete [] col_ind;
   if (block != NULL)              delete [] block;
@@ -201,15 +204,15 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   
   unsigned long iVar;
   
-  nPoint = val_nPoint;              // Assign number of points in the mesh
+  nPoint       = val_nPoint;        // Assign number of points in the mesh
   nPointDomain = val_nPointDomain;  // Assign number of points in the mesh
-  nVar = val_nVar;                  // Assign number of vars in each block system
-  nEqn = val_nEq;                   // Assign number of eqns in each block system
-  nnz = val_nnz;                    // Assign number of possible non zero blocks
-  row_ptr = val_row_ptr;
-  col_ind = val_col_ind;
+  nVar         = val_nVar;          // Assign number of vars in each block system
+  nEqn         = val_nEq;           // Assign number of eqns in each block system
+  nnz          = val_nnz;           // Assign number of possible non zero blocks
+  row_ptr      = val_row_ptr;
+  col_ind      = val_col_ind;
   
-  matrix            = new su2double [nnz*nVar*nEqn];	// Reserve memory for the values of the matrix
+  matrix            = new su2double [nnz*nVar*nEqn];  // Reserve memory for the values of the matrix
   block             = new su2double [nVar*nEqn];
   block_weight      = new su2double [nVar*nEqn];
   block_inverse     = new su2double [nVar*nEqn];
@@ -221,22 +224,21 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   
   /*--- Memory initialization ---*/
   
-  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++)    matrix[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)        block[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)        block_weight[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar*nEqn; iVar++)        block_inverse[iVar] = 0.0;
+  for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) matrix[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_weight[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar*nEqn; iVar++)     block_inverse[iVar] = 0.0;
 
-  for (iVar = 0; iVar < nEqn; iVar++)             prod_block_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)             prod_row_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)             aux_vector[iVar] = 0.0;
-  for (iVar = 0; iVar < nVar; iVar++)             sum_vector[iVar] = 0.0;
-  
+  for (iVar = 0; iVar < nEqn; iVar++)          prod_block_vector[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++)          prod_row_vector[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++)          aux_vector[iVar] = 0.0;
+  for (iVar = 0; iVar < nVar; iVar++)          sum_vector[iVar] = 0.0;
   
   /*--- Set specific preconditioner matrices (ILU) ---*/
   
   if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-    (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
-    (config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
+      (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
+      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
     
     /*--- Reserve memory for the ILU matrix. ---*/
     
@@ -250,7 +252,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
       (config->GetKind_Linear_Solver_Prec() == LINELET) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET) ||
-      (config->GetKind_DiscAdj_Linear_Solver() == JACOBI))   {
+      (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Solver() == JACOBI))   {
     
     /*--- Reserve memory for the values of the inverse of the preconditioner. ---*/
     

@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,6 +15,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -65,7 +67,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CSolver {
 protected:
@@ -75,6 +77,7 @@ protected:
   nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nVarGrad,                 /*!< \brief Number of variables for deallocating the LS cvector. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
@@ -580,6 +583,14 @@ public:
 	 */
 	virtual void Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config);
     
+
+	/*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_ComboObj(CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1779,7 +1790,21 @@ public:
 	 * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
 	 */
 	virtual su2double GetCDrag_Visc(unsigned short val_marker);
-    
+
+	/*!
+   * \author H. Kline
+   * \brief Set the total "combo" objective (weighted sum of other values).
+   * \param[in] ComboObj - Value of the combined objective.
+   */
+	virtual void SetTotal_ComboObj(su2double ComboObj);
+
+	/*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+	virtual su2double GetTotal_ComboObj(void);
+
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the lift coefficient (inviscid + viscous contribution).
@@ -1876,6 +1901,13 @@ public:
 	 */
 	virtual su2double GetTotal_CNearFieldOF(void);
     
+  /*!
+   * \author H. Kline
+   * \brief Add to the value of the total 'combo' objective.
+   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
+   */
+  virtual void AddTotal_ComboObj(su2double val_obj);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
@@ -2337,13 +2369,13 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return average temperature evaluated at an exit boundary marker
+   * \return average mass flow rate evaluated at an exit boundary marker
    */
   virtual su2double GetOneD_MassFlowRate(void);
   
   /*!
    * \brief A virtual member.
-   * set average temperature evaluated at an exit boundary marker
+   * set average mass flow rate evaluated at an exit boundary marker
    */
   virtual void SetOneD_MassFlowRate(su2double MassFlowRate);
   
@@ -2841,7 +2873,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -2904,7 +2936,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -2998,6 +3030,7 @@ protected:
   OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
+  Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
@@ -3434,6 +3467,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \author H. Kline
+	 * \brief Compute weighted-sum "combo" objective output
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_ComboObj(CConfig *config);
     
 	/*!
 	 * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
@@ -4243,7 +4283,14 @@ public:
 	 * \return Value of the NearField pressure coefficient (inviscid + viscous contribution).
 	 */
 	su2double GetTotal_CNearFieldOF(void);
-    
+
+  /*!
+   * \author H. Kline
+   * \brief Add to the value of the total 'combo' objective.
+   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
+   */
+  void AddTotal_ComboObj(su2double val_obj);
+
 	/*!
 	 * \brief Set the value of the Equivalent Area coefficient.
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
@@ -4280,6 +4327,20 @@ public:
 	 */
 	su2double GetTotal_CLift(void);
     
+  /*!
+   * \author H. Kline
+   * \brief Set the total "combo" objective (weighted sum of other values).
+   * \param[in] ComboObj - Value of the combined objective.
+   */
+  void SetTotal_ComboObj(su2double ComboObj);
+
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  su2double GetTotal_ComboObj(void);
+
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
 	 * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -4508,7 +4569,7 @@ public:
   void SetOneD_Mach(su2double AverageMach);
   
   /*!
-   * \brief Provide the averaged Mach number at a marker.
+   * \brief Provide the averaged Temperature number at a marker.
    */
   su2double GetOneD_Temp(void);
   
@@ -4518,12 +4579,12 @@ public:
   void SetOneD_Temp(su2double AverageTemperature);
   
   /*!
-   * \brief Provide the averaged Mach number at a marker.
+   * \brief Provide the averaged mass flow rate at a marker.
    */
   su2double GetOneD_MassFlowRate(void);
   
   /*!
-   * \brief Set the averaged Temperature at a marker.
+   * \brief Set the averaged mass flow rate at a marker.
    */
   void SetOneD_MassFlowRate(su2double MassFlowRate);
   
@@ -4649,7 +4710,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -4923,7 +4984,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -5061,7 +5122,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -5262,7 +5323,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -5438,7 +5499,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -5590,7 +5651,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -6082,7 +6143,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -6191,7 +6252,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -6337,7 +6398,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 4.2.0 "Cardinal"
+ *  \version 4.3.0 "Cardinal"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -6469,7 +6530,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 4.2.0 "Cardinal"
+ *  \version 4.3.0 "Cardinal"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -6628,7 +6689,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios
- *  \version 4.2.0 "Cardinal"
+ *  \version 4.3.0 "Cardinal"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -7267,7 +7328,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -7453,7 +7514,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -7661,7 +7722,7 @@ public:
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CDiscAdjSolver : public CSolver {
 private:
