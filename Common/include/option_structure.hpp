@@ -748,7 +748,6 @@ enum BC_TYPE {
   SUPERSONIC_OUTLET = 20,		/*!< \brief Boundary supersonic inlet definition. */
   ENGINE_INFLOW = 21,		/*!< \brief Boundary nacelle inflow. */
   ENGINE_EXHAUST = 22,		/*!< \brief Boundary nacelle exhaust. */
-  ENGINE_BLEED = 23,		/*!< \brief Boundary engine bleed. */
   RIEMANN_BOUNDARY= 24,   /*!< \brief Riemann Boundary definition. */
   ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
@@ -759,6 +758,7 @@ enum BC_TYPE {
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -859,12 +859,45 @@ static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateM
  */
 enum INLET_TYPE {
   TOTAL_CONDITIONS = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
-  MASS_FLOW = 2           /*!< \brief User specifies density and velocity (mass flow). */
+  MASS_FLOW = 2,           /*!< \brief User specifies density and velocity (mass flow). */
+  INPUT_FILE = 3           /*!< \brief User specifies an input file. */
 };
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
-("MASS_FLOW", MASS_FLOW);
+("MASS_FLOW", MASS_FLOW)
+("INPUT_FILE", INPUT_FILE);
 
+/*!
+ * \brief types engine inflow boundary treatments
+ */
+enum ENGINE_INFLOW_TYPE {
+  FAN_FACE_MACH = 1,	         /*!< \brief User specifies fan face mach number. */
+  FAN_FACE_MDOT = 2,           /*!< \brief User specifies Static pressure. */
+  FAN_FACE_PRESSURE = 3        /*!< \brief User specifies Static pressure. */
+};
+static const map<string, ENGINE_INFLOW_TYPE> Engine_Inflow_Map = CCreateMap<string, ENGINE_INFLOW_TYPE>
+("FAN_FACE_MACH", FAN_FACE_MACH)
+("FAN_FACE_MDOT", FAN_FACE_MDOT)
+("FAN_FACE_PRESSURE", FAN_FACE_PRESSURE);
+
+/*!
+ * \brief types actuator disk boundary treatments
+ */
+enum ACTDISK_TYPE {
+  VARIABLES_JUMP = 1,		/*!< \brief User specifies the variables jump. */
+  BC_THRUST = 2,     /*!< \brief User specifies the BC thrust. */
+  NET_THRUST = 3,     /*!< \brief User specifies the Net thrust. */
+  DRAG_MINUS_THRUST = 4,     /*!< \brief ACDC computes the right thrust. */
+  MASSFLOW = 5,     /*!< \brief ACDC computes the right thrust. */
+  POWER = 6     /*!< \brief User specifies the Net thrust. */
+};
+static const map<string, ACTDISK_TYPE> ActDisk_Map = CCreateMap<string, ACTDISK_TYPE>
+("VARIABLES_JUMP", VARIABLES_JUMP)
+("BC_THRUST", BC_THRUST)
+("NET_THRUST", NET_THRUST)
+("DRAG_MINUS_THRUST", DRAG_MINUS_THRUST)
+("MASSFLOW", MASSFLOW)
+("POWER", POWER);
 
 /*!
  * \brief types of geometric entities based on VTK nomenclature
@@ -913,7 +946,11 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  OUTFLOW_GENERALIZED = 31,          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  IDC_COEFFICIENT = 32, 	           /*!< \brief IDC coefficient objective function definition. */
+  PROPULSIVE_EFFICIENCY = 33, 	       /*!< \brief Mass flow ratio coefficient. */
+  NET_THRUST_COEFFICIENT = 34, 	     /*!< \brief Mass flow ratio coefficient. */
+  CUSTOM_COEFFICIENT = 35 	           /*!< \brief Custom coefficient objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -946,7 +983,11 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED);
+("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
+("IDC_COEFFICIENT", IDC_COEFFICIENT)
+("PROPULSIVE_EFFICIENCY", PROPULSIVE_EFFICIENCY)
+("NET_THRUST_COEFFICIENT", NET_THRUST_COEFFICIENT)
+("CUSTOM_COEFFICIENT", CUSTOM_COEFFICIENT);
 
 /*!
  * \brief types of residual criteria equations
@@ -1042,6 +1083,17 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("CSV", CSV)
 ("CGNS", CGNS_SOL)
 ("PARAVIEW", PARAVIEW);
+
+/*!
+ * \brief type of jump definition
+ */
+enum JUMP_DEFINITION {
+  DIFFERENCE = 1,     /*!< \brief Jump given by a difference in values. */
+  RATIO = 2           /*!< \brief Jump given by a ratio. */
+};
+static const map<string, JUMP_DEFINITION> Jump_Map = CCreateMap<string, JUMP_DEFINITION>
+("DIFFERENCE", DIFFERENCE)
+("RATIO", RATIO);
 
 /*!
  * \brief type of multigrid cycle
@@ -1232,12 +1284,12 @@ static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMa
  * \brief types of schemes for unsteady computations
  */
 enum ENUM_UNSTEADY {
-  STEADY = 0,             /*!< \brief A steady computation. */
-  TIME_STEPPING = 1,		/*!< \brief Use a time stepping strategy for unsteady computations. */
-  DT_STEPPING_1ST = 2,	/*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
-  DT_STEPPING_2ND = 3,	/*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
-  ROTATIONAL_FRAME = 4,   /*!< \brief Use a rotational source term. */
-  TIME_SPECTRAL = 5       	/*!< \brief Use a time spectral source term. */
+  STEADY = 0,            /*!< \brief A steady computation. */
+  TIME_STEPPING = 1,		 /*!< \brief Use a time stepping strategy for unsteady computations. */
+  DT_STEPPING_1ST = 2,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (1st order). */
+  DT_STEPPING_2ND = 3,	 /*!< \brief Use a dual time stepping strategy for unsteady computations (2nd order). */
+  ROTATIONAL_FRAME = 4,  /*!< \brief Use a rotational source term. */
+  HARMONIC_BALANCE = 5    /*!< \brief Use a harmonic balance source term. */
 
 };
 static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_UNSTEADY>
@@ -1245,7 +1297,7 @@ static const map<string, ENUM_UNSTEADY> Unsteady_Map = CCreateMap<string, ENUM_U
 ("TIME_STEPPING", TIME_STEPPING)
 ("DUAL_TIME_STEPPING-1ST_ORDER", DT_STEPPING_1ST)
 ("DUAL_TIME_STEPPING-2ND_ORDER", DT_STEPPING_2ND)
-("TIME_SPECTRAL", TIME_SPECTRAL)
+("HARMONIC_BALANCE", HARMONIC_BALANCE)
 ("ROTATIONAL_FRAME", ROTATIONAL_FRAME);
 
 /*!
@@ -2780,71 +2832,6 @@ public:
   
 };
 
-//Inlet condition where the input direction is assumed
-class COptionBleed : public COptionBase{
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  su2double * & massflow_target;
-  su2double * & temp_target;
-  
-public:
-  COptionBleed(string option_field_name, unsigned short & nMarker_Bleed, string* & Marker_Bleed, su2double* & MassFlow_Target, su2double* & Temp_Target) : size(nMarker_Bleed), marker(Marker_Bleed), massflow_target(MassFlow_Target), temp_target(Temp_Target) {
-    this->name = option_field_name;
-  }
-  
-  ~COptionBleed() {};
-  
-  string SetValue(vector<string> option_value) {
-    
-    unsigned short totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = NULL;
-      this->massflow_target = NULL;
-      this->temp_target = NULL;
-      return "";
-    }
-    
-    if (totalVals % 3 != 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 3");
-      this->size = 0;
-      this->marker = NULL;
-      this->massflow_target = NULL;
-      this->temp_target = NULL;
-      return newstring;
-    }
-    
-    unsigned short nVals = totalVals / 3;
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->massflow_target = new su2double[nVals];
-    this->temp_target = new su2double[nVals];
-    
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[3*i]);
-      istringstream ss_1st(option_value[3*i + 1]);
-      if (!(ss_1st >> this->massflow_target[i]))
-        return badValue(option_value, "bleed fixed", this->name);
-      istringstream ss_2nd(option_value[3*i + 2]);
-      if (!(ss_2nd >> this->temp_target[i]))
-        return badValue(option_value, "bleed fixed", this->name);
-    }
-    
-    return "";
-  }
-  
-  void SetDefault() {
-    this->marker = NULL;
-    this->massflow_target = NULL;
-    this->temp_target = NULL;
-    this->size = 0; // There is no default value for list
-  }
-  
-};
-
 class COptionPeriodic : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
@@ -3172,98 +3159,84 @@ public:
 
 
 
-class COptionActuatorDisk : public COptionBase{
+class COptionActDisk : public COptionBase{
   string name; // identifier for the option
   unsigned short & inlet_size;
   unsigned short & outlet_size;
   string * & marker_inlet;
   string * & marker_outlet;
-  su2double ** & origin;
-  su2double * & root_radius;
-  su2double * & tip_radius;
-  su2double * & press_jump;
-  su2double * & temp_jump;
-  su2double * & omega;
-  unsigned short * & distribution;
-
+  su2double ** & press_jump;
+  su2double ** & temp_jump;
+  su2double ** & omega;
+  
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string * & Marker_ActDiskInlet, string * & Marker_ActDiskOutlet, su2double ** & ActDisk_Origin, su2double * & ActDisk_RootRadius, su2double * & ActDisk_TipRadius, su2double * & ActDisk_PressJump, su2double * & ActDisk_TempJump, su2double * & ActDisk_Omega, unsigned short * & ActDisk_Distribution) : inlet_size(nMarker_ActDiskInlet), outlet_size(nMarker_ActDiskOutlet), marker_inlet(Marker_ActDiskInlet), marker_outlet(Marker_ActDiskOutlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega), distribution(ActDisk_Distribution) {
+  COptionActDisk(const string name,
+                 unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string * & Marker_ActDiskInlet, string * & Marker_ActDiskOutlet,
+                 su2double ** & ActDisk_PressJump, su2double ** & ActDisk_TempJump, su2double ** & ActDisk_Omega) :
+  inlet_size(nMarker_ActDiskInlet), outlet_size(nMarker_ActDiskOutlet), marker_inlet(Marker_ActDiskInlet), marker_outlet(Marker_ActDiskOutlet),
+  press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega) {
     this->name = name;
   }
-
-  ~COptionActuatorDisk() {};
+  
+  ~COptionActDisk() {};
   string SetValue(vector<string> option_value) {
-    const int mod_num = 11;
+    const int mod_num = 8;
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->SetDefault();
       return "";
     }
-
+    
     if (totalVals % mod_num != 0) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 10");
+      newstring.append(": must have a number of entries divisible by 8");
       this->SetDefault();
       return newstring;
     }
-
+    
     unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];
     this->marker_outlet = new string[this->outlet_size];
-    this->root_radius = new su2double[this->inlet_size];
-    this->tip_radius = new su2double[this->inlet_size];
-    this->press_jump = new su2double[this->outlet_size];
-    this->temp_jump = new su2double[this->outlet_size];
-    this->omega = new su2double[this->inlet_size];
-    this->distribution = new unsigned short[this->inlet_size];
-
-    this->origin = new su2double*[this->inlet_size];
+    
+    this->press_jump = new su2double*[this->inlet_size];
+    this->temp_jump = new su2double*[this->inlet_size];
+    this->omega = new su2double*[this->inlet_size];
     for (int i = 0; i < this->inlet_size; i++) {
-      this->origin[i] = new su2double[3];
+      this->press_jump[i] = new su2double[2];
+      this->temp_jump[i] = new su2double[2];
+      this->omega[i] = new su2double[2];
     }
-
+    
     string tname = "actuator disk";
-
+    
     for (int i = 0; i < this->inlet_size; i++) {
       this->marker_inlet[i].assign(option_value[mod_num*i]);
       this->marker_outlet[i].assign(option_value[mod_num*i+1]);
       istringstream ss_1st(option_value[mod_num*i + 2]);
-      if (!(ss_1st >> this->origin[i][0])) {
+      if (!(ss_1st >> this->press_jump[i][0])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_2nd(option_value[mod_num*i + 3]);
-      if (!(ss_2nd >> this->origin[i][1])) {
+      if (!(ss_2nd >> this->temp_jump[i][0])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_3rd(option_value[mod_num*i + 4]);
-      if (!(ss_3rd >> this->origin[i][2])) {
+      if (!(ss_3rd >> this->omega[i][0])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_4th(option_value[mod_num*i + 5]);
-      if (!(ss_4th >> this->root_radius[i])) {
+      if (!(ss_4th >> this->press_jump[i][1])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_5th(option_value[mod_num*i + 6]);
-      if (!(ss_5th >> this->tip_radius[i])) {
+      if (!(ss_5th >> this->temp_jump[i][1])) {
         return badValue(option_value, tname, this->name);
       }
       istringstream ss_6th(option_value[mod_num*i + 7]);
-      if (!(ss_6th >> this->press_jump[i])) {
-        return badValue(option_value, tname, this->name);
-      }
-      istringstream ss_7th(option_value[mod_num*i + 8]);
-      if (!(ss_7th >> this->temp_jump[i])) {
-        return badValue(option_value, tname, this->name);
-      }
-      istringstream ss_8th(option_value[mod_num*i + 9]);
-      if (!(ss_8th >> this->omega[i])) {
-        return badValue(option_value, tname, this->name);
-      }
-      istringstream ss_9th(option_value[mod_num*i + 10]);
-      if (!(ss_9th >> this->distribution[i])) {
+      if (!(ss_6th >> this->omega[i][1])) {
         return badValue(option_value, tname, this->name);
       }
     }
@@ -3274,12 +3247,8 @@ public:
     this->outlet_size = 0;
     this->marker_inlet = NULL;
     this->marker_outlet = NULL;
-    this->origin = NULL;
-    this->root_radius = NULL;
-    this->tip_radius = NULL;
     this->press_jump = NULL;
     this->temp_jump = NULL;
     this->omega = NULL;
-    this->distribution = NULL;
   }
 };

@@ -114,7 +114,7 @@ public:
 	 */	
 	void GetAdjResidual(CGeometry *geometry, CConfig *config);
 	
-	/*! 
+	/*!
 	 * \brief Do a complete adaptation of the computational grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] strength - Adaptation Strength.	 
