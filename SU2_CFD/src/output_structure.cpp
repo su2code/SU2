@@ -8742,7 +8742,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolver *FlowSolver) {
 
 	unsigned short iMarker, iDim, iMarker_Analyze;
-	unsigned long iPoint, iVertex, Global_Index;
+  unsigned long iPoint, iVertex;
 	su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
 	su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0;
 	su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0;
@@ -8929,10 +8929,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		su2double *Buffer_Send_Area = NULL, *Buffer_Recv_Area = NULL;
 		Buffer_Send_Area = new su2double [MaxLocalVertex_Surface];
 
-		unsigned long *Buffer_Send_GlobalIndex = NULL;
-		unsigned long *Buffer_Recv_GlobalIndex = NULL;
-		Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
-
 		/*--- Prepare the receive buffers on the master node only. ---*/
 
 		if (rank == MASTER_NODE) {
@@ -8974,7 +8970,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 				Buffer_Recv_dVel_z_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			}
 			Buffer_Recv_Area = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_Surface];
 		}
 
 		/*--- Loop over all vertices in this partition and load the
@@ -9131,8 +9126,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 
 						}
 
-						Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
-
 						nVertex_Surface++;
 
 					}
@@ -9192,7 +9185,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		}
 
 		SU2_MPI::Gather(Buffer_Send_Area, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Area, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
 #else
 
@@ -9244,7 +9236,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		}
 
 		Buffer_Recv_Area[iVertex] = Buffer_Send_Area[iVertex];
-		Buffer_Recv_GlobalIndex[iVertex] = Buffer_Send_GlobalIndex[iVertex];
 	}
 
 #endif
@@ -9264,7 +9255,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 				/*--- Current index position and global index ---*/
 
 				Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-				Global_Index = Buffer_Recv_GlobalIndex[Total_Index];
 
 				/*--- Retrieve the merged data for this node ---*/
 
@@ -9295,7 +9285,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 				/*--- Current index position and global index ---*/
 
 				Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-				Global_Index = Buffer_Recv_GlobalIndex[Total_Index];
 
 				/*--- Retrieve the merged data for this node ---*/
 
@@ -9379,7 +9368,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 						/*--- Current index position and global index ---*/
 
 						Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-						Global_Index = Buffer_Recv_GlobalIndex[Total_Index];
 
 						/*--- Retrieve the merged data for this node ---*/
 
@@ -9580,8 +9568,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 
 		delete [] Buffer_Recv_Area;
 
-		delete [] Buffer_Recv_GlobalIndex;
-
 		delete [] Buffer_Recv_nVertex;
 
 		delete[] r;
@@ -9642,8 +9628,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		delete [] Buffer_Send_dVel_z_dz;
 	}
 	delete [] Buffer_Send_Area;
-
-	delete [] Buffer_Send_GlobalIndex;
 
 	}
 

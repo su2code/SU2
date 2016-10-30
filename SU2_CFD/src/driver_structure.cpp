@@ -3302,11 +3302,6 @@ void CHBDriver::ResetConvergence() {
 
 void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
-	int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
 	unsigned short iVar, jZone, iMGlevel;
 	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
 	unsigned long iPoint;

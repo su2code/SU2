@@ -5159,28 +5159,28 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             case TRIANGLE:
               elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
               InElem = false;
-              for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                 if (ActDisk_Bool[vnodes_triangle[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                   VolumePoint.push_back(vnodes_triangle[i]); } }
               break;
             case QUADRILATERAL:
               elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                 if (ActDisk_Bool[vnodes_quad[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                   VolumePoint.push_back(vnodes_quad[i]); } }
               break;
             case TETRAHEDRON:
               elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_tetra[i]]) { InElem = true; break; }              }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_tetra[i]); } }
               break;
             case HEXAHEDRON:
@@ -5188,30 +5188,30 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
               elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
               InElem = false;
-              for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_hexa[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_hexa[i]); } }
               break;
             case PRISM:
               elem_line >> vnodes_prism[0]; elem_line >> vnodes_prism[1]; elem_line >> vnodes_prism[2];
               elem_line >> vnodes_prism[3]; elem_line >> vnodes_prism[4]; elem_line >> vnodes_prism[5];
               InElem = false;
-              for (i = 0; i < N_POINTS_PRISM; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                 if (ActDisk_Bool[vnodes_prism[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PRISM; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                   VolumePoint.push_back(vnodes_prism[i]); } }
               break;
             case PYRAMID:
               elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
               elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
               InElem = false;
-              for (i = 0; i < N_POINTS_PYRAMID; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                 if (ActDisk_Bool[vnodes_pyramid[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PYRAMID; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                   VolumePoint.push_back(vnodes_pyramid[i]); } }
               break;
           }
