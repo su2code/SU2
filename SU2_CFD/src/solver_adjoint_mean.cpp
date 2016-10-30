@@ -5330,7 +5330,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
 void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, UnitNormal[3], *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
+  su2double Area, *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
   unsigned short iVar, iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -5358,10 +5358,7 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-      
+
       /*--- Index of the closest interior node ---*/
       
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
@@ -5414,8 +5411,7 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
 
 void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet,
-  UnitNormal[3], Area;
+  su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet, Area;
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, GlobalIndex_inlet, GlobalIndex;
   
@@ -5447,9 +5443,6 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Allocate the value at the inlet ---*/
       
@@ -5547,12 +5540,11 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
 
 void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iVertex, iPoint, Point_Normal, GlobalIndex_inlet, GlobalIndex;
+  unsigned long iVertex, iPoint, GlobalIndex_inlet, GlobalIndex;
   su2double *Normal, *V_domain, *V_outlet, *Psi_domain, *Psi_outlet;
   unsigned short iVar, iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   Normal = new su2double[nDim];
   Psi_domain = new su2double[nVar];
@@ -5576,11 +5568,7 @@ void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_co
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-      
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
+
       /*--- Allocate the value at the outlet ---*/
       
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
