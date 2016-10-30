@@ -7228,7 +7228,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   unsigned short iStation, iAngle, nAngle, Theta, nStation;
   su2double *** ProbeArray, *Mach_Station, *Mach_Station_Min, *PT_Sector, *PT_Station, *PT_Station_Min,
   PT_Sector_Min, PT_Mean, Mach_Mean, q_Mean, UpVector[3], radians, RotatedVector[3],
-  RefDensity, RefVel, DC60, IDR, IDC, IDC_Mach;
+  DC60, IDR, IDC, IDC_Mach;
   su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
   su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
   su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
@@ -7709,10 +7709,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         for (iAngle = 1; iAngle < nAngle; iAngle++) {
           if (PT_Sector[iAngle] <= PT_Sector_Min) PT_Sector_Min = PT_Sector[iAngle];
         }
-        
-        RefDensity  = GetDensity_Inf();
-        RefVel = GetModVelocity_Inf();
-        
+                
         /*--- Set the value of the distortion, it only works for one surface ---*/
         
         Mach_Inf           = config->GetMach();
@@ -8059,7 +8056,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   unsigned long iVertex, iPoint;
   su2double  *V_inlet = NULL, *V_outlet = NULL, Pressure, Temperature, Velocity[3], Vn,
   Velocity2, Density, Area, SoundSpeed, TotalPressure, Vel_Infty2, RamDrag,
-  TotalTemperature, Pressure_Infty, VelocityJet,
+  TotalTemperature, VelocityJet,
   Vel_Infty, MaxPressure, MinPressure, MFR, InfVel2;
   unsigned short iMarker_Inlet, iMarker_Outlet, nMarker_Inlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
@@ -8157,7 +8154,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             
             Temperature		= V_inlet[0];
             Pressure  				= V_inlet[nDim+1];
-            Pressure_Infty	= GetPressure_Inf();
             
             Density 						= V_inlet[nDim+2];
             SoundSpeed	= sqrt(Gamma*Pressure/Density);
@@ -8228,7 +8224,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             
             Temperature			= V_outlet[0];
             Pressure  					= V_outlet[nDim+1];
-            Pressure_Infty	= GetPressure_Inf();
             
             Density 						= V_outlet[nDim+2];
             SoundSpeed	= sqrt(Gamma*Pressure/Density);
@@ -8759,14 +8754,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           su2double Factor = (0.5*RefDensity*RefAreaCoeff*RefVel2);
           su2double Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
           su2double DmT = GetTotal_CD() * Factor;
-          
-          su2double ModDmT = 0.0;
-          if (nDim == 2) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
-                                       GetTotal_CFy()*GetTotal_CFy());
-          
-          if (nDim == 3) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
-                                       GetTotal_CFy()*GetTotal_CFy() +
-                                       GetTotal_CFz()*GetTotal_CFz());
           
                     
           su2double SolidSurf_Drag = DmT - Force;

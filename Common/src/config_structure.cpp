@@ -1841,7 +1841,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iDim, iMarker;
+  unsigned short iZone, iCFL, iMarker;
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
