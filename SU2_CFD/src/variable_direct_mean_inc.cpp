@@ -153,7 +153,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   
 	/*--- Allocate space for the time spectral source terms ---*/
   
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
 	}
@@ -267,7 +267,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 	}
   
 	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
 	}

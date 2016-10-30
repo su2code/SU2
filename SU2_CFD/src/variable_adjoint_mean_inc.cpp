@@ -118,7 +118,7 @@ CAdjIncEulerVariable::CAdjIncEulerVariable(su2double val_psirho, su2double *val_
 		IntBoundary_Jump[iVar] = 0.0;
   
   /*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
 			TS_Source[iVar] = 0.0;
@@ -202,7 +202,7 @@ CAdjIncEulerVariable::CAdjIncEulerVariable(su2double *val_solution, unsigned sho
 		IntBoundary_Jump[iVar] = 0.0;
   
 	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		TS_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
 			TS_Source[iVar] = 0.0;

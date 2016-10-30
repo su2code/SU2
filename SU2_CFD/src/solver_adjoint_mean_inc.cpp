@@ -1810,7 +1810,7 @@ void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   //	bool gravity        = (config->GetGravityForce() == YES);
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -1839,7 +1839,7 @@ void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     }
   }
   
-  if (time_spectral) {
+  if (harmonic_balance) {
     
     su2double Volume, Source;
     
@@ -1851,7 +1851,7 @@ void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
       
       /*--- Get stored time spectral source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetHarmonicBalance_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       

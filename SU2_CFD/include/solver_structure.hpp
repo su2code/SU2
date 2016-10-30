@@ -2204,13 +2204,7 @@ public:
    * \return Value of the difference of the heat and the target heat.
    */
   virtual su2double GetTotal_HeatFluxDiff(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
-   */
-  virtual su2double GetTotal_CFreeSurface(void);
-  
+
   /*!
    * \brief A virtual member.
    * \return Value of the FEA coefficient (inviscid + viscous contribution).
@@ -2247,12 +2241,6 @@ public:
    * \param[in] val_pressure - Value of the difference between heat and the target heat.
    */
   virtual void SetTotal_HeatFluxDiff(su2double val_heat);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_cfreesurface - Value of the Free Surface coefficient.
-   */
-  virtual void SetTotal_CFreeSurface(su2double val_cfreesurface);
   
   /*!
    * \brief A virtual member.
