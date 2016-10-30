@@ -1567,13 +1567,35 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           numerics->SetDistance(distDES_tilde, 0.0);
       }
       else if (config->GetKind_HybridRANSLES()==SA_DDES){
+          su2double *Coord_i, *Coord_j, aux_delta;
+          unsigned short nNeigh, iNeigh;
+          unsigned long NumNeigh;
+          
+          /*--- Marcello Righi's Delta max ---*/
+          
+           Coord_i = geometry->node[iPoint]->GetCoord();
+           nNeigh = geometry->node[iPoint]->GetnPoint();
+           
+           Delta=0.;
+           
+           for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
+           NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
+           Coord_j = geometry->node[NumNeigh]->GetCoord();
+           
+           aux_delta=0.;
+           for (iDim=0;iDim<nDim;++iDim)
+              aux_delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+           
+           Delta=max(Delta,sqrt(aux_delta));
+           
+           }
+//
+//          if (nDim==2)
+//              Delta = pow(geometry -> node[iPoint]->GetVolume(),1.0/2.0);
+//          else
+//              Delta = pow(geometry -> node[iPoint]->GetVolume(),1.0/3.0);
           
           dist_wall = geometry->node[iPoint]->GetWall_Distance();
-          
-          if (nDim==2)
-              Delta = pow(geometry -> node[iPoint]->GetVolume(),1.0/2.0);
-          else
-              Delta = pow(geometry -> node[iPoint]->GetVolume(),1.0/3.0);
           
           distDES = Const_DES * Delta;
           PrimVar_Grad=solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
