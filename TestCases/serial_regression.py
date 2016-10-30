@@ -196,6 +196,17 @@ def main():
     turb_naca0012_sst.tol       = 0.00001
     test_list.append(turb_naca0012_sst)
 
+    # PROPELLER 
+    propeller           = TestCase('propeller')
+    propeller.cfg_dir   = "rans/propeller"
+    propeller.cfg_file  = "propeller.cfg"
+    propeller.test_iter = 10
+    propeller.test_vals = [-3.380312, -8.129519, 0.000043, 0.070031] #last 4 columns
+    propeller.su2_exec  = "SU2_CFD"
+    propeller.timeout   = 3200
+    propeller.tol       = 0.00001
+    test_list.append(propeller)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -341,18 +352,18 @@ def main():
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
 
-#    ######################################
-#    ### Spectral Method                ###
-#    ######################################
-#    spectral           = TestCase('spectral')
-#    spectral.cfg_dir   = "spectral_method"
-#    spectral.cfg_file  = "spectral.cfg"
-#    spectral.test_iter = 25
-#    spectral.test_vals = [-1.621870,3.852164,0.007465,0.084358]
-#    spectral.su2_exec  = "SU2_CFD"
-#    spectral.timeout   = 1600
-#    spectral.tol       = 0.00001
-#    test_list.append(spectral)
+    ######################################
+    ### Harmonic Balance               ###
+    ######################################
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "SU2_CFD"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###

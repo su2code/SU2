@@ -387,57 +387,74 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 #endif
 
   /*--- Here we can add new (scalar) objective functions ---*/
-
-  switch (config->GetKind_ObjFunc()) {
-  case DRAG_COEFFICIENT:
+  if (config->GetnObj()==1){
+    switch (config->GetKind_ObjFunc()){
+    case DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CD();
       break;
-  case LIFT_COEFFICIENT:
+    case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
       break;
-  case SIDEFORCE_COEFFICIENT:
+    case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
       break;
-  case EFFICIENCY:
+    case EFFICIENCY:
       ObjFunc_Value = direct_solver->GetTotal_CEff();
       break;
-  case MOMENT_X_COEFFICIENT:
+    case MOMENT_X_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMx();
       break;
-  case MOMENT_Y_COEFFICIENT:
+    case MOMENT_Y_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMy();
       break;
-  case MOMENT_Z_COEFFICIENT:
+    case MOMENT_Z_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CMz();
       break;
-  case EQUIVALENT_AREA:
+    case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
-  case AVG_TOTAL_PRESSURE:
-    ObjFunc_Value = direct_solver->GetOneD_TotalPress();
-    break;
-  case AVG_OUTLET_PRESSURE:
-    ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
-    break;
-  case MASS_FLOW_RATE:
-    ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
-    break;
- /*--- Template for new objective functions where TemplateObjFunction()
-  *  is the routine that returns the obj. function value. The computation
-  * must be done while the tape is active, i.e. between AD::StartRecording() and
-  * AD::StopRecording() in DiscAdjMeanFlowIteration::Iterate(). The best place is somewhere
-  * inside MeanFlowIteration::Iterate().
-  *
-  * case TEMPLATE_OBJECTIVE:
-  *    ObjFunc_Value = TemplateObjFunction();
-  *    break;
-  * ---*/
+    case AVG_TOTAL_PRESSURE:
+      ObjFunc_Value = direct_solver->GetOneD_TotalPress();
+      break;
+    case AVG_OUTLET_PRESSURE:
+      ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
+      break;
+    case MASS_FLOW_RATE:
+      ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
+      break;
+    case NET_THRUST_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_NetCThrust();
+      break;
+    case IDC_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_IDC();
+      break;
+    case PROPULSIVE_EFFICIENCY:
+      ObjFunc_Value = direct_solver->GetTotal_Prop_Eff();
+      break;
+    case CUSTOM_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_Custom();
+      break;
+
+    }
+
+    /*--- Template for new objective functions where TemplateObjFunction()
+     *  is the routine that returns the obj. function value. The computation
+     * must be done while the tape is active, i.e. between AD::StartRecording() and
+     * AD::StopRecording() in DiscAdjMeanFlowIteration::Iterate(). The best place is somewhere
+     * inside MeanFlowIteration::Iterate().
+     *
+     * case TEMPLATE_OBJECTIVE:
+     *    ObjFunc_Value = TemplateObjFunction();
+     *    break;
+     * ---*/
+  }
+  else{
+    ObjFunc_Value = direct_solver->GetTotal_ComboObj();
   }
   if (rank == MASTER_NODE) {
     AD::RegisterOutput(ObjFunc_Value);
   }
 }
-
 
 void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
   int rank = MASTER_NODE;

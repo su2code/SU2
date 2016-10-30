@@ -37,7 +37,7 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-	TS_Source = NULL;
+	HB_Source = NULL;
 	Primitive = NULL;
 	Secondary = NULL;
 	
@@ -74,7 +74,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   /*--- Array initialization ---*/
   
-  TS_Source = NULL;
+  HB_Source = NULL;
   Primitive = NULL;
   Secondary = NULL;
   
@@ -195,11 +195,11 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 		}
 	}
   
-	/*--- Allocate space for the time spectral source terms ---*/
+	/*--- Allocate space for the harmonic balance source terms ---*/
   
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new su2double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+		HB_Source = new su2double[nVar];
+		for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
 	}
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
@@ -252,7 +252,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   
   /*--- Array initialization ---*/
   
-  TS_Source = NULL;
+  HB_Source = NULL;
   Primitive = NULL;
   Secondary = NULL;
   
@@ -340,10 +340,10 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 		}
 	}
   
-	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new su2double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
+	/*--- Allocate space for the harmonic balance source terms ---*/
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+		HB_Source = new su2double[nVar];
+		for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
 	}
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
@@ -384,7 +384,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 CEulerVariable::~CEulerVariable(void) {
 	unsigned short iVar;
 
-  if (TS_Source         != NULL) delete [] TS_Source;
+  if (HB_Source         != NULL) delete [] HB_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Secondary         != NULL) delete [] Secondary;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
@@ -394,12 +394,12 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      if (Gradient_Primitive!=NULL) delete [] Gradient_Primitive[iVar];
+      if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
   if (Gradient_Secondary != NULL) {
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-      if (Gradient_Secondary!=NULL) delete [] Gradient_Secondary[iVar];
+      if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];
     delete [] Gradient_Secondary;
   }
 

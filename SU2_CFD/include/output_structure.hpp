@@ -188,6 +188,16 @@ public:
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
   void OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Create and write the file with the flow coefficient on the surface.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] FlowSolution - Flow solution.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Current zone number in the grid file.
+   */
+  void WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolver *FlowSolver);
 
   /*!
    * \brief Writes mass flow rate output at monitored marker.
@@ -507,5 +517,14 @@ public:
    * \param[in] val_nZone - Number of Zones.
    */
   void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
+
+  /*!
+   * \brief Write the output file for harmonic balance for each time-instance.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Number of Zones.
+   * \param[in] val_iZone - Zone index.
+   */
+  void HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
 
 };
