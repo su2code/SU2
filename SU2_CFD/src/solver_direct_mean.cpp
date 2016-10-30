@@ -269,22 +269,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
         }
       }
       
-      /*--- iH angle ---*/
-      
-      position = text_line.find ("IH=",0);
-      if (position != string::npos) {
-        text_line.erase (0,3); iH_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: ACDC will use the iH provided in the solution file: " << iH_ << " deg." << endl;
-          config->SetiH(iH_);
-        }
-        else {
-          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the iH in the solution file." << endl;
-        }
-      }
-      
       /*--- BCThrust angle ---*/
       
       position = text_line.find ("INITIAL_BCTHRUST=",0);
@@ -309,16 +293,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
         if ((config->GetdCL_dAlpha() != dCL_dAlpha_) &&  (rank == MASTER_NODE))
           cout <<"WARNING: ACDC will use the dCL/dAlpha provided in the solution file: " << dCL_dAlpha_ << " 1/deg." << endl;
         config->SetdCL_dAlpha(dCL_dAlpha_);
-      }
-      
-      /*--- dCM/dHi ---*/
-      
-      position = text_line.find ("DCM_DIH=",0);
-      if (position != string::npos) {
-        text_line.erase (0,11); dCM_diH_ = atof(text_line.c_str());
-        if ((config->GetdCM_diH() != dCM_diH_) &&  (rank == MASTER_NODE))
-          cout <<"WARNING: ACDC will use the dCM/dHi provided in the solution file: " << dCM_diH_ << " 1/deg." << endl;
-        config->SetdCM_diH(dCM_diH_);
       }
       
       /*--- External iteration ---*/
@@ -1064,7 +1038,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -15450,22 +15423,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         }
       }
       
-      /*--- iH angle ---*/
-      
-      position = text_line.find ("IH=",0);
-      if (position != string::npos) {
-        text_line.erase (0,3); iH_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: ACDC will use the iH provided in the solution file: " << iH_ << " deg." << endl;
-          config->SetiH(iH_);
-        }
-        else {
-          if ((config->GetAoS() != iH_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the iH in the solution file." << endl;
-        }
-      }
-      
       /*--- BCThrust angle ---*/
       
       position = text_line.find ("INITIAL_BCTHRUST=",0);
@@ -15490,16 +15447,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         if ((config->GetdCL_dAlpha() != dCL_dAlpha_) &&  (rank == MASTER_NODE))
           cout <<"WARNING: ACDC will use the dCL/dAlpha provided in the solution file: " << dCL_dAlpha_ << " 1/deg." << endl;
         config->SetdCL_dAlpha(dCL_dAlpha_);
-      }
-      
-      /*--- dCM/dHi ---*/
-      
-      position = text_line.find ("DCM_DIH=",0);
-      if (position != string::npos) {
-        text_line.erase (0,11); dCM_diH_ = atof(text_line.c_str());
-        if ((config->GetdCM_diH() != dCM_diH_) &&  (rank == MASTER_NODE))
-          cout <<"WARNING: ACDC will use the dCM/dHi provided in the solution file: " << dCM_diH_ << " 1/deg." << endl;
-        config->SetdCM_diH(dCM_diH_);
       }
       
       /*--- External iteration ---*/
@@ -16250,7 +16197,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -16263,7 +16209,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
-      
     }
     
     /*--- Instantiate the variable class with an arbitrary solution

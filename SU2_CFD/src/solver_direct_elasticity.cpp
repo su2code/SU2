@@ -300,7 +300,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -313,7 +312,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
-      
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
@@ -1073,7 +1071,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
 #else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
   if (rbuf_NotMatching != 0) {
     if (rank == MASTER_NODE) {
       cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
