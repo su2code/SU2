@@ -846,12 +846,8 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
-<<<<<<< HEAD
     bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
 
-=======
-  
->>>>>>> su2code/master
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent = false;
@@ -863,12 +859,8 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   heat             = false;
   transition       = false;
   template_solver  = false;
-<<<<<<< HEAD
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-    
-=======
-  
->>>>>>> su2code/master
+
   /*--- Assign booleans ---*/
   
   switch (config->GetKind_Solver()) {
@@ -892,18 +884,12 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
-<<<<<<< HEAD
     case SA:     spalart_allmaras = true;     break;
     case SA_NEG: neg_spalart_allmaras = true; break;
     case SST:    menter_sst = true;           break;
     case SA_E: e_spalart_allmaras = true; break;
     case SA_COMP: comp_spalart_allmaras = true; break;
     case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-=======
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;           break;
->>>>>>> su2code/master
     }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -1864,12 +1850,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   heat,
   transition,
   template_solver;
-<<<<<<< HEAD
+
   bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
 
-=======
-  
->>>>>>> su2code/master
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
@@ -1882,12 +1865,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;
   template_solver  = false;
-<<<<<<< HEAD
+    
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
 
-=======
-  
->>>>>>> su2code/master
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
@@ -1910,13 +1890,10 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true;  break;
-<<<<<<< HEAD
       case SA_COMP: comp_spalart_allmaras = true; break;
       case SA_E: e_spalart_allmaras = true; break;
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
-=======
-        
->>>>>>> su2code/master
+
     }
   
   /*--- Solver definition for the template problem ---*/
@@ -2046,7 +2023,6 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     }
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-<<<<<<< HEAD
       if (spalart_allmaras || neg_spalart_allmaras ||menter_sst|| comp_spalart_allmaras || e_spalart_allmaras || e_comp_spalart_allmaras){
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           delete numerics_container[iMGlevel][TURB_SOL][VISC_TERM];
@@ -2056,17 +2032,6 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
           delete numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM];
           delete numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM];
 
-=======
-    if (spalart_allmaras || neg_spalart_allmaras || menter_sst){
-      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        delete numerics_container[iMGlevel][TURB_SOL][VISC_TERM];
-        delete numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM];
-        delete numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM];
-        /*--- Definition of the boundary condition method ---*/
-        delete numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM];
-        delete numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM];
-        
->>>>>>> su2code/master
       }
     }
     

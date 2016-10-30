@@ -100,46 +100,7 @@ int main(int argc, char *argv[]) {
     driver = new CMultiZoneDriver(config_file_name, nZone, nDim);
 
     /*--- Future multi-zone drivers instatiated here. ---*/
-
-<<<<<<< HEAD
-
-          if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-          
-          /*--- Execute the routine for writing restart, volume solution,
-           surface solution, and surface comma-separated value files. ---*/
-          
-          output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-          
-          /*--- Output a file with the forces breakdown. ---*/
-          
-          output->SetForces_Breakdown(geometry_container, solver_container,
-                                      config_container, integration_container, ZONE_0);
-          
-          /*--- Compute the forces at different sections. ---*/
-          
-          if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
-            output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-          }
-          
-          if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-          
-        }
-      
-    /* --- Export Surface Solution File for Unsteady Simulations ---*/
-
-    if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0)) {
-        output->SetSurfaceCSV_Flow(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0][FLOW_SOL], ExtIter, ZONE_0);
-    }
     
-    /*--- If the convergence criteria has been met, terminate the simulation. ---*/
-    
-    if (StopCalc) break;
-    
-    ExtIter++;
-    
-=======
->>>>>>> su2code/master
   }
 
   delete config;

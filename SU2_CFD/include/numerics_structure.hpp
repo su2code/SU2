@@ -207,20 +207,10 @@ public:
   su2double *Vorticity_i, *Vorticity_j;  /*!< \brief Vorticity. */
   su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
   
-  su2double *l, *m;
-<<<<<<< HEAD
-  su2double *dPdU_i, *dPdU_j;
-  su2double *dTdU_i, *dTdU_j;
-  su2double *dTvedU_i, *dTvedU_j;
-  su2double *Ys, **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
-  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
-  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   su2double dissipation;
     
-  CVariable *var;
-=======
->>>>>>> su2code/master
-  
+  su2double *l, *m;
+
   /*!
    * \brief Constructor of the class.
    */
