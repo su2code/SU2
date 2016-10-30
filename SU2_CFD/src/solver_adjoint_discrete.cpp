@@ -216,13 +216,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     /*--- Detect a wrong solution file ---*/
     
     if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
 #ifndef HAVE_MPI
     rbuf_NotMatching = sbuf_NotMatching;
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -235,7 +233,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
-      
     }
 
     /*--- Instantiate the variable class with an arbitrary solution
