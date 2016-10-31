@@ -1236,20 +1236,19 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Density_Inf   = config->GetDensity_FreeStreamND();
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
   
-  bool transition    = (config->GetKind_Trans_Model() == BC); //Added by Cakmakcioglu 10/30/2016
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
-  
+
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
-  if (transition) {
-  nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf; //Modified for BC transition model. Cakmakcioglu 10/30/2016
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
   }
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
-  if (transition) {
-  nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf; //Modified for BC transition model. Cakmakcioglu 10/30/2016
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
   }
 
   /*--- Factor_nu_ActDisk ---*/
