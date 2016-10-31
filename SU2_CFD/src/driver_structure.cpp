@@ -1869,7 +1869,7 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
       case EULER : case NAVIER_STOKES: case RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         fluid_target  = true;     break;
-      case FEM_ELASTICITY: case DISC_ADJ_FEM:
+      case FEM_ELASTICITY: case ADJ_ELASTICITY: case DISC_ADJ_FEM:
         structural_target = true;   break;
     }
     
@@ -1883,7 +1883,7 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
         case EULER : case NAVIER_STOKES: case RANS:
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           fluid_donor  = true;    break;
-        case FEM_ELASTICITY:  case DISC_ADJ_FEM:
+        case FEM_ELASTICITY:  case ADJ_ELASTICITY: case DISC_ADJ_FEM:
           structural_donor = true;  break;
       }
       
@@ -3207,6 +3207,18 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
 
     FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 
+  }
+
+  // TODO: Temporary, for running the classic adjoint for FSIs
+
+  if (config_container[ZONE_STRUCT]->GetKind_Solver() == ADJ_ELASTICITY){
+    /*-----------------------------------------------------------------*/
+    /*-------------- Structural adjoint subiteration ------------------*/
+    /*-----------------------------------------------------------------*/
+
+    iteration_container[ZONE_STRUCT]->Postprocess(output, integration_container, geometry_container,
+                                                 solver_container, numerics_container, config_container,
+                                                 surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
   }
 
   /*-----------------------------------------------------------------*/
