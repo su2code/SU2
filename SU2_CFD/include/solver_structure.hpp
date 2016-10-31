@@ -3547,13 +3547,15 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  virtual void Initiate_MPI_Communication(void);
-  
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Complete_MPI_Communication(void);
+  virtual void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                               CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -3564,20 +3566,8 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  virtual void Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  virtual void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  virtual void Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
   /*!
    * \brief A virtual member.
@@ -9524,8 +9514,10 @@ protected:
   unsigned long nMeshPoints;    /*!< \brief Number of mesh points in the local part of the grid. */
   const CPointFEM *meshPoints;  /*!< \brief Array of the points of the FEM mesh. */
   
-  unsigned long                 nMatchingInternalFaces;  /*!< \brief Number of local matching internal faces. */
-  const CInternalFaceElementFEM *matchingInternalFaces;  /*!< \brief Array of the local matching internal faces. */
+  unsigned long                 nMatchingInternalFacesWithHaloElem;  /*!< \brief Number of local matching internal faces 
+                                                                                 between an owned and a halo element. */
+  unsigned long                 nMatchingInternalFaces;              /*!< \brief Number of local matching internal faces. */
+  const CInternalFaceElementFEM *matchingInternalFaces;              /*!< \brief Array of the local matching internal faces. */
   
   const CBoundaryFEM *boundaries;     /*!< \brief Array of the boundaries of the FEM mesh. */
   
@@ -9724,7 +9716,7 @@ public:
                     unsigned short iMesh, unsigned long Iteration);
   
   /*!
-   * \brief Compute the internal contributions to the spatial residual.
+   * \brief Compute the volume contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -9732,11 +9724,11 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
   /*!
-   * \brief Compute the external contributions to the spatial residual.
+   * \brief Compute the surface contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -9744,8 +9736,27 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+
+  /*!
+   * \brief Compute the spatial residual for the given range of faces. It is a virtual
+            function, because this function is overruled for Navier-Stokes.
+   * \param[in]     geometry - Geometrical definition of the problem.
+   * \param[in]     solver_container - Container vector with all the solutions.
+   * \param[in]     numerics - Description of the numerical method.
+   * \param[in]     config - Definition of the particular problem.
+   * \param[in]     iMesh - Index of the mesh in multigrid computations.
+   * \param[in]     iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in]     indFaceBeg - Starting index in the matching faces.
+   * \param[in]     indFaceEnd - End index in the matching faces.
+   * \param[in,out] indResFaces - Index where to store the residuals in
+                                  the vector of face residuals.
+   */
+  virtual void ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                             CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                             const unsigned long indFaceBeg, const unsigned long indFaceEnd,
+                             unsigned long &indResFaces);
   
   /*!
    * \brief Compute primitive variables and their gradients.
@@ -10180,7 +10191,9 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CFz_Inv(void);
-  
+
+protected:
+
   /*!
    * \brief Routine that initiates the non-blocking communication between ranks.
    */
@@ -10202,8 +10215,6 @@ public:
             between ranks.
    */
   void Complete_MPI_ReverseCommunication(void);
-  
-protected:
   
   /*!
    * \brief Function, which computes the inviscid fluxes in face points.
@@ -10227,10 +10238,8 @@ protected:
    * \brief Function, which creates the final residual by accumulating the
             individual contributions and multiply the result by the inverse
             of the (lumped) mass matrix.
-   * \param[in,out] tmpRes - Temporary storage array needed for multiplication
-                             with the inverse of the mass matrix.
    */
-  void CreateFinalResidual(su2double *tmpRes);
+  void CreateFinalResidual(void);
   
   /*!
    * \brief Function, which computes the inviscid fluxes in face points of
@@ -10383,7 +10392,7 @@ public:
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
   /*!
-   * \brief Compute the internal contributions to the spatial residual.
+   * \brief Compute the volume contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -10391,21 +10400,27 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
   /*!
-   * \brief Compute the external contributions to the spatial residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \brief Compute the spatial residual for the given range of faces.
+   * \param[in]     geometry - Geometrical definition of the problem.
+   * \param[in]     solver_container - Container vector with all the solutions.
+   * \param[in]     numerics - Description of the numerical method.
+   * \param[in]     config - Definition of the particular problem.
+   * \param[in]     iMesh - Index of the mesh in multigrid computations.
+   * \param[in]     iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in]     indFaceBeg - Starting index in the matching faces.
+   * \param[in]     indFaceEnd - End index in the matching faces.
+   * \param[in,out] indResFaces - Index where to store the residuals in
+                                  the vector of face residuals.
    */
-  void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
+  void ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                     CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                     const unsigned long indFaceBeg, const unsigned long indFaceEnd,
+                     unsigned long &indResFaces);
+
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
