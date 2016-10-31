@@ -1029,12 +1029,6 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
   unsigned long Iteration = 0;
   su2double tick = 0.0;
   
-  /*--- Initiate non-blocking comms. ---*/
-  
-  config->Tick(&tick);
-  solver_container[MainSolver]->Initiate_MPI_Communication();
-  config->Tock(tick,"Initiate_MPI_Communication",3);
-  
   /*--- Compute time step and set the old solution, if needed. ---*/
 
   if (iRKStep == 0) {
@@ -1053,11 +1047,11 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     config->Tock(tick,"SetTime_Step",3);
   }
   
-  /*--- Compute the internal portion of the residual (excluding halos) ---*/
+  /*--- Compute the volume portion of the residual. ---*/
   
   config->Tick(&tick);
-  solver_container[MainSolver]->Internal_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
-  config->Tock(tick,"Internal_Residual",3);
+  solver_container[MainSolver]->Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+  config->Tock(tick,"Volume_Residual",3);
   
   /*--- Boundary conditions ---*/
   
@@ -1116,17 +1110,11 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     }
   }
   
-  /*--- Complete non-blocking comms. ---*/
+  /*--- Compute surface portion of the residual. ---*/
   
   config->Tick(&tick);
-  solver_container[MainSolver]->Complete_MPI_Communication();
-  config->Tock(tick,"Complete_MPI_Communication",3);
-  
-  /*--- Compute remaining portion of the residual including halos. ---*/
-  
-  config->Tick(&tick);
-  solver_container[MainSolver]->External_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
-  config->Tock(tick,"External_Residual",3);
+  solver_container[MainSolver]->Surface_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+  config->Tock(tick,"Surface_Residual",3);
 }
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

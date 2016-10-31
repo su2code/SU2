@@ -98,7 +98,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   else               nVar = nDim + 1;
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
-        geometrical information for the FEM DG solver. ---*/
+        geometrical information for the FEM DG solver. If necessary, it is
+        possible to increase nMatchingFacesWithHaloElem a bit, such that
+        the computation of the external faces may be more efficient when
+        using multiple threads. ---*/
   CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
 
   nVolElemTot   = DGGeometry->GetNVolElemTot();
@@ -108,8 +111,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   nMeshPoints = DGGeometry->GetNMeshPoints();
   meshPoints  = DGGeometry->GetMeshPoints();
 
-  nMatchingInternalFaces = DGGeometry->GetNMatchingFaces();
-  matchingInternalFaces  = DGGeometry->GetMatchingFaces();
+  nMatchingInternalFacesWithHaloElem = DGGeometry->GetNMatchingFacesWithHaloElem();
+  nMatchingInternalFaces             = DGGeometry->GetNMatchingFaces();
+  matchingInternalFaces              = DGGeometry->GetMatchingFaces();
 
   boundaries = DGGeometry->GetBoundaries();
 
@@ -2086,8 +2090,11 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
   
 }
 
-void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                            CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  /* Start the MPI communication of the solution in the halo elements. */
+  Initiate_MPI_Communication();
 
   /*--- Allocate the memory for some temporary storage needed to compute the
         internal residual efficiently. ---*/
@@ -2189,13 +2196,40 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
   }
 }
 
-void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                           CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  /* Complete the MPI communication of the solution data. */
+  Complete_MPI_Communication();
+
+  /* Compute the residual of the faces that involve a halo element. */
+  unsigned long indResFaces = 0;
+  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iRKStep,
+                0, nMatchingInternalFacesWithHaloElem, indResFaces);
+
+  /* Start the communication of the residuals, for which the
+     reverse communication must be used. */
+  Initiate_MPI_ReverseCommunication();
+
+  /* Compute the residual of the faces that only involve owned elements. */
+  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iRKStep,
+                nMatchingInternalFacesWithHaloElem, nMatchingInternalFaces,
+                indResFaces);
+
+  /* Complete the communication of the residuals. */
+  Complete_MPI_ReverseCommunication();
+
+  /* Create the final residual by summing up all contributions. */
+  CreateFinalResidual();
+}
+
+void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                                        const unsigned long indFaceBeg, const unsigned long indFaceEnd,
+                                        unsigned long &indResFaces) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. ---*/
-  su2double tick = 0.0;
-
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
@@ -2204,21 +2238,14 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
   su2double *solIntR = helpSolIntR.data();
   su2double *fluxes  = helpFluxes.data();
 
-  /*--------------------------------------------------------------------------*/
-  /*--- Part 1: Compute the contribution to the contour integral in the    ---*/
-  /*---         FEM formulation from the matching internal faces.          ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Loop over the internal matching faces. ---*/
-  unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nMatchingInternalFaces; ++l) {
+  /*--- Loop over the requested range of matching faces. ---*/
+  for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
 
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Compute the inviscid fluxes in the integration points of ---*/
     /*---         this matching face multiplied by the integration weight. ---*/
     /*------------------------------------------------------------------------*/
     
-    config->Tick(&tick);
     /* Compute the inviscid fluxes in the integration points. */
     InviscidFluxesInternalMatchingFace(config, &matchingInternalFaces[l],
                                        solIntL, solIntR, fluxes, numerics);
@@ -2237,14 +2264,12 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
       for(unsigned short j=0; j<nVar; ++j)
         flux[j] *= weights[i];
     }
-    config->Tock(tick, "ER_1_1", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the contribution to the residuals from the       ---*/
     /*---         integration over this internal matching face.            ---*/
     /*------------------------------------------------------------------------*/
 
-    config->Tick(&tick);
     /* Easier storage of the position in the residual array for side 0 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
@@ -2283,21 +2308,7 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
       for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
         resFace1[i] = -resFace1[i];
     }
-    config->Tock(tick, "ER_1_2", 4);
   }
-  
-  /*--------------------------------------------------------------------------*/
-  /*--- Part 2: Accumulate the residuals for the owned DOFs and multiply   ---*/
-  /*---         by the inverse of either the mass matrix or the lumped     ---*/
-  /*---         mass matrix.                                               ---*/
-  /*--------------------------------------------------------------------------*/
-
-  config->Tick(&tick);
-  /* Call the function CreateFinalResidual to carry out the task. The array
-     fluxes is passed as temporary storage. */
-  CreateFinalResidual(fluxes);
-    
-  config->Tock(tick, "ER_2_1", 4);
 }
 
 void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
@@ -2378,11 +2389,11 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                             solIntL, solIntR, fluxes, numerics);
 }
 
-void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
+void CFEM_DG_EulerSolver::CreateFinalResidual(void) {
 
-  /* Start the communication of the residuals, for which the
-     reverse communication must be used. */
-  Initiate_MPI_ReverseCommunication();
+  /* Allocate the memory for the local vectors. */
+  vector<su2double> helpTmpRes(nVar*nDOFsMax);
+  su2double *tmpRes = helpTmpRes.data();
 
   /* Loop over the owned volume elements to accumulate the local data. */
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -2402,13 +2413,6 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
           resDOF[k] += resFace[k];
       }
     }
-  }
-
-  /* Complete the communication of the residuals. */
-  Complete_MPI_ReverseCommunication();
-
-  /* Loop over the owned volume elements to compute the final residual. */
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
@@ -4219,8 +4223,11 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  /* Start the MPI communication of the solution in the halo elements. */
+  Initiate_MPI_Communication();
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
@@ -4418,8 +4425,10 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
   }
 }
 
-void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                                     const unsigned long indFaceBeg, const unsigned long indFaceEnd,
+                                     unsigned long &indResFaces) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note the size for fluxes and gradSolInt and the
@@ -4449,14 +4458,8 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   su2double *viscosityIntL = helpViscosityIntL.data();
   su2double *viscosityIntR = helpViscosityIntR.data();
 
-  /*--------------------------------------------------------------------------*/
-  /*--- Part 1: Compute the contribution to the contour integral in the    ---*/
-  /*---         FEM formulation from the matching internal faces.          ---*/
-  /*--------------------------------------------------------------------------*/
-
-  /*--- Loop over the internal matching faces. ---*/
-  unsigned long indResFaces = 0;
-  for(unsigned long l=0; l<nMatchingInternalFaces; ++l) {
+  /*--- Loop over the requested range of matching faces. ---*/
+  for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
 
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Compute the inviscid fluxes in the integration points of ---*/
@@ -4711,18 +4714,6 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     }
     config->Tock(tick, "ER_1_6", 4);
   }
-
-  /*--------------------------------------------------------------------------*/
-  /*--- Part 2: Accumulate the residuals for the owned DOFs and multiply   ---*/
-  /*---         by the inverse of either the mass matrix or the lumped     ---*/
-  /*---         mass matrix.                                               ---*/
-  /*--------------------------------------------------------------------------*/
-
-  config->Tick(&tick);
-  /* Call the function CreateFinalResidual to carry out the task. The array
-     fluxes is passed as temporary storage. */
-  CreateFinalResidual(fluxes);
-  config->Tock(tick, "ER_2_1", 4);
 }
 
 void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,

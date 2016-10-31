@@ -31,7 +31,9 @@
 
 #pragma once
 
-inline SortFacesClass::SortFacesClass(unsigned long val_nVolElemTot) {nVolElemTot = val_nVolElemTot;}
+inline SortFacesClass::SortFacesClass(unsigned long val_nVolElemOwned,
+                                      unsigned long val_nVolElemTot)
+ {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot;}
 
 inline SortFacesClass::~SortFacesClass(void) { }
 
@@ -108,6 +110,8 @@ inline vector<vector<unsigned long> > CMeshFEM::GetRotPerHalos(void) const {retu
 inline CMeshFEM_DG::CMeshFEM_DG(void) { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
+
+inline unsigned long CMeshFEM_DG::GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem;}
 
 inline unsigned long CMeshFEM_DG::GetNMatchingFaces(void) {return matchingFaces.size();}
 

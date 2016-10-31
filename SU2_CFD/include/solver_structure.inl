@@ -1722,15 +1722,11 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config) {}
 
-inline void CSolver::Initiate_MPI_Communication(void) {}
+inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
 
-inline void CSolver::Complete_MPI_Communication(void) {}
-
-inline void CSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
+inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

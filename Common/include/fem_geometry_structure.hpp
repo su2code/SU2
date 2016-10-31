@@ -48,7 +48,8 @@ public:
   /*!
    * \brief Constructor of the class. Set the value of nVolElemTot.
    */
-   SortFacesClass(unsigned long val_nVolElemTot);
+   SortFacesClass(unsigned long val_nVolElemOwned,
+                  unsigned long val_nVolElemTot);
 
  /*!
   * \brief Destructor of the class. Nothing to be done.
@@ -63,7 +64,8 @@ public:
   bool operator()(const FaceOfElementClass &f0,
                   const FaceOfElementClass &f1);
 private:
-  unsigned long nVolElemTot;  /*!< \brief Number of local volume elements . */
+  unsigned long nVolElemOwned; /*!< \brief Number of locally owned volume elements. */
+  unsigned long nVolElemTot;   /*!< \brief Total number of local volume elements . */
 
   /*!
    * \brief Default constructor of the class. Disabled.
@@ -671,6 +673,8 @@ private:
                                                                               internal faces used for the geometry of
                                                                               the DG solver. */
 
+  unsigned long nMatchingFacesWithHaloElem;      /*!< \brief Number of matching faces between an owned element and a halo
+                                                             element. These faces are numbered first in matchingFaces. */
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
 
 public:
@@ -715,6 +719,13 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   void CreateStandardVolumeElements(CConfig *config);
+
+ /*!
+  * \brief Function, which makes available the number of matching internal faces
+           between an owned element and a halo element.
+  * \return  The number of matching internal faces between these elements.
+  */
+  unsigned long GetNMatchingFacesWithHaloElem(void);
 
  /*!
   * \brief Function, which makes available the number of matching internal faces.

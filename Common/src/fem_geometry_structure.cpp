@@ -73,11 +73,28 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
     /* Determine the situation. */
     if(elemIDMax0 < nVolElemTot && elemIDMax1 < nVolElemTot) {
 
-      /* Both faces are matching internal faces. These faces are sorted
-         according to their element ID's in order to increase cache performance.
-         This may be adapted to improve performance. */
-      if(elemIDMin0 != elemIDMin1) return elemIDMin0 < elemIDMin1;
-      return elemIDMax0 < elemIDMax1;
+      /* Both faces are matching internal faces. Determine whether or not these
+         faces are local faces, i.e. faces between locally owned elements. */
+      const bool face0IsLocal = elemIDMax0 < nVolElemOwned;
+      const bool face1IsLocal = elemIDMax1 < nVolElemOwned;
+
+      /* Check if both faces have the same status, i.e. either local or
+         not local. */
+      if(face0IsLocal == face1IsLocal) {
+
+        /* Both faces are either local or not local. These faces are sorted
+           according to their element ID's in order to increase cache performance.
+           This may be adapted to improve performance. */
+        if(elemIDMin0 != elemIDMin1) return elemIDMin0 < elemIDMin1;
+        return elemIDMax0 < elemIDMax1;
+      }
+      else {
+
+        /* One face is a local face and the other is not. Make sure that
+           the local faces are numbered last. */
+        if( face0IsLocal ) return false;
+        else               return true;
+      }
     }
     else if(elemIDMax0 >= nVolElemTot && elemIDMax1 >= nVolElemTot) {
 
@@ -2114,7 +2131,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
      first, followed by the matching faces and at the end of localFaces the
      non-matching faces are stored. In order to carry out this sorting the
      functor SortFacesClass is used for comparison. */
-  sort(localFaces.begin(), localFaces.end(), SortFacesClass(nVolElemTot));
+  sort(localFaces.begin(), localFaces.end(),
+       SortFacesClass(nVolElemOwned, nVolElemTot));
 
   /*--- Carry out a possible swap of side 0 and side 1 of the faces. This is
         done for the following reasons (in order of importance).
@@ -2252,11 +2270,17 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   }
 
   /*--- Determine the number of matching and non-matching internal faces. ---*/
+  /*--- For the matching faces, also determine the number of faces        ---*/
+  /*--- between an owned element and a halo element.                      ---*/
+  nMatchingFacesWithHaloElem = 0;
   unsigned long nMatchingFaces = 0, nNonMatchingFaces = 0;
   for(unsigned long i=0; i<localFaces.size(); ++i) {
     if(localFaces[i].faceIndicator == -1) {
-      if(localFaces[i].elemID1 < nVolElemTot) ++nMatchingFaces;
-      else                                    ++nNonMatchingFaces;
+      if(localFaces[i].elemID1 < nVolElemTot) {
+        ++nMatchingFaces;
+        if(localFaces[i].elemID1 >= nVolElemOwned) ++nMatchingFacesWithHaloElem;
+      }
+      else ++nNonMatchingFaces;
     }
   }
 
