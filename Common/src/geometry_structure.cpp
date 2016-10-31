@@ -12777,6 +12777,16 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
     string::size_type position;
     
     Surface_file.open(cstr, ios::in);
+    
+    /*--- Read extra inofmration ---*/
+    
+    getline(Surface_file, text_line);
+    text_line.erase (0,9);
+    su2double AoASens = atof(text_line.c_str());
+    config->SetAoA_Sens(AoASens);
+    
+    /*--- File header ---*/
+    
     getline(Surface_file, text_line);
     
     while (getline(Surface_file, text_line)) {
