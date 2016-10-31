@@ -404,7 +404,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
         position = text_line.find ("DCD_DCL_VALUE=",0);
         if (position != string::npos) {
           text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-          cout << text_line <<endl;
           if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
             cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
           config->SetdCD_dCL(dCD_dCL_);
