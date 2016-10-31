@@ -1649,14 +1649,14 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
 
 void CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(void) {
 
+#ifdef HAVE_MPI
+
   /*-----------------------------------------------------------------------*/
   /*---         Complete the MPI communication, if needed.              ---*/
   /*-----------------------------------------------------------------------*/
 
-#ifdef HAVE_MPI
   if( nCommRequests )
     SU2_MPI::Waitall(nCommRequests, reverseCommRequests.data(), MPI_STATUSES_IGNORE);
-#endif
 
   /*---------------------------------------------------------------------------*/
   /*--- Update the residuals of the owned DOFs with the data just received. ---*/
@@ -1680,6 +1680,8 @@ void CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(void) {
         res[k] += reverseCommRecvBuf[i][nn];
     }
   }
+
+#endif
 }
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
