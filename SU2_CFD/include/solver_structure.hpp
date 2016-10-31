@@ -9535,7 +9535,8 @@ protected:
   
   unsigned short nIntegrationMax; /*!< \brief Maximum number of integration points used. */
   unsigned short nDOFsMax;        /*!< \brief Maximum number of DOFs present. */
-  
+ 
+  vector<su2double> VecTmpMemory;  /*!< \brief Vector for temporary memory. */
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
   vector<su2double> VecSolDOFsOld; /*!< \brief Vector, which stores the old solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs (needed for classical RK4 scheme). */
