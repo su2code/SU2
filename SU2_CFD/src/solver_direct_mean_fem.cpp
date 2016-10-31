@@ -157,7 +157,36 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     const unsigned short nDOFs = standardMatchingFacesSol[i].GetNDOFsElemSide1();
     nDOFsMax = max(nDOFsMax, nDOFs);
   }
-  
+
+  /*--- Make sure that nIntegrationMax and nDOFsMax are such that the allocations
+        of temporary memory is 64 byte aligned.    ---*/
+  if( nIntegrationMax%8 ) nIntegrationMax += 8 - nIntegrationMax%8;
+  if( nDOFsMax%8 )        nDOFsMax        += 8 - nDOFsMax%8;
+
+  /*--- Determine the size of the vector VecTmpMemory and allocate its memory. ---*/
+  unsigned int sizeVecTmp;
+  if( config->GetViscous() ) {
+
+    /* Viscous simulation. */
+    unsigned short sizeFluxes = nIntegrationMax*nDim;
+    sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+    const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+
+    sizeVecTmp = 2*nIntegrationMax*(1 + nVar) + sizeFluxes + sizeGradSolInt
+               + max(nIntegrationMax,nDOFsMax)*nVar;
+  }
+  else {
+
+    /* Inviscid simulation. */
+    unsigned int sizeVol = nVar*nIntegrationMax*(nDim+1);
+    unsigned int sizeSur = nVar*(2*nIntegrationMax + max(nIntegrationMax,nDOFsMax));
+
+    sizeVecTmp = max(sizeVol, sizeSur);
+  }
+
+  VecTmpMemory.resize(sizeVecTmp);
+
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
   
@@ -2098,13 +2127,9 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        internal residual efficiently. ---*/
-  vector<su2double> helpSolInt(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(nIntegrationMax*nVar*nDim);
-
-  su2double *solInt = helpSolInt.data();
-  su2double *fluxes = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solInt = VecTmpMemory.data();
+  su2double *fluxes = solInt + nIntegrationMax*nVar;
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -2230,15 +2255,10 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
                                         const unsigned long indFaceBeg, const unsigned long indFaceEnd,
                                         unsigned long &indResFaces) {
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. ---*/
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-
-  su2double *solIntL = helpSolIntL.data();
-  su2double *solIntR = helpSolIntR.data();
-  su2double *fluxes  = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
   /*--- Loop over the requested range of matching faces. ---*/
   for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
@@ -2393,9 +2413,8 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
 
 void CFEM_DG_EulerSolver::CreateFinalResidual(void) {
 
-  /* Allocate the memory for the local vectors. */
-  vector<su2double> helpTmpRes(nVar*nDOFsMax);
-  su2double *tmpRes = helpTmpRes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *tmpRes = VecTmpMemory.data();
 
   /* Loop over the owned volume elements to accumulate the local data. */
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
@@ -2447,13 +2466,9 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(void) {
 
 void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
-  /*--- Allocate the memory for the storage of the solution in the DOFs
-        and in the integration points. ---*/
-  vector<su2double> helpSolInt(nIntegrationMax*nVar);
-  vector<su2double> helpSolDOFs(nDOFsMax*nVar);
-
-  su2double *solInt  = helpSolInt.data();
-  su2double *solDOFs = helpSolDOFs.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solInt  = VecTmpMemory.data();
+  su2double *solDOFs = solInt + nIntegrationMax*nVar;
 
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -2924,15 +2939,10 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                         CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. ---*/
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-
-  su2double *solIntL = helpSolIntL.data();
-  su2double *solIntR = helpSolIntR.data();
-  su2double *fluxes  = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3008,16 +3018,11 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
 
 void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. ---*/
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
 
-  su2double *solIntL = helpSolIntL.data();
-  su2double *solIntR = helpSolIntR.data();
-  su2double *fluxes  = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3056,16 +3061,11 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
 
 void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. ---*/
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
 
-  su2double *solIntL = helpSolIntL.data();
-  su2double *solIntR = helpSolIntR.data();
-  su2double *fluxes  = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3138,15 +3138,10 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. ---*/
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-
-  su2double *solIntL = helpSolIntL.data();
-  su2double *solIntR = helpSolIntR.data();
-  su2double *fluxes  = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3268,15 +3263,10 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
   su2double P_Exit = config->GetOutlet_Pressure(Marker_Tag);
   P_Exit = P_Exit/config->GetPressure_Ref();
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. ---*/
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-
-  su2double *solIntL = helpSolIntL.data();
-  su2double *solIntR = helpSolIntR.data();
-  su2double *fluxes  = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3360,15 +3350,10 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
 void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. ---*/
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-
-  su2double *solIntL = helpSolIntL.data();
-  su2double *solIntR = helpSolIntR.data();
-  su2double *fluxes  = helpFluxes.data();
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solIntL = VecTmpMemory.data();
+  su2double *solIntR = solIntL + nIntegrationMax*nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3852,17 +3837,12 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
+
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solInt     = VecTmpMemory.data();
+  su2double *gradSolInt = solInt     + nIntegrationMax*nVar;
+  su2double *solDOFs    = gradSolInt + nIntegrationMax*nVar*nDim;
  
-  /*--- Allocate the memory for the storage of the solution in the DOFs
-        and the solution and its gradients in the integration points. ---*/
-  vector<su2double> helpSolInt(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpSolDOFs(nDOFsMax*nVar);
-
-  su2double *solInt     = helpSolInt.data();
-  su2double *gradSolInt = helpGradSolInt.data();
-  su2double *solDOFs    = helpSolDOFs.data();
-
   /*--- Get the information of the angle of attack, reference area, etc. ---*/
   const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
   const su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
@@ -4234,15 +4214,11 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        internal residual efficiently. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
 
-  vector<su2double> helpSolInt(nIntegrationMax*nVar*(nDim+1));
-  vector<su2double> helpFluxes(nIntegrationMax*nVar*nDim);
-
-  su2double *solAndGradInt = helpSolInt.data();
-  su2double *fluxes        = helpFluxes.data();
+  su2double *solAndGradInt = VecTmpMemory.data();
+  su2double *fluxes        = solAndGradInt + nIntegrationMax*nVar*(nDim+1);
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -4432,10 +4408,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
                                      const unsigned long indFaceBeg, const unsigned long indFaceEnd,
                                      unsigned long &indResFaces) {
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
   su2double tick1 = 0.0;
 
@@ -4444,21 +4417,13 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityIntL(nIntegrationMax);
-  vector<su2double> helpViscosityIntR(nIntegrationMax);
-
-  su2double *solIntL       = helpSolIntL.data();
-  su2double *solIntR       = helpSolIntR.data();
-  su2double *gradSolInt    = helpGradSolInt.data();
-  su2double *fluxes        = helpFluxes.data();
-  su2double *viscFluxes    = helpViscFluxes.data();
-  su2double *viscosityIntL = helpViscosityIntL.data();
-  su2double *viscosityIntR = helpViscosityIntR.data();
+  su2double *solIntL       = VecTmpMemory.data();
+  su2double *solIntR       = solIntL       + nIntegrationMax*nVar;
+  su2double *viscosityIntL = solIntR       + nIntegrationMax*nVar;
+  su2double *viscosityIntR = viscosityIntL + nIntegrationMax;
+  su2double *gradSolInt    = viscosityIntR + nIntegrationMax;
+  su2double *fluxes        = gradSolInt    + sizeGradSolInt;
+  su2double *viscFluxes    = fluxes        + sizeFluxes;
 
   /*--- Loop over the requested range of matching faces. ---*/
   for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
@@ -5045,28 +5010,18 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
 
 void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5122,28 +5077,18 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
      thermal conductivity and viscosity. */
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and and gradSolIntL and
-        the max function for the viscFluxes. This is because these arrays are
-        also used as temporary storage for other purposes. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
 
   /* Set the pointer solElem to fluxes. This is just for readability, as the
      same memory can be used for the storage of the solution of the DOFs of
@@ -5299,28 +5244,18 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
 void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5424,28 +5359,18 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5579,28 +5504,18 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   su2double P_Exit = config->GetOutlet_Pressure(Marker_Tag);
   P_Exit = P_Exit/config->GetPressure_Ref();
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5706,29 +5621,18 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
   const string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
   const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
-
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -5818,30 +5722,20 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const su2double Cv           = Gas_Constant/Gamma_Minus_One;
   const su2double StaticEnergy = Cv*TWall;
-  
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
+
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
-
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
+  
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
   su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
@@ -5921,28 +5815,18 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
   const su2double sinFlowAngle = sin(flowAngle);
 #endif
 
-  /*--- Allocate the memory for some temporary storage needed to compute the
-        residual efficiently. Note the size for fluxes and gradSolInt and the
-        max function for the viscFluxes. This is because these arrays are also
-        used as temporary storage for other purposes. ---*/
+  /*--- Set the pointers for the local arrays. ---*/
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
   const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
-  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(sizeGradSolInt);
-  vector<su2double> helpFluxes(sizeFluxes);
-  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
-  vector<su2double> helpViscosityInt(nIntegrationMax);
-
-  su2double *solIntL      = helpSolIntL.data();
-  su2double *solIntR      = helpSolIntR.data();
-  su2double *gradSolInt   = helpGradSolInt.data();
-  su2double *fluxes       = helpFluxes.data();
-  su2double *viscFluxes   = helpViscFluxes.data();
-  su2double *viscosityInt = helpViscosityInt.data();
+  su2double *solIntL      = VecTmpMemory.data();
+  su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
+  su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
+  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *fluxes       = gradSolInt   + sizeGradSolInt;
+  su2double *viscFluxes   = fluxes       + sizeFluxes;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
