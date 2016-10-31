@@ -10877,11 +10877,8 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 	su2double *Normal = new su2double[nDim];
 	su2double *PrimVar_i = new su2double[nPrimVar];
 	su2double *PrimVar_j = new su2double[nPrimVar];
-	su2double *S_i = new su2double[8];
-	su2double *S_j = new su2double[8];
 	su2double P_static, rho_static;
 
-	su2double P_static, rho_static;
 
 	int rank = MASTER_NODE, irank = 1;
 
