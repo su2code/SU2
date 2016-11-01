@@ -1577,1390 +1577,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
 }
 
-void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
-  
-  unsigned long iProcessor;
-  unsigned short NODES_PER_ELEMENT;
-  unsigned long iPoint, jPoint, kPoint;
-  unsigned long nElem_Total = 0, Global_Index;
-  
-  unsigned long iVertex, iMarker;
-  int SendRecv, RecvFrom;
-  
-  bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
-  
-  int *Conn_Elem = NULL;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
-  int ind;
-#endif
-  
-  /*--- Store the local number of this element type and the number of nodes
-   per this element type. In serial, this will be the total number of this
-   element type in the entire mesh. In parallel, it is the number on only
-   the current partition. ---*/
-  
-  switch (Elem_Type) {
-    case TRIANGLE:
-      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
-      break;
-    case QUADRILATERAL:
-      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
-      break;
-    case TETRAHEDRON:
-      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
-      break;
-    case HEXAHEDRON:
-      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
-      break;
-    case PRISM:
-      NODES_PER_ELEMENT = N_POINTS_PRISM;
-      break;
-    case PYRAMID:
-      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
-      break;
-    default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
-  }
-  
-  /*--- Compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-  
-  unsigned long *npoint_procs  = new unsigned long[size];
-  unsigned long *starting_node = new unsigned long[size];
-  unsigned long *ending_node   = new unsigned long[size];
-  unsigned long *nPoint_Linear = new unsigned long[size+1];
-  
-  unsigned long total_pt_accounted = 0;
-  for (int ii = 0; ii < size; ii++) {
-    npoint_procs[ii] = geometry->GetGlobal_nPointDomain()/size;
-    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
-  }
-  
-  /*--- Get the number of remainder points after the even division. ---*/
-  
-  unsigned long rem_points = geometry->GetGlobal_nPointDomain()-total_pt_accounted;
-  for (unsigned long ii = 0; ii < rem_points; ii++) {
-    npoint_procs[ii]++;
-  }
-  
-  /*--- Store the local number of nodes and the beginning/end index ---*/
-  
-  starting_node[0] = 0;
-  ending_node[0]   = starting_node[0] + npoint_procs[0];
-  nPoint_Linear[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    starting_node[ii] = ending_node[ii-1];
-    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
-    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
-  }
-  nPoint_Linear[size] = geometry->GetGlobal_nPointDomain();
-  
-  /*--- Force the removal of all added periodic elements (use global index).
-   First, we isolate and create a list of all added periodic points, excluding
-   those that were part of the original domain (we want these to be in the
-   output files). ---*/
-  
-  vector<unsigned long> Added_Periodic;
-  Added_Periodic.clear();
-  
-  if (config->GetKind_SU2() != SU2_DEF) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        SendRecv = config->GetMarker_All_SendRecv(iMarker);
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-              (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
-              (SendRecv < 0)) {
-            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
-          }
-        }
-      }
-    }
-  }
-  
-  /*--- Now we communicate this information to all processors, so that they
-   can force the removal of these particular nodes by flagging them as halo
-   points. In general, this should be a small percentage of the total mesh,
-   so the communication/storage costs here shouldn't be prohibitive. ---*/
-  
-  /*--- First communicate the number of points that each rank has found. ---*/
-  
-  unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
-  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
-  Buffer_Recv_nAddedPeriodic = new unsigned long[size];
-  
-  nAddedPeriodic = Added_Periodic.size();
-  Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#else
-  maxAddedPeriodic = nAddedPeriodic;
-  Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
-#endif
-  
-  /*--- Communicate the global index values of all added periodic nodes. ---*/
-  unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
-  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
-  
-  for (iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
-    Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
-  }
-  
-  /*--- Gather the element connectivity information. All processors will now
-   have a copy of the global index values for all added periodic points. ---*/
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
-                     MPI_COMM_WORLD);
-#else
-  for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++)
-    Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
-#endif
-  
-  /*--- Search all send/recv boundaries on this partition for halo cells. In
-   particular, consider only the recv conditions (these are the true halo
-   nodes). Check the ranks of the processors that are communicating and
-   choose to keep only the halo cells from the higher rank processor. Here,
-   we are also choosing to keep periodic nodes that were part of the original
-   domain. We will check the communicated list of added periodic points. ---*/
-  
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      RecvFrom = abs(SendRecv)-1;
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-        
-        /*--- We need to keep one copy of overlapping halo cells. ---*/
-        
-        notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
-                   (SendRecv < 0) && (rank > RecvFrom));
-        
-        /*--- We want to keep the periodic nodes that were part of the original domain.
-         For SU2_DEF we want to keep all periodic nodes. ---*/
-        
-        if (config->GetKind_SU2() == SU2_DEF) {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
-        }else {
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        }
-        
-        notPeriodic = (isPeriodic && (SendRecv < 0));
-        
-        /*--- Lastly, check that this isn't an added periodic point that
-         we will forcibly remove. Use the communicated list of these points. ---*/
-        
-        addedPeriodic = false; kPoint = 0;
-        for (iProcessor = 0; iProcessor < (unsigned long)size; iProcessor++) {
-          for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
-            if (Global_Index == Buffer_Recv_AddedPeriodic[kPoint+jPoint])
-              addedPeriodic = true;
-          }
-          
-          /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
-          
-          kPoint = (iProcessor+1)*maxAddedPeriodic;
-          
-        }
-        
-        /*--- If we found either of these types of nodes, flag them to be kept. ---*/
-        
-        if ((notHalo || notPeriodic) && !addedPeriodic) {
-          Local_Halo[iPoint] = false;
-        }
-        
-      }
-    }
-  }
-  
-  /*--- We start with the connectivity distributed across all procs with
-   no particular ordering assumed. We need to loop through our local partition
-   and decide how many elements we must send to each other rank in order to
-   have all elements sorted according to a linear partitioning of the grid
-   nodes, i.e., rank 0 holds the first nPoint()/nProcessors nodes.
-   First, initialize a counter and flag. ---*/
-  
-  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
-  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
-  int *nElem_Flag = new int[size];
-  
-  for (int ii=0; ii < size; ii++) {
-    nElem_Send[ii] = 0;
-    nElem_Recv[ii] = 0;
-    nElem_Flag[ii]= -1;
-  }
-  nElem_Send[size] = 0; nElem_Recv[size] = 0;
-  
-  for (int ii = 0; ii < (int)geometry->GetnElem(); ii++ ) {
-    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
-      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
-        
-        /*--- Get the index of the current point. ---*/
-        
-        iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-        
-        /*--- Search for the lowest global index in this element. We
-         send the element to the processor owning the range that includes
-         the lowest global index value. ---*/
-        
-        for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-          jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
-          if (newID < Global_Index) Global_Index = newID;
-        }
-        
-        /*--- Search for the processor that owns this point ---*/
-        
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-        
-        /*--- If we have not visted this element yet, increment our
-         number of elements that must be sent to a particular proc. ---*/
-        
-        if ((nElem_Flag[iProcessor] != ii)) {
-          nElem_Flag[iProcessor] = ii;
-          nElem_Send[iProcessor+1]++;
-        }
-        
-      }
-    }
-  }
-  
-  /*--- Communicate the number of cells to be sent/recv'd amongst
-   all processors. After this communication, each proc knows how
-   many cells it will receive from each other processor. ---*/
-  
-#ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
-  
-  /*--- Prepare to send connectivities. First check how many
-   messages we will be sending and receiving. Here we also put
-   the counters into cumulative storage format to make the
-   communications simpler. ---*/
-  
-  int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
-  
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
-    
-    nElem_Send[ii+1] += nElem_Send[ii];
-    nElem_Recv[ii+1] += nElem_Recv[ii];
-  }
-  
-  /*--- Allocate memory to hold the connectivity that we are
-   sending. ---*/
-  
-  unsigned long *connSend = NULL;
-  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
-    connSend[ii] = 0;
-  
-  /*--- Allocate arrays for storing halo flags. ---*/
-  
-  unsigned short *haloSend = new unsigned short[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    haloSend[ii] = false;
-  
-  /*--- Create an index variable to keep track of our index
-   position as we load up the send buffer. ---*/
-  
-  unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
-
-  unsigned long *haloIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
-  
-  /*--- Loop through our elements and load the elems and their
-   additional data that we will send to the other procs. ---*/
-  
-  for (int ii = 0; ii < (int)geometry->GetnElem(); ii++) {
-    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
-      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
-        
-        /*--- Get the index of the current point. ---*/
-        
-        iPoint = geometry->elem[ii]->GetNode(jj);
-        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
-        
-        /*--- Search for the lowest global index in this element. We
-         send the element to the processor owning the range that includes
-         the lowest global index value. ---*/
-        
-        for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-          jPoint = geometry->elem[ii]->GetNode(kk);
-          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
-          if (newID < Global_Index) Global_Index = newID;
-        }
-        
-        /*--- Search for the processor that owns this point ---*/
-        
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-        
-        /*--- Load connectivity into the buffer for sending ---*/
-        
-        if (nElem_Flag[iProcessor] != ii) {
-          
-          nElem_Flag[iProcessor] = ii;
-          unsigned long nn = index[iProcessor];
-          unsigned long mm = haloIndex[iProcessor];
-          
-          /*--- Load the connectivity values. ---*/
-          
-          for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-            iPoint = geometry->elem[ii]->GetNode(kk);
-            connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
-            
-            /*--- Check if this is a halo node. If so, flag this element
-             as a halo cell. We will use this later to sort and remove
-             any duplicates from the connectivity list. ---*/
-            
-            if (Local_Halo[iPoint]) haloSend[mm] = true;
-            
-          }
-          
-          /*--- Increment the index by the message length ---*/
-          
-          index[iProcessor]    += NODES_PER_ELEMENT;
-          haloIndex[iProcessor]++;
-          
-        }
-      }
-    }
-  }
-  
-  /*--- Free memory after loading up the send buffer. ---*/
-  
-  delete [] index;
-  delete [] haloIndex;
-  
-  /*--- Allocate the memory that we need for receiving the conn
-   values and then cue up the non-blocking receives. Note that
-   we do not include our own rank in the communications. We will
-   directly copy our own data later. ---*/
-  
-  unsigned long *connRecv = NULL;
-  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
-    connRecv[ii] = 0;
-  
-  unsigned short *haloRecv = new unsigned short[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    haloRecv[ii] = false;
-  
-#ifdef HAVE_MPI
-  
-  /*--- We need double the number of messages to send both the conn.
-   and the flags for the halo cells. ---*/
-  
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
-  
-  /*--- Launch the non-blocking recv's for the connectivity. ---*/
-  
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
-  }
-  
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
-  
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int dest = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
-  
-  /*--- Repeat the process to communicate the halo flags. ---*/
-  
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(haloRecv[ll]), count, MPI_UNSIGNED_SHORT, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
-      iMessage++;
-    }
-  }
-  
-  /*--- Launch the non-blocking sends of the halo flags. ---*/
-  
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(haloSend[ll]), count, MPI_UNSIGNED_SHORT, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
-      iMessage++;
-    }
-  }
-#endif
-  
-  /*--- Copy my own rank's data into the recv buffer directly. ---*/
-  
-  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
-  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
-  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
-  
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
-  
-  mm = nElem_Recv[rank];
-  ll = nElem_Send[rank];
-  kk = nElem_Send[rank+1];
-  
-  for (int nn=ll; nn<kk; nn++, mm++) haloRecv[mm] = haloSend[nn];
-  
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
-  
-#ifdef HAVE_MPI
-  int number = 2*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-  
-  number = 2*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-  
-  delete [] send_req;
-  delete [] recv_req;
-#endif
-  
-  /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. Note that we add 1
-   to the connectivity for vizualization packages. First, allocate
-   appropriate amount of memory for this section. ---*/
-  
-  Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
-  int count = 0; nElem_Total = 0;
-  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-    if (!haloRecv[ii]) {
-      nElem_Total++;
-      for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-        Conn_Elem[count] = (int)connRecv[ii*NODES_PER_ELEMENT+jj] + 1;
-        count++;
-      }
-    }
-  }
-  
-  //  count = 0;
-  //  for (int ii = 0; ii < (int)nElem_Total; ii++) {
-  //    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-  //      cout << Conn_Elem[count]<< " ";
-  //      count++;
-  //    }
-  //    cout << "  " << rank << endl;
-  //  }
-  
-  /*--- Store the particular global element count in the class data,
-   and set the class data pointer to the connectivity array. ---*/
-  
-  switch (Elem_Type) {
-    case TRIANGLE:
-      nParallel_Tria = nElem_Total;
-      if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
-      break;
-    case QUADRILATERAL:
-      nParallel_Quad = nElem_Total;
-      if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
-      break;
-    case TETRAHEDRON:
-      nParallel_Tetr = nElem_Total;
-      if (nParallel_Tetr > 0) Conn_Tetr_Par = Conn_Elem;
-      break;
-    case HEXAHEDRON:
-      nParallel_Hexa = nElem_Total;
-      if (nParallel_Hexa > 0) Conn_Hexa_Par = Conn_Elem;
-      break;
-    case PRISM:
-      nParallel_Pris = nElem_Total;
-      if (nParallel_Pris > 0) Conn_Pris_Par = Conn_Elem;
-      break;
-    case PYRAMID:
-      nParallel_Pyra = nElem_Total;
-      if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
-      break;
-    default:
-      cout << "Error: Unrecognized element type \n";
-      exit(EXIT_FAILURE); break;
-  }
-  
-  /*--- Free temporary memory from communications ---*/
-  
-  delete [] connSend;
-  delete [] connRecv;
-  delete [] haloSend;
-  delete [] haloRecv;
-  delete [] nElem_Recv;
-  delete [] nElem_Send;
-  delete [] nElem_Flag;
-  
-  //  cout << " SUCCCESS CONN " << nElem_Total << endl;
-  
-}
-
-void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
-  
-  unsigned long iProcessor;
-  unsigned long Global_Index;
-  
-  int NODES_PER_ELEMENT = nVar_Par;
-  
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
-  MPI_Status status;
-  int ind;
-#endif
-  
-  /*--- Compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-  
-  unsigned long *npoint_procs  = new unsigned long[size];
-  unsigned long *starting_node = new unsigned long[size];
-  unsigned long *ending_node   = new unsigned long[size];
-  unsigned long *nPoint_Linear = new unsigned long[size+1];
-  
-  unsigned long total_pt_accounted = 0;
-  for (int ii = 0; ii < size; ii++) {
-    npoint_procs[ii] = geometry->GetGlobal_nPointDomain()/size;
-    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
-  }
-  
-  /*--- Get the number of remainder points after the even division. ---*/
-  
-  unsigned long rem_points = geometry->GetGlobal_nPointDomain()-total_pt_accounted;
-  for (unsigned long ii = 0; ii < rem_points; ii++) {
-    npoint_procs[ii]++;
-  }
-  
-  /*--- Store the local number of nodes and the beginning/end index ---*/
-  
-  starting_node[0] = 0;
-  ending_node[0]   = starting_node[0] + npoint_procs[0];
-  nPoint_Linear[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    starting_node[ii] = ending_node[ii-1];
-    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
-    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
-  }
-  nPoint_Linear[size] = geometry->GetGlobal_nPointDomain();
-  
-  /*--- We start with the grid nodes distributed across all procs with
-   no particular ordering assumed. We need to loop through our local partition
-   and decide how many nodes we must send to each other rank in order to
-   have all nodes sorted according to a linear partitioning of the grid
-   nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
-   First, initialize a counter and flag. ---*/
-  
-  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
-  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
-  int *nElem_Flag = new int[size];
-  
-  for (int ii=0; ii < size; ii++) {
-    nElem_Send[ii] = 0;
-    nElem_Recv[ii] = 0;
-    nElem_Flag[ii]= -1;
-  }
-  nElem_Send[size] = 0; nElem_Recv[size] = 0;
-  
-  for (int ii = 0; ii < (int)geometry->GetnPointDomain(); ii++ ) {
-    
-    /*--- Get the global index of the current point. ---*/
-    
-    Global_Index = geometry->node[ii]->GetGlobalIndex();
-    
-    /*--- Search for the processor that owns this point ---*/
-    
-    iProcessor = Global_Index/npoint_procs[0];
-    if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
-    if (Global_Index >= nPoint_Linear[iProcessor])
-      while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-    else
-      while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-    
-    /*--- If we have not visted this node yet, increment our
-     number of elements that must be sent to a particular proc. ---*/
-    
-    if (nElem_Flag[iProcessor] != ii) {
-      nElem_Flag[iProcessor] = ii;
-      nElem_Send[iProcessor+1]++;
-    }
-  }
-  
-  /*--- Communicate the number of nodes to be sent/recv'd amongst
-   all processors. After this communication, each proc knows how
-   many cells it will receive from each other processor. ---*/
-  
-#ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-  nElem_Recv[1] = nElem_Send[1];
-#endif
-  
-  /*--- Prepare to send coordinates. First check how many
-   messages we will be sending and receiving. Here we also put
-   the counters into cumulative storage format to make the
-   communications simpler. ---*/
-  
-  int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
-  
-  for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
-    
-    nElem_Send[ii+1] += nElem_Send[ii];
-    nElem_Recv[ii+1] += nElem_Recv[ii];
-  }
-  
-  /*--- Allocate memory to hold the connectivity that we are
-   sending. ---*/
-  
-  su2double *connSend = NULL;
-  connSend = new su2double[NODES_PER_ELEMENT*nElem_Send[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
-    connSend[ii] = 0;
-  
-  /*--- Allocate arrays for sending the global ID. ---*/
-  
-  unsigned long *idSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
-    idSend[ii] = 0;
-  
-  /*--- Create an index variable to keep track of our index
-   position as we load up the send buffer. ---*/
-  
-  unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
-  
-  unsigned long *idIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
-  
-  /*--- Loop through our elements and load the elems and their
-   additional data that we will send to the other procs. ---*/
-  
-  for (int ii = 0; ii < (int)geometry->GetnPointDomain(); ii++) {
-    
-    /*--- Get the index of the current point. ---*/
-    
-    Global_Index = geometry->node[ii]->GetGlobalIndex();
-    
-    /*--- Search for the processor that owns this point ---*/
-    
-    iProcessor = Global_Index/npoint_procs[0];
-    if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
-    if (Global_Index >= nPoint_Linear[iProcessor])
-      while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-    else
-      while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-    
-    /*--- Load node coordinates into the buffer for sending ---*/
-    
-    if (nElem_Flag[iProcessor] != ii) {
-      
-      nElem_Flag[iProcessor] = ii;
-      unsigned long nn = index[iProcessor];
-      
-      /*--- Load the data values. ---*/
-      
-      for (unsigned short kk = 0; kk < NODES_PER_ELEMENT; kk++) {
-        connSend[nn] = Local_Data[ii][kk]; nn++;
-      }
-      
-      /*--- Load the global ID (minus offset) for sorting the
-       points once they all reach the correct processor. ---*/
-      
-      nn = idIndex[iProcessor];
-      idSend[nn] = Global_Index - starting_node[iProcessor];
-      
-      /*--- Increment the index by the message length ---*/
-      
-      index[iProcessor]  += NODES_PER_ELEMENT;
-      idIndex[iProcessor]++;
-    }
-  }
-  
-  /*--- Free memory after loading up the send buffer. ---*/
-  
-  delete [] index;
-  delete [] idIndex;
-  
-  /*--- Allocate the memory that we need for receiving the conn
-   values and then cue up the non-blocking receives. Note that
-   we do not include our own rank in the communications. We will
-   directly copy our own data later. ---*/
-  
-  su2double *connRecv = NULL;
-  connRecv = new su2double[NODES_PER_ELEMENT*nElem_Recv[size]];
-  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
-    connRecv[ii] = 0;
-  
-  unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
-    idRecv[ii] = 0;
-  
-#ifdef HAVE_MPI
-  
-  /*--- We need double the number of messages to send both the conn.
-   and the global IDs. ---*/
-  
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
-  
-  unsigned long iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage]));
-      iMessage++;
-    }
-  }
-  
-  /*--- Launch the non-blocking sends of the connectivity. ---*/
-  
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = NODES_PER_ELEMENT*kk;
-      int dest = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage]));
-      iMessage++;
-    }
-  }
-  
-  /*--- Repeat the process to communicate the global IDs. ---*/
-  
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-      int count  = kk;
-      int source = ii;
-      int tag    = ii + 1;
-      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
-      iMessage++;
-    }
-  }
-  
-  /*--- Launch the non-blocking sends of the global IDs. ---*/
-  
-  iMessage = 0;
-  for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
-      int count  = kk;
-      int dest   = ii;
-      int tag    = rank + 1;
-      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
-      iMessage++;
-    }
-  }
-#endif
-  
-  /*--- Copy my own rank's data into the recv buffer directly. ---*/
-  
-  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
-  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
-  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
-  
-  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
-  
-  mm = nElem_Recv[rank];
-  ll = nElem_Send[rank];
-  kk = nElem_Send[rank+1];
-  
-  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
-  
-  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
-  
-#ifdef HAVE_MPI
-  int number = 2*nSends;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, send_req, &ind, &status);
-  
-  number = 2*nRecvs;
-  for (int ii = 0; ii < number; ii++)
-    SU2_MPI::Waitany(number, recv_req, &ind, &status);
-  
-  delete [] send_req;
-  delete [] recv_req;
-#endif
-  
-  /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. First, allocate the
-   appropriate amount of memory for this section. ---*/
-  
-  Parallel_Data = new su2double*[NODES_PER_ELEMENT];
-  for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-    Parallel_Data[jj] = new su2double[nElem_Recv[size]];
-    for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-      Parallel_Data[jj][idRecv[ii]] = connRecv[ii*NODES_PER_ELEMENT+jj];
-    }
-  }
-  
-  //  if (rank == MASTER_NODE) {
-  //    for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-  //      cout << Parallel_Coords[0][ii] << ", " << Parallel_Coords[1][ii] << "  ID: " << idRecv[ii] << endl;
-  //    }
-  //  }
-  
-  /*--- Store the total number of elements I now have for
-   the current section after completing the communications. ---*/
-  
-  nParallel_Poin = nElem_Recv[size];
-  
-  /*--- Free temporary memory from communications ---*/
-  
-  delete [] connSend;
-  delete [] connRecv;
-  delete [] idSend;
-  delete [] idRecv;
-  delete [] nElem_Recv;
-  delete [] nElem_Send;
-  delete [] nElem_Flag;
-  
-  // Need to deallocate local data here to save memory
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-    delete [] Local_Data[iPoint];
-  delete [] Local_Data;
-  
-  //  cout << " SUCCCESS COORDS " << nParallel_Poin << endl;
-  
-}
-
-void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
-  
-  unsigned short iDim;
-  unsigned short Kind_Solver = config->GetKind_Solver();
-  unsigned short nDim = geometry->GetnDim();
-  
-  unsigned long iVar, jVar;
-  unsigned long iPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
-  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
-  
-  su2double RefAreaCoeff = config->GetRefAreaCoeff();
-  su2double Gamma = config->GetGamma();
-  su2double RefVel2;
-  su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
-  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
-  su2double *Grid_Vel = NULL;
-  
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  bool grid_movement  = (config->GetGrid_Movement());
-  bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
-  
-  int *Local_Halo;
-  
-  /*--- Set the non-dimensionalization for coefficients. ---*/
-  
-  if (grid_movement) {
-    Gas_Constant = config->GetGas_ConstantND();
-    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-    Mach_Motion = config->GetMach_Motion();
-    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-  }
-  else {
-    RefVel2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
-  }
-  RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
-  RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
-  
-  /*--- Use a switch statement to decide how many solver containers we have
-   in this zone for output. ---*/
-  
-  switch (config->GetKind_Solver()) {
-    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
-    default: SecondIndex = NONE; break;
-  }
-  
-  nVar_First = solver[FirstIndex]->GetnVar();
-  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
-  nVar_Consv_Par = nVar_First + nVar_Second;
-  
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Register the variables that will be output. To register a  ---*/
-  /*---         variable, two things are required. First, increment the    ---*/
-  /*---         counter for the number of variables (nVar_Par), which      ---*/
-  /*---         controls the size of the data structure allocation, i.e.,  ---*/
-  /*---         the number of columns in an nPoint x nVar structure.       ---*/
-  /*---         Second, add a name for the variable to the vector that     ---*/
-  /*---         holds the string names.                                    ---*/
-  /*--------------------------------------------------------------------------*/
-  
-  /*--- All output files first need the grid coordinates. ---*/
-  
-  nVar_Par  = 1; Variable_Names.push_back("x");
-  nVar_Par += 1; Variable_Names.push_back("y");
-  if (geometry->GetnDim() == 3) {
-    nVar_Par += 1; Variable_Names.push_back("z");
-  }
-  
-  /*--- At a mininum, the restarts and visualization files need the
-   conservative variables, so these follow next. ---*/
-  
-  nVar_Par += nVar_Consv_Par;
-  Variable_Names.push_back("Density");
-  Variable_Names.push_back("X-Momentum");
-  Variable_Names.push_back("Y-Momentum");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-  Variable_Names.push_back("Energy");
-  if (SecondIndex != NONE) {
-    if (config->GetKind_Turb_Model() == SST) {
-      Variable_Names.push_back("TKE");
-      Variable_Names.push_back("Omega");
-    } else {
-      /*--- S-A variants ---*/
-      Variable_Names.push_back("Nu_Tilde");
-    }
-  }
-  
-  /*--- If requested, register the limiter and residuals for all of the
-   equations in the current flow problem. ---*/
-  
-  if (!config->GetLow_MemoryOutput()) {
-    
-    /*--- Add the limiters ---*/
-    
-    if (config->GetWrt_Limiters()) {
-      nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Limiter_Density");
-      Variable_Names.push_back("Limiter_X-Momentum");
-      Variable_Names.push_back("Limiter_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-      Variable_Names.push_back("Limiter_Energy");
-      if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
-          Variable_Names.push_back("Limiter_TKE");
-          Variable_Names.push_back("Limiter_Omega");
-        } else {
-          /*--- S-A variants ---*/
-          Variable_Names.push_back("Limiter_Nu_Tilde");
-        }
-      }
-    }
-    
-    /*--- Add the residuals ---*/
-    
-    if (config->GetWrt_Residuals()) {
-      nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Residual_Density");
-      Variable_Names.push_back("Residual_X-Momentum");
-      Variable_Names.push_back("Residual_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-      Variable_Names.push_back("Residual_Energy");
-      if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
-          Variable_Names.push_back("Residual_TKE");
-          Variable_Names.push_back("Residual_Omega");
-        } else {
-          /*--- S-A variants ---*/
-          Variable_Names.push_back("Residual_Nu_Tilde");
-        }
-        
-      }
-    }
-    
-    /*--- Add the grid velocity. ---*/
-    
-    if (grid_movement) {
-      if (geometry->GetnDim() == 2) nVar_Par += 2;
-      else if (geometry->GetnDim() == 3) nVar_Par += 3;
-      
-      Variable_Names.push_back("Grid_Velx");
-      Variable_Names.push_back("Grid_Vely");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
-    }
-    
-    /*--- Add the freesurface density. ---*/
-    
-    if ((config->GetKind_Regime() == FREESURFACE)) {
-      nVar_Par += 1;
-      Variable_Names.push_back("Density_FreeSurface");
-    }
-    
-    /*--- Add Pressure, Temperature, Cp, Mach. ---*/
-    
-    nVar_Par += 4;
-    Variable_Names.push_back("Pressure");
-    Variable_Names.push_back("Temperature");
-    Variable_Names.push_back("Pressure_Coefficient");
-    Variable_Names.push_back("Mach");
-    
-    /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
-    
-    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-      nVar_Par += 2;
-      Variable_Names.push_back("Skin_Friction_Coefficient_X");
-      Variable_Names.push_back("Skin_Friction_Coefficient_Y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 3; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
-      }
-      nVar_Par += 2;
-      Variable_Names.push_back("Heat_Flux");
-      Variable_Names.push_back("Y_Plus");
-    }
-    
-    /*--- Add Eddy Viscosity. ---*/
-    
-    if (Kind_Solver == RANS) {
-      nVar_Par += 1;
-      Variable_Names.push_back("Eddy_Viscosity");
-      
-    }
-    
-    /*--- Add the distance to the nearest sharp edge if requested. ---*/
-    
-    if (config->GetWrt_SharpEdges()) {
-      nVar_Par += 1;
-      Variable_Names.push_back("Sharp_Edge_Dist");
-    }
-    
-    /*--- New variables get registered here before the end of the loop. ---*/
-    
-  }
-  
-  /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
-  
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    Aux_Frict_x = new su2double[geometry->GetnPoint()];
-    Aux_Frict_y = new su2double[geometry->GetnPoint()];
-    Aux_Frict_z = new su2double[geometry->GetnPoint()];
-    Aux_Heat    = new su2double[geometry->GetnPoint()];
-    Aux_yPlus   = new su2double[geometry->GetnPoint()];
-    
-    /*--- First, loop through the mesh in order to find and store the
-     value of the viscous coefficients at any surface nodes. They
-     will be placed in an auxiliary vector and then communicated like
-     all other volumetric variables. ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Aux_Frict_x[iPoint] = 0.0;
-      Aux_Frict_y[iPoint] = 0.0;
-      Aux_Frict_z[iPoint] = 0.0;
-      Aux_Heat[iPoint]    = 0.0;
-      Aux_yPlus[iPoint]   = 0.0;
-    }
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Plotting(iMarker) == YES) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          Aux_Frict_x[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0);
-          Aux_Frict_y[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1);
-          if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
-          Aux_Heat[iPoint] = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
-          Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
-        }
-      }
-    }
-  }
-  
-  /*--- Allocate the local data structure now that we know how many
-   variables are in the output. ---*/
-  
-  // Segfault here if I switch to periodic version!!
-  
-  Local_Data = new su2double*[geometry->GetnPointDomain()];
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    Local_Data[iPoint] = new su2double[nVar_Par];
-  }
-  
-  Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  /*--- Search all send/recv boundaries on this partition for any periodic
-   nodes that were part of the original domain. We want to recover these
-   for visualization purposes. ---*/
-  
-  if (!Wrt_Halo) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        
-        /*--- Checking for less than or equal to the rank, because there may
-         be some periodic halo nodes that send info to the same rank. ---*/
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-          if (isPeriodic) Local_Halo[iPoint] = false;
-        }
-      }
-    }
-  }
-  
-  /*--------------------------------------------------------------------------*/
-  /*--- Step 2: Loop over all grid nodes and load up the desired data for  ---*/
-  /*---         the restart and vizualization files. Note that we need to  ---*/
-  /*---         increment the iVar variable after each variable load.      ---*/
-  /*---         The idea is that we're filling up the columns of field     ---*/
-  /*---         data for each iPoint (row) of the data structure. This     ---*/
-  /*---         This data will then be sorted, communicated, and written   ---*/
-  /*---         to files automatically after this routine. Note that the   ---*/
-  /*---         ordering of the data loading MUST match the order of the   ---*/
-  /*---         variable registration above for the files to be correct.   ---*/
-  /*--------------------------------------------------------------------------*/
-
-  // Need to eventually do all points (including halos) in case of periodic
-  
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    if (!Local_Halo[iPoint]) {
-      
-      /*--- Restart the column index with each new point. ---*/
-      
-      iVar = 0;
-      
-      /*--- Load the grid node coordinate values. ---*/
-      
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
-        iVar++;
-      }
-      
-      /*--- Load the conservative variable states for the mean flow variables.
-       If requested, load the limiters and residuals as well. ---*/
-      
-      for (jVar = 0; jVar < nVar_First; jVar++) {
-        Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
-        iVar++;
-      }
-      
-      if (!config->GetLow_MemoryOutput()) {
-        if (config->GetWrt_Limiters()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
-            iVar++;
-          }
-        }
-        if (config->GetWrt_Residuals()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            if (!config->GetDiscrete_Adjoint()) {
-              Local_Data[iPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
-            } else {
-              Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar) -
-              solver[FirstIndex]->node[iPoint]->GetSolution_Old(jVar);
-            }
-            iVar++;
-          }
-        }
-      }
-      
-      /*--- If this is RANS, i.e., the second solver container is not empty,
-       then load data for the conservative turbulence variables and the
-       limiters / residuals (if requested). ----*/
-      
-      if (SecondIndex != NONE) {
-        for (jVar = 0; jVar < nVar_Second; jVar++) {
-          Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
-          iVar++;
-        }
-        if (!config->GetLow_MemoryOutput()) {
-          if (config->GetWrt_Limiters()) {
-            for (jVar = 0; jVar < nVar_Second; jVar++) {
-              Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
-              iVar++;
-            }
-          }
-          if (config->GetWrt_Residuals()) {
-            for (jVar = 0; jVar < nVar_Second; jVar++) {
-              if (!config->GetDiscrete_Adjoint()) {
-                Local_Data[iPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
-              } else {
-                Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar) -
-                solver[SecondIndex]->node[iPoint]->GetSolution_Old(jVar);
-              }
-              iVar++;
-            }
-          }
-        }
-      }
-      
-      if (!config->GetLow_MemoryOutput()) {
-        
-        /*--- Load buffers with the three grid velocity components. ---*/
-        
-        if (grid_movement) {
-          Grid_Vel = geometry->node[iPoint]->GetGridVel();
-          Local_Data[iPoint][iVar] = Grid_Vel[0]; iVar++;
-          Local_Data[iPoint][iVar] = Grid_Vel[1]; iVar++;
-          if (geometry->GetnDim() == 3) {
-            Local_Data[iPoint][iVar] = Grid_Vel[2];
-            iVar++;
-          }
-        }
-        
-        /*--- Load data for the freesurface density. ---*/
-        
-        if (config->GetKind_Regime() == FREESURFACE) {
-          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); iVar++;
-        }
-        
-        /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
-        
-        if (compressible) {
-          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); iVar++;
-          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
-          Local_Data[iPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
-          Local_Data[iPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-          solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
-        }
-        if (incompressible || freesurface) {
-          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); iVar++;
-          Local_Data[iPoint][iVar] = 0.0; iVar++;
-          Local_Data[iPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; iVar++;
-          Local_Data[iPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
-          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); iVar++;
-        }
-        
-        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-          
-          /*--- Load data for the laminar viscosity. ---*/
-          
-          if (compressible) {
-            Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); iVar++;
-          }
-          if (incompressible || freesurface) {
-            Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); iVar++;
-          }
-          
-          /*--- Load data for the skin friction, heat flux, and y-plus. ---*/
-          
-          Local_Data[iPoint][iVar] = Aux_Frict_x[iPoint]; iVar++;
-          Local_Data[iPoint][iVar] = Aux_Frict_y[iPoint]; iVar++;
-          if (geometry->GetnDim() == 3) {
-            Local_Data[iPoint][iVar] = Aux_Frict_z[iPoint];
-            iVar++;
-          }
-          Local_Data[iPoint][iVar] = Aux_Heat[iPoint]; iVar++;
-          Local_Data[iPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
-          
-        }
-        
-        /*--- Load data for the Eddy viscosity for RANS. ---*/
-        
-        if (Kind_Solver == RANS) {
-          if (compressible) {
-            Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
-          }
-          if (incompressible || freesurface) {
-            Local_Data[iPoint][iVar]  = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); iVar++;
-          }
-        }
-        
-        /*--- Load data for the distance to the nearest sharp edge. ---*/
-        
-        if (config->GetWrt_SharpEdges()) {
-          Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
-        }
-        
-        /*--- New variables can be loaded to the Local_Data structure here,
-         assuming they were registered above correctly. ---*/
-        
-      }
-    }
-  }
-  
-  /*--- Free memory for auxiliary vectors. ---*/
-  
-  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    delete[] Aux_Frict_x; delete[] Aux_Frict_y; delete[] Aux_Frict_z;
-    delete [] Aux_Heat; delete [] Aux_yPlus;
-  }
-  
-  delete [] Local_Halo;
-  
-}
-
 void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   unsigned short NODES_PER_ELEMENT;
@@ -3471,7 +2087,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     //  iVar_EF = nVar_Total; nVar_Total += geometry->GetnDim();
     //}
     
-    if (( Kind_Solver == ADJ_EULER              ) || ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+    if (( Kind_Solver == ADJ_EULER              ) ||
+        ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
         ( Kind_Solver == ADJ_RANS               )) {
       iVar_Sens   = nVar_Total; nVar_Total += 2;
     }
@@ -5262,108 +3879,6 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
 }
 
-void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
-  
-  /*--- Local variables ---*/
-  
-  unsigned short nZone = geometry->GetnZone();
-  unsigned short iVar;
-  unsigned long iPoint, jPoint, iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  ofstream restart_file;
-  string filename;
-  
-  int iProcessor;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
-  /*--- Retrieve filename from config ---*/
-  
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
-    filename = config->GetRestart_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
-  } else if (fem) {
-    filename = config->GetRestart_FEMFileName();
-  } else {
-    filename = config->GetRestart_FlowFileName();
-  }
-  
-  /*--- Append the zone number if multizone problems ---*/
-  if (nZone > 1)
-    filename= config->GetMultizone_FileName(filename, val_iZone);
-  
-  /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
-  } else if (config->GetWrt_Unsteady()) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  }
-  
-  //hack for now
-  
-  filename = "restart_parallel.dat";
-  
-  /*--- Only the master node writes the header. ---*/
-  
-  if (rank == MASTER_NODE) {
-    restart_file.open(filename.c_str(), ios::out);
-    restart_file.precision(15);
-    restart_file << "\"PointID\"";
-    for (iVar = 0; iVar < Variable_Names.size()-1; iVar++)
-      restart_file << "\t\"" << Variable_Names[iVar] << "\"";
-    restart_file << "\t\"" << Variable_Names[Variable_Names.size()-1] << "\"" << endl;
-    restart_file.close();
-  }
-  
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  
-  /*--- All processors open the file. ---*/
-  
-  restart_file.open(filename.c_str(), ios::out | ios::app);
-  restart_file.precision(15);
-  
-  /*--- Write the restart file in parallel, processor by processor. ---*/
-  
-  unsigned long myPoint = 0, offset = 0;
-  for (iProcessor = 0; iProcessor < size; iProcessor++) {
-    if (rank == iProcessor) {
-      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
-        
-        /*--- Index of the point (note outer loop over procs) ---*/
-        
-        restart_file << iPoint + offset << "\t";
-        myPoint++;
-        
-        /*--- Loop over the variables and write the values to file ---*/
-        
-        for (iVar = 0; iVar < nVar_Par; iVar++) {
-          restart_file << scientific << Parallel_Data[iVar][iPoint] << "\t";
-        }
-        restart_file << "\n";
-      }
-    }
-    /*--- Flush the file and wait for all processors to arrive. ---*/
-    restart_file.flush();
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
-    
-  }
-  
-  restart_file.close();
-  
-}
-
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
@@ -5415,27 +3930,6 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
   }
 }
 
-void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
-  
-  /*--- Deallocate memory for connectivity data on each processor. ---*/
-  
-  if (surf_sol) {
-    if (nParallel_Line > 0      && Conn_Line_Par      != NULL) delete [] Conn_Line_Par;
-    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
-    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
-  }
-  else {
-    if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
-    
-  }
-  
-}
-
 void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   
   int rank = MASTER_NODE;
@@ -5453,17 +3947,6 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
     delete [] Data;
     
   }
-}
-
-void COutput::DeallocateParallelData(CConfig *config, CGeometry *geometry) {
-  
-  /*--- Deallocate memory for solution data ---*/
-  
-  for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
-    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
-  }
-  if (Parallel_Data != NULL) delete [] Parallel_Data;
-  
 }
 
 void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
@@ -8733,44 +7216,6 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       MergeConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
     }
     
-    
-    /*--- Hacking in the parallel output straight here in line for now... ---*/
-    
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TRIANGLE      );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], QUADRILATERAL );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TETRAHEDRON   );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], HEXAHEDRON    );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PRISM         );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PYRAMID       );
-    
-    LoadLocalData_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-
-    SortOutputData(config[iZone], geometry[iZone][MESH_0]);
-
-    /*--- Reduce the total number of points and cells we will be writing in the output files. ---*/
-    
-#ifndef HAVE_MPI
-    nGlobal_Poin_Par = geometry[iZone][MESH_0]->GetGlobal_nPointDomain();
-    nGlobal_Elem_Par = geometry[iZone][MESH_0]->GetGlobal_nElem();
-#else
-    SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-    SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    
-    /*--- Write naive parallel ASCII files. ---*/
-    
-    SetTecplotASCII_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
-
-    SetRestart_Parallel(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-    
-    /*--- Clean up the parallel data that was allocated for output. ---*/
-    
-    DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
-    DeallocateParallelData(config[iZone], geometry[iZone][MESH_0]);
-    
-    Variable_Names.clear();
-    
     /*--- Merge coordinates of all grid nodes (excluding ghost points).
      The grid coordinates are always merged and included first in the
      restart files. ---*/
@@ -11577,4 +10022,2431 @@ void COutput::HarmonicBalanceOutput(CSolver ****solver_container, CConfig **conf
 
 	delete [] sbuf_var;
 	delete [] averages;
+}
+
+void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
+                                       CGeometry ***geometry,
+                                       CConfig **config,
+                                       unsigned long iExtIter,
+                                       unsigned short val_nZone) {
+  
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  unsigned short iZone;
+  
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    
+    /*--- Flags identifying the types of files to be written. ---*/
+    
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
+    
+    if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
+    
+    switch (config[iZone]->GetKind_Solver()) {
+        
+      case EULER : case NAVIER_STOKES : case RANS :
+        
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+        break;
+        
+      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+        break;
+        
+    }
+    
+    /*--- Get the file output format ---*/
+    
+    //unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+    
+    /*--- Sort the volumetric connectivity so that it is in a linear partitioning
+     (based on the degrees of freedom at the nodes. ---*/
+    
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TRIANGLE      );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], QUADRILATERAL );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TETRAHEDRON   );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], HEXAHEDRON    );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PRISM         );
+    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PYRAMID       );
+    
+    /*--- Sort surface conectivity here... ----*/
+    
+    //
+    
+    /*--- This switch statement will become a call to a virtual function
+     defined within each of the "physics" output child classes that loads
+     the local data for that particular problem alone. ---*/
+    
+    switch (config[iZone]->GetKind_Solver()) {
+      case EULER : case NAVIER_STOKES: case RANS :
+        LoadLocalData_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        break;
+      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        LoadLocalData_AdjFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        break;
+      case FEM_ELASTICITY:
+        LoadLocalData_Elasticity(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        break;
+      case POISSON_EQUATION: case WAVE_EQUATION: case HEAT_EQUATION:
+        LoadLocalData_Base(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        break;
+      default: break;
+    }
+    
+    /*--- After loading the data local to a processor, we perform the same
+     sorting as done for the volume connectivity, i.e., a linear partitioning
+     across all ranks in the communicator. ---*/
+    
+    SortOutputData(config[iZone], geometry[iZone][MESH_0]);
+    
+    /*--- Reduce the total number of points and cells we will be writing in the output files. ---*/
+    
+#ifndef HAVE_MPI
+    nGlobal_Poin_Par = geometry[iZone][MESH_0]->GetGlobal_nPointDomain();
+    nGlobal_Elem_Par = geometry[iZone][MESH_0]->GetGlobal_nElem();
+#else
+    SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
+    SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    
+    /*--- Write naive parallel ASCII files. ---*/
+    
+    SetTecplotASCII_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
+    SetRestart_Parallel(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    
+    /*--- Clean up the parallel data that was allocated for output. ---*/
+    
+    DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
+    DeallocateData_Parallel(config[iZone], geometry[iZone][MESH_0]);
+    
+    Variable_Names.clear();
+    
+    /*--- Final broadcast (informing other procs that the base output
+     file was written). ---*/
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+    
+  }
+}
+
+void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  unsigned short iDim;
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  unsigned short nDim = geometry->GetnDim();
+  
+  unsigned long iVar, jVar;
+  unsigned long iPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
+  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
+  
+  su2double RefAreaCoeff = config->GetRefAreaCoeff();
+  su2double Gamma = config->GetGamma();
+  su2double RefVel2;
+  su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
+  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
+  su2double *Grid_Vel = NULL;
+  
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+  bool grid_movement  = (config->GetGrid_Movement());
+  bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
+  
+  int *Local_Halo;
+  
+  /*--- Set the non-dimensionalization for coefficients. ---*/
+  
+  if (grid_movement) {
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
+  }
+  RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
+  RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
+  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+  
+  /*--- Use a switch statement to decide how many solver containers we have
+   in this zone for output. ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
+    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
+    default: SecondIndex = NONE; break;
+  }
+  
+  nVar_First = solver[FirstIndex]->GetnVar();
+  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First + nVar_Second;
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Register the variables that will be output. To register a  ---*/
+  /*---         variable, two things are required. First, increment the    ---*/
+  /*---         counter for the number of variables (nVar_Par), which      ---*/
+  /*---         controls the size of the data structure allocation, i.e.,  ---*/
+  /*---         the number of columns in an nPoint x nVar structure.       ---*/
+  /*---         Second, add a name for the variable to the vector that     ---*/
+  /*---         holds the string names.                                    ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /*--- All output files first need the grid coordinates. ---*/
+  
+  nVar_Par  = 1; Variable_Names.push_back("x");
+  nVar_Par += 1; Variable_Names.push_back("y");
+  if (geometry->GetnDim() == 3) {
+    nVar_Par += 1; Variable_Names.push_back("z");
+  }
+  
+  /*--- At a mininum, the restarts and visualization files need the
+   conservative variables, so these follow next. ---*/
+  
+  nVar_Par += nVar_Consv_Par;
+  Variable_Names.push_back("Density");
+  Variable_Names.push_back("X-Momentum");
+  Variable_Names.push_back("Y-Momentum");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  Variable_Names.push_back("Energy");
+  if (SecondIndex != NONE) {
+    if (config->GetKind_Turb_Model() == SST) {
+      Variable_Names.push_back("TKE");
+      Variable_Names.push_back("Omega");
+    } else {
+      /*--- S-A variants ---*/
+      Variable_Names.push_back("Nu_Tilde");
+    }
+  }
+  
+  /*--- If requested, register the limiter and residuals for all of the
+   equations in the current flow problem. ---*/
+  
+  if (!config->GetLow_MemoryOutput()) {
+    
+    /*--- Add the limiters ---*/
+    
+    if (config->GetWrt_Limiters()) {
+      nVar_Par += nVar_Consv_Par;
+      Variable_Names.push_back("Limiter_Density");
+      Variable_Names.push_back("Limiter_X-Momentum");
+      Variable_Names.push_back("Limiter_Y-Momentum");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+      Variable_Names.push_back("Limiter_Energy");
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Limiter_TKE");
+          Variable_Names.push_back("Limiter_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Limiter_Nu_Tilde");
+        }
+      }
+    }
+    
+    /*--- Add the residuals ---*/
+    
+    if (config->GetWrt_Residuals()) {
+      nVar_Par += nVar_Consv_Par;
+      Variable_Names.push_back("Residual_Density");
+      Variable_Names.push_back("Residual_X-Momentum");
+      Variable_Names.push_back("Residual_Y-Momentum");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+      Variable_Names.push_back("Residual_Energy");
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Residual_TKE");
+          Variable_Names.push_back("Residual_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Residual_Nu_Tilde");
+        }
+        
+      }
+    }
+    
+    /*--- Add the grid velocity. ---*/
+    
+    if (grid_movement) {
+      if (geometry->GetnDim() == 2) nVar_Par += 2;
+      else if (geometry->GetnDim() == 3) nVar_Par += 3;
+      
+      Variable_Names.push_back("Grid_Velx");
+      Variable_Names.push_back("Grid_Vely");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
+    }
+    
+    /*--- Add the freesurface density. ---*/
+    
+    if ((config->GetKind_Regime() == FREESURFACE)) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Density_FreeSurface");
+    }
+    
+    /*--- Add Pressure, Temperature, Cp, Mach. ---*/
+    
+    nVar_Par += 4;
+    Variable_Names.push_back("Pressure");
+    Variable_Names.push_back("Temperature");
+    Variable_Names.push_back("Pressure_Coefficient");
+    Variable_Names.push_back("Mach");
+    
+    /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
+    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
+      nVar_Par += 2;
+      Variable_Names.push_back("Skin_Friction_Coefficient_X");
+      Variable_Names.push_back("Skin_Friction_Coefficient_Y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 3; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
+      }
+      nVar_Par += 2;
+      Variable_Names.push_back("Heat_Flux");
+      Variable_Names.push_back("Y_Plus");
+    }
+    
+    /*--- Add Eddy Viscosity. ---*/
+    
+    if (Kind_Solver == RANS) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Eddy_Viscosity");
+      
+    }
+    
+    /*--- Add the distance to the nearest sharp edge if requested. ---*/
+    
+    if (config->GetWrt_SharpEdges()) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Sharp_Edge_Dist");
+    }
+    
+    /*--- New variables get registered here before the end of the loop. ---*/
+    
+  }
+  
+  /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
+  
+  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    Aux_Frict_x = new su2double[geometry->GetnPoint()];
+    Aux_Frict_y = new su2double[geometry->GetnPoint()];
+    Aux_Frict_z = new su2double[geometry->GetnPoint()];
+    Aux_Heat    = new su2double[geometry->GetnPoint()];
+    Aux_yPlus   = new su2double[geometry->GetnPoint()];
+    
+    /*--- First, loop through the mesh in order to find and store the
+     value of the viscous coefficients at any surface nodes. They
+     will be placed in an auxiliary vector and then communicated like
+     all other volumetric variables. ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      Aux_Frict_x[iPoint] = 0.0;
+      Aux_Frict_y[iPoint] = 0.0;
+      Aux_Frict_z[iPoint] = 0.0;
+      Aux_Heat[iPoint]    = 0.0;
+      Aux_yPlus[iPoint]   = 0.0;
+    }
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_Plotting(iMarker) == YES) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          Aux_Frict_x[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0);
+          Aux_Frict_y[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1);
+          if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
+          Aux_Heat[iPoint] = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
+          Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
+        }
+      }
+    }
+  }
+  
+  /*--- Allocate the local data structure now that we know how many
+   variables are in the output. ---*/
+  
+  // Segfault here if I switch to periodic version!!
+  
+  Local_Data = new su2double*[geometry->GetnPointDomain()];
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Local_Data[iPoint] = new su2double[nVar_Par];
+  }
+  
+  Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  
+  /*--- Search all send/recv boundaries on this partition for any periodic
+   nodes that were part of the original domain. We want to recover these
+   for visualization purposes. ---*/
+  
+  if (!Wrt_Halo) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        
+        /*--- Checking for less than or equal to the rank, because there may
+         be some periodic halo nodes that send info to the same rank. ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          if (isPeriodic) Local_Halo[iPoint] = false;
+        }
+      }
+    }
+  }
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Loop over all grid nodes and load up the desired data for  ---*/
+  /*---         the restart and vizualization files. Note that we need to  ---*/
+  /*---         increment the iVar variable after each variable load.      ---*/
+  /*---         The idea is that we're filling up the columns of field     ---*/
+  /*---         data for each iPoint (row) of the data structure. This     ---*/
+  /*---         This data will then be sorted, communicated, and written   ---*/
+  /*---         to files automatically after this routine. Note that the   ---*/
+  /*---         ordering of the data loading MUST match the order of the   ---*/
+  /*---         variable registration above for the files to be correct.   ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  // Need to eventually do all points (including halos) in case of periodic
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    if (!Local_Halo[iPoint]) {
+      
+      /*--- Restart the column index with each new point. ---*/
+      
+      iVar = 0;
+      
+      /*--- Load the grid node coordinate values. ---*/
+      
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+        Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        iVar++;
+      }
+      
+      /*--- Load the conservative variable states for the mean flow variables.
+       If requested, load the limiters and residuals as well. ---*/
+      
+      for (jVar = 0; jVar < nVar_First; jVar++) {
+        Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
+        iVar++;
+      }
+      
+      if (!config->GetLow_MemoryOutput()) {
+        if (config->GetWrt_Limiters()) {
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+            iVar++;
+          }
+        }
+        if (config->GetWrt_Residuals()) {
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[iPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
+            iVar++;
+          }
+        }
+      }
+      
+      /*--- If this is RANS, i.e., the second solver container is not empty,
+       then load data for the conservative turbulence variables and the
+       limiters / residuals (if requested). ----*/
+      
+      if (SecondIndex != NONE) {
+        for (jVar = 0; jVar < nVar_Second; jVar++) {
+          Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
+          iVar++;
+        }
+        if (!config->GetLow_MemoryOutput()) {
+          if (config->GetWrt_Limiters()) {
+            for (jVar = 0; jVar < nVar_Second; jVar++) {
+              Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+              iVar++;
+            }
+          }
+          if (config->GetWrt_Residuals()) {
+            for (jVar = 0; jVar < nVar_Second; jVar++) {
+              Local_Data[iPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+              iVar++;
+            }
+          }
+        }
+      }
+      
+      if (!config->GetLow_MemoryOutput()) {
+        
+        /*--- Load buffers with the three grid velocity components. ---*/
+        
+        if (grid_movement) {
+          Grid_Vel = geometry->node[iPoint]->GetGridVel();
+          Local_Data[iPoint][iVar] = Grid_Vel[0]; iVar++;
+          Local_Data[iPoint][iVar] = Grid_Vel[1]; iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[iPoint][iVar] = Grid_Vel[2];
+            iVar++;
+          }
+        }
+        
+        /*--- Load data for the freesurface density. ---*/
+        
+        if (config->GetKind_Regime() == FREESURFACE) {
+          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); iVar++;
+        }
+        
+        /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
+        
+        if (compressible) {
+          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressure(); iVar++;
+          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
+          Local_Data[iPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
+          Local_Data[iPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
+          solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
+        }
+        if (incompressible || freesurface) {
+          Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc(); iVar++;
+          Local_Data[iPoint][iVar] = 0.0; iVar++;
+          Local_Data[iPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; iVar++;
+          Local_Data[iPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
+          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); iVar++;
+        }
+        
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+          
+          /*--- Load data for the laminar viscosity. ---*/
+          
+          if (compressible) {
+            Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); iVar++;
+          }
+          if (incompressible || freesurface) {
+            Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); iVar++;
+          }
+          
+          /*--- Load data for the skin friction, heat flux, and y-plus. ---*/
+          
+          Local_Data[iPoint][iVar] = Aux_Frict_x[iPoint]; iVar++;
+          Local_Data[iPoint][iVar] = Aux_Frict_y[iPoint]; iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[iPoint][iVar] = Aux_Frict_z[iPoint];
+            iVar++;
+          }
+          Local_Data[iPoint][iVar] = Aux_Heat[iPoint]; iVar++;
+          Local_Data[iPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
+          
+        }
+        
+        /*--- Load data for the Eddy viscosity for RANS. ---*/
+        
+        if (Kind_Solver == RANS) {
+          if (compressible) {
+            Local_Data[iPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
+          }
+          if (incompressible || freesurface) {
+            Local_Data[iPoint][iVar]  = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); iVar++;
+          }
+        }
+        
+        /*--- Load data for the distance to the nearest sharp edge. ---*/
+        
+        if (config->GetWrt_SharpEdges()) {
+          Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
+        }
+        
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
+        
+      }
+    }
+  }
+  
+  /*--- Free memory for auxiliary vectors. ---*/
+  
+  if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+    delete[] Aux_Frict_x; delete[] Aux_Frict_y; delete[] Aux_Frict_z;
+    delete [] Aux_Heat; delete [] Aux_yPlus;
+  }
+  
+  delete [] Local_Halo;
+  
+}
+
+void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  unsigned short iDim;
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  unsigned short nDim = geometry->GetnDim();
+  
+  unsigned long iVar, jVar;
+  unsigned long iPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
+  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
+  
+  su2double *Aux_Sens = NULL;
+  su2double *Grid_Vel = NULL;
+  su2double *Normal, Area;
+  
+  bool grid_movement  = (config->GetGrid_Movement());
+  bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
+  
+  int *Local_Halo;
+  
+  /*--- Use a switch statement to decide how many solver containers we have
+   in this zone for output. ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case ADJ_EULER : case ADJ_NAVIER_STOKES : FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; break;
+    case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; break;
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE;  break;
+    case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTURB_SOL;  break;
+  }
+  
+  nVar_First = solver[FirstIndex]->GetnVar();
+  if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First + nVar_Second;
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Register the variables that will be output. To register a  ---*/
+  /*---         variable, two things are required. First, increment the    ---*/
+  /*---         counter for the number of variables (nVar_Par), which      ---*/
+  /*---         controls the size of the data structure allocation, i.e.,  ---*/
+  /*---         the number of columns in an nPoint x nVar structure.       ---*/
+  /*---         Second, add a name for the variable to the vector that     ---*/
+  /*---         holds the string names.                                    ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /*--- All output files first need the grid coordinates. ---*/
+  
+  nVar_Par  = 1; Variable_Names.push_back("x");
+  nVar_Par += 1; Variable_Names.push_back("y");
+  if (geometry->GetnDim() == 3) {
+    nVar_Par += 1; Variable_Names.push_back("z");
+  }
+  
+  /*--- At a mininum, the restarts and visualization files need the
+   conservative variables, so these follow next. ---*/
+  
+  nVar_Par += nVar_Consv_Par;
+  Variable_Names.push_back("Adjoint_Density");
+  Variable_Names.push_back("Adjoint_X-Momentum");
+  Variable_Names.push_back("Adjoint_Y-Momentum");
+  if (geometry->GetnDim() == 3)
+    Variable_Names.push_back("Adjoint_Z-Momentum");
+  Variable_Names.push_back("Adjoint_Energy");
+  if (SecondIndex != NONE) {
+    if (config->GetKind_Turb_Model() == SST) {
+      Variable_Names.push_back("Adjoint_TKE");
+      Variable_Names.push_back("Adjoint_Omega");
+    } else {
+      /*--- S-A variants ---*/
+      Variable_Names.push_back("Adjoint_Nu_Tilde");
+    }
+  }
+  
+  /*--- If requested, register the limiter and residuals for all of the
+   equations in the current flow problem. ---*/
+  
+  if (!config->GetLow_MemoryOutput()) {
+    
+    /*--- Add the limiters ---*/
+    
+    if (config->GetWrt_Limiters()) {
+      nVar_Par += nVar_Consv_Par;
+      Variable_Names.push_back("Limiter_Adjoint_Density");
+      Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
+      Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
+      if (geometry->GetnDim() == 3)
+        Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+      Variable_Names.push_back("Limiter_Adjoint_Energy");
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Limiter_Adjoint_TKE");
+          Variable_Names.push_back("Limiter_Adjoint_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Limiter_Adjoint_Nu_Tilde");
+        }
+      }
+    }
+    
+    /*--- Add the residuals ---*/
+    
+    if (config->GetWrt_Residuals()) {
+      nVar_Par += nVar_Consv_Par;
+      Variable_Names.push_back("Residual_Adjoint_Density");
+      Variable_Names.push_back("Residual_Adjoint_X-Momentum");
+      Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
+      if (geometry->GetnDim() == 3)
+        Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+      Variable_Names.push_back("Residual_Adjoint_Energy");
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Residual_Adjoint_TKE");
+          Variable_Names.push_back("Residual_Adjoint_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Residual_Adjoint_Nu_Tilde");
+        }
+        
+      }
+    }
+    
+    /*--- Add the grid velocity. ---*/
+    
+    if (grid_movement) {
+      if (geometry->GetnDim() == 2) nVar_Par += 2;
+      else if (geometry->GetnDim() == 3) nVar_Par += 3;
+      Variable_Names.push_back("Grid_Velx");
+      Variable_Names.push_back("Grid_Vely");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
+    }
+    
+    /*--- All adjoint solvers write the surface sensitivity. ---*/
+    
+    nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
+    
+    /*--- For the continouus adjoint, we write either convective scheme's
+     dissipation sensor (centered) or limiter (uwpind) for adj. density. ---*/
+    
+    if (( Kind_Solver == ADJ_EULER              ) ||
+        ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+        ( Kind_Solver == ADJ_RANS               )) {
+      nVar_Par += 1;
+      if (config->GetKind_ConvNumScheme() == SPACE_CENTERED) {
+        Variable_Names.push_back("Dissipation_Sensor");
+      } else {
+        Variable_Names.push_back("Limiter_Adjoint_Density");
+      }
+    }
+    
+    /*--- For the discrete adjoint, we have the full field of sensitivity
+     in each coordinate direction. ---*/
+    
+    if ((Kind_Solver == DISC_ADJ_EULER)         ||
+        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+        (Kind_Solver == DISC_ADJ_RANS)) {
+      nVar_Par += nDim;
+      Variable_Names.push_back("Sensitivity_x");
+      Variable_Names.push_back("Sensitivity_y");
+      if (geometry->GetnDim()== 3)
+        Variable_Names.push_back("Sensitivity_z");
+    }
+    
+    /*--- New variables get registered here before the end of the loop. ---*/
+    
+  }
+  
+  /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
+  
+  Aux_Sens = new su2double[geometry->GetnPoint()];
+  
+  /*--- First, loop through the mesh in order to find and store the
+   value of the viscous coefficients at any surface nodes. They
+   will be placed in an auxiliary vector and then communicated like
+   all other volumetric variables. ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    Aux_Sens[iPoint] = 0.0;
+  }
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt (Area);
+        Aux_Sens[iPoint] = solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex)/Area;
+      }
+    }
+  
+  /*--- Allocate the local data structure now that we know how many
+   variables are in the output. ---*/
+  
+  // Segfault here if I switch to periodic version!!
+  
+  Local_Data = new su2double*[geometry->GetnPointDomain()];
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Local_Data[iPoint] = new su2double[nVar_Par];
+  }
+  
+  Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  
+  /*--- Search all send/recv boundaries on this partition for any periodic
+   nodes that were part of the original domain. We want to recover these
+   for visualization purposes. ---*/
+  
+  if (!Wrt_Halo) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        
+        /*--- Checking for less than or equal to the rank, because there may
+         be some periodic halo nodes that send info to the same rank. ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          if (isPeriodic) Local_Halo[iPoint] = false;
+        }
+      }
+    }
+  }
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Loop over all grid nodes and load up the desired data for  ---*/
+  /*---         the restart and vizualization files. Note that we need to  ---*/
+  /*---         increment the iVar variable after each variable load.      ---*/
+  /*---         The idea is that we're filling up the columns of field     ---*/
+  /*---         data for each iPoint (row) of the data structure. This     ---*/
+  /*---         This data will then be sorted, communicated, and written   ---*/
+  /*---         to files automatically after this routine. Note that the   ---*/
+  /*---         ordering of the data loading MUST match the order of the   ---*/
+  /*---         variable registration above for the files to be correct.   ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  // Need to eventually do all points (including halos) in case of periodic
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    if (!Local_Halo[iPoint]) {
+      
+      /*--- Restart the column index with each new point. ---*/
+      
+      iVar = 0;
+      
+      /*--- Load the grid node coordinate values. ---*/
+      
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+        Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        iVar++;
+      }
+      
+      /*--- Load the conservative variable states for the mean flow variables.
+       If requested, load the limiters and residuals as well. ---*/
+      
+      for (jVar = 0; jVar < nVar_First; jVar++) {
+        Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
+        iVar++;
+      }
+      
+      if (!config->GetLow_MemoryOutput()) {
+        if (config->GetWrt_Limiters()) {
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
+            iVar++;
+          }
+        }
+        if (config->GetWrt_Residuals()) {
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            if (!config->GetDiscrete_Adjoint()) {
+              Local_Data[iPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
+            } else {
+              Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar) -
+              solver[FirstIndex]->node[iPoint]->GetSolution_Old(jVar);
+            }
+            iVar++;
+          }
+        }
+      }
+      
+      /*--- If this is Adj. RANS, i.e., the second solver container is not empty,
+       then load data for the conservative turbulence variables and the
+       limiters / residuals (if requested). ----*/
+      
+      if (SecondIndex != NONE) {
+        for (jVar = 0; jVar < nVar_Second; jVar++) {
+          Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
+          iVar++;
+        }
+        if (!config->GetLow_MemoryOutput()) {
+          if (config->GetWrt_Limiters()) {
+            for (jVar = 0; jVar < nVar_Second; jVar++) {
+              Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter(jVar);
+              iVar++;
+            }
+          }
+          if (config->GetWrt_Residuals()) {
+            for (jVar = 0; jVar < nVar_Second; jVar++) {
+              if (!config->GetDiscrete_Adjoint()) {
+                Local_Data[iPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+              } else {
+                Local_Data[iPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar) -
+                solver[SecondIndex]->node[iPoint]->GetSolution_Old(jVar);
+              }
+              iVar++;
+            }
+          }
+        }
+      }
+      
+      if (!config->GetLow_MemoryOutput()) {
+        
+        /*--- Load buffers with the three grid velocity components. ---*/
+        
+        if (grid_movement) {
+          Grid_Vel = geometry->node[iPoint]->GetGridVel();
+          Local_Data[iPoint][iVar] = Grid_Vel[0]; iVar++;
+          Local_Data[iPoint][iVar] = Grid_Vel[1]; iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[iPoint][iVar] = Grid_Vel[2];
+            iVar++;
+          }
+        }
+        
+        /*--- Load data for the surface sensitivity. ---*/
+        
+        Local_Data[iPoint][iVar] = Aux_Sens[iPoint]; iVar++;
+        
+        /*--- Load data for the convective scheme sensor. ---*/
+        
+        if (( Kind_Solver == ADJ_EULER              ) ||
+            ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
+            ( Kind_Solver == ADJ_RANS               )) {
+          if (config->GetKind_ConvNumScheme() == SPACE_CENTERED) {
+            Local_Data[iPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensor(iPoint); iVar++;
+          } else {
+            Local_Data[iPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetLimiter(0); iVar++;
+          }
+        }
+        
+        /*--- Load data for the discrete sensitivities. ---*/
+        
+        if ((Kind_Solver == DISC_ADJ_EULER)         ||
+            (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+            (Kind_Solver == DISC_ADJ_RANS)) {
+          Local_Data[iPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(0); iVar++;
+          Local_Data[iPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(1); iVar++;
+          if (geometry->GetnDim()== 3) {
+            Local_Data[iPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(2);
+            iVar++;
+          }
+        }
+        
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
+        
+      }
+    }
+  }
+  
+  /*--- Free memory for auxiliary vectors. ---*/
+  
+  delete [] Aux_Sens;
+  delete [] Local_Halo;
+  
+}
+
+void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  unsigned short iDim;
+  
+  unsigned long iVar, jVar;
+  unsigned long iPoint, FirstIndex = NONE, iMarker, iVertex;
+  unsigned long nVar_First = 0, nVar_Consv_Par = 0;
+  
+  su2double *Node_Vel = NULL, *Node_Accel = NULL, *Stress = NULL;
+  
+  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
+  
+  int *Local_Halo;
+  
+  /*--- Use a switch statement to decide how many solver containers we have
+   in this zone for output. ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case FEM_ELASTICITY: FirstIndex = FEA_SOL; break;
+  }
+  
+  nVar_First = solver[FirstIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First;
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Register the variables that will be output. To register a  ---*/
+  /*---         variable, two things are required. First, increment the    ---*/
+  /*---         counter for the number of variables (nVar_Par), which      ---*/
+  /*---         controls the size of the data structure allocation, i.e.,  ---*/
+  /*---         the number of columns in an nPoint x nVar structure.       ---*/
+  /*---         Second, add a name for the variable to the vector that     ---*/
+  /*---         holds the string names.                                    ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /*--- All output files first need the grid coordinates. ---*/
+  
+  nVar_Par  = 1; Variable_Names.push_back("x");
+  nVar_Par += 1; Variable_Names.push_back("y");
+  if (geometry->GetnDim() == 3) {
+    nVar_Par += 1; Variable_Names.push_back("z");
+  }
+  
+  /*--- At a mininum, the restarts and visualization files need the
+   conservative variables, so these follow next. ---*/
+  
+  nVar_Par += nVar_Consv_Par;
+  Variable_Names.push_back("Displacement_1");
+  Variable_Names.push_back("Displacement_2");
+  if (geometry->GetnDim() == 3)
+    Variable_Names.push_back("Displacement_3");
+  
+  /*--- If requested, register the limiter and residuals for all of the
+   equations in the current flow problem. ---*/
+  
+  if (!config->GetLow_MemoryOutput()) {
+    
+    /*--- Add the limiters ---*/
+    
+    if (config->GetWrt_Limiters()) {
+      nVar_Par += nVar_Consv_Par;
+      Variable_Names.push_back("Limiter_Displacement_1");
+      Variable_Names.push_back("Limiter_Displacement_2");
+      if (geometry->GetnDim() == 3)
+        Variable_Names.push_back("Limiter_Displacement_3");
+    }
+    
+    /*--- Add the residuals ---*/
+    
+    if (config->GetWrt_Residuals()) {
+      nVar_Par += nVar_Consv_Par;
+      Variable_Names.push_back("Residual_Displacement_1");
+      Variable_Names.push_back("Residual_Displacement_2");
+      if (geometry->GetnDim() == 3)
+        Variable_Names.push_back("Residual_Displacement_3");
+    }
+    
+    /*--- If the analysis is dynamic... ---*/
+    if (config->GetDynamic_Analysis() == DYNAMIC) {
+      
+      /*--- Velocities ---*/
+      
+      nVar_Par += 2;
+      Variable_Names.push_back("Velocity_1");
+      Variable_Names.push_back("Velocity_2");
+      if (geometry->GetnDim() == 3) {
+        
+        nVar_Par += 1;
+        Variable_Names.push_back("Velocity_3");
+      }
+      /*--- Accelerations ---*/
+      nVar_Par += 2;
+      Variable_Names.push_back("Acceleration_1");
+      Variable_Names.push_back("Acceleration_2");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1;
+        Variable_Names.push_back("Acceleration_3");
+      }
+    }
+    
+    /*--- Add the stresses. ---*/
+    
+    nVar_Par += 3;
+    Variable_Names.push_back("Sxx");
+    Variable_Names.push_back("Syy");
+    Variable_Names.push_back("Sxy");
+    if (geometry->GetnDim() == 3) {
+      nVar_Par += 3;
+      Variable_Names.push_back("Szz");
+      Variable_Names.push_back("Sxz");
+      Variable_Names.push_back("Syz");
+    }
+    
+    /*--- Add the Von Mises Stress. ---*/
+    
+    nVar_Par += 1;
+    Variable_Names.push_back("Von_Mises_Stress");
+    
+    /*--- New variables get registered here before the end of the loop. ---*/
+    
+  }
+  
+  /*--- Allocate the local data structure now that we know how many
+   variables are in the output. ---*/
+  
+  // Segfault here if I switch to periodic version!!
+  
+  Local_Data = new su2double*[geometry->GetnPointDomain()];
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Local_Data[iPoint] = new su2double[nVar_Par];
+  }
+  
+  Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  
+  /*--- Search all send/recv boundaries on this partition for any periodic
+   nodes that were part of the original domain. We want to recover these
+   for visualization purposes. ---*/
+  
+  if (!Wrt_Halo) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        
+        /*--- Checking for less than or equal to the rank, because there may
+         be some periodic halo nodes that send info to the same rank. ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          if (isPeriodic) Local_Halo[iPoint] = false;
+        }
+      }
+    }
+  }
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Loop over all grid nodes and load up the desired data for  ---*/
+  /*---         the restart and vizualization files. Note that we need to  ---*/
+  /*---         increment the iVar variable after each variable load.      ---*/
+  /*---         The idea is that we're filling up the columns of field     ---*/
+  /*---         data for each iPoint (row) of the data structure. This     ---*/
+  /*---         This data will then be sorted, communicated, and written   ---*/
+  /*---         to files automatically after this routine. Note that the   ---*/
+  /*---         ordering of the data loading MUST match the order of the   ---*/
+  /*---         variable registration above for the files to be correct.   ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  // Need to eventually do all points (including halos) in case of periodic
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    if (!Local_Halo[iPoint]) {
+      
+      /*--- Restart the column index with each new point. ---*/
+      
+      iVar = 0;
+      
+      /*--- Load the grid node coordinate values. ---*/
+      
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+        Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        iVar++;
+      }
+      
+      /*--- Load the conservative variable states for the mean flow variables.
+       If requested, load the limiters and residuals as well. ---*/
+      
+      for (jVar = 0; jVar < nVar_First; jVar++) {
+        Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
+        iVar++;
+      }
+      
+      if (!config->GetLow_MemoryOutput()) {
+        if (config->GetWrt_Limiters()) {
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
+            iVar++;
+          }
+        }
+        if (config->GetWrt_Residuals()) {
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[iPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
+            iVar++;
+          }
+        }
+      }
+      
+      if (!config->GetLow_MemoryOutput()) {
+        
+        /*--- Load the velocities and accelerations (dynamic calculations). ---*/
+        
+        if (config->GetDynamic_Analysis() == DYNAMIC) {
+          
+          /*--- Velocities ---*/
+          
+          Node_Vel = solver[FEA_SOL]->node[iPoint]->GetSolution_Vel();
+          Local_Data[iPoint][iVar] = Node_Vel[0]; iVar++;
+          Local_Data[iPoint][iVar] = Node_Vel[1]; iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[iPoint][iVar] = Node_Vel[2];
+            iVar++;
+          }
+          
+          /*--- Accelerations ---*/
+          
+          Node_Accel = solver[FEA_SOL]->node[iPoint]->GetSolution_Accel();
+          Local_Data[iPoint][iVar] = Node_Accel[0]; iVar++;
+          Local_Data[iPoint][iVar] = Node_Accel[1]; iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[iPoint][iVar] = Node_Accel[2];
+            iVar++;
+          }
+        }
+        
+        /*--- Add the stresses. ---*/
+        
+        Stress = solver[FEA_SOL]->node[iPoint]->GetStress_FEM();
+        /*--- Sigma xx ---*/
+        Local_Data[iPoint][iVar] = Stress[0]; iVar++;
+        /*--- Sigma yy ---*/
+        Local_Data[iPoint][iVar] = Stress[1]; iVar++;
+        /*--- Sigma xy ---*/
+        Local_Data[iPoint][iVar] = Stress[2]; iVar++;
+        
+        if (geometry->GetnDim() == 3) {
+          /*--- Sigma zz ---*/
+          Local_Data[iPoint][iVar] = Stress[3]; iVar++;
+          /*--- Sigma xz ---*/
+          Local_Data[iPoint][iVar] = Stress[4]; iVar++;
+          /*--- Sigma yz ---*/
+          Local_Data[iPoint][iVar] = Stress[5]; iVar++;
+        }
+        
+        /*--- Add the Von Mises Stress. ---*/
+        
+        Local_Data[iPoint][iVar] = solver[FEA_SOL]->node[iPoint]->GetVonMises_Stress(); iVar++;
+        
+        /*--- New variables can be loaded to the Local_Data structure here,
+         assuming they were registered above correctly. ---*/
+        
+      }
+    }
+  }
+  
+  /*--- Free memory for auxiliary vectors. ---*/
+  
+  delete [] Local_Halo;
+  
+}
+
+void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  unsigned short iDim;
+  
+  unsigned long iVar, jVar;
+  unsigned long iPoint, FirstIndex = NONE, iMarker, iVertex;
+  unsigned long nVar_First = 0, nVar_Consv_Par = 0;
+  
+  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
+  
+  int *Local_Halo;
+  
+  stringstream varname;
+  
+  /*--- Use a switch statement to decide how many solver containers we have
+   in this zone for output. ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case POISSON_EQUATION: FirstIndex = POISSON_SOL;  break;
+    case WAVE_EQUATION:    FirstIndex = WAVE_SOL;     break;
+    case HEAT_EQUATION:    FirstIndex = HEAT_SOL;     break;
+  }
+  
+  nVar_First = solver[FirstIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First;
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Register the variables that will be output. To register a  ---*/
+  /*---         variable, two things are required. First, increment the    ---*/
+  /*---         counter for the number of variables (nVar_Par), which      ---*/
+  /*---         controls the size of the data structure allocation, i.e.,  ---*/
+  /*---         the number of columns in an nPoint x nVar structure.       ---*/
+  /*---         Second, add a name for the variable to the vector that     ---*/
+  /*---         holds the string names.                                    ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /*--- All output files first need the grid coordinates. ---*/
+  
+  nVar_Par  = 1; Variable_Names.push_back("x");
+  nVar_Par += 1; Variable_Names.push_back("y");
+  if (geometry->GetnDim() == 3) {
+    nVar_Par += 1; Variable_Names.push_back("z");
+  }
+  
+  /*--- At a mininum, the restarts and visualization files need the
+   conservative variables, so these follow next. ---*/
+  
+  nVar_Par += nVar_Consv_Par;
+  for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+    varname << "Conservative_" << iVar+1;
+    Variable_Names.push_back(varname.str());
+    varname.clear();
+  }
+  
+  /*--- If requested, register the residuals for all of the
+   equations in the current problem. ---*/
+  
+  if (!config->GetLow_MemoryOutput()) {
+    
+    /*--- Add the residuals ---*/
+    
+    if (config->GetWrt_Residuals()) {
+      nVar_Par += nVar_Consv_Par;
+      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+        varname << "Residual_" << iVar+1;
+        Variable_Names.push_back(varname.str());
+        varname.clear();
+      }
+    }
+    
+    /*--- New variables get registered here before the end of the loop. ---*/
+    
+  }
+  
+  /*--- Allocate the local data structure now that we know how many
+   variables are in the output. ---*/
+  
+  // Segfault here if I switch to periodic version!!
+  
+  Local_Data = new su2double*[geometry->GetnPointDomain()];
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Local_Data[iPoint] = new su2double[nVar_Par];
+  }
+  
+  Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  
+  /*--- Search all send/recv boundaries on this partition for any periodic
+   nodes that were part of the original domain. We want to recover these
+   for visualization purposes. ---*/
+  
+  if (!Wrt_Halo) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        
+        /*--- Checking for less than or equal to the rank, because there may
+         be some periodic halo nodes that send info to the same rank. ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          if (isPeriodic) Local_Halo[iPoint] = false;
+        }
+      }
+    }
+  }
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Loop over all grid nodes and load up the desired data for  ---*/
+  /*---         the restart and vizualization files. Note that we need to  ---*/
+  /*---         increment the iVar variable after each variable load.      ---*/
+  /*---         The idea is that we're filling up the columns of field     ---*/
+  /*---         data for each iPoint (row) of the data structure. This     ---*/
+  /*---         This data will then be sorted, communicated, and written   ---*/
+  /*---         to files automatically after this routine. Note that the   ---*/
+  /*---         ordering of the data loading MUST match the order of the   ---*/
+  /*---         variable registration above for the files to be correct.   ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  // Need to eventually do all points (including halos) in case of periodic
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    if (!Local_Halo[iPoint]) {
+      
+      /*--- Restart the column index with each new point. ---*/
+      
+      iVar = 0;
+      
+      /*--- Load the grid node coordinate values. ---*/
+      
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+        Local_Data[iPoint][iVar] = geometry->node[iPoint]->GetCoord(iDim);
+        iVar++;
+      }
+      
+      /*--- Load the conservative variable states for the mean flow variables.
+       If requested, load the limiters and residuals as well. ---*/
+      
+      for (jVar = 0; jVar < nVar_First; jVar++) {
+        Local_Data[iPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
+        iVar++;
+      }
+      
+      if (!config->GetLow_MemoryOutput()) {
+        if (config->GetWrt_Residuals()) {
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[iPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
+            iVar++;
+          }
+        }
+      }
+      
+      /*--- New variables can be loaded to the Local_Data structure here,
+       assuming they were registered above correctly. ---*/
+      
+    }
+  }
+  
+  /*--- Free memory for auxiliary vectors. ---*/
+  
+  delete [] Local_Halo;
+  
+}
+
+void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+  
+  unsigned long iProcessor;
+  unsigned short NODES_PER_ELEMENT;
+  unsigned long iPoint, jPoint, kPoint;
+  unsigned long nElem_Total = 0, Global_Index;
+  
+  unsigned long iVertex, iMarker;
+  int SendRecv, RecvFrom;
+  
+  bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
+  
+  int *Conn_Elem = NULL;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Request *send_req, *recv_req;
+  MPI_Status status;
+  int ind;
+#endif
+  
+  /*--- Store the local number of this element type and the number of nodes
+   per this element type. In serial, this will be the total number of this
+   element type in the entire mesh. In parallel, it is the number on only
+   the current partition. ---*/
+  
+  switch (Elem_Type) {
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case QUADRILATERAL:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    case TETRAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
+      break;
+    case HEXAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
+      break;
+    case PRISM:
+      NODES_PER_ELEMENT = N_POINTS_PRISM;
+      break;
+    case PYRAMID:
+      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
+      break;
+    default:
+      cout << "Error: Unrecognized element type \n";
+      exit(EXIT_FAILURE); break;
+  }
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  unsigned long *npoint_procs  = new unsigned long[size];
+  unsigned long *starting_node = new unsigned long[size];
+  unsigned long *ending_node   = new unsigned long[size];
+  unsigned long *nPoint_Linear = new unsigned long[size+1];
+  
+  unsigned long total_pt_accounted = 0;
+  for (int ii = 0; ii < size; ii++) {
+    npoint_procs[ii] = geometry->GetGlobal_nPointDomain()/size;
+    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
+  }
+  
+  /*--- Get the number of remainder points after the even division. ---*/
+  
+  unsigned long rem_points = geometry->GetGlobal_nPointDomain()-total_pt_accounted;
+  for (unsigned long ii = 0; ii < rem_points; ii++) {
+    npoint_procs[ii]++;
+  }
+  
+  /*--- Store the local number of nodes and the beginning/end index ---*/
+  
+  starting_node[0] = 0;
+  ending_node[0]   = starting_node[0] + npoint_procs[0];
+  nPoint_Linear[0] = 0;
+  for (int ii = 1; ii < size; ii++) {
+    starting_node[ii] = ending_node[ii-1];
+    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
+    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
+  }
+  nPoint_Linear[size] = geometry->GetGlobal_nPointDomain();
+  
+  /*--- Force the removal of all added periodic elements (use global index).
+   First, we isolate and create a list of all added periodic points, excluding
+   those that were part of the original domain (we want these to be in the
+   output files). ---*/
+  
+  vector<unsigned long> Added_Periodic;
+  Added_Periodic.clear();
+  
+  if (config->GetKind_SU2() != SU2_DEF) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        SendRecv = config->GetMarker_All_SendRecv(iMarker);
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+              (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
+              (SendRecv < 0)) {
+            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+          }
+        }
+      }
+    }
+  }
+  
+  /*--- Now we communicate this information to all processors, so that they
+   can force the removal of these particular nodes by flagging them as halo
+   points. In general, this should be a small percentage of the total mesh,
+   so the communication/storage costs here shouldn't be prohibitive. ---*/
+  
+  /*--- First communicate the number of points that each rank has found. ---*/
+  
+  unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
+  unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
+  Buffer_Recv_nAddedPeriodic = new unsigned long[size];
+  
+  nAddedPeriodic = Added_Periodic.size();
+  Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nAddedPeriodic, &maxAddedPeriodic, 1, MPI_UNSIGNED_LONG,
+                     MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&Buffer_Send_nAddedPeriodic, 1, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_nAddedPeriodic,  1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  maxAddedPeriodic = nAddedPeriodic;
+  Buffer_Recv_nAddedPeriodic[0] = Buffer_Send_nAddedPeriodic[0];
+#endif
+  
+  /*--- Communicate the global index values of all added periodic nodes. ---*/
+  unsigned long *Buffer_Send_AddedPeriodic = new unsigned long[maxAddedPeriodic];
+  unsigned long *Buffer_Recv_AddedPeriodic = new unsigned long[size*maxAddedPeriodic];
+  
+  for (iPoint = 0; iPoint < Added_Periodic.size(); iPoint++) {
+    Buffer_Send_AddedPeriodic[iPoint] = Added_Periodic[iPoint];
+  }
+  
+  /*--- Gather the element connectivity information. All processors will now
+   have a copy of the global index values for all added periodic points. ---*/
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
+                     Buffer_Recv_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
+                     MPI_COMM_WORLD);
+#else
+  for (iPoint = 0; iPoint < maxAddedPeriodic; iPoint++)
+    Buffer_Recv_AddedPeriodic[iPoint] = Buffer_Send_AddedPeriodic[iPoint];
+#endif
+  
+  /*--- Search all send/recv boundaries on this partition for halo cells. In
+   particular, consider only the recv conditions (these are the true halo
+   nodes). Check the ranks of the processors that are communicating and
+   choose to keep only the halo cells from the higher rank processor. Here,
+   we are also choosing to keep periodic nodes that were part of the original
+   domain. We will check the communicated list of added periodic points. ---*/
+  
+  int *Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+      SendRecv = config->GetMarker_All_SendRecv(iMarker);
+      RecvFrom = abs(SendRecv)-1;
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        
+        /*--- We need to keep one copy of overlapping halo cells. ---*/
+        
+        notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
+                   (SendRecv < 0) && (rank > RecvFrom));
+        
+        /*--- We want to keep the periodic nodes that were part of the original domain.
+         For SU2_DEF we want to keep all periodic nodes. ---*/
+        
+        if (config->GetKind_SU2() == SU2_DEF) {
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
+        }else {
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+        }
+        
+        notPeriodic = (isPeriodic && (SendRecv < 0));
+        
+        /*--- Lastly, check that this isn't an added periodic point that
+         we will forcibly remove. Use the communicated list of these points. ---*/
+        
+        addedPeriodic = false; kPoint = 0;
+        for (iProcessor = 0; iProcessor < (unsigned long)size; iProcessor++) {
+          for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
+            if (Global_Index == Buffer_Recv_AddedPeriodic[kPoint+jPoint])
+              addedPeriodic = true;
+          }
+          
+          /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
+          
+          kPoint = (iProcessor+1)*maxAddedPeriodic;
+          
+        }
+        
+        /*--- If we found either of these types of nodes, flag them to be kept. ---*/
+        
+        if ((notHalo || notPeriodic) && !addedPeriodic) {
+          Local_Halo[iPoint] = false;
+        }
+        
+      }
+    }
+  }
+  
+  /*--- We start with the connectivity distributed across all procs with
+   no particular ordering assumed. We need to loop through our local partition
+   and decide how many elements we must send to each other rank in order to
+   have all elements sorted according to a linear partitioning of the grid
+   nodes, i.e., rank 0 holds the first nPoint()/nProcessors nodes.
+   First, initialize a counter and flag. ---*/
+  
+  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
+  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size];
+  
+  for (int ii=0; ii < size; ii++) {
+    nElem_Send[ii] = 0;
+    nElem_Recv[ii] = 0;
+    nElem_Flag[ii]= -1;
+  }
+  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+  
+  for (int ii = 0; ii < (int)geometry->GetnElem(); ii++ ) {
+    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
+      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+        
+        /*--- Get the index of the current point. ---*/
+        
+        iPoint = geometry->elem[ii]->GetNode(jj);
+        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        
+        /*--- Search for the lowest global index in this element. We
+         send the element to the processor owning the range that includes
+         the lowest global index value. ---*/
+        
+        for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+          jPoint = geometry->elem[ii]->GetNode(kk);
+          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          if (newID < Global_Index) Global_Index = newID;
+        }
+        
+        /*--- Search for the processor that owns this point ---*/
+        
+        iProcessor = Global_Index/npoint_procs[0];
+        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+        if (Global_Index >= nPoint_Linear[iProcessor])
+          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+        else
+          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        
+        /*--- If we have not visted this element yet, increment our
+         number of elements that must be sent to a particular proc. ---*/
+        
+        if ((nElem_Flag[iProcessor] != ii)) {
+          nElem_Flag[iProcessor] = ii;
+          nElem_Send[iProcessor+1]++;
+        }
+        
+      }
+    }
+  }
+  
+  /*--- Communicate the number of cells to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+#else
+  nElem_Recv[1] = nElem_Send[1];
+#endif
+  
+  /*--- Prepare to send connectivities. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  int nSends = 0, nRecvs = 0;
+  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  
+  for (int ii = 0; ii < size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+    
+    nElem_Send[ii+1] += nElem_Send[ii];
+    nElem_Recv[ii+1] += nElem_Recv[ii];
+  }
+  
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+  
+  unsigned long *connSend = NULL;
+  connSend = new unsigned long[NODES_PER_ELEMENT*nElem_Send[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
+    connSend[ii] = 0;
+  
+  /*--- Allocate arrays for storing halo flags. ---*/
+  
+  unsigned short *haloSend = new unsigned short[nElem_Send[size]];
+  for (int ii = 0; ii < nElem_Send[size]; ii++)
+    haloSend[ii] = false;
+  
+  /*--- Create an index variable to keep track of our index
+   position as we load up the send buffer. ---*/
+  
+  unsigned long *index = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  
+  unsigned long *haloIndex = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) haloIndex[ii] = nElem_Send[ii];
+  
+  /*--- Loop through our elements and load the elems and their
+   additional data that we will send to the other procs. ---*/
+  
+  for (int ii = 0; ii < (int)geometry->GetnElem(); ii++) {
+    if (geometry->elem[ii]->GetVTK_Type() == Elem_Type) {
+      for ( int jj = 0; jj < NODES_PER_ELEMENT; jj++ ) {
+        
+        /*--- Get the index of the current point. ---*/
+        
+        iPoint = geometry->elem[ii]->GetNode(jj);
+        Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+        
+        /*--- Search for the lowest global index in this element. We
+         send the element to the processor owning the range that includes
+         the lowest global index value. ---*/
+        
+        for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+          jPoint = geometry->elem[ii]->GetNode(kk);
+          unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
+          if (newID < Global_Index) Global_Index = newID;
+        }
+        
+        /*--- Search for the processor that owns this point ---*/
+        
+        iProcessor = Global_Index/npoint_procs[0];
+        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+        if (Global_Index >= nPoint_Linear[iProcessor])
+          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+        else
+          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        
+        /*--- Load connectivity into the buffer for sending ---*/
+        
+        if (nElem_Flag[iProcessor] != ii) {
+          
+          nElem_Flag[iProcessor] = ii;
+          unsigned long nn = index[iProcessor];
+          unsigned long mm = haloIndex[iProcessor];
+          
+          /*--- Load the connectivity values. ---*/
+          
+          for (int kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+            iPoint = geometry->elem[ii]->GetNode(kk);
+            connSend[nn] = geometry->node[iPoint]->GetGlobalIndex(); nn++;
+            
+            /*--- Check if this is a halo node. If so, flag this element
+             as a halo cell. We will use this later to sort and remove
+             any duplicates from the connectivity list. ---*/
+            
+            if (Local_Halo[iPoint]) haloSend[mm] = true;
+            
+          }
+          
+          /*--- Increment the index by the message length ---*/
+          
+          index[iProcessor]    += NODES_PER_ELEMENT;
+          haloIndex[iProcessor]++;
+          
+        }
+      }
+    }
+  }
+  
+  /*--- Free memory after loading up the send buffer. ---*/
+  
+  delete [] index;
+  delete [] haloIndex;
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+  
+  unsigned long *connRecv = NULL;
+  connRecv = new unsigned long[NODES_PER_ELEMENT*nElem_Recv[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
+    connRecv[ii] = 0;
+  
+  unsigned short *haloRecv = new unsigned short[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++)
+    haloRecv[ii] = false;
+  
+#ifdef HAVE_MPI
+  
+  /*--- We need double the number of messages to send both the conn.
+   and the flags for the halo cells. ---*/
+  
+  send_req = new MPI_Request[2*nSends];
+  recv_req = new MPI_Request[2*nRecvs];
+  
+  /*--- Launch the non-blocking recv's for the connectivity. ---*/
+  
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Repeat the process to communicate the halo flags. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(haloRecv[ll]), count, MPI_UNSIGNED_SHORT, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the halo flags. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(haloSend[ll]), count, MPI_UNSIGNED_SHORT, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+#endif
+  
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  
+  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
+  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
+  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  
+  mm = nElem_Recv[rank];
+  ll = nElem_Send[rank];
+  kk = nElem_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) haloRecv[mm] = haloSend[nn];
+  
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+  
+#ifdef HAVE_MPI
+  int number = 2*nSends;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+  
+  number = 2*nRecvs;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+  
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+  
+  /*--- Store the connectivity for this rank in the proper data
+   structure before post-processing below. Note that we add 1
+   to the connectivity for vizualization packages. First, allocate
+   appropriate amount of memory for this section. ---*/
+  
+  Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
+  int count = 0; nElem_Total = 0;
+  for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+    if (!haloRecv[ii]) {
+      nElem_Total++;
+      for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+        Conn_Elem[count] = (int)connRecv[ii*NODES_PER_ELEMENT+jj] + 1;
+        count++;
+      }
+    }
+  }
+  
+  //  count = 0;
+  //  for (int ii = 0; ii < (int)nElem_Total; ii++) {
+  //    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+  //      cout << Conn_Elem[count]<< " ";
+  //      count++;
+  //    }
+  //    cout << "  " << rank << endl;
+  //  }
+  
+  /*--- Store the particular global element count in the class data,
+   and set the class data pointer to the connectivity array. ---*/
+  
+  switch (Elem_Type) {
+    case TRIANGLE:
+      nParallel_Tria = nElem_Total;
+      if (nParallel_Tria > 0) Conn_Tria_Par = Conn_Elem;
+      break;
+    case QUADRILATERAL:
+      nParallel_Quad = nElem_Total;
+      if (nParallel_Quad > 0) Conn_Quad_Par = Conn_Elem;
+      break;
+    case TETRAHEDRON:
+      nParallel_Tetr = nElem_Total;
+      if (nParallel_Tetr > 0) Conn_Tetr_Par = Conn_Elem;
+      break;
+    case HEXAHEDRON:
+      nParallel_Hexa = nElem_Total;
+      if (nParallel_Hexa > 0) Conn_Hexa_Par = Conn_Elem;
+      break;
+    case PRISM:
+      nParallel_Pris = nElem_Total;
+      if (nParallel_Pris > 0) Conn_Pris_Par = Conn_Elem;
+      break;
+    case PYRAMID:
+      nParallel_Pyra = nElem_Total;
+      if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_Elem;
+      break;
+    default:
+      cout << "Error: Unrecognized element type \n";
+      exit(EXIT_FAILURE); break;
+  }
+  
+  /*--- Free temporary memory from communications ---*/
+  
+  delete [] connSend;
+  delete [] connRecv;
+  delete [] haloSend;
+  delete [] haloRecv;
+  delete [] nElem_Recv;
+  delete [] nElem_Send;
+  delete [] nElem_Flag;
+  
+  //  cout << " SUCCCESS CONN " << nElem_Total << endl;
+  
+}
+
+void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
+  
+  unsigned long iProcessor;
+  unsigned long Global_Index;
+  
+  int NODES_PER_ELEMENT = nVar_Par;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Request *send_req, *recv_req;
+  MPI_Status status;
+  int ind;
+#endif
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  unsigned long *npoint_procs  = new unsigned long[size];
+  unsigned long *starting_node = new unsigned long[size];
+  unsigned long *ending_node   = new unsigned long[size];
+  unsigned long *nPoint_Linear = new unsigned long[size+1];
+  
+  unsigned long total_pt_accounted = 0;
+  for (int ii = 0; ii < size; ii++) {
+    npoint_procs[ii] = geometry->GetGlobal_nPointDomain()/size;
+    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
+  }
+  
+  /*--- Get the number of remainder points after the even division. ---*/
+  
+  unsigned long rem_points = geometry->GetGlobal_nPointDomain()-total_pt_accounted;
+  for (unsigned long ii = 0; ii < rem_points; ii++) {
+    npoint_procs[ii]++;
+  }
+  
+  /*--- Store the local number of nodes and the beginning/end index ---*/
+  
+  starting_node[0] = 0;
+  ending_node[0]   = starting_node[0] + npoint_procs[0];
+  nPoint_Linear[0] = 0;
+  for (int ii = 1; ii < size; ii++) {
+    starting_node[ii] = ending_node[ii-1];
+    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
+    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
+  }
+  nPoint_Linear[size] = geometry->GetGlobal_nPointDomain();
+  
+  /*--- We start with the grid nodes distributed across all procs with
+   no particular ordering assumed. We need to loop through our local partition
+   and decide how many nodes we must send to each other rank in order to
+   have all nodes sorted according to a linear partitioning of the grid
+   nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
+   First, initialize a counter and flag. ---*/
+  
+  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
+  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size];
+  
+  for (int ii=0; ii < size; ii++) {
+    nElem_Send[ii] = 0;
+    nElem_Recv[ii] = 0;
+    nElem_Flag[ii]= -1;
+  }
+  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+  
+  for (int ii = 0; ii < (int)geometry->GetnPointDomain(); ii++ ) {
+    
+    /*--- Get the global index of the current point. ---*/
+    
+    Global_Index = geometry->node[ii]->GetGlobalIndex();
+    
+    /*--- Search for the processor that owns this point ---*/
+    
+    iProcessor = Global_Index/npoint_procs[0];
+    if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+    if (Global_Index >= nPoint_Linear[iProcessor])
+      while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+    else
+      while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+    
+    /*--- If we have not visted this node yet, increment our
+     number of elements that must be sent to a particular proc. ---*/
+    
+    if (nElem_Flag[iProcessor] != ii) {
+      nElem_Flag[iProcessor] = ii;
+      nElem_Send[iProcessor+1]++;
+    }
+  }
+  
+  /*--- Communicate the number of nodes to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+#ifdef HAVE_MPI
+  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+#else
+  nElem_Recv[1] = nElem_Send[1];
+#endif
+  
+  /*--- Prepare to send coordinates. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  int nSends = 0, nRecvs = 0;
+  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  
+  for (int ii = 0; ii < size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+    
+    nElem_Send[ii+1] += nElem_Send[ii];
+    nElem_Recv[ii+1] += nElem_Recv[ii];
+  }
+  
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+  
+  su2double *connSend = NULL;
+  connSend = new su2double[NODES_PER_ELEMENT*nElem_Send[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Send[size]; ii++)
+    connSend[ii] = 0;
+  
+  /*--- Allocate arrays for sending the global ID. ---*/
+  
+  unsigned long *idSend = new unsigned long[nElem_Send[size]];
+  for (int ii = 0; ii < nElem_Send[size]; ii++)
+    idSend[ii] = 0;
+  
+  /*--- Create an index variable to keep track of our index
+   position as we load up the send buffer. ---*/
+  
+  unsigned long *index = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) index[ii] = NODES_PER_ELEMENT*nElem_Send[ii];
+  
+  unsigned long *idIndex = new unsigned long[size];
+  for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
+  
+  /*--- Loop through our elements and load the elems and their
+   additional data that we will send to the other procs. ---*/
+  
+  for (int ii = 0; ii < (int)geometry->GetnPointDomain(); ii++) {
+    
+    /*--- Get the index of the current point. ---*/
+    
+    Global_Index = geometry->node[ii]->GetGlobalIndex();
+    
+    /*--- Search for the processor that owns this point ---*/
+    
+    iProcessor = Global_Index/npoint_procs[0];
+    if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+    if (Global_Index >= nPoint_Linear[iProcessor])
+      while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+    else
+      while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+    
+    /*--- Load node coordinates into the buffer for sending ---*/
+    
+    if (nElem_Flag[iProcessor] != ii) {
+      
+      nElem_Flag[iProcessor] = ii;
+      unsigned long nn = index[iProcessor];
+      
+      /*--- Load the data values. ---*/
+      
+      for (unsigned short kk = 0; kk < NODES_PER_ELEMENT; kk++) {
+        connSend[nn] = Local_Data[ii][kk]; nn++;
+      }
+      
+      /*--- Load the global ID (minus offset) for sorting the
+       points once they all reach the correct processor. ---*/
+      
+      nn = idIndex[iProcessor];
+      idSend[nn] = Global_Index - starting_node[iProcessor];
+      
+      /*--- Increment the index by the message length ---*/
+      
+      index[iProcessor]  += NODES_PER_ELEMENT;
+      idIndex[iProcessor]++;
+    }
+  }
+  
+  /*--- Free memory after loading up the send buffer. ---*/
+  
+  delete [] index;
+  delete [] idIndex;
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+  
+  su2double *connRecv = NULL;
+  connRecv = new su2double[NODES_PER_ELEMENT*nElem_Recv[size]];
+  for (int ii = 0; ii < NODES_PER_ELEMENT*nElem_Recv[size]; ii++)
+    connRecv[ii] = 0;
+  
+  unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
+  for (int ii = 0; ii < nElem_Recv[size]; ii++)
+    idRecv[ii] = 0;
+  
+#ifdef HAVE_MPI
+  
+  /*--- We need double the number of messages to send both the conn.
+   and the global IDs. ---*/
+  
+  send_req = new MPI_Request[2*nSends];
+  recv_req = new MPI_Request[2*nRecvs];
+  
+  unsigned long iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = NODES_PER_ELEMENT*nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_DOUBLE, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the connectivity. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = NODES_PER_ELEMENT*nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = NODES_PER_ELEMENT*kk;
+      int dest = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(connSend[ll]), count, MPI_DOUBLE, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Repeat the process to communicate the global IDs. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
+      int ll     = nElem_Recv[ii];
+      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+      int count  = kk;
+      int source = ii;
+      int tag    = ii + 1;
+      SU2_MPI::Irecv(&(idRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
+                     MPI_COMM_WORLD, &(recv_req[iMessage+nRecvs]));
+      iMessage++;
+    }
+  }
+  
+  /*--- Launch the non-blocking sends of the global IDs. ---*/
+  
+  iMessage = 0;
+  for (int ii=0; ii<size; ii++) {
+    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
+      int ll = nElem_Send[ii];
+      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+      int count  = kk;
+      int dest   = ii;
+      int tag    = rank + 1;
+      SU2_MPI::Isend(&(idSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
+                     MPI_COMM_WORLD, &(send_req[iMessage+nSends]));
+      iMessage++;
+    }
+  }
+#endif
+  
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  
+  int mm = NODES_PER_ELEMENT*nElem_Recv[rank];
+  int ll = NODES_PER_ELEMENT*nElem_Send[rank];
+  int kk = NODES_PER_ELEMENT*nElem_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+  
+  mm = nElem_Recv[rank];
+  ll = nElem_Send[rank];
+  kk = nElem_Send[rank+1];
+  
+  for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
+  
+  /*--- Wait for the non-blocking sends and recvs to complete. ---*/
+  
+#ifdef HAVE_MPI
+  int number = 2*nSends;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, send_req, &ind, &status);
+  
+  number = 2*nRecvs;
+  for (int ii = 0; ii < number; ii++)
+    SU2_MPI::Waitany(number, recv_req, &ind, &status);
+  
+  delete [] send_req;
+  delete [] recv_req;
+#endif
+  
+  /*--- Store the connectivity for this rank in the proper data
+   structure before post-processing below. First, allocate the
+   appropriate amount of memory for this section. ---*/
+  
+  Parallel_Data = new su2double*[NODES_PER_ELEMENT];
+  for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
+    Parallel_Data[jj] = new su2double[nElem_Recv[size]];
+    for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+      Parallel_Data[jj][idRecv[ii]] = connRecv[ii*NODES_PER_ELEMENT+jj];
+    }
+  }
+  
+  //  if (rank == MASTER_NODE) {
+  //    for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+  //      cout << Parallel_Coords[0][ii] << ", " << Parallel_Coords[1][ii] << "  ID: " << idRecv[ii] << endl;
+  //    }
+  //  }
+  
+  /*--- Store the total number of elements I now have for
+   the current section after completing the communications. ---*/
+  
+  nParallel_Poin = nElem_Recv[size];
+  
+  /*--- Free temporary memory from communications ---*/
+  
+  delete [] connSend;
+  delete [] connRecv;
+  delete [] idSend;
+  delete [] idRecv;
+  delete [] nElem_Recv;
+  delete [] nElem_Send;
+  delete [] nElem_Flag;
+  
+  // Need to deallocate local data here to save memory
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+    delete [] Local_Data[iPoint];
+  delete [] Local_Data;
+  
+  //  cout << " SUCCCESS COORDS " << nParallel_Poin << endl;
+  
+}
+
+void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short nZone = geometry->GetnZone();
+  unsigned short iVar;
+  unsigned long iPoint, iExtIter = config->GetExtIter();
+  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  ofstream restart_file;
+  string filename;
+  
+  int iProcessor;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Retrieve filename from config ---*/
+  
+  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+    filename = config->GetRestart_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else if (fem) {
+    filename = config->GetRestart_FEMFileName();
+  } else {
+    filename = config->GetRestart_FlowFileName();
+  }
+  
+  /*--- Append the zone number if multizone problems ---*/
+  if (nZone > 1)
+    filename= config->GetMultizone_FileName(filename, val_iZone);
+  
+  /*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
+  } else if (config->GetWrt_Unsteady()) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if ((fem) && (config->GetWrt_Dynamic())) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  }
+  
+  //hack for now
+  
+  filename = "restart_parallel.dat";
+  
+  /*--- Only the master node writes the header. ---*/
+  
+  if (rank == MASTER_NODE) {
+    restart_file.open(filename.c_str(), ios::out);
+    restart_file.precision(15);
+    restart_file << "\"PointID\"";
+    for (iVar = 0; iVar < Variable_Names.size()-1; iVar++)
+      restart_file << "\t\"" << Variable_Names[iVar] << "\"";
+    restart_file << "\t\"" << Variable_Names[Variable_Names.size()-1] << "\"" << endl;
+    restart_file.close();
+  }
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
+  /*--- All processors open the file. ---*/
+  
+  restart_file.open(filename.c_str(), ios::out | ios::app);
+  restart_file.precision(15);
+  
+  /*--- Write the restart file in parallel, processor by processor. ---*/
+  
+  unsigned long myPoint = 0, offset = 0;
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+        
+        /*--- Index of the point (note outer loop over procs) ---*/
+        
+        restart_file << iPoint + offset << "\t";
+        myPoint++;
+        
+        /*--- Loop over the variables and write the values to file ---*/
+        
+        for (iVar = 0; iVar < nVar_Par; iVar++) {
+          restart_file << scientific << Parallel_Data[iVar][iPoint] << "\t";
+        }
+        restart_file << "\n";
+      }
+    }
+    /*--- Flush the file and wait for all processors to arrive. ---*/
+    restart_file.flush();
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&myPoint, &offset, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    
+  }
+  
+  restart_file.close();
+  
+}
+
+void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
+  
+  /*--- Deallocate memory for connectivity data on each processor. ---*/
+  
+  if (surf_sol) {
+    if (nParallel_Line > 0      && Conn_Line_Par      != NULL) delete [] Conn_Line_Par;
+    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
+    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
+  }
+  else {
+    if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    
+  }
+  
+}
+
+void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
+  
+  /*--- Deallocate memory for solution data ---*/
+  
+  for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
+    if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
+  }
+  if (Parallel_Data != NULL) delete [] Parallel_Data;
+  
 }
