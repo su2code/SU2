@@ -2578,6 +2578,8 @@ void CDriver::Output(unsigned long ExtIter) {
 
       output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
 
+      output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
+      
       /*--- Output a file with the forces breakdown. ---*/
 
       output->SetForces_Breakdown(geometry_container, solver_container,

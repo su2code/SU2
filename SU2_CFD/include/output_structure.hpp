@@ -148,7 +148,7 @@ public:
 	 */
 	void SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, 
 											 unsigned long iExtIter, unsigned short val_nZone);
-	
+  
   /*!
 	 * \brief Writes and organizes the all the output files, except the history one, for serial computations.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -272,23 +272,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void MergeCoordinates(CConfig *config, CGeometry *geometry);
-  
-  /*!
-   * \brief Sort the coordinates for each grid node into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void SortOutputData(CConfig *config, CGeometry *geometry);
-  
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
+
   /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
 	 * \param[in] config - Definition of the particular problem.
@@ -296,14 +280,6 @@ public:
 	 * \param[in] Elem_Type - VTK index of the element type being merged.
 	 */
 	void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
-  /*!
-   * \brief Sort the connectivity for a single element type into a linear partitioning across all processors.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] Elem_Type - VTK index of the element type being merged.
-   */
-  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
@@ -524,25 +500,11 @@ public:
 	void DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool surf_sol);
   
   /*!
-   * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol);
-  
-  /*!
 	 * \brief Deallocate temporary memory needed for merging and writing solution variables.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void DeallocateSolution(CConfig *config, CGeometry *geometry);
-  
-  /*!
-   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   */
-  void DeallocateParallelData(CConfig *config, CGeometry *geometry);
   
 	/*! 
 	 * \brief Write the header of the history file.
@@ -610,4 +572,81 @@ public:
    */
   void HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
 
+  /*!
+   * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetResult_Files_Parallel(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
+                                unsigned long iExtIter, unsigned short val_nZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for generic problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Sort the connectivity for a single element type into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+   * \brief Sort the coordinates for each grid node into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SortOutputData(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol);
+  
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateData_Parallel(CConfig *config, CGeometry *geometry);
+  
 };
