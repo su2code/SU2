@@ -1562,7 +1562,7 @@ private:
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   ProjVelocity, ProjVelocity_i, ProjVelocity_j, RoeSoundSpeed2, kappa;
   unsigned short iDim, iVar, jVar, kVar;
-  bool roe_low_diss;
+  unsigned short roe_low_diss;
   
 public:
   

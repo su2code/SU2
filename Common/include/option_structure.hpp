@@ -676,6 +676,21 @@ static const map<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = CCreateMap<stri
 ("SA_EDDES", SA_EDDES);
 
 /*!
+ * \brief types of Roe Low Dissipation Schemes
+ */
+enum ENUM_ROELOWDISS {
+    NO_ROELOWDISS = 0, /*!< \brief No Roe Low Dissipation model. */
+    FD            = 1, /*!< \brief Numerical Blending based on DDES's F_d function */
+    NTS           = 2, /*!< \brief Numerical Blending of Travin and Shur. */
+    NTS_DUCROS    = 3  /*!< \brief Numerical Blending of Travin and Shur + Ducros' Shock Sensor. */
+};
+static const map<string, ENUM_ROELOWDISS> RoeLowDiss_Map = CCreateMap<string, ENUM_ROELOWDISS>
+("NONE", NO_ROELOWDISS)
+("FD", FD)
+("NTS", NTS)
+("NTS_DUCROS", NTS_DUCROS);
+
+/*!
  * \brief type of time integration schemes
  */
 enum ENUM_TIME_INT {

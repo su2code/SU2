@@ -98,7 +98,6 @@ private:
 	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
 	Low_Mach_Corr,			/*!< \brief Flag to know if we are using a low Mach number correction. */
-    Roe_Low_Diss,    /*!< \brief Flag to know if we are using Roe scheme with low dissipation for unsteady flows. */
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
@@ -720,6 +719,7 @@ private:
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
+  unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
@@ -4374,12 +4374,6 @@ public:
 	 * \return <code>TRUE</code> if we are using low Mach correction; otherwise <code>FALSE</code>.
 	 */
 	bool Low_Mach_Correction(void);
-
-    /*!
-     * \brief Get information about the Low Mach Correction
-     * \return <code>TRUE</code> if we are using low Mach correction; otherwise <code>FALSE</code>.
-     */
-    bool Roe_Low_Dissipation(void);
     
 	/*!
 	 * \brief Get information about the poisson solver condition
@@ -5622,6 +5616,12 @@ public:
      */
     unsigned short GetKind_HybridRANSLES(void);
 
+    /*!
+     * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
+     * \return Verbosity level for the console output.
+     */
+    unsigned short GetKind_RoeLowDiss(void);
+    
     /*!
      * \brief Get the DES Constant.
      * \return Verbosity level for the console output.
