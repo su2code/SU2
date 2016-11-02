@@ -2340,7 +2340,7 @@ CUpwRoe_Flow::CUpwRoe_Flow(unsigned short val_nDim, unsigned short val_nVar, CCo
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   grid_movement = config->GetGrid_Movement();
   kappa = config->GetRoe_Kappa(); // 1 is unstable
-  roe_low_diss = config->Roe_Low_Dissipation();
+  roe_low_diss = config->GetKind_RoeLowDiss();
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -2545,11 +2545,9 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         
         /*--- Apply Roe Low Dissipation only to the momentum equations ---*/
           
-        if (roe_low_diss){
+        if (roe_low_diss != NO_ROELOWDISS){
             if ((iVar>0) && (iVar<(nDim+1)))
                 val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area*dissipation;
-//                val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*dissipation;
-//                val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area*dissipation;
             else
                 val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
             
@@ -3329,7 +3327,6 @@ void CUpwLMRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
     su2double ProjGridVel = 0.0;
     su2double zeta,Mach_i,Mach_j;
-    bool roe_low_diss = config->Roe_Low_Dissipation();
     
     AD::StartPreacc();
     AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
@@ -3376,11 +3373,7 @@ void CUpwLMRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
     
     zeta = min(1.0,max(Mach_i,Mach_j));
     zeta = max(0.05,zeta);
-    if (roe_low_diss){
-        if (dissipation>0.9)
-            zeta = 1.0;
-    }
-    //cout<< zeta << endl;
+
     /*--- Recompute conservative variables ---*/
     
     U_i[0] = Density_i; U_j[0] = Density_j;
