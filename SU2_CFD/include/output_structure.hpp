@@ -621,12 +621,28 @@ public:
   void LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
-   * \brief Sort the connectivity for a single element type into a linear partitioning across all processors.
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_nZone - iZone index.
+   */
+  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
+   * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+   * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
    * \brief Sort the coordinates for each grid node into a linear partitioning across all processors.

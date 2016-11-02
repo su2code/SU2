@@ -10030,54 +10030,35 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
                                        unsigned long iExtIter,
                                        unsigned short val_nZone) {
   
+  int rank = MASTER_NODE;
+  
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
   unsigned short iZone;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
     /*--- Flags identifying the types of files to be written. ---*/
     
-    //bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    //bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
     
     switch (config[iZone]->GetKind_Solver()) {
         
       case EULER : case NAVIER_STOKES : case RANS :
-        
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
         break;
         
-      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
+      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
         break;
-        
+      default: break;
     }
-    
-    /*--- Get the file output format ---*/
-    
-    //unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-    
-    /*--- Sort the volumetric connectivity so that it is in a linear partitioning
-     (based on the degrees of freedom at the nodes. ---*/
-    
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TRIANGLE      );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], QUADRILATERAL );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], TETRAHEDRON   );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], HEXAHEDRON    );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PRISM         );
-    SortVolumetricConnectivity(config[iZone], geometry[iZone][MESH_0], PYRAMID       );
-    
-    /*--- Sort surface conectivity here... ----*/
-    
-    //
-    
-    /*--- Reduce the total number of points and cells we will be writing in the output files. ---*/
-    unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
-#ifndef HAVE_MPI
-    nGlobal_Elem_Par = nTotal_Elem;
-#else
-    SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
     
     /*--- This switch statement will become a call to a virtual function
      defined within each of the "physics" output child classes that loads
@@ -10106,10 +10087,19 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     SortOutputData(config[iZone], geometry[iZone][MESH_0]);
     
-    /*--- Write naive parallel ASCII files. ---*/
+    /*--- Write naive parallel ASCII restart files. ---*/
     
-    SetTecplotASCII_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
     SetRestart_Parallel(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    
+    /*--- Get the file output format ---*/
+    
+    if (Wrt_Vol || Wrt_Srf) {
+      if (rank == MASTER_NODE) cout << "Preparing connectivity lists across all processors." << endl;
+        SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
+    }
+    
+    //unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+        SetTecplotASCII_Parallel(config[iZone],  geometry[iZone][MESH_0], false, true);
     
     /*--- Clean up the parallel data that was allocated for output. ---*/
     
@@ -11399,6 +11389,93 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
   
 }
 
+void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Flags identifying the types of files to be written. ---*/
+  
+  bool Wrt_Vol = config->GetWrt_Vol_Sol();
+  //bool Wrt_Srf = config->GetWrt_Srf_Sol();
+  
+  /*--- Sort connectivity for each type of element (excluding halos). Note
+   In these routines, we sort the connectivity into a linear partitioning
+   across all processors based on the global index of the grid nodes. ---*/
+  
+  /*--- Sort volumetric grid. ---*/
+  
+  if (Wrt_Vol) {
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting volumetric triangle grid connectivity." << endl;
+    SortVolumetricConnectivity(config, geometry, TRIANGLE);
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting volumetric quadrilateral grid connectivity." << endl;
+    SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting volumetric tetrahedron grid connectivity." << endl;
+    SortVolumetricConnectivity(config, geometry, TETRAHEDRON);
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting volumetric hexahedron grid connectivity." << endl;
+    SortVolumetricConnectivity(config, geometry, HEXAHEDRON);
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting volumetric prism grid connectivity." << endl;
+    SortVolumetricConnectivity(config, geometry, PRISM);
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+      cout <<"Sorting volumetric pyramid grid connectivity." << endl;
+    SortVolumetricConnectivity(config, geometry, PYRAMID);
+    
+  }
+  
+//  /*--- Sort surface grid. ---*/
+//  
+//  if (Wrt_Srf) {
+//    
+//    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+//      cout <<"Sorting surface line grid connectivity." << endl;
+//    SortSurfaceConnectivity(config, geometry, LINE);
+//    
+//    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+//      cout <<"Sorting surface triangle grid connectivity." << endl;
+//    SortSurfaceConnectivity(config, geometry, TRIANGLE);
+//    
+//    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
+//      cout <<"Sorting surface quadrilateral grid connectivity." << endl;
+//    SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
+//    
+//  }
+//  
+//  /*--- Update total number of volume elements after merge. ---*/
+//  
+//  nGlobal_Elem = nGlobal_Tria + nGlobal_Quad + nGlobal_Tetr +
+//  nGlobal_Hexa + nGlobal_Pyra + nGlobal_Pris;
+//  
+//  /*--- Update total number of surface elements after merge. ---*/
+//  
+//  nSurf_Elem = nGlobal_Line + nGlobal_BoundTria + nGlobal_BoundQuad;
+  
+  /*--- Reduce the total number of points and cells we will be writing in the output files. ---*/
+  
+  unsigned long nTotal_Elem = nParallel_Tria + nParallel_Quad + nParallel_Tetr + nParallel_Hexa + nParallel_Pris + nParallel_Pyra;
+#ifndef HAVE_MPI
+  nGlobal_Elem_Par = nTotal_Elem;
+#else
+  SU2_MPI::Allreduce(&nTotal_Elem, &nGlobal_Elem_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  
+}
+
 void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
   
   unsigned long iProcessor;
@@ -11409,8 +11486,6 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   unsigned long iVertex, iMarker;
   int SendRecv, RecvFrom;
   
-  bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL;
   bool notPeriodic, notHalo, addedPeriodic, isPeriodic;
   
   int *Local_Halo = NULL;
@@ -11418,7 +11493,6 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -11455,86 +11529,6 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       cout << "Error: Unrecognized element type \n";
       exit(EXIT_FAILURE); break;
   }
-  
-  /*--- Step 1: each processor needs to add up its local points that will
-   have their data output, including finding any original periodic points
-   that need to be included in the list. ---*/
-  
-  Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-  
-  /*--- Search all send/recv boundaries on this partition for any periodic
-   nodes that were part of the original domain. We want to recover these
-   for visualization purposes. ---*/
-  
-  nLocalPoint = 0;
-  
-  if (Wrt_Halo) {
-    nLocalPoint = geometry->GetnPoint();
-  } else {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        
-        /*--- Checking for less than or equal to the rank, because there may
-         be some periodic halo nodes that send info to the same rank. ---*/
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-          if (isPeriodic) Local_Halo[iPoint] = false;
-        }
-      }
-    }
-    
-    /*--- Sum total number of nodes that belong to the domain ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-      if (Local_Halo[iPoint] == false)
-        nLocalPoint++;
-    
-  }
-  
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-  nTotalPoint = nLocalPoint;
-#endif
-  
-  /*--- Compute the number of points that will be on each processor.
-   This is a linear partitioning with the addition of a simple load
-   balancing for any remainder points. ---*/
-  
-  unsigned long *npoint_procs  = new unsigned long[size];
-  unsigned long *starting_node = new unsigned long[size];
-  unsigned long *ending_node   = new unsigned long[size];
-  unsigned long *nPoint_Linear = new unsigned long[size+1];
-  
-  unsigned long total_pt_accounted = 0;
-  for (int ii = 0; ii < size; ii++) {
-    npoint_procs[ii] = nTotalPoint/size;
-    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
-  }
-  
-  /*--- Get the number of remainder points after the even division. ---*/
-  
-  unsigned long rem_points = nTotalPoint-total_pt_accounted;
-  for (unsigned long ii = 0; ii < rem_points; ii++) {
-    npoint_procs[ii]++;
-  }
-  
-  /*--- Store the local number of nodes and the beginning/end index ---*/
-  
-  starting_node[0] = 0;
-  ending_node[0]   = starting_node[0] + npoint_procs[0];
-  nPoint_Linear[0] = 0;
-  for (int ii = 1; ii < size; ii++) {
-    starting_node[ii] = ending_node[ii-1];
-    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
-    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
-  }
-  nPoint_Linear[size] = nTotalPoint;
   
   /*--- Force the removal of all added periodic elements (use global index).
    First, we isolate and create a list of all added periodic points, excluding
@@ -11612,6 +11606,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
    we are also choosing to keep periodic nodes that were part of the original
    domain. We will check the communicated list of added periodic points. ---*/
   
+  Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
   
@@ -11667,6 +11662,55 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
     }
   }
   
+  /*--- Now that we've done the gymnastics to find any periodic points,
+   compute the total number of local and global points for the output. ---*/
+  
+  nLocalPoint = 0;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      if (Local_Halo[iPoint] == false)
+        nLocalPoint++;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nTotalPoint = nLocalPoint;
+#endif
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  unsigned long *npoint_procs  = new unsigned long[size];
+  unsigned long *starting_node = new unsigned long[size];
+  unsigned long *ending_node   = new unsigned long[size];
+  unsigned long *nPoint_Linear = new unsigned long[size+1];
+  
+  unsigned long total_pt_accounted = 0;
+  for (int ii = 0; ii < size; ii++) {
+    npoint_procs[ii] = nTotalPoint/size;
+    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
+  }
+  
+  /*--- Get the number of remainder points after the even division. ---*/
+  
+  unsigned long rem_points = nTotalPoint-total_pt_accounted;
+  for (unsigned long ii = 0; ii < rem_points; ii++) {
+    npoint_procs[ii]++;
+  }
+  
+  /*--- Store the local number of nodes and the beginning/end index ---*/
+  
+  starting_node[0] = 0;
+  ending_node[0]   = starting_node[0] + npoint_procs[0];
+  nPoint_Linear[0] = 0;
+  for (int ii = 1; ii < size; ii++) {
+    starting_node[ii] = ending_node[ii-1];
+    ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
+    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
+  }
+  nPoint_Linear[size] = nTotalPoint;
+  
   /*--- We start with the connectivity distributed across all procs with
    no particular ordering assumed. We need to loop through our local partition
    and decide how many elements we must send to each other rank in order to
@@ -11707,7 +11751,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
         /*--- Search for the processor that owns this point ---*/
         
         iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+        if (iProcessor >= (unsigned long)size)
+          iProcessor = (unsigned long)size-1;
         if (Global_Index >= nPoint_Linear[iProcessor])
           while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
         else
@@ -11800,7 +11845,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
         /*--- Search for the processor that owns this point ---*/
         
         iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+        if (iProcessor >= (unsigned long)size)
+          iProcessor = (unsigned long)size-1;
         if (Global_Index >= nPoint_Linear[iProcessor])
           while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
         else
@@ -11858,7 +11904,6 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
     haloRecv[ii] = false;
   
 #ifdef HAVE_MPI
-  
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
@@ -11960,7 +12005,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
 #endif
   
   /*--- Store the connectivity for this rank in the proper data
-   structure before post-processing below. Note that we add 1
+   structure before post-processing below. Note that we add 1 here
    to the connectivity for vizualization packages. First, allocate
    appropriate amount of memory for this section. ---*/
   
@@ -11975,15 +12020,6 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       }
     }
   }
-  
-  //  count = 0;
-  //  for (int ii = 0; ii < (int)nElem_Total; ii++) {
-  //    for (int jj = 0; jj < NODES_PER_ELEMENT; jj++) {
-  //      cout << Conn_Elem[count]<< " ";
-  //      count++;
-  //    }
-  //    cout << "  " << rank << endl;
-  //  }
   
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
@@ -12028,8 +12064,6 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   delete [] nElem_Send;
   delete [] nElem_Flag;
   
-  //  cout << " SUCCCESS CONN " << nElem_Total << endl;
-  
 }
 
 void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
@@ -12039,14 +12073,12 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   unsigned long iPoint, Global_Index, nLocalPoint, nTotalPoint, iVertex;
   
   int VARS_PER_POINT = nVar_Par;
-  
   int *Local_Halo = NULL;
   
-  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
+  bool isPeriodic;
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -12067,36 +12099,32 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    nodes that were part of the original domain. We want to recover these
    for visualization purposes. ---*/
   
-  nLocalPoint = 0;
-  
-  if (Wrt_Halo) {
-    nLocalPoint = geometry->GetnPoint();
-  } else {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-        
-        /*--- Checking for less than or equal to the rank, because there may
-         be some periodic halo nodes that send info to the same rank. ---*/
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-          if (isPeriodic) Local_Halo[iPoint] = false;
-        }
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+      
+      /*--- Checking for less than or equal to the rank, because there may
+       be some periodic halo nodes that send info to the same rank. ---*/
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                      (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+        if (isPeriodic) Local_Halo[iPoint] = false;
       }
     }
-    
-    /*--- Sum total number of nodes that belong to the domain ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-      if (Local_Halo[iPoint] == false)
-        nLocalPoint++;
-    
   }
   
+  /*--- Sum total number of nodes that belong to the domain, including
+   any periodic points we're recovering. ---*/
+  
+  nLocalPoint = 0;
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    if (Local_Halo[iPoint] == false)
+      nLocalPoint++;
+  
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
   nTotalPoint = nLocalPoint;
 #endif
@@ -12143,22 +12171,22 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    nodes, i.e., rank 0 holds the first ~ nGlobalPoint()/nProcessors nodes.
    First, initialize a counter and flag. ---*/
   
-  int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
-  int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
-  int *nElem_Flag = new int[size];
+  int *nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
+  int *nPoint_Recv = new int[size+1]; nPoint_Recv[0] = 0;
+  int *nPoint_Flag = new int[size];
   
   for (int ii=0; ii < size; ii++) {
-    nElem_Send[ii] = 0;
-    nElem_Recv[ii] = 0;
-    nElem_Flag[ii]= -1;
+    nPoint_Send[ii] = 0;
+    nPoint_Recv[ii] = 0;
+    nPoint_Flag[ii]= -1;
   }
-  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+  nPoint_Send[size] = 0; nPoint_Recv[size] = 0;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++ ) {
     
-    /*--- Check for halos & write only if requested ---*/
+    /*--- We only write interior points and recovered periodic points. ---*/
     
-    if (!Local_Halo[iPoint] || Wrt_Halo) {
+    if (!Local_Halo[iPoint]) {
       
       /*--- Get the global index of the current point. ---*/
       
@@ -12167,7 +12195,8 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       /*--- Search for the processor that owns this point ---*/
       
       iProcessor = Global_Index/npoint_procs[0];
-      if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+      if (iProcessor >= (unsigned long)size)
+        iProcessor = (unsigned long)size-1;
       if (Global_Index >= nPoint_Linear[iProcessor])
         while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
       else
@@ -12176,9 +12205,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       /*--- If we have not visted this node yet, increment our
        number of elements that must be sent to a particular proc. ---*/
       
-      if (nElem_Flag[iProcessor] != (int)iPoint) {
-        nElem_Flag[iProcessor] = (int)iPoint;
-        nElem_Send[iProcessor+1]++;
+      if (nPoint_Flag[iProcessor] != (int)iPoint) {
+        nPoint_Flag[iProcessor] = (int)iPoint;
+        nPoint_Send[iProcessor+1]++;
       }
       
     }
@@ -12189,10 +12218,10 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    many cells it will receive from each other processor. ---*/
   
 #ifdef HAVE_MPI
-  MPI_Alltoall(&(nElem_Send[1]), 1, MPI_INT,
-               &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  MPI_Alltoall(&(nPoint_Send[1]), 1, MPI_INT,
+               &(nPoint_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
 #else
-  nElem_Recv[1] = nElem_Send[1];
+  nPoint_Recv[1] = nPoint_Send[1];
 #endif
   
   /*--- Prepare to send coordinates. First check how many
@@ -12201,66 +12230,67 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    communications simpler. ---*/
   
   int nSends = 0, nRecvs = 0;
-  for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+  for (int ii=0; ii < size; ii++) nPoint_Flag[ii] = -1;
   
   for (int ii = 0; ii < size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-    if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
+    if ((ii != rank) && (nPoint_Send[ii+1] > 0)) nSends++;
+    if ((ii != rank) && (nPoint_Recv[ii+1] > 0)) nRecvs++;
     
-    nElem_Send[ii+1] += nElem_Send[ii];
-    nElem_Recv[ii+1] += nElem_Recv[ii];
+    nPoint_Send[ii+1] += nPoint_Send[ii];
+    nPoint_Recv[ii+1] += nPoint_Recv[ii];
   }
   
   /*--- Allocate memory to hold the connectivity that we are
    sending. ---*/
   
   su2double *connSend = NULL;
-  connSend = new su2double[VARS_PER_POINT*nElem_Send[size]];
-  for (int ii = 0; ii < VARS_PER_POINT*nElem_Send[size]; ii++)
+  connSend = new su2double[VARS_PER_POINT*nPoint_Send[size]];
+  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Send[size]; ii++)
     connSend[ii] = 0;
   
   /*--- Allocate arrays for sending the global ID. ---*/
   
-  unsigned long *idSend = new unsigned long[nElem_Send[size]];
-  for (int ii = 0; ii < nElem_Send[size]; ii++)
+  unsigned long *idSend = new unsigned long[nPoint_Send[size]];
+  for (int ii = 0; ii < nPoint_Send[size]; ii++)
     idSend[ii] = 0;
   
   /*--- Create an index variable to keep track of our index
-   position as we load up the send buffer. ---*/
+   positions as we load up the send buffer. ---*/
   
   unsigned long *index = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) index[ii] = VARS_PER_POINT*nElem_Send[ii];
+  for (int ii=0; ii < size; ii++) index[ii] = VARS_PER_POINT*nPoint_Send[ii];
   
   unsigned long *idIndex = new unsigned long[size];
-  for (int ii=0; ii < size; ii++) idIndex[ii] = nElem_Send[ii];
+  for (int ii=0; ii < size; ii++) idIndex[ii] = nPoint_Send[ii];
   
   /*--- Loop through our elements and load the elems and their
    additional data that we will send to the other procs. ---*/
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
-    /*--- Check for halos & write only if requested ---*/
+    /*--- We only write interior points and recovered periodic points. ---*/
     
-    if (!Local_Halo[iPoint] || Wrt_Halo) {
+    if (!Local_Halo[iPoint]) {
       
       /*--- Get the index of the current point. ---*/
       
       Global_Index = geometry->node[iPoint]->GetGlobalIndex();
       
-      /*--- Search for the processor that owns this point ---*/
+      /*--- Search for the processor that owns this point. ---*/
       
       iProcessor = Global_Index/npoint_procs[0];
-      if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
+      if (iProcessor >= (unsigned long)size)
+        iProcessor = (unsigned long)size-1;
       if (Global_Index >= nPoint_Linear[iProcessor])
         while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
       else
         while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
       
-      /*--- Load node coordinates into the buffer for sending ---*/
+      /*--- Load node coordinates into the buffer for sending. ---*/
       
-      if (nElem_Flag[iProcessor] != (int)iPoint) {
+      if (nPoint_Flag[iProcessor] != (int)iPoint) {
         
-        nElem_Flag[iProcessor] = (int)iPoint;
+        nPoint_Flag[iProcessor] = (int)iPoint;
         unsigned long nn = index[iProcessor];
         
         /*--- Load the data values. ---*/
@@ -12295,16 +12325,15 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
    directly copy our own data later. ---*/
   
   su2double *connRecv = NULL;
-  connRecv = new su2double[VARS_PER_POINT*nElem_Recv[size]];
-  for (int ii = 0; ii < VARS_PER_POINT*nElem_Recv[size]; ii++)
+  connRecv = new su2double[VARS_PER_POINT*nPoint_Recv[size]];
+  for (int ii = 0; ii < VARS_PER_POINT*nPoint_Recv[size]; ii++)
     connRecv[ii] = 0;
   
-  unsigned long *idRecv = new unsigned long[nElem_Recv[size]];
-  for (int ii = 0; ii < nElem_Recv[size]; ii++)
+  unsigned long *idRecv = new unsigned long[nPoint_Recv[size]];
+  for (int ii = 0; ii < nPoint_Recv[size]; ii++)
     idRecv[ii] = 0;
   
 #ifdef HAVE_MPI
-  
   /*--- We need double the number of messages to send both the conn.
    and the global IDs. ---*/
   
@@ -12313,9 +12342,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = VARS_PER_POINT*nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = VARS_PER_POINT*nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
       int count  = VARS_PER_POINT*kk;
       int source = ii;
       int tag    = ii + 1;
@@ -12329,9 +12358,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = VARS_PER_POINT*nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = VARS_PER_POINT*nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
       int count  = VARS_PER_POINT*kk;
       int dest = ii;
       int tag    = rank + 1;
@@ -12345,9 +12374,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-      int ll     = nElem_Recv[ii];
-      int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
+    if ((ii != rank) && (nPoint_Recv[ii+1] > nPoint_Recv[ii])) {
+      int ll     = nPoint_Recv[ii];
+      int kk     = nPoint_Recv[ii+1] - nPoint_Recv[ii];
       int count  = kk;
       int source = ii;
       int tag    = ii + 1;
@@ -12361,9 +12390,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   iMessage = 0;
   for (int ii=0; ii<size; ii++) {
-    if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-      int ll = nElem_Send[ii];
-      int kk = nElem_Send[ii+1] - nElem_Send[ii];
+    if ((ii != rank) && (nPoint_Send[ii+1] > nPoint_Send[ii])) {
+      int ll = nPoint_Send[ii];
+      int kk = nPoint_Send[ii+1] - nPoint_Send[ii];
       int count  = kk;
       int dest   = ii;
       int tag    = rank + 1;
@@ -12376,15 +12405,15 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
   
-  int mm = VARS_PER_POINT*nElem_Recv[rank];
-  int ll = VARS_PER_POINT*nElem_Send[rank];
-  int kk = VARS_PER_POINT*nElem_Send[rank+1];
+  int mm = VARS_PER_POINT*nPoint_Recv[rank];
+  int ll = VARS_PER_POINT*nPoint_Send[rank];
+  int kk = VARS_PER_POINT*nPoint_Send[rank+1];
   
   for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
   
-  mm = nElem_Recv[rank];
-  ll = nElem_Send[rank];
-  kk = nElem_Send[rank+1];
+  mm = nPoint_Recv[rank];
+  ll = nPoint_Send[rank];
+  kk = nPoint_Send[rank+1];
   
   for (int nn=ll; nn<kk; nn++, mm++) idRecv[mm] = idSend[nn];
   
@@ -12409,29 +12438,24 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   
   Parallel_Data = new su2double*[VARS_PER_POINT];
   for (int jj = 0; jj < VARS_PER_POINT; jj++) {
-    Parallel_Data[jj] = new su2double[nElem_Recv[size]];
-    for (int ii = 0; ii < nElem_Recv[size]; ii++) {
+    Parallel_Data[jj] = new su2double[nPoint_Recv[size]];
+    for (int ii = 0; ii < nPoint_Recv[size]; ii++) {
       Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
     }
   }
   
-  //  if (rank == MASTER_NODE) {
-  //    for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-  //      cout << Parallel_Coords[0][ii] << ", " << Parallel_Coords[1][ii] << "  ID: " << idRecv[ii] << endl;
-  //    }
-  //  }
-  
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
   
-  nParallel_Poin = nElem_Recv[size];
+  nParallel_Poin = nPoint_Recv[size];
   
   /*--- Reduce the total number of points we will write in the output files. ---*/
 
 #ifndef HAVE_MPI
   nGlobal_Poin_Par = nParallel_Poin;
 #else
-  SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nParallel_Poin, &nGlobal_Poin_Par, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
   
   /*--- Free temporary memory from communications ---*/
@@ -12440,9 +12464,9 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   delete [] connRecv;
   delete [] idSend;
   delete [] idRecv;
-  delete [] nElem_Recv;
-  delete [] nElem_Send;
-  delete [] nElem_Flag;
+  delete [] nPoint_Recv;
+  delete [] nPoint_Send;
+  delete [] nPoint_Flag;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     delete [] Local_Data[iPoint];
@@ -12466,7 +12490,6 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
   int iProcessor;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -12560,6 +12583,8 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
     
   }
   
+  /*--- All processors close the file. ---*/
+  
   restart_file.close();
   
 }
@@ -12569,9 +12594,12 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
   if (surf_sol) {
-    if (nParallel_Line > 0      && Conn_Line_Par      != NULL) delete [] Conn_Line_Par;
-    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
-    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
+    if (nParallel_Line > 0      && Conn_Line_Par      != NULL)
+      delete [] Conn_Line_Par;
+    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL)
+      delete [] Conn_BoundTria_Par;
+    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL)
+      delete [] Conn_BoundQuad_Par;
   }
   else {
     if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
@@ -12580,7 +12608,6 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
     if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
     if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
     if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
-    
   }
   
 }
