@@ -13,7 +13,7 @@ notifications:
   
 branches:
     only:
-        - feature_pyWrapper
+        - develop
 
 env:
     global:
@@ -37,7 +37,7 @@ env:
 before_install:
     # install the necessary packages
     - sudo apt-get update -qq
-    - sudo apt-get install -qq python-numpy python-scipy python-pip mpich1 swig
+    - sudo apt-get install -qq python-numpy python-scipy python-pip mpich2 swig
 
 install:
     - sudo pip install mpi4py
