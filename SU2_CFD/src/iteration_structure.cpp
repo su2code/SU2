@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -33,6 +35,372 @@
 
 CIteration::CIteration(CConfig *config) { }
 CIteration::~CIteration(void) { }
+
+void CIteration::SetGrid_Movement(CGeometry ***geometry_container, 
+				  CSurfaceMovement **surface_movement,
+                      		  CVolumetricMovement **grid_movement,
+				  CFreeFormDefBox ***FFDBox,
+                      		  CSolver ****solver_container,
+				  CConfig **config_container,
+                      		  unsigned short val_iZone,
+				  unsigned long IntIter,
+				  unsigned long ExtIter)   {
+
+  unsigned short iDim, iMGlevel, nMGlevels = config_container[val_iZone]->GetnMGLevels();
+  unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(val_iZone);
+  unsigned long nIterMesh;
+  unsigned long iPoint;
+  bool stat_mesh = true;
+  bool adjoint = config_container[val_iZone]->GetContinuous_Adjoint();
+  bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+
+  /*--- For a harmonic balance case, set "iteration number" to the zone number,
+   so that the meshes are positioned correctly for each instance. ---*/
+  if (harmonic_balance) {
+    ExtIter = val_iZone;
+    Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
+  }
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Perform mesh movement depending on specified type ---*/
+  switch (Kind_Grid_Movement) {
+
+    case MOVING_WALL:
+
+      /*--- Fixed wall velocities: set the grid velocities only one time
+       before the first iteration flow solver. ---*/
+
+      if (ExtIter == 0) {
+
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting the moving wall velocities." << endl;
+
+        surface_movement[val_iZone]->Moving_Walls(geometry_container[val_iZone][MESH_0],
+                                       config_container[val_iZone], val_iZone, ExtIter);
+
+        /*--- Update the grid velocities on the coarser multigrid levels after
+         setting the moving wall velocities for the finest mesh. ---*/
+
+        grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+
+      }
+
+      break;
+
+
+    case ROTATING_FRAME:
+
+      /*--- Steadily rotating frame: set the grid velocities just once
+       before the first iteration flow solver. ---*/
+
+      if (ExtIter == 0) {
+
+        if (rank == MASTER_NODE) {
+          cout << endl << " Setting rotating frame grid velocities";
+          cout << " for zone " << val_iZone << "." << endl;
+        }
+
+        /*--- Set the grid velocities on all multigrid levels for a steadily
+         rotating reference frame. ---*/
+
+        for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
+          geometry_container[val_iZone][iMGlevel]->SetRotationalVelocity(config_container[val_iZone], val_iZone);
+
+      }
+
+      break;
+
+    case STEADY_TRANSLATION:
+
+      /*--- Set the translational velocity and hold the grid fixed during
+       the calculation (similar to rotating frame, but there is no extra
+       source term for translation). ---*/
+
+      if (ExtIter == 0) {
+
+        if (rank == MASTER_NODE)
+          cout << endl << " Setting translational grid velocities." << endl;
+
+        /*--- Set the translational velocity on all grid levels. ---*/
+
+        for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
+          geometry_container[val_iZone][iMGlevel]->SetTranslationalVelocity(config_container[val_iZone]);
+
+      }
+
+      break;
+
+    case RIGID_MOTION:
+
+      if (rank == MASTER_NODE) {
+        cout << endl << " Performing rigid mesh transformation." << endl;
+      }
+
+      /*--- Move each node in the volume mesh using the specified type
+       of rigid mesh motion. These routines also compute analytic grid
+       velocities for the fine mesh. ---*/
+
+      grid_movement[val_iZone]->Rigid_Translation(geometry_container[val_iZone][MESH_0],
+                                       config_container[val_iZone], val_iZone, ExtIter);
+      grid_movement[val_iZone]->Rigid_Plunging(geometry_container[val_iZone][MESH_0],
+                                    config_container[val_iZone], val_iZone, ExtIter);
+      grid_movement[val_iZone]->Rigid_Pitching(geometry_container[val_iZone][MESH_0],
+                                    config_container[val_iZone], val_iZone, ExtIter);
+      grid_movement[val_iZone]->Rigid_Rotation(geometry_container[val_iZone][MESH_0],
+                                    config_container[val_iZone], val_iZone, ExtIter);
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+
+      break;
+
+    case DEFORMING:
+
+      if (rank == MASTER_NODE)
+        cout << endl << " Updating surface positions." << endl;
+
+      /*--- Translating ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Translating(geometry_container[val_iZone][MESH_0],
+                                            config_container[val_iZone], ExtIter, val_iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],
+                                           config_container[val_iZone], true);
+
+      /*--- Plunging ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Plunging(geometry_container[val_iZone][MESH_0],
+                                         config_container[val_iZone], ExtIter, val_iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],
+                                           config_container[val_iZone], true);
+
+      /*--- Pitching ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Pitching(geometry_container[val_iZone][MESH_0],
+                                         config_container[val_iZone], ExtIter, val_iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],
+                                           config_container[val_iZone], true);
+
+      /*--- Rotating ---*/
+
+      /*--- Compute the new node locations for moving markers ---*/
+
+      surface_movement[val_iZone]->Surface_Rotating(geometry_container[val_iZone][MESH_0],
+                                         config_container[val_iZone], ExtIter, val_iZone);
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],
+                                           config_container[val_iZone], true);
+
+      /*--- Update the grid velocities on the fine mesh using finite
+       differencing based on node coordinates at previous times. ---*/
+
+      if (!adjoint) {
+        if (rank == MASTER_NODE)
+          cout << " Computing grid velocities by finite differencing." << endl;
+        geometry_container[val_iZone][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
+      }
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+
+      break;
+
+    case EXTERNAL: case EXTERNAL_ROTATION:
+
+      /*--- Apply rigid rotation to entire grid first, if necessary ---*/
+
+      if (Kind_Grid_Movement == EXTERNAL_ROTATION) {
+        if (rank == MASTER_NODE)
+          cout << " Updating node locations by rigid rotation." << endl;
+        grid_movement[val_iZone]->Rigid_Rotation(geometry_container[val_iZone][MESH_0],
+                                      config_container[val_iZone], val_iZone, ExtIter);
+      }
+
+      /*--- Load new surface node locations from external files ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Updating surface locations from file." << endl;
+      surface_movement[val_iZone]->SetExternal_Deformation(geometry_container[val_iZone][MESH_0],
+                                                config_container[val_iZone], val_iZone, ExtIter);
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << " Deforming the volume grid." << endl;
+      grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],
+                                           config_container[val_iZone], true);
+
+      /*--- Update the grid velocities on the fine mesh using finite
+       differencing based on node coordinates at previous times. ---*/
+
+      if (!adjoint) {
+        if (rank == MASTER_NODE)
+          cout << " Computing grid velocities by finite differencing." << endl;
+        geometry_container[val_iZone][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
+      }
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+
+      break;
+
+    case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+
+      /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
+      if (IntIter == 0) {
+        if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
+
+          if (rank == MASTER_NODE) {
+            cout << endl << " Performing rigid mesh transformation." << endl;
+          }
+
+          /*--- Move each node in the volume mesh using the specified type
+           of rigid mesh motion. These routines also compute analytic grid
+           velocities for the fine mesh. ---*/
+
+          grid_movement[val_iZone]->Rigid_Translation(geometry_container[val_iZone][MESH_0],
+                                           config_container[val_iZone], val_iZone, ExtIter);
+          grid_movement[val_iZone]->Rigid_Plunging(geometry_container[val_iZone][MESH_0],
+                                        config_container[val_iZone], val_iZone, ExtIter);
+          grid_movement[val_iZone]->Rigid_Pitching(geometry_container[val_iZone][MESH_0],
+                                        config_container[val_iZone], val_iZone, ExtIter);
+          grid_movement[val_iZone]->Rigid_Rotation(geometry_container[val_iZone][MESH_0],
+                                        config_container[val_iZone], val_iZone, ExtIter);
+
+          /*--- Update the multigrid structure after moving the finest grid,
+           including computing the grid velocities on the coarser levels. ---*/
+
+          grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+        }
+
+      }
+
+      /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
+      else if (IntIter % config_container[val_iZone]->GetAeroelasticIter() ==0) {
+
+        if (rank == MASTER_NODE)
+          cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
+
+        /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
+
+        solver_container[val_iZone][MESH_0][FLOW_SOL]->Aeroelastic(surface_movement[val_iZone], geometry_container[val_iZone][MESH_0], config_container[val_iZone], ExtIter);
+
+        /*--- Deform the volume grid around the new boundary locations ---*/
+
+        if (rank == MASTER_NODE)
+          cout << " Deforming the volume grid due to the aeroelastic movement." << endl;
+        grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],
+                                             config_container[val_iZone], true);
+
+        /*--- Update the grid velocities on the fine mesh using finite
+         differencing based on node coordinates at previous times. ---*/
+
+        if (rank == MASTER_NODE)
+          cout << " Computing grid velocities by finite differencing." << endl;
+        geometry_container[val_iZone][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
+
+        /*--- Update the multigrid structure after moving the finest grid,
+         including computing the grid velocities on the coarser levels. ---*/
+
+        grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+      }
+
+      break;
+
+    case ELASTICITY:
+
+      if (ExtIter != 0) {
+
+        if (rank == MASTER_NODE)
+          cout << " Deforming the grid using the Linear Elasticity solution." << endl;
+
+        /*--- Update the coordinates of the grid using the linear elasticity solution. ---*/
+        for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
+
+          su2double *U_time_nM1 = solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
+          su2double *U_time_n   = solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
+
+          for (iDim = 0; iDim < geometry_container[val_iZone][MESH_0]->GetnDim(); iDim++)
+            geometry_container[val_iZone][MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
+
+        }
+
+      }
+
+      break;
+
+    case FLUID_STRUCTURE:
+
+      if (rank == MASTER_NODE)
+        cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << "Deforming the volume grid." << endl;
+      grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],
+                                           config_container[val_iZone], true);
+
+      nIterMesh = grid_movement[val_iZone]->Get_nIterMesh();
+      stat_mesh = (nIterMesh == 0);
+
+      if (!adjoint && !stat_mesh) {
+        if (rank == MASTER_NODE)
+          cout << "Computing grid velocities by finite differencing." << endl;
+        geometry_container[val_iZone][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
+      }
+      else if (stat_mesh) {
+          if (rank == MASTER_NODE)
+            cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
+      }
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
+
+      break;
+
+    case NO_MOVEMENT: case GUST: default:
+
+      /*--- There is no mesh motion specified for this zone. ---*/
+      if (rank == MASTER_NODE)
+        cout << "No mesh motion specified." << endl;
+
+      break;
+  }
+
+}
 
 void CIteration::Preprocess(COutput *output,
                             CIntegration ***integration_container,
@@ -90,18 +458,12 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
   unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
 
-  bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
-  /*--- Set the initial condition ---*/
-  /*--- For FSI problems with subiterations, this must only be done in the first subiteration ---*/
-  if(!( (fsi) && (FSIIter > 0) ))
+  /*--- Set the initial condition for FSI problems with subiterations ---*/
+  /*--- This must be done only in the first subiteration ---*/
+  if( ((fsi)&&(FSIIter == 0)) )
 	 solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
-  
-  /*--- Dynamic mesh update ---*/
-  
-  if ((config_container[val_iZone]->GetGrid_Movement()) && (!time_spectral)) {
-    SetGrid_Movement(geometry_container[val_iZone], surface_movement[val_iZone], grid_movement[val_iZone], FFDBox[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_iZone, IntIter, ExtIter);
-  }
+
   
   /*--- Apply a Wind Gust ---*/
   
@@ -243,8 +605,8 @@ void CMeanFlowIteration::Iterate(COutput *output,
       
       /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
       if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation())) {
-        SetGrid_Movement(geometry_container[val_iZone], surface_movement[val_iZone], grid_movement[val_iZone], FFDBox[val_iZone],
-                         solver_container[val_iZone], config_container[val_iZone], val_iZone, IntIter, ExtIter);
+        SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox,
+                         solver_container, config_container, val_iZone, IntIter, ExtIter);
         /*--- Apply a Wind Gust ---*/
         if (config_container[val_iZone]->GetWind_Gust()) {
           if (IntIter % config_container[val_iZone]->GetAeroelasticIter() ==0)
@@ -255,6 +617,8 @@ void CMeanFlowIteration::Iterate(COutput *output,
       if (integration_container[val_iZone][FLOW_SOL]->GetConvergence()) break;
       
     }
+
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
     
   }
   
@@ -567,9 +931,9 @@ void CMeanFlowIteration::SetMixingPlane(CGeometry ***geometry_container, CSolver
       if (config_container[iZone]->GetMarker_All_TagBound(intMarker) == config_container[iZone]->GetMarker_MixingPlane_Bound(intMarkerMix) ) {
         solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], intMarker);
         extMarker_Tag = config_container[iZone]->GetMarker_MixingPlane_Donor(intMarkerMix);
-        for (jZone = 0; jZone < nZone; jZone++){
+        for (jZone = 0; jZone < nZone; jZone++) {
           for (extMarker = 0; extMarker < config_container[jZone]->GetnMarker_All(); extMarker++)
-            if (config_container[jZone]->GetMarker_All_TagBound(extMarker) == extMarker_Tag){
+            if (config_container[jZone]->GetMarker_All_TagBound(extMarker) == extMarker_Tag) {
               solver_container[jZone][MESH_0][FLOW_SOL]->SetExtAveragedValue(solver_container[iZone][MESH_0][FLOW_SOL], intMarker, extMarker);
             }
         }
@@ -595,7 +959,7 @@ void CMeanFlowIteration::SetTurboPerformance(CGeometry ***geometry_container, CS
         Kind_TurboPerf = config_container[iZone]->GetKind_TurboPerf(inMarkerTP);
         for (jZone = 0; jZone < nZone; jZone++)
           for (outMarker = 0; outMarker < config_container[jZone]->GetnMarker_All(); outMarker++)
-            if (config_container[jZone]->GetMarker_All_TagBound(outMarker) == outMarker_Tag){
+            if (config_container[jZone]->GetMarker_All_TagBound(outMarker) == outMarker_Tag) {
               solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], inMarker);
               solver_container[jZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[jZone][MESH_0], solver_container[jZone][MESH_0], config_container[jZone], outMarker);
               solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(solver_container[jZone][MESH_0][FLOW_SOL], config_container[iZone], inMarker, outMarker, Kind_TurboPerf, inMarkerTP);
@@ -712,7 +1076,7 @@ void CHeatIteration::Iterate(COutput *output,
                              CSurfaceMovement **surface_movement,
                              CVolumetricMovement **grid_movement,
                              CFreeFormDefBox*** FFDBox,
-                             unsigned short val_iZone){
+                             unsigned short val_iZone) {
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -878,7 +1242,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 	/*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
 	integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
-	if (linear){
+	if (linear) {
 
 		/*--- Set the value of the internal iteration ---*/
 
@@ -895,11 +1259,11 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 	}
 	/*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
-	else if ((nonlinear) && ((!statTime) || (!fsi))){
+	else if ((nonlinear) && ((!statTime) || (!fsi))) {
 
 		/*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
-		if (!incremental_load){
+		if (!incremental_load) {
 
 			/*--- Set the value of the internal iteration ---*/
 
@@ -917,7 +1281,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 			/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-			for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++){
+			for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
 				/*--- Write the convergence history (only screen output) ---*/
 
@@ -934,7 +1298,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 		}
 		/*--- The incremental load is only used in nonlinear cases ---*/
-		else if (incremental_load){
+		else if (incremental_load) {
 
 			/*--- Set the initial condition: store the current solution as Solution_Old ---*/
 
@@ -989,9 +1353,9 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 					( Residual_ETOL <  Criteria_ETOL ) );
 
 			/*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
-			if (meetCriteria){
+			if (meetCriteria) {
 
-				for (IntIter = 2; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++){
+				for (IntIter = 2; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
 					/*--- Write the convergence history (only screen output) ---*/
 
@@ -1018,7 +1382,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 				solver_container[val_iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
 				/*--- For the number of increments ---*/
-				for (iIncrement = 0; iIncrement < nIncrements; iIncrement++){
+				for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
 
 					loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
 
@@ -1036,7 +1400,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 					solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 
-					if (rank == MASTER_NODE){
+					if (rank == MASTER_NODE) {
 						cout << endl;
 						cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
 					}
@@ -1057,7 +1421,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 					/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-					for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++){
+					for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
 						/*--- Write the convergence history (only screen output) ---*/
 
@@ -1083,7 +1447,7 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 	else if (
 			(nonlinear && statTime) &&
 			((first_iter && initial_calc) || (restart && initial_calc_restart))
-	){
+	) {
 
 		/*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
 		solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
@@ -1102,7 +1466,7 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 	 	  CSurfaceMovement **surface_movement,
 	 	  CVolumetricMovement **grid_movement,
 	 	  CFreeFormDefBox*** FFDBox,
-	 	  unsigned short val_iZone){
+	 	  unsigned short val_iZone) {
 
 	su2double Physical_dt, Physical_t;
   	unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
@@ -1114,7 +1478,7 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 
 	/*----------------- Update structural solver ----------------------*/
 
-	if (dynamic){
+	if (dynamic) {
 		integration_container[val_iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
 		integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
@@ -1146,7 +1510,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
                                        unsigned short val_iZone) {
   
   unsigned short iMesh;
-  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool dynamic_mesh = config_container[ZONE_0]->GetGrid_Movement();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -1158,7 +1522,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
   
-  if (((dynamic_mesh && ExtIter == 0) || config_container[val_iZone]->GetUnsteady_Simulation()) && !time_spectral) {
+  if (((dynamic_mesh && ExtIter == 0) || config_container[val_iZone]->GetUnsteady_Simulation()) && !harmonic_balance) {
     int Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
     if (rank == MASTER_NODE && val_iZone == ZONE_0 && config_container[val_iZone]->GetUnsteady_Simulation())
       cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
@@ -1225,8 +1589,8 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
       
       /*--- Set the value of the non-dimensional coefficients in the coarse levels, using the fine level solution ---*/
       
-      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CDrag(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CLift(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
+      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CD(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD());
+      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CL(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CT(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CQ(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
@@ -1359,7 +1723,7 @@ void CAdjMeanFlowIteration::Monitor()     { }
 void CAdjMeanFlowIteration::Output()      { }
 void CAdjMeanFlowIteration::Postprocess() { }
 
-CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
+CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE) {
   
   meanflow_iteration = new CMeanFlowIteration(config);
   
@@ -1402,11 +1766,11 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
     /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
 
-    if (dual_time){
+    if (dual_time) {
       Direct_Iter += 1;
     }
 
-    if (dual_time_2nd){
+    if (dual_time_2nd) {
 
       /*--- Load solution at timestep n-2 ---*/
 
@@ -1414,18 +1778,18 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
       /*--- Push solution back to correct array ---*/
 
-      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++){
-        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
+      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
+        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++) {
           solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
           solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-          if (turbulent){
+          if (turbulent) {
             solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
             solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
           }
         }
       }
     }
-    if (dual_time){
+    if (dual_time) {
 
       /*--- Load solution at timestep n-1 ---*/
 
@@ -1433,10 +1797,10 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
       /*--- Push solution back to correct array ---*/
 
-      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++){
-        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
+      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
+        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++) {
           solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-          if (turbulent){
+          if (turbulent) {
             solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
           }
         }
@@ -1450,24 +1814,24 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
     /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
 
-    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
       solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution());
     }
-    if (turbulent){
-      for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+    if (turbulent) {
+      for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
         solver_container[val_iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
       }
     }
   }
 
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
-  if (turbulent){
+  if (turbulent) {
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);
   }
 
-  if (CurrentRecording != FLOW_VARIABLES || unsteady){
+  if (CurrentRecording != FLOW_VARIABLES || unsteady) {
     
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE) {
       cout << "Direct iteration to store computational graph." << endl;
       cout << "Compute residuals to check the convergence of the direct problem." << endl;
     }
@@ -1479,12 +1843,12 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
     
     /*--- Print residuals in the first iteration ---*/
     
-    if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )){
+    if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )) {
       cout << "log10[RMS Density]: "<< log10(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
-          <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD()
+          <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL() << "." << endl;
 
-      if (turbulent){
+      if (turbulent) {
         cout << "log10[RMS k]: " << log10(solver_container[val_iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
       }
     }
@@ -1504,12 +1868,12 @@ void CDiscAdjMeanFlowIteration::LoadUnsteady_Solution(CGeometry ***geometry_cont
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  if (val_DirectIter >= 0){
+  if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading flow solution from direct iteration " << val_DirectIter  << "." << endl;
     solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
     solver_container[val_iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0, val_DirectIter, RUNTIME_FLOW_SYS, false);
-    if (turbulent){
+    if (turbulent) {
       solver_container[val_iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
       solver_container[val_iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
     }
@@ -1517,10 +1881,10 @@ void CDiscAdjMeanFlowIteration::LoadUnsteady_Solution(CGeometry ***geometry_cont
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Setting freestream conditions at direct iteration " << val_DirectIter << "." << endl;
-    for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++){
+    for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
       solver_container[val_iZone][iMesh][FLOW_SOL]->Preprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh, val_DirectIter, RUNTIME_FLOW_SYS, false);
-      if (turbulent){
+      if (turbulent) {
         solver_container[val_iZone][iMesh][TURB_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
         solver_container[val_iZone][iMesh][TURB_SOL]->Postprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh);
       }
@@ -1553,7 +1917,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
     nIntIter = config_container[val_iZone]->GetUnst_nIntIter();
 
 
-  for(IntIter=0; IntIter< nIntIter; IntIter++){
+  for(IntIter=0; IntIter< nIntIter; IntIter++) {
 
     /*--- Set the internal iteration ---*/
 
@@ -1589,7 +1953,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
     integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
                                                                           IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
-    if(integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()){
+    if(integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) {
       break;
     }
 
@@ -1601,13 +1965,13 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   }
 
 
-  if (dual_time){
+  if (dual_time) {
     integration_container[val_iZone][ADJFLOW_SOL]->SetConvergence(false);
   }
 
   
   if (((ExtIter+1 >= config_container[val_iZone]->GetnExtIter()) || (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) ||
-      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) || (dual_time)){
+      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) || (dual_time)) {
     
     /*--- Record one mean flow iteration with geometry variables as input ---*/
     
@@ -1648,7 +2012,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   unsigned short iMesh;
 
   DirectExtIter = 0;
-  if (unsteady){
+  if (unsteady) {
     DirectExtIter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
   }
 
@@ -1658,13 +2022,13 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   /*--- We only need to reset the indices if the current recording is different from the recording we want to have ---*/
 
-  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
+  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ) {
 
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
+    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
       solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
 
-    if (turbulent){
+    if (turbulent) {
       solver_container[val_iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
 
@@ -1680,11 +2044,11 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   }
     /*--- Prepare for recording ---*/
 
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
+    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
       solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
 
-    if (turbulent){
+    if (turbulent) {
       solver_container[val_iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
 
@@ -1703,7 +2067,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   
   /*--- Set the correct direct iteration number ---*/
 
-  if (unsteady){
+  if (unsteady) {
     config_container[val_iZone]->SetExtIter(DirectExtIter);
   }
 
@@ -1717,12 +2081,20 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Register flow variables and objective function as output ---*/
   
   /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
-  if (config_container[val_iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
-    output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                 geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
-  
+  for (unsigned short iObj=0; iObj<config_container[val_iZone]->GetnObj(); iObj++){
+    if (config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_OUTLET_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_TOTAL_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==MASS_FLOW_RATE){
+      output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                   geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+      break;
+    }
+  }
+  /*--- For a combined objective function, the total should be computed and stored ---*/
+  if (config_container[val_iZone]->GetnObj()>0){
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[val_iZone]);
+  }
+
   RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
   
   /*--- Stop the recording ---*/
@@ -1733,17 +2105,17 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   
   CurrentRecording = kind_recording;
 
-  /* --- Reset the number of the internal iterations---*/
+  /*--- Reset the number of the internal iterations---*/
 
   config_container[ZONE_0]->SetIntIter(IntIter);
 
 }
 
 
-void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording) {
   
   
-  if (kind_recording == FLOW_VARIABLES){
+  if (kind_recording == FLOW_VARIABLES) {
     
     /*--- Register flow and turbulent variables as input ---*/
     
@@ -1751,11 +2123,11 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
     
     solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
     
-    if (turbulent){
+    if (turbulent) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
-  if (kind_recording == GEOMETRY_VARIABLES){
+  if (kind_recording == GEOMETRY_VARIABLES) {
     
     /*--- Register node coordinates as input ---*/
     
@@ -1765,10 +2137,10 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
 
 }
 
-void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording) {
 
 
-  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)){
+  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)) {
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
@@ -1778,14 +2150,14 @@ void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CG
 
   /*--- Compute coupling between flow and turbulent equations ---*/
 
-  if (turbulent){
+  if (turbulent) {
     solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
   }
 
 }
 
-void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone) {
   
   /*--- Register objective function as output of the iteration ---*/
   
@@ -1795,13 +2167,13 @@ void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGe
   
   solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
   
-  if (turbulent){
+  if (turbulent) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
                                                                  config_container[iZone]);
   }
 }
 
-void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone) {
   
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
@@ -1812,7 +2184,7 @@ void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, 
   solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                   config_container[iZone]);
   
-  if (turbulent){
+  if (turbulent) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                     config_container[iZone]);
   }
@@ -1830,6 +2202,7 @@ void CDiscAdjMeanFlowIteration::Update(COutput *output,
 void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
 void CDiscAdjMeanFlowIteration::Postprocess() { }
+
 
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   	  	  	  	 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
@@ -1861,7 +2234,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	/*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
-	if (!incremental_load){
+	if (!incremental_load) {
 
 		/*--- Set the initial condition ---*/
 
@@ -1890,8 +2263,8 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 		/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-		if (nonlinear){
-			for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++){
+		if (nonlinear) {
+			for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
 
 				for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -1914,7 +2287,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	}
 	/*--- The incremental load is only used in nonlinear cases ---*/
-	else if (incremental_load){
+	else if (incremental_load) {
 
 		/*--- Set the initial condition: store the current solution as Solution_Old ---*/
 
@@ -1973,9 +2346,9 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 						 ( Residual_ETOL <  Criteria_ETOL ) );
 
 		/*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
-		if (meetCriteria){
+		if (meetCriteria) {
 
-			for (IntIter = 2; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++){
+			for (IntIter = 2; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
 
 				for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -2007,13 +2380,13 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 				solver_container[iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
 
 			/*--- For the number of increments ---*/
-			for (iIncrement = 0; iIncrement < nIncrements; iIncrement++){
+			for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
 
 				loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
 
 				/*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
 
-				for (iZone = 0; iZone < nZone; iZone++){
+				for (iZone = 0; iZone < nZone; iZone++) {
 
 					/*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
 					integration_container[iZone][FEA_SOL]->SetConvergence(false);
@@ -2028,7 +2401,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 					solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 				}
 
-				if (rank == MASTER_NODE){
+				if (rank == MASTER_NODE) {
 					cout << endl;
 					cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
 				}
@@ -2054,7 +2427,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 				/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-				for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++){
+				for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
 
 					for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -2088,7 +2461,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	/*----------------- Update structural solver ----------------------*/
 
-	if (dynamic){
+	if (dynamic) {
 		for (iZone = 0; iZone < nZone; iZone++) {
 			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
 			integration_container[iZone][FEA_SOL]->SetConvergence(false);
@@ -2103,365 +2476,4 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 	}
 
 
-}
-
-void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement,
-                      CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
-                      CSolver ***solver_container, CConfig *config_container,
-                      unsigned short iZone, unsigned long IntIter, unsigned long ExtIter)   {
-  
-  unsigned short iDim, iMGlevel, nMGlevels = config_container->GetnMGLevels();
-  unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
-  unsigned long nIterMesh;
-  unsigned long iPoint;
-  bool stat_mesh = true;
-  bool adjoint = config_container->GetContinuous_Adjoint();
-  bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  
-  /*--- For a time-spectral case, set "iteration number" to the zone number,
-   so that the meshes are positioned correctly for each instance. ---*/
-  if (time_spectral) {
-    ExtIter = iZone;
-    Kind_Grid_Movement = config_container->GetKind_GridMovement(ZONE_0);
-  }
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  /*--- Perform mesh movement depending on specified type ---*/
-  switch (Kind_Grid_Movement) {
-      
-    case MOVING_WALL:
-      
-      /*--- Fixed wall velocities: set the grid velocities only one time
-       before the first iteration flow solver. ---*/
-      
-      if (ExtIter == 0) {
-        
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting the moving wall velocities." << endl;
-        
-        surface_movement->Moving_Walls(geometry_container[MESH_0],
-                                       config_container, iZone, ExtIter);
-        
-        /*--- Update the grid velocities on the coarser multigrid levels after
-         setting the moving wall velocities for the finest mesh. ---*/
-        
-        grid_movement->UpdateMultiGrid(geometry_container, config_container);
-        
-      }
-      
-      break;
-      
-      
-    case ROTATING_FRAME:
-      
-      /*--- Steadily rotating frame: set the grid velocities just once
-       before the first iteration flow solver. ---*/
-      
-      if (ExtIter == 0) {
-        
-        if (rank == MASTER_NODE) {
-          cout << endl << " Setting rotating frame grid velocities";
-          cout << " for zone " << iZone << "." << endl;
-        }
-        
-        /*--- Set the grid velocities on all multigrid levels for a steadily
-         rotating reference frame. ---*/
-        
-        for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
-          geometry_container[iMGlevel]->SetRotationalVelocity(config_container, iZone);
-        
-      }
-      
-      break;
-      
-    case STEADY_TRANSLATION:
-      
-      /*--- Set the translational velocity and hold the grid fixed during
-       the calculation (similar to rotating frame, but there is no extra
-       source term for translation). ---*/
-      
-      if (ExtIter == 0) {
-        
-        if (rank == MASTER_NODE)
-          cout << endl << " Setting translational grid velocities." << endl;
-        
-        /*--- Set the translational velocity on all grid levels. ---*/
-        
-        for (iMGlevel = 0; iMGlevel <= nMGlevels; iMGlevel++)
-          geometry_container[iMGlevel]->SetTranslationalVelocity(config_container);
-        
-      }
-      
-      break;
-      
-    case RIGID_MOTION:
-      
-      if (rank == MASTER_NODE) {
-        cout << endl << " Performing rigid mesh transformation." << endl;
-      }
-      
-      /*--- Move each node in the volume mesh using the specified type
-       of rigid mesh motion. These routines also compute analytic grid
-       velocities for the fine mesh. ---*/
-      
-      grid_movement->Rigid_Translation(geometry_container[MESH_0],
-                                       config_container, iZone, ExtIter);
-      grid_movement->Rigid_Plunging(geometry_container[MESH_0],
-                                    config_container, iZone, ExtIter);
-      grid_movement->Rigid_Pitching(geometry_container[MESH_0],
-                                    config_container, iZone, ExtIter);
-      grid_movement->Rigid_Rotation(geometry_container[MESH_0],
-                                    config_container, iZone, ExtIter);
-      
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
-      
-      grid_movement->UpdateMultiGrid(geometry_container, config_container);
-      
-      break;
-      
-    case DEFORMING:
-      
-      if (rank == MASTER_NODE)
-        cout << endl << " Updating surface positions." << endl;
-      
-      /*--- Translating ---*/
-      
-      /*--- Compute the new node locations for moving markers ---*/
-      
-      surface_movement->Surface_Translating(geometry_container[MESH_0],
-                                            config_container, ExtIter, iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-      
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
-                                           config_container, true);
-      
-      /*--- Plunging ---*/
-      
-      /*--- Compute the new node locations for moving markers ---*/
-      
-      surface_movement->Surface_Plunging(geometry_container[MESH_0],
-                                         config_container, ExtIter, iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-      
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
-                                           config_container, true);
-      
-      /*--- Pitching ---*/
-      
-      /*--- Compute the new node locations for moving markers ---*/
-      
-      surface_movement->Surface_Pitching(geometry_container[MESH_0],
-                                         config_container, ExtIter, iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-      
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
-                                           config_container, true);
-      
-      /*--- Rotating ---*/
-      
-      /*--- Compute the new node locations for moving markers ---*/
-      
-      surface_movement->Surface_Rotating(geometry_container[MESH_0],
-                                         config_container, ExtIter, iZone);
-      /*--- Deform the volume grid around the new boundary locations ---*/
-      
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
-                                           config_container, true);
-      
-      /*--- Update the grid velocities on the fine mesh using finite
-       differencing based on node coordinates at previous times. ---*/
-      
-      if (!adjoint) {
-        if (rank == MASTER_NODE)
-          cout << " Computing grid velocities by finite differencing." << endl;
-        geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-      }
-      
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
-      
-      grid_movement->UpdateMultiGrid(geometry_container, config_container);
-      
-      break;
-      
-    case EXTERNAL: case EXTERNAL_ROTATION:
-      
-      /*--- Apply rigid rotation to entire grid first, if necessary ---*/
-      
-      if (Kind_Grid_Movement == EXTERNAL_ROTATION) {
-        if (rank == MASTER_NODE)
-          cout << " Updating node locations by rigid rotation." << endl;
-        grid_movement->Rigid_Rotation(geometry_container[MESH_0],
-                                      config_container, iZone, ExtIter);
-      }
-      
-      /*--- Load new surface node locations from external files ---*/
-      
-      if (rank == MASTER_NODE)
-        cout << " Updating surface locations from file." << endl;
-      surface_movement->SetExternal_Deformation(geometry_container[MESH_0],
-                                                config_container, iZone, ExtIter);
-      
-      /*--- Deform the volume grid around the new boundary locations ---*/
-      
-      if (rank == MASTER_NODE)
-        cout << " Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
-                                           config_container, true);
-      
-      /*--- Update the grid velocities on the fine mesh using finite
-       differencing based on node coordinates at previous times. ---*/
-      
-      if (!adjoint) {
-        if (rank == MASTER_NODE)
-          cout << " Computing grid velocities by finite differencing." << endl;
-        geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-      }
-      
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
-      
-      grid_movement->UpdateMultiGrid(geometry_container, config_container);
-      
-      break;
-      
-    case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
-      
-      /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
-      if (IntIter == 0) {
-        if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {
-          
-          if (rank == MASTER_NODE) {
-            cout << endl << " Performing rigid mesh transformation." << endl;
-          }
-          
-          /*--- Move each node in the volume mesh using the specified type
-           of rigid mesh motion. These routines also compute analytic grid
-           velocities for the fine mesh. ---*/
-          
-          grid_movement->Rigid_Translation(geometry_container[MESH_0],
-                                           config_container, iZone, ExtIter);
-          grid_movement->Rigid_Plunging(geometry_container[MESH_0],
-                                        config_container, iZone, ExtIter);
-          grid_movement->Rigid_Pitching(geometry_container[MESH_0],
-                                        config_container, iZone, ExtIter);
-          grid_movement->Rigid_Rotation(geometry_container[MESH_0],
-                                        config_container, iZone, ExtIter);
-          
-          /*--- Update the multigrid structure after moving the finest grid,
-           including computing the grid velocities on the coarser levels. ---*/
-          
-          grid_movement->UpdateMultiGrid(geometry_container, config_container);
-        }
-        
-      }
-      
-      /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      else if (IntIter % config_container->GetAeroelasticIter() ==0) {
-        
-        if (rank == MASTER_NODE)
-          cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
-        
-        /*--- Solve the aeroelastic equations for the new node locations of the moving markers(surfaces) ---*/
-        
-        solver_container[MESH_0][FLOW_SOL]->Aeroelastic(surface_movement, geometry_container[MESH_0], config_container, ExtIter);
-        
-        /*--- Deform the volume grid around the new boundary locations ---*/
-        
-        if (rank == MASTER_NODE)
-          cout << " Deforming the volume grid due to the aeroelastic movement." << endl;
-        grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
-                                             config_container, true);
-        
-        /*--- Update the grid velocities on the fine mesh using finite
-         differencing based on node coordinates at previous times. ---*/
-        
-        if (rank == MASTER_NODE)
-          cout << " Computing grid velocities by finite differencing." << endl;
-        geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-        
-        /*--- Update the multigrid structure after moving the finest grid,
-         including computing the grid velocities on the coarser levels. ---*/
-        
-        grid_movement->UpdateMultiGrid(geometry_container, config_container);
-      }
-      
-      break;
-      
-    case ELASTICITY:
-      
-      if (ExtIter != 0) {
-        
-        if (rank == MASTER_NODE)
-          cout << " Deforming the grid using the Linear Elasticity solution." << endl;
-        
-        /*--- Update the coordinates of the grid using the linear elasticity solution. ---*/
-        for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
-          
-          su2double *U_time_nM1 = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
-          su2double *U_time_n   = solver_container[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
-          
-          for (iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++)
-            geometry_container[MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
-          
-        }
-        
-      }
-      
-      break;
-      
-    case FLUID_STRUCTURE:
-
-      if (rank == MASTER_NODE)
-        cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
-
-      /*--- Deform the volume grid around the new boundary locations ---*/
-
-      if (rank == MASTER_NODE)
-        cout << "Deforming the volume grid." << endl;
-      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
-                                           config_container, true);
-
-      nIterMesh = grid_movement->Get_nIterMesh();
-      stat_mesh = (nIterMesh == 0);
-
-      if (!adjoint && !stat_mesh) {
-        if (rank == MASTER_NODE)
-          cout << "Computing grid velocities by finite differencing." << endl;
-        geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
-      }
-      else if (stat_mesh){
-          if (rank == MASTER_NODE)
-            cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
-      }
-
-      /*--- Update the multigrid structure after moving the finest grid,
-       including computing the grid velocities on the coarser levels. ---*/
-
-      grid_movement->UpdateMultiGrid(geometry_container, config_container);
-
-      break;
-
-    case NO_MOVEMENT: case GUST: default:
-      
-      /*--- There is no mesh motion specified for this zone. ---*/
-      if (rank == MASTER_NODE)
-        cout << "No mesh motion specified." << endl;
-      
-      break;
-  }
-  
 }
