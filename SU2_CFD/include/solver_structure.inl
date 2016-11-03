@@ -848,6 +848,9 @@ inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_
 inline void CSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) { }
 
+inline void CSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                       CConfig *config, unsigned short iStep) { }
+
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
@@ -1722,11 +1725,17 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config) {}
 
+inline void CSolver::ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime) {}
+
 inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
 
 inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
+
+inline void CSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight) {}
+
+inline void CSolver:: MultiplyResidualByInverseMassMatrix(void) {}
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

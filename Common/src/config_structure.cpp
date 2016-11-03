@@ -32,6 +32,7 @@
  */
 
 #include "../include/config_structure.hpp"
+#include "../include/gauss_jacobi_quadrature.hpp"
 
 vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
 vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for profiled functions. */
@@ -381,6 +382,7 @@ void CConfig::SetPointersNull(void) {
   SubsonicEngine_Cyl = NULL;
   Hold_GridFixed_Coord = NULL;
   EA_IntLimit = NULL;
+  TimeDOFsADER_DG = NULL;
   RK_Alpha_Step = NULL;
   Int_Coeffs = NULL;
   Kind_ObjFunc = NULL;
@@ -834,6 +836,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   // these options share nRKStep as their size, which is not a good idea in general
   /* DESCRIPTION: Runge-Kutta alpha coefficients */
   addDoubleListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
+  /* DESCRIPTION: Number of time DOFs used in the predictor step of ADER-DG. */
+  addUnsignedShortOption("TIME_DOFS_ADER_DG", nTimeDOFsADER_DG, 2);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
   addDoubleOption("UNST_TIMESTEP", Delta_UnstTime, 0.0);
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
@@ -2862,6 +2866,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nRKStep = 1;
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
+
+  if (Kind_TimeIntScheme_FEM_Flow == ADER_DG) {
+    vector<su2double> GLPoints(nTimeDOFsADER_DG), GLWeights(nTimeDOFsADER_DG);
+    CGaussJacobiQuadrature GaussJacobi;
+    GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
+
+    TimeDOFsADER_DG = new su2double[nTimeDOFsADER_DG];
+    for(iDim=0; iDim<nTimeDOFsADER_DG; iDim++)
+      TimeDOFsADER_DG[iDim] = GLPoints[iDim];
+  }
   
   if (nIntCoeffs == 0) {
 	nIntCoeffs = 2;
@@ -4342,6 +4356,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
           cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
           break;
+
+        case ADER_DG:
+          cout << "ADER-DG, possibly with local time stepping, for the flow equations." << endl;
+          cout << "Number of time DOFs ADER-DG predictor step: " << nTimeDOFsADER_DG << endl;
+          cout << "Location of time DOFs ADER-DG in the interval [-1,1]: ";
+          for (unsigned short iDOF=0; iDOF<nTimeDOFsADER_DG; iDOF++) {
+            cout << "\t" << TimeDOFsADER_DG[iDOF];
+          }
+          cout << endl;
+          break;
       }
     }
 
@@ -5120,9 +5144,10 @@ CConfig::~CConfig(void) {
     delete itr->second;
   }
  
-  if (RK_Alpha_Step != NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth  != NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth != NULL) delete [] MG_PostSmooth;
+  if (TimeDOFsADER_DG != NULL) delete [] TimeDOFsADER_DG;
+  if (RK_Alpha_Step   != NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth    != NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth   != NULL) delete [] MG_PostSmooth;
   
   /*--- Free memory for Aeroelastic problems. ---*/
 

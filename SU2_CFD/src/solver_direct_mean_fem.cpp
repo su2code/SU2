@@ -34,13 +34,11 @@
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   
   /*--- Basic array initialization ---*/
-  
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
   
   /*--- Surface-based array initialization ---*/
-  
   Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
   Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
   Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
@@ -65,7 +63,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 #endif
   
   /*--- Array initialization ---*/
-
   FluidModel = NULL;
   
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL; CEff_Inv = NULL;
@@ -83,12 +80,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   Cauchy_Serie = NULL;
   
   /*--- Set the gamma value ---*/
-  
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Define geometry constants in the solver structure. ---*/
-  
   nDim    = geometry->GetnDim();
   nMarker = config->GetnMarker_All();
 
@@ -189,7 +184,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
-  
   SetNondimensionalization(geometry, config, iMesh);
 
   /*--- Define some auxiliary vectors related to the residual ---*/
@@ -205,7 +199,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   }
   
   /*--- Non-dimensional coefficients ---*/
-  
   CD_Inv   = new su2double[nMarker];
   CL_Inv   = new su2double[nMarker];
   CSF_Inv  = new su2double[nMarker];
@@ -239,14 +232,12 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   Surface_CMz      = new su2double[config->GetnMarker_Monitoring()];
   
   /*--- Init total coefficients ---*/
-  
   Total_CD   = 0.0; Total_CL  = 0.0; Total_CSF = 0.0;
   Total_CMx  = 0.0; Total_CMy = 0.0; Total_CMz = 0.0;
   Total_CFx  = 0.0; Total_CFy = 0.0; Total_CFz = 0.0;
   Total_CEff = 0.0;
   
   /*--- Read farfield conditions ---*/
-  
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
@@ -255,7 +246,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   Mach_Inf        = config->GetMach();
 
   /*--- Set the conservative variables of the free-stream. ---*/
-
   ConsVarFreeStream.resize(nVar);
   if( compressible ) {
     ConsVarFreeStream[0] = Density_Inf;
@@ -271,7 +261,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Determine the total number of DOFs stored on this rank and allocate the memory
         to store the conservative variables. ---*/
-
   nDOFsLocOwned = 0;
   for(unsigned long i=0; i<nVolElemOwned; ++i) nDOFsLocOwned += volElem[i].nDOFsSol;
 
@@ -279,12 +268,27 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) nDOFsLocTot += volElem[i].nDOFsSol;
 
   VecSolDOFs.resize(nVar*nDOFsLocTot);
-  VecSolDOFsOld.resize(nVar*nDOFsLocOwned);
-  if(config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT)
-    VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
+
+  /*--- Check for the ADER-DG time integration scheme and allocate the memory
+        for the necessary vectors. ---*/
+  if(config->GetKind_TimeIntScheme() == ADER_DG) {
+
+    const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
+
+    VecTotResDOFsADER.resize(nVar*nDOFsLocOwned);
+    VecSolDOFsPredictorADER.resize(nTimeDOFs*nVar*nDOFsLocOwned);
+  }
+  else {
+
+    /*--- Runge Kutta type of time integration schemes. Allocate the memory to
+          store the old solution and possibly the new. ---*/
+    VecSolDOFsOld.resize(nVar*nDOFsLocOwned);
+
+    if(config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT)
+      VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
+  }
   
   /*--- Determine the global number of DOFs. ---*/
-
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
@@ -292,7 +296,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 #endif
 
   /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
-
   VecDeltaTime.resize(nVolElemOwned);
   VecResDOFs.resize(nVar*nDOFsLocTot);
   nEntriesResFaces.assign(nDOFsLocTot+1, 0);
@@ -461,7 +464,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         appropriately. Coarse multigrid levels will be intitially set to
         the farfield values bc the solver will immediately interpolate
         the solution from the finest mesh to the coarser levels. ---*/
-  
   if (!restart || (iMesh != MESH_0)) {
     
     /*--- Start the solution from the free-stream state ---*/
@@ -476,7 +478,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   } else {
     
     /*--- Open the restart file, throw an error if this fails. ---*/
-
     ifstream restart_file;
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
@@ -533,7 +534,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
     
     /*--- Detect a wrong solution file ---*/
-
     unsigned short rbuf_NotMatching = 0;
     if(nDOF_Read < nDOFsLocOwned) rbuf_NotMatching = 1;
     
@@ -557,12 +557,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
     
     /*--- Close the restart file ---*/
-    
     restart_file.close();
   }
   
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-  
   unsigned long nBadDOFs = 0;
 
   if( compressible ) {
@@ -584,7 +582,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       su2double Temperature = FluidModel->GetTemperature();
     
       /*--- Use the values at the infinity if the state is not physical. ---*/
-    
       if((Pressure < 0.0) || (VecSolDOFs[ii] < 0.0) || (Temperature < 0.0)) {
         for(unsigned short j=0; j<nVar; ++j) {
           VecSolDOFs[ii+j] = ConsVarFreeStream[j];
@@ -596,7 +593,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   }
     
   /*--- Warning message about non-physical points ---*/
-    
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
     unsigned long nBadDOFsLoc = nBadDOFs;
@@ -1919,7 +1915,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
   }
 }
 
-void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long ErrorCounter = 0;
   
@@ -1966,6 +1962,13 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
       if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
     }
   }
+
+  /*-------------------------------------------------------------*/
+  /*--- Carry out the predictor step for ADER, if necessary.  ---*/
+  /*-------------------------------------------------------------*/
+
+  if(config->GetKind_TimeIntScheme() == ADER_DG)
+    ADER_DG_PredictorStep(config, iStep);
 }
 
 void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -2121,8 +2124,20 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
   
 }
 
+void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
+
+  cout << "CFEM_DG_EulerSolver::ADER_DG_PredictorStep: Not implemented yet" << endl;
+  exit(1);
+}
+
+void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime) {
+
+  cout << "CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol: Not implemented yet" << endl;
+  exit(1);
+}
+
 void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
 
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
@@ -2224,14 +2239,14 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 }
 
 void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                           CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+                                           CConfig *config, unsigned short iMesh, unsigned short iStep) {
 
   /* Complete the MPI communication of the solution data. */
   Complete_MPI_Communication();
 
   /* Compute the residual of the faces that involve a halo element. */
   unsigned long indResFaces = 0;
-  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iRKStep,
+  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
                 0, nMatchingInternalFacesWithHaloElem, indResFaces);
 
   /* Start the communication of the residuals, for which the
@@ -2239,7 +2254,7 @@ void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver
   Initiate_MPI_ReverseCommunication();
 
   /* Compute the residual of the faces that only involve owned elements. */
-  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iRKStep,
+  ResidualFaces(geometry, solver_container, numerics, config, iMesh, iStep,
                 nMatchingInternalFacesWithHaloElem, nMatchingInternalFaces,
                 indResFaces);
 
@@ -2247,11 +2262,19 @@ void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver
   Complete_MPI_ReverseCommunication();
 
   /* Create the final residual by summing up all contributions. */
-  CreateFinalResidual();
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+
+    su2double *resDOF = VecResDOFs.data() + nVar*i;
+    for(unsigned long j=nEntriesResFaces[i]; j<nEntriesResFaces[i+1]; ++j) {
+      const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+      for(unsigned short k=0; k<nVar; ++k)
+        resDOF[k] += resFace[k];
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                                        CConfig *config, unsigned short iMesh, unsigned short iStep,
                                         const unsigned long indFaceBeg, const unsigned long indFaceEnd,
                                         unsigned long &indResFaces) {
 
@@ -2411,29 +2434,37 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                             solIntL, solIntR, fluxes, numerics);
 }
 
-void CFEM_DG_EulerSolver::CreateFinalResidual(void) {
+void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight) {
+
+  /* Compute half the integration weight. The reason for doing this is that the
+     given integration weight is based on the normalized interval [-1..1], i.e.
+     a length of two. */
+  const su2double halfWeight = 0.5*weight;
+
+  /* Determine the case we have. */
+  if(iTime == 0) {
+
+    /*--- First time integration point. Initialize the total ADER residual
+          to the spatial residual multiplied by halfWeight. ---*/
+    for(unsigned long i=0; i<VecTotResDOFsADER.size(); ++i)
+      VecTotResDOFsADER[i] = halfWeight*VecResDOFs[i];
+  }
+  else {
+
+    /*--- Not the first integration point. The spatial residual, multiplied by
+          halfWeight must be added to the total ADER residual. ---*/
+    for(unsigned long i=0; i<VecTotResDOFsADER.size(); ++i)
+      VecTotResDOFsADER[i] += halfWeight*VecResDOFs[i];
+  }
+}
+
+void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(void) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *tmpRes = VecTmpMemory.data();
 
-  /* Loop over the owned volume elements to accumulate the local data. */
+  /* Loop over the owned volume elements. */
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /*--- Loop over the DOFs of the element and accumulate the residuals.
-          This accumulation is carried inside the loop over the owned volume
-          elements, such that an OpenMP parallelization of the loop over the
-          volume elements is straightforward. ---*/
-    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
-
-      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
-      su2double *resDOF = VecResDOFs.data() + nVar*ii;
-
-      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
-        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
-        for(unsigned short k=0; k<nVar; ++k)
-          resDOF[k] += resFace[k];
-      }
-    }
 
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
@@ -2934,6 +2965,23 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
   }
   
 #endif
+}
+
+void CFEM_DG_EulerSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                            unsigned short iStep) {
+
+  /*--- Update the solution by looping over the owned volume elements. ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Set the pointers for the residual and solution for this element. */
+    const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
+    const su2double *res = VecTotResDOFsADER.data() + offset;
+    su2double *solDOFs   = VecSolDOFs.data()        + offset;
+
+    /* Loop over the DOFs for this element and update the solution. */
+    for(unsigned short i=0; i<(nVar*volElem[l].nDOFsSol); ++i)
+      solDOFs[i] -= VecDeltaTime[l]*res[i];
+  }
 }
 
 void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
@@ -3826,13 +3874,6 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   }
 }
 
-void CFEM_DG_NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
-  /*--- Collect the number of non-physical points for this iteration. ---*/
-  CFEM_DG_EulerSolver::Preprocessing(geometry, solver_container, config, iMesh,
-                                     iRKStep, RunTime_EqSystem, Output);
-}
-
 void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Constant factor present in the heat flux vector. */
@@ -4205,8 +4246,14 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   }
 }
 
+void CFEM_DG_NSSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
+
+  cout << "CFEM_DG_NSSolver::ADER_DG_PredictorStep: Not implemented yet" << endl;
+  exit(1);
+}
+
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+                                       CConfig *config, unsigned short iMesh, unsigned short iStep) {
 
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
@@ -4404,7 +4451,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 }
 
 void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                                     CConfig *config, unsigned short iMesh, unsigned short iStep,
                                      const unsigned long indFaceBeg, const unsigned long indFaceEnd,
                                      unsigned long &indResFaces) {
 
