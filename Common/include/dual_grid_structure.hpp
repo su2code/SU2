@@ -651,18 +651,18 @@ public:
 	 */
 	su2double **GetGridVel_Grad(void);
 	
-	/*! 
+	/*!
 	 * \brief Add the value of the coordinates to the <i>Coord_Sum</i> vector for implicit smoothing.
 	 * \param[in] val_coord_sum - Value of the coordinates to add.
 	 */	
 	void AddCoord_Sum(su2double *val_coord_sum);
 	
-	/*! 
+	/*!
 	 * \brief Initialize the vector <i>Coord_Sum</i>.
 	 */	
 	void SetCoord_SumZero(void);
 	
-	/*! 
+	/*!
 	 * \brief Set the value of the vector <i>Coord_Old</i> for implicit smoothing.
 	 * \param[in] val_coord_old - Value of the coordinates.
 	 */	
@@ -889,7 +889,8 @@ private:
 	su2double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	su2double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
-	long PeriodicPoint[3];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+	long PeriodicPoint[5];			/*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
+  bool ActDisk_Perimeter;     /*!< \brief Identify nodes at the perimeter of the actuator disk */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
 	unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
@@ -1047,6 +1048,13 @@ public:
 	 */
 	void SetDonorPoint(long val_periodicpoint, long val_processor);
 	
+  /*!
+   * \overload
+   * \param[in] val_periodicpoint - Value of periodic point of the vertex.
+   * \param[in] val_processor - Processor where the point belong.
+   */
+  void SetDonorPoint(long val_periodicpoint, long val_periodicglobalindex, long val_periodicvertex, long val_periodicmarker, long val_processor);
+  
 	/*! 
 	 * \overload
 	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
@@ -1054,6 +1062,13 @@ public:
 	 * \param[in] val_globalindex - Global index of the donor point.
 	 */
 	void SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex);
+  
+  /*!
+   * \overload
+   * \param[in] val_periodicpoint - Value of periodic point of the vertex.
+   * \param[in] val_processor - Processor where the point belong.
+   */
+  void SetActDisk_Perimeter(bool val_actdisk_perimeter);
 
 	/*!
 	 * \brief Get the value of the periodic point of a vertex.
@@ -1062,16 +1077,34 @@ public:
 	long GetDonorPoint(void);
   
   /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetDonorMarker(void);
+  
+  /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetDonorVertex(void);
+
+  /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetDonorGlobalIndex(void);
+  
+  /*!
+   * \brief Get the value of the periodic point of a vertex.
+   * \return Value of the periodic point of a vertex.
+   */
+  long GetGlobalDonorPoint(void);
+
+  /*!
 	 * \brief Get the value of the periodic point of a vertex.
 	 * \return Value of the periodic point of a vertex.
 	 */
 	long GetDonorProcessor(void);
-
-  /*!
-	 * \brief Get the value of the global index for the donor point of a vertex.
-	 * \return Value of the global index for the donor point of a vertex.
-	 */
-	long GetGlobalDonorPoint(void);
   
 	/*! 
 	 * \brief Get the value of the periodic point of a vertex, and its somain
@@ -1079,6 +1112,12 @@ public:
 	 */
 	long *GetPeriodicPointDomain(void);	
   
+  /*!
+   * \brief Get the value of the periodic point of a vertex, and its somain
+   * \return Value of the periodic point of a vertex, and the domain.
+   */
+  bool GetActDisk_Perimeter(void);
+
   /*!
 	 * \brief Set the donor element of a vertex for interpolation across zones.
 	 * \param[in] val_donorelem - donor element index.

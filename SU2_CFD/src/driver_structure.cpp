@@ -188,8 +188,8 @@ CDriver::CDriver(char* confFile,
   if(nZone == SINGLE_ZONE) {
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
   }
-  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    if (rank == MASTER_NODE) cout << "A spectral method driver has been instantiated." << endl;
+  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    if (rank == MASTER_NODE) cout << "A Harmonic Balance driver has been instantiated." << endl;
   }
   else if (nZone == 2 && fsi) {
     if (rank == MASTER_NODE) cout << "A Fluid-Structure Interaction driver has been instantiated." << endl;
@@ -288,7 +288,7 @@ CDriver::CDriver(char* confFile,
 
 	/*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically
-   deforming meshes, and time-spectral preprocessing. ---*/
+   deforming meshes, and preprocessing of harmonic balance. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -300,7 +300,7 @@ CDriver::CDriver(char* confFile,
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
-      if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
+      if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
         iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
     }
 
@@ -474,9 +474,9 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (geometry_container[iZone]!=NULL) {
+    if (geometry_container[iZone] != NULL) {
       for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
-        if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
+        if (geometry_container[iZone][iMGlevel] != NULL) delete geometry_container[iZone][iMGlevel];
       }
       delete [] geometry_container[iZone];
     }
@@ -504,9 +504,9 @@ void CDriver::Postprocessing() {
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
-  if (config_container!=NULL) {
+  if (config_container!= NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (config_container[iZone]!=NULL) {
+      if (config_container[iZone] != NULL) {
         delete config_container[iZone];
       }
     }
@@ -515,7 +515,7 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
   /*--- Deallocate output container ---*/
-  if (output!=NULL) delete output;
+  if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
@@ -1019,7 +1019,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; adj_turb=true; break;
+    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
       
   }
   
@@ -2435,67 +2435,61 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
 
 
 bool CDriver::Monitor(unsigned long ExtIter) {
-
-    /*--- Synchronization point after a single solver iteration. Compute the
-     wall clock time required. ---*/
-
+  
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+  
 #ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StopTime = MPI_Wtime();
+  StopTime = MPI_Wtime();
 #endif
-
-    UsedTime = (StopTime - StartTime);
-
-    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-
-    if (config_container[ZONE_0]->GetEquivArea() == YES) {
-      output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-    }
-
-    /*--- Check if there is any change in the runtime parameters ---*/
-
-    CConfig *runtime = NULL;
-    strcpy(runtime_file_name, "runtime.dat");
-    runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-    runtime->SetExtIter(ExtIter);
-    delete runtime;
-
-    /*--- Update the convergence history file (serial and parallel computations). ---*/
-
-    if (!fsi) {
-      output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-				config_container, integration_container, false, UsedTime, ZONE_0);
-
-    }
-
-
-    /*--- Evaluate the new CFL number (adaptive). ---*/
-
-    if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-      output->SetCFL_Number(solver_container, config_container, ZONE_0);
-    }
-
-    /*--- Check whether the current simulation has reached the specified
-     convergence criteria, and set StopCalc to true, if so. ---*/
-
-    switch (config_container[ZONE_0]->GetKind_Solver()) {
-      case EULER: case NAVIER_STOKES: case RANS:
-        StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-      case WAVE_EQUATION:
-        StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
-      case HEAT_EQUATION:
-        StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
-      case FEM_ELASTICITY:
-	StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-      case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-    }
-
-    return StopCalc;
-
+  
+  UsedTime = (StopTime - StartTime);
+  
+  
+  /*--- Check if there is any change in the runtime parameters ---*/
+  
+  CConfig *runtime = NULL;
+  strcpy(runtime_file_name, "runtime.dat");
+  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+  runtime->SetExtIter(ExtIter);
+  delete runtime;
+  
+  /*--- Update the convergence history file (serial and parallel computations). ---*/
+  
+  if (!fsi) {
+    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+                                config_container, integration_container, false, UsedTime, ZONE_0);
+    
+  }
+  
+  
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  
+  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+    output->SetCFL_Number(solver_container, config_container, ZONE_0);
+  }
+  
+  /*--- Check whether the current simulation has reached the specified
+   convergence criteria, and set StopCalc to true, if so. ---*/
+  
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+    case WAVE_EQUATION:
+      StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
+    case HEAT_EQUATION:
+      StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+    case FEM_ELASTICITY:
+      StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+  }
+  
+  return StopCalc;
+  
 }
 
 
@@ -2563,6 +2557,22 @@ void CDriver::Output(unsigned long ExtIter) {
 
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 
+      /*--- For specific applications, evaluate and plot the surface. ---*/
+      
+      if (config_container[ZONE_0]->GetnMarker_Analyze() != 0) {
+        
+        output->WriteSurface_Analysis(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0],
+                                     solver_container[ZONE_0][MESH_0][FLOW_SOL]);
+      }
+      
+      /*--- For specific applications, evaluate and plot the equivalent area. ---*/
+      
+      if (config_container[ZONE_0]->GetEquivArea() == YES) {
+        
+        output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+      }
+      
       /*--- Execute the routine for writing restart, volume solution,
        surface solution, and surface comma-separated value files. ---*/
 
@@ -3032,10 +3042,10 @@ void CSingleZoneDriver::ResetConvergence() {
 
 void CSingleZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 
   /*--- Dynamic mesh update ---*/
-  if ((config_container[ZONE_0]->GetGrid_Movement()) && (!time_spectral)) {
+  if ((config_container[ZONE_0]->GetGrid_Movement()) && (!harmonic_balance)) {
     iteration_container[ZONE_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, 0, ExtIter );
   }
 
@@ -3161,12 +3171,12 @@ void CMultiZoneDriver::ResetConvergence() {
 
 void CMultiZoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool time_spectral;
+  bool harmonic_balance;
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    time_spectral = (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+   harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
     /*--- Dynamic mesh update ---*/
-    if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
+    if ((config_container[iZone]->GetGrid_Movement()) && (!harmonic_balance)) {
       iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
   }
@@ -3216,28 +3226,32 @@ void CMultiZoneDriver::SetInitialMesh() {
 
 }
 
-CSpectralDriver::CSpectralDriver(char* confFile,
+CHBDriver::CHBDriver(char* confFile,
                                  unsigned short val_nZone,
                                  unsigned short val_nDim) : CDriver(confFile,
                                                                     val_nZone,
-                                                                    val_nDim) { }
+                                                                    val_nDim) {
+	unsigned short kZone;
 
-CSpectralDriver::~CSpectralDriver(void) { }
+	D = NULL;
+	/*--- allocate dynamic memory for the Harmonic Balance operator ---*/
+	D = new su2double*[nZone]; for (kZone = 0; kZone < nZone; kZone++) D[kZone] = new su2double[nZone];
 
-void CSpectralDriver::Run() {
+}
+
+CHBDriver::~CHBDriver(void) {
+
+	unsigned short kZone;
+
+	  /*--- delete dynamic memory for the Harmonic Balance operator ---*/
+	  for (kZone = 0; kZone < nZone; kZone++) if (D[kZone] != NULL) delete [] D[kZone];
+	  if (D[kZone] != NULL) delete [] D;
+
+}
+
+void CHBDriver::Run() {
   
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- If this is the first iteration, set up the spectral operators,
-   initialize the source terms, and compute any grid veocities, if necessary. ---*/
-  
-  if (ExtIter == 0) {
-    SetTimeSpectral_Velocities();
-    for (iZone = 0; iZone < nZone; iZone++)
-      SetTimeSpectral((iZone+1)%nZone);
-  }
-  
-  /*--- Run a single iteration of a spectral method problem. Preprocess all
+  /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
   
   for (iZone = 0; iZone < nZone; iZone++)
@@ -3252,23 +3266,24 @@ void CSpectralDriver::Run() {
     
 }
 
-void CSpectralDriver::Update() {
+void CHBDriver::Update() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Update the spectral source terms across all zones ---*/
-
-    SetTimeSpectral((iZone+1)%nZone);
+    /*--- Update the harmonic balance terms across all zones ---*/
+  	SetHarmonicBalance(iZone);
 
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, iZone);
 
+    output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
+
   }
 
 }
 
-void CSpectralDriver::ResetConvergence() {
+void CHBDriver::ResetConvergence() {
 
   for(iZone = 0; iZone < nZone; iZone++) {
     switch (config_container[iZone]->GetKind_Solver()) {
@@ -3304,145 +3319,95 @@ void CSpectralDriver::ResetConvergence() {
 
 }
 
-void CSpectralDriver::SetTimeSpectral(unsigned short iZone) {
-  
-  int rank = MASTER_NODE;
+void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
+
+	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  unsigned short iVar, jZone, kZone, iMGlevel;
-  unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
-  unsigned long iPoint;
-  bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
-  if (adjoint) {
-    implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  }
-  
-  /*--- Retrieve values from the config file ---*/
-  su2double *U = new su2double[nVar];
-  su2double *U_old = new su2double[nVar];
-  su2double *Psi = new su2double[nVar];
-  su2double *Psi_old = new su2double[nVar];
-  su2double *Source = new su2double[nVar];
-  su2double deltaU, deltaPsi;
-  
-  /*--- Compute period of oscillation ---*/
-  su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
-  
-  /*--- allocate dynamic memory for D ---*/
-  su2double **D = new su2double*[nZone];
-  for (kZone = 0; kZone < nZone; kZone++) {
-    D[kZone] = new su2double[nZone];
-  }
-  
-  /*--- Build the time-spectral operator matrix ---*/
-  ComputeTimeSpectral_Operator(D, period);
-  //  for (kZone = 0; kZone < nZone; kZone++) {
-  //    for (jZone = 0; jZone < nZone; jZone++) {
-  //
-  //      if (nZone%2 == 0) {
-  //
-  //        /*--- For an even number of time instances ---*/
-  //        if (kZone == jZone) {
-  //          D[kZone][jZone] = 0.0;
-  //        }
-  //        else {
-  //          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
-  //        }
-  //      }
-  //      else {
-  //
-  //        /*--- For an odd number of time instances ---*/
-  //        if (kZone == jZone) {
-  //          D[kZone][jZone] = 0.0;
-  //        }
-  //        else {
-  //          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
-  //        }
-  //      }
-  //
-  //    }
-  //  }
-  
-  /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
-  /*--- Loop over all grid levels ---*/
-  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-    
-    /*--- Loop over each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Source[iVar] = 0.0;
-      }
-      
-      /*--- Step across the columns ---*/
-      for (jZone = 0; jZone < nZone; jZone++) {
-        
-        /*--- Retrieve solution at this node in current zone ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          
-          if (!adjoint) {
-            U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-            Source[iVar] += U[iVar]*D[iZone][jZone];
-            
-            if (implicit) {
-              U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
-              deltaU = U[iVar] - U_old[iVar];
-              Source[iVar] += deltaU*D[iZone][jZone];
-            }
-            
-          }
-          
-          else {
-            Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
-            Source[iVar] += Psi[iVar]*D[jZone][iZone];
-            
-            if (implicit) {
-              Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
-              deltaPsi = Psi[iVar] - Psi_old[iVar];
-              Source[iVar] += deltaPsi*D[jZone][iZone];
-            }
-          }
-        }
-        
-        /*--- Store sources for current row ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          if (!adjoint) {
-            solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
-          }
-          else {
-            solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
-          }
-        }
-        
-      }
-    }
-  }
-  
-  //	/*--- Loop over all grid levels ---*/
-  //	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-  //
-  //		/*--- Loop over each node in the volume mesh ---*/
-  //		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-  //
-  //			for (iZone = 0; iZone < nZone; iZone++) {
-  //				for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
-  //				for (jZone = 0; jZone < nZone; jZone++) {
-  //
-  //					/*--- Retrieve solution at this node in current zone ---*/
-  //					for (iVar = 0; iVar < nVar; iVar++) {
-  //						U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-  //						Source[iVar] += U[iVar]*D[iZone][jZone];
-  //					}
-  //				}
-  //				/*--- Store sources for current iZone ---*/
-  //				for (iVar = 0; iVar < nVar; iVar++)
-  //					solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source[iVar]);
-  //			}
-  //		}
-  //	}
+
+	unsigned short iVar, jZone, iMGlevel;
+	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
+	unsigned long iPoint;
+	bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+	bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
+	if (adjoint) {
+		implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+	}
+
+	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+	/*--- Retrieve values from the config file ---*/
+	su2double *U = new su2double[nVar];
+	su2double *U_old = new su2double[nVar];
+	su2double *Psi = new su2double[nVar];
+	su2double *Psi_old = new su2double[nVar];
+	su2double *Source = new su2double[nVar];
+	su2double deltaU, deltaPsi;
+
+	/*--- Compute period of oscillation ---*/
+	su2double period = config_container[ZONE_0]->GetHarmonicBalance_Period();
+
+	/*--- Non-dimensionalize the input period, if necessary.	*/
+	period /= config_container[ZONE_0]->GetTime_Ref();
+
+	if (ExtIter == 0)
+		ComputeHB_Operator();
+
+	/*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
+	/*--- Loop over all grid levels ---*/
+	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+
+		/*--- Loop over each node in the volume mesh ---*/
+		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
+
+			for (iVar = 0; iVar < nVar; iVar++) {
+				Source[iVar] = 0.0;
+			}
+
+			/*--- Step across the columns ---*/
+			for (jZone = 0; jZone < nZone; jZone++) {
+
+				/*--- Retrieve solution at this node in current zone ---*/
+				for (iVar = 0; iVar < nVar; iVar++) {
+
+					if (!adjoint) {
+						U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+						Source[iVar] += U[iVar]*D[iZone][jZone];
+
+						if (implicit) {
+							U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+							deltaU = U[iVar] - U_old[iVar];
+							Source[iVar] += deltaU*D[iZone][jZone];
+						}
+
+					}
+
+					else {
+						Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
+						Source[iVar] += Psi[iVar]*D[jZone][iZone];
+
+						if (implicit) {
+							Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+							deltaPsi = Psi[iVar] - Psi_old[iVar];
+							Source[iVar] += deltaPsi*D[jZone][iZone];
+						}
+					}
+				}
+
+				/*--- Store sources for current row ---*/
+				for (iVar = 0; iVar < nVar; iVar++) {
+					if (!adjoint) {
+						solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iVar]);
+					}
+					else {
+						solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source[iVar]);
+					}
+				}
+
+			}
+		}
+	}
   
   /*--- Source term for a turbulence model ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
@@ -3467,249 +3432,195 @@ void CSpectralDriver::SetTimeSpectral(unsigned short iZone) {
       
       /*--- Store sources for current iZone ---*/
       for (iVar = 0; iVar < nVar_Turb; iVar++)
-        solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetTimeSpectral_Source(iVar, Source_Turb[iVar]);
+        solver_container[iZone][MESH_0][TURB_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source_Turb[iVar]);
     }
     
     delete [] U_Turb;
     delete [] Source_Turb;
   }
   
-  /*--- delete dynamic memory for D ---*/
-  for (kZone = 0; kZone < nZone; kZone++) {
-    delete [] D[kZone];
-  }
-  delete [] D;
   delete [] U;
   delete [] U_old;
   delete [] Psi;
   delete [] Psi_old;
-  delete [] Source;
-  
-  /*--- Write file with force coefficients ---*/
-  ofstream TS_Flow_file;
-  ofstream mean_TS_Flow_file;
-  
-  /*--- MPI Send/Recv buffers ---*/
-  su2double *sbuf_force = NULL,  *rbuf_force = NULL;
-  
-  /*--- Other variables ---*/
-  unsigned short nVar_Force = 8;
-  unsigned long current_iter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- Allocate memory for send buffer ---*/
-  sbuf_force = new su2double[nVar_Force];
-  
-  su2double *averages = new su2double[nVar_Force];
-  for (iVar = 0; iVar < nVar_Force; iVar++)
-    averages[iVar] = 0;
-  
-  /*--- Allocate memory for receive buffer ---*/
-  if (rank == MASTER_NODE) {
-    rbuf_force = new su2double[nVar_Force];
-    
-    TS_Flow_file.precision(15);
-    TS_Flow_file.open("TS_force_coefficients.csv", ios::out);
-    TS_Flow_file <<  "\"time_instance\",\"lift_coeff\",\"drag_coeff\",\"moment_coeff_x\",\"moment_coeff_y\",\"moment_coeff_z\"" << endl;
-    
-    mean_TS_Flow_file.precision(15);
-    if (current_iter == 0 && iZone == 1) {
-      mean_TS_Flow_file.open("history_TS_forces.plt", ios::trunc);
-      mean_TS_Flow_file << "TITLE = \"SU2 TIME-SPECTRAL SIMULATION\"" << endl;
-      mean_TS_Flow_file <<  "VARIABLES = \"Iteration\",\"CLift\",\"CDrag\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
-      mean_TS_Flow_file << "ZONE T= \"Average Convergence History\"" << endl;
-    }
-    else
-      mean_TS_Flow_file.open("history_TS_forces.plt", ios::out | ios::app);
-  }
-  
-  if (rank == MASTER_NODE) {
-    
-    /*--- Run through the zones, collecting the forces coefficients
-     N.B. Summing across processors within a given zone is being done
-     elsewhere. ---*/
-    for (kZone = 0; kZone < nZone; kZone++) {
-      
-      /*--- Flow solution coefficients (parallel) ---*/
-      sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CL();
-      sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CD();
-      sbuf_force[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
-      sbuf_force[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
-      sbuf_force[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
-      sbuf_force[5] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CT();
-      sbuf_force[6] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CQ();
-      sbuf_force[7] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
-      
-      for (iVar = 0; iVar < nVar_Force; iVar++) {
-        rbuf_force[iVar] = sbuf_force[iVar];
-      }
-      
-      TS_Flow_file << kZone << ", ";
-      for (iVar = 0; iVar < nVar_Force; iVar++)
-        TS_Flow_file << rbuf_force[iVar] << ", ";
-      TS_Flow_file << endl;
-      
-      /*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
-      for (iVar = 0; iVar < nVar_Force; iVar++) {
-        averages[iVar] += (1.0/su2double(nZone))*rbuf_force[iVar];
-      }
-    }
-  }
-  
-  if (rank == MASTER_NODE && iZone == ZONE_0) {
-    
-    mean_TS_Flow_file << current_iter << ", ";
-    for (iVar = 0; iVar < nVar_Force; iVar++) {
-      mean_TS_Flow_file << averages[iVar];
-      if (iVar < nVar_Force-1)
-        mean_TS_Flow_file << ", ";
-    }
-    mean_TS_Flow_file << endl;
-  }
-  
-  if (rank == MASTER_NODE) {
-    TS_Flow_file.close();
-    mean_TS_Flow_file.close();
-    delete [] rbuf_force;
-  }
-  
-  delete [] sbuf_force;
-  delete [] averages;
-  
+
 }
 
-void CSpectralDriver::ComputeTimeSpectral_Operator(su2double **D, su2double period) {
-  
-  unsigned short kZone, jZone;
-  
-  /*--- Build the time-spectral operator matrix ---*/
-  for (kZone = 0; kZone < nZone; kZone++) {
-    for (jZone = 0; jZone < nZone; jZone++) {
-      
-      if (nZone%2 == 0) {
-        
-        /*--- For an even number of time instances ---*/
-        if (kZone == jZone) {
-          D[kZone][jZone] = 0.0;
-        }
-        else {
-          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/tan(PI_NUMBER*(kZone-jZone)/nZone));
-        }
-      }
-      else {
-        
-        /*--- For an odd number of time instances ---*/
-        if (kZone == jZone) {
-          D[kZone][jZone] = 0.0;
-        }
-        else {
-          D[kZone][jZone] = (PI_NUMBER/period)*pow(-1.0,(kZone-jZone))*(1/sin(PI_NUMBER*(kZone-jZone)/nZone));
-        }
-      }
-      
-    }
-  }
-  
+
+void CHBDriver::ComputeHB_Operator(){
+
+	const   complex<su2double> J(0.0,1.0);
+	unsigned short i, j, k, iZone;
+
+	su2double *Omega_HB       = new su2double[nZone];
+	complex<su2double> **E    = new complex<su2double>*[nZone];
+	complex<su2double> **Einv = new complex<su2double>*[nZone];
+	complex<su2double> **DD   = new complex<su2double>*[nZone];
+	for (iZone = 0; iZone < nZone; iZone++){
+		E[iZone]    = new complex<su2double>[nZone];
+		Einv[iZone] = new complex<su2double>[nZone];
+		DD[iZone]   = new complex<su2double>[nZone];
+	}
+
+	/*--- Get simualation period from config file ---*/
+	su2double Period = config_container[ZONE_0]->GetHarmonicBalance_Period();
+
+	/*--- Non-dimensionalize the input period, if necessary.      */
+	Period /= config_container[ZONE_0]->GetTime_Ref();
+
+	/*--- Build the array containing the selected frequencies to solve ---*/
+	for (iZone = 0; iZone < nZone; iZone++){
+		Omega_HB[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
+		Omega_HB[iZone] /= config_container[iZone]->GetOmega_Ref();
+	}
+
+	/*--- Build the diagonal matrix of the frequencies DD ---*/
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZone; k++) {
+			if (k == i ){
+				DD[i][k] = J*Omega_HB[k];
+			}
+		}
+	}
+
+	/*--- Build the harmonic balance inverse matrix ---*/
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZone; k++) {
+			Einv[i][k] = complex<su2double>(cos(Omega_HB[k]*(i*Period/nZone))) + J*complex<su2double>(sin(Omega_HB[k]*(i*Period/nZone)));
+		}
+	}
+
+	/*---  Invert inverse harmonic balance Einv with Gauss elimination ---*/
+
+	/*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
+	complex<su2double> **temp = new complex<su2double>*[nZone];
+	for (i = 0; i < nZone; i++) {
+		temp[i] = new complex<su2double>[2 * nZone];
+	}
+
+	/*---  Copy the desired matrix into the temporary matrix ---*/
+	for (i = 0; i < nZone; i++) {
+		for (j = 0; j < nZone; j++) {
+			temp[i][j] = Einv[i][j];
+			temp[i][nZone + j] = 0;
+		}
+		temp[i][nZone + i] = 1;
+	}
+
+	su2double max_val;
+	unsigned short max_idx;
+
+	/*---  Pivot each column such that the largest number possible divides the other rows  ---*/
+	for (k = 0; k < nZone - 1; k++) {
+		max_idx = k;
+		max_val = abs(temp[k][k]);
+		/*---  Find the largest value (pivot) in the column  ---*/
+		for (j = k; j < nZone; j++) {
+			if (abs(temp[j][k]) > max_val) {
+				max_idx = j;
+				max_val = abs(temp[j][k]);
+			}
+		}
+		/*---  Move the row with the highest value up  ---*/
+		for (j = 0; j < (nZone * 2); j++) {
+			complex<su2double> d = temp[k][j];
+			temp[k][j] = temp[max_idx][j];
+			temp[max_idx][j] = d;
+		}
+		/*---  Subtract the moved row from all other rows ---*/
+		for (i = k + 1; i < nZone; i++) {
+			complex<su2double> c = temp[i][k] / temp[k][k];
+			for (j = 0; j < (nZone * 2); j++) {
+				temp[i][j] = temp[i][j] - temp[k][j] * c;
+			}
+		}
+	}
+	/*---  Back-substitution  ---*/
+	for (k = nZone - 1; k > 0; k--) {
+		if (temp[k][k] != complex<su2double>(0.0)) {
+			for (int i = k - 1; i > -1; i--) {
+				complex<su2double> c = temp[i][k] / temp[k][k];
+				for (j = 0; j < (nZone * 2); j++) {
+					temp[i][j] = temp[i][j] - temp[k][j] * c;
+				}
+			}
+		}
+	}
+	/*---  Normalize the inverse  ---*/
+	for (i = 0; i < nZone; i++) {
+		complex<su2double> c = temp[i][i];
+		for (j = 0; j < nZone; j++) {
+			temp[i][j + nZone] = temp[i][j + nZone] / c;
+		}
+	}
+	/*---  Copy the inverse back to the main program flow ---*/
+	for (i = 0; i < nZone; i++) {
+		for (j = 0; j < nZone; j++) {
+			E[i][j] = temp[i][j + nZone];
+		}
+	}
+	/*---  Delete dynamic template  ---*/
+	for (i = 0; i < nZone; i++) {
+		delete[] temp[i];
+	}
+	delete[] temp;
+
+
+	/*---  Temporary matrix for performing product  ---*/
+	complex<su2double> **Temp    = new complex<su2double>*[nZone];
+
+	/*---  Temporary complex HB operator  ---*/
+	complex<su2double> **Dcpx    = new complex<su2double>*[nZone];
+
+	for (iZone = 0; iZone < nZone; iZone++){
+		Temp[iZone]    = new complex<su2double>[nZone];
+		Dcpx[iZone]   = new complex<su2double>[nZone];
+	}
+
+	/*---  Calculation of the HB operator matrix ---*/
+	for (int row = 0; row < nZone; row++) {
+		for (int col = 0; col < nZone; col++) {
+			for (int inner = 0; inner < nZone; inner++) {
+				Temp[row][col] += Einv[row][inner] * DD[inner][col];
+			}
+		}
+	}
+
+	unsigned short row, col, inner;
+
+	for (row = 0; row < nZone; row++) {
+		for (col = 0; col < nZone; col++) {
+			for (inner = 0; inner < nZone; inner++) {
+				Dcpx[row][col] += Temp[row][inner] * E[inner][col];
+			}
+		}
+	}
+
+	/*---  Take just the real part of the HB operator matrix ---*/
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZone; k++) {
+			D[i][k] = real(Dcpx[i][k]);
+		}
+	}
+
+	/*--- Deallocate dynamic memory ---*/
+		for (iZone = 0; iZone < nZone; iZone++){
+			delete [] E[iZone];
+			delete [] Einv[iZone];
+			delete [] DD[iZone];
+			delete [] Temp[iZone];
+			delete [] Dcpx[iZone];
+		}
+		delete [] E;
+		delete [] Einv;
+		delete [] DD;
+		delete [] Temp;
+		delete [] Dcpx;
+		delete [] Omega_HB;
+
 }
 
-void CSpectralDriver::SetTimeSpectral_Velocities() {
-  
-  unsigned short iZone, jDegree, iDim, iMGlevel;
-  unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
-  
-  su2double angular_interval = 2.0*PI_NUMBER/(su2double)(nZone);
-  su2double *Coord;
-  unsigned long iPoint;
-  
-  /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-  su2double period = config_container[ZONE_0]->GetTimeSpectral_Period();
-  su2double deltaT = period/(su2double)(config_container[ZONE_0]->GetnTimeInstances());
-  
-  /*--- allocate dynamic memory for angular positions (these are the abscissas) ---*/
-  su2double *angular_positions = new su2double [nZone];
-  for (iZone = 0; iZone < nZone; iZone++) {
-    angular_positions[iZone] = iZone*angular_interval;
-  }
-  
-  /*--- find the highest-degree trigonometric polynomial allowed by the Nyquist criterion---*/
-  su2double high_degree = (nZone-1)/2.0;
-  int highest_degree = SU2_TYPE::Int(high_degree);
-  
-  /*--- allocate dynamic memory for a given point's coordinates ---*/
-  su2double **coords = new su2double *[nZone];
-  for (iZone = 0; iZone < nZone; iZone++) {
-    coords[iZone] = new su2double [nDim];
-  }
-  
-  /*--- allocate dynamic memory for vectors of Fourier coefficients ---*/
-  su2double *a_coeffs = new su2double [highest_degree+1];
-  su2double *b_coeffs = new su2double [highest_degree+1];
-  
-  /*--- allocate dynamic memory for the interpolated positions and velocities ---*/
-  su2double *fitted_coords = new su2double [nZone];
-  su2double *fitted_velocities = new su2double [nZone];
-  
-  /*--- Loop over all grid levels ---*/
-  for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-    
-    /*--- Loop over each node in the volume mesh ---*/
-    for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-      
-      /*--- Populate the 2D coords array with the
-       coordinates of a given mesh point across
-       the time instances (i.e. the Zones) ---*/
-      /*--- Loop over each zone ---*/
-      for (iZone = 0; iZone < nZone; iZone++) {
-        /*--- get the coordinates of the given point ---*/
-        Coord = geometry_container[iZone][iMGlevel]->node[iPoint]->GetCoord();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          /*--- add them to the appropriate place in the 2D coords array ---*/
-          coords[iZone][iDim] = Coord[iDim];
-        }
-      }
-      
-      /*--- Loop over each Dimension ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        
-        /*--- compute the Fourier coefficients ---*/
-        for (jDegree = 0; jDegree < highest_degree+1; jDegree++) {
-          a_coeffs[jDegree] = 0;
-          b_coeffs[jDegree] = 0;
-          for (iZone = 0; iZone < nZone; iZone++) {
-            a_coeffs[jDegree] = a_coeffs[jDegree] + (2.0/(su2double)nZone)*cos(jDegree*angular_positions[iZone])*coords[iZone][iDim];
-            b_coeffs[jDegree] = b_coeffs[jDegree] + (2.0/(su2double)nZone)*sin(jDegree*angular_positions[iZone])*coords[iZone][iDim];
-          }
-        }
-        
-        /*--- find the interpolation of the coordinates and its derivative (the velocities) ---*/
-        for (iZone = 0; iZone < nZone; iZone++) {
-          fitted_coords[iZone] = a_coeffs[0]/2.0;
-          fitted_velocities[iZone] = 0.0;
-          for (jDegree = 1; jDegree < highest_degree+1; jDegree++) {
-            fitted_coords[iZone] = fitted_coords[iZone] + a_coeffs[jDegree]*cos(jDegree*angular_positions[iZone]) + b_coeffs[jDegree]*sin(jDegree*angular_positions[iZone]);
-            fitted_velocities[iZone] = fitted_velocities[iZone] + (angular_interval/deltaT)*jDegree*(b_coeffs[jDegree]*cos(jDegree*angular_positions[iZone]) - a_coeffs[jDegree]*sin(jDegree*angular_positions[iZone]));
-          }
-        }
-        
-        /*--- Store grid velocity for this point, at this given dimension, across the Zones ---*/
-        for (iZone = 0; iZone < nZone; iZone++) {
-          geometry_container[iZone][iMGlevel]->node[iPoint]->SetGridVel(iDim, fitted_velocities[iZone]);
-        }
-      }
-    }
-  }
-  
-  /*--- delete dynamic memory for the abscissas, coefficients, et cetera ---*/
-  delete [] angular_positions;
-  delete [] a_coeffs;
-  delete [] b_coeffs;
-  delete [] fitted_coords;
-  delete [] fitted_velocities;
-  for (iZone = 0; iZone < nZone; iZone++) {
-    delete [] coords[iZone];
-  }
-  delete [] coords;
-  
-}
+
 
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
