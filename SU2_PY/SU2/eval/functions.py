@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.2.0 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -77,11 +79,17 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     
+    # check for multiple objectives
+    multi_objective = (type(func_name)==list)
+    # func_name_string is only used to check whether the function has already been evaluated. 
+    func_name_string = func_name
+    if multi_objective:   func_name_string = func_name[0]  
+
     # redundancy check
-    if not state['FUNCTIONS'].has_key(func_name):
-        
+    if not state['FUNCTIONS'].has_key(func_name_string):
+
         # Aerodynamics
-        if func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
+        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
             aerodynamics( config, state )
             
         # Stability
@@ -96,12 +104,21 @@ def function( func_name, config, state=None ):
             raise Exception, 'unknown function name, %s' % func_name
         
     #: if not redundant
-    
+
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
+    elif (multi_objective):
+        # If combine_objective is true, use the 'combo' output.
+        objectives=config.OPT_OBJECTIVE
+        func_out = 0.0
+        for func in func_name:
+            sign = su2io.get_objectiveSign(func)
+            func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
+        state['FUNCTIONS']['COMBO'] = func_out
     else:
         func_out = state['FUNCTIONS'][func_name]
+        
     
     return copy.deepcopy(func_out)
 
@@ -249,7 +266,7 @@ def aerodynamics( config, state=None ):
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             
-    if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':    
+    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:    
         import downstream_function
         state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
 

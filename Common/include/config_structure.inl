@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -39,15 +41,179 @@ inline void CConfig::SetInflow_Mach(unsigned short val_imarker, su2double val_fa
 
 inline void CConfig::SetInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure) { Inflow_Pressure[val_imarker] = val_fanface_pressure; }
 
-inline void CConfig::SetBleed_Temperature(unsigned short val_imarker, su2double val_bleed_temp) { Bleed_Temperature[val_imarker] = val_bleed_temp; }
+inline void CConfig::SetInflow_MassFlow(unsigned short val_imarker, su2double val_fanface_massflow) { Inflow_MassFlow[val_imarker] = val_fanface_massflow; }
 
-inline void CConfig::SetBleed_MassFlow(unsigned short val_imarker, su2double val_bleed_massflow) { Bleed_MassFlow[val_imarker] = val_bleed_massflow; }
+inline void CConfig::SetInflow_ReverseMassFlow(unsigned short val_imarker, su2double val_fanface_reversemassflow) { Inflow_ReverseMassFlow[val_imarker] = val_fanface_reversemassflow; }
 
-inline void CConfig::SetBleed_Pressure(unsigned short val_imarker, su2double val_bleed_pressure) { Bleed_Pressure[val_imarker] = val_bleed_pressure; }
+inline void CConfig::SetInflow_TotalPressure(unsigned short val_imarker, su2double val_fanface_totalpressure) { Inflow_TotalPressure[val_imarker] = val_fanface_totalpressure; }
+
+inline void CConfig::SetInflow_Temperature(unsigned short val_imarker, su2double val_fanface_temperature) { Inflow_Temperature[val_imarker] = val_fanface_temperature; }
+
+inline void CConfig::SetInflow_TotalTemperature(unsigned short val_imarker, su2double val_fanface_totaltemperature) { Inflow_TotalTemperature[val_imarker] = val_fanface_totaltemperature; }
+
+inline void CConfig::SetInflow_RamDrag(unsigned short val_imarker, su2double val_fanface_ramdrag) { Inflow_RamDrag[val_imarker] = val_fanface_ramdrag; }
+
+inline void CConfig::SetInflow_Force(unsigned short val_imarker, su2double val_fanface_force) { Inflow_Force[val_imarker] = val_fanface_force; }
+
+inline void CConfig::SetInflow_Power(unsigned short val_imarker, su2double val_fanface_power) { Inflow_Power[val_imarker] = val_fanface_power; }
+
+inline su2double CConfig::GetInflow_ReverseMassFlow(unsigned short val_imarker) { return Inflow_ReverseMassFlow[val_imarker]; }
 
 inline void CConfig::SetExhaust_Pressure(unsigned short val_imarker, su2double val_exhaust_pressure) { Exhaust_Pressure[val_imarker] = val_exhaust_pressure; }
 
 inline void CConfig::SetExhaust_Temperature(unsigned short val_imarker, su2double val_exhaust_temp) { Exhaust_Temperature[val_imarker] = val_exhaust_temp; }
+
+inline void CConfig::SetExhaust_MassFlow(unsigned short val_imarker, su2double val_exhaust_massflow) { Exhaust_MassFlow[val_imarker] = val_exhaust_massflow; }
+
+inline void CConfig::SetExhaust_TotalPressure(unsigned short val_imarker, su2double val_exhaust_totalpressure) { Exhaust_TotalPressure[val_imarker] = val_exhaust_totalpressure; }
+
+inline void CConfig::SetExhaust_TotalTemperature(unsigned short val_imarker, su2double val_exhaust_totaltemp) { Exhaust_TotalTemperature[val_imarker] = val_exhaust_totaltemp; }
+
+inline void CConfig::SetExhaust_GrossThrust(unsigned short val_imarker, su2double val_exhaust_grossthrust) { Exhaust_GrossThrust[val_imarker] = val_exhaust_grossthrust; }
+
+inline void CConfig::SetExhaust_Force(unsigned short val_imarker, su2double val_exhaust_force) { Exhaust_Force[val_imarker] = val_exhaust_force; }
+
+inline void CConfig::SetExhaust_Power(unsigned short val_imarker, su2double val_exhaust_power) { Exhaust_Power[val_imarker] = val_exhaust_power; }
+
+inline void CConfig::SetEngine_Mach(unsigned short val_imarker, su2double val_engine_mach) { Engine_Mach[val_imarker] = val_engine_mach; }
+
+inline void CConfig::SetEngine_Force(unsigned short val_imarker, su2double val_engine_force) { Engine_Force[val_imarker] = val_engine_force; }
+
+inline void CConfig::SetEngine_Power(unsigned short val_imarker, su2double val_engine_power) { Engine_Power[val_imarker] = val_engine_power; }
+
+inline void CConfig::SetEngine_NetThrust(unsigned short val_imarker, su2double val_engine_netthrust) { Engine_NetThrust[val_imarker] = val_engine_netthrust; }
+
+inline void CConfig::SetEngine_GrossThrust(unsigned short val_imarker, su2double val_engine_grossthrust) { Engine_GrossThrust[val_imarker] = val_engine_grossthrust; }
+
+inline void CConfig::SetEngine_Area(unsigned short val_imarker, su2double val_engine_area) { Engine_Area[val_imarker] = val_engine_area; }
+
+inline void CConfig::SetActDisk_DeltaPress(unsigned short val_imarker, su2double val_actdisk_deltapress) { ActDisk_DeltaPress[val_imarker] = val_actdisk_deltapress; }
+
+inline void CConfig::SetActDisk_Power(unsigned short val_imarker, su2double val_actdisk_power) { ActDisk_Power[val_imarker] = val_actdisk_power; }
+
+inline void CConfig::SetActDisk_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow) { ActDisk_MassFlow[val_imarker] = val_actdisk_massflow; }
+
+inline void CConfig::SetActDisk_Mach(unsigned short val_imarker, su2double val_actdisk_mach) { ActDisk_Mach[val_imarker] = val_actdisk_mach; }
+
+inline void CConfig::SetActDisk_Force(unsigned short val_imarker, su2double val_actdisk_force) { ActDisk_Force[val_imarker] = val_actdisk_force; }
+
+inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion) { Surface_DC60[val_imarker] = val_surface_distortion; }
+
+inline void CConfig::SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow) { Surface_MassFlow[val_imarker] = val_surface_massflow; }
+
+inline void CConfig::SetSurface_IDC(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC[val_imarker] = val_surface_distortion; }
+
+inline void CConfig::SetSurface_IDC_Mach(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDC_Mach[val_imarker] = val_surface_distortion; }
+
+inline void CConfig::SetSurface_IDR(unsigned short val_imarker, su2double val_surface_distortion) { Surface_IDR[val_imarker] = val_surface_distortion; }
+
+inline void CConfig::SetActDisk_DeltaTemp(unsigned short val_imarker, su2double val_actdisk_deltatemp) { ActDisk_DeltaTemp[val_imarker] = val_actdisk_deltatemp; }
+
+inline void CConfig::SetActDisk_TotalPressRatio(unsigned short val_imarker, su2double val_actdisk_pressratio) { ActDisk_TotalPressRatio[val_imarker] = val_actdisk_pressratio; }
+
+inline void CConfig::SetActDisk_TotalTempRatio(unsigned short val_imarker, su2double val_actdisk_tempratio) { ActDisk_TotalTempRatio[val_imarker] = val_actdisk_tempratio; }
+
+inline void CConfig::SetActDisk_StaticPressRatio(unsigned short val_imarker, su2double val_actdisk_pressratio) { ActDisk_StaticPressRatio[val_imarker] = val_actdisk_pressratio; }
+
+inline void CConfig::SetActDisk_StaticTempRatio(unsigned short val_imarker, su2double val_actdisk_tempratio) { ActDisk_StaticTempRatio[val_imarker] = val_actdisk_tempratio; }
+
+inline void CConfig::SetActDisk_NetThrust(unsigned short val_imarker, su2double val_actdisk_netthrust) { ActDisk_NetThrust[val_imarker] = val_actdisk_netthrust; }
+
+inline void CConfig::SetActDisk_BCThrust(unsigned short val_imarker, su2double val_actdisk_bcthrust) { ActDisk_BCThrust[val_imarker] = val_actdisk_bcthrust; }
+
+inline void CConfig::SetActDisk_BCThrust_Old(unsigned short val_imarker, su2double val_actdisk_bcthrust_old) { ActDisk_BCThrust_Old[val_imarker] = val_actdisk_bcthrust_old; }
+
+inline void CConfig::SetActDisk_GrossThrust(unsigned short val_imarker, su2double val_actdisk_grossthrust) { ActDisk_GrossThrust[val_imarker] = val_actdisk_grossthrust; }
+
+inline void CConfig::SetActDisk_Area(unsigned short val_imarker, su2double val_actdisk_area) { ActDisk_Area[val_imarker] = val_actdisk_area; }
+
+inline void CConfig::SetActDiskInlet_ReverseMassFlow(unsigned short val_imarker, su2double val_actdisk_area) { ActDisk_ReverseMassFlow[val_imarker] = val_actdisk_area; }
+
+inline su2double CConfig::GetActDisk_DeltaPress(unsigned short val_imarker) { return ActDisk_DeltaPress[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_DeltaTemp(unsigned short val_imarker) { return ActDisk_DeltaTemp[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_TotalPressRatio(unsigned short val_imarker) { return ActDisk_TotalPressRatio[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_TotalTempRatio(unsigned short val_imarker) { return ActDisk_TotalTempRatio[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_StaticPressRatio(unsigned short val_imarker) { return ActDisk_StaticPressRatio[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_StaticTempRatio(unsigned short val_imarker) { return ActDisk_StaticTempRatio[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_Power(unsigned short val_imarker) { return ActDisk_Power[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_MassFlow(unsigned short val_imarker) { return ActDisk_MassFlow[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_Mach(unsigned short val_imarker) { return ActDisk_Mach[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_Force(unsigned short val_imarker) { return ActDisk_Force[val_imarker]; }
+
+inline su2double CConfig::GetSurface_MassFlow(unsigned short val_imarker) { return Surface_MassFlow[val_imarker]; }
+
+inline su2double CConfig::GetSurface_DC60(unsigned short val_imarker) { return Surface_DC60[val_imarker]; }
+
+inline su2double CConfig::GetSurface_IDC(unsigned short val_imarker) { return Surface_IDC[val_imarker]; }
+
+inline su2double CConfig::GetSurface_IDC_Mach(unsigned short val_imarker) { return Surface_IDC_Mach[val_imarker]; }
+
+inline su2double CConfig::GetSurface_IDR(unsigned short val_imarker) { return Surface_IDR[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_NetThrust(unsigned short val_imarker) { return ActDisk_NetThrust[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_BCThrust(unsigned short val_imarker) { return ActDisk_BCThrust[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_BCThrust_Old(unsigned short val_imarker) { return ActDisk_BCThrust_Old[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_GrossThrust(unsigned short val_imarker) { return ActDisk_GrossThrust[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_Area(unsigned short val_imarker) { return ActDisk_Area[val_imarker]; }
+
+inline su2double CConfig::GetActDisk_ReverseMassFlow(unsigned short val_imarker) { return ActDisk_ReverseMassFlow[val_imarker]; }
+
+inline void CConfig::SetActDiskInlet_Pressure(unsigned short val_imarker, su2double val_actdisk_press) { ActDiskInlet_Pressure[val_imarker] = val_actdisk_press; }
+
+inline void CConfig::SetActDiskInlet_TotalPressure(unsigned short val_imarker, su2double val_actdisk_totalpress) { ActDiskInlet_TotalPressure[val_imarker] = val_actdisk_totalpress; }
+
+inline void CConfig::SetActDiskInlet_RamDrag(unsigned short val_imarker, su2double val_actdisk_ramdrag) { ActDiskInlet_RamDrag[val_imarker] = val_actdisk_ramdrag; }
+
+inline void CConfig::SetActDiskInlet_Force(unsigned short val_imarker, su2double val_actdisk_force) { ActDiskInlet_Force[val_imarker] = val_actdisk_force; }
+
+inline void CConfig::SetActDiskInlet_Power(unsigned short val_imarker, su2double val_actdisk_power) { ActDiskInlet_Power[val_imarker] = val_actdisk_power; }
+
+inline void CConfig::SetActDiskInlet_Temperature(unsigned short val_imarker, su2double val_actdisk_temp) { ActDiskInlet_Temperature[val_imarker] = val_actdisk_temp; }
+
+inline void CConfig::SetActDiskInlet_TotalTemperature(unsigned short val_imarker, su2double val_actdisk_totaltemp) { ActDiskInlet_TotalTemperature[val_imarker] = val_actdisk_totaltemp; }
+
+inline void CConfig::SetActDiskInlet_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow) { ActDiskInlet_MassFlow[val_imarker] = val_actdisk_massflow; }
+
+inline void CConfig::SetActDiskOutlet_Pressure(unsigned short val_imarker, su2double val_actdisk_press) { ActDiskOutlet_Pressure[val_imarker] = val_actdisk_press; }
+
+inline void CConfig::SetActDiskOutlet_TotalPressure(unsigned short val_imarker, su2double val_actdisk_totalpress) { ActDiskOutlet_TotalPressure[val_imarker] = val_actdisk_totalpress; }
+
+inline void CConfig::SetActDiskOutlet_GrossThrust(unsigned short val_imarker, su2double val_actdisk_grossthrust) { ActDiskOutlet_GrossThrust[val_imarker] = val_actdisk_grossthrust; }
+
+inline void CConfig::SetActDiskOutlet_Force(unsigned short val_imarker, su2double val_actdisk_force) { ActDiskOutlet_Force[val_imarker] = val_actdisk_force; }
+
+inline void CConfig::SetActDiskOutlet_Power(unsigned short val_imarker, su2double val_actdisk_power) { ActDiskOutlet_Power[val_imarker] = val_actdisk_power; }
+
+inline void CConfig::SetActDiskOutlet_Temperature(unsigned short val_imarker, su2double val_actdisk_temp) { ActDiskOutlet_Temperature[val_imarker] = val_actdisk_temp; }
+
+inline void CConfig::SetActDiskOutlet_TotalTemperature(unsigned short val_imarker, su2double val_actdisk_totaltemp) { ActDiskOutlet_TotalTemperature[val_imarker] = val_actdisk_totaltemp; }
+
+inline void CConfig::SetActDiskOutlet_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow) { ActDiskOutlet_MassFlow[val_imarker] = val_actdisk_massflow; }
+
+inline su2double CConfig::GetEngine_Mach(unsigned short val_imarker) { return Engine_Mach[val_imarker]; }
+
+inline su2double CConfig::GetEngine_Force(unsigned short val_imarker) { return Engine_Force[val_imarker]; }
+
+inline su2double CConfig::GetEngine_Power(unsigned short val_imarker) { return Engine_Power[val_imarker]; }
+
+inline su2double CConfig::GetEngine_NetThrust(unsigned short val_imarker) { return Engine_NetThrust[val_imarker]; }
+
+inline su2double CConfig::GetEngine_GrossThrust(unsigned short val_imarker) { return Engine_GrossThrust[val_imarker]; }
+
+inline su2double CConfig::GetEngine_Area(unsigned short val_imarker) { return Engine_Area[val_imarker]; }
 
 inline unsigned short CConfig::GetnZone(void) { return nZone; }
 
@@ -67,7 +233,7 @@ inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
 
-inline su2double CConfig::GetTimeSpectral_Period(void) { return TimeSpectral_Period; }
+inline su2double CConfig::GetHarmonicBalance_Period(void) { return HarmonicBalance_Period; }
 
 inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
@@ -103,7 +269,11 @@ inline su2double CConfig::GetAdjointLimit(void) { return AdjointLimit; }
 
 inline su2double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed_Coord; }
 
-inline su2double *CConfig::GetSubsonic_Engine_Box(void) { return Subsonic_Engine_Box; }
+inline su2double *CConfig::GetSubsonicEngine_Cyl(void) { return SubsonicEngine_Cyl; }
+
+inline su2double *CConfig::GetSubsonicEngine_Values(void) { return SubsonicEngine_Values; }
+
+inline su2double *CConfig::GetDistortionRack(void) { return DistortionRack; }
 
 inline su2double CConfig::GetRatioDensity(void) { return RatioDensity; }
 
@@ -225,6 +395,10 @@ inline su2double CConfig::GetViscosity_Ref(void) { return Viscosity_Ref; }
 
 inline su2double CConfig::GetConductivity_Ref(void) { return Conductivity_Ref; }
 
+inline su2double CConfig::GetHighlite_Area(void) { return Highlite_Area; }
+
+inline su2double CConfig::GetFan_Poly_Eff(void) { return Fan_Poly_Eff; }
+
 inline su2double CConfig::GetOmega_Ref(void) { return Omega_Ref; }
 
 inline su2double CConfig::GetForce_Ref(void) { return Force_Ref; }
@@ -254,6 +428,14 @@ inline su2double CConfig::GetOmega_FreeStream(void) { return Omega_FreeStream; }
 inline su2double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStream; }
 
 inline su2double CConfig::GetNuFactor_Engine(void) { return NuFactor_Engine; }
+
+inline su2double CConfig::GetNuFactor_ActDisk(void) { return NuFactor_ActDisk; }
+
+inline su2double CConfig::GetSecondaryFlow_ActDisk(void) { return SecondaryFlow_ActDisk; }
+
+inline su2double CConfig::GetInitial_BCThrust(void) { return Initial_BCThrust; }
+
+inline void CConfig::SetInitial_BCThrust(su2double val_bcthrust) { Initial_BCThrust = val_bcthrust; }
 
 inline su2double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
 
@@ -451,8 +633,6 @@ inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 
 inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }
 
-inline bool CConfig::GetIonization(void) { return ionization; }
-
 inline unsigned short CConfig::GetKind_Solver(void) { return Kind_Solver; }
 
 inline void CConfig::SetKind_Solver(unsigned short val_solver) { Kind_Solver = val_solver; }
@@ -558,6 +738,8 @@ inline su2double CConfig::GetPlunging_Ampl_X(unsigned short val_iZone) { return 
 inline su2double CConfig::GetPlunging_Ampl_Y(unsigned short val_iZone) { return  Plunging_Ampl_Y[val_iZone]; }
 
 inline su2double CConfig::GetPlunging_Ampl_Z(unsigned short val_iZone) { return  Plunging_Ampl_Z[val_iZone]; }
+
+inline su2double* CConfig::GetOmega_HB(void) { return  Omega_HB; }
 
 inline unsigned short CConfig::GetMoveMotion_Origin(unsigned short val_marker) {return MoveMotion_Origin[val_marker]; }
 
@@ -727,6 +909,10 @@ inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
+inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_Inflow; }
+
+inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
+
 inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingProcess; }
 
 inline bool CConfig::GetBoolMixingPlane(void) { return (nMarker_MixBound !=0);}
@@ -753,7 +939,13 @@ inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
 
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
-inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
+inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc[0]; }
+
+inline unsigned short CConfig::GetKind_ObjFunc(unsigned short val_obj) {return Kind_ObjFunc[val_obj]; }
+
+inline su2double CConfig::GetWeight_ObjFunc(unsigned short val_obj) {return Weight_ObjFunc[val_obj]; }
+
+inline void CConfig::SetWeight_ObjFunc(unsigned short val_obj, su2double val) {Weight_ObjFunc[val_obj] = val; }
 
 inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) {return Obj_ChainRuleCoeff[iVar]; }
 
@@ -775,24 +967,23 @@ inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = 
 
 inline string CConfig::GetMarker_All_TagBound(unsigned short val_marker) { return Marker_All_TagBound[val_marker]; }
 
-inline string CConfig::GetMarker_ActDisk_Inlet(unsigned short val_marker) { return Marker_ActDisk_Inlet[val_marker]; }
+inline string CConfig::GetMarker_ActDiskInlet_TagBound(unsigned short val_marker) { return Marker_ActDiskInlet[val_marker]; }
 
-inline string CConfig::GetMarker_ActDisk_Outlet(unsigned short val_marker) { return Marker_ActDisk_Outlet[val_marker]; }
+inline string CConfig::GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker) { return Marker_ActDiskOutlet[val_marker]; }
 
-inline string CConfig::GetMarker_EngineInflow(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
+inline string CConfig::GetMarker_EngineInflow_TagBound(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
-inline string CConfig::GetMarker_EngineBleed(unsigned short val_marker) { return Marker_EngineBleed[val_marker]; }
+inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
 
-inline string CConfig::GetMarker_EngineExhaust(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
+inline string CConfig::GetMarker_Monitoring_TagBound(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
 
-inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
+inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
-inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
+inline string CConfig::GetMarker_Analyze_TagBound(unsigned short val_marker) { return Marker_Analyze[val_marker]; }
 
 inline short CConfig::GetMarker_All_TagBound(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
-		if (val_tag == Marker_All_TagBound[iMarker])
-		return iMarker; 
+		if (val_tag == Marker_All_TagBound[iMarker]) return iMarker;
 	}
 	return -1;
 }
@@ -810,6 +1001,8 @@ inline void CConfig::SetMarker_All_GeoEval(unsigned short val_marker, unsigned s
 inline void CConfig::SetMarker_All_Designing(unsigned short val_marker, unsigned short val_designing) { Marker_All_Designing[val_marker] = val_designing; }
 
 inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned short val_plotting) { Marker_All_Plotting[val_marker] = val_plotting; }
+
+inline void CConfig::SetMarker_All_Analyze(unsigned short val_marker, unsigned short val_analyze) { Marker_All_Analyze[val_marker] = val_analyze; }
 
 inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
 
@@ -837,6 +1030,8 @@ inline void CConfig::SetMarker_All_SendRecv(unsigned short val_marker, short val
 
 inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker) { return Marker_All_Plotting[val_marker]; }
 
+inline unsigned short CConfig::GetMarker_All_Analyze(unsigned short val_marker) { return Marker_All_Analyze[val_marker]; }
+
 inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
@@ -851,8 +1046,6 @@ inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }
 
-inline unsigned short CConfig::GetnMarker_EngineBleed(void) {	return nMarker_EngineBleed; }
-
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
 inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
@@ -863,11 +1056,15 @@ inline unsigned short CConfig::GetnMarker_Out_1D(void) { return nMarker_Out_1D; 
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
+inline unsigned short CConfig::GetnMarker_Analyze(void) { return nMarker_Analyze; }
+
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 
-inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_ActDisk_Inlet; }
+inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }
 
-inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
+inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
+
+inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
@@ -876,6 +1073,8 @@ inline string CConfig::GetMesh_Out_FileName(void) { return Mesh_Out_FileName; }
 inline unsigned short CConfig::GetMesh_FileFormat(void) { return Mesh_FileFormat; }
 
 inline unsigned short CConfig::GetOutput_FileFormat(void) { return Output_FileFormat; }
+
+inline unsigned short CConfig::GetActDisk_Jump(void) { return ActDisk_Jump; }
 
 inline string CConfig::GetConv_FileName(void) { return Conv_FileName; }
 
@@ -953,7 +1152,11 @@ inline void CConfig::SetDelta_UnstTimeND(su2double val_delta_unsttimend) { Delta
 
 inline su2double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
 
-inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
+inline bool CConfig::GetSubsonicEngine(void) { return SubsonicEngine; }
+
+inline bool CConfig::GetActDisk_DoubleSurface(void) { return ActDisk_DoubleSurface; }
+
+inline bool CConfig::GetActDisk_SU2_DEF(void) { return ActDisk_SU2_DEF; }
 
 inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_value) { return DV_Value[val_dv][val_value]; }
 
@@ -964,8 +1167,6 @@ inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 inline su2double CConfig::GetMinLogResidual(void) { return MinLogResidual; }
 
 inline su2double CConfig::GetDamp_Engine_Inflow(void) { return Damp_Engine_Inflow; }
-
-inline su2double CConfig::GetDamp_Engine_Bleed(void) { return Damp_Engine_Bleed; }
 
 inline su2double CConfig::GetDamp_Engine_Exhaust(void) { return Damp_Engine_Exhaust; }
 
@@ -986,8 +1187,6 @@ inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }
 
 inline bool CConfig::GetAxisymmetric(void) { return Axisymmetric; }
-
-inline bool CConfig::GetDebugMode(void) { return DebugMode; }
 
 inline bool CConfig::GetAdaptBoundary(void) { return AdaptBoundary; }
 
@@ -1129,6 +1328,8 @@ inline long CConfig::GetVisualize_CV(void) {return Visualize_CV; }
 
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
+inline unsigned long CConfig::GetIter_Fixed_NetThrust(void) {return Iter_Fixed_NetThrust; }
+
 inline su2double CConfig::GetTarget_CL(void) {return Target_CL; }
 
 inline su2double CConfig::GetdCl_dAlpha(void) {return dCl_dAlpha; }
@@ -1137,7 +1338,15 @@ inline unsigned long CConfig::GetIter_Fixed_CL(void) {return Iter_Fixed_CL; }
 
 inline bool CConfig::GetUpdate_AoA(void) { return Update_AoA; }
 
+inline bool CConfig::GetUpdate_BCThrust_Bool(void) { return Update_BCThrust_Bool; }
+
 inline void CConfig::SetUpdate_AoA(bool val_update) { Update_AoA = val_update; }
+
+inline unsigned long CConfig::GetUpdate_BCThrust(void) {return Update_BCThrust; }
+
+inline void CConfig::SetUpdate_BCThrust_Bool(bool val_update) { Update_BCThrust_Bool = val_update; }
+
+inline su2double CConfig::GetdNetThrust_dBCThrust(void) {return dNetThrust_dBCThrust; }
 
 inline void CConfig::SetNonphysical_Points(unsigned long val_nonphys_points) { Nonphys_Points = val_nonphys_points; }
 
@@ -1217,7 +1426,7 @@ inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 
-inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
+inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
 

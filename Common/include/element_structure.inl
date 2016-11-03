@@ -2,7 +2,7 @@
  * \file element_structure.inl
  * \brief In-Line subroutines of the <i>element_structure.hpp</i> file.
  * \author R. Sanchez
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -63,13 +65,13 @@ inline su2double CElement::GetElement_Pressure(void) {return el_Pressure;}
 
 inline su2double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
 
-inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){ return Kab[nodeA][nodeB];}
+inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB) { return Kab[nodeA][nodeB];}
 
-inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
+inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB) { return Kk_ab[nodeA][nodeB];}
 
-inline su2double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
+inline su2double *CElement::Get_Kt_a(unsigned short nodeA) { return Kt_a[nodeA];}
 
-inline su2double *CElement::Get_FDL_a(unsigned short nodeA){ return FDL_a[nodeA];}
+inline su2double *CElement::Get_FDL_a(unsigned short nodeA) { return FDL_a[nodeA];}
 
 inline su2double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
 
@@ -95,9 +97,9 @@ inline su2double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWei
 
 inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
 
-inline void CElement::ComputeGrad_Pressure(void){ }
+inline void CElement::ComputeGrad_Pressure(void) { }
 
-inline void CQUAD4::ComputeGrad_Pressure(void){ }
+inline void CQUAD4::ComputeGrad_Pressure(void) { }
 
-inline void CHEXA8::ComputeGrad_Pressure(void){ }
+inline void CHEXA8::ComputeGrad_Pressure(void) { }
 
