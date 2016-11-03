@@ -133,10 +133,11 @@ class Interface:
 
         self.MappingMatrix = None			#interpolation/mapping matrix for meshes interpolation/mapping
 
-	self.aitkenParam = float()			#relaxation parameter for the BGS method
+	self.aitkenParam = FSI_config['AITKEN_PARAM']			#relaxation parameter for the BGS method
 	self.FSIIter = 0				#current FSI iteration
 	self.nDim = FSI_config['NDIM']			#problem dimension
 	self.Center = [0,0,0]				#in case of rigid body structural model, one can track the rotation center
+        self.unsteady = False
 
 	# ---Some screen output ---
 	self.MPIPrint('Fluid solver : SU2_CFD')
@@ -144,6 +145,7 @@ class Interface:
 
 	if FSI_config['UNSTEADY_SIMULATION'] == 'YES':
           self.MPIPrint('Unsteady coupled simulation with physical time step : {} s'.format(FSI_config['UNST_TIMESTEP']))
+          self.unsteady = True
 	else:
 	  self.MPIPrint('Steady coupled simulation')
 
@@ -699,10 +701,10 @@ class Interface:
           NodeA = np.array([posX, posY, posZ])
           NodeB = np.array([solidInterfaceBuffRcv_X[jVertexSolid], solidInterfaceBuffRcv_Y[jVertexSolid], solidInterfaceBuffRcv_Z[jVertexSolid]])
           distance = spdist.euclidean(NodeA, NodeB)
-          if distance > 1e-10:
-            print('Tolerance for matching meshes is not matched !')
           iGlobalVertexFluid = self.__getGlobalIndex('fluid', myid, iVertexFluid)
           jGlobalVertexSolid = self.__getGlobalIndex('solid', iProc, jVertexSolid)
+          if distance > 1e-6:
+            print("WARNING : Tolerance for matching meshes is not matched between node F{} and S{} : ({}, {}, {})<-->({}, {}, {}) , DISTANCE : {} !".format(iGlobalVertexFluid,jGlobalVertexSolid,posX, posY, posZ,solidInterfaceBuffRcv_X[jVertexSolid], solidInterfaceBuffRcv_Y[jVertexSolid], solidInterfaceBuffRcv_Z[jVertexSolid], distance))
           #print("DEBUG MESSAGE From proc {} : Local fluid : {} , Global fluid : {}".format(myid, iVertexFluid, iGlobalVertexFluid))
           #print("DEBUG MESSAGE From proc {} : Local solid : {} , Global solid : {}".format(myid, jVertexSolid, jGlobalVertexSolid))
           #print("DEBUG MESSAGE From Proc {} with globalFluid = {}-({},{},{}) and globalSolid = {}-({},{},{}) ".format(myid, iGlobalVertexFluid, posX, posY, posZ, jGlobalVertexSolid,solidInterfaceBuffRcv_X[jVertexSolid], solidInterfaceBuffRcv_Y[jVertexSolid], solidInterfaceBuffRcv_Z[jVertexSolid] ))
@@ -1025,11 +1027,12 @@ class Interface:
               FluidSolver.SetVertexCoordZ(self.fluidInterfaceIdentifier, iVertex, self.localFluidInterface_array_Z[localIndex])
               localIndex += 1
             # Prepares the mesh deformation in the fluid solver
-	    nodalVarCoordNorm = FluidSolver.SetVertexVarCoord(self.fluidInterfaceIdentifier, iVertex)		
+	    nodalVarCoordNorm = FluidSolver.SetVertexVarCoord(self.fluidInterfaceIdentifier, iVertex)
+            #print nodalVarCoordNorm		
 
 	    
 
-    def setSolidInterfaceLoads(self, SolidSolver, FSI_config):
+    def setSolidInterfaceLoads(self, SolidSolver, FSI_config, time):
 	"""
 	Communicates the new solid interface loads to the solid solver.
 	In case of rigid body motion, calculates the new resultant forces (lift, drag, ...).
@@ -1093,7 +1096,7 @@ class Interface:
 	        Fx = self.localSolidLoads_array_X[localIndex]
 	        Fy = self.localSolidLoads_array_Y[localIndex]
 		Fz = self.localSolidLoads_array_Z[localIndex]
-	        SolidSolver.applyload(iVertex, Fx, Fy, Fz)
+	        SolidSolver.applyload(iVertex, Fx, Fy, Fz, time)
                 localIndex += 1
 
     def computeSolidInterfaceResidual(self, SolidSolver):
@@ -1153,6 +1156,14 @@ class Interface:
         normInterfaceResidual_Y = self.solidInterfaceResidual_array_Y.norm()
         normInterfaceResidual_Z = self.solidInterfaceResidual_array_Z.norm()
 
+        #print("DEBUG MESSAGE FROM PROC {} : NormInterfaceResidual_X = {}".format(myid, normInterfaceResidual_X))
+        #print("DEBUG MESSAGE FROM PROC {} : NormInterfaceResidual_Y = {}".format(myid, normInterfaceResidual_Y))
+        #print("DEBUG MESSAGE FROM PROC {} : NormInterfaceResidual_Z = {}".format(myid, normInterfaceResidual_Z))
+        #if myid == 0:
+        #  print predPos_array_X.getArray()
+        #  print "*************"
+        #  print self.solidInterface_array_X.getArray()
+
         normInterfaceResidualSquare = normInterfaceResidual_X**2 + normInterfaceResidual_Y**2 + normInterfaceResidual_Z**2
 
         predPos_array_X.destroy()
@@ -1200,7 +1211,7 @@ class Interface:
 	
         # --- Create the PETSc vector for the difference between the residuals (current and previous FSI iter) ---
 	if self.FSIIter == 0:
-	    self.aitkenParam = FSI_config['AITKEN_PARAM']
+	    self.aitkenParam = max(FSI_config['AITKEN_PARAM'], self.aitkenParam)
 	else:
             if self.have_MPI:
               deltaResx_array_X = PETSc.Vec().create(self.comm)
@@ -1233,9 +1244,9 @@ class Interface:
             prodScalRes_Z = deltaResx_array_Z.dot(self.solidInterfaceResidualnM1_array_Z)
             prodScalRes = prodScalRes_X + prodScalRes_Y + prodScalRes_Z
 
-            deltaResNormSquare_X = deltaResx_array_X.norm()
-            deltaResNormSquare_Y = deltaResx_array_Y.norm()
-            deltaResNormSquare_Z = deltaResx_array_Z.norm()
+            deltaResNormSquare_X = (deltaResx_array_X.norm())**2
+            deltaResNormSquare_Y = (deltaResx_array_Y.norm())**2
+            deltaResNormSquare_Z = (deltaResx_array_Z.norm())**2
 	    deltaResNormSquare = deltaResNormSquare_X + deltaResNormSquare_Y + deltaResNormSquare_Z
 
 	    self.aitkenParam *= -prodScalRes/deltaResNormSquare
@@ -1246,6 +1257,9 @@ class Interface:
             del deltaResx_array_X
             del deltaResx_array_Y
             del deltaResx_array_Z
+
+        self.aitkenParam = min(self.aitkenParam, 1.0)
+        self.aitkenParam = max(self.aitkenParam, 0.0)
 
         # --- Update the value of the residual for the next FSI iteration ---
         self.solidInterfaceResidual_array_X.copy(self.solidInterfaceResidualnM1_array_X)
@@ -1374,18 +1388,28 @@ class Interface:
           myid = self.comm.Get_rank()
         else:
           myid = 0
-	
+        
         if myid == self.rootProcess:
-	  if TimeIter == 0:
+          if self.unsteady:	
+	    if TimeIter == 0:
 	      histFile = open('FSIhistory.dat', "w")
               histFile.write("TimeIter\tTime\tFSIRes\tFSINbIter\n")
-	  else:
+	    else:
 	      histFile = open('FSIhistory.dat', "a")
-	  if FSIConv:
+	    if FSIConv:
 	      histFile.write(str(TimeIter) + '\t' + str(time) + '\t' + str(varCoordNorm) + '\t' + str(self.FSIIter+1) + '\n')
-	  else:
+	    else:
 	      histFile.write(str(TimeIter) + '\t' + str(time) + '\t' + str(varCoordNorm) + '\t' + str(self.FSIIter) + '\n')
-	  histFile.close()
+	    histFile.close()
+          else:
+            if self.FSIIter == 0:
+              histFile = open('FSIhistory.dat', "w")
+              histFile.write("FSI Iter\tFSIRes\n")
+            else :
+              histFile = open('FSIhistory.dat', "a")
+            histFile.write(str(self.FSIIter) + '\t' + str(varCoordNorm) + '\n')
+            histFile.close()
+          
 
         self.MPIBarrier()
 
@@ -1509,7 +1533,7 @@ class Interface:
                         self.MPIBarrier()
 			if TimeIter > TimeIterTreshold:
 			  self.interpolateFluidLoadsOnSolidMesh(FSI_config)
-			  self.setSolidInterfaceLoads(SolidSolver, FSI_config)
+			  self.setSolidInterfaceLoads(SolidSolver, FSI_config, time)
 
 			  # --- Solid solver call for FSI subiteration --- #
 			  self.MPIPrint('\nLaunching solid solver for a single time iteration...\n')
@@ -1595,6 +1619,8 @@ class Interface:
 	  self.MPIPrint('********************************\n')
 	  self.MPIPrint('\n*************** Enter Block Gauss Seidel (BGS) method for strong coupling FSI ***************')
 
+          self.getSolidInterfacePosition(SolidSolver)
+
 	  # --- External FSI loop --- #
 	  self.FSIIter = 0
 	  while self.FSIIter < NbFSIIterMax:
@@ -1618,18 +1644,21 @@ class Interface:
 	    self.getFluidInterfaceNodalForce(FSI_config, FluidSolver)
             self.MPIBarrier()
 	    self.interpolateFluidLoadsOnSolidMesh(FSI_config)
-	    self.setSolidInterfaceLoads(SolidSolver, FSI_config)
+	    self.setSolidInterfaceLoads(SolidSolver, FSI_config, 0.05)
 	     
 	    # --- Solid solver call for FSI subiteration --- #
 	    self.MPIPrint('\nLaunching solid solver for a static computation...\n')
             if myid in self.solidSolverProcessors:
 	      if FSI_config['CSD_SOLVER'] == 'NATIVE':
-	          SolidSolver.staticComputation()	
+	          SolidSolver.staticComputation()
+              else:
+                  SolidSolver.run(0.0, 0.05)
 	      SolidSolver.writeSolution(0.0, self.FSIIter, Iter, NbIter)		
 
 	    # --- Compute and monitor the FSI residual --- #
 	    varCoordNorm = self.computeSolidInterfaceResidual(SolidSolver)
 	    self.MPIPrint('\n>>>> FSI Residual : {} <<<<'.format(varCoordNorm))
+            self.writeFSIHistory(0, 0.0, varCoordNorm, False)
 	    if varCoordNorm < FSITolerance:			
 	      break
 
