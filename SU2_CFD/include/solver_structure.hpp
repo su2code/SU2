@@ -1297,6 +1297,16 @@ public:
    */
   virtual void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iRKStep);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iStep - Current step in the time accurate local time stepping.
+   */
+  virtual void ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                 unsigned short iStep);
   
   /*!
    * \brief A virtual member.
@@ -3544,6 +3554,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iTime - Time index of the time integration point for the
+                        integration over the time slab in the corrector
+                        step of ADER-DG.
+   */
+  virtual void ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime);
   
   /*!
    * \brief A virtual member.
@@ -3568,6 +3586,20 @@ public:
    */
   virtual void Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iTime    - Time index of the time integration point for the
+                           integration over the time slab in the corrector
+                           step of ADER-DG.
+   * \param[in] weight   - Integration weight of this time integration point.
+   */
+  virtual void AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void MultiplyResidualByInverseMassMatrix(void);
   
   /*!
    * \brief A virtual member.
@@ -9541,10 +9573,17 @@ protected:
   vector<su2double> VecSolDOFsOld; /*!< \brief Vector, which stores the old solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs (needed for classical RK4 scheme). */
   vector<su2double> VecDeltaTime;  /*!< \brief Vector, which stores the time steps of the owned volume elements. */
+
+  vector<su2double> VecSolDOFsPredictorADER; /*!< \brief Vector, which stores the ADER predictor solution in the owned
+                                                         DOFs. These are both space and time DOFs. */
   
-  vector<su2double> VecResDOFs;    /*!< \brief Vector, which stores the residuals in the owned DOFs. */
-  vector<su2double> VecResFaces;   /*!< \brief Vector, which stores the residuals of the DOFs that
-                                    come from the faces, both boundary and internal. */
+  vector<su2double> VecResDOFs;         /*!< \brief Vector, which stores the residuals in the owned DOFs. */
+  vector<su2double> VecResFaces;        /*!< \brief Vector, which stores the residuals of the DOFs that
+                                                    come from the faces, both boundary and internal. */
+  vector<su2double> VecTotResDOFsADER;  /*!< \brief Vector, which stores the accumulated residuals of the
+                                                    owned DOFs for the ADER corrector step. */
+
+
   vector<unsigned long> nEntriesResFaces; /*!< \brief Number of entries for the owned DOFs in the
                                            residual of the faces. Cumulative storage. */
   vector<unsigned long> entriesResFaces;  /*!< \brief The corresponding entries in the residual of the faces. */
@@ -9715,7 +9754,16 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
-  
+
+  /*!
+   * \brief Function, which interpolates the predictor solution of ADER-DG
+            to the time value that corresponds to iTime.
+   * \param[in] iTime - Time index of the time integration point for the
+                        integration over the time slab in the corrector
+                        step of ADER-DG.
+   */
+  void ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime);
+
   /*!
    * \brief Compute the volume contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9723,10 +9771,11 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
    */
   void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+                       CConfig *config, unsigned short iMesh, unsigned short iStep);
   
   /*!
    * \brief Compute the surface contributions to the spatial residual.
@@ -9735,10 +9784,11 @@ public:
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
    */
   void Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+                        CConfig *config, unsigned short iMesh, unsigned short iStep);
 
   /*!
    * \brief Compute the spatial residual for the given range of faces. It is a virtual
@@ -9748,27 +9798,39 @@ public:
    * \param[in]     numerics - Description of the numerical method.
    * \param[in]     config - Definition of the particular problem.
    * \param[in]     iMesh - Index of the mesh in multigrid computations.
-   * \param[in]     iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in]     iStep - Current step in the time accurate local time
+                            stepping algorithm, if appropriate.
    * \param[in]     indFaceBeg - Starting index in the matching faces.
    * \param[in]     indFaceEnd - End index in the matching faces.
    * \param[in,out] indResFaces - Index where to store the residuals in
                                   the vector of face residuals.
    */
   virtual void ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                             CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                             CConfig *config, unsigned short iMesh, unsigned short iStep,
                              const unsigned long indFaceBeg, const unsigned long indFaceEnd,
                              unsigned long &indResFaces);
+
+  /*!
+   * \brief Function, which accumulates the space time residual of the ADER-DG
+            time integration scheme in the owned DOFs.
+   * \param[in] iTime    - time index of the time integration point for the
+                           integration over the time slab in the corrector
+                           step of ADER-DG.
+   * \param[in] weight   - Integration weight of this time integration point.
+   */
+   void AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight);
   
   /*!
    * \brief Compute primitive variables and their gradients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                     unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+                     unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output);
   
   /*!
    * \brief
@@ -9878,6 +9940,16 @@ public:
    */
   void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short iRKStep);
+
+  /*!
+   * \brief Update the solution for the ADER-DG scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iStep - Current step in the time accurate local time stepping.
+   */
+  void ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                         unsigned short iStep);
   
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.
@@ -10236,13 +10308,6 @@ protected:
                                  CNumerics           *numerics);
   
   /*!
-   * \brief Function, which creates the final residual by accumulating the
-            individual contributions and multiply the result by the inverse
-            of the (lumped) mass matrix.
-   */
-  void CreateFinalResidual(void);
-  
-  /*!
    * \brief Function, which computes the inviscid fluxes in face points of
             a matching internal face.
    * \param[in]  config       - Definition of the particular problem.
@@ -10267,11 +10332,26 @@ protected:
    */
   void LeftStatesIntegrationPointsBoundaryFace(const CSurfaceElementFEM *surfElem,
                                                su2double *solFace, su2double *solIntL);
+
+  /*!
+   * \brief Function, which multiplies the residual by the inverse
+            of the (lumped) mass matrix.
+   */
+  void MultiplyResidualByInverseMassMatrix(void);
   
 private:
   /*!
+   * \brief Function, carries out the predictor step of the ADER-DG
+            time integration.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iStep  - Current step in the time accurate local time
+                         stepping algorithm
+   */
+  virtual void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
+
+  /*!
    * \brief Function, which sets up the persistent communication of the flow
-   variables in the DOFs.
+            variables in the DOFs.
    * \param[in] DGGeometry - Geometrical definition of the DG problem.
    * \param[in] config     - Definition of the particular problem.
    */
@@ -10280,20 +10360,20 @@ private:
   
   /*!
    * \brief Function, which computes the residual contribution from a boundary
-   face in an inviscid computation when the boundary conditions have
-   already been applied.
-   * \param[in]     config              - Definition of the particular problem.
-   * \param[in]     conv_numerics       - Description of the numerical method.
-   * \param[in]     surfElem            - Surface boundary element for which the
-   contribution to the residual must be computed.
-   * \param[in]     solInt0             - Solution in the integration points of side 0.
-   * \param[in]     solInt1             - Solution in the integration points of side 1.
-   * \param[out]    fluxes              - Temporary storage for the fluxes in the
-   integration points.
-   * \param[out]    resFaces            - Array to store the residuals of the face.
-   * \param[in,out] indResFaces         - Index in resFaces, where the current residual
-   should be stored. It is updated in the function
-   for the next boundary element.
+            face in an inviscid computation when the boundary conditions have
+            already been applied.
+   * \param[in]     config        - Definition of the particular problem.
+   * \param[in]     conv_numerics - Description of the numerical method.
+   * \param[in]     surfElem      - Surface boundary element for which the
+                                    contribution to the residual must be computed.
+   * \param[in]     solInt0       - Solution in the integration points of side 0.
+   * \param[in]     solInt1       - Solution in the integration points of side 1.
+   * \param[out]    fluxes        - Temporary storage for the fluxes in the
+                                    integration points.
+   * \param[out]    resFaces      - Array to store the residuals of the face.
+   * \param[in,out] indResFaces   - Index in resFaces, where the current residual
+                                    should be stored. It is updated in the function
+                                    for the next boundary element.
    */
   void ResidualInviscidBoundaryFace(CConfig                  *config,
                                     CNumerics                *conv_numerics,
@@ -10383,26 +10463,17 @@ public:
   ~CFEM_DG_NSSolver(void);
   
   /*!
-   * \brief Restart residual and compute gradients.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-  
-  /*!
    * \brief Compute the volume contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
    */
   void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+                       CConfig *config, unsigned short iMesh, unsigned short iStep);
   
   /*!
    * \brief Compute the spatial residual for the given range of faces.
@@ -10411,14 +10482,15 @@ public:
    * \param[in]     numerics - Description of the numerical method.
    * \param[in]     config - Definition of the particular problem.
    * \param[in]     iMesh - Index of the mesh in multigrid computations.
-   * \param[in]     iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in]     iStep - Current step in the time accurate local time
+                            stepping algorithm, if appropriate.
    * \param[in]     indFaceBeg - Starting index in the matching faces.
    * \param[in]     indFaceEnd - End index in the matching faces.
    * \param[in,out] indResFaces - Index where to store the residuals in
                                   the vector of face residuals.
    */
   void ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                     CConfig *config, unsigned short iMesh, unsigned short iRKStep,
+                     CConfig *config, unsigned short iMesh, unsigned short iStep,
                      const unsigned long indFaceBeg, const unsigned long indFaceEnd,
                      unsigned long &indResFaces);
 
@@ -10605,7 +10677,16 @@ public:
   void SetOmega_Max(su2double val_omega_max);
   
 private:
-  
+
+  /*!
+   * \brief Function, carries out the predictor step of the ADER-DG
+            time integration.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iStep  - Current step in the time accurate local time
+                         stepping algorithm.
+   */
+  void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
+ 
   /*!
    * \brief Function to compute the penalty terms in the integration
    points of a face.

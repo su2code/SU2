@@ -722,24 +722,25 @@ public:
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iStep - Current step of the Runge-Kutta iteration for the RK schemes
+                        and the step in the local time stepping for ADER-DG.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    */
   void Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
-                         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+                         unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem);
   
   /*!
    * \brief Perform the time integration (explicit or implicit) of the numerical system.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iStep - Current step of the Runge-Kutta iteration for the RK schemes
+                        and the step in the local time stepping for ADER-DG.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
   void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                        unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
-  
+                        unsigned short iStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
 };
 
 #include "integration_structure.inl"
