@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Global makefile for the SU2 project
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.2.0 "Cardinal"
+# \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -39,7 +41,9 @@ SUBDIRS = externals
 
 SUBDIRS += Common/lib
 
+if BUILD_PY
 SUBDIRS += SU2_PY
+endif
 
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
@@ -63,4 +67,8 @@ endif
 
 if BUILD_GEO
 SUBDIRS +=SU2_GEO/obj
+endif
+
+if BUILD_PY_WRAPPER
+SUBDIRS += SU2_PY/pySU2
 endif
