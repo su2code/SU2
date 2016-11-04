@@ -2284,7 +2284,7 @@ void CDriver::Iteration_Preprocessing() {
     case ADJ_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": adjoint FEM iteration." << endl;
-      iteration_container[iZone] = new CFEAIteration_Adj(config[iZone]);
+      iteration_container[iZone] = new CFEAIteration_Adj(config_container[iZone]);
       break;
 
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
@@ -3102,7 +3102,13 @@ void CSingleZoneDriver::Update() {
 
   iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox, ZONE_0)
+                                      surface_movement, grid_movement, FFDBox, ZONE_0);
+
+  if (config_container[ZONE_0]->GetKind_Solver() == ADJ_ELASTICITY){
+    iteration_container[ZONE_0]->Postprocess(output, integration_container, geometry_container,
+                                      solver_container, numerics_container, config_container,
+                                      surface_movement, grid_movement, FFDBox, ZONE_0);
+  }
 
 }
 
