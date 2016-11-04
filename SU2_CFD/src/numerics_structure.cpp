@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -136,31 +138,31 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 CNumerics::~CNumerics(void) {
 
-  if (UnitNormal!=NULL) delete [] UnitNormal;
-  if (UnitNormald!=NULL) delete [] UnitNormald;
+  if (UnitNormal!= NULL) delete [] UnitNormal;
+  if (UnitNormald!= NULL) delete [] UnitNormald;
 
-  if (U_n!=NULL) delete [] U_n;
-  if (U_nM1!=NULL) delete [] U_nM1;
-  if (U_nP1!=NULL) delete [] U_nP1;
+  if (U_n!= NULL) delete [] U_n;
+  if (U_nM1!= NULL) delete [] U_nM1;
+  if (U_nP1!= NULL) delete [] U_nP1;
 
 	// visc
-  if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
+  if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
 
-  if (Flux_Tensor!=NULL){
+  if (Flux_Tensor!= NULL) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }
     delete [] Flux_Tensor;
   }
 
-  if (tau != NULL){
+  if (tau != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] tau[iDim];
     }
     delete [] tau;
   }
 
-  if (delta != NULL){
+  if (delta != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] delta[iDim];
     }
@@ -266,7 +268,6 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
 	}
 
 }
-
 
 void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
                                            su2double *val_velocity,
@@ -1132,7 +1133,6 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* Lambda, su2double *val_normal,
 		su2double **val_absPeJac) {
-
 
 	su2double lam1, lam2, lam3, lam4;
 	lam1 = Lambda[0]; lam2 = Lambda[1]; lam3 = Lambda[2]; lam4 = Lambda[3];
