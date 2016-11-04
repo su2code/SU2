@@ -201,6 +201,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/primal_grid_structure.inl \
 	../include/vector_structure.hpp \
 	../include/vector_structure.inl \
+	../include/math_op_structure.hpp \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/mpi_structure.hpp \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \

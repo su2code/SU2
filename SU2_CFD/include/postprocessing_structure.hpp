@@ -32,3 +32,91 @@
  */
 
 #pragma once
+
+
+#include "../../Common/include/mpi_structure.hpp"
+
+#include <cmath>
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
+
+//#include "fluid_model.hpp"
+//#include "numerics_structure.hpp"
+//#include "variable_structure.hpp"
+#include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/matrix_structure.hpp"
+#include "../../Common/include/vector_structure.hpp"
+#include "../../Common/include/linear_solvers_structure.hpp"
+#include "../../Common/include/grid_movement_structure.hpp"
+#include "../../SU2_CFD/include/solver_structure.hpp"
+//#include "numerics_machine_learning.hpp"
+
+using namespace std;
+
+
+class FWHSolver {
+  public:
+  su2double  CFD_PressureFluctuation;
+  su2double  CAA_PressureFluctuation;
+  su2double U1, U2, U3, M, a_inf, AOA, beta_sq;
+  complex <su2double> ***G, ***dGdy1, ***dGdy2, ***dGdy3,**fpp;
+  su2double ***dJdU;
+  su2double **surface_geo;
+  complex <su2double>  **fF1, **fF2, **fQ  ;
+  su2double   **F1, **F2, **Q, *F1_mean, *F2_mean, *Q_mean, *Hanning_W, Hanning_Scale;
+  su2double ***F, **F_mean;
+  complex <su2double>  ***fF;
+  complex <su2double>  **pp;
+  su2double  **fpp_r, **fpp_i, **fpp_r_root,**fpp_i_root, **pp_CFD, *pp_CFD_mean ;
+  unsigned long nObserver, nPanel, nSample, idx_window_l, idx_window_r, nDim;
+  unsigned long *PointID;
+  su2double **Observer_Locations;
+  su2double SPL;
+
+
+	/*!
+	 * \brief Constructor of the  class.
+	 */
+	FWHSolver(CConfig *config, CGeometry *geometry);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~FWHSolver(void);
+
+
+
+        void SetAeroacoustic_Analysis(CSolver *solver, CConfig *config, CGeometry *geometry, ofstream &CFD_pressure_file);
+        void SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned long iObserver);
+        void Extract_NoiseSources(CSolver *solver, CConfig* config, CGeometry *geometry);
+        void Compute_FarfieldNoise(CSolver *solver, CConfig* config, CGeometry *geometry);
+        void Compute_GreensFunction2D (CConfig* config);
+        void Compute_GreensFunction3D (CConfig* config);
+        void Window_SourceTerms ();
+        void FFT_SourceTermsR2 ();
+        void Integrate_Sources (CConfig* config);
+        void iFFT_SignalR2 ();
+        void Compute_SPL ();
+        void Write_Sensitivities(CSolver *solver, CConfig *config, CGeometry *geometry);
+        su2double bessj0 (su2double x);
+        su2double bessj1 (su2double x);
+        su2double bessy0 (su2double x);
+        su2double bessy1 (su2double x);
+        su2double GetCFD_PressureFluctuation();
+
+//        void iFFT_Signal (CSolver *solver, CConfig* config, CGeometry *geometry);
+//        void FFT_SourceTerms (CSolver *solver, CConfig* config, CGeometry *geometry);
+//        void SetCAA_PressureFluctuation(CSolver *solver, CConfig* config, CGeometry *geometry, ofstream &SRC_p_file, ofstream &SRC_ux_file, ofstream &SRC_uy_file, ofstream &SRC_rho_file, ofstream &time_file);
+//        su2double GetCAA_PressureFluctuation();
+
+};
+
+
+
+#include "postprocessing_structure.inl"

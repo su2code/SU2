@@ -32,6 +32,7 @@
  */
 
 #include "../include/SU2_SOL.hpp"
+#include "../../SU2_CFD/include/postprocessing_structure.hpp"
 
 using namespace std;
 
@@ -43,6 +44,9 @@ int main(int argc, char *argv[]) {
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+
+  ofstream CFD_pressure_file ;
+  CFD_pressure_file.open("p_CFD.dat");
 
   /*--- MPI initialization ---*/
 
@@ -58,6 +62,7 @@ int main(int argc, char *argv[]) {
 	CGeometry **geometry_container = NULL;
 	CSolver **solver_container     = NULL;
 	CConfig **config_container     = NULL;
+	FWHSolver **FWH_container      = NULL;
 	
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -141,6 +146,64 @@ int main(int argc, char *argv[]) {
 #else
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
+
+
+
+
+  if (rank == MASTER_NODE)
+          cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+
+/*--- Compute elements surrounding points, points surrounding points ---*/
+
+if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+geometry_container[ZONE_0]->SetPoint_Connectivity();
+
+if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+geometry_container[ZONE_0]->SetRCM_Ordering(config_container[ZONE_0]);
+
+/*--- recompute elements surrounding points, points surrounding points ---*/
+
+if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+geometry_container[ZONE_0]->SetPoint_Connectivity();
+
+/*--- Compute elements surrounding elements ---*/
+
+if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+geometry_container[ZONE_0]->SetElement_Connectivity();
+
+/*--- Check the orientation before computing geometrical quantities ---*/
+
+if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+geometry_container[ZONE_0]->SetBoundVolume();
+geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+/*--- Create the edge structure ---*/
+
+if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
+geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
+
+/*--- Compute center of gravity ---*/
+
+if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+geometry_container[ZONE_0]->SetCoord_CG();
+
+/*--- Create the dual control volume structures ---*/
+
+if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+
+  geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
+
+      FWH_container = new FWHSolver* [nZone];
+for (iZone = 0; iZone < nZone; iZone++) {
+
+   FWH_container[iZone]  = new FWHSolver(config_container[iZone],geometry_container[iZone]);
+
+}
+
+
+
+
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
@@ -299,6 +362,9 @@ int main(int argc, char *argv[]) {
 							solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
 					}
 
+					//Extracting flow data on the FWH surface as well as static pressure at the observer locations (for validation only)
+					 FWH_container[ZONE_0]->SetAeroacoustic_Analysis(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0],CFD_pressure_file);
+
 					if (rank == MASTER_NODE)
 						cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
 					output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
@@ -405,6 +471,31 @@ int main(int argc, char *argv[]) {
 		  }
 
 	}
+
+
+
+
+        cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
+
+         if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+
+
+
+
+           }else{
+             if (rank == MASTER_NODE)
+               cout << endl <<"------------------------- Computing Far Field Noise (Primal Only) -----------------------" << endl;
+             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+           }
+
+
+
+
+
+
+
+
+
 
 
   /*--- Synchronization point after a single solver iteration. Compute the

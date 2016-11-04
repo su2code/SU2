@@ -76,6 +76,7 @@ lib_sources = \
   ../include/primal_grid_structure.inl \
   ../include/vector_structure.hpp \
   ../include/vector_structure.inl \
+  ../include/math_op_structure.hpp \
   ../include/matrix_structure.hpp \
   ../include/matrix_structure.inl \
   ../include/mpi_structure.hpp \
@@ -97,6 +98,7 @@ lib_sources = \
   ../src/linear_solvers_structure.cpp \
   ../src/primal_grid_structure.cpp \
   ../src/vector_structure.cpp \
+  ../src/math_op_structure.cpp \
   ../src/matrix_structure.cpp \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
