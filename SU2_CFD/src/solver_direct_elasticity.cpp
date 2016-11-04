@@ -490,6 +490,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
   solutionPredictor = new su2double [nVar];
 
+  iElem_iDe = NULL;
+  DV_Val = NULL;
   /*---- If we are solving an adjoint problem we need to define the number of design variables and delimit the regions ---*/
   /*---- The same if we are solving a problem with DEs ---*/
   if ((config->GetKind_Solver() == ADJ_ELASTICITY) || (de_effects)) {
@@ -630,9 +632,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       }
 
     }
-  } else{
-    n_DV = 0;
-    DV_Val = NULL;
   }
 
   /*--- Perform the MPI communication of the solution ---*/

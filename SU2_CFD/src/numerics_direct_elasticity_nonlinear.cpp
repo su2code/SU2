@@ -75,6 +75,9 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 	C10 = Mu/2.0;
 	D1  = 2.0/Kappa;
 
+	F_Mat_Iso = NULL;
+	b_Mat_Iso = NULL;
+	cijkl = NULL;
 	if (incompressible || nearly_incompressible){
 
 		F_Mat_Iso = new su2double *[3];
@@ -95,17 +98,17 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 				}
 			}
 		}
-
-
 	}
-	else{
-		F_Mat_Iso = NULL;
-		b_Mat_Iso = NULL;
-	}
-
 
 	maxwell_stress = config->GetDE_Effects();
 
+  ke_DE         = 0.0;
+  nElectric_Field   = 0;
+  nDim_Electric_Field = 0;
+
+  EField_Ref_Unit   = NULL;
+  EField_Ref_Mod    = NULL;
+  EField_Curr_Unit  = NULL;
 	if (maxwell_stress == true){
 
 		su2double Electric_Field_Mod;
@@ -188,17 +191,6 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		}
 
 	}
-	else{
-
-		ke_DE 				= 0.0;
-		nElectric_Field 	= 0;
-		nDim_Electric_Field = 0;
-
-		EField_Ref_Unit		= NULL;
-		EField_Ref_Mod		= NULL;
-		EField_Curr_Unit	= NULL;
-
-	}
 
 }
 
@@ -236,24 +228,32 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 	delete [] KAux_P_ab;
 	delete [] currentCoord;
 
-	for (iVar = 0; iVar < 3; iVar++){
-		if (F_Mat_Iso[iVar] != NULL) delete [] F_Mat_Iso[iVar];
-		if (b_Mat_Iso[iVar] != NULL) delete [] b_Mat_Iso[iVar];
-	}
+  if (F_Mat_Iso != NULL){
+    for (iVar = 0; iVar < 3; iVar++){
+      if (F_Mat_Iso[iVar] != NULL) delete [] F_Mat_Iso[iVar];
+    }
+    delete [] F_Mat_Iso;
+  }
 
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 3; jVar++){
-			for (kVar = 0; kVar < 3;kVar++){
-				if (cijkl[iVar][jVar][kVar] != NULL) delete [] cijkl[iVar][jVar][kVar];
-			}
-			if (cijkl[iVar][jVar] != NULL) delete [] cijkl[iVar][jVar];
-		}
-		if (cijkl[iVar] != NULL) delete [] cijkl[iVar];
-	}
-	if (cijkl != NULL)			delete [] cijkl;
+  if (b_Mat_Iso != NULL){
+    for (iVar = 0; iVar < 3; iVar++){
+      if (b_Mat_Iso[iVar] != NULL) delete [] b_Mat_Iso[iVar];
+    }
+    delete [] b_Mat_Iso;
+  }
 
-	if (F_Mat_Iso != NULL)			delete [] F_Mat_Iso;
-	if (b_Mat_Iso != NULL) 			delete [] b_Mat_Iso;
+  if (cijkl != NULL){
+    for (iVar = 0; iVar < 3; iVar++){
+      for (jVar = 0; jVar < 3; jVar++){
+        for (kVar = 0; kVar < 3;kVar++){
+          if (cijkl[iVar][jVar][kVar] != NULL) delete [] cijkl[iVar][jVar][kVar];
+        }
+        if (cijkl[iVar][jVar] != NULL) delete [] cijkl[iVar][jVar];
+      }
+      if (cijkl[iVar] != NULL) delete [] cijkl[iVar];
+    }
+    delete [] cijkl;
+  }
 
 	if (EField_Ref_Unit != NULL) 	delete [] EField_Ref_Unit;
 	if (EField_Ref_Mod != NULL) 	delete [] EField_Ref_Mod;
