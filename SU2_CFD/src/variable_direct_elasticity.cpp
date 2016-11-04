@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -94,7 +96,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Solution[iVar] = val_fea[iVar];
 	}
 
-	if (dynamic_analysis){
+	if (dynamic_analysis) {
 		Solution_time_n			=  new su2double [nVar];
 		Solution_Vel 			=  new su2double [nVar];
 		Solution_Vel_time_n		=  new su2double [nVar];
@@ -134,11 +136,11 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   FlowTraction_n = NULL;
 
 	/*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
-	if (incremental_load && nonlinear_analysis){
+	if (incremental_load && nonlinear_analysis) {
 		Solution_Old 			=  new su2double [nVar];
 	}
   /*--- If we are running a discrete adjoint iteration, we need this vector for cross-dependencies ---*/
-	else if (discrete_adjoint && fsi_analysis){
+	else if (discrete_adjoint && fsi_analysis) {
     Solution_Old      =  new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++){
       Solution_Old[iVar] = val_fea[iVar];
@@ -148,20 +150,20 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	/*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
   Residual_Ext_Surf_n = NULL;
   FlowTraction_n = NULL;
-	if (gen_alpha){
-		Residual_Ext_Surf_n		= new su2double [nVar];
-
-		if (fsi_analysis) FlowTraction_n = new su2double [nVar];
-
-	}
-
-//	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
+  if (gen_alpha) {
+    Residual_Ext_Surf_n		= new su2double [nVar];
+    
+    if (fsi_analysis) FlowTraction_n = new su2double [nVar];
+    
+  }
+  
+  //	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
   Residual_Ext_Body = NULL;
 	if (body_forces) Residual_Ext_Body = new su2double [nVar];
 
 	Residual_Ext_Surf = new su2double [nVar];
 
-	for (iVar = 0; iVar < nVar; iVar++){
+	for (iVar = 0; iVar < nVar; iVar++) {
 		Residual_Ext_Surf[iVar] = 0.0;
 		if (body_forces) Residual_Ext_Body[iVar] = 0.0;
 	}

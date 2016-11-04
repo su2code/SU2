@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -51,7 +53,7 @@ using namespace std;
  * \class CIteration
  * \brief Parent class for defining a single iteration of a physics problem.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CIteration {
 protected:
@@ -68,6 +70,24 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CIteration(void);
+
+  /*!
+   * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
+   * \author T. Economon
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] IntIter - Current sudo time iteration number.
+   * \param[in] ExtIter - Current physical time iteration number.
+   */
+  virtual void SetGrid_Movement(CGeometry ***geometry_container, CSurfaceMovement **surface_movement,
+                      CVolumetricMovement **grid_movement, CFreeFormDefBox ***FFDBox,
+                      CSolver ****solver_container, CConfig **config_container,
+                      unsigned short val_iZone, unsigned long IntIter, unsigned long ExtIter);
   
   /*!
    * \brief A virtual member.
@@ -218,7 +238,7 @@ public:
  * \class CMeanFlowIteration
  * \brief Class for driving an iteration of the mean flow system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CMeanFlowIteration : public CIteration {
 public:
@@ -362,7 +382,7 @@ public:
  * \class CWaveIteration
  * \brief Class for driving an iteration of the wave system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CWaveIteration : public CIteration {
 public:
@@ -480,7 +500,7 @@ public:
  * \class CHeatIteration
  * \brief Class for driving an iteration of the heat system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CHeatIteration : public CIteration {
 public:
@@ -582,7 +602,7 @@ public:
  * \class CPoissonIteration
  * \brief Class for driving an iteration of the poisson system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CPoissonIteration : public CIteration {
 public:
@@ -923,7 +943,7 @@ public:
  * \class CAdjMeanFlowIteration
  * \brief Class for driving an iteration of the adjoint mean flow system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjMeanFlowIteration : public CIteration {
 public:
@@ -1025,7 +1045,7 @@ public:
  * \class CDiscAdjMeanFlowIteration
  * \brief Class for driving an iteration of the discrete adjoint mean flow system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CDiscAdjMeanFlowIteration : public CIteration {
 
@@ -1546,22 +1566,3 @@ public:
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 									CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
-
-
-
-/*!
- * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
- * \author T. Economon
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] surface_movement - Surface movement classes of the problem.
- * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] FFDBox - FFD FFDBoxes of the problem.
- * \param[in] solver_container - Container vector with all the solutions.
- * \param[in] config - Definition of the particular problem.
- * \param[in] iZone - Index of the zone.
- * \param[in] IntIter - Current sudo time iteration number.
- * \param[in] ExtIter - Current physical time iteration number.
- */
-void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement, 
-                      CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
-                      CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long IntIter, unsigned long ExtIter);
