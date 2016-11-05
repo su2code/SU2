@@ -3194,212 +3194,216 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 }
 
 void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, unsigned short strength) {
-	unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new;
-	unsigned short iDim, iMarker;
-	su2double Dual_Area, norm, Solution_Vertex, Solution_0, Solution_1, Solution_Average, 
-			DualArea, Partial_Res, Grad_Val, *Normal;
-	su2double scale_area = config->GetDualVol_Power();
-
-	/*--- Initialization ---*/
-	nElem_new = 0;
-	max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));	
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
-		geometry->elem[iElem]->SetDivide(false);
-	}
-	
-	/*--- Compute the gradient of the first variable ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++)
-			Gradient[iPoint][iDim] = 0.0;
-	
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {	
-		Point_0 = geometry->edge[iEdge]->GetNode(0); Solution_0 = ConsVar_Sol[Point_0][0];
-		Point_1 = geometry->edge[iEdge]->GetNode(1); Solution_1 = ConsVar_Sol[Point_1][0];
-		Normal = geometry->edge[iEdge]->GetNormal();
-		Solution_Average =  0.5 * ( Solution_0 + Solution_1);
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Partial_Res = Solution_Average*Normal[iDim];
-			Gradient[Point_0][iDim] = Gradient[Point_0][iDim] + Partial_Res;
-			Gradient[Point_1][iDim] = Gradient[Point_1][iDim] - Partial_Res;
-		}				
-	}
+  unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new;
+  unsigned short iDim, iMarker;
+  su2double Dual_Area, norm, Solution_Vertex, Solution_0, Solution_1, Solution_Average,
+  DualArea, Partial_Res, Grad_Val, *Normal;
+  su2double scale_area = config->GetDualVol_Power();
+  
+  /*--- Initialization ---*/
+  nElem_new = 0;
+  max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
+    geometry->elem[iElem]->SetDivide(false);
+  }
+  
+  /*--- Compute the gradient of the first variable ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient[iPoint][iDim] = 0.0;
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    Point_0 = geometry->edge[iEdge]->GetNode(0); Solution_0 = ConsVar_Sol[Point_0][0];
+    Point_1 = geometry->edge[iEdge]->GetNode(1); Solution_1 = ConsVar_Sol[Point_1][0];
+    Normal = geometry->edge[iEdge]->GetNormal();
+    Solution_Average =  0.5 * ( Solution_0 + Solution_1);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Partial_Res = Solution_Average*Normal[iDim];
+      Gradient[Point_0][iDim] = Gradient[Point_0][iDim] + Partial_Res;
+      Gradient[Point_1][iDim] = Gradient[Point_1][iDim] - Partial_Res;
+    }
+  }
 		
-	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-			Point = geometry->vertex[iMarker][iVertex]->GetNode();
-			Solution_Vertex = ConsVar_Sol[Point][0];
-			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Partial_Res = Solution_Vertex*Normal[iDim];
-				Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
-			}
-		}
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        Point = geometry->vertex[iMarker][iVertex]->GetNode();
+        Solution_Vertex = ConsVar_Sol[Point][0];
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Partial_Res = Solution_Vertex*Normal[iDim];
+          Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
+        }
+      }
 		
-	for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++) {
-			DualArea = geometry->node[iPoint]->GetVolume();
-			Grad_Val = Gradient[iPoint][iDim]/DualArea;
-			Gradient[iPoint][iDim] = Grad_Val;			
-		}
-	
-	/*--- Compute the the adaptation index at each point ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area = geometry->node[iPoint]->GetVolume();
-		norm = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) 
-			norm += Gradient[iPoint][iDim]*Gradient[iPoint][iDim];
-		norm = sqrt(norm); 
-		Index[iPoint] = pow(Dual_Area, scale_area)*norm;
-	}
-	
-	SetSensorElem(geometry, config, max_elem_new);
+  for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++) {
+      DualArea = geometry->node[iPoint]->GetVolume();
+      Grad_Val = Gradient[iPoint][iDim]/DualArea;
+      Gradient[iPoint][iDim] = Grad_Val;
+    }
+  
+  /*--- Compute the the adaptation index at each point ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+    Dual_Area = geometry->node[iPoint]->GetVolume();
+    norm = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      norm += Gradient[iPoint][iDim]*Gradient[iPoint][iDim];
+    norm = sqrt(norm);
+    Index[iPoint] = pow(Dual_Area, scale_area)*norm;
+  }
+  
+  SetSensorElem(geometry, config, max_elem_new);
+  
 }
 
 
 void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, unsigned short strength) {
-	su2double Dual_Area;
-	unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new;
-	unsigned short iDim, iMarker;
-	su2double norm, Solution_Vertex, Solution_0, Solution_1, Solution_Average, 
-	DualArea, Partial_Res, Grad_Val, *Normal;
-	su2double scale_area = config->GetDualVol_Power();
-	
-	// Initialization
-	nElem_new = 0;
-	max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));	
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
-		geometry->elem[iElem]->SetDivide(false);
-	}
-	
-	
-	// Compute the gradient of the density.
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++)
-			Gradient[iPoint][iDim] = 0.0;
-	
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {	
-		Point_0 = geometry->edge[iEdge]->GetNode(0); Solution_0 = AdjVar_Sol[Point_0][0];
-		Point_1 = geometry->edge[iEdge]->GetNode(1); Solution_1 = AdjVar_Sol[Point_1][0];
-		Normal = geometry->edge[iEdge]->GetNormal();
-		Solution_Average =  0.5 * ( Solution_0 + Solution_1);
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Partial_Res = Solution_Average*Normal[iDim];
-			Gradient[Point_0][iDim] = Gradient[Point_0][iDim] + Partial_Res;
-			Gradient[Point_1][iDim] = Gradient[Point_1][iDim] - Partial_Res;
-		}				
-	}
-	
-	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-			Point = geometry->vertex[iMarker][iVertex]->GetNode();
-			Solution_Vertex = AdjVar_Sol[Point][0];
-			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Partial_Res = Solution_Vertex*Normal[iDim];
-				Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
-			}
-		}
-	
-	for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++) {
-			DualArea = geometry->node[iPoint]->GetVolume();
-			Grad_Val = Gradient[iPoint][iDim]/DualArea;
-			Gradient[iPoint][iDim] = Grad_Val;			
-		}
-	
-	
-	// Compute the the adaptation index at each point.
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area = geometry->node[iPoint]->GetVolume();
-		norm = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) 
-			norm += Gradient[iPoint][iDim]*Gradient[iPoint][iDim];
-		norm = sqrt(norm); 
-		Index[iPoint] = pow(Dual_Area, scale_area)*norm;
-	}
-	
-	SetSensorElem(geometry, config, max_elem_new);
-	
+  su2double Dual_Area;
+  unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new;
+  unsigned short iDim, iMarker;
+  su2double norm, Solution_Vertex, Solution_0, Solution_1, Solution_Average,
+  DualArea, Partial_Res, Grad_Val, *Normal;
+  su2double scale_area = config->GetDualVol_Power();
+  
+  // Initialization
+  nElem_new = 0;
+  max_elem_new = SU2_TYPE::Int(0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
+    geometry->elem[iElem]->SetDivide(false);
+  }
+  
+  
+  // Compute the gradient of the density.
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient[iPoint][iDim] = 0.0;
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    Point_0 = geometry->edge[iEdge]->GetNode(0); Solution_0 = AdjVar_Sol[Point_0][0];
+    Point_1 = geometry->edge[iEdge]->GetNode(1); Solution_1 = AdjVar_Sol[Point_1][0];
+    Normal = geometry->edge[iEdge]->GetNormal();
+    Solution_Average =  0.5 * ( Solution_0 + Solution_1);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Partial_Res = Solution_Average*Normal[iDim];
+      Gradient[Point_0][iDim] = Gradient[Point_0][iDim] + Partial_Res;
+      Gradient[Point_1][iDim] = Gradient[Point_1][iDim] - Partial_Res;
+    }
+  }
+  
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        Point = geometry->vertex[iMarker][iVertex]->GetNode();
+        Solution_Vertex = AdjVar_Sol[Point][0];
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Partial_Res = Solution_Vertex*Normal[iDim];
+          Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
+        }
+      }
+  
+  for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++) {
+      DualArea = geometry->node[iPoint]->GetVolume();
+      Grad_Val = Gradient[iPoint][iDim]/DualArea;
+      Gradient[iPoint][iDim] = Grad_Val;
+    }
+  
+  
+  // Compute the the adaptation index at each point.
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+    Dual_Area = geometry->node[iPoint]->GetVolume();
+    norm = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      norm += Gradient[iPoint][iDim]*Gradient[iPoint][iDim];
+    norm = sqrt(norm);
+    Index[iPoint] = pow(Dual_Area, scale_area)*norm;
+  }
+  
+  SetSensorElem(geometry, config, max_elem_new);
+  
 }
 
 void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config) {
-	su2double Dual_Area;
-	unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new_flow, max_elem_new_adj;
-	unsigned short iDim, iMarker;
-	su2double norm, DualArea, Partial_Res, *Normal;
-	su2double scale_area = config->GetDualVol_Power();
-	
-	// Initialization
-	max_elem_new_flow = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
-	max_elem_new_adj =  SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
-		geometry->elem[iElem]->SetDivide(false);
-	}
-	
-	// Compute the gradient of the first variable.
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Gradient_Flow[iPoint][iDim] = 0.0;
-			Gradient_Adj[iPoint][iDim] = 0.0;
-		}
-
-	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {	
-		Point_0 = geometry->edge[iEdge]->GetNode(0);
-		Point_1 = geometry->edge[iEdge]->GetNode(1);
-		Normal = geometry->edge[iEdge]->GetNormal();
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Partial_Res = 0.5 * ( ConsVar_Sol[Point_0][0] + ConsVar_Sol[Point_1][0] ) * Normal[iDim];
-			Gradient_Flow[Point_0][iDim] = Gradient_Flow[Point_0][iDim] + Partial_Res;
-			Gradient_Flow[Point_1][iDim] = Gradient_Flow[Point_1][iDim] - Partial_Res;
-
-			Partial_Res = 0.5 * ( AdjVar_Sol[Point_0][0] + AdjVar_Sol[Point_1][0] ) * Normal[iDim];
-			Gradient_Adj[Point_0][iDim] = Gradient_Adj[Point_0][iDim] + Partial_Res;
-			Gradient_Adj[Point_1][iDim] = Gradient_Adj[Point_1][iDim] - Partial_Res;			
-		}				
-	}
-	
-	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-			Point = geometry->vertex[iMarker][iVertex]->GetNode();
-			Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Gradient_Flow[Point][iDim] = Gradient_Flow[Point][iDim] - ConsVar_Sol[Point][0] * Normal[iDim];
-				Gradient_Adj[Point][iDim] = Gradient_Adj[Point][iDim] - AdjVar_Sol[Point][0] * Normal[iDim];
-			}
-		}
-	
-	for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
-		for (iDim = 0; iDim < nDim; iDim++) {
-			DualArea = geometry->node[iPoint]->GetVolume();
-			Gradient_Flow[iPoint][iDim] = Gradient_Flow[iPoint][iDim]/DualArea;
-			Gradient_Adj[iPoint][iDim] = Gradient_Adj[iPoint][iDim]/DualArea;
-		}
-	
-	// Compute the the adaptation index at each point.
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area=geometry->node[iPoint]->GetVolume();
-		norm = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) 
-			norm += Gradient_Flow[iPoint][iDim]*Gradient_Flow[iPoint][iDim];
-		norm = sqrt(norm); 
-		Index[iPoint] = pow(Dual_Area, scale_area)*norm;
-	}
-	
-	
-	SetSensorElem(geometry, config, max_elem_new_flow);
-
-	// Compute the the adaptation index at each point.
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
-		Dual_Area=geometry->node[iPoint]->GetVolume();
-		norm = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) 
-			norm += Gradient_Adj[iPoint][iDim]*Gradient_Adj[iPoint][iDim];
-		norm = sqrt(norm); 
-		Index[iPoint] = pow(Dual_Area, scale_area)*norm;
-	}
-	
-	SetSensorElem(geometry, config, max_elem_new_adj);
-
+  su2double Dual_Area;
+  unsigned long Point = 0, Point_0 = 0, Point_1 = 0, iEdge, iVertex, iPoint, iElem, max_elem_new_flow, max_elem_new_adj;
+  unsigned short iDim, iMarker;
+  su2double norm, DualArea, Partial_Res, *Normal;
+  su2double scale_area = config->GetDualVol_Power();
+  
+  // Initialization
+  max_elem_new_flow = SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+  max_elem_new_adj =  SU2_TYPE::Int(0.5*0.01*config->GetNew_Elem_Adapt()*su2double(geometry->GetnElem()));
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem ++) {
+    geometry->elem[iElem]->SetDivide(false);
+  }
+  
+  // Compute the gradient of the first variable.
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Gradient_Flow[iPoint][iDim] = 0.0;
+      Gradient_Adj[iPoint][iDim] = 0.0;
+    }
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    Point_0 = geometry->edge[iEdge]->GetNode(0);
+    Point_1 = geometry->edge[iEdge]->GetNode(1);
+    Normal = geometry->edge[iEdge]->GetNormal();
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Partial_Res = 0.5 * ( ConsVar_Sol[Point_0][0] + ConsVar_Sol[Point_1][0] ) * Normal[iDim];
+      Gradient_Flow[Point_0][iDim] = Gradient_Flow[Point_0][iDim] + Partial_Res;
+      Gradient_Flow[Point_1][iDim] = Gradient_Flow[Point_1][iDim] - Partial_Res;
+      
+      Partial_Res = 0.5 * ( AdjVar_Sol[Point_0][0] + AdjVar_Sol[Point_1][0] ) * Normal[iDim];
+      Gradient_Adj[Point_0][iDim] = Gradient_Adj[Point_0][iDim] + Partial_Res;
+      Gradient_Adj[Point_1][iDim] = Gradient_Adj[Point_1][iDim] - Partial_Res;
+    }
+  }
+  
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        Point = geometry->vertex[iMarker][iVertex]->GetNode();
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Gradient_Flow[Point][iDim] = Gradient_Flow[Point][iDim] - ConsVar_Sol[Point][0] * Normal[iDim];
+          Gradient_Adj[Point][iDim] = Gradient_Adj[Point][iDim] - AdjVar_Sol[Point][0] * Normal[iDim];
+        }
+      }
+  
+  for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++) {
+      DualArea = geometry->node[iPoint]->GetVolume();
+      Gradient_Flow[iPoint][iDim] = Gradient_Flow[iPoint][iDim]/DualArea;
+      Gradient_Adj[iPoint][iDim] = Gradient_Adj[iPoint][iDim]/DualArea;
+    }
+  
+  // Compute the the adaptation index at each point.
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+    Dual_Area=geometry->node[iPoint]->GetVolume();
+    norm = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      norm += Gradient_Flow[iPoint][iDim]*Gradient_Flow[iPoint][iDim];
+    norm = sqrt(norm);
+    Index[iPoint] = pow(Dual_Area, scale_area)*norm;
+  }
+  
+  
+  SetSensorElem(geometry, config, max_elem_new_flow);
+  
+  // Compute the the adaptation index at each point.
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+    Dual_Area=geometry->node[iPoint]->GetVolume();
+    norm = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      norm += Gradient_Adj[iPoint][iDim]*Gradient_Adj[iPoint][iDim];
+    norm = sqrt(norm); 
+    Index[iPoint] = pow(Dual_Area, scale_area)*norm;
+  }
+  
+  SetSensorElem(geometry, config, max_elem_new_adj);
+  
 }
 
 void CGridAdaptation::SetIndicator_Robust(CGeometry *geometry, CConfig *config) {

@@ -413,12 +413,12 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      if (Gradient_Primitive[iVar]!=NULL) delete [] Gradient_Primitive[iVar];
+      if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
   if (Gradient_Secondary != NULL) {
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-      if (Gradient_Secondary[iVar]!=NULL) delete [] Gradient_Secondary[iVar];
+      if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];
     delete [] Gradient_Secondary;
   }
 
