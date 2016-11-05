@@ -447,6 +447,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   ofstream SurfAdj_file;
   
   /*--- Write file name with extension if unsteady ---*/
+  
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
@@ -466,6 +467,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SurfAdj_file.precision(15);
   SurfAdj_file.open(cstr, ios::out);
   
+  SurfAdj_file << "SENS_AOA=" << AdjSolver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
   if (geometry->GetnDim() == 2) {
     SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
     if (config->GetDiscrete_Adjoint()) {
@@ -704,6 +707,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     SurfAdj_file.open(cstr, ios::out);
     SurfAdj_file.precision(15);
     
+    SurfAdj_file << "SENS_AOA=" << AdjSolver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
     /*--- Write the 2D surface flow coefficient file ---*/
     if (geometry->GetnDim() == 2) {
       
@@ -3850,7 +3855,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   /*--- Write the general header and flow conditions ----*/
   
-  restart_file <<"AoA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+  restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
 //  restart_file <<"IH= " << config->GetiH() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;

@@ -2104,33 +2104,21 @@ public:
 	su2double GetAoA(void);
   
   /*!
-   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
-   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
-   *        lifting body and the fluid through which it is moving.
-   * \return Value of the angle of attack.
-   */
-  su2double GetiH(void);
-  
-  /*!
-   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
-   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
-   *        lifting body and the fluid through which it is moving.
-   * \return Value of the angle of attack.
+   * \brief Get the off set angle of attack of the body. The solution and the geometry 
+   *        file are able to modifity the angle of attack in the config file
+   * \return Value of the off set angle of attack.
    */
   su2double GetAoA_Offset(void);
   
   /*!
-   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
-   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
-   *        lifting body and the fluid through which it is moving.
-   * \return Value of the angle of attack.
+   * \brief Get the off set sideslip angle of the body. The solution and the geometry
+   *        file are able to modifity the angle of attack in the config file
+   * \return Value of the off set sideslip angle.
    */
   su2double GetAoS_Offset(void);
   
   /*!
-   * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body
-   *        (often the chord line of an airfoil) and the vector representing the relative motion between the
-   *        lifting body and the fluid through which it is moving.
+   * \brief Get the functional sensitivity with respect to changes in the angle of attack.
    * \return Value of the angle of attack.
    */
   su2double GetAoA_Sens(void);
@@ -2142,20 +2130,14 @@ public:
 	void SetAoA(su2double val_AoA);
   
   /*!
-   * \brief Set the angle of attack.
-   * \param[in] val_AoA - Value of the angle of attack.
-   */
-  void SetiH(su2double val_iH);
-  
-  /*!
-   * \brief Set the angle of attack.
+   * \brief Set the off set angle of attack.
    * \param[in] val_AoA - Value of the angle of attack.
    */
   void SetAoA_Offset(su2double val_AoA_offset);
   
   /*!
-   * \brief Set the angle of attack.
-   * \param[in] val_AoA - Value of the angle of attack.
+   * \brief Set the off set sideslip angle.
+   * \param[in] val_AoA - Value of the off set sideslip angle.
    */
   void SetAoS_Offset(su2double val_AoS_offset);
   

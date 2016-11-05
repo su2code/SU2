@@ -233,7 +233,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       
       /*--- Angle of attack ---*/
       
-      position = text_line.find ("AoA=",0);
+      position = text_line.find ("AOA=",0);
       if (position != string::npos) {
         text_line.erase (0,4); AoA_ = atof(text_line.c_str());
         if (config->GetDiscard_InFiles() == false) {
@@ -15387,7 +15387,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       
       /*--- Angle of attack ---*/
       
-      position = text_line.find ("AoA=",0);
+      position = text_line.find ("AOA=",0);
       if (position != string::npos) {
         text_line.erase (0,4); AoA_ = atof(text_line.c_str());
         if (config->GetDiscard_InFiles() == false) {

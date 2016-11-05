@@ -558,11 +558,7 @@ inline void CConfig::SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_
 
 inline su2double CConfig::GetAoA(void) { return AoA; }
 
-inline su2double CConfig::GetiH(void) { return iH; }
-
 inline void CConfig::SetAoA(su2double val_AoA) { AoA = val_AoA; }
-
-inline void CConfig::SetiH(su2double val_iH) { iH = val_iH; }
 
 inline void CConfig::SetAoA_Offset(su2double val_AoA_offset) { AoA_Offset = val_AoA_offset; }
 
