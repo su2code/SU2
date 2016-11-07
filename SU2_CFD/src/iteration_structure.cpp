@@ -53,7 +53,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
   bool stat_mesh = true;
   bool adjoint = config_container[val_iZone]->GetContinuous_Adjoint();
   bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool discrete_adjoint = config_container->GetDiscrete_Adjoint();
+  bool discrete_adjoint = config_container[val_iZone]->GetDiscrete_Adjoint();
 
   /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/

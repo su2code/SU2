@@ -89,42 +89,25 @@ int main(int argc, char *argv[]) {
 
   } else if ((nZone == 2) && fsi) {
 
-    bool stat_fsi = ((config_container[ZONE_0]->GetDynamic_Analysis() == STATIC) && (config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY));
-    bool disc_adj_fsi = (config_container[ZONE_0]->GetDiscrete_Adjoint());
+    bool stat_fsi = ((config->GetDynamic_Analysis() == STATIC) && (config->GetUnsteady_Simulation() == STEADY));
+    bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
 
     /*--- If the problem is a discrete adjoint FSI problem ---*/
     if (disc_adj_fsi) {
-
       if (stat_fsi) {
-
-        /*--- Discrete adjoint FSI problem: instantiate the discrete adjoint FSI driver class. ---*/
-
-        if (rank == MASTER_NODE) cout << "Instantiating a discrete adjoint, static Fluid-Structure Interaction driver for the problem. " << endl;
-        driver = new CDiscAdjFSIStatDriver(iteration_container, solver_container, geometry_container,
-            integration_container, numerics_container, interpolator_container,
-            transfer_container, config_container, val_nZone, val_nDim);
-
+        driver = new CDiscAdjFSIStatDriver(config_file_name, nZone, nDim);
       }
       else {
-        if (rank == MASTER_NODE) cout << "WARNING: There is no discrete adjoint implementation for dynamic FSI. " << endl;
+        cout << "WARNING: There is no discrete adjoint implementation for dynamic FSI. " << endl;
         exit(EXIT_FAILURE);
       }
-
     }
     /*--- If the problem is a direct FSI problem ---*/
     else{
       if (stat_fsi) {
-        /*--- FSI problem: instantiate the FSI driver class. ---*/
-        if (rank == MASTER_NODE) cout << "Instantiating a static Fluid-Structure Interaction driver for the problem. " << endl;
-        driver = new CFSIStatDriver(iteration_container, solver_container, geometry_container,
-            integration_container, numerics_container, interpolator_container,
-            transfer_container, config_container, val_nZone, val_nDim);
+        driver = new CFSIStatDriver(config_file_name, nZone, nDim);
       }
       else {
-
-        /*--- FSI problem: instantiate the FSI driver class. ---*/
-
-        if (rank == MASTER_NODE) cout << "Instantiating a Fluid-Structure Interaction driver for the problem. " << endl;
         driver = new CFSIDriver(config_file_name, nZone, nDim);
       }
     }
