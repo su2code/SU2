@@ -2576,8 +2576,6 @@ void CDriver::Output(unsigned long ExtIter) {
       /*--- Execute the routine for writing restart, volume solution,
        surface solution, and surface comma-separated value files. ---*/
 
-      output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-
       output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
       
       /*--- Output a file with the forces breakdown. ---*/
