@@ -91,6 +91,9 @@ class COutput {
   
   unsigned long nGlobal_Poin_Par;   // Global number of nodes with halos
   unsigned long nGlobal_Elem_Par;  // Global number of elems without halos
+  unsigned long nGlobal_Surf_Poin;
+  unsigned long nSurf_Elem_Par;
+  unsigned long nSurf_Poin_Par;
   unsigned long nParallel_Poin;
   unsigned long nParallel_Line,
   nParallel_BoundTria,
@@ -114,6 +117,7 @@ class COutput {
   unsigned short nVar_Par;
   su2double **Local_Data;
   su2double **Parallel_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  su2double **Parallel_Surf_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
   
 	su2double **Data;
@@ -392,9 +396,11 @@ public:
    * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_iZone - iZone index.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  void SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -645,11 +651,18 @@ public:
   void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
-   * \brief Sort the coordinates for each grid node into a linear partitioning across all processors.
+   * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SortOutputData(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Sort the surface output data for each grid node into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
   
   /*!
    * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
@@ -664,5 +677,12 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DeallocateData_Parallel(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
   
 };
