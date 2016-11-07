@@ -4414,8 +4414,20 @@ void CSpectralDriver::ComputeSpectralInterpolation(su2double *Object, su2double 
 
 void CSpectralDriver::SetSpectralAverage(){
 
-	unsigned short kZone;
+  unsigned short kZone,iZone;
 	su2double TotalPressureLossAvg = 0, EntropyGenAvg = 0, KineticEnergyLossAvg = 0;
+	/* Set drag coefficeint averaged over multiple zones */
+	su2double avg_CDrag = 0.0;
+	for (unsigned short iZone = 0; iZone < nZone; iZone++)
+	  {
+	    avg_CDrag += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+	  }
+	  avg_CDrag /= nZone;
+	  //for (unsigned short iZone = 0; iZone < nZone; iZone++)                                                              
+	  //solver_container[iZone][MESH_0][FLOW_SOL]->SetTotal_Avg_CDrag(avg_CDrag);
+       
+        for (unsigned short iZone = 0; iZone < nZone; iZone++)
+	  solver_container[iZone][MESH_0][FLOW_SOL]->SetTotal_CDrag(avg_CDrag);
 
 	switch (config_container[ZONE_0]->GetKind_SpectralAverage()) {
 	case ARITHMETIC_MEAN:
@@ -4494,7 +4506,7 @@ void CDiscAdjSpectralDriver::Run() {
       }
     }
   }
-
+   SetSpectralAverage();
   SetSensitivity(SOLUTION);
 
 
@@ -4585,8 +4597,9 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
     }
   }
 
+
   for (iZone = 0; iZone < nZone; iZone++)
-  	SetSpectralMethod(iZone);
+     SetSpectralMethod(iZone);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
@@ -4597,7 +4610,7 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
     direct_iteration[iZone]->Iterate(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, iZone);
-
+    
     /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
     if (config_container[iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
         config_container[iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
@@ -4606,7 +4619,7 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
                                    geometry_container[iZone][MESH_0], config_container[iZone]);
 
   }
-
+   SetSpectralAverage();
 
   /* --- Set turboperformance for multi-zone ---*/
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){

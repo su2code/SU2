@@ -390,7 +390,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
   switch (config->GetKind_ObjFunc()){
   case DRAG_COEFFICIENT:
     // For now changed to averaged drag for HB method
-		ObjFunc_Value = direct_solver->GetTotal_Avg_CDrag();
+		ObjFunc_Value = direct_solver->GetTotal_CDrag();
 		break;
   case LIFT_COEFFICIENT:
      ObjFunc_Value = direct_solver->GetTotal_CLift();

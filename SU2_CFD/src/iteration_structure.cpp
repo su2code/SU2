@@ -609,17 +609,6 @@ void CMeanFlowIteration::Iterate(COutput *output,
       
     }    
    }
-
-   /* Set drag coefficeint averaged over multiple zones */
-   su2double avg_CDrag = 0.0;
-   for (unsigned short iZone = 0; iZone < nZone; iZone++)
-     {
-       avg_CDrag += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
-       // cout << "avgCDrag(" << iZone << ") = " << solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
-     }
-   avg_CDrag /= nZone;
-   //cout << "avgCDrag_Final = " << avg_CDrag << endl;
-   solver_container[val_iZone][MESH_0][FLOW_SOL]->SetTotal_Avg_CDrag(avg_CDrag);
   
 }
 
