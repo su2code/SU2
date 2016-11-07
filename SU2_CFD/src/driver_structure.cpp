@@ -184,6 +184,8 @@ CDriver::CDriver(char* confFile,
     cout << endl <<"------------------------- Driver information --------------------------" << endl;
 
   fsi = config_container[ZONE_0]->GetFSI_Simulation();
+  bool stat_fsi = ((config_container[ZONE_0]->GetDynamic_Analysis() == STATIC) && (config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY));
+  bool disc_adj_fsi = (config_container[ZONE_0]->GetDiscrete_Adjoint());
 
   if(nZone == SINGLE_ZONE) {
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
@@ -192,7 +194,17 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE) cout << "A Harmonic Balance driver has been instantiated." << endl;
   }
   else if (nZone == 2 && fsi) {
-    if (rank == MASTER_NODE) cout << "A Fluid-Structure Interaction driver has been instantiated." << endl;
+    if (disc_adj_fsi) {
+      if (stat_fsi)
+        if (rank == MASTER_NODE) cout << "A Discrete-Adjoint driver for Fluid-Structure Interaction has been instantiated." << endl;
+    }
+    else{
+      if (stat_fsi)
+        if (rank == MASTER_NODE) cout << "A Static Fluid-Structure Interaction driver has been instantiated." << endl;
+      else
+        if (rank == MASTER_NODE) cout << "A Dynamic Fluid-Structure Interaction driver has been instantiated." << endl;
+    }
+
   }
   else {
     if (rank == MASTER_NODE) cout << "A multi-zone driver has been instantiated." << endl;
@@ -2313,7 +2325,7 @@ void CDriver::Iteration_Preprocessing() {
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEM structural iteration." << endl;
-      iteration_container[iZone] = new CDiscAdjFEAIteration(config[iZone]);
+      iteration_container[iZone] = new CDiscAdjFEAIteration(config_container[iZone]);
       break;
   }
   
@@ -4129,40 +4141,15 @@ void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 }
 
 
-CFSIStatDriver::CFSIStatDriver(CIteration **iteration_container,
-                       CSolver ****solver_container,
-                       CGeometry ***geometry_container,
-                       CIntegration ***integration_container,
-                       CNumerics *****numerics_container,
-                       CInterpolator ***interpolator_container,
-                       CTransfer ***transfer_container,
-                       CConfig **config_container,
-                       unsigned short val_nZone,
-                       unsigned short val_nDim) : CFSIDriver(iteration_container,
-                                                           solver_container,
-                                                           geometry_container,
-                                                           integration_container,
-                                                           numerics_container,
-                                                           interpolator_container,
-                                                           transfer_container,
-                                                           config_container,
-                                                           val_nZone,
-                                                           val_nDim) { }
+CFSIStatDriver::CFSIStatDriver(char* confFile,
+                                   unsigned short val_nZone,
+                                   unsigned short val_nDim) : CFSIDriver(confFile,
+                                                                           val_nZone,
+                                                                           val_nDim) { }
 
 CFSIStatDriver::~CFSIStatDriver(void) { }
 
-void CFSIStatDriver::Run(CIteration **iteration_container,
-                     COutput *output,
-                     CIntegration ***integration_container,
-                     CGeometry ***geometry_container,
-                     CSolver ****solver_container,
-                     CNumerics *****numerics_container,
-                     CConfig **config_container,
-                     CSurfaceMovement **surface_movement,
-                     CVolumetricMovement **grid_movement,
-                     CFreeFormDefBox*** FFDBox,
-                     CInterpolator ***interpolator_container,
-                     CTransfer ***transfer_container) {
+void CFSIStatDriver::Run() {
 
   /*--- As of now, we are coding it for just 2 zones. ---*/
   /*--- This will become more general, but we need to modify the configuration for that ---*/
@@ -4192,7 +4179,8 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
 
    /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
    bool restart = (config_container[ZONE_FLOW]->GetRestart() || config_container[ZONE_FLOW]->GetRestart_Flow());
-   unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+//   unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+   ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
    if (restart){
     unsigned short ZONE_FLOW = 0;
@@ -4203,10 +4191,7 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
   /*---------------- Predict structural displacements ---------------*/
   /*-----------------------------------------------------------------*/
 
-  Predict_Displacements(output, integration_container, geometry_container,
-                      solver_container, numerics_container, config_container,
-                      surface_movement, grid_movement, FFDBox,
-                      ZONE_STRUCT, ZONE_FLOW);
+  Predict_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
 
   while (FSIIter < nFSIIter){
@@ -4215,10 +4200,7 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
     /*------------------- Transfer Displacements ----------------------*/
     /*-----------------------------------------------------------------*/
 
-    Transfer_Displacements(output, integration_container, geometry_container,
-                solver_container, numerics_container, config_container,
-                surface_movement, grid_movement, FFDBox, transfer_container,
-                ZONE_STRUCT, ZONE_FLOW);
+    Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
     /*-----------------------------------------------------------------*/
     /*------------------- Set the Grid movement -----------------------*/
@@ -4226,8 +4208,9 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
     /*---- as the flag Grid_Movement is set to false in this case -----*/
     /*-----------------------------------------------------------------*/
 
-    SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
-                     solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
+    iteration_container[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement,
+                                                     grid_movement, FFDBox, solver_container,
+                                                     config_container, ZONE_FLOW, IntIter, ExtIter);
 
     /*-----------------------------------------------------------------*/
     /*-------------------- Fluid subiteration -------------------------*/
@@ -4274,10 +4257,7 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
     /*------------------- Set FEA loads from fluid --------------------*/
     /*-----------------------------------------------------------------*/
 
-    Transfer_Tractions(output, integration_container, geometry_container,
-                solver_container, numerics_container, config_container,
-                surface_movement, grid_movement, FFDBox, transfer_container,
-                ZONE_FLOW, ZONE_STRUCT);
+    Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
 
     /*-----------------------------------------------------------------*/
     /*------------------ Structural subiteration ----------------------*/
@@ -4299,8 +4279,7 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
     /*----------------- Displacements relaxation ----------------------*/
     /*-----------------------------------------------------------------*/
 
-    Relaxation_Displacements(output, geometry_container, solver_container, config_container,
-                 ZONE_STRUCT, ZONE_FLOW, FSIIter);
+    Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, FSIIter);
 
     /*-----------------------------------------------------------------*/
     /*-------------------- Check convergence --------------------------*/
@@ -4335,10 +4314,7 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
   /*------------------ Update coupled solver ------------------------*/
   /*-----------------------------------------------------------------*/
 
-  Update(output, integration_container, geometry_container,
-           solver_container, numerics_container, config_container,
-           surface_movement, grid_movement, FFDBox, transfer_container,
-           ZONE_FLOW, ZONE_STRUCT);
+  Update(ZONE_FLOW, ZONE_STRUCT);
 
 
   /*-----------------------------------------------------------------*/
@@ -4363,25 +4339,11 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
 
 
 
-CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(CIteration **iteration_container,
-                       CSolver ****solver_container,
-                       CGeometry ***geometry_container,
-                       CIntegration ***integration_container,
-                       CNumerics *****numerics_container,
-                       CInterpolator ***interpolator_container,
-                       CTransfer ***transfer_container,
-                       CConfig **config_container,
-                       unsigned short val_nZone,
-                       unsigned short val_nDim) : CFSIStatDriver(iteration_container,
-                                                                   solver_container,
-                                                                   geometry_container,
-                                                                   integration_container,
-                                                                   numerics_container,
-                                                                   interpolator_container,
-                                                                   transfer_container,
-                                                                   config_container,
-                                                                   val_nZone,
-                                                                   val_nDim) {
+CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
+                                                   unsigned short val_nZone,
+                                                   unsigned short val_nDim) : CFSIStatDriver(confFile,
+                                                                                               val_nZone,
+                                                                                               val_nDim) {
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -4499,18 +4461,7 @@ CDiscAdjFSIStatDriver::~CDiscAdjFSIStatDriver(void) {
 }
 
 
-void CDiscAdjFSIStatDriver::Run(CIteration **iteration_container,
-                     COutput *output,
-                     CIntegration ***integration_container,
-                     CGeometry ***geometry_container,
-                     CSolver ****solver_container,
-                     CNumerics *****numerics_container,
-                     CConfig **config_container,
-                     CSurfaceMovement **surface_movement,
-                     CVolumetricMovement **grid_movement,
-                     CFreeFormDefBox*** FFDBox,
-                     CInterpolator ***interpolator_container,
-                     CTransfer ***transfer_container) {
+void CDiscAdjFSIStatDriver::Run( ) {
 
   /*--- As of now, we are coding it for just 2 zones. ---*/
   /*--- This will become more general, but we need to modify the configuration for that ---*/
@@ -4535,20 +4486,14 @@ void CDiscAdjFSIStatDriver::Run(CIteration **iteration_container,
 #endif
 
 
-  Preprocess(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-             config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-             ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+  Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
   switch (Kind_Objective_Function){
   case FLOW_OBJECTIVE_FUNCTION:
-    Iterate_Block_FlowOF(iteration_container, output, integration_container, geometry_container, solver_container,
-        numerics_container, config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container, ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+    Iterate_Block_FlowOF(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
     break;
   case FEM_OBJECTIVE_FUNCTION:
-    Iterate_Block_StructuralOF(iteration_container, output, integration_container, geometry_container, solver_container,
-        numerics_container, config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container, ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+    Iterate_Block_StructuralOF(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
     break;
   }
 
@@ -4556,19 +4501,7 @@ void CDiscAdjFSIStatDriver::Run(CIteration **iteration_container,
 }
 
 
-void CDiscAdjFSIStatDriver::Preprocess(CIteration **iteration_container,
-                  COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  CInterpolator ***interpolator_container,
-                  CTransfer ***transfer_container,
-                  unsigned short ZONE_FLOW,
+void CDiscAdjFSIStatDriver::Preprocess(unsigned short ZONE_FLOW,
                   unsigned short ZONE_STRUCT,
                   unsigned short kind_recording){
 
@@ -4769,9 +4702,7 @@ void CDiscAdjFSIStatDriver::Preprocess(CIteration **iteration_container,
 
 }
 
-void CDiscAdjFSIStatDriver::PrintDirect_Residuals(CSolver ****solver_container,
-                                                          CConfig **config_container,
-                                                          unsigned short ZONE_FLOW,
+void CDiscAdjFSIStatDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
                                                           unsigned short ZONE_STRUCT,
                                                           unsigned short kind_recording){
 
@@ -4798,8 +4729,8 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(CSolver ****solver_container,
 
     if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )){
       cout << "log10[RMS Density]: "<< log10(solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-                     <<", Drag: " <<solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CDrag()
-                     <<", Lift: " << solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+                     <<", Drag: " <<solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CD()
+                     <<", Lift: " << solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CL() << "." << endl;
 
       if (turbulent){
         cout << "log10[RMS k]: " << log10(solver_container[ZONE_FLOW][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
@@ -4808,15 +4739,15 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(CSolver ****solver_container,
         switch (config_container[ZONE_FLOW]->GetKind_ObjFunc()){
         case DRAG_COEFFICIENT:
           kind_OFunction = "(Drag coefficient): ";
-          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CD();
           break;
         case LIFT_COEFFICIENT:
           kind_OFunction = "(Lift coefficient): ";
-          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CLift();
+          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CL();
           break;
         case SIDEFORCE_COEFFICIENT:
           kind_OFunction = "(Sideforce coefficient): ";
-          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CSideForce();
+          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CSF();
           break;
         case EFFICIENCY:
           kind_OFunction = "(Efficiency): ";
@@ -4849,6 +4780,21 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(CSolver ****solver_container,
         case MASS_FLOW_RATE:
           kind_OFunction = "(Mass flow rate): ";
           val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetOneD_MassFlowRate();
+          break;
+        case NET_THRUST_COEFFICIENT:
+          kind_OFunction = "(Net thrust coefficient): ";
+          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_NetCThrust();
+          break;
+        case IDC_COEFFICIENT:
+          kind_OFunction = "(IDC coefficient): ";
+          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_IDC();
+          break;
+        case PROPULSIVE_EFFICIENCY:
+          kind_OFunction = "(Propulsive efficiency): ";
+          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_Prop_Eff();
+          break;
+        case CUSTOM_COEFFICIENT:
+          val_OFunction = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_Custom();
           break;
         default:
           val_OFunction = 0.0;  // If the objective function is computed in a different physical problem
@@ -4899,10 +4845,7 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(CSolver ****solver_container,
 
 }
 
-void CDiscAdjFSIStatDriver::Iterate_Direct(CIteration **iteration_container, COutput *output, CIntegration ***integration_container,
-                              CGeometry ***geometry_container, CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                              CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox, CInterpolator ***interpolator_container,
-                              CTransfer ***transfer_container, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::Iterate_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording){
 
   bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
 
@@ -4910,9 +4853,7 @@ void CDiscAdjFSIStatDriver::Iterate_Direct(CIteration **iteration_container, COu
       (kind_recording == GEOMETRY_VARIABLES) ||
       (kind_recording == FEM_CROSS_TERM_FLOW)) {
 
-    Fluid_Iteration_Direct(iteration_container, transfer_container, output, integration_container, geometry_container,
-        solver_container, numerics_container, config_container, interpolator_container, surface_movement, grid_movement,
-        FFDBox, ZONE_FLOW, ZONE_STRUCT);
+    Fluid_Iteration_Direct(ZONE_FLOW, ZONE_STRUCT);
 
 
   }
@@ -4921,29 +4862,21 @@ void CDiscAdjFSIStatDriver::Iterate_Direct(CIteration **iteration_container, COu
       (kind_recording == FLOW_CROSS_TERM) ||
       (kind_recording == GEOMETRY_CROSS_TERM)) {
 
-    Structural_Iteration_Direct(iteration_container, transfer_container, output, integration_container, geometry_container,
-        solver_container, numerics_container, config_container, interpolator_container, surface_movement, grid_movement,
-        FFDBox, ZONE_FLOW, ZONE_STRUCT);
+    Structural_Iteration_Direct(ZONE_FLOW, ZONE_STRUCT);
 
   }
 
 
   if (kind_recording == FEM_CROSS_TERM_GEOMETRY) {
 
-    Mesh_Deformation_Direct(iteration_container, transfer_container, output, integration_container, geometry_container,
-        solver_container, numerics_container, config_container, interpolator_container, surface_movement, grid_movement,
-        FFDBox, ZONE_FLOW, ZONE_STRUCT);
+    Mesh_Deformation_Direct(ZONE_FLOW, ZONE_STRUCT);
 
   }
 
 
 }
 
-void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
-    CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
-    CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
-    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-    unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
+void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   /*--- Set ExtIter to 0 ---*/
 
@@ -4978,11 +4911,7 @@ void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(CIteration **iteration_contai
 
 }
 
-void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
-    CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
-    CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
-    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-    unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
+void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
   unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
@@ -5002,10 +4931,7 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
   /*-------------------- Transfer Tractions -------------------------*/
   /*-----------------------------------------------------------------*/
 
-  Transfer_Tractions(output, integration_container, geometry_container,
-              solver_container, numerics_container, config_container,
-              surface_movement, grid_movement, FFDBox, transfer_container,
-              ZONE_FLOW, ZONE_STRUCT);
+  Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
 
   /*-----------------------------------------------------------------*/
   /*--------------- Iterate the structural solver -------------------*/
@@ -5024,11 +4950,7 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
 
 }
 
-void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
-    CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
-    CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
-    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-    unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
+void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
   unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
@@ -5048,10 +4970,7 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(CIteration **iteration_conta
   /*------------------- Transfer Displacements ----------------------*/
   /*-----------------------------------------------------------------*/
 
-  Transfer_Displacements(output, integration_container, geometry_container,
-      solver_container, numerics_container, config_container,
-      surface_movement, grid_movement, FFDBox, transfer_container,
-      ZONE_STRUCT, ZONE_FLOW);
+  Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
   /*-----------------------------------------------------------------*/
   /*------------------- Set the Grid movement -----------------------*/
@@ -5059,8 +4978,9 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(CIteration **iteration_conta
   /*---- as the flag Grid_Movement is set to false in this case -----*/
   /*-----------------------------------------------------------------*/
 
-  SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
-      solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
+  direct_iteration[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement,
+                                                   grid_movement, FFDBox, solver_container,
+                                                   config_container, ZONE_FLOW, IntIter, ExtIter);
 
 //  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
 //  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
@@ -5068,21 +4988,9 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(CIteration **iteration_conta
 
 }
 
-void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
-                                           COutput *output,
-                                           CIntegration ***integration_container,
-                                           CGeometry ***geometry_container,
-                                           CSolver ****solver_container,
-                                           CNumerics *****numerics_container,
-                                           CConfig **config_container,
-                                           CSurfaceMovement **surface_movement,
-                                           CVolumetricMovement **grid_movement,
-                                           CFreeFormDefBox*** FFDBox,
-                                           CInterpolator ***interpolator_container,
-                                           CTransfer ***transfer_container,
-                                           unsigned short ZONE_FLOW,
-                                           unsigned short ZONE_STRUCT,
-                                           unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::SetRecording(unsigned short ZONE_FLOW,
+                                              unsigned short ZONE_STRUCT,
+                                              unsigned short kind_recording){
 
   bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
 
@@ -5158,28 +5066,20 @@ void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
 
     /*--- Clear indices ---*/
 
-    PrepareRecording(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-                     config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-                     ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+    PrepareRecording(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
     /*--- Clear indices of coupling variables ---*/
 
-    SetDependencies(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-                    config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-                    ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+    SetDependencies(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
-    Iterate_Direct(iteration_container,output, integration_container, geometry_container, solver_container, numerics_container,
-          config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-          ZONE_FLOW, ZONE_STRUCT, kind_recording);
+    Iterate_Direct(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   }
 
   /*--- Prepare for recording ---*/
 
-  PrepareRecording(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-                   config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-                   ZONE_FLOW, ZONE_STRUCT, kind_recording);
+  PrepareRecording(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   /*--- Start the recording of all operations ---*/
 
@@ -5187,26 +5087,18 @@ void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
 
   /*--- Register input variables ---*/
 
-  RegisterInput(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-                config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-                ZONE_FLOW, ZONE_STRUCT, kind_recording);
+  RegisterInput(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   /*--- Set dependencies for flow, geometry and structural solvers ---*/
 
-  SetDependencies(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-                  config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-                  ZONE_FLOW, ZONE_STRUCT, kind_recording);
+  SetDependencies(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   /*--- Run a direct iteration ---*/
-  Iterate_Direct(iteration_container,output, integration_container, geometry_container, solver_container, numerics_container,
-      config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-      ZONE_FLOW, ZONE_STRUCT, kind_recording);
+  Iterate_Direct(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   /*--- Register objective function and output variables ---*/
 
-  RegisterOutput(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-                config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container,
-                ZONE_FLOW, ZONE_STRUCT, kind_recording);
+  RegisterOutput(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   /*--- Stop the recording ---*/
   AD::StopRecording();
@@ -5222,21 +5114,9 @@ void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
 
 }
 
-void CDiscAdjFSIStatDriver::PrepareRecording(CIteration **iteration_container,
-                  COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  CInterpolator ***interpolator_container,
-                  CTransfer ***transfer_container,
-                  unsigned short ZONE_FLOW,
-                  unsigned short ZONE_STRUCT,
-                  unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::PrepareRecording(unsigned short ZONE_FLOW,
+                                                   unsigned short ZONE_STRUCT,
+                                                   unsigned short kind_recording){
 
   unsigned short iMesh;
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
@@ -5259,21 +5139,9 @@ void CDiscAdjFSIStatDriver::PrepareRecording(CIteration **iteration_container,
 
 }
 
-void CDiscAdjFSIStatDriver::RegisterInput(CIteration **iteration_container,
-                  COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  CInterpolator ***interpolator_container,
-                  CTransfer ***transfer_container,
-                  unsigned short ZONE_FLOW,
-                  unsigned short ZONE_STRUCT,
-                  unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::RegisterInput(unsigned short ZONE_FLOW,
+                                               unsigned short ZONE_STRUCT,
+                                               unsigned short kind_recording){
 
   bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
 
@@ -5299,21 +5167,9 @@ void CDiscAdjFSIStatDriver::RegisterInput(CIteration **iteration_container,
 
 }
 
-void CDiscAdjFSIStatDriver::SetDependencies(CIteration **iteration_container,
-                  COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  CInterpolator ***interpolator_container,
-                  CTransfer ***transfer_container,
-                  unsigned short ZONE_FLOW,
-                  unsigned short ZONE_STRUCT,
-                  unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::SetDependencies(unsigned short ZONE_FLOW,
+                                                  unsigned short ZONE_STRUCT,
+                                                  unsigned short kind_recording){
 
   bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
 
@@ -5328,21 +5184,9 @@ void CDiscAdjFSIStatDriver::SetDependencies(CIteration **iteration_container,
 
 }
 
-void CDiscAdjFSIStatDriver::RegisterOutput(CIteration **iteration_container,
-                  COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  CInterpolator ***interpolator_container,
-                  CTransfer ***transfer_container,
-                  unsigned short ZONE_FLOW,
-                  unsigned short ZONE_STRUCT,
-                  unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::RegisterOutput(unsigned short ZONE_FLOW,
+                                                 unsigned short ZONE_STRUCT,
+                                                 unsigned short kind_recording){
 
   bool print_output = config_container[ZONE_FLOW]->GetDeform_Output();
 
@@ -5400,19 +5244,7 @@ void CDiscAdjFSIStatDriver::RegisterOutput(CIteration **iteration_container,
 }
 
 
-void CDiscAdjFSIStatDriver::Iterate_Block(CIteration **iteration_container,
-                                                COutput *output,
-                                                CIntegration ***integration_container,
-                                                CGeometry ***geometry_container,
-                                                CSolver ****solver_container,
-                                                CNumerics *****numerics_container,
-                                                CConfig **config_container,
-                                                CSurfaceMovement **surface_movement,
-                                                CVolumetricMovement **grid_movement,
-                                                CFreeFormDefBox*** FFDBox,
-                                                CInterpolator ***interpolator_container,
-                                                CTransfer ***transfer_container,
-                                                unsigned short ZONE_FLOW,
+void CDiscAdjFSIStatDriver::Iterate_Block(unsigned short ZONE_FLOW,
                                                 unsigned short ZONE_STRUCT,
                                                 unsigned short kind_recording){
 
@@ -5435,13 +5267,11 @@ void CDiscAdjFSIStatDriver::Iterate_Block(CIteration **iteration_container,
 
   /*--- Record one direct iteration with kind_recording as input ---*/
 
-  SetRecording(iteration_container, output, integration_container, geometry_container, solver_container, numerics_container,
-               config_container, surface_movement, grid_movement, FFDBox, interpolator_container, transfer_container, ZONE_FLOW,
-               ZONE_STRUCT, kind_recording);
+  SetRecording(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   /*--- Print the residuals of the direct subiteration ---*/
 
-  PrintDirect_Residuals(solver_container, config_container, ZONE_FLOW, ZONE_STRUCT, kind_recording);
+  PrintDirect_Residuals(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   /*--- Run the iteration ---*/
 
@@ -5473,8 +5303,7 @@ void CDiscAdjFSIStatDriver::Iterate_Block(CIteration **iteration_container,
 
     /*--- Set the adjoint values of the flow and objective function ---*/
 
-    InitializeAdjoint(iteration_container, geometry_container, solver_container,  config_container,
-                      ZONE_FLOW, ZONE_STRUCT, kind_recording);
+    InitializeAdjoint(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
     /*--- Run the adjoint computation ---*/
 
@@ -5482,23 +5311,20 @@ void CDiscAdjFSIStatDriver::Iterate_Block(CIteration **iteration_container,
 
     /*--- Extract the adjoints of the input variables and store them for the next iteration ---*/
 
-    ExtractAdjoint(iteration_container, geometry_container, solver_container,  config_container,
-                   ZONE_FLOW, ZONE_STRUCT, kind_recording);
+    ExtractAdjoint(ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
     /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
     AD::ClearAdjoints();
 
     /*--- Check the convergence of the adjoint block ---*/
 
-    adjoint_convergence = CheckConvergence(integration_container, geometry_container, solver_container, config_container,
-                                           IntIter, ZONE_FLOW, ZONE_STRUCT, kind_recording);
+    adjoint_convergence = CheckConvergence(IntIter, ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
 //    if (adjoint_convergence) break;
 
     /*--- Write the convergence history (only screen output) ---*/
 
-    ConvergenceHistory(integration_container, geometry_container, solver_container, config_container,
-                       output, IntIter, nIntIter, ZONE_FLOW, ZONE_STRUCT, kind_recording);
+    ConvergenceHistory(IntIter, nIntIter, ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
   }
 
@@ -5512,11 +5338,7 @@ void CDiscAdjFSIStatDriver::Iterate_Block(CIteration **iteration_container,
 }
 
 
-void CDiscAdjFSIStatDriver::InitializeAdjoint(CIteration **iteration_container,
-                                                     CGeometry ***geometry_container,
-                                                     CSolver ****solver_container,
-                                                     CConfig **config_container,
-                                                     unsigned short ZONE_FLOW,
+void CDiscAdjFSIStatDriver::InitializeAdjoint(unsigned short ZONE_FLOW,
                                                      unsigned short ZONE_STRUCT,
                                                      unsigned short kind_recording){
 
@@ -5578,11 +5400,7 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(CIteration **iteration_container,
 
 }
 
-void CDiscAdjFSIStatDriver::ExtractAdjoint(CIteration **iteration_container,
-                                                  CGeometry ***geometry_container,
-                                                  CSolver ****solver_container,
-                                                  CConfig **config_container,
-                                                  unsigned short ZONE_FLOW,
+void CDiscAdjFSIStatDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
                                                   unsigned short ZONE_STRUCT,
                                                   unsigned short kind_recording){
 
@@ -5678,14 +5496,10 @@ void CDiscAdjFSIStatDriver::ExtractAdjoint(CIteration **iteration_container,
 
 
 
-bool CDiscAdjFSIStatDriver::CheckConvergence(CIntegration ***integration_container,
-                                                    CGeometry ***geometry_container,
-                                                    CSolver ****solver_container,
-                                                    CConfig **config_container,
-                                                    unsigned long IntIter,
-                                                    unsigned short ZONE_FLOW,
-                                                    unsigned short ZONE_STRUCT,
-                                                    unsigned short kind_recording){
+bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
+                                                   unsigned short ZONE_FLOW,
+                                                   unsigned short ZONE_STRUCT,
+                                                   unsigned short kind_recording){
 
   bool flow_convergence    = false,
         mesh_convergence    = false,
@@ -5730,12 +5544,7 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(CIntegration ***integration_contain
 
 }
 
-void CDiscAdjFSIStatDriver::ConvergenceHistory(CIntegration ***integration_container,
-                                                      CGeometry ***geometry_container,
-                                                      CSolver ****solver_container,
-                                                      CConfig **config_container,
-                                                      COutput *output,
-                                                      unsigned long IntIter,
+void CDiscAdjFSIStatDriver::ConvergenceHistory(unsigned long IntIter,
                                                       unsigned long nIntIter,
                                                       unsigned short ZONE_FLOW,
                                                       unsigned short ZONE_STRUCT,
@@ -5808,21 +5617,9 @@ void CDiscAdjFSIStatDriver::ConvergenceHistory(CIntegration ***integration_conta
 
 }
 
-void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(CIteration **iteration_container,
-                                                COutput *output,
-                                                CIntegration ***integration_container,
-                                                CGeometry ***geometry_container,
-                                                CSolver ****solver_container,
-                                                CNumerics *****numerics_container,
-                                                CConfig **config_container,
-                                                CSurfaceMovement **surface_movement,
-                                                CVolumetricMovement **grid_movement,
-                                                CFreeFormDefBox*** FFDBox,
-                                                CInterpolator ***interpolator_container,
-                                                CTransfer ***transfer_container,
-                                                unsigned short ZONE_FLOW,
-                                                unsigned short ZONE_STRUCT,
-                                                unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
+                                                       unsigned short ZONE_STRUCT,
+                                                       unsigned short kind_recording){
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5850,56 +5647,31 @@ void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(CIteration **iteration_containe
 
     /*--- Iterate fluid (including cross term) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FLOW_VARIABLES);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_VARIABLES);
 
     /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, GEOMETRY_VARIABLES);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_VARIABLES);
 
     /*--- Compute mesh cross term (dM / dSv) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
 
     /*--- Iterate structure first ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FEM_VARIABLES);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_VARIABLES);
 
     /*--- Compute cross term (dS / dFv) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
 
     /*--- Compute cross term (dM / dSv) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
 
 
     /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(integration_container, geometry_container, solver_container, numerics_container,
-        config_container, iFSIIter, ZONE_FLOW, ZONE_STRUCT);
+    BGS_Converged = BGSConvergence(iFSIIter, ZONE_FLOW, ZONE_STRUCT);
 
     if (BGS_Converged) break;
 
@@ -5908,21 +5680,9 @@ void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(CIteration **iteration_containe
 
 }
 
-void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_container,
-                                                COutput *output,
-                                                CIntegration ***integration_container,
-                                                CGeometry ***geometry_container,
-                                                CSolver ****solver_container,
-                                                CNumerics *****numerics_container,
-                                                CConfig **config_container,
-                                                CSurfaceMovement **surface_movement,
-                                                CVolumetricMovement **grid_movement,
-                                                CFreeFormDefBox*** FFDBox,
-                                                CInterpolator ***interpolator_container,
-                                                CTransfer ***transfer_container,
-                                                unsigned short ZONE_FLOW,
-                                                unsigned short ZONE_STRUCT,
-                                                unsigned short kind_recording){
+void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
+                                                              unsigned short ZONE_STRUCT,
+                                                              unsigned short kind_recording){
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5952,64 +5712,35 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
 
     /*--- Iterate structure first ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FEM_VARIABLES);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_VARIABLES);
 
     /*--- Compute cross term (dS / dFv) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
 
     /*--- Compute cross term (dM / dSv) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
 
     /*--- Iterate fluid (including cross term) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FLOW_VARIABLES);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_VARIABLES);
 
     /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, GEOMETRY_VARIABLES);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_VARIABLES);
 
     /*--- Compute flow cross term (dF / dSv) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_FLOW);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_FLOW);
 
     /*--- Compute mesh cross term (dM / dSv) ---*/
 
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
 
 
     /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(integration_container, geometry_container, solver_container, numerics_container,
-        config_container, iFSIIter, ZONE_FLOW, ZONE_STRUCT);
+    BGS_Converged = BGSConvergence(iFSIIter, ZONE_FLOW, ZONE_STRUCT);
 
     if (BGS_Converged) break;
 
@@ -6018,12 +5749,7 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
 
 }
 
-bool CDiscAdjFSIStatDriver::BGSConvergence(CIntegration ***integration_container,
-                                                 CGeometry ***geometry_container,
-                                                 CSolver ****solver_container,
-                                                 CNumerics *****numerics_container,
-                                                 CConfig **config_container,
-                                                 unsigned long IntIter,
+bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
                                                  unsigned short ZONE_FLOW,
                                                  unsigned short ZONE_STRUCT){
 
