@@ -8593,6 +8593,14 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   													valueSpan[nSpan_loc] = coord[2];
   												}
   												break;
+  											case AXIAL_CENTRIFUGAL:
+  												if (marker_flag == INFLOW){
+  													valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+  												}
+  												else{
+  													valueSpan[nSpan_loc] = coord[2];
+  												}
+  												break;
 
   											}
   											nSpan_loc++;
@@ -8716,6 +8724,18 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   												break;
   											case CENTRIPETAL_AXIAL:
   												if (marker_flag == OUTFLOW){
+  													radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+  													if (radius < min) min = radius;
+  													if (radius > max) max = radius;
+  												}
+  												else{
+  													if (coord[2] < min) min = coord[2];
+  													if (coord[2] > max) max = coord[2];
+  												}
+  												break;
+
+  											case AXIAL_CENTRIFUGAL:
+  												if (marker_flag == INFLOW){
   													radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
   													if (radius < min) min = radius;
   													if (radius > max) max = radius;
@@ -9034,6 +9054,26 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 											}
 									}
 									break;
+
+								case AXIAL_CENTRIFUGAL:
+									if (marker_flag == INFLOW){
+										radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+										for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+											if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+												dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+												jSpan=iSpan;
+											}
+										}
+									}
+									else{
+										for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+												if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+													dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+													jSpan=iSpan;
+												}
+											}
+									}
+									break;
 								}
 
 								nVertexSpan[iMarker][jSpan]++;
@@ -9103,6 +9143,25 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 										}
 									}
 									break;
+
+								case AXIAL_CENTRIFUGAL:
+										if(marker_flag == INFLOW){
+											radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+											for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+												if (dist > (abs(radius - SpanWiseValue[marker_flag-1][iSpan]))){
+													dist= abs(radius-SpanWiseValue[marker_flag-1][iSpan]);
+													jSpan=iSpan;
+												}
+											}
+										}else{
+											for(iSpan = 0; iSpan < nSpanWiseSections[marker_flag-1]; iSpan++){
+												if (dist > (abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]))){
+													dist= abs(coord[2]-SpanWiseValue[marker_flag-1][iSpan]);
+													jSpan=iSpan;
+												}
+											}
+										}
+										break;
 								}
 
 								/*--- compute the face area associated with the vertex ---*/
@@ -9206,6 +9265,20 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 									}
 									break;
 								case CENTRIPETAL_AXIAL:
+									Normal2 = 0.0;
+									for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+									if (marker_flag == INFLOW){
+										TurboNormal[0] = coord[0]/sqrt(Normal2);
+										TurboNormal[1] = coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}else{
+										TurboNormal[0] = coord[0]/sqrt(Normal2);
+										TurboNormal[1] = coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}
+									break;
+
+								case AXIAL_CENTRIFUGAL:
 									Normal2 = 0.0;
 									for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
 									if (marker_flag == INFLOW){
@@ -9722,6 +9795,15 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZo
 								}
 								else{
 									AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+								}
+								break;
+							case AXIAL_CENTRIFUGAL:
+								if (marker_flag == INFLOW)
+								{
+									AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+								}else
+								{
+									AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
 								}
 								break;
 
