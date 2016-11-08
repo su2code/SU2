@@ -2615,8 +2615,12 @@ void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_con
   su2double Transfer_Time = 0.0;
 
   if (Ramp_Load){
-    if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
-    switch (config->GetDynamic_LoadTransfer()){
+    if (Ramp_Time == 0.0)
+      ModAmpl = 1.0;
+    else
+      Transfer_Time = CurrentTime / Ramp_Time;
+
+    switch (config->GetDynamic_LoadTransfer()) {
     case INSTANTANEOUS:
       ModAmpl = 1.0;
       break;
@@ -2933,8 +2937,12 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
 
   
   if (Ramp_Load) {
-    if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
-    switch (config->GetDynamic_LoadTransfer()){
+    if (Ramp_Time == 0.0)
+      ModAmpl = 1.0;
+    else
+      Transfer_Time = CurrentTime / Ramp_Time;
+
+    switch (config->GetDynamic_LoadTransfer()) {
     case INSTANTANEOUS:
       ModAmpl = 1.0;
       break;
@@ -3286,9 +3294,13 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 //  else{
 //    TotalLoad=LoadDirVal*LoadDirMult;
 //  }
-  
+
   if (Ramp_Load) {
-    if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
+    if (Ramp_Time == 0.0)
+      ModAmpl = 1.0;
+    else
+      Transfer_Time = CurrentTime / Ramp_Time;
+
     switch (config->GetDynamic_LoadTransfer()) {
     case INSTANTANEOUS:
       ModAmpl = 1.0;

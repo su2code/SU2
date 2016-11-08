@@ -595,8 +595,8 @@ public:
 };
 
 /*!
- * \class CDiscAdjBlockFSIDriver
- * \brief Class for driving a BLOCK discrete adjoint FSI iteration.
+ * \class CDiscAdjFSIStatDriver
+ * \brief Class for driving a discrete adjoint FSI iteration.
  * \author R. Sanchez.
  * \version 4.2.0 "Cardinal"
  */
@@ -874,6 +874,14 @@ public:
   void RegisterOutput(unsigned short ZONE_FLOW,
                     unsigned short ZONE_STRUCT,
                     unsigned short kind_recording);
+
+  /*!
+   * \brief Run the post-processing routines.
+   * \param[in] ZONE_FLOW - zone of the fluid solver.
+   * \param[in] ZONE_STRUCT - zone of the structural solver.
+   */
+  void Postprocess(unsigned short ZONE_FLOW,
+                     unsigned short ZONE_STRUCT);
 
 
 };
