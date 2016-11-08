@@ -341,6 +341,13 @@ CDriver::CDriver(char* confFile,
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
 
+    if (config_container[iZone]->GetKind_GridMovement(iZone) == FLUID_STRUCTURE_STATIC){
+      if (rank == MASTER_NODE)
+        cout << "Setting moving mesh structure for static FSI problems." << endl;
+        /*--- Instantiate the container for the grid movement structure ---*/
+        grid_movement[iZone]    = new CElasticityMovement(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+
 
   }
 
@@ -3151,8 +3158,9 @@ void CSingleZoneDriver::Update() {
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, ZONE_0);
 
-  if (config_container[ZONE_0]->GetKind_Solver() == ADJ_ELASTICITY){
-    iteration_container[ZONE_0]->Postprocess(output, integration_container, geometry_container,
+  if ((config_container[ZONE_0]->GetKind_Solver() == ADJ_ELASTICITY) ||
+      (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM)){
+      iteration_container[ZONE_0]->Postprocess(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, ZONE_0);
   }
@@ -4496,6 +4504,8 @@ void CDiscAdjFSIStatDriver::Run( ) {
     Iterate_Block_StructuralOF(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
     break;
   }
+
+  Postprocess(ZONE_FLOW, ZONE_STRUCT);
 
 
 }
@@ -5943,6 +5953,22 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
   return Convergence;
 }
 
+void CDiscAdjFSIStatDriver::Postprocess(unsigned short ZONE_FLOW,
+                                             unsigned short ZONE_STRUCT) {
+
+  unsigned short iMarker;
+
+  /*--- Apply BC's to the structural adjoint after the solution has converged (to avoid unphysical values in clamped nodes) ---*/
+  for (iMarker = 0; iMarker < config_container[ZONE_STRUCT]->GetnMarker_All(); iMarker++)
+  switch (config_container[ZONE_STRUCT]->GetMarker_All_KindBC(iMarker)) {
+    case CLAMPED_BOUNDARY:
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[ZONE_STRUCT][MESH_0],
+        solver_container[ZONE_STRUCT][MESH_0], numerics_container[ZONE_STRUCT][MESH_0][FEA_SOL][FEA_TERM],
+        config_container[ZONE_STRUCT], iMarker);
+    break;
+  }
+
+}
 
 
 
