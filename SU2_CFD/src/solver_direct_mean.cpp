@@ -1147,27 +1147,6 @@ CEulerSolver::~CEulerSolver(void) {
       delete [] ActDisk_DeltaT[iMarker];
     delete [] ActDisk_DeltaT;
   }
-  
-  if (Inlet_Ttotal != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] Inlet_Ttotal[iMarker];
-    delete [] Inlet_Ttotal;
-  }
-
-  if (Inlet_Ptotal != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete [] Inlet_Ptotal[iMarker];
-    delete [] Inlet_Ptotal;
-  }
-
-  if (Inlet_FlowDir != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
-        delete [] Inlet_FlowDir[iMarker][iVertex];
-      delete [] Inlet_FlowDir[iMarker];
-    }
-    delete [] Inlet_FlowDir;
-  }
 
   if (nVertex != NULL)  delete [] nVertex;
 
@@ -16029,11 +16008,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker, iDim;
   
-  if (CD_Visc != NULL)       delete [] CD_Visc;
-  if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)  delete [] CSF_Visc;
+  unsigned short iMarker, iDim;
+  unsigned long iVertex;
+  
+  if (CD_Visc != NULL)          delete [] CD_Visc;
+  if (CL_Visc != NULL)          delete [] CL_Visc;
+  if (CSF_Visc != NULL)         delete [] CSF_Visc;
   if (CMx_Visc != NULL)         delete [] CMx_Visc;
   if (CMy_Visc != NULL)         delete [] CMy_Visc;
   if (CMz_Visc != NULL)         delete [] CMz_Visc;
@@ -16060,7 +16041,7 @@ CNSSolver::~CNSSolver(void) {
   if (Surface_CMy_Visc != NULL)     delete [] Surface_CMy_Visc;
   if (Surface_CMz_Visc != NULL)     delete [] Surface_CMz_Visc;
   if (Surface_HF_Visc != NULL)      delete [] Surface_HF_Visc;
-  if (Surface_MaxHF_Visc != NULL)        delete [] Surface_MaxHF_Visc;
+  if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
   
   if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
   
@@ -16073,6 +16054,28 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] CSkinFriction;
   }
+  
+  if (Inlet_Ttotal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] Inlet_Ttotal[iMarker];
+    delete [] Inlet_Ttotal;
+  }
+  
+  if (Inlet_Ptotal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] Inlet_Ptotal[iMarker];
+    delete [] Inlet_Ptotal;
+  }
+  
+  if (Inlet_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] Inlet_FlowDir[iMarker][iVertex];
+      delete [] Inlet_FlowDir[iMarker];
+    }
+    delete [] Inlet_FlowDir;
+  }
+
   
 }
 
