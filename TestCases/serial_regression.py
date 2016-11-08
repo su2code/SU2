@@ -501,12 +501,63 @@ def main():
     centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
     centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
     centrifugal_stage.test_iter = 100
-    centrifugal_stage.test_vals = [-10.166364, 1.621172, 2.206476e+01, 5.271075e-01] #last 4 columns
+    centrifugal_stage.test_vals = [-10.166628, 1.621134, 22.064950, 0.527107] #last 4 columns
     centrifugal_stage.su2_exec  = "SU2_CFD"
     centrifugal_stage.timeout   = 1600
     centrifugal_stage.tol       = 0.000001
     test_list.append(centrifugal_stage) 
 
+    ######################################
+    ### Sliding Mesh                   ###
+    ######################################
+
+    # Uniform flow
+#    uniform_flow         = TestCase('uniform_flow')
+#    uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
+#    uniform_flow.cfg_file  = "uniform_NN.cfg"
+#    uniform_flow.test_iter = 50
+#    uniform_flow.test_vals = [-0.368836, 5.156090, 0.000000, 0.000000] #last 4 columns
+#    uniform_flow.su2_exec  = "SU2_CFD"
+#    uniform_flow.timeout   = 1600
+#    uniform_flow.tol       = 0.000001
+#    uniform_flow.unsteady  = True
+#    test_list.append(uniform_flow) 
+
+    # Channel_2D
+    channel_2D           = TestCase('channel_2D')
+    channel_2D.cfg_dir   = "sliding_interface/channel_2D"
+    channel_2D.cfg_file  = "channel_2D_NN.cfg"
+    channel_2D.test_iter = 4
+    channel_2D.test_vals = [-1.498300, 4.541411, 0.000000, 0.000000] #last 4 columns
+    channel_2D.su2_exec  = "SU2_CFD"
+    channel_2D.timeout   = 100
+    channel_2D.tol       = 0.00001
+    channel_2D.unsteady  = True
+    test_list.append(channel_2D)
+
+    # Channel_3D
+    channel_3D           = TestCase('channel_3D')
+    channel_3D.cfg_dir   = "sliding_interface/channel_3D"
+    channel_3D.cfg_file  = "channel_3D_NN.cfg"
+    channel_3D.test_iter = 1
+    channel_3D.test_vals = [-1.899948, 4.032874, 0.000000, 0.000000] #last 4 columns
+    channel_3D.su2_exec  = "SU2_CFD"
+    channel_3D.timeout   = 1600
+    channel_3D.tol       = 0.00001
+    channel_3D.unsteady  = True
+    test_list.append(channel_3D)
+
+    # Pipe
+#    pipe           = TestCase('pipe')
+#    pipe.cfg_dir   = "sliding_interface/pipe"
+#    pipe.cfg_file  = "pipe_NN.cfg"
+#    pipe.test_iter = 2
+#    pipe.test_vals = [-3.503708, 3.194241, 0.000000, 0.000000] #last 4 columns
+#    pipe.su2_exec  = "SU2_CFD"
+#    pipe.timeout   = 1600
+#    pipe.tol       = 0.00001
+#    pipe.unsteady  = True
+#    test_list.append(pipe)
 
     ##########################
     ### FEA - FSI          ###
