@@ -792,6 +792,24 @@ static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_A
 ("FIXED_PARAMETER", FIXED_PARAMETER)
 ("AITKEN_DYNAMIC", AITKEN_DYNAMIC);
 
+/*!
+ * \brief types of dynamic transfer methods
+ */
+enum ENUM_DYN_TRANSFER_METHOD {
+  INSTANTANEOUS = 1,   /*!< \brief No ramp, load is transfer instantaneously. */
+  POL_ORDER_1 = 2,     /*!< \brief The load is transferred using a ramp. */
+  POL_ORDER_3 = 3,     /*!< \brief The load is transferred using an order 3 polynomial function */
+  POL_ORDER_5 = 4,     /*!< \brief The load is transferred using an order 5 polynomial function */
+  SIGMOID_10 = 5,      /*!< \brief The load is transferred using a sigmoid with parameter 10 */
+  SIGMOID_20 = 6       /*!< \brief The load is transferred using a sigmoid with parameter 20 */
+};
+static const map<string, ENUM_DYN_TRANSFER_METHOD> Dyn_Transfer_Method_Map = CCreateMap<string, ENUM_DYN_TRANSFER_METHOD>
+("INSTANTANEOUS", INSTANTANEOUS)
+("RAMP", POL_ORDER_1)
+("CUBIC", POL_ORDER_3)
+("QUINTIC", POL_ORDER_5)
+("SIGMOID_10", SIGMOID_10)
+("SIGMOID_20", SIGMOID_20);
 
 
 /*!

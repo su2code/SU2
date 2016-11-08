@@ -1512,6 +1512,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
+  /* DESCRIPTION: Transfer method used for multiphysics problems */
+  addEnumOption("DYNAMIC_LOAD_TRANSFER", Dynamic_LoadTransfer, Dyn_Transfer_Method_Map, POL_ORDER_1);
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("SIGMOID_TIME", Sigmoid_Time, 1.0);
   /* DESCRIPTION: Constant of steepness of the sigmoid */

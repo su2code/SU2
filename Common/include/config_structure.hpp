@@ -778,6 +778,7 @@ private:
   su2double *Int_Coeffs;		  /*!< \brief Time integration coefficients for structural method. */
   bool Sigmoid_Load,		      /*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				          /*!< \brief Apply the load with linear increases. */
+  unsigned short Dynamic_LoadTransfer;  /*!< \brief Method for dynamic load transferring. */
   bool IncrementalLoad;		    /*!< \brief Apply the load in increments (for nonlinear structural analysis). */
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
@@ -6557,6 +6558,14 @@ public:
 	 * \return 	Value of the max time while the load is linearly increased
 	 */
 	 su2double GetRamp_Time(void);
+
+	 /*!
+	  * \brief Get the kind of load transfer method we want to use for dynamic problems
+	  * \note This value is obtained from the config file, and it is constant
+	  *       during the computation.
+	  * \return Kind of transfer method for multiphysics problems
+	  */
+	 unsigned short GetDynamic_LoadTransfer(void);
 
 	/*!
 	 * \brief Get the maximum time of the sigmoid.
