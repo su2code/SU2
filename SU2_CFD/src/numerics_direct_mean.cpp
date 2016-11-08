@@ -2670,7 +2670,6 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_j[iDim] = V_j[iDim+1];
     Velocity2_j += Velocity_j[iDim]*Velocity_j[iDim];
-
   }
 
   Pressure_j = V_j[nDim+1];

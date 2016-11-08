@@ -782,7 +782,8 @@ enum BC_TYPE {
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
   INTERNAL_BOUNDARY= 38,   /*!< \brief Internal Boundary definition. */
-  DISP_DIR_BOUNDARY = 39,    /*!< \brief Boundary displacement definition. */
+  FLUID_INTERFACE = 39,	/*!< \brief Domain interface definition. */
+  DISP_DIR_BOUNDARY = 40,    /*!< \brief Boundary displacement definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
