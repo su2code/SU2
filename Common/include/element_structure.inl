@@ -87,6 +87,8 @@ inline su2double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGau
 
 inline su2double CElement::GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);}
 
+inline su2double CElement::GetGradNi_X_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_Xj(iNode,iDim);}
+
 inline su2double CElement::GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_xj(iNode,iDim);}
 
 inline su2double CElement::GetNi_Extrap(unsigned short iNode, unsigned short iGauss) { return NodalExtrap[iNode][iGauss]; }
@@ -94,6 +96,10 @@ inline su2double CElement::GetNi_Extrap(unsigned short iNode, unsigned short iGa
 inline su2double CElement::Get_NodalStress(unsigned short iNode, unsigned short iVar) { return NodalStress[iNode][iVar]; }
 
 inline su2double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWeightP[iGaussP];}
+
+inline su2double CElement::ComputeArea(void) { return 0.0;}
+
+inline su2double CElement::ComputeVolume(void) { return 0.0;}
 
 inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
 
