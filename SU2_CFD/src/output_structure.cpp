@@ -10045,6 +10045,10 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
     
+    /*--- Write out CSV files in parallel for flow and adjoint. ---*/
+    
+    if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
+    
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES : case RANS :
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0],
@@ -10062,6 +10066,9 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     /*--- This switch statement will become a call to a virtual function
      defined within each of the "physics" output child classes that loads
      the local data for that particular problem alone. ---*/
+    
+    if (rank == MASTER_NODE)
+      cout << "Loading solution output data locally on each rank." << endl;
     
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES: case RANS :
@@ -10083,11 +10090,15 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     /*--- After loading the data local to a processor, we perform a sorting, 
      i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
     
+    if (rank == MASTER_NODE)
+      cout << "Sorting output data across all ranks." << endl;
     SortOutputData(config[iZone], geometry[iZone][MESH_0]);
     
     /*--- Write parallel ASCII restart files. This will be replaced with
      a binary alternative with MPI-IO soon. ---*/
     
+    if (rank == MASTER_NODE)
+      cout << "Writing SU2 native restart file." << endl;
     SetRestart_Parallel(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
     
     /*--- Get the file output format ---*/
@@ -10101,7 +10112,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
       
       if (rank == MASTER_NODE)
-        cout << "Preparing connectivity lists across all processors." << endl;
+        cout << "Preparing element connectivity across all rank." << endl;
       SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
       
       /*--- Sort the surface data and renumber if for writing. ---*/
@@ -10110,13 +10121,17 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       
       /*--- Write Tecplot ASCII files for the volume and/or surface solutions. ---*/
       
-      if (Wrt_Vol)
+      if (Wrt_Vol) {
+        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
         SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
                                  solver_container[iZone][MESH_0], iZone, val_nZone, false);
+      }
       
-      if (Wrt_Srf)
+      if (Wrt_Srf) {
+        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
         SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
                                  solver_container[iZone][MESH_0], iZone, val_nZone, true);
+      }
       
       /*--- Clean up the connectivity data that was allocated for output. ---*/
       
@@ -10311,7 +10326,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Skin_Friction_Coefficient_X");
       Variable_Names.push_back("Skin_Friction_Coefficient_Y");
       if (geometry->GetnDim() == 3) {
-        nVar_Par += 3; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
+        nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
       }
       nVar_Par += 2;
       Variable_Names.push_back("Heat_Flux");
@@ -11040,15 +11055,14 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     if (config->GetDynamic_Analysis() == DYNAMIC) {
       
       /*--- Velocities ---*/
-      
       nVar_Par += 2;
       Variable_Names.push_back("Velocity_1");
       Variable_Names.push_back("Velocity_2");
       if (geometry->GetnDim() == 3) {
-        
         nVar_Par += 1;
         Variable_Names.push_back("Velocity_3");
       }
+      
       /*--- Accelerations ---*/
       nVar_Par += 2;
       Variable_Names.push_back("Acceleration_1");
@@ -11358,7 +11372,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
   
   jPoint = 0;
   
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     /*--- Check for halos & write only if requested ---*/
     
@@ -11433,28 +11447,14 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
   if (Wrt_Vol) {
     
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting volumetric triangle grid connectivity." << endl;
-    SortVolumetricConnectivity(config, geometry, TRIANGLE);
+      cout <<"Sorting volumetric grid connectivity." << endl;
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting volumetric quadrilateral grid connectivity." << endl;
+    SortVolumetricConnectivity(config, geometry, TRIANGLE     );
     SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting volumetric tetrahedron grid connectivity." << endl;
-    SortVolumetricConnectivity(config, geometry, TETRAHEDRON);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting volumetric hexahedron grid connectivity." << endl;
-    SortVolumetricConnectivity(config, geometry, HEXAHEDRON);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting volumetric prism grid connectivity." << endl;
-    SortVolumetricConnectivity(config, geometry, PRISM);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting volumetric pyramid grid connectivity." << endl;
-    SortVolumetricConnectivity(config, geometry, PYRAMID);
+    SortVolumetricConnectivity(config, geometry, TETRAHEDRON  );
+    SortVolumetricConnectivity(config, geometry, HEXAHEDRON   );
+    SortVolumetricConnectivity(config, geometry, PRISM        );
+    SortVolumetricConnectivity(config, geometry, PYRAMID      );
     
   }
   
@@ -11463,15 +11463,10 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
   if (Wrt_Srf) {
     
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting surface line grid connectivity." << endl;
-    SortSurfaceConnectivity(config, geometry, LINE);
+      cout <<"Sorting surface grid connectivity." << endl;
     
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting surface triangle grid connectivity." << endl;
-    SortSurfaceConnectivity(config, geometry, TRIANGLE);
-    
-    if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
-      cout <<"Sorting surface quadrilateral grid connectivity." << endl;
+    SortSurfaceConnectivity(config, geometry, LINE         );
+    SortSurfaceConnectivity(config, geometry, TRIANGLE     );
     SortSurfaceConnectivity(config, geometry, QUADRILATERAL);
     
   }
