@@ -306,7 +306,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
       }
 
       /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      else if (IntIter % config_container[val_iZone]->GetAeroelasticIter() ==0) {
+      else if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0) {
 
         if (rank == MASTER_NODE)
           cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
@@ -461,7 +461,7 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This must be done only in the first subiteration ---*/
-  if( ((fsi)&&(FSIIter == 0)) )
+  if( fsi  && ( FSIIter == 0 ) )
 	 solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
   
@@ -494,95 +494,46 @@ void CMeanFlowIteration::Iterate(COutput *output,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) {
   
-  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  unsigned long IntIter, ExtIter, nIntIter; 
+  
+  bool fsi = config_container[val_iZone]->GetFSI_Simulation();
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  
+  int rank = MASTER_NODE;
+  
 #ifdef HAVE_MPI
-  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Set the value of the internal iteration ---*/
+	  ExtIter = config_container[val_iZone]->GetExtIter();
   
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-  
-  /*--- Update global parameters ---*/
-  
-  if ((config_container[val_iZone]->GetKind_Solver() == EULER) ||
-      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
-    config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-  }
-  if ((config_container[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
-    config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-  }
-  if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
-      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
-    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
-  }
-  
-  /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-  
-  integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                  config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
-  
-  if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
-      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
-    
-    /*--- Solve the turbulence model ---*/
-    
-    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
-    integration_container[val_iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                     config_container, RUNTIME_TURB_SYS, IntIter, val_iZone);
-    
-    /*--- Solve transition model ---*/
-    
-    if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {
-      config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
-      integration_container[val_iZone][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                        config_container, RUNTIME_TRANS_SYS, IntIter, val_iZone);
-    }
-    
-  }
-  
-  /*--- Dual time stepping strategy ---*/
+	  /* --- Setting up iteration values depending on if this is a 
+	   steady or an unsteady simulaiton */
+	   
+	  if ( !unsteady ) 
+			IntIter = ExtIter;
+	  else
+	        IntIter = config_container[val_iZone]->GetIntIter();
 
-   if (((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
-	 !config_container[val_iZone]->GetDiscrete_Adjoint()) {
+      /*--- Update global parameters ---*/
+      
+      switch( config_container[val_iZone]->GetKind_Solver() ) {
+		  
+		case EULER: case DISC_ADJ_EULER:
+				config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
 
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
-      
-      /*--- Write the convergence history (only screen output) ---*/
-      
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-      
-      /*--- Set the value of the internal iteration ---*/
-      
-      config_container[val_iZone]->SetIntIter(IntIter);
-      
-      /*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
-      
-      if ((config_container[val_iZone]->GetKind_Solver() == EULER) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
-        config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-      }
-      if ((config_container[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
-        config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-      }
-      if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
-        config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
-      }
-      
+		case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
+				config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+
+		case RANS: case DISC_ADJ_RANS:
+				config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;			    
+	  }
+	  
       /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
       
       integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                       config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
       
-      /*--- Pseudo-timestepping the turbulence model ---*/
       
       if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
           (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
@@ -604,23 +555,21 @@ void CMeanFlowIteration::Iterate(COutput *output,
       }
       
       /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-      if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation())) {
-        SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox,
-                         solver_container, config_container, val_iZone, IntIter, ExtIter);
-        /*--- Apply a Wind Gust ---*/
-        if (config_container[val_iZone]->GetWind_Gust()) {
-          if (IntIter % config_container[val_iZone]->GetAeroelasticIter() ==0)
-            SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone], solver_container[val_iZone]);
-        }
+      if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
+		  
+			SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, val_iZone, IntIter, ExtIter);
+							 
+			/*--- Apply a Wind Gust ---*/
+			if (config_container[val_iZone]->GetWind_Gust()) {
+			  if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0 && IntIter != 0)
+				SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone], solver_container[val_iZone]);
+			}
       }
       
-      if (integration_container[val_iZone][FLOW_SOL]->GetConvergence()) break;
-      
-    }
 
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-    
-  }
+	  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) 
+			/*--- Write the convergence history (only screen output) ---*/
+			output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);     
   
 }
 
@@ -1625,22 +1574,33 @@ void CAdjMeanFlowIteration::Iterate(COutput *output,
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
   /*--- Set the value of the internal iteration ---*/
   
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    IntIter = 0;
+  ExtIter = config_container[val_iZone]->GetExtIter();
+  
+  /* --- Setting up iteration values depending on if this is a 
+  steady or an unsteady simulaiton */
+
+  if ( !unsteady ) 
+    IntIter = ExtIter;
+  else
+    IntIter = config_container[val_iZone]->GetIntIter();
+    
+    
+  switch( config_container[val_iZone]->GetKind_Solver() ) {
+
+	case ADJ_EULER:
+		config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS, ExtIter); break;
+
+	case ADJ_NAVIER_STOKES:
+		config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS, ExtIter); break;
+
+	case ADJ_RANS:
+		config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_ADJFLOW_SYS, ExtIter); break;			    
   }
-  
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_EULER)
-    config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)
-    config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_RANS)
-    config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_ADJFLOW_SYS, ExtIter);
-  
+    
   /*--- Iteration of the flow adjoint problem ---*/
   
   integration_container[val_iZone][ADJFLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
@@ -2073,6 +2033,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   /*--- Run the direct iteration ---*/
 
+  config_container[val_iZone]->SetIntIter(0);
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
 
