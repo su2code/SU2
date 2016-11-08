@@ -4023,7 +4023,6 @@ void CFSIDriver::Run() {
   /*--- This will become more general, but we need to modify the configuration for that ---*/
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
-<<<<<<< HEAD
 
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
   bool stat_fsi = ((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == STEADY) && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == STATIC));
@@ -4035,19 +4034,6 @@ void CFSIDriver::Run() {
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
   unsigned long nIntIter;
 
-=======
-
-  /*--- Boolean to determine if we are running a static or dynamic case ---*/
-  bool stat_fsi = ((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == STEADY) && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == STATIC));
-  bool dyn_fsi = (((config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND))
-                   && (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC));
-
-  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
-  unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
-  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
-  unsigned long nIntIter;
-
->>>>>>> feature_DE
   bool StopCalc_Flow = false;
 
   int rank = MASTER_NODE;
@@ -4113,7 +4099,6 @@ void CFSIDriver::Run() {
         /*--- Write the convergence history for the fluid (only screen output) ---*/
 
         output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, 0.0, ZONE_FLOW);
-<<<<<<< HEAD
 
         /*--- If the convergence criteria is met for the flow, break the loop ---*/
         StopCalc_Flow = integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence();
@@ -4201,91 +4186,6 @@ void CFSIDriver::Run() {
   }
 
   // TODO: Temporary, for running the classic adjoint for FSIs
-=======
-
-        /*--- If the convergence criteria is met for the flow, break the loop ---*/
-        StopCalc_Flow = integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence();
-        if (StopCalc_Flow) break;
-
-      }
-
-    }
-    else if ( dyn_fsi ) {
-
-      /*--- For unsteady flow simulations, we need to loop over nIntIter for the number of time steps ---*/
-
-      nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
-
-      for (IntIter = 0; IntIter < nIntIter; IntIter++){
-
-        config_container[ZONE_FLOW]->SetIntIter(IntIter);
-
-        iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_FLOW);
-
-        /*--- If convergence was reached in every zone --*/
-
-        if (integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence() == 1) break;
-      }
-
-      /*--- Write the convergence history for the fluid (only screen output) ---*/
-
-       output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW);
-
-    } else {
-
-      if (rank == MASTER_NODE) cout << "The definition of Fluid and Structural solvers is inconsistent for FSI applications " << endl;
-
-      exit(EXIT_FAILURE);
-
-    }
-
-    /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
-
-    integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
-
-    /*-----------------------------------------------------------------*/
-    /*------------------- Set FEA loads from fluid --------------------*/
-    /*-----------------------------------------------------------------*/
-    if(transfer_container[ZONE_FLOW][ZONE_STRUCT] != NULL)
-      Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
-
-
-    /*-----------------------------------------------------------------*/
-    /*------------------ Structural subiteration ----------------------*/
-    /*-----------------------------------------------------------------*/
-
-    iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
-        solver_container, numerics_container, config_container,
-        surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
-
-    /*--- Write the convergence history for the structure (only screen output) ---*/
-
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
-
-    /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
-
-    integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence(false);
-
-    /*-----------------------------------------------------------------*/
-    /*----------------- Displacements relaxation ----------------------*/
-    /*-----------------------------------------------------------------*/
-
-    Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, FSIIter);
-
-    /*-----------------------------------------------------------------*/
-    /*-------------------- Check convergence --------------------------*/
-    /*-----------------------------------------------------------------*/
-
-    integration_container[ZONE_STRUCT][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT], solver_container[ZONE_STRUCT][MESH_0][FEA_SOL], FSIIter);
-
-    if (integration_container[ZONE_STRUCT][FEA_SOL]->GetConvergence_FSI()) break;
-
-    /*-----------------------------------------------------------------*/
-    /*--------------------- Update FSIIter ---------------------------*/
-    /*-----------------------------------------------------------------*/
-
-    FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
->>>>>>> feature_DE
 
   if (stat_fsi && (config_container[ZONE_STRUCT]->GetKind_Solver() == ADJ_ELASTICITY)){
     /*-----------------------------------------------------------------*/
