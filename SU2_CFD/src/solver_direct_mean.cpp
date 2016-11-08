@@ -1148,6 +1148,27 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] ActDisk_DeltaT;
   }
   
+  if (Inlet_Ttotal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] Inlet_Ttotal[iMarker];
+    delete [] Inlet_Ttotal;
+  }
+
+  if (Inlet_Ptotal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] Inlet_Ptotal[iMarker];
+    delete [] Inlet_Ptotal;
+  }
+
+  if (Inlet_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] Inlet_FlowDir[iMarker][iVertex];
+      delete [] Inlet_FlowDir[iMarker];
+    }
+    delete [] Inlet_FlowDir;
+  }
+
   if (nVertex != NULL)  delete [] nVertex;
 
   if (HeatFlux != NULL) {

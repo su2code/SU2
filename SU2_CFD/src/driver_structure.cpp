@@ -475,7 +475,7 @@ void CDriver::Postprocessing() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone] != NULL) {
-      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
+      for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
         if (geometry_container[iZone][iMGlevel] != NULL) delete geometry_container[iZone][iMGlevel];
       }
       delete [] geometry_container[iZone];
