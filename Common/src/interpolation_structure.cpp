@@ -68,7 +68,7 @@ CInterpolator::CInterpolator(void) {
 
 CInterpolator::~CInterpolator(void) {
 
-  //if (Buffer_Receive_nVertex_Donor!=NULL) delete[] Buffer_Receive_nVertex_Donor;
+  //if (Buffer_Receive_nVertex_Donor!= NULL) delete[] Buffer_Receive_nVertex_Donor;
 }
 
 
