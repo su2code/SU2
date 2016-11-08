@@ -97,6 +97,10 @@ inline su2double CElement::Get_NodalStress(unsigned short iNode, unsigned short 
 
 inline su2double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWeightP[iGaussP];}
 
+inline su2double CElement::ComputeArea(void) { return 0.0;}
+
+inline su2double CElement::ComputeVolume(void) { return 0.0;}
+
 inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
 
 inline void CElement::Set_iDe(unsigned short val_iDe) { iDe = val_iDe;}

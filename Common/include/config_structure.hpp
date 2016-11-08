@@ -393,6 +393,7 @@ private:
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
 	Kind_Linear_Solver_FSI_Struc,	 /*!< \brief Numerical solver for the structural part in FSI problems. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
+	Kind_Deform_Linear_Solver_Prec,     /*!< \brief Preconditioner of the linear solver for the mesh deformation. */
 	Kind_Linear_Solver_Prec_FSI_Struc,		/*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
 	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
@@ -457,8 +458,10 @@ private:
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
 	su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Deform_Linear_Solver_Iter;   /*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
@@ -696,6 +699,7 @@ private:
 	unsigned short RefGeom_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
 	unsigned short nIterFSI;	  /*!< \brief Number of maximum number of subiterations in a FSI problem. */
+  unsigned short nIterFSI_Ramp;  /*!< \brief Number of FSI subiterations during which a ramp is applied. */
 	su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
 	su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
 	su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
@@ -3053,6 +3057,12 @@ public:
 	 */
 	unsigned short GetKind_Linear_Solver_Prec(void);
 
+  /*!
+   * \brief Get the kind of preconditioner for the linear solver for mesh deformation.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Deform_Linear_Solver_Prec(void);
+
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
@@ -3065,11 +3075,23 @@ public:
 	 */
 	su2double GetLinear_Solver_Error(void);
 
+  /*!
+   * \brief Get min error of the linear solver for the implicit formulation.
+   * \return Min error of the linear solver for the implicit formulation.
+   */
+  su2double GetDeform_Linear_Solver_Error(void);
+
 	/*!
 	 * \brief Get max number of iterations of the linear solver for the implicit formulation.
 	 * \return Max number of iterations of the linear solver for the implicit formulation.
 	 */
 	unsigned long GetLinear_Solver_Iter(void);
+
+  /*!
+   * \brief Get max number of iterations of the linear solver for the implicit formulation.
+   * \return Max number of iterations of the linear solver for the implicit formulation.
+   */
+  unsigned long GetDeform_Linear_Solver_Iter(void);
 
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.
@@ -6525,6 +6547,12 @@ public:
 	 * \return Number of FSI subiters.
 	 */
 	unsigned short GetnIterFSI(void);
+
+  /*!
+   * \brief Get the number of subiterations while a ramp is applied.
+   * \return Number of FSI subiters.
+   */
+  unsigned short GetnIterFSI_Ramp(void);
 
 	/*!
 	 * \brief Get Aitken's relaxation parameter for static relaxation cases.
