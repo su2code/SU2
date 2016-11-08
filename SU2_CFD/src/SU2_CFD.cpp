@@ -114,12 +114,7 @@ int main(int argc, char *argv[]) {
     }
     /*--- If the problem is a direct FSI problem ---*/
     else{
-      if (stat_fsi) {
-        driver = new CFSIStatDriver(config_file_name, nZone, nDim);
-      }
-      else {
-        driver = new CFSIDriver(config_file_name, nZone, nDim);
-      }
+      driver = new CFSIDriver(config_file_name, nZone, nDim);
     }
 
   } else {
