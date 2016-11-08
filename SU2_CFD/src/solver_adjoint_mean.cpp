@@ -4690,34 +4690,60 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             su2double avg_pressure  = solver_container[FLOW_SOL]->GetOneD_AvgPressure();
             su2double massflux      = solver_container[FLOW_SOL]->GetOneD_MassFlowRate();
             su2double avg_vel       = solver_container[FLOW_SOL]->GetOneD_Velocity();
-            su2double avg_vel2      = pow(Vn,2.0);
+            su2double avg_vel2      = pow(avg_vel,2.0);
             /* Some repeated terms */
-            su2double dVdr          = 0.5/avg_vel/massflux* (pow(Vn,3.0) - avg_vel2 * Vn );
+            su2double one_over_mdot = 1.0*one_over_mdot;
+            su2double dVdr          = 0.5/avg_vel*one_over_mdot* (pow(Vn,3.0) - avg_vel2 * Vn );
             a1 = Gamma/Gamma_Minus_One/(pow(avg_enthalpy-0.5*avg_vel2,2.0));
             a2 = 0.5/avg_vel*(3.0*pow(Vn,2.0) - avg_vel2;
             su2double drdh = -avg_pressure*a1;
             su2double drdv = -avg_vel*drdh;
             /* dj / drho */
             Grad_chain[0] =   config->GetCoeff_ObjChainRule(0)*
-                drdh*/massflux*( 0.5*Vn*Velocity2 - avg_enthalpy*Vn) ;
+                drdh**one_over_mdot*( 0.5*Vn*Velocity2 - avg_enthalpy*Vn) ;
             Grad_chain[0] +=  config->GetCoeff_ObjChainRule(0)*
                 ( avg_pressure*a1*avg_vel * dVdr);
             Grad_chain[0] +=  config->GetCoeff_ObjChainRule(1)*dVdr;
             /* dj / d\vec{v} */
             for (iDim = 0; iDim<nDim; iDim++){
               Grad_chain[iDim+1] = config->GetCoeff_ObjChainRule(0)*
-                  Density*UnitNormal[iDim]/massflux*drdv* a2;
+                  Density*UnitNormal[iDim]*one_over_mdot*drdv* a2;
               Grad_chain[iDim+1] +=config->GetCoeff_ObjChainRule(0)*
-                  drdh/massflux*((Pressure*Gamma/Gamma_Minus_One + 0.5*avg_vel2*Density- avg_enthalpy*Density)*UnitNormal[iDim]+
+                  drdh*one_over_mdot*((Pressure*Gamma/Gamma_Minus_One + 0.5*avg_vel2*Density- avg_enthalpy*Density)*UnitNormal[iDim]+
                       Velocity[iDim]*Vn*Density);
               Grad_chain[iDim+1] += config->GetCoeff_ObjChainRule(1)*
-                  UnitNormal[iDim]*Density/massflux*(a2);
+                  UnitNormal[iDim]*Density*one_over_mdot*(a2);
             }
             /* dj / d P */
             Grad_chain[4] =  config->GetCoeff_ObjChainRule(0)*(Gamma/Gamma_Minus_One/(avg_enthalpy-0.5*avg_vel2) * (1.0/Area_Monitored));
             Grad_chain[4] += config->GetCoeff_ObjChainRule(4)/Area_Monitored;
           }
+          if  (config->GetKind_OneD() == ONED_FLUX){
+            su2double avg_enthalpy  = solver_container[FLOW_SOL]->GetOneD_AvgEnthalpy();
+            su2double avg_density   = solver_container[FLOW_SOL]->GetOneD_AvgDensity();
+            su2double avg_pressure  = solver_container[FLOW_SOL]->GetOneD_AvgPressure();
+            su2double massflux      = solver_container[FLOW_SOL]->GetOneD_MassFlowRate();
+            su2double avg_vel       = solver_container[FLOW_SOL]->GetOneD_Velocity();
+            su2double avg_vel2      = pow(Vn,2.0);
+            /* Some repeated terms */
+            su2double one_over_mdot = 1.0*one_over_mdot;
+            /* dj / drho */
+            a1 = Vn*one_over_mdot; /*-- d (mdot) / drho --*/
+            Grad_chain[0] = config->GetCoeff_ObjChainRule(0)*(2.0*Density - avg_density)*a1;
+            Grad_chain[0] += config->GetCoeff_ObjChainRule(1)*0.5/avg_vel*(Vn**2.0 - avg_vel2)*a1;
+            Grad_chain[0] += config->GetCoeff_ObjChainRule(4)*(Pressure - avg_pressure)*a1;
+            /* dj / d\vec{v} */
+            for (iDim = 0; iDim<nDim; iDim++){
+              a1 = Density*UnitNormal[iDim]*one_over_mdot;/*-- d (mdot) / V[i] --*/
+              Grad_chain[iDim+1] = config->GetCoeff_ObjChainRule(0)*(Density - avg_density)*a1;
+              Grad_chain[iDim+1] += config->GetCoeff_ObjChainRule(1)*0.5/avg_vel*(3.0*pow(Vn,2.0)-avg_vel2)*a1;
+              Grad_chain[iDim+1] += config->GetCoeff_ObjChainRule(4)*(Pressure - avg_pressure )*a1;
+            }
+            /* dj / d P */
+            Grad_chain[4] =  config->GetCoeff_ObjChainRule(4)*(Density*Vn*one_over_mdot);
+          }
         }
+
 
         /*--- Set Adjoint variables to 0 initially ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
