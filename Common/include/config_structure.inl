@@ -1428,6 +1428,8 @@ inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 
+inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_LoadTransfer; }
+
 inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
