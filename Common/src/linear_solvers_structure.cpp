@@ -798,3 +798,67 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
 #endif
 }
+
+void CSysSolve::SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config){
+
+#ifdef CODI_REVERSE_TYPE
+
+  unsigned long size = LinSysRes.GetLocSize();
+  unsigned long i, nBlk = LinSysRes.GetNBlk(),
+                nVar = LinSysRes.GetNVar(),
+                nBlkDomain = LinSysRes.GetNBlkDomain();
+
+  /*--- Arrays to store the indices of the input/output of the linear solver.
+     * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
+
+  su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
+  su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
+
+  for (i = 0; i < size; i++){
+
+    /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
+
+    if (!LinSysSol[i].isActive()){
+      AD::globalTape.registerInput(LinSysSol[i]);
+    }
+
+    /*--- Store the indices ---*/
+
+    LinSysRes_Indices[i] = LinSysRes[i].getGradientData();
+    LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
+  }
+
+  /*--- Push the data to the checkpoint handler for access in the reverse sweep ---*/
+
+  AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
+
+  dataHandler->addData(LinSysRes_Indices);
+  dataHandler->addData(LinSysSol_Indices);
+  dataHandler->addData(size);
+  dataHandler->addData(nBlk);
+  dataHandler->addData(nVar);
+  dataHandler->addData(nBlkDomain);
+  dataHandler->addData(&Jacobian);
+  dataHandler->addData(geometry);
+  dataHandler->addData(config);
+
+  /*--- Build preconditioner for the transposed Jacobian ---*/
+
+  switch(config->GetKind_DiscAdj_Linear_Prec()){
+    case ILU:
+      Jacobian.BuildILUPreconditioner(true);
+      break;
+    case JACOBI:
+      Jacobian.BuildJacobiPreconditioner(true);
+      break;
+    default:
+      cout << "The specified preconditioner is not yet implemented for the discrete adjoint method." << endl;
+      exit(EXIT_FAILURE);
+  }
+
+  /*--- Push the external function to the AD tape ---*/
+
+  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_g, dataHandler, &CSysSolve_b::Delete_b);
+
+#endif
+}
