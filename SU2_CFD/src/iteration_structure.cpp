@@ -1503,6 +1503,9 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 	su2double Physical_dt, Physical_t;
   	unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
 	bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
+  bool static_fem = (config_container[val_iZone]->GetDynamic_Analysis() == STATIC);         // Static problems
+  bool fsi = config_container[val_iZone]->GetFSI_Simulation();         // Fluid-Structure Interaction problems
+
 
 	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
@@ -1520,6 +1523,15 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 		Physical_t  = (ExtIter+1)*Physical_dt;
 		if (Physical_t >=  config_container[val_iZone]->GetTotal_DynTime())
 			integration_container[val_iZone][FEA_SOL]->SetConvergence(true);
+	} else if ( static_fem && fsi) {
+
+	  /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart purposes) ---*/
+	  switch (config_container[val_iZone]->GetKind_TimeIntScheme_FEA()) {
+	  case (NEWMARK_IMPLICIT):
+	      solver_container[val_iZone][MESH_0][FEA_SOL]->ImplicitNewmark_Relaxation(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+	  break;
+
+	  }
 	}
 
 }
