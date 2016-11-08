@@ -2918,23 +2918,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double Transfer_Time = 0.0;
-
-//  if (Ramp_Load){
-//    ModAmpl=NormalLoad*CurrentTime/Ramp_Time;
-//    NonModAmpl=NormalLoad;
-//    TotalLoad=min(ModAmpl,NonModAmpl);
-//  }
-//  else if (Sigmoid_Load){
-//    SigAux = CurrentTime/ Sigmoid_Time;
-//    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
-//    ModAmpl = max(ModAmpl,0.0);
-//    ModAmpl = min(ModAmpl,1.0);
-//    TotalLoad=ModAmpl*NormalLoad;
-//  }
-//  else{
-//    TotalLoad=NormalLoad;
-//  }
-
   
   if (Ramp_Load) {
     if (Ramp_Time == 0.0)
@@ -3278,22 +3261,6 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
   su2double Transfer_Time = 0.0;
-
-//  if (Ramp_Load){
-//    ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
-//    NonModAmpl=LoadDirVal*LoadDirMult;
-//    TotalLoad=min(ModAmpl,NonModAmpl);
-//  }
-//  else if (Sigmoid_Load){
-//    SigAux = CurrentTime/ Sigmoid_Time;
-//    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
-//    ModAmpl = max(ModAmpl,0.0);
-//    ModAmpl = min(ModAmpl,1.0);
-//    TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
-//  }
-//  else{
-//    TotalLoad=LoadDirVal*LoadDirMult;
-//  }
 
   if (Ramp_Load) {
     if (Ramp_Time == 0.0)

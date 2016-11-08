@@ -316,7 +316,6 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 		Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
 	}
 
-
 }
 
 void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
@@ -551,17 +550,14 @@ void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, 
 void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
 					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-	su2double *Solution;
-	unsigned short iVar;
+  su2double *Solution;
+  unsigned short iVar;
 
-    /*--- Retrieve solution and set it as the donor variable ---*/
-	Solution = donor_solution->node[Point_Donor]->GetSolution();
+  /*--- Retrieve solution and set it as the donor variable ---*/
+  Solution = donor_solution->node[Point_Donor]->GetSolution();
 
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Donor_Variable[iVar] = Solution[iVar];
-	}
-
-
+  for (iVar = 0; iVar < nVar; iVar++)
+    Donor_Variable[iVar] = Solution[iVar];
 }
 
 void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
@@ -573,3 +569,45 @@ void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CG
 
 }
 
+CTransfer_SlidingInterface::CTransfer_SlidingInterface(void) : CTransfer() {
+
+}
+
+CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+
+}
+
+CTransfer_SlidingInterface::~CTransfer_SlidingInterface(void) {
+
+}
+
+
+void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
+													   CConfig *donor_config, CConfig *target_config){
+
+}
+
+void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor){
+
+  su2double *Solution;
+  unsigned short iVar;
+
+  /*--- Retrieve solution and set it as the donor variable ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+}
+
+void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+													CConfig *target_config, unsigned long Marker_Target,
+													unsigned long Vertex_Target, unsigned long Point_Target){
+
+  unsigned short iVar;
+  /*--- Set the Sliding solution with the value of the Target Variable ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++)
+    target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, Target_Variable[iVar]);
+
+}
