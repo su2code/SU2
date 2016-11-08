@@ -1486,6 +1486,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   int size = SINGLE_NODE;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   
+   
   /*--- Some dynamic arrays so we're not allocating too much on the stack ---*/
   
   unsigned long *nVertexDomain       = new unsigned long[nMarker_Max];
@@ -6465,8 +6466,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
     }
   }
-  
-  if (rank == MASTER_NODE) {
     
     while (getline (mesh_file, text_line)) {
       
@@ -6742,7 +6741,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       config->SetPeriodicTranslate(iPeriodic, translate);
       delete [] center; delete [] rotation; delete [] translate;
     }
-  }
   
   /*--- Close the input file ---*/
   
