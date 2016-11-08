@@ -714,8 +714,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  
-  
   virtual void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                            unsigned short val_marker);
   
@@ -739,6 +737,15 @@ public:
    */
   virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
+  /*!
+  * \brief Impose the interface state across sliding meshes.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1256,6 +1263,24 @@ public:
    * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
    */
   virtual su2double GetAveragedTangVelocity(unsigned short valMarker);
+  
+   /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+	
+ /*!
+  * \brief Set the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  * \param[in] component  - set value
+  */
+  virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+
   
   /*!
    * \brief A virtual member.
@@ -3871,52 +3896,58 @@ protected:
   unsigned long BCThrust_Counter;
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
-  su2double **AveragedVelocity,
-  **AveragedNormal,
-  **AveragedGridVel,
-  **AveragedFlux,
-  **TotalFlux,
-  *TotalArea,
-  *AveragedNormalVelocity,
-  *ExtAveragedNormalVelocity,
-  *AveragedTangVelocity,
-  *ExtAveragedTangVelocity,
-  *AveragedTangGridVelocity,
-  *AveragedMach,
-  *AveragedNormalMach,
-  *AveragedTangMach,
-  *AveragedEnthalpy,
-  *AveragedPressure,
-  *AveragedTotTemperature,
-  *AveragedTotPressure,
-  *ExtAveragedPressure,
-  *ExtAveragedTotTemperature,
-  *ExtAveragedTotPressure,
-  *AveragedDensity,
-  *ExtAveragedDensity,
-  *AveragedSoundSpeed,
-  *AveragedEntropy,
-  *MassFlow,
-  *FlowAngle;
-  su2double *TotalStaticEfficiency,
-  *TotalTotalEfficiency,
-  *KineticEnergyLoss,
-  *TotalPressureLoss,
-  *MassFlowIn,
-  *MassFlowOut,
-  *FlowAngleIn,
-  *FlowAngleOut,
-  *EulerianWork,
-  *TotalEnthalpyIn,
-  *PressureRatio,
-  *PressureOut,
-  *EnthalpyOut,
-  *MachIn,
-  *MachOut,
-  *NormalMachIn,
-  *NormalMachOut,
-  *VelocityOutIs;
   
+  su2double **AveragedVelocity,
+            **AveragedNormal,
+            **AveragedGridVel,
+            **AveragedFlux,
+            **TotalFlux,
+            *TotalArea,
+            *AveragedNormalVelocity,
+            *ExtAveragedNormalVelocity,
+            *AveragedTangVelocity,
+            *ExtAveragedTangVelocity,
+            *AveragedTangGridVelocity,
+            *AveragedMach,
+            *AveragedNormalMach,
+            *AveragedTangMach,
+            *AveragedEnthalpy,
+            *AveragedPressure,
+            *AveragedTotTemperature,
+            *AveragedTotPressure,
+            *ExtAveragedPressure,
+            *ExtAveragedTotTemperature,
+            *ExtAveragedTotPressure,
+            *AveragedDensity,
+            *ExtAveragedDensity,
+            *AveragedSoundSpeed,
+            *AveragedEntropy,
+            *MassFlow,
+            *FlowAngle;
+  
+  su2double *TotalStaticEfficiency,
+            *TotalTotalEfficiency,
+            *KineticEnergyLoss,
+            *TotalPressureLoss,
+            *MassFlowIn,
+            *MassFlowOut,
+            *FlowAngleIn,
+            *FlowAngleOut,
+            *EulerianWork,
+            *TotalEnthalpyIn,
+            *PressureRatio,
+            *PressureOut,
+            *EnthalpyOut,
+            *MachIn,
+            *MachOut,
+            *NormalMachIn,
+            *NormalMachOut,
+            *VelocityOutIs;
+
+  /* Sliding meshes variables */
+
+  su2double ***SlidingState;
+
 public:
   
   
@@ -4306,6 +4337,15 @@ public:
    */
   void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
+ /*!
+  * \brief Impose the interface state across sliding meshes.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+    
   /*!
    * \brief Impose the engine inflow boundary condition.
  	 * \param[in] geometry - Geometrical definition of the problem.
@@ -4875,6 +4915,14 @@ public:
    */
   void StoreTurboPerformance(CSolver *solver,  unsigned short inMarkerTP );
   
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
@@ -5931,6 +5979,15 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
+ /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] val_state  - requested state component
+   * \param[in] component  - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+    
   /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -6024,6 +6081,7 @@ private:
   AllBound_HF_Visc,    /*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
+  
   
 public:
   

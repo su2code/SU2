@@ -1066,6 +1066,8 @@ inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_E
 
 inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
 
+inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
+
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
 
 inline unsigned short CConfig::GetnMarker_Out_1D(void) { return nMarker_Out_1D; }
@@ -1477,6 +1479,8 @@ inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 
 inline su2double CConfig::GetCriteria_FEM_ADJ(void) { return Res_FEM_ADJ; }
+
+inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_LoadTransfer; }
 
 inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
