@@ -2695,6 +2695,19 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
       }
+
+      /*---  Add the contribution to the residual due to flow loads (FSI contribution) ---*/
+      if (fsi) {
+        if (incremental_load){
+          for (iVar = 0; iVar < nVar; iVar++){
+            Res_FSI_Cont[iVar] = loadIncrement * node[iPoint]->Get_FlowTraction(iVar);
+          }
+        }
+        else {
+          Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+        }
+        LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+      }
     }
     
   }
