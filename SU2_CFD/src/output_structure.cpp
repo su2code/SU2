@@ -10112,7 +10112,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
       
       if (rank == MASTER_NODE)
-        cout << "Preparing element connectivity across all rank." << endl;
+        cout << "Preparing element connectivity across all ranks." << endl;
       SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
       
       /*--- Sort the surface data and renumber if for writing. ---*/
@@ -10136,6 +10136,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       /*--- Clean up the connectivity data that was allocated for output. ---*/
       
       DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
+      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], true);
       
       /*--- Clean up the surface data that was only needed for output. ---*/
       
@@ -12018,7 +12019,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
    to the connectivity for vizualization packages. First, allocate
    appropriate amount of memory for this section. ---*/
   
-  Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
+  if (nElem_Recv[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
   int count = 0; nElem_Total = 0;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     if (!haloRecv[ii]) {
@@ -12069,10 +12070,18 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   delete [] connRecv;
   delete [] haloSend;
   delete [] haloRecv;
+  delete [] Local_Halo;
   delete [] nElem_Recv;
   delete [] nElem_Send;
   delete [] nElem_Flag;
-  
+  delete [] Buffer_Recv_nAddedPeriodic;
+  delete [] Buffer_Send_AddedPeriodic;
+  delete [] Buffer_Recv_AddedPeriodic; 
+  delete [] npoint_procs;
+  delete [] starting_node;
+  delete [] ending_node;
+  delete [] nPoint_Linear;
+
 }
 
 void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
@@ -12611,7 +12620,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
    to the connectivity for vizualization packages. First, allocate
    appropriate amount of memory for this section. ---*/
   
-  Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
+  if (nElem_Recv[size] > 0) Conn_Elem = new int[NODES_PER_ELEMENT*nElem_Recv[size]];
   int count = 0; nElem_Total = 0;
   for (int ii = 0; ii < nElem_Recv[size]; ii++) {
     if (!haloRecv[ii]) {
@@ -12621,8 +12630,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
         count++;
       }
     }
-  }
-  
+  }  
+
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
   
@@ -12650,9 +12659,17 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   delete [] connRecv;
   delete [] haloSend;
   delete [] haloRecv;
+  delete [] Local_Halo;
   delete [] nElem_Recv;
   delete [] nElem_Send;
   delete [] nElem_Flag;
+  delete [] Buffer_Recv_nAddedPeriodic;
+  delete [] Buffer_Send_AddedPeriodic;
+  delete [] Buffer_Recv_AddedPeriodic;
+  delete [] npoint_procs;
+  delete [] starting_node;
+  delete [] ending_node;
+  delete [] nPoint_Linear;
   
 }
 
@@ -13058,6 +13075,10 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   delete [] Local_Data;
   
   delete [] Local_Halo;
+  delete [] npoint_procs;
+  delete [] starting_node;
+  delete [] ending_node;
+  delete [] nPoint_Linear;
   
 }
 
@@ -14455,6 +14476,17 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   delete [] nElem_Recv;
   delete [] nElem_Send;
   delete [] nElem_Flag;
+  delete [] Local_Halo;
+  delete [] Buffer_Recv_nAddedPeriodic;
+  delete [] Buffer_Send_AddedPeriodic;
+  delete [] Buffer_Recv_AddedPeriodic;
+  delete [] npoint_procs;
+  delete [] starting_node;
+  delete [] ending_node;
+  delete [] nPoint_Linear_Elems;
+  delete [] nPoint_Linear_Nodes;
+  delete [] nPoint_Send;
+  delete [] nPoint_Recv;
   
 }
 
