@@ -10297,8 +10297,9 @@ protected:
    * \brief Function, which creates the final residual by accumulating the
             individual contributions and multiply the result by the inverse
             of the (lumped) mass matrix.
+   * \param[in]  config      - Definition of the particular problem.
    */
-  void CreateFinalResidual(void);
+  void CreateFinalResidual(CConfig *config);
   
   /*!
    * \brief Function, which computes the inviscid fluxes in face points of
@@ -10319,12 +10320,15 @@ protected:
                                           CNumerics                     *numerics);
   /*!
    * \brief Function, which computes the left state of a boundary face.
+   * \param[in]  config       - Definition of the particular problem.
    * \param[in]  surfElem - Surface boundary element for which the left state must be computed.
    * \param[out] solFace  - Temporary storage for the solution in the DOFs.
    * \param[out] solIntL  - Left states in the integration points of the face.
    */
-  void LeftStatesIntegrationPointsBoundaryFace(const CSurfaceElementFEM *surfElem,
-                                               su2double *solFace, su2double *solIntL);
+  void LeftStatesIntegrationPointsBoundaryFace(CConfig *config,
+                                               const CSurfaceElementFEM *surfElem,
+                                               su2double *solFace,
+                                               su2double *solIntL);
   
 private:
   /*!
@@ -10768,7 +10772,8 @@ private:
    * \param[out]  viscosityInt        - Viscosity in the integration points, which is
    needed for other terms in the discretization.
    */
-  void ViscousNormalFluxFace(const unsigned short nInt,
+  void ViscousNormalFluxFace(CConfig              *config,
+                             const unsigned short nInt,
                              const unsigned short nDOFsElem,
                              const su2double      Wall_HeatFlux,
                              const bool           HeatFlux_Prescribed,
