@@ -1151,7 +1151,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
 
   /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
   config->Tick(&tick);
-  solver_container[MainSolver]->MultiplyResidualByInverseMassMatrix();
+  solver_container[MainSolver]->MultiplyResidualByInverseMassMatrix(config);
   config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
 }
 

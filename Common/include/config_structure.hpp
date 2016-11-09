@@ -67,6 +67,9 @@ using namespace std;
 
 class CConfig {
 private:
+
+	int rank;
+	
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
@@ -172,6 +175,7 @@ private:
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
+	nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
@@ -210,6 +214,7 @@ private:
 	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+	*Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_ActDiskInlet,
   *Marker_ActDiskOutlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
@@ -2313,6 +2318,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
+	
+	/*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_Fluid_InterfaceBound(void);
 
   /*!
 	 * \brief Get the total number of boundary markers.
@@ -4762,6 +4773,12 @@ public:
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_PerBound(string val_marker);
+	
+	/*!
+	 * \brief  Get the name of the marker <i>val_marker</i>.
+	 * \return The interface which owns that marker <i>val_marker</i>.
+	 */
+	int GetMarker_FSIinterface(string val_marker);
 
 	/*!
 	 * \brief Determines if problem is adjoint
@@ -6486,6 +6503,25 @@ public:
    * \brief Write a CSV file containing the results of the profiling.
    */
   void SetProfilingCSV(void);
+  
+  /*!
+   * \brief Start the timer for profiling subroutines.
+   * \param[in] val_start_time - the value of the start time.
+   */
+  void GEMM_Tick(double *val_start_time);
+  
+  /*!
+   * \brief Stop the timer for profiling subroutines and store results.
+   * \param[in] val_start_time - the value of the start time.
+   * \param[in] val_function_name - string for the name of the profiled subroutine.
+   * \param[in] val_group_id - string for the name of the profiled subroutine.
+   */
+  void GEMM_Tock(double val_start_time, string val_function_name, int M, int N, int K);
+  
+  /*!
+   * \brief Write a CSV file containing the results of the profiling.
+   */
+  void GEMMProfilingCSV(void);
   
   /*!
    * \brief Get the verbosity level of the console output.

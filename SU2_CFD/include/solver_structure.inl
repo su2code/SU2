@@ -703,6 +703,9 @@ inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 								  unsigned short val_marker) { }
 
+inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                         CConfig *config){ }
+
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                            CConfig *config, unsigned short val_marker) { }
 
@@ -1721,7 +1724,15 @@ inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
 
-inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {}
+inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
+
+inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }
+
+inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ }
+
+inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
+
+inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
 
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {}
 
@@ -1737,7 +1748,7 @@ inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_cont
 
 inline void CSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight) {}
 
-inline void CSolver:: MultiplyResidualByInverseMassMatrix(void) {}
+inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig *config) {}
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
