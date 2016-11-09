@@ -530,6 +530,7 @@ AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
 AC_OUTPUT(Makefile \
         externals/Makefile \
 	Common/lib/Makefile \
+	Common/test/Makefile \
 	SU2_CFD/obj/Makefile \
 	SU2_CFD/test/Makefile \
 	SU2_DOT/obj/Makefile \

@@ -1023,10 +1023,16 @@ public:
 	 */
 	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
   
-  /*!
-   * \brief Constructor of the class which reads the input file.
-   */
-  CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
+        /*!
+         * \brief Constructor of the class which reads the input file.
+         */
+        CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
+
+        /*!
+         * \brief Contructor that sets all options to default values.
+         */
+        CConfig();
+
 
 	/*!
 	 * \brief Destructor of the class.
