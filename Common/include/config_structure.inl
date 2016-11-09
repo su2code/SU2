@@ -435,8 +435,6 @@ inline su2double CConfig::GetNuFactor_FreeStream(void) { return NuFactor_FreeStr
 
 inline su2double CConfig::GetNuFactor_Engine(void) { return NuFactor_Engine; }
 
-inline su2double CConfig::GetNuFactor_ActDisk(void) { return NuFactor_ActDisk; }
-
 inline su2double CConfig::GetSecondaryFlow_ActDisk(void) { return SecondaryFlow_ActDisk; }
 
 inline su2double CConfig::GetInitial_BCThrust(void) { return Initial_BCThrust; }
@@ -1067,6 +1065,8 @@ inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_En
 inline unsigned short CConfig::GetnMarker_EngineExhaust(void) { return nMarker_EngineExhaust; }
 
 inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_InterfaceBound; }
+
+inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
 

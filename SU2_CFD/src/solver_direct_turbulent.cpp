@@ -1264,7 +1264,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
 
   /*--- Factor_nu_ActDisk ---*/
-  Factor_nu_ActDisk = config->GetNuFactor_ActDisk();
+  Factor_nu_ActDisk = config->GetNuFactor_Engine();
   nu_tilde_ActDisk  = Factor_nu_ActDisk*Viscosity_Inf/Density_Inf;
 
   /*--- Eddy viscosity at infinity ---*/

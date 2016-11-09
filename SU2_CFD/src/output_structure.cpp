@@ -3857,12 +3857,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-//  restart_file <<"IH= " << config->GetiH() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-  restart_file <<"DCL_DALPHA= " << config->GetdCL_dAlpha() << endl;
-//  restart_file <<"DCM_DHI= " << config->GetdCM_diH() << endl;
   restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-//  restart_file <<"DCD_DCM_VALUE= " << config->GetdCD_dCM() << endl;
   restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
   
   restart_file.close();
@@ -5138,7 +5134,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 default:
                   break;
               }
-            else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+            else cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "      CD(Total)" << endl;
             //            }
             //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
             

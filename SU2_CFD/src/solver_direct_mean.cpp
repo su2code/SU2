@@ -104,6 +104,9 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
   
+
+  SlidingState = NULL;
+  
   FluidModel = NULL;
 
   AveragedVelocity = NULL;
@@ -283,16 +286,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
           if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
             cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
         }
-      }
-      
-      /*--- dCL/dAlpha ---*/
-      
-      position = text_line.find ("DCL_DALPHA=",0);
-      if (position != string::npos) {
-        text_line.erase (0,11); dCL_dAlpha_ = atof(text_line.c_str());
-        if ((config->GetdCL_dAlpha() != dCL_dAlpha_) &&  (rank == MASTER_NODE))
-          cout <<"WARNING: ACDC will use the dCL/dAlpha provided in the solution file: " << dCL_dAlpha_ << " 1/deg." << endl;
-        config->SetdCL_dAlpha(dCL_dAlpha_);
       }
       
       /*--- External iteration ---*/
@@ -671,7 +664,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MomentInviscid    = new su2double[3];
   CD_Inv         = new su2double[nMarker];
   CL_Inv         = new su2double[nMarker];
-  CSF_Inv    = new su2double[nMarker];
+  CSF_Inv        = new su2double[nMarker];
   CMx_Inv           = new su2double[nMarker];
   CMy_Inv           = new su2double[nMarker];
   CMz_Inv           = new su2double[nMarker];
@@ -684,7 +677,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MomentMomentum    = new su2double[3];
   CD_Mnt        = new su2double[nMarker];
   CL_Mnt        = new su2double[nMarker];
-  CSF_Mnt   = new su2double[nMarker];
+  CSF_Mnt       = new su2double[nMarker];
   CMx_Mnt          = new su2double[nMarker];
   CMy_Mnt          = new su2double[nMarker];
   CMz_Mnt          = new su2double[nMarker];
@@ -695,7 +688,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   Surface_CL_Inv      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Inv      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF_Inv = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Inv     = new su2double[config->GetnMarker_Monitoring()];
   Surface_CEff_Inv       = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFx_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFy_Inv        = new su2double[config->GetnMarker_Monitoring()];
@@ -717,7 +710,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Surface_CL          = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD          = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF     = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF         = new su2double[config->GetnMarker_Monitoring()];
   Surface_CEff           = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFx            = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFy            = new su2double[config->GetnMarker_Monitoring()];
@@ -814,7 +807,29 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Exhaust_Area[iMarker]        = 0.0;
   }
   
-  /*--- Initialize quantities for the mixing process ---*/
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  
+  SlidingState = new su2double** [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+	
+	SlidingState[iMarker] = NULL;
+	  
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+      for (iVar = 0; iVar < nVar; iVar++)
+        SlidingState[iMarker][iPoint][iVar] = -1;
+      }
+    }
+    else
+      SlidingState[iMarker] = NULL;
+  }
+ 
+  /*--- Initializate quantities for the mixing process ---*/
   
   AveragedVelocity = new su2double* [nMarker];
   AveragedNormal   = new su2double* [nMarker];
@@ -1255,6 +1270,18 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CharacPrimVar;
   }
   
+  if ( SlidingState != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      if ( SlidingState[iMarker] != NULL ){
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] SlidingState[iMarker][iVertex];
+          
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+  }
+  
   if (DonorPrimVar != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
@@ -1362,7 +1389,7 @@ CEulerSolver::~CEulerSolver(void) {
   if (NormalMachIn          != NULL) delete [] NormalMachIn;
   if (NormalMachOut         != NULL) delete [] NormalMachOut;
   if (VelocityOutIs         != NULL) delete [] VelocityOutIs;
-
+  
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -10360,10 +10387,10 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
         cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
         cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
         
-        if (AoA_Counter >= Update_Alpha)  {
-          config->SetdCL_dAlpha(dCL_dAlpha_);
-          config->SetdCD_dCL(dCD_dCL_);
-        }
+//        if (AoA_Counter >= Update_Alpha)  {
+//          config->SetdCL_dAlpha(dCL_dAlpha_);
+//          config->SetdCD_dCL(dCD_dCL_);
+//        }
         
       }
       
@@ -13452,6 +13479,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   
 }
 
+
 void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
@@ -13709,6 +13737,88 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
   
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
   
+}
+
+void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                         CConfig *config) {
+  
+  unsigned long iVertex, iPoint;
+  unsigned short iDim, iVar, iMarker;
+  
+  bool implicit 	 = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  
+  su2double Density, sq_vel, StaticEnergy;
+  
+  su2double *Normal = new su2double[nDim];
+  su2double *PrimVar_i = new su2double[nPrimVar];
+  su2double *PrimVar_j = new su2double[nPrimVar];
+  
+  su2double P_static, rho_static;
+  
+  int rank = MASTER_NODE, irank = 1;
+  
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+      if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE)	{
+
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (geometry->node[iPoint]->GetDomain()) {
+
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+            PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
+          }
+          
+          /*--- Set primitive variables ---*/
+
+          numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          
+          if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ){
+	        Secondary_i = node[iPoint]->GetSecondary();
+
+		    P_static   = PrimVar_j[nDim+1];
+		    rho_static = PrimVar_j[nDim+2];			  
+            FluidModel->SetTDState_Prho(P_static, rho_static);
+			
+            Secondary_j[0] = FluidModel->GetdPdrho_e();
+            Secondary_j[1] = FluidModel->GetdPde_rho();  
+                   
+            numerics->SetSecondary(Secondary_i, Secondary_j);
+	      }
+
+          /*--- Set the normal vector ---*/
+
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++) 
+            Normal[iDim] = -Normal[iDim];
+
+          numerics->SetNormal(Normal);
+
+          if (grid_movement)
+            numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+          /*--- Compute the convective residual using an upwind scheme ---*/
+
+          numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+          /*--- Add Residuals and Jacobians ---*/
+
+          LinSysRes.AddBlock(iPoint, Residual);
+          if (implicit) 
+            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        }
+      }
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -15511,16 +15621,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         }
       }
       
-      /*--- dCL/dAlpha ---*/
-      
-      position = text_line.find ("DCL_DALPHA=",0);
-      if (position != string::npos) {
-        text_line.erase (0,11); dCL_dAlpha_ = atof(text_line.c_str());
-        if ((config->GetdCL_dAlpha() != dCL_dAlpha_) &&  (rank == MASTER_NODE))
-          cout <<"WARNING: ACDC will use the dCL/dAlpha provided in the solution file: " << dCL_dAlpha_ << " 1/deg." << endl;
-        config->SetdCL_dAlpha(dCL_dAlpha_);
-      }
-      
       /*--- External iteration ---*/
       
       position = text_line.find ("EXT_ITER=",0);
@@ -15856,9 +15956,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   ForceInviscid  = new su2double[3];
   MomentInviscid = new su2double[3];
-  CD_Inv      = new su2double[nMarker];
-  CL_Inv      = new su2double[nMarker];
-  CSF_Inv = new su2double[nMarker];
+  CD_Inv         = new su2double[nMarker];
+  CL_Inv         = new su2double[nMarker];
+  CSF_Inv        = new su2double[nMarker];
   CMx_Inv        = new su2double[nMarker];
   CMy_Inv        = new su2double[nMarker];
   CMz_Inv        = new su2double[nMarker];
@@ -15869,9 +15969,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   ForceMomentum  = new su2double[3];
   MomentMomentum = new su2double[3];
-  CD_Mnt      = new su2double[nMarker];
-  CL_Mnt      = new su2double[nMarker];
-  CSF_Mnt = new su2double[nMarker];
+  CD_Mnt         = new su2double[nMarker];
+  CL_Mnt         = new su2double[nMarker];
+  CSF_Mnt        = new su2double[nMarker];
   CMx_Mnt        = new su2double[nMarker];
   CMy_Mnt        = new su2double[nMarker];
   CMz_Mnt        = new su2double[nMarker];
@@ -15882,9 +15982,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   ForceViscous     = new su2double[3];
   MomentViscous    = new su2double[3];
-  CD_Visc       = new su2double[nMarker];
-  CL_Visc       = new su2double[nMarker];
-  CSF_Visc  = new su2double[nMarker];
+  CD_Visc          = new su2double[nMarker];
+  CL_Visc          = new su2double[nMarker];
+  CSF_Visc         = new su2double[nMarker];
   CMx_Visc         = new su2double[nMarker];
   CMy_Visc         = new su2double[nMarker];
   CMz_Visc         = new su2double[nMarker];
@@ -15895,7 +15995,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Surface_CL_Inv      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Inv      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF_Inv = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Inv     = new su2double[config->GetnMarker_Monitoring()];
   Surface_CEff_Inv       = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFx_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFy_Inv        = new su2double[config->GetnMarker_Monitoring()];
@@ -15904,9 +16004,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Surface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
   
-  Surface_CL_Mnt      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CD_Mnt      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF_Mnt = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CL_Mnt         = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CD_Mnt         = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Mnt        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CEff_Mnt       = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFx_Mnt        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFy_Mnt        = new su2double[config->GetnMarker_Monitoring()];
@@ -15917,7 +16017,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   Surface_CL          = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD          = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF     = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF         = new su2double[config->GetnMarker_Monitoring()];
   Surface_CEff           = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFx            = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFy            = new su2double[config->GetnMarker_Monitoring()];
@@ -15928,7 +16028,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Surface_CL_Visc      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Visc      = new su2double[config->GetnMarker_Monitoring()];
-  Surface_CSF_Visc = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Visc     = new su2double[config->GetnMarker_Monitoring()];
   Surface_CEff_Visc       = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFx_Visc        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CFy_Visc        = new su2double[config->GetnMarker_Monitoring()];
@@ -16090,6 +16190,29 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AveragedMach = new su2double[nMarker];
   AveragedNormalMach = new su2double[nMarker];
   AveragedTangMach = new su2double[nMarker];
+  
+  
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  
+  SlidingState = new su2double** [nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+	  
+	SlidingState[iMarker] = NULL;
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+        SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+
+        for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++){
+          SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+        for (iVar = 0; iVar < nVar; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = -1;
+      }
+    }
+    else
+      SlidingState[iMarker] = NULL;
+  }
   
   
   /*--- Initializate quantities for turboperformace ---*/
@@ -16376,7 +16499,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker, iDim;
+  unsigned short iMarker, iDim, iVertex;
   
   if (CD_Visc != NULL)       delete [] CD_Visc;
   if (CL_Visc != NULL)       delete [] CL_Visc;
@@ -16420,7 +16543,6 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] CSkinFriction;
   }
-  
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
