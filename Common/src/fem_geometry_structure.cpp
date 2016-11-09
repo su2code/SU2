@@ -4818,8 +4818,15 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the mass matrix (or its inverse) and/or the      ---*/
-  /*---         lumped mass matrix.                                        ---*/
+  /*---         lumped mass matrix. For ADER-DG also the iteration matrix  ---*/
+  /*---         of the predictor step is determined.                       ---*/
   /*--------------------------------------------------------------------------*/
+
+  /* Determine the time coefficients in the iteration matrix of the ADER-DG
+     predictor step. */
+  vector<su2double> timeCoefAder;
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG)
+    TimeCoefficientsPredictorADER_DG(config, timeCoefAder);
 
   /* Loop over the owned volume elements. */
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
@@ -4854,10 +4861,91 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         }
       }
 
+      /*--- Check for ADER-DG time integration. ---*/
+      if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+
+        /* Allocate the memory for the iteration matrix in the predictor
+           step of the ADER-DG scheme. */
+        const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
+        volElem[i].ADERIterationMatrix.resize(nDOFs*nDOFs*nTimeDOFs*nTimeDOFs);
+
+        /* Store the iteration matrix and the mass matrix a bit shorter. */
+        su2double *iterMat = volElem[i].ADERIterationMatrix.data();
+        su2double *massMat = volElem[i].massMatrix.data();
+
+        /*--- Create the ADER iteration matrix. ---*/
+        ll = 0;
+        for(unsigned short jT=0; jT<nTimeDOFs; ++jT) {
+          for(unsigned short jS=0; jS<nDOFs; ++jS) {
+            for(unsigned short iT=0; iT<nTimeDOFs; ++iT) {
+              const su2double val = timeCoefAder[jT*nTimeDOFs+iT];
+              for(unsigned short iS=0; iS<nDOFs; ++iS, ++ll)
+                iterMat[ll] = val*massMat[jS*nDOFs+iS];
+            }
+          }
+        }
+
+        /*--- For efficiency reasons it is better to store the inverse of the
+              currently stored matrix. Check if LAPACK/MKL can be used. ---*/
+
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+        /* The inverse can be computed using the Lapack routines LAPACKE_dgetrf
+           and LAPACKE_dgetri. In order to carry out these computations, some
+           extra memory is needed, which is allocated first. */
+        const unsigned short sizeMat = nDOFs*nTimeDOFs;
+        vector<int> ipiv(sizeMat);
+
+        /* Call LAPACKE_dgetrf to compute the LU factorization using
+           partial pivoting. Check if it went correctly. */
+        lapack_int errorCode;
+        errorCode = LAPACKE_dgetrf(LAPACK_ROW_MAJOR, sizeMat, sizeMat,
+                                   volElem[i].ADERIterationMatrix.data(),
+                                   sizeMat, ipiv.data());
+        if(errorCode != 0) {
+          cout << endl;
+          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
+          cout << "Something wrong when calling LAPACKE_dgetrf. Error code: "
+               << errorCode << endl;
+          cout << endl;
+#ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+#else
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#endif
+        }
+
+        /* LAPACKE_dgetri to compute the actual inverse. Check if everything
+           went fine. */
+        errorCode = LAPACKE_dgetri(LAPACK_ROW_MAJOR, sizeMat,
+                                   volElem[i].ADERIterationMatrix.data(),
+                                   sizeMat, ipiv.data());
+        if(errorCode != 0) {
+          cout << endl;
+          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
+          cout << "Something wrong when calling LAPACKE_dgetri. Error code: "
+               << errorCode << endl;
+          cout << endl;
+#ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+#else
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#endif
+        }
+#else
+        /* No support for Lapack. Hence an internal routine is used.
+           This does not all the checking the Lapack routine does. */
+        FEMStandardElementBaseClass::InverseMatrix(nDOFs*nTimeDOFs,
+                                                   volElem[i].ADERIterationMatrix);
+#endif
+      }
+
       /*--- Check if the inverse of mass matrix is needed. ---*/
       if( FullInverseMassMatrix ) {
 
-        /*--- Check if the LAPACK/MKL can be used to compute the inverse. ---*/
+        /*--- Check if LAPACK/MKL can be used to compute the inverse. ---*/
 
 #if defined (HAVE_LAPACK) || defined(HAVE_MKL)
 
@@ -4953,5 +5041,136 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         }
       }
     }
+  }
+}
+
+void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
+                                                   vector<su2double> &timeCoefAder) {
+
+  /* Determine the number of time DOFs in the predictor step of ADER as well
+     as their location on the interval [-1..1]. */
+  const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
+  const su2double      *TimeDOFs = config->GetTimeDOFsADER_DG();
+
+  /* Compute the Vandermonde matrix and its inverse in the time DOFs. */
+  vector<su2double> rTimeDOFs(nTimeDOFs);
+  for(unsigned short i=0; i<nTimeDOFs; ++i) rTimeDOFs[i] = TimeDOFs[i];
+
+  vector<su2double> V(nTimeDOFs*nTimeDOFs);
+  FEMStandardElementBaseClass timeElement;
+  timeElement.Vandermonde1D(nTimeDOFs, rTimeDOFs, V);
+
+  vector<su2double> VInv = V;
+  timeElement.InverseMatrix(nTimeDOFs, VInv);
+
+  /* Compute the Vandermonde matrix for r = 1, i.e. the end of the interval. */
+  vector<su2double> rEnd(1); rEnd[0] = 1.0;
+  vector<su2double> VEnd(nTimeDOFs);
+  timeElement.Vandermonde1D(nTimeDOFs, rEnd, VEnd);
+
+  /*--- Determine the matrix products VEnd*VInv to get the correct expression
+        for the values of the Lagrangian interpolation functions for r = 1. ---*/
+  vector<su2double> lEnd(nTimeDOFs, 0.0);
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short k=0; k<nTimeDOFs; ++k)
+      lEnd[j] += VEnd[k]*VInv[j*nTimeDOFs+k];
+  }
+
+  /*--- To reduce the error due to round off, make sure that the row sum is 1.
+        Also check if the difference is not too large to be solely caused by
+        roundoff.  ---*/
+  su2double val = 0.0;
+  for(unsigned short j=0; j<nTimeDOFs; ++j) val += lEnd[j];
+
+  if(fabs(val-1.0) > 1.e-6){
+    cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
+    cout << "Difference is too large to be caused by roundoff" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  val = 1.0/val;
+  for(unsigned short j=0; j<nTimeDOFs; ++j) lEnd[j] *= val;
+
+  /*--- Compute the values of the Lagrangian functions at the beginning of the
+        interval (r = -1). These are needed to compute the RHS of the predictor. ---*/
+  rEnd[0] = -1.0;
+  timeElement.Vandermonde1D(nTimeDOFs, rEnd, VEnd);
+
+  LagrangianBeginTimeIntervalADER_DG.assign(nTimeDOFs, 0.0);
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short k=0; k<nTimeDOFs; ++k)
+      LagrangianBeginTimeIntervalADER_DG[j] += VEnd[k]*VInv[j*nTimeDOFs+k];
+  }
+
+  /*--- To reduce the error due to round off, make sure that the row sum is 1.
+        Also check if the difference is not too large to be solely caused by
+        roundoff.  ---*/
+  val = 0.0;
+  for(unsigned short j=0; j<nTimeDOFs; ++j) val += LagrangianBeginTimeIntervalADER_DG[j];
+
+  if(fabs(val-1.0) > 1.e-6){
+    cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
+    cout << "Difference is too large to be caused by roundoff" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  val = 1.0/val;
+  for(unsigned short j=0; j<nTimeDOFs; ++j) LagrangianBeginTimeIntervalADER_DG[j] *= val;
+
+  /*--- Compute the mass matrix in time, which is the inverse of V^T V. Note that
+        this definition is different from the one used in Hesthaven, because their
+        V is our V^T. Furthermore note that the mass matrix should be a diagonal
+        matrix, due to the choice of the DOFs (Gauss Legendre points). ---*/
+  vector<su2double> MassTime(nTimeDOFs*nTimeDOFs, 0.0);
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short i=0; i<nTimeDOFs; ++i) {
+      const unsigned short ji = j*nTimeDOFs + i;
+      for(unsigned short k=0; k<nTimeDOFs; ++k)
+        MassTime[ji] += V[k*nTimeDOFs+j]*V[k*nTimeDOFs+i];
+    }
+  }
+
+  timeElement.InverseMatrix(nTimeDOFs, MassTime); 
+
+  /* Compute the gradient of the Vandermonde matrix in the time DOFs. */
+  vector<su2double> VDr(nTimeDOFs*nTimeDOFs);
+  timeElement.GradVandermonde1D(nTimeDOFs, rTimeDOFs, VDr);
+
+  /* Compute the product VDr VInv. Store the result in V. Note that in both
+     matrices the transpose is stored compared to the definition of Hesthaven. */
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short i=0; i<nTimeDOFs; ++i) {
+      const unsigned short ji = j*nTimeDOFs + i;
+      V[ji] = 0.0;
+      for(unsigned short k=0; k<nTimeDOFs; ++k)
+        V[ji] += VDr[k*nTimeDOFs+j]*VInv[i*nTimeDOFs+k];
+    }
+  }
+
+  /* Compute the time stiffness matrix S = M Dr. */
+  vector<su2double> S(nTimeDOFs*nTimeDOFs, 0.0);
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short i=0; i<nTimeDOFs; ++i) {
+      const unsigned short ji = j*nTimeDOFs + i;
+      for(unsigned short k=0; k<nTimeDOFs; ++k)
+        S[ji] += MassTime[j*nTimeDOFs+k]*V[k*nTimeDOFs+i];
+    }
+  }
+
+  /* Compute the time coefficients of the iteration matrix in the predictor step. */
+  timeCoefAder.assign(nTimeDOFs*nTimeDOFs, 0.0);
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short i=0; i<nTimeDOFs; ++i)
+      timeCoefAder[j*nTimeDOFs+i] = lEnd[j]*lEnd[i] - S[i*nTimeDOFs+j];
   }
 }

@@ -166,6 +166,9 @@ public:
   vector<su2double> massMatrix;             /*!< \brief Mass matrix (or the inverse) for this element. */
   vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */
 
+  vector<su2double> ADERIterationMatrix;    /*!< \brief Iteration matrix used in the predictor step of
+                                                        the ADER-DG scheme. */
+
   vector<su2double> coorIntegrationPoints;  /*!< \brief The coordinates of the integration points of this element. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
                                                         the integration points of this element. */
@@ -673,6 +676,10 @@ private:
                                                                               internal faces used for the geometry of
                                                                               the DG solver. */
 
+  vector<su2double> LagrangianBeginTimeIntervalADER_DG; /*!< \brief Values of the Lagrangian interpolation functions of
+                                                                    the time DOFs at the beginning of the time interval,
+                                                                    i.e. r == -1. */
+
   unsigned long nMatchingFacesWithHaloElem;      /*!< \brief Number of matching faces between an owned element and a halo
                                                              element. These faces are numbered first in matchingFaces. */
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
@@ -1054,6 +1061,15 @@ private:
            matching faces.
   */
   void MetricTermsMatchingFaces(void);
+
+  /*!
+  * \brief Function, which computes the time coefficients in the iteration matrix
+           of the ADER-DG predictor step.
+  * \param[in]  config       - Definition of the particular problem.
+  * \param[out] timeCoefAder - The coefficients to be computed.
+  */
+  void TimeCoefficientsPredictorADER_DG(CConfig           *config,
+                                        vector<su2double> &timeCoefAder);
 };
 
 #include "fem_geometry_structure.inl"

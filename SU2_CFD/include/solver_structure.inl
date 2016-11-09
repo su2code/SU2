@@ -788,6 +788,8 @@ inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_c
 
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 							        unsigned short iMesh, unsigned long Iteration) { }	
+
+inline void CSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) { }
 							        
 inline void CSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 							        unsigned short iMesh) { }	

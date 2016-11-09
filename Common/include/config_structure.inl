@@ -606,6 +606,12 @@ inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline unsigned short CConfig::GetnTimeDOFsADER_DG(void) { return nTimeDOFsADER_DG; }
 
+inline su2double *CConfig::GetTimeDOFsADER_DG(void) { return TimeDOFsADER_DG; }
+
+inline unsigned short CConfig::GetnTimeIntegrationADER_DG(void) { return nTimeIntegrationADER_DG; }
+
+inline su2double *CConfig::GetWeightsIntegrationADER_DG(void) { return WeightsIntegrationADER_DG; }
+
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
 
 inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {	
@@ -1445,6 +1451,8 @@ inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solve
 inline su2double CConfig::GetQuadrature_Factor_Straight(void) {return Quadrature_Factor_Straight;}
 
 inline su2double CConfig::GetQuadrature_Factor_Curved(void) {return Quadrature_Factor_Curved;}
+
+inline su2double CConfig::GetQuadrature_Factor_Time_ADER_DG(void) {return Quadrature_Factor_Time_ADER_DG;}
 
 inline su2double CConfig::GetTheta_Interior_Penalty_DGFEM(void) {return Theta_Interior_Penalty_DGFEM;}
 

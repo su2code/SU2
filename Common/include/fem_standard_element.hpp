@@ -133,6 +133,26 @@ public:
   static void InverseMatrix(unsigned short    n,
                             vector<su2double> &A);
 
+  /*!
+  * \brief Function, which computes the gradient of the Vandermonde matrix for a standard 1D edge.
+  * \param[in]  nDOFs - Number of DOFs, which in 1D is the polynomial degree + 1.
+  * \param[in]  r     - Parametric coordinates for which the gradient of the Vandermonde matrix must be computed.
+  * \param[out] VDr   - Matrix to store the gradient of the Vandermonde matrix in all r-locations.
+  */
+  void GradVandermonde1D(unsigned short          nDOFs,
+                         const vector<su2double> &r,
+                         vector<su2double>       &VDr);
+
+  /*!
+  * \brief Function, which computes the Vandermonde matrix for a standard 1D edge.
+  * \param[in]  nDOFs - Number of DOFs, which in 1D is the polynomial degree + 1.
+  * \param[in]  r     - Parametric coordinates for which the Vandermonde matrix must be computed.
+  * \param[out] V     - Matrix to store the Vandermonde matrix in all r-locations.
+  */
+  void Vandermonde1D(unsigned short          nDOFs,
+                     const vector<su2double> &r,
+                     vector<su2double>       &V);
+
 protected:
   /*!
   * \brief Function, which checks if the sum of the given derivatives of the
@@ -468,16 +488,6 @@ private:
                            su2double      x);
 
   /*!
-  * \brief Function, which computes the gradient of the Vandermonde matrix for a standard 1D edge.
-  * \param[in]  nDOFs - Number of DOFs, which in 1D is the polynomial degree + 1.
-  * \param[in]  r     - Parametric coordinates for which the gradient of the Vandermonde matrix must be computed.
-  * \param[out] VDr   - Matrix to store the gradient of the Vandermonde matrix in all r-locations.
-  */
-  void GradVandermonde1D(unsigned short          nDOFs,
-                         const vector<su2double> &r,
-                         vector<su2double>       &VDr);
-
-  /*!
   * \brief Function, which computes the gradients of the Vandermonde matrix for a standard triangle.
   * \param[in]  nPoly - Polynomial degree of the triangle.
   * \param[in]  nDOFs - Number of DOFs of the triangle.
@@ -663,16 +673,6 @@ private:
                        unsigned short alpha,
                        unsigned short beta,
                        su2double      x);
-
-  /*!
-  * \brief Function, which computes the Vandermonde matrix for a standard 1D edge.
-  * \param[in]  nDOFs - Number of DOFs, which in 1D is the polynomial degree + 1.
-  * \param[in]  r     - Parametric coordinates for which the Vandermonde matrix must be computed.
-  * \param[out] V     - Matrix to store the Vandermonde matrix in all r-locations.
-  */
-  void Vandermonde1D(unsigned short          nDOFs,
-                     const vector<su2double> &r,
-                     vector<su2double>       &V);
 
   /*!
    * \brief Function, which computes the Vandermonde matrix for a standard triangle.
