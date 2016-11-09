@@ -2798,7 +2798,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool fixed_cl       = config->GetFixed_CL_Mode();
-  bool eval_dcd_dcx       = config->GetEval_dCD_dCX();
+  bool eval_dcd_dcx   = config->GetEval_dCD_dCX();
 
   /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
@@ -4175,7 +4175,7 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
       AoA_Counter++;
       if (AoA_Counter >= 2) Update_AoA = true;
       else Update_AoA = false;
-    };
+    }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
     
@@ -4218,7 +4218,6 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     SetForceProj_Vector(geometry, solver_container, config);
     
   }
-  
   
   /*--- Output some information to the console with the headers ---*/
   
