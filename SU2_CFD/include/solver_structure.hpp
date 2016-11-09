@@ -489,6 +489,14 @@ public:
    */
   virtual void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iMesh, unsigned long Iteration);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iStep  - Current step in the time accurate local time
+                         stepping algorithm
+   */
+  virtual void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
   
   /*!
    * \brief A virtual member.
@@ -9756,6 +9764,15 @@ public:
                     unsigned short iMesh, unsigned long Iteration);
 
   /*!
+   * \brief Function, carries out the predictor step of the ADER-DG
+            time integration.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iStep  - Current step in the time accurate local time
+                         stepping algorithm
+   */
+  void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
+
+  /*!
    * \brief Function, which interpolates the predictor solution of ADER-DG
             to the time value that corresponds to iTime.
    * \param[in] iTime - Time index of the time integration point for the
@@ -10341,15 +10358,6 @@ protected:
   
 private:
   /*!
-   * \brief Function, carries out the predictor step of the ADER-DG
-            time integration.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iStep  - Current step in the time accurate local time
-                         stepping algorithm
-   */
-  virtual void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
-
-  /*!
    * \brief Function, which sets up the persistent communication of the flow
             variables in the DOFs.
    * \param[in] DGGeometry - Geometrical definition of the DG problem.
@@ -10678,15 +10686,6 @@ public:
   
 private:
 
-  /*!
-   * \brief Function, carries out the predictor step of the ADER-DG
-            time integration.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iStep  - Current step in the time accurate local time
-                         stepping algorithm.
-   */
-  void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
- 
   /*!
    * \brief Function to compute the penalty terms in the integration
    points of a face.

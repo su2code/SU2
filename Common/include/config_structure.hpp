@@ -343,8 +343,11 @@ private:
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
-  unsigned short nTimeDOFsADER_DG;      /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
-  su2double *TimeDOFsADER_DG;           /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
+  unsigned short nTimeDOFsADER_DG;        /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
+  su2double *TimeDOFsADER_DG;             /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
+  unsigned short nTimeIntegrationADER_DG; /*!< \brief Number of time integration points ADER-DG. */ 
+  su2double *TimeIntegrationADER_DG;      /*!< \brief The location of the ADER-DG time integration points on the interval [-1,1]. */
+  su2double *WeightsIntegrationADER_DG;   /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
@@ -809,10 +812,11 @@ private:
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
-  unsigned short Riemann_Solver_FEM;      /*!< \brief Riemann solver chosen for the DG method. */
-  su2double Quadrature_Factor_Straight;   /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
-  su2double Quadrature_Factor_Curved;     /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
-  su2double Theta_Interior_Penalty_DGFEM; /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
+  unsigned short Riemann_Solver_FEM;        /*!< \brief Riemann solver chosen for the DG method. */
+  su2double Quadrature_Factor_Straight;     /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
+  su2double Quadrature_Factor_Curved;       /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
+  su2double Quadrature_Factor_Time_ADER_DG; /*!< \brief Factor applied during quadrature in time for ADER-DG. */
+  su2double Theta_Interior_Penalty_DGFEM;   /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -2255,6 +2259,24 @@ public:
    * \return Number of time DOFs used in ADER-DG.
    */
   unsigned short GetnTimeDOFsADER_DG(void);
+
+  /*!
+   * \brief Get the location of the time DOFs for ADER-DG on the interval [-1..1].
+   * \return The location of the time DOFs used in ADER-DG.
+   */
+  su2double *GetTimeDOFsADER_DG(void);
+
+  /*!
+   * \brief Get the number time integration points for ADER-DG.
+   * \return Number of time integration points used in ADER-DG.
+   */
+  unsigned short GetnTimeIntegrationADER_DG(void);
+
+  /*!
+   * \brief Get the weights of the time integration points for ADER-DG.
+   * \return The weights of the time integration points used in ADER-DG.
+   */
+  su2double *GetWeightsIntegrationADER_DG(void);
 
 	/*!
 	 * \brief Get the total number of boundary markers.
@@ -6677,16 +6699,22 @@ public:
   unsigned short GetRiemann_Solver_FEM(void);
   
   /*!
-   * \brief Factor applied during quadrature of straight elements.
+   * \brief Get the factor applied during quadrature of straight elements.
    * \return The specified straight element quadrature factor.
    */
   su2double GetQuadrature_Factor_Straight(void);
   
   /*!
-   * \brief Factor applied during quadrature of curved elements.
+   * \brief Get the factor applied during quadrature of curved elements.
    * \return The specified curved element quadrature factor.
    */
   su2double GetQuadrature_Factor_Curved(void);
+
+  /*!
+   * \brief Get the factor applied during time quadrature for ADER-DG.
+   * \return The specified ADER-DG time quadrature factor.
+   */
+  su2double GetQuadrature_Factor_Time_ADER_DG(void);
 
   /*!
    * \brief Function to make available the multiplication factor theta of the

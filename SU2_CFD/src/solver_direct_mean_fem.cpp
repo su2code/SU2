@@ -268,9 +268,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) nDOFsLocTot += volElem[i].nDOFsSol;
 
   VecSolDOFs.resize(nVar*nDOFsLocTot);
+  VecSolDOFsOld.resize(nVar*nDOFsLocOwned);
 
   /*--- Check for the ADER-DG time integration scheme and allocate the memory
-        for the necessary vectors. ---*/
+        for the additional vectors. ---*/
   if(config->GetKind_TimeIntScheme() == ADER_DG) {
 
     const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
@@ -281,9 +282,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   else {
 
     /*--- Runge Kutta type of time integration schemes. Allocate the memory to
-          store the old solution and possibly the new. ---*/
-    VecSolDOFsOld.resize(nVar*nDOFsLocOwned);
-
+          possibly store the new solution. ---*/
     if(config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT)
       VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
   }
@@ -1962,13 +1961,6 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
       if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
     }
   }
-
-  /*-------------------------------------------------------------*/
-  /*--- Carry out the predictor step for ADER, if necessary.  ---*/
-  /*-------------------------------------------------------------*/
-
-  if(config->GetKind_TimeIntScheme() == ADER_DG)
-    ADER_DG_PredictorStep(config, iStep);
 }
 
 void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -2811,7 +2803,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
     const su2double *res        = VecResDOFs.data()    + offset;
-    const su2double *solDOFSOld = VecSolDOFsOld.data() + offset;
+    const su2double *solDOFsOld = VecSolDOFsOld.data() + offset;
     su2double *solDOFs          = VecSolDOFs.data()    + offset;
 
     /* Loop over the DOFs for this element and update the solution and the L2 norm. */
@@ -2821,7 +2813,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
-        solDOFs[i] = solDOFSOld[i] - tmp*res[i];
+        solDOFs[i] = solDOFsOld[i] - tmp*res[i];
 
         AddRes_RMS(iVar, res[i]*res[i]);
         AddRes_Max(iVar, fabs(res[i]), globalIndex, coor); 
@@ -2896,8 +2888,8 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
     const su2double *res        = VecResDOFs.data()    + offset;
-    const su2double *solDOFSOld = VecSolDOFsOld.data() + offset;
-    su2double *solDOFSNew       = VecSolDOFsNew.data() + offset;
+    const su2double *solDOFsOld = VecSolDOFsOld.data() + offset;
+    su2double *solDOFsNew       = VecSolDOFsNew.data() + offset;
     su2double *solDOFs          = VecSolDOFs.data()    + offset;
     
     /* Loop over the DOFs for this element and update the solution and the L2 norm. */
@@ -2910,10 +2902,10 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
         
         if (iRKStep < 3) {
-          solDOFSNew[i] += tmp_func*res[i];
-          solDOFs[i]     = solDOFSOld[i] + tmp_time*res[i];
+          solDOFsNew[i] += tmp_func*res[i];
+          solDOFs[i]     = solDOFsOld[i] + tmp_time*res[i];
         } else {
-          solDOFs[i]     = solDOFSNew[i] + tmp_func*res[i];
+          solDOFs[i]     = solDOFsNew[i] + tmp_func*res[i];
         }
         
         AddRes_RMS(iVar, res[i]*res[i]);
@@ -2975,12 +2967,13 @@ void CFEM_DG_EulerSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solve
 
     /* Set the pointers for the residual and solution for this element. */
     const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
-    const su2double *res = VecTotResDOFsADER.data() + offset;
-    su2double *solDOFs   = VecSolDOFs.data()        + offset;
+    const su2double *res        = VecTotResDOFsADER.data() + offset;
+    const su2double *solDOFsOld = VecSolDOFsOld.data()     + offset;
+    su2double *solDOFs          = VecSolDOFs.data()        + offset;
 
     /* Loop over the DOFs for this element and update the solution. */
     for(unsigned short i=0; i<(nVar*volElem[l].nDOFsSol); ++i)
-      solDOFs[i] -= VecDeltaTime[l]*res[i];
+      solDOFs[i] = solDOFsOld[i] - VecDeltaTime[l]*res[i];
   }
 }
 
@@ -4244,12 +4237,6 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMy[iMarker_Monitoring]  += Surface_CMy_Visc[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]  += Surface_CMz_Visc[iMarker_Monitoring];
   }
-}
-
-void CFEM_DG_NSSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
-
-  cout << "CFEM_DG_NSSolver::ADER_DG_PredictorStep: Not implemented yet" << endl;
-  exit(1);
 }
 
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

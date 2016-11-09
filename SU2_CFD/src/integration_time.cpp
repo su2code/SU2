@@ -981,11 +981,6 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
     solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iStep, RunTime_EqSystem, false);
     config[ZONE_0]->Tock(tick,"Preprocessing",2);
 
-    if(config[iZone]->GetKind_TimeIntScheme() == ADER_DG) {
-      cout << "ADER-DG not implemented yet" << endl;
-      exit(1);
-    }
-    
     /*--- Space integration ---*/
     config[ZONE_0]->Tick(&tick);
     Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iStep, RunTime_EqSystem);
@@ -1034,14 +1029,23 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
   const bool useADER = config->GetKind_TimeIntScheme() == ADER_DG;
   if( useADER ) {
 
-    /*--- ADER-DG is used. Compute the time step and set the number of time
-          integration points and the corresponding weights. ---*/
+    /*--- ADER-DG is used. Set the old solution, compute the time step, carry
+          out the predictor step and set the number of time integration points
+          and the corresponding weights. ---*/
+    config->Tick(&tick);
+    solver_container[MainSolver]->Set_OldSolution(geometry);
+    config->Tock(tick,"Set_OldSolution",3);
+
     config->Tick(&tick);
     solver_container[MainSolver]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
     config->Tock(tick,"SetTime_Step",3);
 
-    nTimeIntegrationPoints = 2;     // Must be constructed properly
-    timeIntegrationWeights = NULL;  // later!!!!
+    config->Tick(&tick);
+    solver_container[MainSolver]->ADER_DG_PredictorStep(config, iStep);
+    config->Tock(tick,"ADER_DG_PredictorStep",3);
+
+    nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+    timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
   }
   else {
 

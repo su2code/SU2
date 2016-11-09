@@ -383,6 +383,8 @@ void CConfig::SetPointersNull(void) {
   Hold_GridFixed_Coord = NULL;
   EA_IntLimit = NULL;
   TimeDOFsADER_DG = NULL;
+  TimeIntegrationADER_DG = NULL;
+  WeightsIntegrationADER_DG = NULL;
   RK_Alpha_Step = NULL;
   Int_Coeffs = NULL;
   Kind_ObjFunc = NULL;
@@ -1466,6 +1468,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("QUADRATURE_FACTOR_STRAIGHT_FEM", Quadrature_Factor_Straight, 2.0);
   /* DESCRIPTION: Constant factor applied for quadrature with curved elements (3.0 by default) */
   addDoubleOption("QUADRATURE_FACTOR_CURVED_FEM", Quadrature_Factor_Curved, 3.0);
+  /* DESCRIPTION: Factor applied during quadrature in time for ADER-DG. (2.0 by default) */
+  addDoubleOption("QUADRATURE_FACTOR_TIME_ADER_DG", Quadrature_Factor_Time_ADER_DG, 2.0);
   /* DESCRIPTION: Factor for the symmetrizing terms in the DG FEM discretization (1.0 by default) */
   addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
 
@@ -2868,6 +2872,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Kind_TimeIntScheme_FEM_Flow == ADER_DG) {
+
+    Unsteady_Simulation = TIME_STEPPING;  // Only time stepping for ADER.
+
     vector<su2double> GLPoints(nTimeDOFsADER_DG), GLWeights(nTimeDOFsADER_DG);
     CGaussJacobiQuadrature GaussJacobi;
     GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
@@ -2875,6 +2882,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     TimeDOFsADER_DG = new su2double[nTimeDOFsADER_DG];
     for(iDim=0; iDim<nTimeDOFsADER_DG; iDim++)
       TimeDOFsADER_DG[iDim] = GLPoints[iDim];
+
+    unsigned short orderExact = ceil(Quadrature_Factor_Time_ADER_DG*(nTimeDOFsADER_DG-1));
+    nTimeIntegrationADER_DG = orderExact/2 + 1;
+    GLPoints.resize(nTimeIntegrationADER_DG);
+    GLWeights.resize(nTimeIntegrationADER_DG);
+    GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
+
+    TimeIntegrationADER_DG    = new su2double[nTimeIntegrationADER_DG];
+    WeightsIntegrationADER_DG = new su2double[nTimeIntegrationADER_DG];
+    for(iDim=0; iDim<nTimeIntegrationADER_DG; iDim++) {
+      TimeIntegrationADER_DG[iDim]    = GLPoints[iDim];
+      WeightsIntegrationADER_DG[iDim] = GLWeights[iDim];
+    }
   }
   
   if (nIntCoeffs == 0) {
@@ -4360,9 +4380,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case ADER_DG:
           cout << "ADER-DG, possibly with local time stepping, for the flow equations." << endl;
           cout << "Number of time DOFs ADER-DG predictor step: " << nTimeDOFsADER_DG << endl;
-          cout << "Location of time DOFs ADER-DG in the interval [-1,1]: ";
+          cout << "Location of time DOFs ADER-DG on the interval [-1,1]: ";
           for (unsigned short iDOF=0; iDOF<nTimeDOFsADER_DG; iDOF++) {
             cout << "\t" << TimeDOFsADER_DG[iDOF];
+          }
+          cout << endl;
+          cout << "Time quadrature factor for ADER-DG: " << Quadrature_Factor_Time_ADER_DG << endl;
+          cout << "Number of time integration points ADER-DG: " << nTimeIntegrationADER_DG << endl;
+          cout << "Location of time integration points ADER-DG on the interval [-1,1]: ";
+          for (unsigned short iDOF=0; iDOF<nTimeIntegrationADER_DG; iDOF++) {
+            cout << "\t" << TimeIntegrationADER_DG[iDOF];
+          }
+          cout << endl;
+          cout << "Weights of time integration points ADER-DG on the interval [-1,1]: ";
+          for (unsigned short iDOF=0; iDOF<nTimeIntegrationADER_DG; iDOF++) {
+            cout << "\t" << WeightsIntegrationADER_DG[iDOF];
           }
           cout << endl;
           break;
@@ -5144,10 +5176,12 @@ CConfig::~CConfig(void) {
     delete itr->second;
   }
  
-  if (TimeDOFsADER_DG != NULL) delete [] TimeDOFsADER_DG;
-  if (RK_Alpha_Step   != NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth    != NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth   != NULL) delete [] MG_PostSmooth;
+  if (TimeDOFsADER_DG           != NULL) delete [] TimeDOFsADER_DG;
+  if (TimeIntegrationADER_DG    != NULL) delete [] TimeIntegrationADER_DG;
+  if (WeightsIntegrationADER_DG != NULL) delete [] WeightsIntegrationADER_DG;
+  if (RK_Alpha_Step             != NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth              != NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth             != NULL) delete [] MG_PostSmooth;
   
   /*--- Free memory for Aeroelastic problems. ---*/
 
