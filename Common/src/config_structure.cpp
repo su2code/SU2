@@ -608,7 +608,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
-  addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 30.0);
+  addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 3.0);
   /* DESCRIPTION:  */
   addDoubleOption("ACTDISK_NU_FACTOR", NuFactor_ActDisk, 3.0);
   /* DESCRIPTION:  */
@@ -782,6 +782,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
+  /* DESCRIPTION: Only half engine is in the computational grid */
+  addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
   /* DESCRIPTION: Limits for the pressure (Min, Max) */

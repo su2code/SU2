@@ -1174,6 +1174,8 @@ inline bool CConfig::GetSubsonicEngine(void) { return SubsonicEngine; }
 
 inline bool CConfig::GetActDisk_DoubleSurface(void) { return ActDisk_DoubleSurface; }
 
+inline bool CConfig::GetEngine_HalfModel(void) { return Engine_HalfModel; }
+
 inline bool CConfig::GetActDisk_SU2_DEF(void) { return ActDisk_SU2_DEF; }
 
 inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_value) { return DV_Value[val_dv][val_value]; }
