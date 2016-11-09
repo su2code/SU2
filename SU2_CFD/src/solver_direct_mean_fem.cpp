@@ -2130,6 +2130,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt = VecTmpMemory.data();
   su2double *fluxes = solInt + nIntegrationMax*nVar;
+  su2double tick = 0.0;
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
@@ -2156,8 +2157,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
-
+    config->GEMM_Tock(tick, "Volume_Residual_1", nInt, nVar, nDOFs);
+    
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
     /*---         integration weight, in the integration points.           ---*/
@@ -2219,7 +2222,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
+    config->GEMM_Tock(tick, "Volume_Residual_2", nDOFs, nVar, nInt*nDim);
+    
   }
 }
 
@@ -2247,7 +2253,8 @@ void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver
   Complete_MPI_ReverseCommunication();
 
   /* Create the final residual by summing up all contributions. */
-  CreateFinalResidual();
+  CreateFinalResidual(config);
+  
 }
 
 void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -2259,7 +2266,8 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
   su2double *solIntL = VecTmpMemory.data();
   su2double *solIntR = solIntL + nIntegrationMax*nVar;
   su2double *fluxes  = solIntR + nIntegrationMax*nVar;
-
+  su2double tick = 0.0;
+  
   /*--- Loop over the requested range of matching faces. ---*/
   for(unsigned long l=indFaceBeg; l<indFaceEnd; ++l) {
 
@@ -2303,8 +2311,10 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
     const su2double *basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide0();
 
     /* Call the general function to carry out the matrix product. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
-
+    config->GEMM_Tock(tick,"ResidualFaces_1",nDOFsFace0, nVar, nInt);
+    
     /* Easier storage of the position in the residual array for side 1 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
@@ -2325,8 +2335,11 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
             the residual. Afterwards the residual is negated, because the
             normal is pointing into the adjacent element. ---*/
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
+      
+      config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
-
+      config->GEMM_Tock(tick,"ResidualFaces_2",nDOFsFace1, nVar, nInt);
+      
       for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
         resFace1[i] = -resFace1[i];
     }
@@ -2369,11 +2382,11 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       sol[j] = solDOF[j];
   }
 
-  config->Tick(&tick);
+  config->GEMM_Tick(&tick);
   /* Compute the left states. Call the general function to
      carry out the matrix product. */
   DenseMatrixProduct(nInt, nVar, nDOFsFace0, basisFace0, solFace, solIntL);
-  config->Tock(tick, "ER_1_1_1", 5);
+  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace_1", nInt, nVar, nDOFsFace0);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 2: Interpolate the right state in the integration points of ---*/
@@ -2395,11 +2408,11 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
       sol[j] = solDOF[j];
   }
 
-  config->Tick(&tick);
   /* Compute the right states. Call the general function to
      carry out the matrix product. */
+  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, nVar, nDOFsFace1, basisFace1, solFace, solIntR);
-  config->Tock(tick, "ER_1_1_2", 5);
+  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace_2", nInt, nVar, nDOFsFace0);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the fluxes in the integration points using the   ---*/
@@ -2411,11 +2424,12 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                             solIntL, solIntR, fluxes, numerics);
 }
 
-void CFEM_DG_EulerSolver::CreateFinalResidual(void) {
+void CFEM_DG_EulerSolver::CreateFinalResidual(CConfig *config) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *tmpRes = VecTmpMemory.data();
-
+  su2double tick = 0.0;
+  
   /* Loop over the owned volume elements to accumulate the local data. */
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
@@ -2458,8 +2472,11 @@ void CFEM_DG_EulerSolver::CreateFinalResidual(void) {
       /* Multiply the residual with the inverse of the mass matrix.
          Use the array tmpRes as temporary storage. */
       memcpy(tmpRes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
+      config->GEMM_Tick(&tick);
       DenseMatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
                          volElem[l].massMatrix.data(), tmpRes, res);
+      config->GEMM_Tock(tick, "CreateFinalResidual", volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol);
+
     }
   }
 }
@@ -2563,7 +2580,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
         for(unsigned long l=0; l<nSurfElem; ++l) {
 
           /* Compute the states in the integration points of the face. */
-          LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], solDOFs, solInt);
+          LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], solDOFs, solInt);
 
           /*--- Get the number of integration points and the integration
                 weights from the corresponding standard element. ---*/
@@ -2958,7 +2975,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Apply the inviscid wall boundary conditions to compute the right
           state in the integration points. There are two options. Either the
@@ -3038,7 +3055,7 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Determine the number of integration points and set the right state
           to the free stream value. ---*/
@@ -3081,7 +3098,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /* Loop over the integration points to apply the symmetry condition. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -3157,7 +3174,7 @@ void CFEM_DG_EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_contain
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -3282,7 +3299,7 @@ void CFEM_DG_EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contai
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -3369,7 +3386,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_contai
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -3437,7 +3454,8 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
-
+  su2double tick = 0.0;
+  
   /*------------------------------------------------------------------------*/
   /*--- Step 1: Compute the fluxes in the integration points using the   ---*/
   /*---         approximate Riemann solver.                              ---*/
@@ -3471,18 +3489,23 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
   const su2double *basisFaceTrans = standardBoundaryFacesSol[ind].GetBasisFaceIntegrationTranspose();
 
   /* Call the general function to carry out the matrix product. */
+  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
+  config->GEMM_Tock(tick, "ResidualInviscidBoundaryFace", nDOFs, nVar, nInt);
 }
 
-void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(const CSurfaceElementFEM *surfElem,
-                                                                  su2double *solFace, su2double *solIntL) {
+void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(CConfig *config,
+                                                                  const CSurfaceElementFEM *surfElem,
+                                                                  su2double *solFace,
+                                                                  su2double *solIntL) {
 
   /* Get the required information from the corresponding standard face. */
   const unsigned short ind   = surfElem->indStandardElement;
   const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
   const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
   const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
-
+  su2double tick = 0.0;
+  
   /* Easier storage of the DOFs of the face. */
   const unsigned long *DOFs = surfElem->DOFsSolFace.data();
 
@@ -3496,7 +3519,10 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(const CSurface
   }
 
   /* Call the general function to carry out the matrix product. */
+  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, nVar, nDOFs, basisFace, solFace, solIntL);
+  config->GEMM_Tock(tick, "LeftStatesIntegrationPointsBoundaryFace", nInt, nVar, nDOFs);
+  
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
@@ -3837,7 +3863,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
-
+  su2double tick = 0.0;
+  
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt     = VecTmpMemory.data();
   su2double *gradSolInt = solInt     + nIntegrationMax*nVar;
@@ -3928,7 +3955,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         for(unsigned long l=0; l<nSurfElem; ++l) {
 
           /* Compute the states in the integration points of the face. */
-          LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], solDOFs, solInt);
+          LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], solDOFs, solInt);
 
           /*--- Get the required information from the standard element. ---*/
           const unsigned short ind          = surfElem[l].indStandardElement;
@@ -3949,8 +3976,10 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /* Compute the gradients in the integration points. Call the general function to
              carry out the matrix product. */
+          config->GEMM_Tick(&tick);
           DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solDOFs, gradSolInt);
-
+          config->GEMM_Tock(tick, "Friction_Forces", nInt*nDim, nVar, nDOFsElem);
+          
           /* Determine the offset between r- and -s-derivatives, which is also the
              offset between s- and t-derivatives. */
           const unsigned short offDeriv = nVar*nInt;
@@ -4242,13 +4271,13 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /*---         points of the element.                                   ---*/
     /*------------------------------------------------------------------------*/
 
-    config->Tick(&tick);
     /* Easier storage of the solution variables for this element. */
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, solDOFs, solAndGradInt);
-    config->Tock(tick, "IR_1_1", 4);
+    config->GEMM_Tock(tick, "Volume_Residual_1", nInt*(nDim+1), nVar, nDOFs);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the total fluxes (inviscid fluxes minus the      ---*/
@@ -4393,13 +4422,14 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /*---         integration over the volume element.                     ---*/
     /*------------------------------------------------------------------------*/
 
-    config->Tick(&tick);
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
-    config->Tock(tick, "IR_3_1", 4);
+    config->GEMM_Tock(tick, "Volume_Residual_2", nDOFs, nVar, nInt*nDim);
+    
   }
 }
 
@@ -4411,7 +4441,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
   /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
   su2double tick1 = 0.0;
-
+  su2double tick2 = 0.0;
+  
   unsigned short sizeFluxes = nIntegrationMax*nDim;
   sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
 
@@ -4455,7 +4486,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
     /* Call the general function to compute the viscous flux in normal
        direction for side 0. */
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           matchingInternalFaces[l].DOFsSolElementSide0.data(),
                           matchingInternalFaces[l].metricCoorDerivFace0.data(),
                           matchingInternalFaces[l].metricNormalsFace.data(),
@@ -4473,7 +4504,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
     /* Call the general function to compute the viscous flux in normal
        direction for side 1. */
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntR,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntR,
                           matchingInternalFaces[l].DOFsSolElementSide1.data(),
                           matchingInternalFaces[l].metricCoorDerivFace1.data(),
                           matchingInternalFaces[l].metricNormalsFace.data(),
@@ -4522,7 +4553,6 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     /*---         integration over this internal matching face.            ---*/
     /*------------------------------------------------------------------------*/
 
-    config->Tick(&tick);
     /* Easier storage of the position in the residual array for side 0 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
@@ -4534,8 +4564,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     const su2double *basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide0();
 
     /* Call the general function to carry out the matrix product. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
-
+    config->GEMM_Tock(tick, "ResidualFaces_1", nDOFsFace0, nVar, nInt);
+    
     /* Easier storage of the position in the residual array for side 1 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
@@ -4556,7 +4588,9 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
             the residual. Afterwards the residual is negated, because the
             normal is pointing into the adjacent element. ---*/
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
+      config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
+      config->GEMM_Tock(tick, "ResidualFaces_2", nDOFsFace1, nVar, nInt);
 
       for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
         resFace1[i] = -resFace1[i];
@@ -4635,8 +4669,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
       /* Call the general function to carry out the matrix product to compute
          the residual for side 0. */
+      config->GEMM_Tick(&tick2);
       DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
-    
+      config->GEMM_Tock(tick2, "ResidualFaces_3", nDOFsElem0, nVar, nInt*nDim);
+
       /* Get the element information of side 1 of the face. */
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
       derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
@@ -4671,19 +4707,20 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
       su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
       indResFaces        += nDOFsElem1;
 
-      config->Tick(&tick1);
       /* Call the general function to carry out the matrix product to compute
          the residual for side 1. Note that the symmetrizing residual should not
          be negated, because two minus signs enter the formulation for side 1,
          which cancel each other. */
+      config->GEMM_Tick(&tick2);
       DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
-      config->Tock(tick, "ER_1_6_1", 5);
+      config->GEMM_Tock(tick2, "ResidualFaces_4", nDOFsElem1, nVar, nInt*nDim);
     }
     config->Tock(tick, "ER_1_6", 4);
   }
 }
 
-void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
+void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
+                                             const unsigned short nInt,
                                              const unsigned short nDOFsElem,
                                              const su2double      Wall_HeatFlux,
                                              const bool           HeatFlux_Prescribed,
@@ -4696,6 +4733,8 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
                                              su2double            *viscNormFluxes,
                                              su2double            *viscosityInt) {
 
+  su2double tick = 0.0;
+  
   /* Constant factor present in the heat flux vector. Set it to zero if the heat
      flux is prescribed, such that no if statements are needed in the loop. */
   const su2double factHeatFlux = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Lam;
@@ -4720,8 +4759,10 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
 
   /* Compute the gradients in the integration points. Call the general function to
      carry out the matrix product. */
+  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
-
+  config->GEMM_Tock(tick, "ViscousNormalFluxFace", nInt*nDim, nVar, nDOFsElem);
+  
   /* Determine the offset between r- and -s-derivatives, which is also the
      offset between s- and t-derivatives. */
   const unsigned short offDeriv = nVar*nInt;
@@ -5038,7 +5079,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Determine the number of integration points and set the right state
           to the free stream value. ---*/
@@ -5056,7 +5097,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
@@ -5071,8 +5112,15 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   }
 }
 
-void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
+                                    CSolver **solver_container,
+                                    CNumerics *conv_numerics,
+                                    CNumerics *visc_numerics,
+                                    CConfig *config,
+                                    unsigned short val_marker) {
 
+  su2double tick = 0.0;
+  
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
@@ -5109,7 +5157,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /* Get the required information from the standard element. */
     const unsigned short ind          = surfElem[l].indStandardElement;
@@ -5133,8 +5181,10 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contai
 
     /* Compute the left gradients in the integration points. Call the general
        function to carry out the matrix product. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
-
+    config->GEMM_Tock(tick, "BC_Sym_Plane", nInt*nDim, nVar, nDOFsElem);
+    
     /*--- Loop over the integration points to apply the symmetry condition
           and to compute the viscous normal fluxes. This is done in the same
           loop, because the gradients in the right integration points are
@@ -5272,7 +5322,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Apply the inviscid wall boundary conditions to compute the right
           state in the integration points. There are two options. Either the
@@ -5327,7 +5377,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
@@ -5386,7 +5436,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -5479,7 +5529,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
@@ -5531,7 +5581,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -5593,7 +5643,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
@@ -5649,7 +5699,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -5690,7 +5740,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(nInt, nDOFsElem, Wall_HeatFlux, true, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, Wall_HeatFlux, true, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
@@ -5751,7 +5801,7 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -5787,7 +5837,7 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
@@ -5843,7 +5893,7 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
     /* Compute the left states in the integration points of the face.
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
-    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+    LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -5899,7 +5949,7 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-    ViscousNormalFluxFace(nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
+    ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
@@ -5927,6 +5977,8 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
+  su2double tick = 0.0;
+  
   /*--- Get the required information from the standard element. ---*/
   const unsigned short ind          = surfElem->indStandardElement;
   const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
@@ -5980,8 +6032,10 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   const su2double *basisFaceTrans = standardBoundaryFacesSol[ind].GetBasisFaceIntegrationTranspose();
 
   /* Call the general function to carry out the matrix product. */
+  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
-
+  config->GEMM_Tock(tick, "ResidualViscousBoundaryFace_1", nDOFs, nVar, nInt);
+  
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the symmetrizing terms, if present, in the       ---*/
   /*---         integration points of this boundary face.                ---*/
@@ -6050,6 +6104,9 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
     /* Call the general function to carry out the matrix product to compute
        the residual. */
+    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
+    config->GEMM_Tock(tick, "ResidualViscousBoundaryFace_2", nDOFsElem, nVar, nInt*nDim);
+
   }
 }
