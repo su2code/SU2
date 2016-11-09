@@ -5256,7 +5256,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
             if (disc_adj) {
-              cout << "    Sens_Press" << "     Sens_Mach" << endl;
+              cout << "    Sens_Press" << "    Sens_AoA (1/deg)" << endl;
             } else {
               cout << "      Sens_Geo" << "    Sens_AoA (1/deg)" << endl;
             }
@@ -5301,9 +5301,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "     Res[Psi_E]";
             }
             if (disc_adj) {
-              cout << "    Sens_Press" << "     Sens_Mach" << endl;
+              cout << "    Sens_Press" << "    Sens_AoA (1/deg)" << endl;
             } else {
-              cout << "      Sens_Geo" << "     Sens_AoA" << endl;
+              cout << "      Sens_Geo" << "    Sens_AoA (1/deg)" << endl;
                           }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
