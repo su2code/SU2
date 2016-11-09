@@ -4205,6 +4205,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool rotating_frame = config[val_iZone]->GetRotating_Frame();
     bool aeroelastic = config[val_iZone]->GetAeroelastic_Simulation();
     bool equiv_area = config[val_iZone]->GetEquivArea();
+    bool engine        = ((config[val_iZone]->GetnMarker_EngineInflow() != 0) || (config[val_iZone]->GetnMarker_EngineExhaust() != 0));
+    bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
     bool thermal = false; /* flag for whether to print heat flux values */
@@ -5197,8 +5199,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 default:
                   break;
               }
-            
-            else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
+            else if (actuator_disk) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else if (engine) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else cout << "      CL(Total)" << "      CD(Total)" << endl;
             
             break;
             
@@ -8915,12 +8918,11 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	unsigned short iMarker, iDim, iMarker_Analyze;
 	unsigned long iPoint, iVertex, Global_Index;
 	su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
-	su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0;
+	su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0, Distance_Mirror = 0.0;
 	su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0;
 	unsigned short iStation, iAngle, nAngle;
 	char cstr[200];
-	su2double *** ProbeArray, dx = 0.0, dy = 0.0, dz = 0.0,
-			UpVector[3], radians, RotatedVector[3];
+	su2double *** ProbeArray, dx = 0.0, dy = 0.0, dz = 0.0, dx_ = 0.0, dy_ = 0.0, dz_ = 0.0, UpVector[3], radians, RotatedVector[3];
 	su2double Pressure, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf,
 	Temperature, TotalTemperature, Pressure_Inf, Temperature_Inf, TotalTemperature_Inf, Velocity_Inf;
 	su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
@@ -8930,6 +8932,8 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	unsigned long nVertex_Surface, nLocalVertex_Surface, MaxLocalVertex_Surface;
 	unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
 	unsigned long Total_Index;
+	bool Engine_HalfModel = config->GetEngine_HalfModel();
+	double SignFlip = 1.0;
 
 	int rank, iProcessor, nProcessor;
 	rank = MASTER_NODE;
@@ -9457,6 +9461,10 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		yCoord_CG = yCoord_CG / TotalArea;
 		zCoord_CG = zCoord_CG / TotalArea;
 
+		/*--- If it is a half model, CGy = 0 ---*/
+
+		if (Engine_HalfModel) { yCoord_CG = 0.0; }
+
 		/*--- Compute hub and tip radius ---*/
 
 		TipRadius = 1E-6; HubRadius = 1E6;
@@ -9566,31 +9574,55 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 						if (nDim == 3) Distance += dz*dz;
 						Distance = sqrt(Distance);
 
+						SignFlip = 1.0;
+
+						if (Engine_HalfModel) {
+
+							yCoord = -yCoord;
+
+							dx_ = (xCoord_ - xCoord);
+							dy_ = (yCoord_ - yCoord);
+							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+							Distance_Mirror = dx_*dx_ + dy_*dy_;
+							if (nDim == 3) Distance_Mirror += dz_*dz_;
+							Distance_Mirror = sqrt(Distance_Mirror);
+
+							if (Distance_Mirror < Distance) {
+								SignFlip = -1.0;
+								Distance = Distance_Mirror;
+								dx = dx_; dy = dy_;
+								if (nDim == 3) dz = dz_;
+							}
+
+						}
+
+
 						if (Distance <= MinDistance) {
 							MinDistance = Distance;
-							ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][4] = Buffer_Recv_TT[Total_Index] + Buffer_Recv_dTT_dx[Total_Index]*dx + Buffer_Recv_dTT_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][4] = Buffer_Recv_TT[Total_Index] + Buffer_Recv_dTT_dx[Total_Index]*dx + Buffer_Recv_dTT_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dTT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][5] = Buffer_Recv_P[Total_Index] + Buffer_Recv_dP_dx[Total_Index]*dx + Buffer_Recv_dP_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][5] = Buffer_Recv_P[Total_Index] + Buffer_Recv_dP_dx[Total_Index]*dx + Buffer_Recv_dP_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][5] += Buffer_Recv_dP_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][6] = Buffer_Recv_T[Total_Index] + Buffer_Recv_dT_dx[Total_Index]*dx + Buffer_Recv_dT_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][6] = Buffer_Recv_T[Total_Index] + Buffer_Recv_dT_dx[Total_Index]*dx + Buffer_Recv_dT_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][6] += Buffer_Recv_dT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][7] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][7] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][7] += Buffer_Recv_dMach_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][8] = Buffer_Recv_Vel_x[Total_Index] + Buffer_Recv_dVel_x_dx[Total_Index]*dx + Buffer_Recv_dVel_x_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][8] = Buffer_Recv_Vel_x[Total_Index] + Buffer_Recv_dVel_x_dx[Total_Index]*dx + Buffer_Recv_dVel_x_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][8] += Buffer_Recv_dVel_x_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][9] = Buffer_Recv_Vel_y[Total_Index] + Buffer_Recv_dVel_y_dx[Total_Index]*dx + Buffer_Recv_dVel_y_dy[Total_Index]*dy;
-							if (nDim == 3) ProbeArray[iAngle][iStation][9] += Buffer_Recv_dVel_y_dz[Total_Index]*dz;
+							ProbeArray[iAngle][iStation][9] = SignFlip * (Buffer_Recv_Vel_y[Total_Index] + Buffer_Recv_dVel_y_dx[Total_Index]*dx + Buffer_Recv_dVel_y_dy[Total_Index]*dy*SignFlip );
+							if (nDim == 3) ProbeArray[iAngle][iStation][9] += SignFlip * Buffer_Recv_dVel_y_dz[Total_Index]*dz;
 
 							if (nDim == 3) {
-								ProbeArray[iAngle][iStation][10] = Buffer_Recv_Vel_z[Total_Index] + Buffer_Recv_dVel_z_dx[Total_Index]*dx + Buffer_Recv_dVel_z_dy[Total_Index]*dy;
+								ProbeArray[iAngle][iStation][10] = Buffer_Recv_Vel_z[Total_Index] + Buffer_Recv_dVel_z_dx[Total_Index]*dx + Buffer_Recv_dVel_z_dy[Total_Index]*dy*SignFlip;
 								ProbeArray[iAngle][iStation][10] += Buffer_Recv_dVel_z_dz[Total_Index]*dz;
 							}
 

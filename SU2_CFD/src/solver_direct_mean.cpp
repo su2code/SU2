@@ -5936,7 +5936,10 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     }
     
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
+        (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
+        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
       
       /*--- Forces initialization at each Marker ---*/
       
@@ -6211,19 +6214,17 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   UnitNormal[3] = {0.0,0.0,0.0}, Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density, Vel_Infty2, Vel_Infty;
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
-  
+
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Mnt, MyAllBound_CL_Mnt, MyAllBound_CSF_Mnt,
   MyAllBound_CEff_Mnt,
-  MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
-  MyAllBound_CoPx_Mnt, MyAllBound_CoPy_Mnt, MyAllBound_CoPz_Mnt,
+MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   MyAllBound_CFx_Mnt, MyAllBound_CFy_Mnt, MyAllBound_CFz_Mnt, MyAllBound_CT_Mnt,
   MyAllBound_CQ_Mnt, MyAllBound_CMerit_Mnt, MyAllBound_CNearFieldOF_Mnt,
   *MySurface_CL_Mnt = NULL, *MySurface_CD_Mnt = NULL, *MySurface_CSF_Mnt = NULL,
   *MySurface_CEff_Mnt = NULL, *MySurface_CFx_Mnt = NULL, *MySurface_CFy_Mnt = NULL,
   *MySurface_CFz_Mnt = NULL,
-  *MySurface_CMx_Mnt = NULL, *MySurface_CMy_Mnt = NULL,  *MySurface_CMz_Mnt = NULL,
-  *MySurface_CoPx_Mnt = NULL, *MySurface_CoPy_Mnt = NULL,  *MySurface_CoPz_Mnt = NULL;
+	*MySurface_CMx_Mnt = NULL, *MySurface_CMy_Mnt = NULL,  *MySurface_CMz_Mnt = NULL;
 #endif
   
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
@@ -6306,7 +6307,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
       MomentX_Force[0] = 0.0; MomentX_Force[1] = 0.0; MomentX_Force[2] = 0.0;
       MomentY_Force[0] = 0.0; MomentY_Force[1] = 0.0; MomentY_Force[2] = 0.0;
       MomentZ_Force[0] = 0.0; MomentZ_Force[1] = 0.0; MomentZ_Force[2] = 0.0;
-      
+
       /*--- Loop over the vertices to compute the forces ---*/
       
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -6349,16 +6350,16 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
           
           if (iDim == 3) {
             MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentX_Force[1] += (-Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentX_Force[2] += (Force[2]*MomentDist[1])/RefLengthMoment;
-            
+  					MomentX_Force[1] += (-Force[1]*MomentDist[2])/RefLengthMoment;
+  					MomentX_Force[2] += (Force[2]*MomentDist[1])/RefLengthMoment;
+
             MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
             MomentY_Force[0] += (Force[0]*MomentDist[2])/RefLengthMoment;
             MomentY_Force[2] += (-Force[2]*MomentDist[0])/RefLengthMoment;
           }
           MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
           MomentZ_Force[0] += (-Force[0]*MomentDist[1])/RefLengthMoment;
-          MomentZ_Force[1] += (Force[1]*MomentDist[0])/RefLengthMoment;
+					MomentZ_Force[1] += (Force[1]*MomentDist[0])/RefLengthMoment;
           
         }
         
@@ -6478,7 +6479,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   MySurface_CMx_Mnt        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMy_Mnt        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMz_Mnt        = new su2double[config->GetnMarker_Monitoring()];
-  
+
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     MySurface_CL_Mnt[iMarker_Monitoring]      = Surface_CL_Mnt[iMarker_Monitoring];
     MySurface_CD_Mnt[iMarker_Monitoring]      = Surface_CD_Mnt[iMarker_Monitoring];
@@ -6490,7 +6491,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
     MySurface_CMx_Mnt[iMarker_Monitoring]        = Surface_CMx_Mnt[iMarker_Monitoring];
     MySurface_CMy_Mnt[iMarker_Monitoring]        = Surface_CMy_Mnt[iMarker_Monitoring];
     MySurface_CMz_Mnt[iMarker_Monitoring]        = Surface_CMz_Mnt[iMarker_Monitoring];
-    
+
     Surface_CL_Mnt[iMarker_Monitoring]      = 0.0;
     Surface_CD_Mnt[iMarker_Monitoring]      = 0.0;
     Surface_CSF_Mnt[iMarker_Monitoring] = 0.0;
@@ -6514,23 +6515,23 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(MySurface_CMx_Mnt, Surface_CMx_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMy_Mnt, Surface_CMy_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMz_Mnt, Surface_CMz_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  
+
   delete [] MySurface_CL_Mnt; delete [] MySurface_CD_Mnt; delete [] MySurface_CSF_Mnt;
   delete [] MySurface_CEff_Mnt;  delete [] MySurface_CFx_Mnt;   delete [] MySurface_CFy_Mnt;
   delete [] MySurface_CFz_Mnt;
-  delete [] MySurface_CMx_Mnt;   delete [] MySurface_CMy_Mnt;  delete [] MySurface_CMz_Mnt;
-  
+ delete [] MySurface_CMx_Mnt;   delete [] MySurface_CMy_Mnt;  delete [] MySurface_CMz_Mnt;
+
 #endif
   
   /*--- Update the total coefficients (note that all the nodes have the same value) ---*/
   
-  Total_CD            += AllBound_CD_Mnt;
-  Total_CL            += AllBound_CL_Mnt;
-  Total_CSF           += AllBound_CSF_Mnt;
+  Total_CD         += AllBound_CD_Mnt;
+  Total_CL        += AllBound_CL_Mnt;
+  Total_CSF    += AllBound_CSF_Mnt;
   Total_CEff          = Total_CL / (Total_CD + EPS);
   Total_CMx           += AllBound_CMx_Mnt;
   Total_CMy           += AllBound_CMy_Mnt;
-  Total_CMz           += AllBound_CMz_Mnt;
+  Total_CMz          += AllBound_CMz_Mnt;
   Total_CFx           += AllBound_CFx_Mnt;
   Total_CFy           += AllBound_CFy_Mnt;
   Total_CFz           += AllBound_CFz_Mnt;
@@ -7819,8 +7820,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   unsigned short iMarker, iDim;
   unsigned long iPoint, iVertex, Global_Index;
   su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, q = 0.0, PT = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
-  su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0;
-  su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0, dx = 0.0, dy = 0.0, dz = 0.0;
+  su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0, Distance_Mirror = 0.0;
+  su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0, dx = 0.0, dy = 0.0, dz = 0.0, dx_ = 0.0, dy_ = 0.0, dz_ = 0.0;
   unsigned short iStation, iAngle, nAngle, Theta, nStation;
   su2double *** ProbeArray, *Mach_Station, *Mach_Station_Min, *PT_Sector, *PT_Station, *PT_Station_Min,
   PT_Sector_Min, PT_Mean, Mach_Mean, q_Mean, UpVector[3], radians, RotatedVector[3],
@@ -7839,6 +7840,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   unsigned short Theta_DC60 = 60, nStation_DC60 = 5;
   bool Evaluate_ActDisk = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+	bool Engine_HalfModel = config->GetEngine_HalfModel();
+	double SignFlip = 1.0;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -8152,6 +8155,10 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         Mach_Mean   /= TotalArea;
         q_Mean   /=  TotalArea;
         
+    		/*--- If it is a half model, CGy = 0 ---*/
+
+    		if (Engine_HalfModel) { yCoord_CG = 0.0; }
+
         /*--- Compute hub and tip radius ---*/
         
         TipRadius = 1E-6; HubRadius = 1E6;
@@ -8265,13 +8272,35 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
                 
+    						SignFlip = 1.0;
+
+    						if (Engine_HalfModel) {
+
+    							yCoord = -yCoord;
+
+    							dx_ = (xCoord_ - xCoord);
+    							dy_ = (yCoord_ - yCoord);
+    							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+    							Distance_Mirror = dx_*dx_ + dy_*dy_;
+    							if (nDim == 3) Distance_Mirror += dz_*dz_;
+    							Distance_Mirror = sqrt(Distance_Mirror);
+
+    							if (Distance_Mirror < Distance) {
+    								SignFlip = -1.0;
+    								Distance = Distance_Mirror;
+    								dx = dx_; dy = dy_;
+    								if (nDim == 3) dz = dz_;
+    							}
+
+    						}
                 
                 if (Distance <= MinDistance) {
                   MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
 
-                  ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index]  + Buffer_Recv_dq_dx[Total_Index]*dx + Buffer_Recv_dq_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index]  + Buffer_Recv_dq_dx[Total_Index]*dx + Buffer_Recv_dq_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dq_dz[Total_Index]*dz;
                   
                 }
@@ -8429,10 +8458,32 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
                 
-                
+    						SignFlip = 1.0;
+
+    						if (Engine_HalfModel) {
+
+    							yCoord = -yCoord;
+
+    							dx_ = (xCoord_ - xCoord);
+    							dy_ = (yCoord_ - yCoord);
+    							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+    							Distance_Mirror = dx_*dx_ + dy_*dy_;
+    							if (nDim == 3) Distance_Mirror += dz_*dz_;
+    							Distance_Mirror = sqrt(Distance_Mirror);
+
+    							if (Distance_Mirror < Distance) {
+    								SignFlip = -1.0;
+    								Distance = Distance_Mirror;
+    								dx = dx_; dy = dy_;
+    								if (nDim == 3) dz = dz_;
+    							}
+
+    						}
+
                 if (Distance <= MinDistance) {
                   MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
                 }
                 
@@ -8528,9 +8579,32 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
                 
+    						SignFlip = 1.0;
+
+    						if (Engine_HalfModel) {
+
+    							yCoord = -yCoord;
+
+    							dx_ = (xCoord_ - xCoord);
+    							dy_ = (yCoord_ - yCoord);
+    							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+    							Distance_Mirror = dx_*dx_ + dy_*dy_;
+    							if (nDim == 3) Distance_Mirror += dz_*dz_;
+    							Distance_Mirror = sqrt(Distance_Mirror);
+
+    							if (Distance_Mirror < Distance) {
+    								SignFlip = -1.0;
+    								Distance = Distance_Mirror;
+    								dx = dx_; dy = dy_;
+    								if (nDim == 3) dz = dz_;
+    							}
+
+    						}
+
                 if (Distance <= MinDistance) {
                   MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dMach_dz[Total_Index]*dz;
                 }
                 
@@ -8673,7 +8747,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   unsigned long iVertex, iPoint;
   su2double  *V_inlet = NULL, *V_outlet = NULL, Pressure, Temperature, Velocity[3], Vn,
   Velocity2, Density, Area, SoundSpeed, TotalPressure, Vel_Infty2, RamDrag,
-  TotalTemperature, Pressure_Infty, VelocityJet, Pinf_To,
+  TotalTemperature, Pressure_Infty, VelocityJet, VelocityIdeal, Pinf_To,
   Vel_Infty, MassFlow_Inlet, MaxPressure, MinPressure, MFR, InfVel2;
   unsigned short iMarker_Inlet, iMarker_Outlet, nMarker_Inlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound, Marker_Tag;
@@ -8796,7 +8870,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             MinPressure     		  = min(MinPressure, TotalPressure);
             MaxPressure     		  = max(MaxPressure, TotalPressure);
-            Pinf_To = min (1.0, Pressure_Infty / TotalPressure);
             
             RamDrag 	= MassFlow * Vel_Infty;
             
@@ -8863,9 +8936,9 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             TotalPressure     		= Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma 	/ (Gamma - 1.0));
             TotalTemperature 	= Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             VelocityJet         = sqrt(Velocity2) ;
-            
+
             GrossThrust 	= MassFlow * VelocityJet;
-            
+
             Outlet_MassFlow[iMarker]    						+= MassFlow;
             Outlet_Pressure[iMarker]    							+= Pressure*MassFlow;
             Outlet_TotalPressure[iMarker]				+= TotalPressure*MassFlow;
@@ -9387,10 +9460,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           DmTVector[0] = GetTotal_CFx()/ModDmT;
           DmTVector[1] = GetTotal_CFy()/ModDmT;
           if (nDim == 3)  DmTVector[2] = GetTotal_CFz()/ModDmT;
-          
-          
-//          su2double Drag = DmT + NetThrust;
-//          su2double CD = Drag / Factor;
           
           su2double SolidSurf_Drag = DmT - Force;
           su2double SolidSurf_CD = SolidSurf_Drag / Factor;
@@ -13183,7 +13252,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
-  
+  bool Engine_HalfModel = config->GetEngine_HalfModel();
+
   su2double *Normal = new su2double[nDim];
   
   
@@ -13216,6 +13286,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
     
     if (config->GetSystemMeasurements() == US) Target_Inflow_MassFlow /= 32.174;
     
+    if (Engine_HalfModel) Target_Inflow_MassFlow /= 2.0;
+
     /*--- Retrieve the old fan face pressure and mach number in the nacelle (this has been computed in a preprocessing). ---*/
     
     Inflow_Pressure_old = config->GetInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).

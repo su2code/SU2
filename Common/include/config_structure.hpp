@@ -94,6 +94,7 @@ private:
   *DensityLimits,
   *TemperatureLimits; /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;  /*!< \brief actuator disk double surface  */
+  bool Engine_HalfModel;  /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
@@ -4328,6 +4329,12 @@ public:
    */
   bool GetActDisk_DoubleSurface(void);
   
+  /*!
+   * \brief Only halg of the engine is in the compputational grid.
+   * \return <code>TRUE</code> if the engine is complete; otherwise <code>FALSE</code>.
+   */
+  bool GetEngine_HalfModel(void);
+
   /*!
    * \brief Actuator disk defined with a double surface.
    * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
