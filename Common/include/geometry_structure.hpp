@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -65,13 +67,14 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CGeometry {
 protected:
 	unsigned long nPoint,	/*!< \brief Number of points of the mesh. */
 	nPointDomain,						/*!< \brief Number of real points of the mesh. */
 	nPointGhost,					/*!< \brief Number of ghost points of the mesh. */
+	nPointNode,					/*!< \brief Size of the node array allocated to hold CPoint objects. */
   Global_nPoint,	/*!< \brief Total number of nodes in a simulation across all processors (including halos). */
 	Global_nPointDomain,	/*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
 	nElem,					/*!< \brief Number of elements of the mesh. */
@@ -116,7 +119,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
 	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
-	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
+	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
 																			 must be sent. */
@@ -907,6 +910,13 @@ public:
    * \param val - Value of the sensitivity
    */
   virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+  
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void Check_Periodicity(CConfig *config);
+  
 };
 
 /*!
@@ -914,11 +924,11 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CPhysicalGeometry : public CGeometry {
 
-  long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
+  map<long,long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
   unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
   unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
@@ -1450,6 +1460,12 @@ public:
    * \param[in] val - Value of the sensitivity.
    */
   void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+  
+  /*!
+   * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Check_Periodicity(CConfig *config);
 
 };
 
@@ -1458,7 +1474,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1634,7 +1650,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1680,7 +1696,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

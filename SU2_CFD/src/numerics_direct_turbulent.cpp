@@ -2,7 +2,7 @@
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, A. Bueno
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -59,7 +61,7 @@ void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Ja
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
   AD::SetPreaccIn(TurbVar_i[0]); AD::SetPreaccIn(TurbVar_j[0]);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement){
+  if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   
@@ -821,7 +823,7 @@ void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_J
   AD::SetPreaccIn(TurbVar_i,2);
   AD::SetPreaccIn(TurbVar_j,2);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement){
+  if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   if (incompressible) {
