@@ -35,20 +35,32 @@
 
 check_PROGRAMS  =
 check_PROGRAMS += noop
+check_PROGRAMS += CSourcePieceWise_TurbSST_unit
 
 # Eventually these will likely be required
-#AM_CPPFLAGS = 
+AM_CPPFLAGS =
+AM_CPPFLAGS += -I$(top_srcdir)/Common/include
+AM_CPPFLAGS += -I$(top_srcdir)/SU2_CFD/include
+AM_CPPFLAGS += @su2_externals_INCLUDES@
+
 #AM_LDFLAGS = 
 #LIBS = 
-#LDADD =
+
+LDADD  =
+LDADD += $(top_builddir)/Common/lib/libSU2.a
+LDADD += $(top_builddir)/SU2_CFD/obj/libSU2Core.a
+LDADD += @su2_externals_LIBS@
 
 # Test sources
 noop_SOURCES = noop.cpp
+CSourcePieceWise_TurbSST_unit_SOURCES = CSourcePieceWise_TurbSST_unit.cpp
 
 
 # Tests to be run
 TESTS  =
 TESTS += noop
+TESTS += CSourcePieceWise_TurbSST_unit
+
 
 # Any of above we expect to fail?
 #XFAIL_TESTS =
