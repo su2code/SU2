@@ -178,6 +178,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   su2double AoA_, AoS_, BCThrust_;
   string filename = config->GetSolution_FlowFileName();
+  string filename_ = config->GetSolution_FlowFileName();
   string::size_type position;
   unsigned long ExtIter_;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
@@ -187,12 +188,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
   
-  if (restart && (iMesh != MESH_0)) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
     
     /*--- Multizone problems require the number of the zone to be appended. ---*/
     
-    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
     
     /*--- Modify file name for a dual-time unsteady restart ---*/
     
@@ -201,7 +205,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
     
     /*--- Modify file name for a time stepping unsteady restart ---*/
@@ -209,22 +213,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
-    
-  }
 
-  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
-   before computing all the non-dimesional quantities. ---*/
-  
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-    
     /*--- Open the restart file, throw an error if this fails. ---*/
     
-    restart_file.open(filename.data(), ios::in);
+    restart_file.open(filename_.data(), ios::in);
     if (restart_file.fail()) {
       if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+        cout << "There is no flow restart file!! " << filename_.data() << "."<< endl;
       exit(EXIT_FAILURE);
     }
     
@@ -955,6 +952,28 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
   } else {
 		
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
+    
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+    
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+
 		/*--- Open the restart file, throw an error if this fails. ---*/
     
     restart_file.open(filename.data(), ios::in);
@@ -15491,6 +15510,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
+  string filename_ = config->GetSolution_FlowFileName();
   su2double AoA_, AoS_, BCThrust_;
   string::size_type position;
   unsigned long ExtIter_;
@@ -15504,21 +15524,23 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
- 
-  if (restart && (iMesh != MESH_0)) {
+  /*--- Check for a restart file to check if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+  
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
     
     /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
+    
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
     
     /*--- Modify file name for a dual-time unsteady restart ---*/
-
+    
     if (dual_time) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
     
     /*--- Modify file name for a simple unsteady restart ---*/
@@ -15526,22 +15548,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     if (time_stepping) {
       if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
-    
-  }
 
-  /*--- Check for a restart file to check if there is a change in the angle of attack
-   before computing all the non-dimesional quantities. ---*/
-  
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-    
     /*--- Open the restart file, throw an error if this fails. ---*/
     
-    restart_file.open(filename.data(), ios::in);
+    restart_file.open(filename_.data(), ios::in);
     if (restart_file.fail()) {
       if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+        cout << "There is no flow restart file!! " << filename_.data() << "."<< endl;
       exit(EXIT_FAILURE);
     }
     
@@ -16277,6 +16292,28 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   else {
     
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
+    
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+    
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
+    /*--- Modify file name for a simple unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+
     /*--- Open the restart file, throw an error if this fails. ---*/
     
     restart_file.open(filename.data(), ios::in);
