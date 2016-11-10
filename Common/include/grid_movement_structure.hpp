@@ -124,6 +124,9 @@ public:
   vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
 
+  vector<vector<su2double> > BSplineKnots;
+  vector<unsigned short> BSplineOrder;
+
 public:
 	
 	/*! 
@@ -521,7 +524,7 @@ public:
 	 * \param[in] val_t - Value of the parameter where the polynomial is evaluated.
 	 * \return Value of the Bernstein polynomial.
 	 */		
-	su2double GetBernstein(short val_n, short val_i, su2double val_t);
+  su2double GetSplineBasis(short val_n, short val_i, su2double val_t, short index);
 	
 	/*! 
 	 * \brief Get the binomial coefficient n over i, defined as n!/(m!(n-m)!)
@@ -594,7 +597,7 @@ public:
 	 * \param[in] val_order - Order of the derivative.
 	 * \return Value of the Derivative of the Bernstein polynomial.
 	 */		
-	su2double GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order);
+  su2double GetSplineDerivative(short val_n, short val_i, su2double val_t, short val_order, short index);
   
 	/*! 
 	 * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
@@ -627,7 +630,7 @@ public:
 	 * \param[in] lmn - Degree of the FFD box.
 	 * \return __________.
 	 */		
-	su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
+  su2double GetDerivative1(su2double *uvw, unsigned short val_diff, unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
 	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -672,8 +675,8 @@ public:
 	 * \param[in] lmn - Degree of the FFD box.
 	 * \return __________.
 	 */
-	su2double GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-						   unsigned short *ijk, unsigned short *lmn);
+  su2double GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
+               unsigned short *ijk, unsigned short *lmn);
 	
 	/*! 
 	 * \brief An auxiliary routine to help us compute the Hessian of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
@@ -691,8 +694,8 @@ public:
 	 * \param[in] lmn - Degree of the FFD box.
 	 * \return __________.
 	 */		
-	su2double GetDerivative5(su2double *uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also,
-						  unsigned short *lmn);
+  su2double GetDerivative5(su2double *uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also,
+              unsigned short *lmn);
 	
 	/*! 
 	 * \brief Euclidean norm of a vector.
@@ -733,6 +736,8 @@ public:
 	su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11,
                          su2double A12, su2double A20, su2double A21, su2double A22);
   
+  void SetSplineOrder(unsigned short OrderI, unsigned short OrderJ, unsigned short OrderK, unsigned short kind_Blending);
+
 };
 
 /*! 

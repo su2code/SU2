@@ -1187,6 +1187,18 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("CUSTOM",CUSTOM)
 ("CST", CST);
 
+
+/*!
+ * \brief types of FFD Blending function
+ */
+enum ENUM_FFD_BLENDING{
+  BSPLINE_UNIFORM = 0,
+  BEZIER = 1,
+};
+static const map<string, ENUM_FFD_BLENDING> Blending_Map = CCreateMap<string, ENUM_FFD_BLENDING>
+("BSPLINE_UNIFORM", BSPLINE_UNIFORM)
+("BEZIER", BEZIER);
+
 /*!
  * \brief types of solvers for solving linear systems
  */
