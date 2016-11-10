@@ -2752,6 +2752,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       CFreeFormDefBox FFDBox_unitary(1,1,1);
       FFDBox_unitary.SetUnitCornerPoints();
+      FFDBox_unitary.SetSplineOrder(2,2,2, BEZIER);
       
       /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
       
@@ -3163,37 +3164,42 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
 	su2double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff, *Coord;
 	int rank;
   unsigned short nDim = geometry->GetnDim();
-  
+  unsigned short SplineOrder[3];
+
+  for (iDim = 0; iDim < 3; iDim++){
+    SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
+  }
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
 	rank = MASTER_NODE;
 #endif
-	
   /*--- Change order and control points reduce the
-   complexity of the point inversion (this only works with boxes, 
-   and we maintain an internal copy) ---*/
-  
-  for (iOrder = 0; iOrder < 2; iOrder++) {
-    for (jOrder = 0; jOrder < 2; jOrder++) {
-      for (kOrder = 0; kOrder < 2; kOrder++) {
-        
-        lOrder = 0; mOrder = 0; nOrder = 0;
-        if (iOrder == 1) {lOrder = FFDBox->GetlOrder()-1;}
-        if (jOrder == 1) {mOrder = FFDBox->GetmOrder()-1;}
-        if (kOrder == 1) {nOrder = FFDBox->GetnOrder()-1;}
+ complexity of the point inversion (this only works with boxes,
+ in case of Bezier curves, and we maintain an internal copy)---*/
 
-        Coord = FFDBox->GetCoordControlPoints(lOrder, mOrder, nOrder);
-        
-        FFDBox->SetCoordControlPoints(Coord, iOrder, jOrder, kOrder);
-        
+  if (config->GetFFD_Blending() == BEZIER){
+    for (iOrder = 0; iOrder < 2; iOrder++) {
+      for (jOrder = 0; jOrder < 2; jOrder++) {
+        for (kOrder = 0; kOrder < 2; kOrder++) {
+
+          lOrder = 0; mOrder = 0; nOrder = 0;
+          if (iOrder == 1) {lOrder = FFDBox->GetlOrder()-1;}
+          if (jOrder == 1) {mOrder = FFDBox->GetmOrder()-1;}
+          if (kOrder == 1) {nOrder = FFDBox->GetnOrder()-1;}
+
+          Coord = FFDBox->GetCoordControlPoints(lOrder, mOrder, nOrder);
+
+          FFDBox->SetCoordControlPoints(Coord, iOrder, jOrder, kOrder);
+
+        }
       }
     }
-  }
 
-  FFDBox->SetlOrder(2); FFDBox->SetmOrder(2); FFDBox->SetnOrder(2);
-  FFDBox->SetnControlPoints();
-  
+    FFDBox->SetlOrder(2); FFDBox->SetmOrder(2); FFDBox->SetnOrder(2);
+    FFDBox->SetnControlPoints();
+    FFDBox->SetSplineOrder(2, 2, 2, BEZIER);
+  }
   /*--- Point inversion algorithm with a basic box ---*/
   
 	ParamCoordGuess[0]  = 0.5; ParamCoordGuess[1] = 0.5; ParamCoordGuess[2] = 0.5;
@@ -3280,7 +3286,8 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   /*--- After the point inversion, copy the original information back ---*/
   
   FFDBox->SetOriginalControlPoints();
-	
+  FFDBox->SetSplineOrder(SplineOrder[0], SplineOrder[1], SplineOrder[2], config->GetFFD_Blending());
+
 }
 
 void CSurfaceMovement::SetParametricCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild) {
@@ -6312,6 +6319,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   nElem, my_nSurfPoints, nSurfPoints, *nSurfacePoints;
   
   unsigned short nDim = geometry->GetnDim(), iDim;
+  unsigned short SplineOrder[3];
+  unsigned short Blending = 0;
+
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -6434,9 +6444,41 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           if (nDim == 3) cout << ", " << degree[2];
           cout << ". " << endl;
         }
-        
+
+        getline (mesh_file, text_line);
+        text_line.erase(0,10);
+        if (text_line == "BSPLINE_UNIFORM"){
+          Blending = BSPLINE_UNIFORM;
+        }
+        if (text_line == "BEZIER"){
+          Blending = BEZIER;
+        }
+
+        getline (mesh_file, text_line);
+        text_line.erase (0,18); SplineOrder[0] = atoi(text_line.c_str());
+        getline (mesh_file, text_line);
+        text_line.erase (0,18); SplineOrder[1] = atoi(text_line.c_str());
+        if (nDim == 3){
+          getline (mesh_file, text_line);
+          text_line.erase (0,18); SplineOrder[2] = atoi(text_line.c_str());
+        } else {
+          SplineOrder[2] = 2;
+        }
+        if (rank == MASTER_NODE){
+          if (Blending == BSPLINE_UNIFORM){
+            cout << "FFD Blending using B-Splines. ";
+            cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
+            if (nDim == 3) cout << ", " << SplineOrder[2];
+            cout << ". " << endl;
+          }
+          if (Blending == BEZIER){
+            cout << "FFD Blending using Bezier Curves." << endl;
+          }
+        }
+
 				FFDBox[iFFDBox] = new CFreeFormDefBox(SU2_TYPE::Int(degree[0]), SU2_TYPE::Int(degree[1]), SU2_TYPE::Int(degree[2]));				
 				FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
+        FFDBox[iFFDBox]->SetSplineOrder(SplineOrder[0], SplineOrder[1], SplineOrder[2], Blending);
 
 				/*--- Read the number of parents boxes ---*/
         
@@ -6609,8 +6651,15 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   su2double coord[3];
   unsigned short degree[3], iFFDBox, iCornerPoints, LevelFFDBox, nParentFFDBox,
   iParentFFDBox, nChildFFDBox, iChildFFDBox, *nCornerPoints;
+
   
-  unsigned short nDim = geometry->GetnDim();
+  unsigned short nDim = geometry->GetnDim(), iDim;
+  unsigned short SplineOrder[3];
+
+  for (iDim = 0; iDim < 3; iDim++){
+    SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
+  }
+
   int rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
@@ -6658,9 +6707,22 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
       cout << ". " << endl;
     }
     
+    if (rank == MASTER_NODE){
+      if (config->GetFFD_Blending() == BSPLINE_UNIFORM){
+        cout << "FFD Blending using B-Splines.";
+        cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
+        if (nDim == 3) cout << ", " << SplineOrder[2];
+        cout << ". " << endl;
+      }
+      if (config->GetFFD_Blending() == BEZIER){
+        cout << "FFD Blending using Bezier Curves." << endl;
+      }
+    }
+
     FFDBox[iFFDBox] = new CFreeFormDefBox(SU2_TYPE::Int(degree[0]), SU2_TYPE::Int(degree[1]), SU2_TYPE::Int(degree[2]));
     FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
-    
+    FFDBox[iFFDBox]->SetSplineOrder(SplineOrder[0], SplineOrder[1], SplineOrder[2], config->GetFFD_Blending());
+
     /*--- Read the number of parents boxes ---*/
     
     nParentFFDBox = 0; // Nested FFD is not active
@@ -6996,7 +7058,16 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
       output_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
       output_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
       if (nDim == 3) output_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
-      
+      if (config->GetFFD_Blending() == BSPLINE_UNIFORM) {
+        output_file << "BLENDING= BSPLINE_UNIFORM" << endl;
+      }
+      if (config->GetFFD_Blending() == BEZIER) {
+        output_file << "BLENDING= BEZIER" << endl;
+      }
+      output_file << "BSPLINE_DEGREE_I= " << FFDBox[iFFDBox]->BSplineOrder[0] << endl;
+      output_file << "BSPLINE_DEGREE_J= " << FFDBox[iFFDBox]->BSplineOrder[1] << endl;
+      if (nDim == 3) output_file << "BSPLINE_DEGREE_K= " << FFDBox[iFFDBox]->BSplineOrder[2] << endl;
+
       output_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
       for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
         output_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
@@ -7112,7 +7183,109 @@ CFreeFormDefBox::CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_
 			}
 		}
 	}
-	 
+}
+
+void CFreeFormDefBox::SetSplineOrder(unsigned short OrderI, unsigned short OrderJ, unsigned short OrderK, unsigned short kind_Blending){
+
+  /*--- We set the BSpline order to the maximum if a higher order than possible is requested
+   * (max Order = Number of FFD Control Points) ---*/
+
+  if (OrderI > lOrder){
+    OrderI = lOrder;
+  }
+  if (OrderJ > mOrder){
+    OrderJ = mOrder;
+  }
+  if (OrderK > nOrder){
+    OrderK = nOrder;
+  }
+
+  unsigned short iKnot;
+  unsigned short KnotSizeI = 0;
+  unsigned short KnotSizeJ = 0;
+  unsigned short KnotSizeK = 0;
+
+  BSplineOrder.resize(nDim, 0);
+
+  if (kind_Blending == BSPLINE_UNIFORM){
+
+    /*--- Set up the knot vectors for open uniform B-Splines ---*/
+
+    BSplineOrder[0] = OrderI;
+    BSplineOrder[1] = OrderJ;
+    BSplineOrder[2] = OrderK;
+
+    KnotSizeI = BSplineOrder[0] + lOrder;
+    KnotSizeJ = BSplineOrder[1] + mOrder;
+    KnotSizeK = BSplineOrder[2] + nOrder;
+
+    BSplineKnots.resize(nDim);
+    BSplineKnots[0] = vector<su2double>(KnotSizeI, -1e-05);
+    BSplineKnots[1] = vector<su2double>(KnotSizeJ, -1e-05);
+    BSplineKnots[2] = vector<su2double>(KnotSizeK, -1e-05);
+
+    /*--- Note: the first lOrder/mOrder/nOrder knots are zero now.---*/
+
+    /*--- The next knots are equidistantly distributed in [0,1] ---*/
+
+    for (iKnot = 0; iKnot < lOrder - BSplineOrder[0]; iKnot++){
+      BSplineKnots[0][BSplineOrder[0] + iKnot] = su2double(iKnot+1)/su2double(lOrder - BSplineOrder[0] + 1);
+    }
+    for (iKnot = 0; iKnot < mOrder - BSplineOrder[1]; iKnot++){
+      BSplineKnots[1][BSplineOrder[1] + iKnot] = su2double(iKnot+1)/su2double(mOrder - BSplineOrder[1] + 1);
+    }
+    for (iKnot = 0; iKnot < nOrder - BSplineOrder[2]; iKnot++){
+      BSplineKnots[2][BSplineOrder[2] + iKnot] = su2double(iKnot+1)/su2double(nOrder - BSplineOrder[2] + 1);
+    }
+  }
+  if (kind_Blending == BEZIER){
+
+    /*--- Set up the knot vectors for Bezier curves (no interior knots) and number of Knots = 2*BSplineOrder ---*/
+
+    BSplineOrder[0] = lOrder;
+    BSplineOrder[1] = mOrder;
+    BSplineOrder[2] = nOrder;
+
+    KnotSizeI = BSplineOrder[0] + lOrder;
+    KnotSizeJ = BSplineOrder[1] + mOrder;
+    KnotSizeK = BSplineOrder[2] + nOrder;
+
+    BSplineKnots.resize(3);
+    BSplineKnots[0].resize(KnotSizeI,0.0);
+    BSplineKnots[1].resize(KnotSizeJ,0.0);
+    BSplineKnots[2].resize(KnotSizeK,0.0);
+
+  }
+
+  /*--- The remaining lOrder/mOrder/nOrder knots are just 1.0 ---*/
+
+  for (iKnot = lOrder - BSplineOrder[0]; iKnot < lOrder; iKnot++){
+    BSplineKnots[0][BSplineOrder[0]+ iKnot]  = 1.0 + 1e-05;
+  }
+  for (iKnot = mOrder - BSplineOrder[1] ; iKnot < mOrder; iKnot++){
+    BSplineKnots[1][BSplineOrder[1] + iKnot] = 1.0 + 1e-05;
+  }
+  for (iKnot = nOrder - BSplineOrder[2]; iKnot < nOrder; iKnot++){
+    BSplineKnots[2][BSplineOrder[2] + iKnot] = 1.0 + 1e-05;
+  }
+
+  for (iKnot = 0; iKnot < KnotSizeI; iKnot++){
+    cout << BSplineKnots[0][iKnot] << " ";
+  }
+  cout << endl;
+
+  for (iKnot = 0; iKnot < KnotSizeJ; iKnot++){
+    cout << BSplineKnots[1][iKnot] << " ";
+  }
+  cout << endl;
+
+  for (iKnot = 0; iKnot < KnotSizeK; iKnot++){
+    cout << BSplineKnots[2][iKnot] << " ";
+  }
+  cout << endl;
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
 }
 
 CFreeFormDefBox::~CFreeFormDefBox(void) {
@@ -7379,71 +7552,76 @@ su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) {
 			for (kDegree = 0; kDegree <= nDegree; kDegree++)
 				for (iDim = 0; iDim < nDim; iDim++) {
 					cart_coord[iDim] += Coord_Control_Points[iDegree][jDegree][kDegree][iDim]
-					* GetBernstein(lDegree, iDegree, ParamCoord[0])
-					* GetBernstein(mDegree, jDegree, ParamCoord[1])
-					* GetBernstein(nDegree, kDegree, ParamCoord[2]);
+          * GetSplineBasis(BSplineOrder[0], iDegree, ParamCoord[0], 0)
+          * GetSplineBasis(BSplineOrder[1], jDegree, ParamCoord[1], 1)
+          * GetSplineBasis(BSplineOrder[2], kDegree, ParamCoord[2], 2);
 				}
 	
 	return cart_coord;
 }
 
-su2double CFreeFormDefBox::GetBernstein(short val_n, short val_i, su2double val_t) {
-  
-  su2double value = 0.0;
-  
-  if (val_i > val_n) { value = 0.0; return value; }
-  
-  if (val_i == 0) {
-    if (val_t == 0) value = 1.0;
-    else if (val_t == 1) value = 0.0;
-    else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0 - val_t, val_n - val_i);
+su2double CFreeFormDefBox::GetSplineBasis(short val_n, short val_i, su2double val_t, short index) {
+    
+  if (val_n == 1){
+    return su2double(val_t >= BSplineKnots[index][val_i] && val_t < BSplineKnots[index][val_i+1]);
   }
-  else if (val_i == val_n) {
-    if (val_t == 0) value = 0.0;
-    else if (val_t == 1) value = 1.0;
-    else value = pow(val_t, val_n);
+
+  /*--- We directly compute the values for order 2 and 3 to reduce the recursion overhead ---*/
+
+  if (val_n == 2){
+    const su2double m1 = su2double(val_t >= BSplineKnots[index][val_i] && val_t < BSplineKnots[index][val_i+1]);
+    const su2double m2 = su2double(val_t >= BSplineKnots[index][val_i+1] && val_t < BSplineKnots[index][val_i+2]);
+    return (val_t-BSplineKnots[index][val_i])/(1e-10 + BSplineKnots[index][val_i+1]-BSplineKnots[index][val_i])*m1 +
+           (BSplineKnots[index][val_i+2] - val_t)/(1e-10 + BSplineKnots[index][val_i+2]-BSplineKnots[index][val_i+1])*m2;
   }
-  else {
-    if ((val_t == 0) || (val_t == 1)) value = 0.0;
-    value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0-val_t, val_n - val_i);
+
+  if (val_n == 3){
+    const su2double m1 = su2double(val_t >= BSplineKnots[index][val_i] && val_t < BSplineKnots[index][val_i+1]);
+    const su2double m2 = su2double(val_t >= BSplineKnots[index][val_i+1] && val_t < BSplineKnots[index][val_i+2]);
+    const su2double m3 = su2double(val_t >= BSplineKnots[index][val_i+2] && val_t < BSplineKnots[index][val_i+3]);
+
+    return (val_t-BSplineKnots[index][val_i])/(BSplineKnots[index][val_i+2]-BSplineKnots[index][val_i]+1e-10)*
+        ((val_t-BSplineKnots[index][val_i])/(1e-10 + BSplineKnots[index][val_i+1]-BSplineKnots[index][val_i])*m1 +
+        (BSplineKnots[index][val_i+2] - val_t)/(1e-10 + BSplineKnots[index][val_i+2]-BSplineKnots[index][val_i+1])*m2) +
+        (BSplineKnots[index][val_i+3] - val_t)/(BSplineKnots[index][val_i+3]-BSplineKnots[index][val_i+1]+1e-10)*
+        ((val_t-BSplineKnots[index][val_i+1])/(1e-10 + BSplineKnots[index][val_i+2] - BSplineKnots[index][val_i+1])*m2 +
+        (BSplineKnots[index][val_i+3] - val_t)/(1e-10 + BSplineKnots[index][val_i+3]-BSplineKnots[index][val_i+2])*m3);
   }
-  
-  return value;
-  
+
+  return (val_t-BSplineKnots[index][val_i])/(BSplineKnots[index][val_i+val_n-1]-BSplineKnots[index][val_i]+1e-10)*GetSplineBasis(val_n-1, val_i, val_t, index)
+      +  (BSplineKnots[index][val_i + val_n] - val_t)/(BSplineKnots[index][val_i+val_n]-BSplineKnots[index][val_i+1]+1e-10)*GetSplineBasis(val_n-1, val_i+1, val_t, index);
 }
 
-su2double CFreeFormDefBox::GetBernsteinDerivative(short val_n, short val_i, 
-											   su2double val_t, short val_order) {
-	su2double value = 0.0;
-	
-	/*--- Verify this subroutine, it provides negative val_n, 
-	 which is a wrong value for GetBernstein ---*/
-	
-	if (val_order == 0) { 
-		value = GetBernstein(val_n, val_i, val_t); return value; 
-	}
-	
-	if (val_i == 0) { 
-		value = val_n*(-GetBernsteinDerivative(val_n-1, val_i, val_t, val_order-1)); return value; 
-	}
-	else {
-		if (val_n == 0) { 
-			value = val_t; return value; 
-		}
-		else {
-			value = val_n*(GetBernsteinDerivative(val_n-1, val_i-1, val_t, val_order-1) - GetBernsteinDerivative(val_n-1, val_i, val_t, val_order-1));
-			return value;
-		}
-	}
+su2double CFreeFormDefBox::GetSplineDerivative(short val_n, short val_i,
+                         su2double val_t, short val_order, short index) {
 
-	return value;
+  if (val_order >= val_n) return 0.0;
+
+  if (val_order == 0){
+    return GetSplineBasis(val_n, val_i, val_t, index);
+  }
+
+  su2double d1 = BSplineKnots[index][val_i+val_n-1] - BSplineKnots[index][val_i];
+  su2double d2 = BSplineKnots[index][val_i+val_n] - BSplineKnots[index][val_i+1];
+  su2double a1, a2;
+
+  if (d1 > 0.0) a1 = su2double(val_n-1)/(d1);
+  else a1 = 0.0;
+  if (d2 > 0.0) a2 = su2double(val_n-1)/(d2);
+  else a2 = 0.0;
+
+  if (val_order == 1){
+    return a1*GetSplineBasis(val_n-1, val_i, val_t, index) - a2*GetSplineBasis(val_n - 1, val_i+1, val_t, index);
+  }
+
+  return a1*GetSplineDerivative(val_n-1, val_i, val_t, val_order-1, index) - a2*GetSplineDerivative(val_n - 1, val_i+1, val_t, val_order-1, index);
 }
 
 su2double *CFreeFormDefBox::GetFFDGradient(su2double *val_coord, su2double *xyz) {
   
 	unsigned short iDim, jDim, lmn[3];
   
-  /*--- Set the Degree of the Berstein polynomials ---*/
+  /*--- Set the Degree of the spline ---*/
   
   lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
   
@@ -7462,7 +7640,7 @@ void CFreeFormDefBox::GetFFDHessian(su2double *uvw, su2double *xyz, su2double **
   
   unsigned short iDim, jDim, lmn[3];
   
-  /*--- Set the Degree of the Berstein polynomials ---*/
+  /*--- Set the Degree of the spline ---*/
   
   lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
   
@@ -7742,10 +7920,10 @@ su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_dif
   unsigned short iDim;
   su2double value = 0.0;
 	
-  value = GetBernsteinDerivative(lmn[val_diff], ijk[val_diff], uvw[val_diff], 1);
+  value = GetSplineDerivative(BSplineOrder[val_diff], ijk[val_diff], uvw[val_diff], 1, val_diff);
 	for (iDim = 0; iDim < nDim; iDim++)
-		if (iDim != val_diff)
-			value *= GetBernstein(lmn[iDim], ijk[iDim], uvw[iDim]);
+    if (iDim != val_diff)
+      value *= GetSplineBasis(BSplineOrder[iDim], ijk[iDim], uvw[iDim], iDim);
 	
 	return value;
   
@@ -7760,9 +7938,9 @@ su2double CFreeFormDefBox::GetDerivative2 (su2double *uvw, unsigned short dim, s
 		for (jDegree = 0; jDegree <= lmn[1]; jDegree++)
 			for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
 				value += Coord_Control_Points[iDegree][jDegree][kDegree][dim] 
-				* GetBernstein(lmn[0], iDegree, uvw[0])
-				* GetBernstein(lmn[1], jDegree, uvw[1])
-				* GetBernstein(lmn[2], kDegree, uvw[2]);
+        * GetSplineBasis(BSplineOrder[0], iDegree, uvw[0], 0)
+        * GetSplineBasis(BSplineOrder[1], jDegree, uvw[1], 1)
+        * GetSplineBasis(BSplineOrder[2], kDegree, uvw[2], 2);
       }
 	 
 	return 2.0*(value - xyz[dim]);
@@ -7782,7 +7960,7 @@ su2double CFreeFormDefBox::GetDerivative3(su2double *uvw, unsigned short dim, un
 			for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
 				ijk[0] = iDegree; ijk[1] = jDegree; ijk[2] = kDegree;
 				value += Coord_Control_Points[iDegree][jDegree][kDegree][dim] * 
-				GetDerivative1(uvw, diff_this, ijk, lmn);
+        GetDerivative1(uvw, diff_this, ijk, lmn);
 			}
 	
   delete [] ijk;
@@ -7791,29 +7969,29 @@ su2double CFreeFormDefBox::GetDerivative3(su2double *uvw, unsigned short dim, un
 }
 
 su2double CFreeFormDefBox::GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-																			 unsigned short *ijk, unsigned short *lmn) {
+                                       unsigned short *ijk, unsigned short *lmn) {
 	unsigned short iDim;
 	su2double value = 0.0;
 	
 	if (val_diff == val_diff2) {
-		value = GetBernsteinDerivative(lmn[val_diff], ijk[val_diff], uvw[val_diff], 2);
+    value = GetSplineDerivative(BSplineOrder[val_diff], ijk[val_diff], uvw[val_diff], 2, val_diff);
 		for (iDim = 0; iDim < nDim; iDim++)
 			if (iDim != val_diff)
-				value *= GetBernstein(lmn[iDim], ijk[iDim], uvw[iDim]);
+        value *= GetSplineBasis(BSplineOrder[iDim], ijk[iDim], uvw[iDim], iDim);
 	}
 	else {
-		value = GetBernsteinDerivative(lmn[val_diff],  ijk[val_diff],  uvw[val_diff], 1) *
-		GetBernsteinDerivative(lmn[val_diff2], ijk[val_diff2], uvw[val_diff2], 1);
+    value = GetSplineDerivative(BSplineOrder[val_diff],  ijk[val_diff],  uvw[val_diff], 1, val_diff) *
+    GetSplineDerivative(BSplineOrder[val_diff2], ijk[val_diff2], uvw[val_diff2], 1, val_diff2);
 		for (iDim = 0; iDim < nDim; iDim++)
 			if ((iDim != val_diff) && (iDim != val_diff2))
-				value *= GetBernstein(lmn[iDim], ijk[iDim], uvw[iDim]);
+        value *= GetSplineBasis(BSplineOrder[iDim], ijk[iDim], uvw[iDim], iDim);
 	}
 	
 	return value;
 }
 
 su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also, 
-																			unsigned short *lmn) {
+                                      unsigned short *lmn) {
 	
   unsigned short iDegree, jDegree, kDegree, iDim;
   su2double value = 0.0;

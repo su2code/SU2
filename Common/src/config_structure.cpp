@@ -1614,6 +1614,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
 
 
+  addEnumOption("FFD_BLENDING", FFD_Blending, Blending_Map, BSPLINE_UNIFORM );
+
+  default_ad_coeff_flow[0] = 4; default_ad_coeff_flow[1] = 4; default_ad_coeff_flow[2] = 4;
+  addDoubleArrayOption("FFD_BSPLINE_ORDER", 3, FFD_BSpline_Order,default_ad_coeff_flow);
+
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
 
@@ -2168,7 +2173,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   unsigned short nMoving;
   if (nGridMovement > nZone) nMoving = nGridMovement;
   else nMoving = nZone;
-  
+
   /*--- Motion Origin: ---*/
   
   if (Motion_Origin_X == NULL) {
