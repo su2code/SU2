@@ -188,26 +188,30 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-  
-  if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
-  
-  /*--- Modify file name for a dual-time unsteady restart ---*/
-  
-  if (dual_time) {
-    if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-    filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-  }
-  
-  /*--- Modify file name for a time stepping unsteady restart ---*/
-		
-  if (time_stepping) {
-    if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+  if (restart && (iMesh != MESH_0)) {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
+    
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+    
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
   }
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
@@ -15500,25 +15504,31 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Modify file name for an unsteady restart ---*/
-  
-  if (nZone >1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-  
-  if (dual_time) {
-    if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-    filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-  }
-		
-  /*--- Modify file name for a simple unsteady restart ---*/
-		
-  if (time_stepping) {
-    if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-    else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+ 
+  if (restart && (iMesh != MESH_0)) {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
+    
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
+    /*--- Modify file name for a simple unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+    
   }
 
   /*--- Check for a restart file to check if there is a change in the angle of attack
