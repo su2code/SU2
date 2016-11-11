@@ -1136,8 +1136,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
   /*!\brief ONE_D_OUTPUT
-   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker. \n Use with MARKER_OUT_1D. \ingroup Config*/
-  addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, NONE); // Wrt_1D_Output
+   *  \n DESCRIPTION: Output averaged outlet flow values on specified exit marker.
+   *  \n Use with MARKER_OUT_1D. \ingroup Config*/
+  addEnumOption("KIND_ONE_DIMENSIONALIZATION", Kind_OneD, OneD_Map, ONED_NONE);
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);

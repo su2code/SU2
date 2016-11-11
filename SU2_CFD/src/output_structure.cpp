@@ -4785,7 +4785,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             /*---- Averaged stagnation pressure at an exit ----*/
             if (output_1d) {
-              SPRINTF( oneD_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_AvgPress, OneD_AvgDensity, OneD_AvgVelocity, GetOneD_AvgEnthalpy);
+              SPRINTF( oneD_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_AvgPress, OneD_AvgDensity, OneD_AvgVelocity, OneD_AvgEnthalpy);
             }
             if (output_massflow && !output_1d) {
               SPRINTF(massflow_outputs,", %12.10f", Total_Mdot);
@@ -7646,7 +7646,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
   su2double *Normal = NULL, Area = 0.0, UnitNormal[3],
-  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, Vn,// local values at each node (Velocity2 = V^2). U = normal velocity
+  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, Vn, Density,// local values at each node (Velocity2 = V^2). U = normal velocity
   AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
   Velocity1D = 0.0, Enthalpy1D = 0.0, Density1D = 0.0, Pressure1D = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
   su2double TotalArea=0.0;
@@ -7693,14 +7693,14 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
             Vn += UnitNormal[iDim]*solver_container->node[iPoint]->GetVelocity(iDim);
             RhoUA -=Normal[iDim]*solver_container->node[iPoint]->GetSolution(iDim+1);
           }
-          
+          Density = solver_container->node[iPoint]->GetDensity();
           Enthalpy = solver_container->node[iPoint]->GetEnthalpy();
           Velocity2 = solver_container->node[iPoint]->GetVelocity2();
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
           if (incompressible)
-          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          Tot_Pressure = Pressure + 0.5*Density*Velocity2;
           else
             Tot_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
           
@@ -7716,6 +7716,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
             AverageTemperature += Temperature*Area;
             Velocity1D+=Vn*Vn*Area; // V.n magnitude
             Enthalpy1D+=Enthalpy*Area;
+            Density1D+=Density*Area;
             break;
           case ONED_LANGLEY:
             Pressure1D += Pressure * Area;

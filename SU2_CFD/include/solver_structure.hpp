@@ -2650,12 +2650,12 @@ public:
    * \brief A virtual member.
    * \ Set the one-dimensionalized pressure at a marker. (same as area averaged pressure)
    */
-  virtual void SetOneD_FluxAvgPress(su2double Pressure1D);
+  virtual void SetOneD_AvgPress(su2double Pressure1D);
   /*!
    * \brief A virtual member.
    * \ Get the one-dimensionalized density at a marker. (\f$ = (gamma/(gamma-1)) / ( Pref*(href-1/2 uref^2) \f$)
    */
-  virtual su2double GetOneD_FluxAvgDensity(void);
+  virtual su2double GetOneD_AvgDensity(void);
   
   /*!
    * \brief A virtual member.
