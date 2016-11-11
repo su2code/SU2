@@ -6819,11 +6819,13 @@ void CConfig::GEMM_Tock(double val_start_time, string val_function_name, int M, 
   val_stop_time = MPI_Wtime();
 #endif
   
+  string desc = val_function_name + "_" + to_string(M)+"_"+ to_string(N)+"_"+ to_string(K);
+
   /*--- Compute the elapsed time for this subroutine ---*/
   val_elapsed_time = val_stop_time - val_start_time;
   
   /*--- Store the subroutine name and the elapsed time ---*/
-  GEMM_Profile_Function.push_back(val_function_name);
+  GEMM_Profile_Function.push_back(desc);
   GEMM_Profile_Time.push_back(val_elapsed_time);
   GEMM_Profile_M.push_back(M);
   GEMM_Profile_N.push_back(N);
