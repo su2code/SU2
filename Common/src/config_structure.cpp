@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -31,23 +33,25 @@
 
 #include "../include/config_structure.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
 
-  int rank = MASTER_NODE;
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MASTER_NODE;
 #endif
 
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
 
   /*--- Reading config options  ---*/
-  
+
   SetConfig_Options(val_iZone, val_nZone);
 
   /*--- Parsing the config file  ---*/
-  
+
   SetConfig_Parsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
@@ -55,144 +59,412 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
   SetPostprocessing(val_software, val_iZone, val_nDim);
 
   /*--- Configuration file boundaries/markers setting ---*/
-  
+
   SetMarkers(val_software);
 
   /*--- Configuration file output ---*/
 
-  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
+  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone == 0))
     SetOutput(val_software, val_iZone);
 
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software) {
-  
+
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
 
   /*--- Reading config options  ---*/
-  
-  SetConfig_Options(1, 1);
+
+  SetConfig_Options(0, 1);
 
   /*--- Parsing the config file  ---*/
-  
+
   SetConfig_Parsing(case_filename);
 
   /*--- Configuration file postprocessing ---*/
-  
-  SetPostprocessing(val_software, 1, 1);
-  
+
+  SetPostprocessing(val_software, 0, 1);
+
 }
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
-  
+
   bool runtime_file = false;
-  
+
   /*--- Initialize pointers to Null---*/
-  
+
   SetPointersNull();
-  
+
   /*--- Reading config options  ---*/
-  
+
   SetRunTime_Options();
-  
+
   /*--- Parsing the config file  ---*/
-  
+
   runtime_file = SetRunTime_Parsing(case_filename);
-  
+
   /*--- Update original config file ---*/
-  
+
   if (runtime_file) {
     config->SetnExtIter(nExtIter);
   }
 
 }
 
+unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nZone = 1; // Default value
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+
+  /*--- Search the mesh file for the 'NZONE' keyword. ---*/
+
+  switch (val_format) {
+    case SU2:
+
+      /*--- Open grid file ---*/
+
+      strcpy (cstr, val_mesh_filename.c_str());
+      mesh_file.open(cstr, ios::in);
+      if (mesh_file.fail()) {
+        cout << "cstr=" << cstr << endl;
+        cout << "There is no geometry file (GetnZone))!" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Read the SU2 mesh file ---*/
+
+      for (iLine = 0; iLine < nLine ; iLine++) {
+
+        getline (mesh_file, text_line);
+
+        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+
+        position = text_line.find ("NZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
+        }
+      }
+
+      break;
+
+  }
+
+  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
+
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
+  	nZone = config->GetnTimeInstances();
+  }
+
+  return (unsigned short) nZone;
+}
+
+unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
+
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nDim = 3;
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+
+  /*--- Open grid file ---*/
+
+  strcpy (cstr, val_mesh_filename.c_str());
+  mesh_file.open(cstr, ios::in);
+
+  switch (val_format) {
+  case SU2:
+
+    /*--- Read SU2 mesh file ---*/
+
+    for (iLine = 0; iLine < nLine ; iLine++) {
+
+      getline (mesh_file, text_line);
+
+      /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+
+      position = text_line.find ("NDIME=",0);
+      if (position != string::npos) {
+        text_line.erase (0,6); nDim = atoi(text_line.c_str());
+      }
+    }
+    break;
+
+  case CGNS:
+
+#ifdef HAVE_CGNS
+
+    /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+
+    int fn, nbases = 0, nzones = 0, file_type;
+    int cell_dim = 0, phys_dim = 0;
+    char basename[CGNS_STRING_SIZE];
+
+    /*--- Check whether the supplied file is truly a CGNS file. ---*/
+
+    if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+      printf( "\n\n   !!! Error !!!\n" );
+      printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+      printf( " Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+
+    if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+
+    /*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+
+    if (cg_nbases(fn, &nbases)) cg_error_exit();
+
+    /*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+
+    if ( nbases > 1 ) {
+      printf("\n\n   !!! Error !!!\n" );
+      printf("CGNS reader currently incapable of handling more than 1 database.");
+      printf("Now exiting...\n\n");
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- Read the databases. Note that the indexing starts at 1. ---*/
+
+    for ( int i = 1; i <= nbases; i++ ) {
+
+      if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+
+      /*--- Get the number of zones for this base. ---*/
+
+      if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+
+    }
+
+    /*--- Set the problem dimension as read from the CGNS file ---*/
+
+    nDim = cell_dim;
+
+#endif
+
+    break;
+
+  }
+
+  mesh_file.close();
+
+  return (unsigned short) nDim;
+}
 void CConfig::SetPointersNull(void) {
-  Marker_CfgFile_Out_1D=NULL;       Marker_All_Out_1D=NULL;
-  Marker_CfgFile_GeoEval=NULL;      Marker_All_GeoEval=NULL;
-  Marker_CfgFile_Monitoring=NULL;   Marker_All_Monitoring=NULL;
-  Marker_CfgFile_Designing=NULL;    Marker_All_Designing=NULL;
-  Marker_CfgFile_Plotting=NULL;     Marker_All_Plotting=NULL;
-  Marker_CfgFile_DV=NULL;           Marker_All_DV=NULL;
-  Marker_CfgFile_Moving=NULL;       Marker_All_Moving=NULL;
-  Marker_CfgFile_PerBound=NULL;     Marker_All_PerBound=NULL;   Marker_PerBound=NULL;
-  Marker_CfgFile_FSIinterface=NULL;
   
-  Marker_DV=NULL;  Marker_Moving=NULL;  Marker_Monitoring=NULL;
-  Marker_Designing=NULL;  Marker_GeoEval=NULL;  Marker_Plotting=NULL;
-  Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
+  Marker_CfgFile_Out_1D       = NULL;   Marker_All_Out_1D        = NULL;
+  Marker_CfgFile_GeoEval      = NULL;   Marker_All_GeoEval       = NULL;
+  Marker_CfgFile_Monitoring   = NULL;   Marker_All_Monitoring    = NULL;
+  Marker_CfgFile_Designing    = NULL;   Marker_All_Designing     = NULL;
+  Marker_CfgFile_Plotting     = NULL;   Marker_All_Plotting      = NULL;
+  Marker_CfgFile_Analyze      = NULL;   Marker_All_Analyze       = NULL;
+  Marker_CfgFile_DV           = NULL;   Marker_All_DV            = NULL;
+  Marker_CfgFile_Moving       = NULL;   Marker_All_Moving        = NULL;
+  Marker_CfgFile_PerBound     = NULL;   Marker_All_PerBound      = NULL;    Marker_PerBound   = NULL;
+  Marker_CfgFile_FSIinterface = NULL;
+  
+  Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
+  Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
+  Marker_Analyze              = NULL;
+  Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
+  
   /*--- Marker Pointers ---*/
 
-  Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
-  Marker_SymWall = NULL;          Marker_Pressure = NULL;           Marker_PerBound = NULL;
-  Marker_PerDonor = NULL;         Marker_NearFieldBound = NULL;     Marker_InterfaceBound = NULL;
-  Marker_Dirichlet = NULL;        Marker_Inlet = NULL;
-  Marker_Supersonic_Inlet = NULL; Marker_Outlet = NULL;             Marker_Out_1D = NULL;
-  Marker_Isothermal = NULL;       Marker_HeatFlux = NULL;           Marker_EngineInflow = NULL;
-  Marker_EngineBleed = NULL;      Marker_Supersonic_Outlet = NULL;
-  Marker_EngineExhaust = NULL;    Marker_Displacement = NULL;       Marker_Load = NULL;
-  Marker_Load_Dir = NULL;         Marker_Load_Sine = NULL;          Marker_Clamped = NULL;
-  Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
-  Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
-  Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
-  Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL; Marker_Riemann = NULL;
-  Marker_Load = NULL;
+  Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
+  Marker_SymWall              = NULL;    Marker_Pressure         = NULL;    Marker_PerBound       = NULL;
+  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
+  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
+  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;    Marker_Out_1D         = NULL;
+  Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
+  Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;
+  Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
+  Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
+  Marker_FlowLoad             = NULL;    Marker_Neumann          = NULL;    Marker_Internal       = NULL;
+  Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
+  Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
+  Marker_FSIinterface         = NULL;    Marker_All_FSIinterface = NULL;    Marker_Riemann        = NULL;
+  Marker_Fluid_InterfaceBound = NULL;
+
+  
   /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value = NULL;         Exhaust_Temperature_Target = NULL;
-  Exhaust_Pressure_Target = NULL; Inlet_Ttotal = NULL;              Inlet_Ptotal = NULL;
-  Inlet_FlowDir = NULL;           Inlet_Temperature = NULL;         Inlet_Pressure = NULL;
-  Inlet_Velocity = NULL;          Inflow_Mach_Target = NULL;        Inflow_Mach = NULL;
-  Inflow_Pressure = NULL;         Bleed_Temperature_Target = NULL;  Bleed_Temperature = NULL;
-  Bleed_MassFlow_Target = NULL;   Bleed_MassFlow = NULL;            Exhaust_Pressure = NULL; Exhaust_Temperature = NULL;
-  Bleed_Pressure = NULL;          Outlet_Pressure = NULL;           Isothermal_Temperature = NULL;
-  Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
-  FlowLoad_Value = NULL;          Periodic_RotCenter = NULL;        Periodic_RotAngles = NULL;
-  Periodic_Translation = NULL;    Periodic_Center = NULL;           Periodic_Rotation = NULL;
-  Periodic_Translate = NULL;
+  Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
+  Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
+  FlowLoad_Value  = NULL;
+  
+  /*--- Inlet Outlet Boundary Condition settings ---*/
 
-  Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
-  Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
+  Inlet_Ttotal    = NULL;    Inlet_Ptotal      = NULL;
+  Inlet_FlowDir   = NULL;    Inlet_Temperature = NULL;    Inlet_Pressure = NULL;
+  Inlet_Velocity  = NULL;
+  Outlet_Pressure = NULL;
+  
+  /*--- Engine Boundary Condition settings ---*/
+  
+  Inflow_Pressure      = NULL;    Inflow_MassFlow    = NULL;    Inflow_ReverseMassFlow  = NULL;
+  Inflow_TotalPressure = NULL;    Inflow_Temperature = NULL;    Inflow_TotalTemperature = NULL;
+  Inflow_RamDrag       = NULL;    Inflow_Force       = NULL;    Inflow_Power            = NULL;
+  Inflow_Mach          = NULL;
+  
+  Exhaust_Pressure        = NULL;   Exhaust_Temperature        = NULL;    Exhaust_MassFlow = NULL;
+  Exhaust_TotalPressure   = NULL;   Exhaust_TotalTemperature   = NULL;
+  Exhaust_GrossThrust     = NULL;   Exhaust_Force              = NULL;
+  Exhaust_Power           = NULL;   Exhaust_Temperature_Target = NULL;
+  Exhaust_Pressure_Target = NULL;
+  
+  Engine_Mach  = NULL;    Engine_Force        = NULL;
+  Engine_Power = NULL;    Engine_NetThrust    = NULL;    Engine_GrossThrust = NULL;
+  Engine_Area  = NULL;    EngineInflow_Target = NULL;
+  
+  Periodic_Translate   = NULL;   Periodic_Rotation  = NULL;   Periodic_Center    = NULL;
+  Periodic_Translation = NULL;   Periodic_RotAngles = NULL;   Periodic_RotCenter = NULL;
 
+  Dirichlet_Value           = NULL;     Exhaust_Temperature_Target	= NULL;	    Exhaust_Temperature   = NULL;
+  Exhaust_Pressure_Target   = NULL;		Inlet_Ttotal                = NULL;	    Inlet_Ptotal          = NULL;
+  Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
+  Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
+  Exhaust_Pressure          = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
+  Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
+  FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
+  Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
+  Periodic_Translate        = NULL;
+
+  Load_Dir            = NULL;    Load_Dir_Value      = NULL;    Load_Dir_Multiplier = NULL;
+  Load_Sine_Dir       = NULL;    Load_Sine_Amplitude = NULL;    Load_Sine_Frequency = NULL;
+
+  /*--- Actuator Disk Boundary Condition settings ---*/
+  
+  ActDiskInlet_Pressure         = NULL;    ActDiskInlet_TotalPressure = NULL;    ActDiskInlet_Temperature = NULL;
+  ActDiskInlet_TotalTemperature = NULL;    ActDiskInlet_MassFlow      = NULL;    ActDiskInlet_RamDrag     = NULL;
+  ActDiskInlet_Force            = NULL;    ActDiskInlet_Power         = NULL;
+
+  ActDiskOutlet_Pressure      = NULL;
+  ActDiskOutlet_TotalPressure = NULL;   ActDiskOutlet_GrossThrust = NULL;  ActDiskOutlet_Force            = NULL;
+  ActDiskOutlet_Power         = NULL;   ActDiskOutlet_Temperature = NULL;  ActDiskOutlet_TotalTemperature = NULL;
+  ActDiskOutlet_MassFlow      = NULL;
+  
+  ActDisk_DeltaPress      = NULL;    ActDisk_DeltaTemp      = NULL;
+  ActDisk_TotalPressRatio = NULL;    ActDisk_TotalTempRatio = NULL;    ActDisk_StaticPressRatio = NULL;
+  ActDisk_StaticTempRatio = NULL;    ActDisk_NetThrust      = NULL;    ActDisk_GrossThrust      = NULL;
+  ActDisk_Power           = NULL;    ActDisk_MassFlow       = NULL;    ActDisk_Area             = NULL;
+  ActDisk_ReverseMassFlow = NULL;    Surface_MassFlow       = NULL;    Surface_DC60             = NULL;    Surface_IDC = NULL;
+  Surface_IDC_Mach        = NULL;    Surface_IDR            = NULL;    ActDisk_Mach             = NULL;
+  ActDisk_Force           = NULL;    ActDisk_BCThrust       = NULL;    ActDisk_BCThrust_Old     = NULL;
+  
   /*--- Miscellaneous/unsorted ---*/
 
-  Aeroelastic_plunge = NULL;    Aeroelastic_pitch = NULL;
+  Aeroelastic_plunge  = NULL;    
+  Aeroelastic_pitch   = NULL;
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
-  RefOriginMoment = NULL;
-  CFL_AdaptParam = NULL;            CFL=NULL;
-  PlaneTag = NULL;
-  Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
-  Section_Location = NULL;
-  ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
-  MG_CorrecSmooth = NULL;
-  Subsonic_Engine_Box = NULL;
-  Hold_GridFixed_Coord=NULL;
-  EA_IntLimit=NULL;
-  RK_Alpha_Step=NULL;
+
+  RefOriginMoment     = NULL;
+  CFL_AdaptParam      = NULL;            
+  CFL                 = NULL;
+  PlaneTag            = NULL;
+  Kappa_Flow	      = NULL;    
+  Kappa_AdjFlow       = NULL;
+  Section_Location    = NULL;
+  ParamDV             = NULL;     
+  DV_Value            = NULL;    
+  Design_Variable     = NULL;
+
+  Hold_GridFixed_Coord= NULL;
+  SubsonicEngine_Cyl  = NULL;
+  EA_IntLimit         = NULL;
+  RK_Alpha_Step       = NULL;
+  MG_CorrecSmooth     = NULL;
+  MG_PreSmooth        = NULL;
+  MG_PostSmooth       = NULL;
+  Int_Coeffs          = NULL;
+
+  Kind_ObjFunc   = NULL;
+
+  Weight_ObjFunc = NULL;
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement = NULL;
-  Motion_Origin_X = NULL;     Motion_Origin_Y = NULL;     Motion_Origin_Z = NULL;
-  Translation_Rate_X = NULL;  Translation_Rate_Y = NULL;  Translation_Rate_Z = NULL;
-  Rotation_Rate_X = NULL;     Rotation_Rate_Y = NULL;     Rotation_Rate_Z = NULL;
-  Pitching_Omega_X = NULL;    Pitching_Omega_Y = NULL;    Pitching_Omega_Z = NULL;
-  Pitching_Ampl_X = NULL;     Pitching_Ampl_Y = NULL;     Pitching_Ampl_Z = NULL;
-  Pitching_Phase_X = NULL;    Pitching_Phase_Y = NULL;    Pitching_Phase_Z = NULL;
-  Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
-  Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
-  RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
-  MoveMotion_Origin = NULL;
-  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
-  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
+  Kind_GridMovement	  = NULL;
+  Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z	    = NULL;
+  Translation_Rate_X  = NULL;    Translation_Rate_Y  = NULL;    Translation_Rate_Z  = NULL;
+  Rotation_Rate_X     = NULL;    Rotation_Rate_Y     = NULL;    Rotation_Rate_Z     = NULL;
+  Pitching_Omega_X    = NULL;    Pitching_Omega_Y    = NULL;    Pitching_Omega_Z    = NULL;
+  Pitching_Ampl_X     = NULL;    Pitching_Ampl_Y     = NULL;    Pitching_Ampl_Z     = NULL;
+  Pitching_Phase_X    = NULL;    Pitching_Phase_Y    = NULL;    Pitching_Phase_Z    = NULL;
+  Plunging_Omega_X    = NULL;    Plunging_Omega_Y    = NULL;    Plunging_Omega_Z    = NULL;
+  Plunging_Ampl_X     = NULL;    Plunging_Ampl_Y     = NULL;    Plunging_Ampl_Z     = NULL;
+  RefOriginMoment_X   = NULL;    RefOriginMoment_Y   = NULL;    RefOriginMoment_Z   = NULL;
+  MoveMotion_Origin   = NULL;
+  Periodic_Translate  = NULL;    Periodic_Rotation 	 = NULL;    Periodic_Center	    = NULL;
+  Periodic_Translation= NULL;    Periodic_RotAngles	 = NULL;    Periodic_RotCenter  = NULL;
 
+
+  /* Harmonic Balance Frequency pointer */
+  Omega_HB = NULL;
+    
+  /*--- Initialize some default arrays to NULL. ---*/
+  
+  default_vel_inf       = NULL;
+  default_eng_box       = NULL;
+  default_eng_val       = NULL;
+  default_cfl_adapt     = NULL;
+  default_ad_coeff_flow = NULL;
+  default_ad_coeff_adj  = NULL;
+  default_obj_coeff     = NULL;
+  default_geo_loc       = NULL;
+  default_distortion    = NULL;
+  default_ea_lim        = NULL;
+  default_grid_fix      = NULL;
+  default_inc_crit      = NULL;
+  
+  Riemann_FlowDir= NULL;
+  NRBC_FlowDir = NULL;
+  CoordFFDBox= NULL;
+  DegreeFFDBox= NULL;
+  FFDTag = NULL;
+  nDV_Value = NULL;
+  TagFFDBox = NULL;
+ 
+  Kind_Data_Riemann     = NULL;
+  Riemann_Var1          = NULL;
+  Riemann_Var2          = NULL;
+  Kind_Data_NRBC        = NULL;
+  NRBC_Var1             = NULL;
+  NRBC_Var2             = NULL;
+  Marker_TurboBoundIn   = NULL;
+  Marker_TurboBoundOut  = NULL;
+  Kind_TurboPerformance = NULL;
+  Marker_NRBC           = NULL;
+  
   /*--- Variable initialization ---*/
   
-  ExtIter = 0;
-  IntIter = 0;
+  ExtIter    = 0;
+  IntIter    = 0;
+  nIntCoeffs = 0;
+  
+  nMarker_PerBound = 0;
+  nPeriodic_Index  = 0;
+
+  Grid_Movement = false;
+  Aeroelastic_Simulation = false;
   
 }
 
@@ -206,22 +478,29 @@ void CConfig::SetRunTime_Options(void) {
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
   
-  su2double default_vec_3d[3];
-  su2double default_vec_4d[4];
-  su2double default_vec_5d[5];
-  su2double default_vec_2d[2];
-  su2double default_vec_6d[6];
-  
   nZone = val_nZone;
   iZone = val_iZone;
 
+  /*--- Allocate some default arrays needed for lists of doubles. ---*/
+  
+  default_vel_inf       = new su2double[3];
+  default_eng_box       = new su2double[6];
+  default_eng_val       = new su2double[5];
+  default_cfl_adapt     = new su2double[4];
+  default_ad_coeff_flow = new su2double[3];
+  default_ad_coeff_adj  = new su2double[3];
+  default_obj_coeff     = new su2double[5];
+  default_geo_loc       = new su2double[2];
+  default_distortion    = new su2double[2];
+  default_ea_lim        = new su2double[3];
+  default_grid_fix      = new su2double[6];
+  default_inc_crit      = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
   // the best you can to follow the established format. It's very hard to parse c++ code
   // and none of us that write the parsers want to write a full c++ interpreter. Please
   // play nice with the existing format so that you don't break the existing scripts.
-
 
   /* BEGIN_CONFIG_OPTIONS */
 
@@ -230,9 +509,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Regime type \n OPTIONS: see \link Regime_Map \endlink \ingroup Config*/
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
-  
-  /* DESCRIPTION: Debug mode */
-  addBoolOption("DEBUG_MODE",DebugMode, false);
   
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
@@ -335,9 +611,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
-  default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
-  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
@@ -348,6 +624,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */
   addDoubleOption("ENGINE_NU_FACTOR", NuFactor_Engine, 30.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("ACTDISK_NU_FACTOR", NuFactor_ActDisk, 3.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("ACTDISK_SECONDARY_FLOW", SecondaryFlow_ActDisk, 0.0);
+  /* DESCRIPTION:  */
+  addDoubleOption("INITIAL_BCTHRUST", Initial_BCThrust, 4000.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_TURB2LAMVISCRATIO", Turb2LamViscRatio_FreeStream, 10.0);
   /* DESCRIPTION: Side-slip angle (degrees, only for compressible flows) */
@@ -360,8 +642,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
   /* DESCRIPTION: Lift cure slope for fixed CL mode (0.2 per deg by default). */
   addDoubleOption("DCL_DALPHA", dCl_dAlpha, 0.2);
+  /* DESCRIPTION: Damping factor for fixed CL mode. */
+  addDoubleOption("DNETTHRUST_DBCTHRUST", dNetThrust_dBCThrust, 2.0);
   /* DESCRIPTION: Iterations to re-evaluate the angle of attack. */
   addUnsignedLongOption("ITER_FIXED_CL", Iter_Fixed_CL, 500);
+  /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
+  addUnsignedLongOption("UPDATE_BCTHRUST", Update_BCThrust, 5);
 
 
   /*!\par CONFIG_CATEGORY: Reference Conditions \ingroup Config*/
@@ -397,6 +683,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
   addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
+  /*!\brief MARKER_CONTROL_VOLUME\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
+  addStringListOption("MARKER_ANALYZE", nMarker_Analyze, Marker_Analyze);
   /*!\brief MARKER_DESIGNING\n DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
   addStringListOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
   /*!\brief MARKER_OUT_1D \n DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
@@ -414,6 +702,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
   /*!\brief MARKER_NEARFIELD\n DESCRIPTION: Near-Field boundary condition \ingroup Config*/
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
+  /*!\brief MARKER_FLUID_INTERFACE\n DESCRIPTION: Fluid interface boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
   /*!\brief MARKER_INTERFACE\n DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: FSI interface boundary marker(s) \ingroup Config*/
@@ -422,6 +712,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
   addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
+  /* DESCRIPTION: Neumann boundary marker(s) */
+  addStringListOption("MARKER_INTERNAL", nMarker_Internal, Marker_Internal);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
@@ -431,14 +723,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
 
+  /*!\brief ACTDISK_TYPE  \n DESCRIPTION: Actuator Disk boundary type \n OPTIONS: see \link ActDisk_Map \endlink \n Default: VARIABLES_JUMP \ingroup Config*/
+  addEnumOption("ACTDISK_TYPE", Kind_ActDisk, ActDisk_Map, VARIABLES_JUMP);
+
   /*!\brief MARKER_ACTDISK\n DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) \ingroup Config*/
-  addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
-                        Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
-                        ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
-                        ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
+  addActDiskOption("MARKER_ACTDISK",
+                   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,  Marker_ActDiskInlet, Marker_ActDiskOutlet,
+                   ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega);
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
@@ -466,8 +760,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addTurboPerfOption("MARKER_TURBO_PERFORMANCE", nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
    * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
-  addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
-                 Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
+  addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet, Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
   /*!\brief MARKER_SUPERSONIC_OUTLET \n DESCRIPTION: Supersonic outlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_SUPERSONIC_OUTLET", nMarker_Supersonic_Outlet, Marker_Supersonic_Outlet);
   /*!\brief MARKER_OUTLET  \n DESCRIPTION: Outlet boundary marker(s)\n
@@ -481,16 +774,28 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
-  addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, Inflow_Mach_Target);
-  /*!\brief MARKER_ENGINE_BLEED  \n DESCRIPTION: Engine bleed boundary marker(s)
-   Format: ( nacelle inflow marker, flux, ... ) \ingroup Config*/
-  addBleedOption("MARKER_ENGINE_BLEED", nMarker_EngineBleed, Marker_EngineBleed, Bleed_MassFlow_Target, Bleed_Temperature_Target);
+  addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, EngineInflow_Target);
+  /* DESCRIPTION: Highlite area */
+  addDoubleOption("HIGHLITE_AREA", Highlite_Area, 1.0);
+  /* DESCRIPTION: Fan poly efficiency */
+  addDoubleOption("FAN_POLY_EFF", Fan_Poly_Eff, 1.0);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
-  addBoolOption("SUBSONIC_ENGINE", Engine_Intake, false);
-  default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
-  default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+  addBoolOption("SUBSONIC_ENGINE", SubsonicEngine, false);
+  /* DESCRIPTION: Actuator disk double surface */
+  addBoolOption("ACTDISK_DOUBLE_SURFACE", ActDisk_DoubleSurface, false);
+  /* DESCRIPTION: Actuator disk double surface */
+  addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
+  /* DESCRIPTION: Limits for the pressure (Min, Max) */
+  default_distortion[0] =  0.0; default_distortion[1] =  1E6;
+  addDoubleArrayOption("DISTORTION_RACK", 2, DistortionRack, default_distortion);
+  /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
+  default_eng_val[0]=0.0; default_eng_val[1]=0.0; default_eng_val[2]=0.0;
+  default_eng_val[3]=0.0;  default_eng_val[4]=0.0;
+  addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, SubsonicEngine_Values, default_eng_val);
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_vec_6d);
+  default_eng_box[0] = -1E15; default_eng_box[1] = -1E15; default_eng_box[2] = -1E15;
+  default_eng_box[3] =  1E15; default_eng_box[4] =  1E15; default_eng_box[5] =  1E15;
+  addDoubleArrayOption("SUBSONIC_ENGINE_CYL", 7, SubsonicEngine_Cyl, default_eng_box);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
@@ -511,10 +816,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringDoubleListOption("MARKER_FLOWLOAD", nMarker_FlowLoad, Marker_FlowLoad, FlowLoad_Value);
   /* DESCRIPTION: Damping factor for engine inlet condition */
   addDoubleOption("DAMP_ENGINE_INFLOW", Damp_Engine_Inflow, 0.95);
-  /* DESCRIPTION: Damping factor for engine bleed condition */
-  addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
   addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.95);
+  /*!\brief ENGINE_INFLOW_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Engine_Inflow_Map \endlink \n Default: FAN_FACE_MACH \ingroup Config*/
+  addEnumOption("ENGINE_INFLOW_TYPE", Kind_Engine_Inflow, Engine_Inflow_Map, FAN_FACE_MACH);
 
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
@@ -532,8 +837,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
    * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
    * and decrease when the residual is increasing or stalled. \ingroup Config*/
-  default_vec_4d[0] = 0.0; default_vec_4d[1] = 0.0; default_vec_4d[2] = 1.0; default_vec_4d[3] = 100.0;
-  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_vec_4d);
+  default_cfl_adapt[0] = 0.0; default_cfl_adapt[1] = 0.0; default_cfl_adapt[2] = 1.0; default_cfl_adapt[3] = 100.0;
+  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_cfl_adapt);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -553,12 +858,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("UNST_CFL_NUMBER", Unst_CFL, 0.0);
   /* DESCRIPTION: Number of internal iterations (dual time method) */
   addUnsignedLongOption("UNST_INT_ITER", Unst_nIntIter, 100);
-  /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
+  /* DESCRIPTION: Integer number of periodic time instances for Harmonic Balance */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
+  /* DESCRIPTION: Time period for Harmonic Balance wihtout moving meshes */
+  addDoubleOption("HB_PERIOD", HarmonicBalance_Period, -1.0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
   addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
+  /* DESCRIPTION: Number of iterations to average the objective */
+  addLongOption("ITER_AVERAGE_OBJ", Iter_Avg_Objective , 0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (structural analysis) */
   addLongOption("DYN_RESTART_ITER", Dyn_RestartIter, 0);
   /* DESCRIPTION: Time discretization */
@@ -705,9 +1014,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  default_ad_coeff_flow[0] = 0.15; default_ad_coeff_flow[1] = 0.5; default_ad_coeff_flow[2] = 0.02;
   /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_ad_coeff_flow);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -719,11 +1028,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  default_ad_coeff_adj[0] = 0.15; default_ad_coeff_adj[1] = 0.5; default_ad_coeff_adj[2] = 0.02;
   /*!\brief AD_COEFF_ADJFLOW
    *  \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients for the adjoint solver.
    *  \n FORMAT and default values: AD_COEFF_ADJFLOW = (0.15, 0.5, 0.02) \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_ad_coeff_adj);
 
   /*!\brief SPATIAL_ORDER_TURB
    *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
@@ -766,21 +1075,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /*!\brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem. \n Defualt: YES \ingroup Config*/
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
+
+  /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
+  addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
-  addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
+  addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
 
-  default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
-  default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
+  default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
+  default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
   /*!\brief OBJ_CHAIN_RULE_COEFF
   * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
   * with area-averaged outlet primitive variables. This is used with the genereralized outflow
   * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_vec_5d);
+  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_obj_coeff);
 
-  default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
+  default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
+  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_geo_loc);
   /* DESCRIPTION: Identify the axis of the section */
   addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
@@ -809,6 +1121,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
+  /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
+  addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
@@ -876,6 +1190,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SURFACE_ADJ_FILENAME
    *  \n DESCRIPTION: Output file surface adjoint coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
+  /*!\brief SURFACE_SENS_FILENAME_FILENAME
+   *  \n DESCRIPTION: Output file surface sensitivity (discrete adjoint) (w/o extension)  \ingroup Config*/
+  addStringOption("SURFACE_SENS_FILENAME", SurfSens_FileName, string("surface_sens"));
+  /*!\brief VOLUME_SENS_FILENAME
+   *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
+  addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
@@ -1036,15 +1356,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
 
+  /* Harmonic Balance config */
+  /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
+  addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
 
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/
   /*--- Options related to the equivalent area ---*/
 
   /* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
   addBoolOption("EQUIV_AREA", EquivArea, false);
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
+  default_ea_lim[0] = 0.0; default_ea_lim[1] = 1.0; default_ea_lim[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
-  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
+  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_ea_lim);
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
@@ -1082,6 +1405,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
    - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
+   - CST ( Lower Surface (0)/Upper Surface (1), Kulfan parameter number, Total number of Kulfan parameters for surface )
    - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
    - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
    - NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
@@ -1102,22 +1426,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
-	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
-	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
+	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
+	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
 	/* DESCRIPTION: Visualize the deformation */
   addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
-  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
+  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
-  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 2);
+  addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
-  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
+  addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 1000);
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
-  addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
+  addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 1E-6);
+  /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
+  addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
-  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, INVERSE_VOLUME);
+  addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, WALL_DISTANCE);
   /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation*/
   addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
   /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
@@ -1153,6 +1479,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, LINEAR_ELASTIC);
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Compressibility of the material \n OPTIONS: see \link MatComp_Map \endlink \ingroup Config*/
   addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, COMPRESSIBLE_MAT);
+
+  /*  DESCRIPTION: Consider a prestretch in the structural domain
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("PRESTRETCH", Prestretch, false);
+  /*!\brief PRESTRETCH_FILENAME \n DESCRIPTION: Filename to input for prestretching membranes \n Default: prestretch_file.dat \ingroup Config */
+  addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file.dat"));
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
@@ -1193,9 +1525,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of increments of the  */
   addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
 
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  default_inc_crit[0] = 0.0; default_inc_crit[1] = 0.0; default_inc_crit[2] = 0.0;
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
-  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_vec_3d);
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
 
   /* DESCRIPTION: Time while the structure is static */
   addDoubleOption("STATIC_TIME", Static_Time, 0.0);
@@ -1341,6 +1673,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Setup for design variables (lower bound) */
   addPythonOption("OPT_BOUND_LOWER");
   
+  /*!\brief OPT_COMBINE_OBJECTIVE
+   *  \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
+  addPythonOption("OPT_COMBINE_OBJECTIVE");
+
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
 
@@ -1563,7 +1899,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iDim;
+  unsigned short iZone, iCFL, iDim, iMarker;
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
@@ -1582,18 +1918,63 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Store the SU2 module that we are executing. ---*/
   
   Kind_SU2 = val_software;
+
+  /*--- Set the default for thrust in ActDisk ---*/
   
-  /*--- Make sure that 1D outputs are written when objective function requires ---*/
-  
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTFLOW_GENERALIZED) {
-    Wrt_1D_Output = YES;
-    Marker_Out_1D = new string[nMarker_Monitoring];
-    for (unsigned short iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-      Marker_Out_1D[iMarker] = Marker_Monitoring[iMarker];
-    }
-    nMarker_Out_1D = nMarker_Monitoring;
+  if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST)
+      || (Kind_ActDisk == DRAG_MINUS_THRUST) || (Kind_ActDisk == MASSFLOW)
+      || (Kind_ActDisk == POWER))
+    ActDisk_Jump = RATIO;
+
+  /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
+
+  if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL){
+    Kind_ObjFunc = new unsigned short[1];
+    Kind_ObjFunc[0]=DRAG_COEFFICIENT;
+    Weight_ObjFunc = new su2double[1];
+    Weight_ObjFunc[0]=1.0;
+    nObj=1;
+    nObjW=1;
   }
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   
+  if (nObjW<nObj) {
+    if (Weight_ObjFunc!= NULL) {
+      cout <<"The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"<<
+          "or be deleted from the config file (equal weights will be applied)."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj]=1.0;
+  }
+  /*--- Ignore weights if only one objective provided ---*/
+  
+  if (nObj == 1 )
+      Weight_ObjFunc[0] = 1.0;
+
+  /*--- Maker sure that nMarker = nObj ---*/
+
+  if (nObj>0) {
+    if (nMarker_Monitoring!=nObj and Marker_Monitoring!= NULL) {
+      if (nMarker_Monitoring==1) {
+        /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
+        nMarker_Monitoring = nObj;
+        string marker = Marker_Monitoring[0];
+        delete[] Marker_Monitoring;
+        Marker_Monitoring = new string[nMarker_Monitoring];
+        for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
+          Marker_Monitoring[iMarker] = marker;
+      }
+      else if(nObj>1) {
+        cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
+            "For multiple surfaces per objective, list the objective multiple times. \n"<<
+            "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
@@ -1608,8 +1989,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- All the other zones are structure.
    *--- This will allow us to define multiple physics structural problems */
 
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
-	  if (val_izone==0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
+  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
+	  if (val_izone == 0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
 
 	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
 	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
@@ -1617,8 +1998,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
 	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
-  else{ FSI_Problem = false; }
+  else { FSI_Problem = false; }
 
+  if (ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL)) {
+    cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
+  }
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
   
@@ -1627,10 +2011,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Don't do any deformation if there is no Design variable information ---*/
   
-  if (Design_Variable == NULL) {
-    Design_Variable = new unsigned short [1];
-    nDV = 1; Design_Variable[0] = NONE;
-  }
+//  if (Design_Variable == NULL) {
+//    Design_Variable = new unsigned short [1];
+//    nDV = 1; Design_Variable[0] = NONE;
+//  }
   
   /*--- Identification of free-surface problem, this problems are always 
    unsteady and incompressible. ---*/
@@ -1661,7 +2045,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_SPECTRAL  ||
+      Unsteady_Simulation == HARMONIC_BALANCE  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
@@ -1677,8 +2061,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check for Fluid model consistency ---*/
 
-  if (standard_air){
-	if (Gamma != 1.4 || Gas_Constant != 287.058){
+  if (standard_air) {
+	if (Gamma != 1.4 || Gas_Constant != 287.058) {
 		Gamma = 1.4;
 		Gas_Constant = 287.058;
         }
@@ -1762,7 +2146,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION)))
+       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
   
   /*--- If it is not specified, set the mesh motion mach number
@@ -1795,13 +2180,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Make sure that there aren't more than one rigid motion or
    rotating frame specified in GRID_MOVEMENT_KIND. ---*/
-  
+ /* 
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
-      (nGridMovement > 1)) {
-    cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
+      (nGridMovement > 2)) {
+    cout << "Can not support more than 2 type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
     exit(EXIT_FAILURE);
   }
-  
+ */ 
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -2101,53 +2486,83 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
-   There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
-   The largest period of motion is the one to be used for time-spectral calculations. ---*/
-  
-  if (Unsteady_Simulation == TIME_SPECTRAL) {
-    
-    unsigned short N_MOTION_TYPES = 3;
-    su2double *periods;
-    periods = new su2double[N_MOTION_TYPES];
-    
-    /*--- rotation: ---*/
-    
-    su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
-    if (Omega_mag_rot > 0)
-      periods[0] = 2*PI_NUMBER/Omega_mag_rot;
-    else
-      periods[0] = 0.0;
-    
-    /*--- pitching: ---*/
-    
-    su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
-    if (Omega_mag_pitch > 0)
-      periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
-    else
-      periods[1] = 0.0;
-    
-    /*--- plunging: ---*/
-    
-    su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
-    if (Omega_mag_plunge > 0)
-      periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
-    else
-      periods[2] = 0.0;
-    
-    /*--- determine which period is largest ---*/
-    
-    unsigned short iVar;
-    TimeSpectral_Period = 0.0;
-    for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
-      if (periods[iVar] > TimeSpectral_Period)
-        TimeSpectral_Period = periods[iVar];
-    }
-    
-    delete periods;
-    
+  /*-- Setting Harmonic Balance period from the config file */
+
+  if (Unsteady_Simulation == HARMONIC_BALANCE) {
+  	HarmonicBalance_Period = GetHarmonicBalance_Period();
+  	if (HarmonicBalance_Period < 0)  {
+  		cout << "Not a valid value for time period!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  	/* Initialize the Harmonic balance Frequency pointer */
+  	if (Omega_HB == NULL) {
+  		Omega_HB = new su2double[nOmega_HB];
+  		for (iZone = 0; iZone < nOmega_HB; iZone++ )
+  			Omega_HB[iZone] = 0.0;
+  	}else {
+  		if (nOmega_HB != nTimeInstances) {
+  			cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
+  			exit(EXIT_FAILURE);
+  		}
+  	}
   }
+
+    /*--- Use the various rigid-motion input frequencies to determine the period to be used with harmonic balance cases.
+     There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
+     The largest period of motion is the one to be used for harmonic balance  calculations. ---*/
+    
+  /*if (Unsteady_Simulation == HARMONIC_BALANCE) {
+      if (!(GetGrid_Movement())) {
+          // No grid movement - Time period from config file //
+          HarmonicBalance_Period = GetHarmonicBalance_Period();
+      }
+      
+      else {
+          unsigned short N_MOTION_TYPES = 3;
+          su2double *periods;
+          periods = new su2double[N_MOTION_TYPES];
+          
+          //--- rotation: ---//
+          
+          su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
+          if (Omega_mag_rot > 0)
+              periods[0] = 2*PI_NUMBER/Omega_mag_rot;
+          else
+              periods[0] = 0.0;
+          
+          //--- pitching: ---//
+          
+          su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
+          if (Omega_mag_pitch > 0)
+              periods[1] = 2*PI_NUMBER/Omega_mag_pitch;
+          else
+              periods[1] = 0.0;
+          
+          //--- plunging: ---//
+          
+          su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
+          if (Omega_mag_plunge > 0)
+              periods[2] = 2*PI_NUMBER/Omega_mag_plunge;
+          else
+              periods[2] = 0.0;
+          
+          //--- determine which period is largest ---//
+          
+          unsigned short iVar;
+          HarmonicBalance_Period = 0.0;
+          for (iVar = 0; iVar < N_MOTION_TYPES; iVar++) {
+              if (periods[iVar] > HarmonicBalance_Period)
+                  HarmonicBalance_Period = periods[iVar];
+          }
+          
+          delete periods;
+      }
+    
+  }*/
   
+
+  
+    
   /*--- Initialize the RefOriginMoment Pointer ---*/
   
   RefOriginMoment = NULL;
@@ -2160,7 +2575,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    Unless only one value was specified, then set this value for all the markers
    being monitored. ---*/
   
-  unsigned short iMarker;
   
   if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
     cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
@@ -2422,12 +2836,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   nCFL = nMGLevels+1;
   CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
-  if (ContinuousAdjoint){
+  
+  /*--- Evaluate when the Cl should be evaluated ---*/
+  
+  Iter_Fixed_NetThrust = SU2_TYPE::Int(nExtIter / (su2double(Update_BCThrust)+5.0));
+
+  if (ContinuousAdjoint) {
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
-    CFL_AdaptParam[2]*=CFLRedCoeff_AdjFlow;
-    CFL_AdaptParam[3]*=CFLRedCoeff_AdjFlow;
+    CFL_AdaptParam[2] *= CFLRedCoeff_AdjFlow;
+    CFL_AdaptParam[3] *= CFLRedCoeff_AdjFlow;
+    Iter_Fixed_NetThrust = SU2_TYPE::Int(su2double (Iter_Fixed_NetThrust) / CFLRedCoeff_AdjFlow);
   }
   
+  if (Iter_Fixed_NetThrust == 0) { Iter_Fixed_NetThrust = nExtIter+1; Update_BCThrust = 0; }
+
   for (iCFL = 1; iCFL < nCFL; iCFL++)
     CFL[iCFL] = CFL[iCFL-1];
   
@@ -2476,7 +2898,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else RefAreaCoeff = RefAreaCoeff/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
-    
+    Highlite_Area = Highlite_Area/144.0;
+
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
@@ -2484,25 +2907,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Section_Location[0] = Section_Location[0]/12.0;
     Section_Location[1] = Section_Location[1]/12.0;
     
-    Subsonic_Engine_Box[0] = Subsonic_Engine_Box[0]/12.0;
-    Subsonic_Engine_Box[1] = Subsonic_Engine_Box[1]/12.0;
-    Subsonic_Engine_Box[2] = Subsonic_Engine_Box[2]/12.0;
-    Subsonic_Engine_Box[3] = Subsonic_Engine_Box[3]/12.0;
-    Subsonic_Engine_Box[4] = Subsonic_Engine_Box[4]/12.0;
-    Subsonic_Engine_Box[5] = Subsonic_Engine_Box[5]/12.0;
-    
-    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++) {
-      for (iDim = 0; iDim < val_nDim; iDim++)
-        ActDisk_Origin[iMarker][iDim] = ActDisk_Origin[iMarker][iDim]/12.0;
-      ActDisk_RootRadius[iMarker] = ActDisk_RootRadius[iMarker]/12.0;
-      ActDisk_TipRadius[iMarker] = ActDisk_TipRadius[iMarker]/12.0;
-    }
+    SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
+    SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
+    SubsonicEngine_Cyl[2] = SubsonicEngine_Cyl[2]/12.0;
+    SubsonicEngine_Cyl[3] = SubsonicEngine_Cyl[3]/12.0;
+    SubsonicEngine_Cyl[4] = SubsonicEngine_Cyl[4]/12.0;
+    SubsonicEngine_Cyl[5] = SubsonicEngine_Cyl[5]/12.0;
+    SubsonicEngine_Cyl[6] = SubsonicEngine_Cyl[6]/12.0;
     
   }
   
-  if (DirectDiff != NO_DERIVATIVE){
+  if (DirectDiff != NO_DERIVATIVE) {
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
-      if (Kind_SU2 == SU2_CFD){
+      if (Kind_SU2 == SU2_CFD) {
         cout << "SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!" << endl;
         cout << "Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)." << endl;
         exit(EXIT_FAILURE);
@@ -2534,15 +2951,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #if defined CODI_REVERSE_TYPE
   AD_Mode = YES;
 #else
-  if (AD_Mode == YES){
+  if (AD_Mode == YES) {
     cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
     cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
   }
 #endif
 
-  if (DiscreteAdjoint){
+  if (DiscreteAdjoint) {
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
-    if (Kind_SU2 == SU2_CFD){
+    if (Kind_SU2 == SU2_CFD) {
       cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
       cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
       exit(EXIT_FAILURE);
@@ -2552,7 +2969,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
-    switch(Kind_Solver){
+    if (Unsteady_Simulation) {
+
+      Restart_Flow = false;
+
+      if (Grid_Movement) {
+        cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      /*--- If the averaging interval is not set, we average over all time-steps ---*/
+
+      if (Iter_Avg_Objective == 0.0) {
+        Iter_Avg_Objective = nExtIter;
+      }
+    }
+
+    switch(Kind_Solver) {
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
         break;
@@ -2584,14 +3017,14 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
-  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
+  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal,
-  iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
-  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
-  iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
+  iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineExhaust,
+  iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal,
+  iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
+  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
   
@@ -2603,18 +3036,18 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Compute the total number of markers in the config file ---*/
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
+  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
-  nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
+  nMarker_EngineInflow + nMarker_EngineExhaust + nMarker_Internal +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_Out_1D;
   
   /*--- Add the possible send/receive domains ---*/
 
-  nMarker_Max = nMarker_CfgFile + 2*size;
+  nMarker_Max = nMarker_CfgFile + OVERHEAD*size;
   
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
@@ -2622,61 +3055,80 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
-  Marker_All_TagBound   = new string[nMarker_All];			    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv   = new short[nMarker_All];						// +#domain (send), -#domain (receive).
-  Marker_All_KindBC     = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
-  Marker_All_Monitoring = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
-  Marker_All_Designing  = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting   = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_TagBound       = new string[nMarker_All];			    // Store the tag that correspond with each marker.
+  Marker_All_SendRecv       = new short[nMarker_All];						// +#domain (send), -#domain (receive).
+  Marker_All_KindBC         = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
+  Marker_All_Monitoring     = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
+  Marker_All_Designing      = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
+  Marker_All_Plotting       = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_Analyze  = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
   Marker_All_FSIinterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval    = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
-  Marker_All_DV         = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
-  Marker_All_Moving     = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
-  Marker_All_PerBound   = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D     = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_GeoEval        = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
+  Marker_All_DV             = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_PerBound       = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Out_1D         = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
-    Marker_All_SendRecv[iMarker_All]   = 0;
-    Marker_All_KindBC[iMarker_All]     = 0;
-    Marker_All_Monitoring[iMarker_All] = 0;
-    Marker_All_GeoEval[iMarker_All]    = 0;
-    Marker_All_Designing[iMarker_All]  = 0;
-    Marker_All_Plotting[iMarker_All]   = 0;
-    Marker_All_FSIinterface[iMarker_All]   = 0;
-    Marker_All_DV[iMarker_All]         = 0;
-    Marker_All_Moving[iMarker_All]     = 0;
-    Marker_All_PerBound[iMarker_All]   = 0;
-    Marker_All_Out_1D[iMarker_All]     = 0;
+    Marker_All_TagBound[iMarker_All]      = "SEND_RECEIVE";
+    Marker_All_SendRecv[iMarker_All]      = 0;
+    Marker_All_KindBC[iMarker_All]        = 0;
+    Marker_All_Monitoring[iMarker_All]    = 0;
+    Marker_All_GeoEval[iMarker_All]       = 0;
+    Marker_All_Designing[iMarker_All]     = 0;
+    Marker_All_Plotting[iMarker_All]      = 0;
+    Marker_All_Analyze[iMarker_All] = 0;
+    Marker_All_FSIinterface[iMarker_All]  = 0;
+    Marker_All_DV[iMarker_All]            = 0;
+    Marker_All_Moving[iMarker_All]        = 0;
+    Marker_All_PerBound[iMarker_All]      = 0;
+    Marker_All_Out_1D[iMarker_All]        = 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
-  Marker_CfgFile_TagBound     = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing    = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval      = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_FSIinterface	= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV           = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TagBound      = new string[nMarker_CfgFile];
+  Marker_CfgFile_KindBC        = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Monitoring    = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Designing     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Plotting      = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Analyze       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_GeoEval       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_FSIinterface	 = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DV            = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Moving        = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_PerBound      = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Out_1D        = new unsigned short[nMarker_CfgFile];
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile]   = "SEND_RECEIVE";
-    Marker_CfgFile_KindBC[iMarker_CfgFile]     = 0;
-    Marker_CfgFile_Monitoring[iMarker_CfgFile] = 0;
-    Marker_CfgFile_GeoEval[iMarker_CfgFile]    = 0;
-    Marker_CfgFile_Designing[iMarker_CfgFile]  = 0;
-    Marker_CfgFile_Plotting[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_FSIinterface[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_DV[iMarker_CfgFile]         = 0;
-    Marker_CfgFile_Moving[iMarker_CfgFile]     = 0;
-    Marker_CfgFile_PerBound[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_Out_1D[iMarker_CfgFile]     = 0;
+    Marker_CfgFile_TagBound[iMarker_CfgFile]      = "SEND_RECEIVE";
+    Marker_CfgFile_KindBC[iMarker_CfgFile]        = 0;
+    Marker_CfgFile_Monitoring[iMarker_CfgFile]    = 0;
+    Marker_CfgFile_GeoEval[iMarker_CfgFile]       = 0;
+    Marker_CfgFile_Designing[iMarker_CfgFile]     = 0;
+    Marker_CfgFile_Plotting[iMarker_CfgFile]      = 0;
+    Marker_CfgFile_Analyze[iMarker_CfgFile] = 0;
+    Marker_CfgFile_FSIinterface[iMarker_CfgFile]  = 0;
+    Marker_CfgFile_DV[iMarker_CfgFile]            = 0;
+    Marker_CfgFile_Moving[iMarker_CfgFile]        = 0;
+    Marker_CfgFile_PerBound[iMarker_CfgFile]      = 0;
+    Marker_CfgFile_Out_1D[iMarker_CfgFile]        = 0;
   }
+
+  /*--- Allocate memory to store surface information (Analyze BC) ---*/
+
+  Surface_MassFlow = new su2double[nMarker_Analyze];
+  Surface_DC60 = new su2double[nMarker_Analyze];
+  Surface_IDC = new su2double[nMarker_Analyze];
+  Surface_IDC_Mach = new su2double[nMarker_Analyze];
+  Surface_IDR = new su2double[nMarker_Analyze];
+  for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+     Surface_MassFlow[iMarker_Analyze] = 0.0;
+   	 Surface_DC60[iMarker_Analyze] = 0.0;
+     Surface_IDC[iMarker_Analyze] = 0.0;
+     Surface_IDC_Mach[iMarker_Analyze] = 0.0;
+     Surface_IDR[iMarker_Analyze] = 0.0;
+   }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
 
@@ -2712,17 +3164,88 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
-		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
-		Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_INLET;
-		iMarker_CfgFile++;
-	}
-
-  for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
-		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
-		Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_OUTLET;
-		iMarker_CfgFile++;
-	}
+  ActDisk_DeltaPress = new su2double[nMarker_ActDiskInlet];
+  ActDisk_DeltaTemp = new su2double[nMarker_ActDiskInlet];
+  ActDisk_TotalPressRatio = new su2double[nMarker_ActDiskInlet];
+  ActDisk_TotalTempRatio = new su2double[nMarker_ActDiskInlet];
+  ActDisk_StaticPressRatio = new su2double[nMarker_ActDiskInlet];
+  ActDisk_StaticTempRatio = new su2double[nMarker_ActDiskInlet];
+  ActDisk_Power = new su2double[nMarker_ActDiskInlet];
+  ActDisk_MassFlow = new su2double[nMarker_ActDiskInlet];
+  ActDisk_Mach = new su2double[nMarker_ActDiskInlet];
+  ActDisk_Force = new su2double[nMarker_ActDiskInlet];
+  ActDisk_NetThrust = new su2double[nMarker_ActDiskInlet];
+  ActDisk_BCThrust = new su2double[nMarker_ActDiskInlet];
+  ActDisk_BCThrust_Old = new su2double[nMarker_ActDiskInlet];
+  ActDisk_GrossThrust = new su2double[nMarker_ActDiskInlet];
+  ActDisk_Area = new su2double[nMarker_ActDiskInlet];
+  ActDisk_ReverseMassFlow = new su2double[nMarker_ActDiskInlet];
+  
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+    ActDisk_DeltaPress[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_DeltaTemp[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_TotalPressRatio[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_TotalTempRatio[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_StaticPressRatio[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_StaticTempRatio[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_Power[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_MassFlow[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_Mach[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_Force[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_NetThrust[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_BCThrust[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_BCThrust_Old[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_GrossThrust[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_Area[iMarker_ActDiskInlet] = 0.0;
+    ActDisk_ReverseMassFlow[iMarker_ActDiskInlet] = 0.0;
+  }
+  
+  
+  ActDiskInlet_MassFlow = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_Temperature = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_TotalTemperature = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_Pressure = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_TotalPressure = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_RamDrag = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_Force = new su2double[nMarker_ActDiskInlet];
+  ActDiskInlet_Power = new su2double[nMarker_ActDiskInlet];
+  
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskInlet[iMarker_ActDiskInlet];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_INLET;
+    ActDiskInlet_MassFlow[iMarker_ActDiskInlet] = 0.0;
+    ActDiskInlet_Temperature[iMarker_ActDiskInlet] = 0.0;
+    ActDiskInlet_TotalTemperature[iMarker_ActDiskInlet] = 0.0;
+    ActDiskInlet_Pressure[iMarker_ActDiskInlet] = 0.0;
+    ActDiskInlet_TotalPressure[iMarker_ActDiskInlet] = 0.0;
+    ActDiskInlet_RamDrag[iMarker_ActDiskInlet] = 0.0;
+    ActDiskInlet_Force[iMarker_ActDiskInlet] = 0.0;
+    ActDiskInlet_Power[iMarker_ActDiskInlet] = 0.0;
+    iMarker_CfgFile++;
+  }
+  
+  ActDiskOutlet_MassFlow = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_Temperature = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_TotalTemperature = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_Pressure = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_TotalPressure = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_GrossThrust = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_Force = new su2double[nMarker_ActDiskOutlet];
+  ActDiskOutlet_Power = new su2double[nMarker_ActDiskOutlet];
+  
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_OUTLET;
+    ActDiskOutlet_MassFlow[iMarker_ActDiskOutlet] = 0.0;
+    ActDiskOutlet_Temperature[iMarker_ActDiskOutlet] = 0.0;
+    ActDiskOutlet_TotalTemperature[iMarker_ActDiskOutlet] = 0.0;
+    ActDiskOutlet_Pressure[iMarker_ActDiskOutlet] = 0.0;
+    ActDiskOutlet_TotalPressure[iMarker_ActDiskOutlet] = 0.0;
+    ActDiskOutlet_GrossThrust[iMarker_ActDiskOutlet] = 0.0;
+    ActDiskOutlet_Force[iMarker_ActDiskOutlet] = 0.0;
+    ActDiskOutlet_Power[iMarker_ActDiskOutlet] = 0.0;
+    iMarker_CfgFile++;
+  }
 
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
@@ -2733,6 +3256,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_InterfaceBound[iMarker_InterfaceBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = INTERFACE_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+  
+  for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = FLUID_INTERFACE;
     iMarker_CfgFile++;
   }
 
@@ -2760,41 +3289,74 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  Engine_Power = new su2double[nMarker_EngineInflow];
+  Engine_Mach = new su2double[nMarker_EngineInflow];
+  Engine_Force = new su2double[nMarker_EngineInflow];
+  Engine_Power = new su2double[nMarker_EngineInflow];
+  Engine_NetThrust = new su2double[nMarker_EngineInflow];
+  Engine_GrossThrust = new su2double[nMarker_EngineInflow];
+  Engine_Area = new su2double[nMarker_EngineInflow];
+  
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
+    Engine_Power[iMarker_EngineInflow] = 0.0;
+    Engine_Mach[iMarker_EngineInflow] = 0.0;
+    Engine_Force[iMarker_EngineInflow] = 0.0;
+    Engine_Power[iMarker_EngineInflow] = 0.0;
+    Engine_NetThrust[iMarker_EngineInflow] = 0.0;
+    Engine_GrossThrust[iMarker_EngineInflow] = 0.0;
+    Engine_Area[iMarker_EngineInflow] = 0.0;
+  }
+  
   Inflow_Mach = new su2double[nMarker_EngineInflow];
   Inflow_Pressure = new su2double[nMarker_EngineInflow];
-
+  Inflow_MassFlow = new su2double[nMarker_EngineInflow];
+  Inflow_ReverseMassFlow = new su2double[nMarker_EngineInflow];
+  Inflow_TotalPressure = new su2double[nMarker_EngineInflow];
+  Inflow_Temperature = new su2double[nMarker_EngineInflow];
+  Inflow_TotalTemperature = new su2double[nMarker_EngineInflow];
+  Inflow_RamDrag = new su2double[nMarker_EngineInflow];
+  Inflow_Force = new su2double[nMarker_EngineInflow];
+  Inflow_Power = new su2double[nMarker_EngineInflow];
+  
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineInflow[iMarker_EngineInflow];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ENGINE_INFLOW;
     Inflow_Mach[iMarker_EngineInflow] = 0.0;
     Inflow_Pressure[iMarker_EngineInflow] = 0.0;
+    Inflow_MassFlow[iMarker_EngineInflow] = 0.0;
+    Inflow_ReverseMassFlow[iMarker_EngineInflow] = 0.0;
+    Inflow_TotalPressure[iMarker_EngineInflow] = 0.0;
+    Inflow_Temperature[iMarker_EngineInflow] = 0.0;
+    Inflow_TotalTemperature[iMarker_EngineInflow] = 0.0;
+    Inflow_RamDrag[iMarker_EngineInflow] = 0.0;
+    Inflow_Force[iMarker_EngineInflow] = 0.0;
+    Inflow_Power[iMarker_EngineInflow] = 0.0;
     iMarker_CfgFile++;
   }
   
-  Bleed_MassFlow = new su2double[nMarker_EngineBleed];
-  Bleed_Temperature = new su2double[nMarker_EngineBleed];
-  Bleed_Pressure = new su2double[nMarker_EngineBleed];
-
-  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineBleed[iMarker_EngineBleed];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = ENGINE_BLEED;
-    Bleed_MassFlow[iMarker_EngineBleed] = 0.0;
-    Bleed_Temperature[iMarker_EngineBleed] = 0.0;
-    Bleed_Pressure[iMarker_EngineBleed] = 0.0;
-    iMarker_CfgFile++;
-  }
-
   Exhaust_Pressure = new su2double[nMarker_EngineExhaust];
   Exhaust_Temperature = new su2double[nMarker_EngineExhaust];
-
+  Exhaust_MassFlow = new su2double[nMarker_EngineExhaust];
+  Exhaust_TotalPressure = new su2double[nMarker_EngineExhaust];
+  Exhaust_TotalTemperature = new su2double[nMarker_EngineExhaust];
+  Exhaust_GrossThrust = new su2double[nMarker_EngineExhaust];
+  Exhaust_Force = new su2double[nMarker_EngineExhaust];
+  Exhaust_Power = new su2double[nMarker_EngineExhaust];
+  
   for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_EngineExhaust[iMarker_EngineExhaust];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = ENGINE_EXHAUST;
     Exhaust_Pressure[iMarker_EngineExhaust] = 0.0;
     Exhaust_Temperature[iMarker_EngineExhaust] = 0.0;
+    Exhaust_MassFlow[iMarker_EngineExhaust] = 0.0;
+    Exhaust_TotalPressure[iMarker_EngineExhaust] = 0.0;
+    Exhaust_TotalTemperature[iMarker_EngineExhaust] = 0.0;
+    Exhaust_GrossThrust[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Force[iMarker_EngineExhaust] = 0.0;
+    Exhaust_Power[iMarker_EngineExhaust] = 0.0;
     iMarker_CfgFile++;
   }
-
+  
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = SUPERSONIC_INLET;
@@ -2810,6 +3372,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Neumann[iMarker_Neumann];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = NEUMANN;
+    iMarker_CfgFile++;
+  }
+  
+  for (iMarker_Internal = 0; iMarker_Internal < nMarker_Internal; iMarker_Internal++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Internal[iMarker_Internal];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = INTERNAL_BOUNDARY;
     iMarker_CfgFile++;
   }
 
@@ -2901,16 +3469,23 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Plotting[iMarker_Plotting])
         Marker_CfgFile_Plotting[iMarker_CfgFile] = YES;
   }
+  
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+    Marker_CfgFile_Analyze[iMarker_CfgFile] = NO;
+    for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_Analyze[iMarker_Analyze])
+        Marker_CfgFile_Analyze[iMarker_CfgFile] = YES;
+  }
 
   /*--- Identification of Fluid-Structure interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-	unsigned short indexMarker=0;
+	unsigned short indexMarker = 0;
     Marker_CfgFile_FSIinterface[iMarker_CfgFile] = NO;
     for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_FSIinterface[iMarker_FSIinterface])
-      	indexMarker=(int)(iMarker_FSIinterface/2+1);
-        Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
+			indexMarker = (int)(iMarker_FSIinterface/2+1);
+	  Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -2940,14 +3515,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
-  iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
-  iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
-  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
+  iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement,
+  iMarker_Load, iMarker_FlowLoad, iMarker_Neumann, iMarker_Internal, iMarker_Monitoring,
+  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
-  iMarker_ActDisk_Outlet;
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
+  iMarker_ActDiskOutlet;
   
   
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
@@ -2957,7 +3532,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.1.2  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.3.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2980,6 +3555,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
+  cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
   cout << "|                                                                       |" << endl;
@@ -2999,11 +3576,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
-	if (FSI_Problem){
+	if (FSI_Problem) {
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
 
-  if (DiscreteAdjoint){
+  if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
      cout <<"based on the physical case: ";
   }
@@ -3141,7 +3718,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         else cout <<"."<< endl;
       }
     }
-
+    
     if (nMarker_Designing != 0) {
       cout << "Surface(s) where the objective function is evaluated: ";
       for (iMarker_Designing = 0; iMarker_Designing < nMarker_Designing; iMarker_Designing++) {
@@ -3151,23 +3728,37 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
       cout<< endl;
     }
-
-    cout << "Surface(s) plotted in the output file: ";
-    for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++) {
-      cout << Marker_Plotting[iMarker_Plotting];
-      if (iMarker_Plotting < nMarker_Plotting-1) cout << ", ";
-      else cout <<".";
+    
+    if (nMarker_Plotting != 0) {
+      cout << "Surface(s) plotted in the output file: ";
+      for (iMarker_Plotting = 0; iMarker_Plotting < nMarker_Plotting; iMarker_Plotting++) {
+        cout << Marker_Plotting[iMarker_Plotting];
+        if (iMarker_Plotting < nMarker_Plotting-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<< endl;
     }
-    cout<< endl;
-
-    cout << "Surface(s) belonging to the Fluid-Structure Interaction problem: ";
-    for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++) {
-      cout << Marker_FSIinterface[iMarker_FSIinterface];
-      if (iMarker_FSIinterface < nMarker_FSIinterface-1) cout << ", ";
-      else cout <<".";
+    
+    if (nMarker_Analyze != 0) {
+      cout << "Surface(s) to be analyzed in detail: ";
+      for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
+        cout << Marker_Analyze[iMarker_Analyze];
+        if (iMarker_Analyze < nMarker_Analyze-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<< endl;
     }
-    cout<<endl;
-
+    
+    if (nMarker_FSIinterface != 0) {
+      cout << "Surface(s) belonging to the Fluid-Structure Interaction problem: ";
+      for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++) {
+        cout << Marker_FSIinterface[iMarker_FSIinterface];
+        if (iMarker_FSIinterface < nMarker_FSIinterface-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
+    }
+    
     if (nMarker_DV != 0) {
       cout << "Surface(s) affected by the design variables: ";
       for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -3205,8 +3796,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
 	if (val_software == SU2_DOT) {
+    if (DiscreteAdjoint) {
+      cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
+    }else {
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
 	}
+  }
 
 	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
@@ -3236,8 +3831,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
-
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -3253,6 +3847,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+	  case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
           case TRANSLATION:           cout << "Translation design variable."; break;
           case SCALE:                 cout << "Scale design variable."; break;
           case NACA_4DIGITS:          cout << "NACA four digits <-> "; break;
@@ -3275,7 +3870,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           else cout << " <-> ";
         }
 
-        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++){
+        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++) {
           cout << DV_Value[iDV][iDV_Value];
           if (iDV_Value != nDV_Value[iDV]-1) cout << ", ";
         }
@@ -3290,6 +3885,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] == AIRFOIL) ) nParamDV = 2;
         if ((Design_Variable[iDV] ==  TRANSLATION) ||
             (Design_Variable[iDV] ==  NACA_4DIGITS) ||
+	    (Design_Variable[iDV] ==  CST) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
@@ -3363,31 +3959,36 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (((val_software == SU2_CFD) && ( ContinuousAdjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
-      case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
-      case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
-      case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
-      case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
-      case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
-      case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
-      case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
-      case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
-      case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
-      case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
-      case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
-      case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
-      case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
-      case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
-      case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
-      case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
-      case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
-      case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
-      case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
-      case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-      case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+		if (nObj==1) {
+      switch (Kind_ObjFunc[0]) {
+        case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
+        case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
+        case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
+        case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
+        case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
+        case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
+        case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
+        case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
+        case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
+        case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
+        case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
+        case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
+        case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
+        case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
+        case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
+        case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
+        case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
+        case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
+        case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
+        case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
+        case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
+        case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+      }
+		}
+		else {
+		  cout << "Weighted sum objective function." << endl;
 		}
 
 	}
@@ -3695,7 +4296,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-			if (Unsteady_Simulation != TIME_STEPPING){
+			if (Unsteady_Simulation != TIME_STEPPING) {
 				cout << "Courant-Friedrichs-Lewy number:   ";
 				cout.precision(3);
 				cout.width(6); cout << CFL[0];
@@ -3894,6 +4495,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_DOT) {
+    if (DiscreteAdjoint) {
+      cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
+      cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
+    }
     cout << "Output gradient file name: " << ObjFunc_Grad_FileName << ". " << endl;
   }
 
@@ -3902,10 +4507,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
         (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
-      if (Kind_ObjFunc == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
     }
   }
 
@@ -3973,6 +4578,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       else cout <<"."<< endl;
     }
   }
+  
+  if (nMarker_Fluid_InterfaceBound != 0) {
+    cout << "Fluid interface boundary marker(s): ";
+    for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
+      cout << Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
+      if (iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
 
   if (nMarker_Dirichlet != 0) {
     cout << "Dirichlet boundary marker(s): ";
@@ -3991,12 +4605,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       else cout <<"."<< endl;
     }
   }
-
-  if (nMarker_Neumann != 0) {
-    cout << "Neumann boundary marker(s): ";
-    for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
-      cout << Marker_Neumann[iMarker_Neumann];
-      if (iMarker_Neumann < nMarker_Neumann-1) cout << ", ";
+  
+  if (nMarker_Internal != 0) {
+    cout << "Internal boundary marker(s): ";
+    for (iMarker_Internal = 0; iMarker_Internal < nMarker_Internal; iMarker_Internal++) {
+      cout << Marker_Internal[iMarker_Internal];
+      if (iMarker_Internal < nMarker_Internal-1) cout << ", ";
       else cout <<"."<< endl;
     }
   }
@@ -4042,15 +4656,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
       cout << Marker_EngineInflow[iMarker_EngineInflow];
       if (iMarker_EngineInflow < nMarker_EngineInflow-1) cout << ", ";
-      else cout <<"."<< endl;
-    }
-  }
-  
-  if (nMarker_EngineBleed != 0) {
-    cout << "Engine bleed boundary marker(s): ";
-    for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++) {
-      cout << Marker_EngineBleed[iMarker_EngineBleed];
-      if (iMarker_EngineBleed < nMarker_EngineBleed-1) cout << ", ";
       else cout <<"."<< endl;
     }
   }
@@ -4172,20 +4777,20 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (nMarker_ActDisk_Inlet != 0) {
+  if (nMarker_ActDiskInlet != 0) {
 		cout << "Actuator disk (inlet) boundary marker(s): ";
-		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
-			cout << Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
-			if (iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet-1) cout << ", ";
+		for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+			cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+			if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
 			else cout <<"."<< endl;
 		}
 	}
 
-  if (nMarker_ActDisk_Outlet != 0) {
+  if (nMarker_ActDiskOutlet != 0) {
 		cout << "Actuator disk (outlet) boundary marker(s): ";
-		for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
-			cout << Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
-			if (iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet-1) cout << ", ";
+		for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+			cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+			if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
 			else cout <<"."<< endl;
 		}
 	}
@@ -4397,6 +5002,14 @@ unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) {
   return Marker_CfgFile_Plotting[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_Analyze(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Analyze[iMarker_CfgFile];
+}
+
+
 unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -4432,156 +5045,321 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
   return Marker_CfgFile_PerBound[iMarker_CfgFile];
 }
 
-CConfig::~CConfig(void) {
+int CConfig::GetMarker_FSIinterface(string val_marker) {	
+	  unsigned short iMarker_CfgFile;
+	  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    
+		  if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
+				return  Marker_CfgFile_FSIinterface[iMarker_CfgFile];
+    return 0;
+}
 
-  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
+
+CConfig::~CConfig(void) {
+	
+  unsigned long iDV, iMarker, iPeriodic, iFFD;
+
+  /*--- Delete all of the option objects in the global option map ---*/
+    
+  for(map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
+    delete itr->second;
+  }
+ 
+  if (RK_Alpha_Step != NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth  != NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth != NULL) delete [] MG_PostSmooth;
+  
   /*--- Free memory for Aeroelastic problems. ---*/
 
-
   if (Grid_Movement && Aeroelastic_Simulation) {
-    if (Aeroelastic_pitch!=NULL) delete[] Aeroelastic_pitch;
-    if (Aeroelastic_plunge!=NULL) delete[] Aeroelastic_plunge;
+    if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
+    if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
   }
-
 
   /*--- Free memory for unspecified grid motion parameters ---*/
 
- if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
+ if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
+  
+  if (Motion_Origin_X   != NULL) delete [] Motion_Origin_X;
+  if (Motion_Origin_Y   != NULL) delete [] Motion_Origin_Y;
+  if (Motion_Origin_Z   != NULL) delete [] Motion_Origin_Z;
+  if (MoveMotion_Origin != NULL) delete [] MoveMotion_Origin;
 
-  if (Motion_Origin_X != NULL)    delete [] Motion_Origin_X;
-  if (Motion_Origin_Y != NULL)    delete [] Motion_Origin_Y;
-  if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
-  if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
+  /*--- translation: ---*/
+  
+  if (Translation_Rate_X != NULL) delete [] Translation_Rate_X;
+  if (Translation_Rate_Y != NULL) delete [] Translation_Rate_Y;
+  if (Translation_Rate_Z != NULL) delete [] Translation_Rate_Z;
 
   /*--- rotation: ---*/
-
-  if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
-  if (Rotation_Rate_Y != NULL)    delete [] Rotation_Rate_Y;
-  if (Rotation_Rate_Z != NULL)    delete [] Rotation_Rate_Z;
+  
+  if (Rotation_Rate_X != NULL) delete [] Rotation_Rate_X;
+  if (Rotation_Rate_Y != NULL) delete [] Rotation_Rate_Y;
+  if (Rotation_Rate_Z != NULL) delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
-
-  if (Pitching_Omega_X != NULL)    delete [] Pitching_Omega_X;
-  if (Pitching_Omega_Y != NULL)    delete [] Pitching_Omega_Y;
-  if (Pitching_Omega_Z != NULL)    delete [] Pitching_Omega_Z;
+  
+  if (Pitching_Omega_X != NULL) delete [] Pitching_Omega_X;
+  if (Pitching_Omega_Y != NULL) delete [] Pitching_Omega_Y;
+  if (Pitching_Omega_Z != NULL) delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
-
-  if (Pitching_Ampl_X != NULL)    delete [] Pitching_Ampl_X;
-  if (Pitching_Ampl_Y != NULL)    delete [] Pitching_Ampl_Y;
-  if (Pitching_Ampl_Z != NULL)    delete [] Pitching_Ampl_Z;
+  
+  if (Pitching_Ampl_X != NULL) delete [] Pitching_Ampl_X;
+  if (Pitching_Ampl_Y != NULL) delete [] Pitching_Ampl_Y;
+  if (Pitching_Ampl_Z != NULL) delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
-
-  if (Pitching_Phase_X != NULL)    delete [] Pitching_Phase_X;
-  if (Pitching_Phase_Y != NULL)    delete [] Pitching_Phase_Y;
-  if (Pitching_Phase_Z != NULL)    delete [] Pitching_Phase_Z;
+  
+  if (Pitching_Phase_X != NULL) delete [] Pitching_Phase_X;
+  if (Pitching_Phase_Y != NULL) delete [] Pitching_Phase_Y;
+  if (Pitching_Phase_Z != NULL) delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
-
-  if (Plunging_Omega_X != NULL)    delete [] Plunging_Omega_X;
-  if (Plunging_Omega_Y != NULL)    delete [] Plunging_Omega_Y;
-  if (Plunging_Omega_Z != NULL)    delete [] Plunging_Omega_Z;
+  
+  if (Plunging_Omega_X != NULL) delete [] Plunging_Omega_X;
+  if (Plunging_Omega_Y != NULL) delete [] Plunging_Omega_Y;
+  if (Plunging_Omega_Z != NULL) delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
+  
+  if (Plunging_Ampl_X != NULL) delete [] Plunging_Ampl_X;
+  if (Plunging_Ampl_Y != NULL) delete [] Plunging_Ampl_Y;
+  if (Plunging_Ampl_Z != NULL) delete [] Plunging_Ampl_Z;
 
-  if (Plunging_Ampl_X != NULL)    delete [] Plunging_Ampl_X;
-  if (Plunging_Ampl_Y != NULL)    delete [] Plunging_Ampl_Y;
-  if (Plunging_Ampl_Z != NULL)    delete [] Plunging_Ampl_Z;
+  /*--- reference origin for moments ---*/
+  
+  if (RefOriginMoment   != NULL) delete [] RefOriginMoment;
+  if (RefOriginMoment_X != NULL) delete [] RefOriginMoment_X;
+  if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
+  if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
 
-  if (RefOriginMoment != NULL)    delete [] RefOriginMoment;
-  if (RefOriginMoment_X != NULL)    delete [] RefOriginMoment_X;
-  if (RefOriginMoment_Y != NULL)    delete [] RefOriginMoment_Y;
-  if (RefOriginMoment_Z != NULL)    delete [] RefOriginMoment_Z;
-
+  /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
+    
+  if (Omega_HB != NULL) delete [] Omega_HB;
+    
   /*--- Marker pointers ---*/
-
-  if (Marker_CfgFile_Out_1D != NULL)   delete[] Marker_CfgFile_Out_1D;
-  if (Marker_All_Out_1D != NULL)      delete[] Marker_All_Out_1D;
-  if (Marker_CfgFile_GeoEval != NULL)  delete[] Marker_CfgFile_GeoEval;
-  if (Marker_All_GeoEval != NULL)     delete[] Marker_All_GeoEval;
-  if (Marker_CfgFile_TagBound != NULL)      delete[] Marker_CfgFile_TagBound;
-  if (Marker_All_TagBound != NULL)         delete[] Marker_All_TagBound;
+  
+  if (Marker_CfgFile_Out_1D != NULL) delete[] Marker_CfgFile_Out_1D;
+  if (Marker_All_Out_1D     != NULL) delete[] Marker_All_Out_1D;
+  
+  if (Marker_CfgFile_GeoEval != NULL) delete[] Marker_CfgFile_GeoEval;
+  if (Marker_All_GeoEval     != NULL) delete[] Marker_All_GeoEval;
+  
+  if (Marker_CfgFile_TagBound != NULL) delete[] Marker_CfgFile_TagBound;
+  if (Marker_All_TagBound     != NULL) delete[] Marker_All_TagBound;
+  
   if (Marker_CfgFile_KindBC != NULL) delete[] Marker_CfgFile_KindBC;
-  if (Marker_All_KindBC != NULL)    delete[] Marker_All_KindBC;
-  if (Marker_CfgFile_Monitoring != NULL)    delete[] Marker_CfgFile_Monitoring;
-  if (Marker_All_Monitoring != NULL)   delete[] Marker_All_Monitoring;
+  if (Marker_All_KindBC     != NULL) delete[] Marker_All_KindBC;
+  
+  if (Marker_CfgFile_Monitoring != NULL) delete[] Marker_CfgFile_Monitoring;
+  if (Marker_All_Monitoring     != NULL) delete[] Marker_All_Monitoring;
+  
   if (Marker_CfgFile_Designing != NULL) delete[] Marker_CfgFile_Designing;
-  if (Marker_All_Designing != NULL)    delete[] Marker_All_Designing;
-  if (Marker_CfgFile_Plotting != NULL)  delete[] Marker_CfgFile_Plotting;
-  if (Marker_CfgFile_FSIinterface != NULL)  delete[] Marker_CfgFile_FSIinterface;
-  if (Marker_All_Plotting != NULL)     delete[] Marker_All_Plotting;
-  if (Marker_All_FSIinterface != NULL)     delete[] Marker_All_FSIinterface;
-  if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
-  if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
-  if (Marker_CfgFile_Moving != NULL)   delete[] Marker_CfgFile_Moving;
-  if (Marker_All_Moving != NULL)      delete[] Marker_All_Moving;
-  if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
-  if (Marker_All_PerBound != NULL)    delete[] Marker_All_PerBound;
+  if (Marker_All_Designing     != NULL) delete[] Marker_All_Designing;
+  
+  if (Marker_CfgFile_Plotting != NULL) delete[] Marker_CfgFile_Plotting;
+  if (Marker_All_Plotting     != NULL) delete[] Marker_All_Plotting;
+  
+  if (Marker_CfgFile_Analyze != NULL) delete[] Marker_CfgFile_Analyze;
+  if (Marker_All_Analyze  != NULL) delete[] Marker_All_Analyze;
 
-  if (Marker_DV!=NULL)               delete[] Marker_DV;
+  if (Marker_CfgFile_FSIinterface != NULL) delete[] Marker_CfgFile_FSIinterface;
+  if (Marker_All_FSIinterface     != NULL) delete[] Marker_All_FSIinterface;
+  
+  if (Marker_CfgFile_DV != NULL) delete[] Marker_CfgFile_DV;
+  if (Marker_All_DV     != NULL) delete[] Marker_All_DV;
+  
+  if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
+  if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+  
+  if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
+  if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
+
+  if (Marker_DV!= NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
   if (Marker_Monitoring != NULL)      delete[] Marker_Monitoring;
   if (Marker_Designing != NULL)       delete[] Marker_Designing;
   if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
+  if (Marker_Analyze != NULL)        delete[] Marker_Analyze;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
-  if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
-  if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
-  if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
-  if (DV_Value != NULL)    delete[] DV_Value;
+
+  if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
+  if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
+
+  if (DV_Value != NULL) {
+    for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
+    delete [] DV_Value;
+  }
+  
+  if (ParamDV != NULL) {
+    for (iDV = 0; iDV < nDV; iDV++) delete[] ParamDV[iDV];
+    delete [] ParamDV;
+  }
+  
+  if (CoordFFDBox != NULL) {
+    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] CoordFFDBox[iFFD];
+    delete [] CoordFFDBox;
+  }
+  
+  if (DegreeFFDBox != NULL) {
+    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] DegreeFFDBox[iFFD];
+    delete [] DegreeFFDBox;
+  }
+  
   if (Design_Variable != NULL)    delete[] Design_Variable;
   if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
+  
   if (Exhaust_Temperature_Target != NULL)    delete[]  Exhaust_Temperature_Target;
   if (Exhaust_Pressure_Target != NULL)    delete[]  Exhaust_Pressure_Target;
-  if (Inlet_Ttotal != NULL)    delete[]  Inlet_Ttotal;
-  if (Inlet_Ptotal != NULL)    delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir != NULL)    delete[] Inlet_FlowDir;
-  if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
-  if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
-  if (Inlet_Velocity != NULL)    delete[] Inlet_Velocity ;
-  if (Inflow_Mach_Target != NULL)    delete[] Inflow_Mach_Target;
-  if (Inflow_Mach != NULL)    delete[]  Inflow_Mach;
-  if (Inflow_Pressure != NULL)    delete[] Inflow_Pressure;
-  if (Bleed_MassFlow_Target != NULL)    delete[] Bleed_MassFlow_Target;
-  if (Bleed_MassFlow != NULL)    delete[]  Bleed_MassFlow;
-  if (Bleed_Temperature_Target != NULL)    delete[] Bleed_Temperature_Target;
-  if (Bleed_Temperature != NULL)    delete[]  Bleed_Temperature;
-  if (Bleed_Pressure != NULL)    delete[] Bleed_Pressure;
   if (Exhaust_Pressure != NULL)    delete[] Exhaust_Pressure;
   if (Exhaust_Temperature != NULL)    delete[] Exhaust_Temperature;
+  if (Exhaust_MassFlow != NULL)    delete[] Exhaust_MassFlow;
+  if (Exhaust_TotalPressure != NULL)    delete[] Exhaust_TotalPressure;
+  if (Exhaust_TotalTemperature != NULL)    delete[] Exhaust_TotalTemperature;
+  if (Exhaust_GrossThrust != NULL)    delete[] Exhaust_GrossThrust;
+  if (Exhaust_Force != NULL)    delete[] Exhaust_Force;
+  if (Exhaust_Power != NULL)    delete[] Exhaust_Power;
+
+  if (Inflow_Mach != NULL)    delete[]  Inflow_Mach;
+  if (Inflow_Pressure != NULL)    delete[] Inflow_Pressure;
+  if (Inflow_MassFlow != NULL)    delete[] Inflow_MassFlow;
+  if (Inflow_ReverseMassFlow != NULL)    delete[] Inflow_ReverseMassFlow;
+  if (Inflow_TotalPressure != NULL)    delete[] Inflow_TotalPressure;
+  if (Inflow_Temperature != NULL)    delete[] Inflow_Temperature;
+  if (Inflow_TotalTemperature != NULL)    delete[] Inflow_TotalTemperature;
+  if (Inflow_RamDrag != NULL)    delete[] Inflow_RamDrag;
+  if (Inflow_Force != NULL)    delete[]  Inflow_Force;
+  if (Inflow_Power != NULL)    delete[] Inflow_Power;
+
+  if (Engine_Power != NULL)    delete[]  Engine_Power;
+  if (Engine_Mach != NULL)    delete[]  Engine_Mach;
+  if (Engine_Force != NULL)    delete[]  Engine_Force;
+  if (Engine_NetThrust != NULL)    delete[]  Engine_NetThrust;
+  if (Engine_GrossThrust != NULL)    delete[]  Engine_GrossThrust;
+  if (Engine_Area != NULL)    delete[]  Engine_Area;
+  if (EngineInflow_Target != NULL)    delete[] EngineInflow_Target;
+
+  if (ActDiskInlet_MassFlow != NULL)    delete[]  ActDiskInlet_MassFlow;
+  if (ActDiskInlet_Temperature != NULL)    delete[]  ActDiskInlet_Temperature;
+  if (ActDiskInlet_TotalTemperature != NULL)    delete[]  ActDiskInlet_TotalTemperature;
+  if (ActDiskInlet_Pressure != NULL)    delete[]  ActDiskInlet_Pressure;
+  if (ActDiskInlet_TotalPressure != NULL)    delete[]  ActDiskInlet_TotalPressure;
+  if (ActDiskInlet_RamDrag != NULL)    delete[]  ActDiskInlet_RamDrag;
+  if (ActDiskInlet_Force != NULL)    delete[]  ActDiskInlet_Force;
+  if (ActDiskInlet_Power != NULL)    delete[]  ActDiskInlet_Power;
+
+  if (ActDiskOutlet_MassFlow != NULL)    delete[]  ActDiskOutlet_MassFlow;
+  if (ActDiskOutlet_Temperature != NULL)    delete[]  ActDiskOutlet_Temperature;
+  if (ActDiskOutlet_TotalTemperature != NULL)    delete[]  ActDiskOutlet_TotalTemperature;
+  if (ActDiskOutlet_Pressure != NULL)    delete[]  ActDiskOutlet_Pressure;
+  if (ActDiskOutlet_TotalPressure != NULL)    delete[]  ActDiskOutlet_TotalPressure;
+  if (ActDiskOutlet_GrossThrust != NULL)    delete[]  ActDiskOutlet_GrossThrust;
+  if (ActDiskOutlet_Force != NULL)    delete[]  ActDiskOutlet_Force;
+  if (ActDiskOutlet_Power != NULL)    delete[]  ActDiskOutlet_Power;
+
+  if (ActDisk_DeltaPress != NULL)    delete[]  ActDisk_DeltaPress;
+  if (ActDisk_DeltaTemp != NULL)    delete[]  ActDisk_DeltaTemp;
+  if (ActDisk_TotalPressRatio != NULL)    delete[]  ActDisk_TotalPressRatio;
+  if (ActDisk_TotalTempRatio != NULL)    delete[]  ActDisk_TotalTempRatio;
+  if (ActDisk_StaticPressRatio != NULL)    delete[]  ActDisk_StaticPressRatio;
+  if (ActDisk_StaticTempRatio != NULL)    delete[]  ActDisk_StaticTempRatio;
+  if (ActDisk_Power != NULL)    delete[]  ActDisk_Power;
+  if (ActDisk_MassFlow != NULL)    delete[]  ActDisk_MassFlow;
+  if (ActDisk_Mach != NULL)    delete[]  ActDisk_Mach;
+  if (ActDisk_Force != NULL)    delete[]  ActDisk_Force;
+  if (ActDisk_NetThrust != NULL)    delete[]  ActDisk_NetThrust;
+  if (ActDisk_BCThrust != NULL)    delete[]  ActDisk_BCThrust;
+  if (ActDisk_BCThrust_Old != NULL)    delete[]  ActDisk_BCThrust_Old;
+  if (ActDisk_GrossThrust != NULL)    delete[]  ActDisk_GrossThrust;
+  if (ActDisk_Area != NULL)    delete[]  ActDisk_Area;
+  if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
+  
+  if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
+  if (Surface_DC60 != NULL)    delete[]  Surface_DC60;
+  if (Surface_IDC != NULL)    delete[]  Surface_IDC;
+  if (Surface_IDC_Mach != NULL)    delete[]  Surface_IDC_Mach;
+  if (Surface_IDR != NULL)    delete[]  Surface_IDR;
+
+  if (Inlet_Ttotal != NULL) delete[]  Inlet_Ttotal;
+  if (Inlet_Ptotal != NULL) delete[]  Inlet_Ptotal;
+  if (Inlet_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Inlet; iMarker++)
+      delete [] Inlet_FlowDir[iMarker];
+    delete [] Inlet_FlowDir;
+  }
+  
+  if (Inlet_Velocity != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
+      delete [] Inlet_Velocity[iMarker];
+    delete [] Inlet_Velocity;
+  }
+  
+  if (Riemann_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
+      delete [] Riemann_FlowDir[iMarker];
+    delete [] Riemann_FlowDir;
+  }
+  
+  if (NRBC_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++)
+      delete [] NRBC_FlowDir[iMarker];
+    delete [] NRBC_FlowDir;
+  }
+  
+  if (Load_Sine_Dir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Load_Sine; iMarker++)
+      delete [] Load_Sine_Dir[iMarker];
+    delete [] Load_Sine_Dir;
+  }
+  
+  if (Load_Dir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Load_Dir; iMarker++)
+      delete [] Load_Dir[iMarker];
+    delete [] Load_Dir;
+  }
+  
+  if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
+  if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
   if (Outlet_Pressure != NULL)    delete[] Outlet_Pressure;
   if (Isothermal_Temperature != NULL)    delete[] Isothermal_Temperature;
   if (Heat_Flux != NULL)    delete[] Heat_Flux;
   if (Displ_Value != NULL)    delete[] Displ_Value;
   if (Load_Value != NULL)    delete[] Load_Value;
-  if (Load_Dir != NULL)    delete[] Load_Dir;
   if (Load_Dir_Multiplier != NULL)    delete[] Load_Dir_Multiplier;
   if (Load_Dir_Value != NULL)    delete[] Load_Dir_Value;
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
-  if (Periodic_RotCenter != NULL)    delete[] Periodic_RotCenter;
-  if (Periodic_RotAngles != NULL)    delete[] Periodic_RotAngles;
-  if (Periodic_Translation != NULL)    delete[] Periodic_Translation;
-  if (Periodic_Center != NULL)    delete[] Periodic_Center;
-  if (Periodic_Rotation != NULL)    delete[] Periodic_Rotation;
-  if (Periodic_Translate != NULL)    delete[] Periodic_Translate;
 
-  if (ParamDV!=NULL)                  delete[] ParamDV;
+  /*--- related to periodic boundary conditions ---*/
+  
+  for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
+    if (Periodic_RotCenter   != NULL) delete [] Periodic_RotCenter[iMarker];
+    if (Periodic_RotAngles   != NULL) delete [] Periodic_RotAngles[iMarker];
+    if (Periodic_Translation != NULL) delete [] Periodic_Translation[iMarker];
+  }
+  if (Periodic_RotCenter   != NULL) delete[] Periodic_RotCenter;
+  if (Periodic_RotAngles   != NULL) delete[] Periodic_RotAngles;
+  if (Periodic_Translation != NULL) delete[] Periodic_Translation;
+
+  for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
+    if (Periodic_Center    != NULL) delete [] Periodic_Center[iPeriodic];
+    if (Periodic_Rotation  != NULL) delete [] Periodic_Rotation[iPeriodic];
+    if (Periodic_Translate != NULL) delete [] Periodic_Translate[iPeriodic];
+  }
+  if (Periodic_Center      != NULL) delete[] Periodic_Center;
+  if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
+  if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
+  
   if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
-  if (Section_Location != NULL)       delete[] Section_Location;
-  if (Kappa_Flow != NULL )            delete[] Kappa_Flow;
-  if (Kappa_AdjFlow != NULL)          delete[] Kappa_AdjFlow;
   if (PlaneTag != NULL)               delete[] PlaneTag;
-  if (CFL_AdaptParam != NULL)         delete[] CFL_AdaptParam;
-  if (CFL!=NULL)                      delete[] CFL;
-
+  if (CFL!= NULL)                      delete[] CFL;
+  
   /*--- String markers ---*/
   if (Marker_Euler != NULL )              delete[] Marker_Euler;
   if (Marker_FarField != NULL )           delete[] Marker_FarField;
@@ -4592,6 +5370,7 @@ CConfig::~CConfig(void) {
   if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
   if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
   if (Marker_InterfaceBound != NULL )     delete[] Marker_InterfaceBound;
+  if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
   if (Marker_Dirichlet != NULL )          delete[] Marker_Dirichlet;
   if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
   if (Marker_Supersonic_Inlet != NULL )   delete[] Marker_Supersonic_Inlet;
@@ -4600,7 +5379,6 @@ CConfig::~CConfig(void) {
   if (Marker_Out_1D != NULL )             delete[] Marker_Out_1D;
   if (Marker_Isothermal != NULL )         delete[] Marker_Isothermal;
   if (Marker_EngineInflow != NULL )      delete[] Marker_EngineInflow;
-  if (Marker_EngineBleed != NULL )      delete[] Marker_EngineBleed;
   if (Marker_EngineExhaust != NULL )     delete[] Marker_EngineExhaust;
   if (Marker_Displacement != NULL )       delete[] Marker_Displacement;
   if (Marker_Load != NULL )               delete[] Marker_Load;
@@ -4608,8 +5386,42 @@ CConfig::~CConfig(void) {
   if (Marker_Load_Sine != NULL )               delete[] Marker_Load_Sine;
   if (Marker_FlowLoad != NULL )           delete[] Marker_FlowLoad;
   if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
+  if (Marker_Internal != NULL )            delete[] Marker_Internal;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
+  if (Int_Coeffs != NULL) delete [] Int_Coeffs;
+  
+  /*--- Delete some arrays needed just for initializing options. ---*/
+  
+  if (default_vel_inf       != NULL) delete [] default_vel_inf;
+  if (default_eng_box       != NULL) delete [] default_eng_box;
+  if (default_eng_val       != NULL) delete [] default_eng_val;
+  if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
+  if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
+  if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
+  if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
+  if (default_geo_loc       != NULL) delete [] default_geo_loc;
+  if (default_distortion    != NULL) delete [] default_distortion;
+  if (default_ea_lim        != NULL) delete [] default_ea_lim;
+  if (default_grid_fix      != NULL) delete [] default_grid_fix;
+  if (default_inc_crit      != NULL) delete [] default_inc_crit;
+ 
+  if (FFDTag != NULL) delete [] FFDTag;
+  if (nDV_Value != NULL) delete [] nDV_Value;
+  if (TagFFDBox != NULL) delete [] TagFFDBox;
+  
+  if (Kind_Data_Riemann != NULL) delete [] Kind_Data_Riemann;
+  if (Riemann_Var1 != NULL) delete [] Riemann_Var1;
+  if (Riemann_Var2 != NULL) delete [] Riemann_Var2;
+  if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
+  if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
+  if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
+  if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
+  if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
+  if (Kind_TurboPerformance != NULL) delete [] Kind_TurboPerformance;
+  if (Marker_Riemann != NULL) delete [] Marker_Riemann;
+  if (Marker_NRBC != NULL) delete [] Marker_NRBC;
+ 
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
@@ -4625,7 +5437,8 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   }
 
   /*--- Append iteration number for unsteady cases ---*/
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL) || (Wrt_Dynamic)) {
+
+  if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
@@ -4645,7 +5458,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
     string multizone_filename = val_filename;
     char buffer[50];
     
-    if (GetnZone() > 1){
+    if (GetnZone() > 1 ) {
         unsigned short lastindex = multizone_filename.find_last_of(".");
         multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -4664,8 +5477,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-
-    switch (Kind_ObjFunc) {
+    if (nObj==1) {
+      switch (Kind_ObjFunc[0]) {
       case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
       case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf";      break;
@@ -4690,6 +5503,10 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
+      }
+    }
+    else{
+      AdjExt = "_combo";
     }
     Filename.append(AdjExt);
 
@@ -4900,75 +5717,147 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
   return kMarker_All;
 }
 
-su2double* CConfig::GetActDisk_Origin(string val_marker) {
+su2double CConfig::GetActDisk_NetThrust(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_Origin[iMarker_ActDisk];
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_NetThrust[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_RootRadius(string val_marker) {
+su2double CConfig::GetActDisk_Power(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_RootRadius[iMarker_ActDisk];
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Power[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_TipRadius(string val_marker) {
+su2double CConfig::GetActDisk_MassFlow(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_TipRadius[iMarker_ActDisk];
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_MassFlow[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_PressJump(string val_marker) {
+su2double CConfig::GetActDisk_Mach(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_PressJump[iMarker_ActDisk];
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Mach[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_TempJump(string val_marker) {
+su2double CConfig::GetActDisk_Force(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_TempJump[iMarker_ActDisk];
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Force[iMarker_ActDisk];
 }
 
-su2double CConfig::GetActDisk_Omega(string val_marker) {
+su2double CConfig::GetActDisk_BCThrust(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_Omega[iMarker_ActDisk];
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_BCThrust[iMarker_ActDisk];
 }
 
-unsigned short CConfig::GetActDisk_Distribution(string val_marker) {
+su2double CConfig::GetActDisk_BCThrust_Old(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
-  return ActDisk_Distribution[iMarker_ActDisk];
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_BCThrust_Old[iMarker_ActDisk];
 }
 
-unsigned short CConfig::GetMarker_ActDisk_Outlet(string val_marker) {
+void CConfig::SetActDisk_BCThrust(string val_marker, su2double val_actdisk_bcthrust) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  ActDisk_BCThrust[iMarker_ActDisk] = val_actdisk_bcthrust;
+}
+
+void CConfig::SetActDisk_BCThrust_Old(string val_marker, su2double val_actdisk_bcthrust_old) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  ActDisk_BCThrust_Old[iMarker_ActDisk] = val_actdisk_bcthrust_old;
+}
+
+su2double CConfig::GetActDisk_Area(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Area[iMarker_ActDisk];
+}
+
+su2double CConfig::GetActDisk_ReverseMassFlow(string val_marker) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_ReverseMassFlow[iMarker_ActDisk];
+}
+
+su2double CConfig::GetActDisk_PressJump(string val_marker, unsigned short val_value) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_PressJump[iMarker_ActDisk][val_value];
+}
+
+su2double CConfig::GetActDisk_TempJump(string val_marker, unsigned short val_value) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_TempJump[iMarker_ActDisk][val_value];;
+}
+
+su2double CConfig::GetActDisk_Omega(string val_marker, unsigned short val_value) {
+  unsigned short iMarker_ActDisk;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
+  return ActDisk_Omega[iMarker_ActDisk][val_value];;
+}
+
+unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) {
   unsigned short iMarker_ActDisk, kMarker_All;
-
+  
   /*--- Find the marker for this actuator disk inlet. ---*/
-
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if (Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) break;
-
+  
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if (Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) break;
+  
   /*--- Find and return global marker index for the actuator disk outlet. ---*/
-
+  
   for (kMarker_All = 0; kMarker_All < nMarker_CfgFile; kMarker_All++)
-    if (Marker_ActDisk_Outlet[iMarker_ActDisk] == Marker_All_TagBound[kMarker_All]) break;
+    if (Marker_ActDiskOutlet[iMarker_ActDisk] == Marker_CfgFile_TagBound[kMarker_All]) break;
+  
+  return kMarker_All;
+}
 
+unsigned short CConfig::GetMarker_CfgFile_EngineExhaust(string val_marker) {
+  unsigned short iMarker_Engine, kMarker_All;
+  
+  /*--- Find the marker for this engine inflow. ---*/
+  
+  for (iMarker_Engine = 0; iMarker_Engine < nMarker_EngineInflow; iMarker_Engine++)
+    if (Marker_EngineInflow[iMarker_Engine] == val_marker) break;
+  
+  /*--- Find and return global marker index for the engine exhaust. ---*/
+  
+  for (kMarker_All = 0; kMarker_All < nMarker_CfgFile; kMarker_All++)
+    if (Marker_EngineExhaust[iMarker_Engine] == Marker_CfgFile_TagBound[kMarker_All]) break;
+  
   return kMarker_All;
 }
 
@@ -4981,7 +5870,13 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
   Periodic_Center    = new su2double*[nPeriodic_Index];
   Periodic_Rotation  = new su2double*[nPeriodic_Index];
   Periodic_Translate = new su2double*[nPeriodic_Index];
-
+  
+  for (unsigned long i = 0; i < nPeriodic_Index; i++) {
+    Periodic_Center[i]    = new su2double[3];
+    Periodic_Rotation[i]  = new su2double[3];
+    Periodic_Translate[i] = new su2double[3];
+  }
+  
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {
@@ -5156,25 +6051,11 @@ su2double CConfig::GetWall_HeatFlux(string val_marker) {
   return Heat_Flux[iMarker_HeatFlux];
 }
 
-su2double CConfig::GetInflow_Mach_Target(string val_marker) {
+su2double CConfig::GetEngineInflow_Target(string val_marker) {
   unsigned short iMarker_EngineInflow;
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
     if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
-  return Inflow_Mach_Target[iMarker_EngineInflow];
-}
-
-su2double CConfig::GetBleed_MassFlow_Target(string val_marker) {
-  unsigned short iMarker_EngineBleed;
-  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
-    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
-  return Bleed_MassFlow_Target[iMarker_EngineBleed];
-}
-
-su2double CConfig::GetBleed_Temperature_Target(string val_marker) {
-  unsigned short iMarker_EngineBleed;
-  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
-    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
-  return Bleed_Temperature_Target[iMarker_EngineBleed];
+  return EngineInflow_Target[iMarker_EngineInflow];
 }
 
 su2double CConfig::GetInflow_Pressure(string val_marker) {
@@ -5184,25 +6065,60 @@ su2double CConfig::GetInflow_Pressure(string val_marker) {
   return Inflow_Pressure[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetBleed_Pressure(string val_marker) {
-  unsigned short iMarker_EngineBleed;
-  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
-    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
-  return Bleed_Pressure[iMarker_EngineBleed];
+su2double CConfig::GetInflow_MassFlow(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_MassFlow[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetExhaust_Pressure(string val_marker) {
-  unsigned short iMarker_EngineExhaust;
-  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
-  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
-  return Exhaust_Pressure[iMarker_EngineExhaust];
+su2double CConfig::GetInflow_ReverseMassFlow(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_ReverseMassFlow[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetExhaust_Temperature(string val_marker) {
-  unsigned short iMarker_EngineExhaust;
-  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
-  if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
-  return Exhaust_Temperature[iMarker_EngineExhaust];
+su2double CConfig::GetInflow_TotalPressure(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_TotalPressure[iMarker_EngineInflow];
+}
+
+su2double CConfig::GetInflow_Temperature(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Temperature[iMarker_EngineInflow];
+}
+
+su2double CConfig::GetInflow_TotalTemperature(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_TotalTemperature[iMarker_EngineInflow];
+}
+
+su2double CConfig::GetInflow_RamDrag(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_RamDrag[iMarker_EngineInflow];
+}
+
+su2double CConfig::GetInflow_Force(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Force[iMarker_EngineInflow];
+}
+
+su2double CConfig::GetInflow_Power(string val_marker) {
+  unsigned short iMarker_EngineInflow;
+  for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++)
+    if (Marker_EngineInflow[iMarker_EngineInflow] == val_marker) break;
+  return Inflow_Power[iMarker_EngineInflow];
 }
 
 su2double CConfig::GetInflow_Mach(string val_marker) {
@@ -5212,18 +6128,172 @@ su2double CConfig::GetInflow_Mach(string val_marker) {
   return Inflow_Mach[iMarker_EngineInflow];
 }
 
-su2double CConfig::GetBleed_MassFlow(string val_marker) {
-  unsigned short iMarker_EngineBleed;
-  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
-    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
-  return Bleed_MassFlow[iMarker_EngineBleed];
+su2double CConfig::GetExhaust_Pressure(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Pressure[iMarker_EngineExhaust];
 }
 
-su2double CConfig::GetBleed_Temperature(string val_marker) {
-  unsigned short iMarker_EngineBleed;
-  for (iMarker_EngineBleed = 0; iMarker_EngineBleed < nMarker_EngineBleed; iMarker_EngineBleed++)
-    if (Marker_EngineBleed[iMarker_EngineBleed] == val_marker) break;
-  return Bleed_Temperature[iMarker_EngineBleed];
+su2double CConfig::GetExhaust_Temperature(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Temperature[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetExhaust_MassFlow(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_MassFlow[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetExhaust_TotalPressure(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_TotalPressure[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetExhaust_TotalTemperature(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_TotalTemperature[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetExhaust_GrossThrust(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_GrossThrust[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetExhaust_Force(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Force[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetExhaust_Power(string val_marker) {
+  unsigned short iMarker_EngineExhaust;
+  for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++)
+    if (Marker_EngineExhaust[iMarker_EngineExhaust] == val_marker) break;
+  return Exhaust_Power[iMarker_EngineExhaust];
+}
+
+su2double CConfig::GetActDiskInlet_Pressure(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_Pressure[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskInlet_TotalPressure(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_TotalPressure[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskInlet_RamDrag(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_RamDrag[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskInlet_Force(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_Force[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskInlet_Power(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_Power[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskOutlet_Pressure(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_Pressure[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskOutlet_TotalPressure(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_TotalPressure[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskOutlet_GrossThrust(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_GrossThrust[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskOutlet_Force(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_Force[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskOutlet_Power(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_Power[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskInlet_Temperature(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_Temperature[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskInlet_TotalTemperature(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_TotalTemperature[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskOutlet_Temperature(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_Temperature[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskOutlet_TotalTemperature(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_TotalTemperature[iMarker_ActDiskOutlet];
+}
+
+su2double CConfig::GetActDiskInlet_MassFlow(string val_marker) {
+  unsigned short iMarker_ActDiskInlet;
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++)
+    if (Marker_ActDiskInlet[iMarker_ActDiskInlet] == val_marker) break;
+  return ActDiskInlet_MassFlow[iMarker_ActDiskInlet];
+}
+
+su2double CConfig::GetActDiskOutlet_MassFlow(string val_marker) {
+  unsigned short iMarker_ActDiskOutlet;
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++)
+    if (Marker_ActDiskOutlet[iMarker_ActDiskOutlet] == val_marker) break;
+  return ActDiskOutlet_MassFlow[iMarker_ActDiskOutlet];
 }
 
 su2double CConfig::GetDispl_Value(string val_marker) {

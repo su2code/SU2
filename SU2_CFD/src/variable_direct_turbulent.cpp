@@ -2,7 +2,7 @@
  * \file variable_direct_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -34,7 +36,7 @@
 CTurbVariable::CTurbVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
-	TS_Source = NULL;
+	HB_Source = NULL;
   
 }
 
@@ -45,14 +47,14 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
 
   /*--- Array initialization ---*/
   
-	TS_Source = NULL;
+	HB_Source = NULL;
   
-	/*--- Allocate space for the time spectral source terms ---*/
+	/*--- Allocate space for the harmonic balance source terms ---*/
   
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new su2double[nVar];
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+		HB_Source = new su2double[nVar];
 		for (iVar = 0; iVar < nVar; iVar++)
-			TS_Source[iVar] = 0.0;
+			HB_Source[iVar] = 0.0;
 	}
   
 	/*--- Allocate space for the limiter ---*/
@@ -100,7 +102,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
 
 CTurbSAVariable::~CTurbSAVariable(void) {
   
-  if (TS_Source != NULL) delete [] TS_Source;
+  if (HB_Source != NULL) delete [] HB_Source;
   
 }
 
@@ -128,7 +130,7 @@ CTurbMLVariable::CTurbMLVariable(su2double val_nu_tilde, su2double val_muT, unsi
 
 CTurbMLVariable::~CTurbMLVariable(void) {
   
-  if (TS_Source != NULL) delete [] TS_Source;
+  if (HB_Source != NULL) delete [] HB_Source;
   
 }
 
@@ -168,7 +170,7 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
 
 CTurbSSTVariable::~CTurbSSTVariable(void) {
 
-  if (TS_Source != NULL) delete [] TS_Source;
+  if (HB_Source != NULL) delete [] HB_Source;
   
 }
 

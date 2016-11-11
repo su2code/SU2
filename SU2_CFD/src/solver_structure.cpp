@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -95,8 +97,9 @@ CSolver::~CSolver(void) {
   if (Point_Max != NULL) delete [] Point_Max;
 
   if (Point_Max_Coord != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete Point_Max_Coord[iVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Point_Max_Coord[iVar];
+    }
     delete [] Point_Max_Coord;
   }
 
@@ -116,53 +119,51 @@ CSolver::~CSolver(void) {
 
   if (Jacobian_i != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_i[iVar];
+      delete [] Jacobian_i[iVar];
     delete [] Jacobian_i;
   }
 
   if (Jacobian_j != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_j[iVar];
+      delete [] Jacobian_j[iVar];
     delete [] Jacobian_j;
   }
 
   if (Jacobian_ii != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ii[iVar];
+      delete [] Jacobian_ii[iVar];
     delete [] Jacobian_ii;
   }
 
   if (Jacobian_ij != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ij[iVar];
+      delete [] Jacobian_ij[iVar];
     delete [] Jacobian_ij;
   }
 
   if (Jacobian_ji != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ji[iVar];
+      delete [] Jacobian_ji[iVar];
     delete [] Jacobian_ji;
   }
 
   if (Jacobian_jj != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_jj[iVar];
+      delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
   }
 
   if (Smatrix != NULL) {
     for (iDim = 0; iDim < nDim; iDim++)
-      delete Smatrix[iDim];
+      delete [] Smatrix[iDim];
     delete [] Smatrix;
   }
 
   if (cvector != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete cvector[iVar];
+    for (iVar = 0; iVar < nVarGrad; iVar++)
+      delete [] cvector[iVar];
     delete [] cvector;
   }
-
-
 
 }
 
@@ -305,6 +306,7 @@ void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
   
   //	Loop boundary edges
   for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
       
@@ -330,7 +332,7 @@ void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry) {
+void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
   //	Internal variables
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
@@ -361,6 +363,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry) {
   
   //	Loop boundary edges
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       Point = geometry->vertex[iMarker][iVertex]->GetNode();
       AuxVar_Vertex = node[Point]->GetAuxVar();
@@ -532,6 +535,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       Point = geometry->vertex[iMarker][iVertex]->GetNode();
       Solution_Vertex = node[Point]->GetSolution();
@@ -577,6 +581,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     
+    /*--- Set the value of the singular ---*/
+    singular = false;
+    
     /*--- Get coordinates ---*/
     
     Coord_i = geometry->node[iPoint]->GetCoord();
@@ -606,15 +613,16 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
       
       /*--- Sumations for entries of upper triangular matrix R ---*/
       
-      if (fabs(weight) > EPS) {
+      if (weight != 0.0) {
+        
         r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
         r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
         r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
         if (nDim == 3) {
-          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r13   += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
           r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
           r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+          r33   += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
         }
         
         /*--- Entries of c:= transpose(A)*b ---*/
@@ -628,15 +636,14 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Entries of upper triangular matrix R ---*/
     
-    if (fabs(r11) < EPS) r11 = EPS;
-    r11 = sqrt(r11);
-    r12 = r12/(r11);
-    r22 = sqrt(r22-r12*r12);
-    if (fabs(r22) < EPS) r22 = EPS;
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+    
     if (nDim == 3) {
-      r13 = r13/(r11);
-      r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
-      r33 = sqrt(r33-r23*r23-r13*r13);
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
     }
     
     /*--- Compute determinant ---*/
@@ -646,7 +653,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Detect singular matrices ---*/
     
-    if (fabs(detR2) < EPS) singular = true;
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
     
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     
@@ -1184,7 +1191,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSolver::SetPressureLaplacian(CGeometry *geometry, su2double *PressureLaplacian) {
+void CSolver::SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian) {
   
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
   unsigned short iMarker, iVar;
@@ -1232,6 +1239,7 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, su2double *PressureLapla
   /*---	Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       Point = geometry->vertex[iMarker][iVertex]->GetNode();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -1320,12 +1328,12 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
       /*--- Find the particular marker being monitored and get the forces acting on it. ---*/
       
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) {
           
-          Cl = GetSurface_CLift(iMarker_Monitoring);
-          Cd = GetSurface_CDrag(iMarker_Monitoring);
+          Cl = GetSurface_CL(iMarker_Monitoring);
+          Cd = GetSurface_CD(iMarker_Monitoring);
           
           /*--- For typical section wing model want the force normal to the airfoil (in the direction of the spring) ---*/
           Cn = Cl*cos(Alpha) + Cd*sin(Alpha);
@@ -1716,7 +1724,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 	/*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-	if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+	if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
 
 		ifstream restart_file_n1;
 		string filename_n1;
@@ -1820,10 +1828,41 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 	/*--- It's necessary to communicate this information ---*/
 
 	geometry->Set_MPI_OldCoord(config);
+  
+  delete [] Coord;
 
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
+
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names) {
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  config->fields = field_names;
+
+  Solution = new su2double[nVar];
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar] = 0.0;
+  }
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nDim = geometry->GetnDim();
+
+  /*--- Allocate the node variables ---*/
+
+  node = new CVariable*[geometry->GetnPoint()];
+
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+    node[iPoint] = new CBaselineVariable(Solution, nVar, config);
+
+  }
+
+}
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
@@ -1861,7 +1900,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
@@ -1869,12 +1908,11 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-  if (nZone > 1)
+  if (nZone > 1  || config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -1937,8 +1975,10 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Read all lines in the restart file ---*/
   
-  iPoint_Global = 0;
-  while (getline (restart_file, text_line)) {
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (restart_file, text_line);
+    
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
@@ -1958,7 +1998,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
       
       node[iPoint_Local] = new CBaselineVariable(Solution, nVar, config);
     }
-    iPoint_Global++;
+
   }
   
   /*--- Instantiate the variable class with an arbitrary solution
@@ -1987,11 +2027,17 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR, GridVel_Index;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *transl, *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL, *Solution = NULL;
   
   Solution = new su2double[nVar];
+
+  GridVel_Index = 2*nDim;
+
+  if (config->GetKind_Turb_Model() == SA) { GridVel_Index += 1; }
+  else if (config->GetKind_Turb_Model() == SST) { GridVel_Index += 2; }
+  if (config->GetKind_Regime() != INCOMPRESSIBLE) { GridVel_Index += 1; }
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -2100,6 +2146,13 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
                               rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
           Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()) {
+            Solution[GridVel_Index + 1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+            Solution[GridVel_Index + 2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[1][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+          }
         } else {
           
           /*--- Coords ---*/
@@ -2116,15 +2169,27 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           
           /*--- Momentum ---*/
           
-          Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[0][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[0][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
-          Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[1][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[1][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
-          Solution[nDim+3] = (rotMatrix[2][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[2][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[2][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
+          Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[0][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+          Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[1][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+          Solution[nDim+3] = (rotMatrix[2][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[2][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[2][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()) {
+            Solution[GridVel_Index+1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[0][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+            Solution[GridVel_Index+2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[1][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[1][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+            Solution[GridVel_Index+3] = (rotMatrix[2][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[2][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[2][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+          }
         }
         
         /*--- Copy transformed conserved variables back into buffer. ---*/
@@ -2154,6 +2219,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 #endif
   
   /*--- Restart the solution from file information ---*/
+  
   string filename;
   unsigned long iPoint, index;
   string UnstExt, text_line, AdjExt;
@@ -2161,36 +2227,41 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  
+  bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[iZone]->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
   }
   
   /*--- Multizone problems require the number of the zone to be appended. ---*/
+  
 
-  if (nZone > 1)
+  if (nZone > 1 )
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
   /*--- Open the restart file ---*/
+  
   solution_file.open(filename.data(), ios::in);
   
   /*--- In case there is no file ---*/
+  
   if (solution_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "There is no SU2 restart file!!" << endl;
@@ -2198,33 +2269,41 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   /*--- Output the file name to the console. ---*/
+  
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename
     << "." << endl;
   
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
+  
   nVar = config->fields.size() - 1;
   su2double *Solution = new su2double[nVar];
   
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
+  
   long *Global2Local = NULL;
-  Global2Local = new long[geometry[ZONE_0]->GetGlobal_nPointDomain()];
+  Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
+  
   /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry[ZONE_0]->GetGlobal_nPointDomain(); iPoint++) {
+  
+  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
     Global2Local[iPoint] = -1;
   }
   
   /*--- Now fill array with the transform values only for local points ---*/
-  for (iPoint = 0; iPoint < geometry[ZONE_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[ZONE_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  
+  for (iPoint = 0; iPoint < geometry[iZone]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[iZone]->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
   
   /*--- Read all lines in the restart file ---*/
+  
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   
   /*--- The first line is the header ---*/
+  
   getline (solution_file, text_line);
   
   while (getline (solution_file, text_line)) {
@@ -2234,13 +2313,16 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
      on a different processor, the value of iPoint_Local will be -1, as
      initialized above. Otherwise, the local index for this node on the
      current processor will be returned and used to instantiate the vars. ---*/
+    
     iPoint_Local = Global2Local[iPoint_Global];
     if (iPoint_Local >= 0) {
       
       /*--- The PointID is not stored --*/
+      
       point_line >> index;
       
       /*--- Store the solution (starting with node coordinates) --*/
+      
       for (iField = 0; iField < nVar; iField++)
         point_line >> Solution[iField];
       
@@ -2252,9 +2334,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   /*--- Close the restart file ---*/
+  
   solution_file.close();
   
   /*--- Free memory needed for the transformation ---*/
+  
   delete [] Global2Local;
   delete [] Solution;
   
@@ -2275,15 +2359,15 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
-  } else if (fem){
+  } else if (fem) {
 	filename = config->GetSolution_FEMFileName();
   } else {
 	filename = config->GetSolution_FlowFileName();
@@ -2295,7 +2379,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));

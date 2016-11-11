@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.1.2 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -79,7 +81,23 @@ def main():
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sst)
-    
+
+    #######################################################
+    ### Unsteady Disc. adj. compressible RANS           ###
+    #######################################################
+   
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder.cfg" 
+    discadj_cylinder.test_iter = 10
+    discadj_cylinder.test_vals = [3.522068,-1.787841,-1.2030e-02,1.1156e-03] #last 4 columns
+    discadj_cylinder.su2_exec  = "SU2_CFD_AD"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.00001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################  
@@ -113,6 +131,18 @@ def main():
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     pass_list.append(directdiff_euler_py.run_filediff())
     test_list.append(directdiff_euler_py)
+
+    # test continuous_adjoint.py, with multiple objectives
+    discadj_multi_py            = TestCase('discadj_multi_py')
+    discadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    discadj_multi_py.cfg_file   = "inv_wedge_ROE_disc_multiobj.cfg"
+    discadj_multi_py.test_iter  = 10
+    discadj_multi_py.su2_exec   = "discrete_adjoint.py"
+    discadj_multi_py.timeout    = 1600
+    discadj_multi_py.reference_file = "of_grad_combo.dat.refdiscrete"
+    discadj_multi_py.test_file  = "of_grad_combo.dat"
+    pass_list.append(discadj_multi_py.run_filediff())
+    test_list.append(discadj_multi_py)
 
     # Tests summary
     print '=================================================================='

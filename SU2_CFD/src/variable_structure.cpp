@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -142,7 +144,7 @@ CVariable::~CVariable(void) {
 	if (Solution_Max        != NULL) delete [] Solution_Max;
 	if (Solution_Min        != NULL) delete [] Solution_Min;
 	if (Grad_AuxVar         != NULL) delete [] Grad_AuxVar;
-	if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
+	//if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian; // Need to break pointer dependence btwn CNumerics and CVariable
 	if (Res_TruncError      != NULL) delete [] Res_TruncError;
 	if (Residual_Old        != NULL) delete [] Residual_Old;
 	if (Residual_Sum        != NULL) delete [] Residual_Sum;

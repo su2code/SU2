@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,6 +14,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -49,7 +51,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CVariable {
 protected:
@@ -1775,14 +1777,14 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source.
+	 * \param[in] val_source - Value of the harmonic balance source.
 	 */
-	virtual void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	virtual void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual su2double GetTimeSpectral_Source(unsigned short val_var);
+	virtual su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
@@ -2014,6 +2016,21 @@ public:
 	 * \return Pointer to the solution (at time n) vector.
 	 */
 	virtual su2double *GetSolution_Pred_Old(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetPrestretch(unsigned short iVar, su2double val_prestretch);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double *GetPrestretch(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetPrestretch(unsigned short iVar);
   
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2094,7 +2111,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -2124,7 +2141,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CPotentialVariable : public CVariable {
 	su2double *Charge_Density;
@@ -2168,7 +2185,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -2214,7 +2231,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -2289,6 +2306,8 @@ protected:
 
 	su2double *Solution_Pred,					/*!< \brief Predictor of the solution for FSI purposes */
 	*Solution_Pred_Old;						/*!< \brief Predictor of the solution at time n for FSI purposes */
+
+  su2double *Prestretch;        /*!< \brief Prestretch geometry */
 
 
 public:
@@ -2622,6 +2641,21 @@ public:
 	 */
 	su2double *GetSolution_Pred_Old(void);
 
+  /*!
+   * \brief A virtual member.
+   */
+  void SetPrestretch(unsigned short iVar, su2double val_prestretch);
+
+  /*!
+   * \brief A virtual member.
+   */
+  su2double *GetPrestretch(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  su2double GetPrestretch(unsigned short iVar);
+
 	/*!
 	 * \brief Set the value of the Von Mises stress.
 	 * \param[in] val_stress - Value of the Von Mises stress.
@@ -2698,15 +2732,15 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CEulerVariable : public CVariable {
 protected:
-	su2double Velocity2;			/*!< \brief Square of the velocity vector. */
-	su2double *TS_Source;		/*!< \brief Time spectral source term. */
-	su2double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
-  su2double *WindGust;           /*! < \brief Wind gust value */
-  su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
+	su2double  Velocity2;			/*!< \brief Square of the velocity vector. */
+	su2double *HB_Source;     /*!< \brief harmonic balance source term. */
+	su2double  Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
+  su2double *WindGust;      /*! < \brief Wind gust value */
+  su2double *WindGustDer;   /*! < \brief Wind gust derivatives value */
 
 	/*--- Primitive variable definition ---*/
   
@@ -2716,9 +2750,9 @@ protected:
 
   /*--- Secondary variable definition ---*/
   
-	su2double *Secondary;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+	su2double *Secondary;	          /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
 	su2double **Gradient_Secondary;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Secondary;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Limiter_Secondary;   /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
 
 public:
 
@@ -3127,18 +3161,18 @@ public:
 	void SetVelocityInc_Old(su2double *val_velocity);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the preconditioner Beta.
@@ -3182,7 +3216,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -3383,12 +3417,12 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CTurbVariable : public CVariable {
 protected:
 	su2double muT;                /*!< \brief Eddy viscosity. */
-	su2double *TS_Source; 	       /*!< \brief Time spectral source term. */
+	su2double *HB_Source; 	       /*!< \brief Harmonic Balance source term. */
 
 public:
 	/*!
@@ -3427,7 +3461,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -3453,18 +3487,18 @@ public:
 	~CTurbSAVariable(void);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 
 };
 
@@ -3474,7 +3508,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -3500,18 +3534,18 @@ public:
 	~CTurbMLVariable(void);
   
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_source - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_source - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
   
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
   
 };
 
@@ -3520,7 +3554,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -3573,7 +3607,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -3638,7 +3672,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -3646,7 +3680,7 @@ protected:
 	su2double *ForceProj_Vector;	/*!< \brief Vector d. */
 	su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
 	su2double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
-	su2double *TS_Source;		/*!< \brief Time spectral source term. */
+	su2double *HB_Source;		/*!< \brief Harmonic balance source term. */
 	bool incompressible;
 public:
 
@@ -3741,18 +3775,18 @@ public:
 	su2double *GetIntBoundary_Jump(void);
 
 	/*!
-	 * \brief Set the time spectral source term.
+	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
+	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
 	 */
-	void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
+	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the time spectral source term.
+	 * \brief Get the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the time spectral source term for the index <i>val_var</i>.
+	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
 	 */
-	su2double GetTimeSpectral_Source(unsigned short val_var);
+	su2double GetHarmonicBalance_Source(unsigned short val_var);
 };
 
 /*! 
@@ -3760,7 +3794,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -3832,7 +3866,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -3882,7 +3916,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3920,7 +3954,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CTemplateVariable : public CVariable {
 public:
@@ -3950,7 +3984,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
- * \version 4.1.2 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CDiscAdjVariable : public CVariable {
 private:
