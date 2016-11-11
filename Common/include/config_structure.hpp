@@ -5424,6 +5424,13 @@ public:
   unsigned short GetConsole_Output_Verb(void);
 
   /*!
+   * \brief Get the kind of one-dimensionalization
+   * (area-averaged, mass flux averaged,etc).
+   * \return Kind of one-dimensionalization.
+   */
+  unsigned short GetKind_OneD(void);
+
+  /*!
    *
    * \brief Get the direct differentation method.
    * \return direct differentiation method.
