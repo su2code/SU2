@@ -2,7 +2,7 @@
  * \file variable_direct_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -144,9 +142,8 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
 	/*--- Initialization of variables ---*/
-  
 	Solution[0] = val_kine;     Solution_Old[0] = val_kine;
-	Solution[1] = val_omega;	Solution_Old[1] = val_omega;
+	Solution[1] = val_omega;    Solution_Old[1] = val_omega;
   
 	sigma_om2 = constants[3];
 	beta_star = constants[6];
@@ -156,11 +153,9 @@ CTurbSSTVariable::CTurbSSTVariable(su2double val_kine, su2double val_omega, su2d
 	CDkw = 0.0;
   
 	/*--- Initialization of eddy viscosity ---*/
-  
 	muT = val_muT;
   
-	/*--- Allocate and initialize solution for the dual time strategy ---*/
-  
+	/*--- Allocate and initialize solution for the dual time strategy ---*/  
 	if (dual_time) {
 		Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_omega;
 		Solution_time_n1[0]  = val_kine; Solution_time_n1[1]  = val_omega;
@@ -179,24 +174,87 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
 	su2double arg2, arg2A, arg2B, arg1;
   
 	/*--- Cross diffusion ---*/
-  
 	CDkw = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
 		CDkw += Gradient[0][iDim]*Gradient[1][iDim];
 	CDkw *= 2.0*val_density*sigma_om2/Solution[1];
 	CDkw = max(CDkw, pow(10.0, -20.0));
   
-	/*--- F1 ---*/
-  
-  arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist+EPS*EPS);
-  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]+EPS*EPS);
+	/*--- F1 ---*/  
+        arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist+EPS*EPS);
+        arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]+EPS*EPS);
 	arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist+EPS*EPS));
+        arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist+EPS*EPS));
 	F1 = tanh(pow(arg1, 4.0));
   
 	/*--- F2 ---*/
-  
 	arg2 = max(2.0*arg2A, arg2B);
 	F2 = tanh(pow(arg2, 2.0));
+  
+}
+
+
+/*-----------------------------*/
+/*--- (swh) ADDDING KE HERE ---*/
+/*------------------------jump-*/
+
+CTurbKEVariable::CTurbKEVariable(void) : CTurbVariable() { }
+
+CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+                                 su2double *constants, CConfig *config)
+: CTurbVariable(val_nDim, val_nvar, config) {
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  
+	/*--- Initialization of variables ---*/
+	Solution[0] = val_kine; Solution_Old[0] = val_kine;
+	Solution[1] = val_epsi;	Solution_Old[1] = val_epsi;
+	Solution[2] = val_kine; Solution_Old[2] = val_kine;
+	Solution[3] = val_epsi;	Solution_Old[3] = val_epsi;
+	Tm  = val_kine/val_epsi;
+	Lm  = pow(val_kine,1.5)/val_epsi;
+  
+	/*--- Initialization of eddy viscosity ---*/  
+	muT = val_muT;
+  
+	/*--- Allocate and initialize solution for the dual time strategy ---*/
+	if (dual_time) {
+		Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_epsi;
+		Solution_time_n1[0] = val_kine; Solution_time_n1[1] = val_epsi;
+		Solution_time_n[2]  = val_zeta; Solution_time_n[3]  = val_zeta;
+		Solution_time_n1[2] = val_zeta; Solution_time_n1[3] = val_f;
+	}
+    
+}
+
+CTurbKEVariable::~CTurbKEVariable(void) {
+
+  if (TS_Source != NULL) delete [] TS_Source;
+  
+}
+
+void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double val_f, su2double StrainMag) {
+
+	unsigned short iDim;
+	su2double C_mu, C_T, C_L;
+        su2double Tm, Lm, nu;
+  
+        /*--- Molecular kinematic viscosity ---*/
+        nu = val_viscosity/val_density;
+
+        // move these, already in constants...
+        C_mu = 0.22;
+        C_T = 6.0;
+        C_L = 0.36;
+        C_eta = 85.0;
+
+        /*--- Model length scale ---*/
+	Lm = min(pow(val_kine,1.5)/val_epsi, sqrt(val_kine)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+        Lm = C_L * max(Lm,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
+
+        /*--- Model time scale ---*/
+        Tm = min(val_kine/val_epsi,0.6/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+        Tm = max(Tm,C_T*sqrt(nu/val_epsi));
   
 }

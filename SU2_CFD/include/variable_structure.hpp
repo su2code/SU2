@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,8 +14,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -51,7 +49,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CVariable {
 protected:
@@ -1708,7 +1706,7 @@ public:
 	 */
 	virtual su2double **GetGradient_Secondary(void);
   
-  /*!
+        /*!
 	 * \brief A virtual member.
 	 * \return Value of the Secondary variables gradient.
 	 */
@@ -1720,7 +1718,7 @@ public:
 	 * \param[in] val_density - Value of the density.
 	 * \param[in] val_dist - Value of the distance to the wall.
 	 */
-	virtual void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
+    virtual void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
 
 	/*!
 	 * \brief Get the first blending function of the SST model.
@@ -1742,6 +1740,25 @@ public:
 	 * \return the value of the eddy viscosity.
 	 */
 	virtual su2double GetmuT(void);
+
+	/*!
+	 * \brief Set the blending function for the blending of k-w and k-eps.
+	 * \param[in] val_viscosity - Value of the vicosity.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_dist - Value of the distance to the wall.
+	 */
+    virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+
+	/*!
+	 * \brief Get model timescale for ke  model.
+	 */
+	virtual su2double GetTm(void);
+
+	/*!
+	 * \brief Get model lengthscale for ke  model.
+	 */
+	virtual su2double GetLm(void);
+
 
 	/*!
 	 * \brief Set the value of the eddy viscosity.
@@ -2016,21 +2033,6 @@ public:
 	 * \return Pointer to the solution (at time n) vector.
 	 */
 	virtual su2double *GetSolution_Pred_Old(void);
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void SetPrestretch(unsigned short iVar, su2double val_prestretch);
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual su2double *GetPrestretch(void);
-
-  /*!
-   * \brief A virtual member.
-   */
-  virtual su2double GetPrestretch(unsigned short iVar);
   
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2111,7 +2113,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -2141,7 +2143,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CPotentialVariable : public CVariable {
 	su2double *Charge_Density;
@@ -2185,7 +2187,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -2231,7 +2233,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -2306,8 +2308,6 @@ protected:
 
 	su2double *Solution_Pred,					/*!< \brief Predictor of the solution for FSI purposes */
 	*Solution_Pred_Old;						/*!< \brief Predictor of the solution at time n for FSI purposes */
-
-  su2double *Prestretch;        /*!< \brief Prestretch geometry */
 
 
 public:
@@ -2641,21 +2641,6 @@ public:
 	 */
 	su2double *GetSolution_Pred_Old(void);
 
-  /*!
-   * \brief A virtual member.
-   */
-  void SetPrestretch(unsigned short iVar, su2double val_prestretch);
-
-  /*!
-   * \brief A virtual member.
-   */
-  su2double *GetPrestretch(void);
-
-  /*!
-   * \brief A virtual member.
-   */
-  su2double GetPrestretch(unsigned short iVar);
-
 	/*!
 	 * \brief Set the value of the Von Mises stress.
 	 * \param[in] val_stress - Value of the Von Mises stress.
@@ -2732,7 +2717,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -3216,7 +3201,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -3417,7 +3402,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -3461,7 +3446,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -3508,7 +3493,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -3554,7 +3539,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -3607,7 +3592,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -3667,12 +3652,75 @@ public:
 };
 
 
+
+
+/*! 
+ * \class CTurbKEVariable
+ * \brief Main class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author S. Haering
+ * \version 4.1.3 "Cardinal"
+ */
+
+class CTurbKEVariable : public CTurbVariable {
+protected:
+        su2double sigma_e, sigma_k, sigma_z, C_e1o, C_e2, C1, C_2p, C_T, C_L, C_eta;
+	su2double Tm,		/*!< \brief T_m k-eps. */
+	Lm,		        /*!< \brief L_m k-eps */
+        Re_T;
+
+  
+public:
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTurbKEVariable(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+	 * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_f, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+			su2double *constants, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CTurbKEVariable(void);
+
+	/*!
+	 * \brief Set the blending function for the blending of k-w and k-eps.
+	 * \param[in] val_viscosity - Value of the vicosity.
+	 * \param[in] val_dist - Value of the distance to the wall.
+	 * \param[in] val_density - Value of the density.
+	 */
+  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+
+	/*!
+	 * \brief Get the first blending function.
+	 */
+	su2double GetTm(void);
+
+	/*!
+	 * \brief Get the second blending function.
+	 */
+	su2double GetLm(void);
+
+};
+
+
 /*! 
  * \class CAdjEulerVariable
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -3794,7 +3842,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -3866,7 +3914,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -3916,7 +3964,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3954,7 +4002,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CTemplateVariable : public CVariable {
 public:
@@ -3984,7 +4032,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CDiscAdjVariable : public CVariable {
 private:

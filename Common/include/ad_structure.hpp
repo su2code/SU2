@@ -65,7 +65,7 @@ namespace AD{
    * \param[in] data - the input 1D array.
    * \param[in] size - size of the array.
    */
-  void SetPreaccIn(const su2double* data, const int size);
+  void SetPreaccIn(su2double* data, const int size);
 
   /*!
    * \brief Sets the input variables of a preaccumulation section using a 2D array.
@@ -73,7 +73,7 @@ namespace AD{
    * \param[in] size_x - size of the array in x dimension.
    * \param[in] size_y - size of the array in y dimension.
    */
-  void SetPreaccIn(const su2double* const *data, const int size_x, const int size_y);
+  void SetPreaccIn(su2double** data, const int size_x, const int size_y);
 
   /*!
    * \brief Starts a new preaccumulation section and sets the input variables.

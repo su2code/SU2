@@ -2,7 +2,7 @@
  * \file dataype_structure.cpp
  * \brief Main subroutines for the datatype structures.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -63,10 +61,10 @@ namespace AD {
 
       EndPosition = globalTape.getPosition();
 
-      /*--- Allocate local memory ---*/
+      /*--- Allocate local memory on the stack (does not need to be deleted at the end of the routine!) ---*/
 
-      passivedouble* local_jacobi     = new passivedouble[nVarOut*nVarIn];
-      unsigned short* nNonzero        = new unsigned short[nVarOut];
+      passivedouble* local_jacobi     = (passivedouble*)alloca(sizeof(passivedouble)*(nVarOut*nVarIn));
+      unsigned short* nNonzero = (unsigned short*)alloca(sizeof(unsigned short)*nVarOut);
 
       /*--- Compute the local Jacobi matrix of the code between the start and end position
        * using the inputs and outputs declared with StartPreacc(...)/EndPreacc(...) ---*/
@@ -114,12 +112,8 @@ namespace AD {
 
       /* --- Clear local vectors and reset indicator ---*/
 
-
       localInputValues.clear();
       localOutputValues.clear();
-
-      delete [] local_jacobi;
-      delete [] nNonzero;
 
       PreaccActive = false;
     }

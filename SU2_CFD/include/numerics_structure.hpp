@@ -5,7 +5,7 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,8 +15,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -53,8 +51,8 @@ using namespace std;
 /*!
  * \class CNumerics
  * \brief Class for defining the numerical methods.
- * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \author F. Palacios
+ * \version 4.1.3 "Cardinal"
  */
 class CNumerics {
 protected:
@@ -208,6 +206,13 @@ public:
   su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
   
   su2double *l, *m;
+  su2double *dPdU_i, *dPdU_j;
+  su2double *dTdU_i, *dTdU_j;
+  su2double *dTvedU_i, *dTvedU_j;
+  su2double *Ys, **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+  RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  CVariable *var;
   
   /*!
    * \brief Constructor of the class.
@@ -476,6 +481,9 @@ public:
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
+
+  virtual void SetLm(su2double val_Lm_i, su2double val_Lm_j) {/* empty */};
+  virtual void SetTm(su2double val_Tm_i, su2double val_Tm_j) {/* empty */};
   
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -1493,7 +1501,7 @@ public:
  * \brief Class for centered scheme - CUSP.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwCUSP_Flow : public CNumerics {
   
@@ -1543,7 +1551,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author A. Bueno, F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
@@ -1556,7 +1564,7 @@ private:
   su2double **P_Tensor, **invP_Tensor;
   su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j, RoeSoundSpeed2, kappa;
+  ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho, RoeSoundSpeed2, kappa;
   unsigned short iDim, iVar, jVar, kVar;
   
 public:
@@ -1590,7 +1598,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations for a general fluid model.
  * \ingroup ConvDiscr
  * \author S.Vitale, G.Gori, M.Pini
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwGeneralRoe_Flow : public CNumerics {
 private:
@@ -1651,7 +1659,7 @@ public:
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
  * \ingroup ConvDiscr
  * \author S. Copeland
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwMSW_Flow : public CNumerics {
 private:
@@ -1696,7 +1704,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for the flow equations.
  * \ingroup ConvDiscr
  * \author A. K. Lonkar
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwTurkel_Flow : public CNumerics {
 private:
@@ -1751,7 +1759,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwArtComp_Flow : public CNumerics {
 private:
@@ -1798,7 +1806,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwArtComp_FreeSurf_Flow : public CNumerics {
 private:
@@ -1846,7 +1854,7 @@ public:
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwRoe_AdjFlow : public CNumerics {
 private:
@@ -1897,7 +1905,7 @@ public:
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwRoeArtComp_AdjFlow : public CNumerics {
 private:
@@ -1941,7 +1949,7 @@ public:
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwAUSM_Flow : public CNumerics {
 private:
@@ -2098,7 +2106,7 @@ public:
  * \brief Class for performing a linear upwind solver for the Spalart-Allmaras turbulence model equations with transition
  * \ingroup ConvDiscr
  * \author A. Aranake
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwLin_TransLM : public CNumerics {
 private:
@@ -2138,7 +2146,7 @@ public:
  * \brief Class for performing a linear upwind solver for the adjoint Level Set equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwLin_AdjLevelSet : public CNumerics {
 private:
@@ -2180,7 +2188,7 @@ public:
  * \brief Class for performing a linear upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwLin_AdjTurb : public CNumerics {
 private:
@@ -2216,7 +2224,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwSca_TurbSA : public CNumerics {
 private:
@@ -2255,7 +2263,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwSca_TurbML : public CNumerics {
 private:
@@ -2294,7 +2302,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Campos.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwSca_TurbSST : public CNumerics {
 private:
@@ -2330,12 +2338,59 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
+
+//...
+
+/*!
+ * \class CUpwSca_TurbKE
+ * \brief Class for doing a scalar upwind solver for the zeta-f KE turbulence model equations.
+ * \ingroup ConvDiscr
+ * \author A. Campos.
+ * \version 4.1.3 "Cardinal"
+ */
+class CUpwSca_TurbKE : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement, incompressible;
+  su2double Density_i, Density_j,
+  q_ij,
+  a0, a1;
+  unsigned short iDim;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_TurbKE(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwSca_TurbKE(void);
+  
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+//...
+
+
 /*!
  * \class CUpwSca_TransLM
  * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
  * \ingroup ConvDiscr
  * \author A. Aranake.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwSca_TransLM : public CNumerics {
 private:
@@ -2374,7 +2429,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CUpwSca_AdjTurb : public CNumerics {
 private:
@@ -2414,7 +2469,7 @@ public:
  * \brief Class for centered shceme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentJST_KE_Flow : public CNumerics {
   
@@ -2468,7 +2523,7 @@ public:
  * \brief Class for centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentJST_Flow : public CNumerics {
   
@@ -2522,7 +2577,7 @@ public:
  * \brief Class for centered scheme - JST (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentJSTArtComp_Flow : public CNumerics {
   
@@ -2575,7 +2630,7 @@ public:
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentJST_AdjFlow : public CNumerics {
 private:
@@ -2625,7 +2680,7 @@ public:
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentJSTArtComp_AdjFlow : public CNumerics {
 private:
@@ -2675,7 +2730,7 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentLax_Flow : public CNumerics {
 private:
@@ -2727,7 +2782,7 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentLaxArtComp_Flow : public CNumerics {
 private:
@@ -2779,7 +2834,7 @@ public:
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentLax_AdjFlow : public CNumerics {
 private:
@@ -2829,7 +2884,7 @@ public:
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CCentLaxArtComp_AdjFlow : public CNumerics {
 private:
@@ -2879,7 +2934,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_Flow : public CNumerics {
 private:
@@ -2971,7 +3026,7 @@ public:
  * \brief Class for computing viscous term using an average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradArtComp_Flow : public CNumerics {
 private:
@@ -3010,7 +3065,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_TurbSA : public CNumerics {
 private:
@@ -3055,7 +3110,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_TurbSA_Neg : public CNumerics {
 private:
@@ -3101,7 +3156,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_TurbML : public CNumerics {
 private:
@@ -3145,7 +3200,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_TransLM : public CNumerics {
 private:
@@ -3154,9 +3209,9 @@ private:
   su2double *Edge_Vector;
   bool implicit, incompressible;
   su2double sigma;
-  //su2double dist_ij_2;
-  //su2double proj_vector_ij;
-  //unsigned short iVar, iDim;
+  su2double dist_ij_2;
+  su2double proj_vector_ij;
+  unsigned short iVar, iDim;
   
 public:
   
@@ -3188,7 +3243,7 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_AdjFlow : public CNumerics {
 private:
@@ -3230,7 +3285,7 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradArtComp_AdjFlow : public CNumerics {
 private:
@@ -3270,7 +3325,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_Flow : public CNumerics {
 private:
@@ -3365,7 +3420,7 @@ public:
  * \brief Class for computing viscous term using an average of gradients with correction (artificial compresibility).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
 private:
@@ -3407,7 +3462,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_TurbSA : public CNumerics {
 private:
@@ -3448,7 +3503,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_TurbSA_Neg : public CNumerics {
 private:
@@ -3493,7 +3548,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_TurbML : public CNumerics {
 private:
@@ -3534,7 +3589,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_TransLM : public CNumerics {
 private:
@@ -3569,12 +3624,14 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
 };
 
+
+
 /*!
  * \class CAvgGrad_TurbSST
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_TurbSST : public CNumerics {
 private:
@@ -3631,12 +3688,82 @@ public:
   
 };
 
+//...  This one needs work...
+
+/*!
+ * \class CAvgGrad_TurbKE
+ * \brief Class for computing viscous term using average of gradient with correction (zeta-f KE turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
+ * \version 4.1.3 "Cardinal"
+ */
+class CAvgGrad_TurbKE : public CNumerics {
+private:
+  su2double sigma_k,                     /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
+  sigma_e,
+  sigma_z;
+  
+  su2double diff_kine,                     /*!< \brief Diffusivity for viscous terms of tke eq */
+    diff_epsi,                           /*!< \brief Diffusivity for viscous terms of epsi eq */
+    diff_zeta,                           /*!< \brief Diffusivity for viscous terms of zeta eq */
+    diff_f;                           /*!< \brief Diffusivity for viscous terms of f eq */
+  
+  su2double *Edge_Vector,                  /*!< \brief Vector from node i to node j. */
+  dist_ij_2,                            /*!< \brief |Edge_Vector|^2 */
+  proj_vector_ij;                       /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  
+  su2double **Mean_GradTurbVar,            /*!< \brief Average of gradients at cell face */
+  *Proj_Mean_GradTurbVar_Normal,        /*!< \brief Mean_gradTurbVar DOT normal */
+  *Proj_Mean_GradTurbVar_Edge,          /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
+  *Proj_Mean_GradTurbVar_Corrected;
+  
+  su2double Lm_i, Lm_j;                    /*!< \brief model length scale */
+  su2double Tm_i, Tm_j;                    /*!< \brief model time scale */
+  
+  bool implicit, incompressible;
+  unsigned short iVar, iDim;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_TurbKE(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_TurbKE(void);
+  
+  /*!
+   * \brief Sets value of first blending function.
+   */
+  void SetLm(su2double val_Lm_i, su2double val_Lm_j) { Lm_i = val_Lm_i; Lm_j = val_Lm_j;}
+  
+  /*!
+   * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  
+};
+
+//...
+
+
+
 /*!
  * \class CAvgGradCorrected_TurbSST
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_TurbSST : public CNumerics {
 private:
@@ -3693,12 +3820,83 @@ public:
   
 };
 
+
+
+//... this one needs work..
+
+/*!
+ * \class CAvgGradCorrected_TurbKE
+ * \brief Class for computing viscous term using average of gradient with correction (zeta-f KE turbulence model).
+ * \ingroup ViscDiscr
+ * \author A. Bueno.
+ * \version 4.1.3 "Cardinal"
+ */
+class CAvgGradCorrected_TurbKE : public CNumerics {
+private:
+  su2double sigma_k,                     /*!< \brief Constants for the viscous terms, k-w (1), k-eps (2)*/
+  sigma_e,
+  sigma_z;
+  
+  su2double diff_kine,                     /*!< \brief Diffusivity for viscous terms of tke eq */
+    diff_epsi,                           /*!< \brief Diffusivity for viscous terms of omega eq */
+    diff_zeta,
+    diff_f;
+
+  su2double *Edge_Vector,                  /*!< \brief Vector from node i to node j. */
+  dist_ij_2,                            /*!< \brief |Edge_Vector|^2 */
+  proj_vector_ij;                       /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  
+  su2double **Mean_GradTurbVar,            /*!< \brief Average of gradients at cell face */
+  *Proj_Mean_GradTurbVar_Normal,        /*!< \brief Mean_gradTurbVar DOT normal */
+  *Proj_Mean_GradTurbVar_Edge,          /*!< \brief Mean_gradTurbVar DOT Edge_Vector */
+  *Proj_Mean_GradTurbVar_Corrected;
+  
+  su2double Lm_i, Lm_j;                    /*!< \brief Lm */
+  
+  bool implicit, incompressible;
+  unsigned short iVar, iDim;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGradCorrected_TurbKE(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGradCorrected_TurbKE(void);
+  
+  /*!
+   * \brief Sets value of first blending function.
+   */
+  void SetLm(su2double val_Lm_i, su2double val_Lm_j) { Lm_i = val_Lm_i; Lm_j = val_Lm_j;}
+  
+  /*!
+   * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  
+};
+
+//...
+
+
+
 /*!
  * \class CAvgGradCorrected_AdjFlow
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_AdjFlow : public CNumerics {
 private:
@@ -3746,7 +3944,7 @@ public:
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
  * \author F.Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrectedArtComp_AdjFlow : public CNumerics {
 private:
@@ -3792,7 +3990,7 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGradCorrected_AdjTurb : public CNumerics {
 private:
@@ -3844,7 +4042,7 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAvgGrad_AdjTurb : public CNumerics {
 private:
@@ -3896,7 +4094,7 @@ public:
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CGalerkin_Flow : public CNumerics {
 public:
@@ -4155,7 +4353,7 @@ public:
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceNothing : public CNumerics {
 public:
@@ -4179,7 +4377,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourcePieceWise_TurbSA : public CNumerics {
 private:
@@ -4274,7 +4472,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourcePieceWise_TurbSA_Neg : public CNumerics {
 private:
@@ -4369,7 +4567,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourcePieceWise_TransLM : public CNumerics {
 private:
@@ -4434,7 +4632,7 @@ public:
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  * \ingroup SourceDiscr
  * \author A. Campos.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourcePieceWise_TurbSST : public CNumerics {
 private:
@@ -4503,12 +4701,98 @@ public:
   
 };
 
+
+
+//... this one needs work...
+
+/*!
+ * \class CSourcePieceWise_TurbKE
+ * \brief Class for integrating the source terms of the zeta-f KE turbulence model equations.
+ * \ingroup SourceDiscr
+ * \author S. Haering.
+ * \version 4.1.3 "Cardinal"
+ */
+class CSourcePieceWise_TurbKE : public CNumerics {
+private:
+  su2double Lm_i,
+  Lm_j,
+  Tm_i,
+  Tm_j;
+  
+  su2double sigma_k,
+  sigma_e,
+  sigma_z,
+  C_L,
+  C_T,
+  C_1,
+  C_2,
+  C_mu,
+  C_2p,
+  C_eta,
+  C_e1o,
+  C_e2;
+  
+  //su2double CDkw_i, CDkw_j;
+  
+  bool incompressible;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourcePieceWise_TurbKE(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourcePieceWise_TurbKE(void);
+  
+  /*!
+   * \brief Set the value of the first blending function.
+   * \param[in] val_F1_i - Value of the first blending function at point i.
+   * \param[in] val_F1_j - Value of the first blending function at point j.
+   */
+  void SetLm(su2double val_Lm_i, su2double val_Lm_j);
+  
+  /*!
+   * \brief Set the value of the second blending function.
+   * \param[in] val_F2_i - Value of the second blending function at point i.
+   * \param[in] val_F2_j - Value of the second blending function at point j.
+   */
+  void SetTm(su2double val_Tm_i, su2double val_Tm_j);
+  
+  /*!
+   * \brief Set the value of the cross diffusion for the SST model.
+   * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
+   * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
+   */
+  //  virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
+  
+  /*!
+   * \brief Residual for source term integration.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+  
+};
+
+//...
+
+
+
 /*!
  * \class CSourceGravity
  * \brief Class for the source term integration of the gravity force.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceGravity : public CNumerics {
   su2double Froude;
@@ -4541,7 +4825,7 @@ public:
  * \brief Class for source term integration in adjoint problem.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceViscous_AdjFlow : public CNumerics {
 private:
@@ -4577,7 +4861,7 @@ public:
  * \brief Class for source term integration of the adjoint turbulent equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourcePieceWise_AdjTurb : public CNumerics {
 private:
@@ -4613,7 +4897,7 @@ public:
  * \brief Class for source term integration of the adjoint level set equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourcePieceWise_AdjLevelSet : public CNumerics {
 public:
@@ -4644,7 +4928,7 @@ public:
  * \brief Class for source term integration in adjoint problem using a conservative scheme.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceConservative_AdjFlow : public CNumerics {
 private:
@@ -4679,7 +4963,7 @@ public:
  * \brief Class for source term integration in adjoint turbulent problem using a conservative scheme.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceConservative_AdjTurb : public CNumerics {
 public:
@@ -4712,7 +4996,7 @@ public:
  * \brief Class for a rotating frame source term.
  * \ingroup SourceDiscr
  * \author F. Palacios, T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceRotatingFrame_Flow : public CNumerics {
 public:
@@ -4744,7 +5028,7 @@ public:
  * \brief Source term class for rotating frame adjoint.
  * \ingroup SourceDiscr
  * \author T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceRotatingFrame_AdjFlow : public CNumerics {
 public:
@@ -4776,7 +5060,7 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
 public:
@@ -4808,7 +5092,7 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceAxisymmetric_AdjFlow : public CNumerics {
 public:
@@ -4839,7 +5123,7 @@ public:
  * \brief Class for a source term due to a wind gust.
  * \ingroup SourceDiscr
  * \author S. Padrón
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSourceWindGust : public CNumerics {
 public:
@@ -4871,7 +5155,7 @@ public:
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author A. Lonkar.
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSource_Template : public CNumerics {
 public:
@@ -4905,7 +5189,7 @@ public:
  * \brief Class for setting up new method for spatial discretization of convective terms in flow Equations
  * \ingroup ConvDiscr
  * \author A. Lonkar
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CConvective_Template : public CNumerics {
 private:
@@ -4953,7 +5237,7 @@ public:
  * \brief Class for computing viscous term using average of gradients.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CViscous_Template : public CNumerics {
 private:

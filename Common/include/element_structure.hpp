@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
  *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,8 +14,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -51,7 +49,7 @@ using namespace std;
  * \class CElement
  * \brief Main class for defining the element structure.
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CElement {
@@ -395,7 +393,7 @@ public:
  * \class CTRIA1
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTRIA1 : public CElement {
@@ -443,7 +441,7 @@ public:
  * \class CQUAD4
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CQUAD4 : public CElement {
@@ -496,7 +494,7 @@ public:
  * \class CQUAD4P1
  * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CQUAD4P1 : public CQUAD4 {
@@ -537,7 +535,7 @@ public:
  * \class CTETRA1
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTETRA1 : public CElement {
@@ -584,7 +582,7 @@ public:
  * \class CHEXA8
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CHEXA8 : public CElement {
@@ -637,7 +635,7 @@ public:
  * \class CHEXA8P1
  * \brief Hexahedral element with 8 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CHEXA8P1 : public CHEXA8 {
@@ -672,53 +670,5 @@ public:
 
 
 };
-
-/*!
- * \class CBOUND2D
- * \brief 2D line boundary element with 2 Gauss Points
- * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
- */
-
-class CBOUND2D : public CElement {
-
-protected:
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   */
-  CBOUND2D(void);
-
-  /*!
-   * \overload
-   * \param[in] val_fea - Values of the fea solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CBOUND2D(unsigned short val_nDim, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CBOUND2D(void);
-
-  /*!
-   * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
-   * \param[in] val_solution - Solution of the problem.
-   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-   */
-  void ComputeGrad_Linear(void);
-
-  /*!
-   * \brief Set the value of the gradient of the shape functions respect to the current configuration.
-   * \param[in] val_solution - Solution of the problem.
-   * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
-   */
-  void ComputeGrad_NonLinear(void);
-
-};
-
 
 #include "element_structure.inl"

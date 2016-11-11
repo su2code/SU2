@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -509,9 +507,15 @@ inline su2double *CVariable::GetLimiter_Secondary(void) { return NULL; }
 
 inline void CVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) { }
 
+inline void CVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag) { }
+
 inline su2double CVariable::GetF1blending(void) { return 0; }
 
 inline su2double CVariable::GetF2blending(void) { return 0; }
+
+inline su2double CVariable::GetTm(void) { return 0; }
+
+inline su2double CVariable::GetLm(void) { return 0; }
 
 inline su2double CVariable::GetmuT() { return 0;}
 
@@ -590,12 +594,6 @@ inline void CVariable::SetSolution_Pred_Old(void){ }
 inline su2double CVariable::GetSolution_Pred_Old(unsigned short val_var){ return 0.0; }
 
 inline su2double *CVariable::GetSolution_Pred_Old(void){ return NULL; }
-
-inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch){  }
-
-inline su2double *CVariable::GetPrestretch(void){ return NULL; }
-
-inline su2double CVariable::GetPrestretch(unsigned short iVar){ return 0.0; }
 
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
@@ -1009,12 +1007,6 @@ inline void CFEM_ElasVariable::SetVonMises_Stress(su2double val_stress) { VonMis
 
 inline su2double CFEM_ElasVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
 
-inline void CFEM_ElasVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch){ Prestretch[iVar] = val_prestretch;}
-
-inline su2double *CFEM_ElasVariable::GetPrestretch(void){ return Prestretch; }
-
-inline su2double CFEM_ElasVariable::GetPrestretch(unsigned short iVar){ return Prestretch[iVar]; }
-
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] = val_traction; }
 
 inline void CFEABoundVariable::AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] += val_traction; }
@@ -1047,6 +1039,11 @@ inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
 
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
+
+inline su2double CTurbKEVariable::GetTm() { return Tm; }
+
+inline su2double CTurbKEVariable::GetLm() { return Lm; }
+
 
 inline void CAdjTurbVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
   for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {

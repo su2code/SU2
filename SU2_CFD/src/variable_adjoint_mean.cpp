@@ -2,7 +2,7 @@
  * \file variable_adjoint_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -187,7 +185,6 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
 		Undivided_Laplacian = new su2double [nVar];
-  
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
 		Limiter = new su2double [nVar];
 		Solution_Max = new su2double [nVar];

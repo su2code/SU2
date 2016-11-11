@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -36,28 +34,20 @@
 CEulerVariable::CEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
-  
 	TS_Source = NULL;
 	Primitive = NULL;
 	Secondary = NULL;
-	
-  Gradient_Primitive = NULL;
+	Gradient_Primitive = NULL;
 	Gradient_Secondary = NULL;
-  
 	Limiter_Primitive = NULL;
 	Limiter_Secondary = NULL;
-  
-  WindGust    = NULL;
+  WindGust = NULL;
   WindGustDer = NULL;
-
-  nPrimVar     = 0;
-  nPrimVarGrad = 0;
-
-  nSecondaryVar     = 0;
-  nSecondaryVarGrad = 0;
- 
-  Undivided_Laplacian = NULL;
- 
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
+  
 }
 
 CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
@@ -75,26 +65,16 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   /*--- Array initialization ---*/
   
-  TS_Source = NULL;
-  Primitive = NULL;
-  Secondary = NULL;
-  
-  Gradient_Primitive = NULL;
-  Gradient_Secondary = NULL;
-  
-  Limiter_Primitive = NULL;
-  Limiter_Secondary = NULL;
-  
-  WindGust    = NULL;
+	TS_Source = NULL;
+	Primitive = NULL;
+	Gradient_Primitive = NULL;
+	Limiter_Primitive = NULL;
+  WindGust = NULL;
   WindGustDer = NULL;
-  
-  nPrimVar     = 0;
-  nPrimVarGrad = 0;
-  
-  nSecondaryVar     = 0;
-  nSecondaryVarGrad = 0;
-
-  Undivided_Laplacian = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
@@ -262,28 +242,17 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
-  
-  TS_Source = NULL;
-  Primitive = NULL;
-  Secondary = NULL;
-  
-  Gradient_Primitive = NULL;
-  Gradient_Secondary = NULL;
-  
+	TS_Source = NULL;
+	Primitive = NULL;
+	Gradient_Primitive = NULL;
   Limiter_Primitive = NULL;
-  Limiter_Secondary = NULL;
-  
-  WindGust    = NULL;
+  WindGust = NULL;
   WindGustDer = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
   
-  nPrimVar     = 0;
-  nPrimVarGrad = 0;
-  
-  nSecondaryVar     = 0;
-  nSecondaryVarGrad = 0;
- 
-  Undivided_Laplacian = NULL;
- 
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
@@ -402,8 +371,8 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 
 CEulerVariable::~CEulerVariable(void) {
 	unsigned short iVar;
-
-  if (TS_Source         != NULL) delete [] TS_Source;
+  
+	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Secondary         != NULL) delete [] Secondary;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
@@ -421,8 +390,6 @@ CEulerVariable::~CEulerVariable(void) {
       if (Gradient_Secondary!=NULL) delete [] Gradient_Secondary[iVar];
     delete [] Gradient_Secondary;
   }
-
-  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   
 }
 
