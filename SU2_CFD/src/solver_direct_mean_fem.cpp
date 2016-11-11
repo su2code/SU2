@@ -2159,7 +2159,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
-    config->GEMM_Tock(tick, "Volume_Residual_1", nInt, nVar, nDOFs);
+    config->GEMM_Tock(tick, "Volume_Residual1", nInt, nVar, nDOFs);
     
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
@@ -2224,7 +2224,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
-    config->GEMM_Tock(tick, "Volume_Residual_2", nDOFs, nVar, nInt*nDim);
+    config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
     
   }
 }
@@ -2313,7 +2313,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
-    config->GEMM_Tock(tick,"ResidualFaces_1",nDOFsFace0, nVar, nInt);
+    config->GEMM_Tock(tick,"ResidualFaces1",nDOFsFace0, nVar, nInt);
     
     /* Easier storage of the position in the residual array for side 1 of
        this face and update the corresponding counter. */
@@ -2338,7 +2338,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_co
       
       config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
-      config->GEMM_Tock(tick,"ResidualFaces_2",nDOFsFace1, nVar, nInt);
+      config->GEMM_Tock(tick,"ResidualFaces2",nDOFsFace1, nVar, nInt);
       
       for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
         resFace1[i] = -resFace1[i];
@@ -2386,7 +2386,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   /* Compute the left states. Call the general function to
      carry out the matrix product. */
   DenseMatrixProduct(nInt, nVar, nDOFsFace0, basisFace0, solFace, solIntL);
-  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace_1", nInt, nVar, nDOFsFace0);
+  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace1", nInt, nVar, nDOFsFace0);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 2: Interpolate the right state in the integration points of ---*/
@@ -2412,7 +2412,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
      carry out the matrix product. */
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, nVar, nDOFsFace1, basisFace1, solFace, solIntR);
-  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace_2", nInt, nVar, nDOFsFace0);
+  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace2", nInt, nVar, nDOFsFace0);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the fluxes in the integration points using the   ---*/
@@ -4277,7 +4277,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, solDOFs, solAndGradInt);
-    config->GEMM_Tock(tick, "Volume_Residual_1", nInt*(nDim+1), nVar, nDOFs);
+    config->GEMM_Tock(tick, "Volume_Residual1", nInt*(nDim+1), nVar, nDOFs);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the total fluxes (inviscid fluxes minus the      ---*/
@@ -4428,7 +4428,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
-    config->GEMM_Tock(tick, "Volume_Residual_2", nDOFs, nVar, nInt*nDim);
+    config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
     
   }
 }
@@ -4566,7 +4566,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
-    config->GEMM_Tock(tick, "ResidualFaces_1", nDOFsFace0, nVar, nInt);
+    config->GEMM_Tock(tick, "ResidualFaces1", nDOFsFace0, nVar, nInt);
     
     /* Easier storage of the position in the residual array for side 1 of
        this face and update the corresponding counter. */
@@ -4590,7 +4590,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
       config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
-      config->GEMM_Tock(tick, "ResidualFaces_2", nDOFsFace1, nVar, nInt);
+      config->GEMM_Tock(tick, "ResidualFaces2", nDOFsFace1, nVar, nInt);
 
       for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
         resFace1[i] = -resFace1[i];
@@ -4671,7 +4671,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
          the residual for side 0. */
       config->GEMM_Tick(&tick2);
       DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
-      config->GEMM_Tock(tick2, "ResidualFaces_3", nDOFsElem0, nVar, nInt*nDim);
+      config->GEMM_Tock(tick2, "ResidualFaces3", nDOFsElem0, nVar, nInt*nDim);
 
       /* Get the element information of side 1 of the face. */
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
@@ -4713,7 +4713,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
          which cancel each other. */
       config->GEMM_Tick(&tick2);
       DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
-      config->GEMM_Tock(tick2, "ResidualFaces_4", nDOFsElem1, nVar, nInt*nDim);
+      config->GEMM_Tock(tick2, "ResidualFaces4", nDOFsElem1, nVar, nInt*nDim);
     }
     config->Tock(tick, "ER_1_6", 4);
   }
@@ -6034,7 +6034,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   /* Call the general function to carry out the matrix product. */
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
-  config->GEMM_Tock(tick, "ResidualViscousBoundaryFace_1", nDOFs, nVar, nInt);
+  config->GEMM_Tock(tick, "ResidualViscousBoundaryFace1", nDOFs, nVar, nInt);
   
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the symmetrizing terms, if present, in the       ---*/
@@ -6106,7 +6106,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
        the residual. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
-    config->GEMM_Tock(tick, "ResidualViscousBoundaryFace_2", nDOFsElem, nVar, nInt*nDim);
+    config->GEMM_Tock(tick, "ResidualViscousBoundaryFace2", nDOFsElem, nVar, nInt*nDim);
 
   }
 }
