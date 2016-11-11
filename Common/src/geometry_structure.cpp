@@ -12829,9 +12829,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
-  su2double Sens, dull_val;
+  su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
+  string::size_type position;
 
   Sensitivity = new su2double[nPoint*nDim];
 
@@ -12925,7 +12926,19 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     }
 
   }
+  
+  /*--- Read AoA sensitivity ---*/
+  
+  while (getline (restart_file, text_line)) {
+    position = text_line.find ("SENS_AOA=",0);
+    if (position != string::npos) {
+      text_line.erase (0,9); AoASens = atof(text_line.c_str());
+      config->SetAoA_Sens(AoASens);
+    }
+  }
+  
   restart_file.close();
+
 
   delete [] Global2Local;
 }

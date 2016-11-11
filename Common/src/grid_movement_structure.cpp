@@ -4398,7 +4398,6 @@ void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *confi
 void CSurfaceMovement::SetAngleOfAttack(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
   
   su2double Ampl = config->GetDV_Value(iDV);
-  cout << " SetAngleOfAttack(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef)"  << endl;
   config->SetAoA_Offset(Ampl);
   
 }
