@@ -2497,8 +2497,8 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig *config) {
       config->GEMM_Tick(&tick);
       DenseMatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
                          volElem[l].massMatrix.data(), tmpRes, res);
-      config->GEMM_Tock(tick, "CreateFinalResidual", volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol);
-
+      config->GEMM_Tock(tick, "MultiplyResidualByInverseMassMatrix",
+                        volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol);
     }
   }
 }
