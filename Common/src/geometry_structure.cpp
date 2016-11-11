@@ -12903,8 +12903,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   /*--- The first line is the header ---*/
   getline (restart_file, text_line);
   
-  while (getline (restart_file, text_line)) {
-    istringstream point_line(text_line);
+  for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    getline (restart_file, text_line);
+
+  	istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
              on a different processor, the value of iPoint_Local will be -1.
@@ -12920,7 +12923,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
         Sensitivity[iPoint_Local*nDim+iDim] = Sens;
       }
     }
-    iPoint_Global++;
+
   }
   restart_file.close();
 
