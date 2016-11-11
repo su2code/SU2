@@ -6709,7 +6709,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
     
     if (rank == MASTER_NODE){
       if (config->GetFFD_Blending() == BSPLINE_UNIFORM){
-        cout << "FFD Blending using B-Splines.";
+        cout << "FFD Blending using B-Splines. ";
         cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
         if (nDim == 3) cout << ", " << SplineOrder[2];
         cout << ". " << endl;
@@ -7220,9 +7220,9 @@ void CFreeFormDefBox::SetSplineOrder(unsigned short OrderI, unsigned short Order
     KnotSizeK = BSplineOrder[2] + nOrder;
 
     BSplineKnots.resize(nDim);
-    BSplineKnots[0] = vector<su2double>(KnotSizeI, -1e-05);
-    BSplineKnots[1] = vector<su2double>(KnotSizeJ, -1e-05);
-    BSplineKnots[2] = vector<su2double>(KnotSizeK, -1e-05);
+    BSplineKnots[0] = vector<su2double>(KnotSizeI, 0.0);
+    BSplineKnots[1] = vector<su2double>(KnotSizeJ, 0.0);
+    BSplineKnots[2] = vector<su2double>(KnotSizeK, 0.0);
 
     /*--- Note: the first lOrder/mOrder/nOrder knots are zero now.---*/
 
@@ -7561,7 +7561,9 @@ su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) {
 }
 
 su2double CFreeFormDefBox::GetSplineBasis(short val_n, short val_i, su2double val_t, short index) {
-    
+
+  if ((val_t < BSplineKnots[index][val_i]) || (val_t > BSplineKnots[index][val_i+val_n])){ return 0.0;}
+
   if (val_n == 1){
     return su2double(val_t >= BSplineKnots[index][val_i] && val_t < BSplineKnots[index][val_i+1]);
   }
@@ -7775,14 +7777,30 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
         for (iDim = 0; iDim < nDim; iDim++)
           ParamCoord[iDim] = su2double(rand())/su2double(RAND_MAX);
       }
-      
-		}
-    
-	}
-	
-	for (iDim = 0; iDim < nDim; iDim++) 
-		delete [] Hessian[iDim];
-	delete [] Hessian;
+
+    }
+
+    /* --- Splines are not defined outside of [0,1]. So if the parametric coords are outside of
+     *  [0,1] the step was too big and we have to use a smaller relaxation factor. ---*/
+
+    if (((ParamCoord[0] < 0.0) || (ParamCoord[0] > 1.0)) ||
+        ((ParamCoord[1] < 0.0) || (ParamCoord[1] > 1.0)) ||
+        ((ParamCoord[2] < 0.0) || (ParamCoord[2] > 1.0))) {
+
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        cout << ParamCoord[iDim] << " ";
+        ParamCoord[iDim] = ParamCoordGuess[iDim];
+      }
+      SOR_Factor = 0.9*SOR_Factor;
+      cout << endl;
+    }
+
+  }
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    delete [] Hessian[iDim];
+  delete [] Hessian;
   delete [] IndepTerm;
 
   /*--- The code has hit the max number of iterations ---*/
