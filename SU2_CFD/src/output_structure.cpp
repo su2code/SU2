@@ -3669,7 +3669,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   ofstream restart_file;
   string filename;
-  
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+
   /*--- Retrieve filename from config ---*/
   
   if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
@@ -3859,6 +3860,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
   restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+  if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
   restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
   
   restart_file.close();
@@ -5256,9 +5258,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
             if (disc_adj) {
-              cout << "    Sens_Press" << "    Sens_AoA (1/deg)" << endl;
+              cout << "    Sens_Press" << "      Sens_AoA" << endl;
             } else {
-              cout << "      Sens_Geo" << "    Sens_AoA (1/deg)" << endl;
+              cout << "      Sens_Geo" << "      Sens_AoA" << endl;
             }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
@@ -5301,9 +5303,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "     Res[Psi_E]";
             }
             if (disc_adj) {
-              cout << "    Sens_Press" << "    Sens_AoA (1/deg)" << endl;
+              cout << "    Sens_Press" << "      Sens_AoA" << endl;
             } else {
-              cout << "      Sens_Geo" << "    Sens_AoA (1/deg)" << endl;
+              cout << "      Sens_Geo" << "      Sens_AoA" << endl;
                           }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
