@@ -181,7 +181,7 @@ inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return n
 
 inline unsigned long CGeometry::GetnEdge(void) { return nEdge; }
 
-inline bool CGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem, unsigned short &face_second_elem) {return 0;}
+inline bool CGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem, unsigned short &face_second_elem) { return 0;}
 
 inline void CGeometry::SetBoundVolume(void) { }
 
@@ -321,9 +321,9 @@ inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { re
 
 inline void CGeometry::SetSensitivity(CConfig* config) {}
 
-inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) {return 0.0;}
+inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
 
-inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) {return Sensitivity[iPoint*nDim+iDim];}
+inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return Sensitivity[iPoint*nDim+iDim];}
 
 inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {}
 
