@@ -7792,7 +7792,7 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
   
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
   
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
     
     cout.precision(4);
     cout.setf(ios::fixed, ios::floatfield);
@@ -8721,7 +8721,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
       }
       
-      if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+      if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
         
         cout << "Surface ("<< Analyze_TagBound << "): ";
         cout.precision(4);
@@ -8762,7 +8762,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
     
   }
   
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
     
     cout << "-------------------------------------------------------------------------" << endl;
     
@@ -9420,7 +9420,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
         cout.precision(5);
         cout.setf(ios::fixed, ios::floatfield);
         
-        if (write_heads && Output) {
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
           if (Engine) cout << endl   << "---------------------------- Engine properties --------------------------" << endl;
           else cout << endl   << "------------------------ Actuator Disk properties -----------------------" << endl;
         }
@@ -9564,7 +9564,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           su2double mu_polytropic = ((Gamma-1.0)/Gamma)/((poly_coeff-1.0)/poly_coeff);
           SetTotal_Poly_Eff(mu_polytropic);
           
-          if (write_heads && Output) {
+          if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
             
             if (iMarker_Inlet > 0) cout << endl;
             
@@ -9684,7 +9684,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           
         }
         
-        if (write_heads && Output) cout << "-------------------------------------------------------------------------" << endl << endl;
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) cout << "-------------------------------------------------------------------------" << endl << endl;
         
       }
       
@@ -10367,7 +10367,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Output some information to the console with the headers ---*/
     
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads) {
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && !config->GetDiscrete_Adjoint()) {
       Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
       Delta_AoA = Old_AoA - AoA_Prev;
       
@@ -10388,11 +10388,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
         
         cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
         cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
-        
-//        if (AoA_Counter >= Update_Alpha)  {
-//          config->SetdCL_dAlpha(dCL_dAlpha_);
-//          config->SetdCD_dCL(dCD_dCL_);
-//        }
         
       }
       
