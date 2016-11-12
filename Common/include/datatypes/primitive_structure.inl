@@ -38,9 +38,9 @@ namespace SU2_TYPE{
 
   inline void SetSecondary(double& data, const double &val) {}
 
-  inline double GetDerivative(const double& data) {return 0.0;}
+  inline double GetDerivative(const double& data) { return 0.0;}
 
-  inline double GetSecondary(const double& data) {return 0.0;}
+  inline double GetSecondary(const double& data) { return 0.0;}
 
   inline void SetDerivative(double &data, const double &val) {}
 }
