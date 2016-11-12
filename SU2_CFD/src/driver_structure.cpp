@@ -3667,6 +3667,8 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
 void CHBDriver::ComputeHB_Operator(){
 
+#ifdef CHECK_AD
+  
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i, j, k, iZone;
 
@@ -3835,6 +3837,8 @@ void CHBDriver::ComputeHB_Operator(){
 		delete [] Temp;
 		delete [] Dcpx;
 		delete [] Omega_HB;
+  
+#endif
   
 }
 
