@@ -16504,9 +16504,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 CNSSolver::~CNSSolver(void) {
   unsigned short iMarker, iDim, iVertex;
   
-  if (CD_Visc != NULL)       delete [] CD_Visc;
-  if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)  delete [] CSF_Visc;
+  if (CD_Visc != NULL)          delete [] CD_Visc;
+  if (CL_Visc != NULL)          delete [] CL_Visc;
+  if (CSF_Visc != NULL)         delete [] CSF_Visc;
   if (CMx_Visc != NULL)         delete [] CMx_Visc;
   if (CMy_Visc != NULL)         delete [] CMy_Visc;
   if (CMz_Visc != NULL)         delete [] CMz_Visc;
@@ -16533,9 +16533,7 @@ CNSSolver::~CNSSolver(void) {
   if (Surface_CMy_Visc != NULL)     delete [] Surface_CMy_Visc;
   if (Surface_CMz_Visc != NULL)     delete [] Surface_CMz_Visc;
   if (Surface_HF_Visc != NULL)      delete [] Surface_HF_Visc;
-  if (Surface_MaxHF_Visc != NULL)        delete [] Surface_MaxHF_Visc;
-  
-  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
+  if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
   
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -16546,6 +16544,7 @@ CNSSolver::~CNSSolver(void) {
     }
     delete [] CSkinFriction;
   }
+  
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
