@@ -71,7 +71,7 @@
 		05F1089C1978D2AE00F2F288 /* fluid_model_pvdw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108981978D2AE00F2F288 /* fluid_model_pvdw.cpp */; };
 		05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108991978D2AE00F2F288 /* fluid_model.cpp */; };
 		05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108A31978D2F200F2F288 /* transport_model.cpp */; };
-		63B75FA11CD0110D002B4DB2 /* inlet_funct.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 63B75FA01CD0110D002B4DB2 /* inlet_funct.cpp */; };
+		63B75FA11CD0110D002B4DB2 /* (null) in Sources */ = {isa = PBXBuildFile; };
 		E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */; };
 		E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB901B71D124005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB911B71D124005C6C06 /* mpi_structure.cpp */; };
@@ -385,7 +385,6 @@
 				E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */,
 				05E6DBDD17EB62A100FA1F7E /* solver_adjoint_turbulent.cpp */,
 				05E6DBEB17EB62A100FA1F7E /* solver_template.cpp */,
-				63B75FA01CD0110D002B4DB2 /* inlet_funct.cpp */,
 			);
 			name = Solver;
 			sourceTree = "<group>";
@@ -498,7 +497,6 @@
 				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
 				E9D9CE951C62A272004119E9 /* transfer_structure.hpp */,
 				E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */,
-				63B75FA31CD01FEE002B4DB2 /* inlet_funct.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -1489,7 +1487,7 @@
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0700;
+				LastUpgradeCheck = 0810;
 			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_CFD" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -1526,7 +1524,7 @@
 				0530E56A17FDF7AC00733CE8 /* solver_direct_elasticity.cpp in Sources */,
 				05E6DB9617EB61E600FA1F7E /* grid_movement_structure.cpp in Sources */,
 				05E6DB9717EB61E600FA1F7E /* linear_solvers_structure.cpp in Sources */,
-				63B75FA11CD0110D002B4DB2 /* inlet_funct.cpp in Sources */,
+				63B75FA11CD0110D002B4DB2 /* (null) in Sources */,
 				05E6DB9817EB61E600FA1F7E /* matrix_structure.cpp in Sources */,
 				05E6DB9917EB61E600FA1F7E /* primal_grid_structure.cpp in Sources */,
 				05AF9F201BE1E1830062E1F1 /* element_linear.cpp in Sources */,
@@ -1603,7 +1601,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++98";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
@@ -1659,7 +1657,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++98";
-				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
@@ -1709,18 +1707,26 @@
 		1DEB923608733DC60010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_NULLABLE_TO_NONNULL_CONVERSION = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
@@ -1734,15 +1740,23 @@
 		1DEB923708733DC60010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_NULLABLE_TO_NONNULL_CONVERSION = YES;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_SHADOW = YES;
 				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_LABEL = YES;
