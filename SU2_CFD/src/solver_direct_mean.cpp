@@ -176,16 +176,145 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  su2double AoA_, AoS_, BCThrust_;
   string filename = config->GetSolution_FlowFileName();
+  string filename_ = config->GetSolution_FlowFileName();
+  string::size_type position;
+  unsigned long ExtIter_;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
   
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+    
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+    
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+    
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Open the restart file, throw an error if this fails. ---*/
+    
+    restart_file.open(filename_.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename_.data() << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    unsigned long iPoint_Global = 0;
+    string text_line;
+    
+    /*--- The first line is the header (General description) ---*/
+    
+    getline (restart_file, text_line);
+    
+    /*--- Space for the solution ---*/
+    
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
+    }
+    
+    /*--- Space for extra info (if any) ---*/
+    
+    while (getline (restart_file, text_line)) {
+      
+      /*--- Angle of attack ---*/
+      
+      position = text_line.find ("AOA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+            cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+          }
+          config->SetAoA(AoA_ + config->GetAoA_Offset());
+        }
+        else {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+        }
+      }
+      
+      /*--- Sideslip angle ---*/
+      
+      position = text_line.find ("SIDESLIP_ANGLE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+            cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+          }
+          config->SetAoS(AoS_ + config->GetAoS_Offset());
+        }
+        else {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+        }
+      }
+      
+      /*--- BCThrust angle ---*/
+      
+      position = text_line.find ("INITIAL_BCTHRUST=",0);
+      if (position != string::npos) {
+        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+          config->SetInitial_BCThrust(BCThrust_);
+        }
+        else {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+        }
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+          config->SetExtIter_OffSet(ExtIter_);
+      }
+      
+    }
+    
+    /*--- Close the restart file... we will open this file again... ---*/
+    
+    restart_file.close();
+    
+  }
+
   /*--- Array initialization ---*/
   
   /*--- Basic array initialization ---*/
@@ -637,7 +766,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;
   Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_BCThrust_Prev = 0.0;
-  Total_Power = 0.0;
+  Total_Power = 0.0;      AoA_Prev           = 0.0;
+  Total_CL_Prev = 0.0;  Total_CD_Prev      = 0.0;
 
   /*--- Read farfield conditions ---*/
   
@@ -821,37 +951,29 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
     
   } else {
-
+		
     /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-    if (nZone > 1)
-	  filename = config->GetMultizone_FileName(filename, iZone);
+    
+    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
     
     /*--- Modify file name for a dual-time unsteady restart ---*/
     
     if (dual_time) {
-      
-      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
       else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
     
-		/*--- Modify file name for a time stepping unsteady restart ---*/
-		
-		if (time_stepping) {
-			if (adjoint) {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-			} else {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-			}
-			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-		}
-		
-		
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+
 		/*--- Open the restart file, throw an error if this fails. ---*/
     
     restart_file.open(filename.data(), ios::in);
@@ -886,7 +1008,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    /*--- Solution ---*/
+    
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -916,7 +1043,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
         node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
     /*--- Detect a wrong solution file ---*/
@@ -928,7 +1055,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -5839,7 +5965,10 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     }
     
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
+        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
+        (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
+        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
       
       /*--- Forces initialization at each Marker ---*/
       
@@ -6114,19 +6243,17 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   UnitNormal[3] = {0.0,0.0,0.0}, Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density, Vel_Infty2, Vel_Infty;
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
-  
+
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Mnt, MyAllBound_CL_Mnt, MyAllBound_CSF_Mnt,
   MyAllBound_CEff_Mnt,
-  MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
-  MyAllBound_CoPx_Mnt, MyAllBound_CoPy_Mnt, MyAllBound_CoPz_Mnt,
+MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   MyAllBound_CFx_Mnt, MyAllBound_CFy_Mnt, MyAllBound_CFz_Mnt, MyAllBound_CT_Mnt,
   MyAllBound_CQ_Mnt, MyAllBound_CMerit_Mnt, MyAllBound_CNearFieldOF_Mnt,
   *MySurface_CL_Mnt = NULL, *MySurface_CD_Mnt = NULL, *MySurface_CSF_Mnt = NULL,
   *MySurface_CEff_Mnt = NULL, *MySurface_CFx_Mnt = NULL, *MySurface_CFy_Mnt = NULL,
   *MySurface_CFz_Mnt = NULL,
-  *MySurface_CMx_Mnt = NULL, *MySurface_CMy_Mnt = NULL,  *MySurface_CMz_Mnt = NULL,
-  *MySurface_CoPx_Mnt = NULL, *MySurface_CoPy_Mnt = NULL,  *MySurface_CoPz_Mnt = NULL;
+	*MySurface_CMx_Mnt = NULL, *MySurface_CMy_Mnt = NULL,  *MySurface_CMz_Mnt = NULL;
 #endif
   
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
@@ -6209,7 +6336,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
       MomentX_Force[0] = 0.0; MomentX_Force[1] = 0.0; MomentX_Force[2] = 0.0;
       MomentY_Force[0] = 0.0; MomentY_Force[1] = 0.0; MomentY_Force[2] = 0.0;
       MomentZ_Force[0] = 0.0; MomentZ_Force[1] = 0.0; MomentZ_Force[2] = 0.0;
-      
+
       /*--- Loop over the vertices to compute the forces ---*/
       
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -6252,16 +6379,16 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
           
           if (iDim == 3) {
             MomentInviscid[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentX_Force[1] += (-Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentX_Force[2] += (Force[2]*MomentDist[1])/RefLengthMoment;
-            
+  					MomentX_Force[1] += (-Force[1]*MomentDist[2])/RefLengthMoment;
+  					MomentX_Force[2] += (Force[2]*MomentDist[1])/RefLengthMoment;
+
             MomentInviscid[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
             MomentY_Force[0] += (Force[0]*MomentDist[2])/RefLengthMoment;
             MomentY_Force[2] += (-Force[2]*MomentDist[0])/RefLengthMoment;
           }
           MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
           MomentZ_Force[0] += (-Force[0]*MomentDist[1])/RefLengthMoment;
-          MomentZ_Force[1] += (Force[1]*MomentDist[0])/RefLengthMoment;
+					MomentZ_Force[1] += (Force[1]*MomentDist[0])/RefLengthMoment;
           
         }
         
@@ -6381,7 +6508,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   MySurface_CMx_Mnt        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMy_Mnt        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMz_Mnt        = new su2double[config->GetnMarker_Monitoring()];
-  
+
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     MySurface_CL_Mnt[iMarker_Monitoring]      = Surface_CL_Mnt[iMarker_Monitoring];
     MySurface_CD_Mnt[iMarker_Monitoring]      = Surface_CD_Mnt[iMarker_Monitoring];
@@ -6393,7 +6520,7 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
     MySurface_CMx_Mnt[iMarker_Monitoring]        = Surface_CMx_Mnt[iMarker_Monitoring];
     MySurface_CMy_Mnt[iMarker_Monitoring]        = Surface_CMy_Mnt[iMarker_Monitoring];
     MySurface_CMz_Mnt[iMarker_Monitoring]        = Surface_CMz_Mnt[iMarker_Monitoring];
-    
+
     Surface_CL_Mnt[iMarker_Monitoring]      = 0.0;
     Surface_CD_Mnt[iMarker_Monitoring]      = 0.0;
     Surface_CSF_Mnt[iMarker_Monitoring] = 0.0;
@@ -6417,23 +6544,23 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(MySurface_CMx_Mnt, Surface_CMx_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMy_Mnt, Surface_CMy_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMz_Mnt, Surface_CMz_Mnt, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  
+
   delete [] MySurface_CL_Mnt; delete [] MySurface_CD_Mnt; delete [] MySurface_CSF_Mnt;
   delete [] MySurface_CEff_Mnt;  delete [] MySurface_CFx_Mnt;   delete [] MySurface_CFy_Mnt;
   delete [] MySurface_CFz_Mnt;
-  delete [] MySurface_CMx_Mnt;   delete [] MySurface_CMy_Mnt;  delete [] MySurface_CMz_Mnt;
-  
+ delete [] MySurface_CMx_Mnt;   delete [] MySurface_CMy_Mnt;  delete [] MySurface_CMz_Mnt;
+
 #endif
   
   /*--- Update the total coefficients (note that all the nodes have the same value) ---*/
   
-  Total_CD            += AllBound_CD_Mnt;
-  Total_CL            += AllBound_CL_Mnt;
-  Total_CSF           += AllBound_CSF_Mnt;
+  Total_CD         += AllBound_CD_Mnt;
+  Total_CL        += AllBound_CL_Mnt;
+  Total_CSF    += AllBound_CSF_Mnt;
   Total_CEff          = Total_CL / (Total_CD + EPS);
   Total_CMx           += AllBound_CMx_Mnt;
   Total_CMy           += AllBound_CMy_Mnt;
-  Total_CMz           += AllBound_CMz_Mnt;
+  Total_CMz          += AllBound_CMz_Mnt;
   Total_CFx           += AllBound_CFx_Mnt;
   Total_CFy           += AllBound_CFy_Mnt;
   Total_CFz           += AllBound_CFz_Mnt;
@@ -7722,8 +7849,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   unsigned short iMarker, iDim;
   unsigned long iPoint, iVertex, Global_Index;
   su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, q = 0.0, PT = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
-  su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0;
-  su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0, dx = 0.0, dy = 0.0, dz = 0.0;
+  su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0, Distance_Mirror = 0.0;
+  su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0, dx = 0.0, dy = 0.0, dz = 0.0, dx_ = 0.0, dy_ = 0.0, dz_ = 0.0;
   unsigned short iStation, iAngle, nAngle, Theta, nStation;
   su2double *** ProbeArray, *Mach_Station, *Mach_Station_Min, *PT_Sector, *PT_Station, *PT_Station_Min,
   PT_Sector_Min, PT_Mean, Mach_Mean, q_Mean, UpVector[3], radians, RotatedVector[3],
@@ -7731,7 +7858,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
   su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
   su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
-  unsigned short iMarker_Analyze, nMarkerAnalyze = 0;
+  unsigned short iMarker_Analyze;
   int rank, iProcessor, nProcessor;
   rank = MASTER_NODE;
   nProcessor = SINGLE_NODE;
@@ -7742,6 +7869,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   unsigned short Theta_DC60 = 60, nStation_DC60 = 5;
   bool Evaluate_ActDisk = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
   bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+	bool Engine_HalfModel = config->GetEngine_HalfModel();
+	double SignFlip = 1.0;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -8055,6 +8184,10 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         Mach_Mean   /= TotalArea;
         q_Mean   /=  TotalArea;
         
+    		/*--- If it is a half model, CGy = 0 ---*/
+
+    		if (Engine_HalfModel) { yCoord_CG = 0.0; }
+
         /*--- Compute hub and tip radius ---*/
         
         TipRadius = 1E-6; HubRadius = 1E6;
@@ -8168,13 +8301,35 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
                 
+    						SignFlip = 1.0;
+
+    						if (Engine_HalfModel) {
+
+    							yCoord = -yCoord;
+
+    							dx_ = (xCoord_ - xCoord);
+    							dy_ = (yCoord_ - yCoord);
+    							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+    							Distance_Mirror = dx_*dx_ + dy_*dy_;
+    							if (nDim == 3) Distance_Mirror += dz_*dz_;
+    							Distance_Mirror = sqrt(Distance_Mirror);
+
+    							if (Distance_Mirror < Distance) {
+    								SignFlip = -1.0;
+    								Distance = Distance_Mirror;
+    								dx = dx_; dy = dy_;
+    								if (nDim == 3) dz = dz_;
+    							}
+
+    						}
                 
                 if (Distance <= MinDistance) {
                   MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
 
-                  ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index]  + Buffer_Recv_dq_dx[Total_Index]*dx + Buffer_Recv_dq_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][4] = Buffer_Recv_q[Total_Index]  + Buffer_Recv_dq_dx[Total_Index]*dx + Buffer_Recv_dq_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dq_dz[Total_Index]*dz;
                   
                 }
@@ -8332,10 +8487,32 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
                 
-                
+    						SignFlip = 1.0;
+
+    						if (Engine_HalfModel) {
+
+    							yCoord = -yCoord;
+
+    							dx_ = (xCoord_ - xCoord);
+    							dy_ = (yCoord_ - yCoord);
+    							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+    							Distance_Mirror = dx_*dx_ + dy_*dy_;
+    							if (nDim == 3) Distance_Mirror += dz_*dz_;
+    							Distance_Mirror = sqrt(Distance_Mirror);
+
+    							if (Distance_Mirror < Distance) {
+    								SignFlip = -1.0;
+    								Distance = Distance_Mirror;
+    								dx = dx_; dy = dy_;
+    								if (nDim == 3) dz = dz_;
+    							}
+
+    						}
+
                 if (Distance <= MinDistance) {
                   MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
                 }
                 
@@ -8431,9 +8608,32 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
                 
+    						SignFlip = 1.0;
+
+    						if (Engine_HalfModel) {
+
+    							yCoord = -yCoord;
+
+    							dx_ = (xCoord_ - xCoord);
+    							dy_ = (yCoord_ - yCoord);
+    							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+    							Distance_Mirror = dx_*dx_ + dy_*dy_;
+    							if (nDim == 3) Distance_Mirror += dz_*dz_;
+    							Distance_Mirror = sqrt(Distance_Mirror);
+
+    							if (Distance_Mirror < Distance) {
+    								SignFlip = -1.0;
+    								Distance = Distance_Mirror;
+    								dx = dx_; dy = dy_;
+    								if (nDim == 3) dz = dz_;
+    							}
+
+    						}
+
                 if (Distance <= MinDistance) {
                   MinDistance = Distance;
-                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy;
+                  ProbeArray[iAngle][iStation][3] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy*SignFlip;
                   if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dMach_dz[Total_Index]*dz;
                 }
                 
@@ -8576,7 +8776,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   unsigned long iVertex, iPoint;
   su2double  *V_inlet = NULL, *V_outlet = NULL, Pressure, Temperature, Velocity[3], Vn,
   Velocity2, Density, Area, SoundSpeed, TotalPressure, Vel_Infty2, RamDrag,
-  TotalTemperature, Pressure_Infty, VelocityJet, Pinf_To,
+  TotalTemperature, Pressure_Infty, VelocityJet, VelocityIdeal, Pinf_To,
   Vel_Infty, MassFlow_Inlet, MaxPressure, MinPressure, MFR, InfVel2;
   unsigned short iMarker_Inlet, iMarker_Outlet, nMarker_Inlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound, Marker_Tag;
@@ -8699,7 +8899,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             MinPressure     		  = min(MinPressure, TotalPressure);
             MaxPressure     		  = max(MaxPressure, TotalPressure);
-            Pinf_To = min (1.0, Pressure_Infty / TotalPressure);
             
             RamDrag 	= MassFlow * Vel_Infty;
             
@@ -8766,9 +8965,9 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             TotalPressure     		= Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma 	/ (Gamma - 1.0));
             TotalTemperature 	= Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
             VelocityJet         = sqrt(Velocity2) ;
-            
+
             GrossThrust 	= MassFlow * VelocityJet;
-            
+
             Outlet_MassFlow[iMarker]    						+= MassFlow;
             Outlet_Pressure[iMarker]    							+= Pressure*MassFlow;
             Outlet_TotalPressure[iMarker]				+= TotalPressure*MassFlow;
@@ -9290,10 +9489,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           DmTVector[0] = GetTotal_CFx()/ModDmT;
           DmTVector[1] = GetTotal_CFy()/ModDmT;
           if (nDim == 3)  DmTVector[2] = GetTotal_CFz()/ModDmT;
-          
-          
-          su2double Drag = DmT + NetThrust;
-          su2double CD = Drag / Factor;
           
           su2double SolidSurf_Drag = DmT - Force;
           su2double SolidSurf_CD = SolidSurf_Drag / Factor;
@@ -10057,12 +10252,18 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  su2double Target_CL, AoA, Vel_Infty[3], AoA_inc, Vel_Infty_Mag;
+  su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3], AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA,
+  dCL_dAlpha_, dCD_dCL_;
+  
   unsigned short iDim;
+  
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
+  unsigned long Update_Alpha = config->GetUpdate_Alpha();
+  
   unsigned long ExtIter       = config->GetExtIter();
-  su2double Beta              = config->GetAoS()*PI_NUMBER/180.0;
-  su2double dCl_dAlpha        = config->GetdCl_dAlpha()*180.0/PI_NUMBER;
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
+  su2double Beta                 = config->GetAoS()*PI_NUMBER/180.0;
+  su2double dCL_dAlpha           = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   bool Update_AoA             = false;
   
   int rank = MASTER_NODE;
@@ -10081,12 +10282,16 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Update_AoA = false;
     
     /*--- Reevaluate Angle of Attack at a fix number of iterations ---*/
-    
+
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
-      if (AoA_Counter >= 2) Update_AoA = true;
+      if ((AoA_Counter != 0) &&
+          (AoA_Counter != 1) &&
+          (AoA_Counter != Update_Alpha) &&
+          (AoA_Counter != Update_Alpha + 2) &&
+          (AoA_Counter != Update_Alpha + 4) ) Update_AoA = true;
       else Update_AoA = false;
-    };
+    }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
     
@@ -10098,10 +10303,6 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     Update_AoA = config->GetUpdate_AoA();
   }
   
-  /*--- If we are within two digits of convergence in the CL coefficient,
- *    compute an updated value for the AoA at the farfield. We are iterating
- *       on the AoA in order to match the specified fixed lift coefficient. ---*/
-  
   if (Update_AoA && Output) {
     
     /*--- Retrieve the specified target CL value. ---*/
@@ -10112,9 +10313,9 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     
-    /*--- Estimate the increment in AoA based on dCl_dAlpha (radians) ---*/
+    /*--- Estimate the increment in AoA based on dCL_dAlpha (radians) ---*/
     
-    AoA_inc = (1.0/dCl_dAlpha)*(Target_CL - Total_CL);
+    AoA_inc = (1.0/dCL_dAlpha)*(Target_CL - Total_CL);
     
     /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
     
@@ -10122,11 +10323,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
     
     /*--- Only the fine mesh stores the updated values for AoA in config ---*/
-
+    
     if (iMesh == MESH_0) {
       config->SetAoA(AoA*180.0/PI_NUMBER);
     }
-
+    
     /*--- Update the freestream velocity vector at the farfield ---*/
     
     for (iDim = 0; iDim < nDim; iDim++)
@@ -10164,21 +10365,45 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
     }
     
+    /*--- Output some information to the console with the headers ---*/
+    
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads) {
+      Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
+      Delta_AoA = Old_AoA - AoA_Prev;
+      
+      cout.precision(7);
+      cout.setf(ios::fixed, ios::floatfield);
+      cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
+      cout << "CL: " << Total_CL;
+      cout << " (target: " << config->GetTarget_CL() <<")." << endl;
+      cout.precision(4);
+      cout << "Previous AoA: " << Old_AoA << " deg";
+      cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
+      
+      cout.precision(7);
+      if ((fabs(Delta_AoA) > EPS) && (AoA_Counter != 2))  {
+        
+        dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/Delta_AoA;
+        dCD_dCL_ = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
+        
+        cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
+        cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
+        
+//        if (AoA_Counter >= Update_Alpha)  {
+//          config->SetdCL_dAlpha(dCL_dAlpha_);
+//          config->SetdCD_dCL(dCD_dCL_);
+//        }
+        
+      }
+      
+      Total_CD_Prev = Total_CD;
+      Total_CL_Prev = Total_CL;
+      AoA_Prev =config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
+      
+      cout << "-------------------------------------------------------------------------" << endl << endl;
+    }
+    
   }
-  
-  /*--- Output some information to the console with the headers ---*/
-  
-  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
-  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
-    cout.precision(7);
-    cout.setf(ios::fixed, ios::floatfield);
-    cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
-    cout << "Target CL: " << config->GetTarget_CL();
-    cout << ", current CL: " << Total_CL;
-    cout << ", current AoA: " << config->GetAoA() << " deg." << endl;
-    cout << "-------------------------------------------------------------------------" << endl << endl;
-  }
-  
   
 }
 
@@ -13056,7 +13281,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   su2double Baseline_Press = 0.75 * config->GetPressure_FreeStreamND();
-  
+  bool Engine_HalfModel = config->GetEngine_HalfModel();
+
   su2double *Normal = new su2double[nDim];
   
   
@@ -13089,6 +13315,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
     
     if (config->GetSystemMeasurements() == US) Target_Inflow_MassFlow /= 32.174;
     
+    if (Engine_HalfModel) Target_Inflow_MassFlow /= 2.0;
+
     /*--- Retrieve the old fan face pressure and mach number in the nacelle (this has been computed in a preprocessing). ---*/
     
     Inflow_Pressure_old = config->GetInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
@@ -14831,7 +15059,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-	restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
 
   /*--- Modify file name for an unsteady restart ---*/
   
@@ -15282,7 +15510,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
-  
+  string filename_ = config->GetSolution_FlowFileName();
+  su2double AoA_, AoS_, BCThrust_;
+  string::size_type position;
+  unsigned long ExtIter_;
+
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
@@ -15292,6 +15524,132 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Check for a restart file to check if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+  
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+    
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+    
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+    
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+    
+    /*--- Modify file name for a simple unsteady restart ---*/
+    
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Open the restart file, throw an error if this fails. ---*/
+    
+    restart_file.open(filename_.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename_.data() << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    unsigned long iPoint_Global = 0;
+    string text_line;
+    
+    /*--- The first line is the header (General description) ---*/
+    
+    getline (restart_file, text_line);
+    
+    /*--- Space for the solution ---*/
+    
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
+    }
+    
+    /*--- Space for extra info (if any) ---*/
+    
+    while (getline (restart_file, text_line)) {
+      
+      /*--- Angle of attack ---*/
+      
+      position = text_line.find ("AOA=",0);
+      if (position != string::npos) {
+        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+            cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+          }
+          config->SetAoA(AoA_ + config->GetAoA_Offset());
+        }
+        else {
+          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+        }
+      }
+      
+      /*--- Sideslip angle ---*/
+      
+      position = text_line.find ("SIDESLIP_ANGLE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+            cout.precision(6);
+            cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+            cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+          }
+          config->SetAoS(AoS_ + config->GetAoS_Offset());
+        }
+        else {
+          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+        }
+      }
+      
+      /*--- BCThrust angle ---*/
+      
+      position = text_line.find ("INITIAL_BCTHRUST=",0);
+      if (position != string::npos) {
+        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+        if (config->GetDiscard_InFiles() == false) {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+          config->SetInitial_BCThrust(BCThrust_);
+        }
+        else {
+          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+        }
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+          config->SetExtIter_OffSet(ExtIter_);
+      }
+      
+    }
+    
+    /*--- Close the restart file... we will open this file again... ---*/
+    
+    restart_file.close();
+    
+  }
+
   /*--- Array initialization ---*/
   
   CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
@@ -15737,9 +16095,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CFx     = 0.0;	  Total_CFy          = 0.0;    Total_CFz          = 0.0;
   Total_CT      = 0.0;	  Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;
-  Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_BCThrust_Prev = 0.0;
-  Total_Power = 0.0;
+  Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
+  Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
+  Total_Power = 0.0;      AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
 
   /*--- Read farfield conditions from config ---*/
   
@@ -15934,37 +16292,28 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   else {
     
-    /*--- Modify file name for an unsteady restart ---*/
-
-    if (nZone >1)
-    	filename = config->GetMultizone_FileName(filename, iZone);
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    
+    if (nZone > 1) filename = config->GetMultizone_FileName(filename, iZone);
+    
+    /*--- Modify file name for a dual-time unsteady restart ---*/
     
     if (dual_time) {
-      
-      if (adjoint) {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-      
     }
     
-		
-		
-		/*--- Modify file name for a simple unsteady restart ---*/
-		
-		if (time_stepping) {
-			if (adjoint) {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-			} else {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-			}
-			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-		}
+    /*--- Modify file name for a simple unsteady restart ---*/
     
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+
     /*--- Open the restart file, throw an error if this fails. ---*/
     
     restart_file.open(filename.data(), ios::in);
@@ -15999,7 +16348,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -16031,7 +16383,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
     /*--- Detect a wrong solution file ---*/
@@ -16043,7 +16395,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;

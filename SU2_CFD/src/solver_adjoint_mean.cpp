@@ -62,6 +62,10 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   string filename, AdjExt;
   su2double dull_val, myArea_Monitored, Area, *Normal;
+  su2double dCD_dCL_, dCD_dCM_;
+  string::size_type position;
+  unsigned long ExtIter_;
+
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -328,19 +332,26 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
+    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
+      
       iPoint_Local = Global2Local[iPoint_Global];
+      
       if (iPoint_Local >= 0) {
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
@@ -355,31 +366,97 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
         }
         node[iPoint_Local] = new CAdjEulerVariable(Solution, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
+    }
+    
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+    
+    while (getline (restart_file, text_line)) {
+      
+      
+      if (config->GetEval_dCD_dCX() == true) {
+        
+        /*--- dCD_dCL coefficient ---*/
+        
+        position = text_line.find ("DCD_DCL_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+          config->SetdCD_dCL(dCD_dCL_);
+        }
+        
+        /*--- dCD_dCM coefficient ---*/
+        
+        position = text_line.find ("DCD_DCM_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
+          config->SetdCD_dCM(dCD_dCM_);
+        }
+        
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        config->SetExtIter_OffSet(ExtIter_);
+      }
+      
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
+    
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       node[iPoint] = new CAdjEulerVariable(Solution, nDim, nVar, config);
     }
     
     /*--- Close the restart file ---*/
+    
     restart_file.close();
     
     /*--- Free memory needed for the transformation ---*/
+    
     delete [] Global2Local;
+    
   }
   
   /*--- Define solver parameters needed for execution of destructor ---*/
+  
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
   else space_centered = false;
 
-  
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
+  
   myArea_Monitored = 0.0;
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
@@ -2121,6 +2198,10 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
   su2double RefLengthMoment  = config->GetRefLengthMoment();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
+  su2double dCD_dCL 				 = config->GetdCD_dCL();
+  su2double dCD_dCM 			   = config->GetdCD_dCM();
+  bool Fixed_CL              = config->GetFixed_CL_Mode();
+  bool Fixed_CM              = config->GetFixed_CM_Mode();
 
   ForceProj_Vector = new su2double[nDim];
   
@@ -2135,10 +2216,9 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
-  /*--- Evaluate the boundary condition coefficients. ---*/
-  /*--- Since there may be more than one objective per marker, first we have to set all
-   * Force projection vectors to 0.
-   */
+  /*--- Evaluate the boundary condition coefficients,
+   Since there may be more than one objective per marker, first we have to set all Force projection vectors to 0 ---*/
+  
   for (iMarker = 0; iMarker<nMarker; iMarker++) {
     if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
            (config->GetMarker_All_Monitoring(iMarker) == YES))
@@ -2150,9 +2230,10 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
       }
   }
 
+  /*--- Find the matching iMarker ---*/
+
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    /*--- Find the matching iMarker ---*/
     Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
     for (jMarker=0; jMarker<nMarker; jMarker++) {
       Marker_Tag = config->GetMarker_All_TagBound(jMarker);
@@ -2178,8 +2259,29 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 
         switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha)*cos(Beta); ForceProj_Vector[1] += Weight_ObjFunc*sin(Beta); ForceProj_Vector[2] += Weight_ObjFunc*sin(Alpha)*cos(Beta); }
+            if (nDim == 2) {
+              
+              ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha);
+              ForceProj_Vector[1] += Weight_ObjFunc*sin(Alpha);
+              
+              /*--- Modification to run at a fixed CL and CM value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
+              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCM*Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+
+            }
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha)*cos(Beta);
+              ForceProj_Vector[1] += Weight_ObjFunc*sin(Beta);
+              ForceProj_Vector[2] += Weight_ObjFunc*sin(Alpha)*cos(Beta);
+              
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
+              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCM*Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+              
+            }
             break;
           case LIFT_COEFFICIENT :
             if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*cos(Alpha); }
@@ -2695,6 +2797,12 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+  bool fixed_cl       = config->GetFixed_CL_Mode();
+  bool eval_dcd_dcx   = config->GetEval_dCD_dCX();
+
+  /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
+  
+  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
@@ -4032,6 +4140,95 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       delete [] ArchLength;
       
     }
+  }
+  
+  
+}
+
+void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                      CConfig *config, unsigned short iMesh, bool Output) {
+  
+  unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
+  unsigned long ExtIter       = config->GetExtIter();
+  bool Update_AoA             = false;
+  su2double dCL_dAlpha   = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  if (ExtIter == 0) AoA_Counter = 0;
+  
+  /*--- Only the fine mesh level should check the convergence criteria ---*/
+  
+  if ((iMesh == MESH_0) && Output) {
+    
+    /*--- Initialize the update flag to false ---*/
+    
+    Update_AoA = false;
+    
+    /*--- Reevaluate the lift derivative with respect to Angle of Attack
+     at a fix number of iterations ---*/
+    
+    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+      AoA_Counter++;
+      if (AoA_Counter >= 2) Update_AoA = true;
+      else Update_AoA = false;
+    }
+    
+    /*--- Store the update boolean for use on other mesh levels in the MG ---*/
+    
+    config->SetUpdate_AoA(Update_AoA);
+    
+  }
+  
+  else {
+    Update_AoA = config->GetUpdate_AoA();
+  }
+  
+  /*--- If we are within two digits of convergence in the CL coefficient,
+   compute an updated value for the AoA at the farfield. We are iterating
+   on the AoA in order to match the specified fixed lift coefficient. ---*/
+  
+  if (Update_AoA && Output) {
+    
+    /*--- Retrieve the old ACoeff ---*/
+    
+    ACoeff_old = config->GetdCD_dCL();
+    
+    /*--- Estimate the increment in the A coeff, (note that the slope is negative, a decrease in
+     * 	the CL derivative requires an increase in the A coeff ---*/
+    
+    /*--- A good estimation to d(dOF/dalpha)/dA_coeff is dCL_dAlpha ---*/
+    
+    ACoeff_inc =  (1.0/dCL_dAlpha)*Total_Sens_AoA;
+    
+    /*--- Compute a new value for the A coeff based on the fine mesh only (radians)---*/
+    
+    if (iMesh == MESH_0) { ACoeff = ACoeff_old + ACoeff_inc; }
+    else { ACoeff = config->GetdCD_dCL(); }
+    
+    /*--- Only the fine mesh stores the updated values for ACoeff in config ---*/
+    
+    if (iMesh == MESH_0) config->SetdCD_dCL(ACoeff);
+    
+    /*--- Compute the adjoint boundary condition ---*/
+    
+    SetForceProj_Vector(geometry, solver_container, config);
+    
+  }
+  
+  /*--- Output some information to the console with the headers ---*/
+  
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+    cout.precision(7);
+    cout.setf(ios::fixed, ios::floatfield);
+    cout << endl << "-------------------------- Adjoint Fixed CL Mode -------------------------" << endl;
+    cout << "Target dCL/dAlpha: 0.0 (1/deg), current dCL/dAlpha: " << Total_Sens_AoA*PI_NUMBER/180;
+    cout << " (1/deg), current dCD/dCL: " << config->GetdCD_dCL() <<" "<< endl;
+    cout << "-------------------------------------------------------------------------" << endl << endl;
   }
   
   
@@ -6021,8 +6218,11 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, index, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
+  su2double dCD_dCL_, dCD_dCM_;
   ifstream restart_file;
   string filename, AdjExt;
+  string::size_type position;
+  unsigned long ExtIter_;
 
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
@@ -6256,12 +6456,16 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
+    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      getline (restart_file, text_line);
+
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -6283,10 +6487,70 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
         }
         node[iPoint_Local] = new CAdjNSVariable(Solution, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+    
+    while (getline (restart_file, text_line)) {
+      
+      if (config->GetEval_dCD_dCX() ==  true) {
+        
+        /*--- dCD_dCL coefficient ---*/
+        
+        position = text_line.find ("DCD_DCL_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+          config->SetdCD_dCL(dCD_dCL_);
+        }
+        
+        /*--- dCD_dCM coefficient ---*/
+        
+        position = text_line.find ("DCD_DCM_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjointsolution file: " << dCD_dCM_ << " ." << endl;
+          config->SetdCD_dCM(dCD_dCM_);
+        }
+        
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        config->SetExtIter_OffSet(ExtIter_);
+      }
+      
+    }
+
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
@@ -6411,6 +6675,12 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
+  bool fixed_cl       = config->GetFixed_CL_Mode();
+  bool eval_dcd_dcx       = config->GetEval_dCD_dCX();
+
+  /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
+  
+  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
