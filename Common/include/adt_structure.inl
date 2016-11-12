@@ -60,7 +60,7 @@ inline su2_adtBaseClass::su2_adtBaseClass() {}
 
 inline su2_adtBaseClass::~su2_adtBaseClass() {}
 
-inline bool su2_adtBaseClass::IsEmpty(void) const {return isEmpty;}
+inline bool su2_adtBaseClass::IsEmpty(void) const { return isEmpty;}
 
 inline su2_adtPointsOnlyClass::~su2_adtPointsOnlyClass() {}
 
