@@ -162,7 +162,7 @@ CDriver::CDriver(char* confFile,
      the calculation of force coefficient (non-dimensionalization). ---*/
 
     geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
-
+      
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
 
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
@@ -3539,8 +3539,8 @@ void CHBDriver::ResetConvergence() {
 
 void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
-	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -3835,7 +3835,7 @@ void CHBDriver::ComputeHB_Operator(){
 		delete [] Temp;
 		delete [] Dcpx;
 		delete [] Omega_HB;
-
+  
 }
 
 
