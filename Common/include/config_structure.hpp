@@ -102,6 +102,7 @@ private:
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
+  su2double FFD_Scale;  	/*!< \brief Tolerance in the point inversion problem. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -381,9 +382,11 @@ private:
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
+  unsigned short nFFD_Fix_IDir, nFFD_Fix_JDir, nFFD_Fix_KDir;                 /*!< \brief Number of planes fixed in the FFD. */
 	unsigned short nMG_PreSmooth,                 /*!< \brief Number of MG pre-smooth parameters found in config file. */
 	nMG_PostSmooth,                             /*!< \brief Number of MG post-smooth parameters found in config file. */
 	nMG_CorrecSmooth;                           /*!< \brief Number of MG correct-smooth parameters found in config file. */
+  short *FFD_Fix_IDir, *FFD_Fix_JDir, *FFD_Fix_KDir;	/*!< \brief Exact sections. */
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
@@ -478,6 +481,7 @@ private:
   nVolSections;               /*!< \brief Number of sections. */
 	su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
 	su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
 	Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
 	Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
@@ -495,8 +499,10 @@ private:
   su2double Deform_Coeff; /*!< Deform coeffienct */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
+  unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
+  bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
 	su2double Mach;		/*!< \brief Mach number. */
 	su2double Reynolds;	/*!< \brief Reynolds number. */
 	su2double Froude;	/*!< \brief Froude number. */
@@ -811,7 +817,7 @@ private:
   unsigned short DirectDiff;  /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;       /*!< \brief AD-based discrete adjoint mode. */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
-  *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
+  *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
@@ -822,6 +828,7 @@ private:
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
+  *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -941,6 +948,7 @@ private:
   //  for (int i = 0; i < size; i++) {
   //    def[i] = default_value[i];
   //  }
+    
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
@@ -951,6 +959,13 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addShortListOption(const string name, unsigned short & size, short * & option_field) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionShortList(name, size, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1353,24 +1368,12 @@ public:
 	 * \return Value of the limits for the sections.
 	 */
 	su2double GetSection_Location(unsigned short val_var);
-
-	/*!
-	 * \brief Get the array that maps chemical consituents to each chemical reaction.
-	 * \return Memory location of the triple pointer to the 3-D reaction map array.
-	 */
-	int ***GetReaction_Map(void);
-
-	/*!
-	 * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
-	 * \return Memory location of the triple pointer to the 3-D collision integral array.
-	 */
-	su2double ***GetCollisionIntegral00(void);
-
-	/*!
-	 * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
-	 * \return Memory location of the triple pointer to the 3-D collision integral array.
-	 */
-	su2double ***GetCollisionIntegral11(void);
+  
+  /*!
+   * \brief Get the value of the limits for the sections.
+   * \return Value of the limits for the sections.
+   */
+  su2double GetFFD_Axis(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the bulk modulus.
@@ -2284,6 +2287,12 @@ public:
    * \return Continuity level at the surface intersection.
    */
   unsigned short GetFFD_Continuity(void);
+  
+  /*!
+   * \brief Get the required continuity level at the surface intersection with the FFD
+   * \return Continuity level at the surface intersection.
+   */
+  unsigned short GetFFD_CoordSystem(void);
 
 	/*!
 	 * \brief Get the number of Runge-Kutta steps.
@@ -2872,6 +2881,48 @@ public:
 	 * \return Number of implicit smoothing iterations.
 	 */
 	unsigned short GetMG_CorrecSmooth(unsigned short val_mesh);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  short GetFFD_Fix_IDir(unsigned short val_index);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  short GetFFD_Fix_JDir(unsigned short val_index);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  short GetFFD_Fix_KDir(unsigned short val_index);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  unsigned short GetnFFD_Fix_IDir(void);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  unsigned short GetnFFD_Fix_JDir(void);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  unsigned short GetnFFD_Fix_KDir(void);
 
 	/*!
 	 * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -3194,6 +3245,12 @@ public:
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Deformation(void);
+  
+  /*!
+   * \brief Creates a teot file to visualize the deformation made by the MDC software.
+   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+   */
+  bool GetFFD_Symmetry_Plane(void);
 
 	/*!
 	 * \brief Get the kind of SU2 software component.
@@ -6413,6 +6470,11 @@ public:
 	 * \brief Value of the location ath which the gust begins.
 	 */
 	su2double GetFFD_Tol(void);
+  
+  /*!
+   * \brief Value of the location ath which the gust begins.
+   */
+  su2double GetFFD_Scale(void);
 
   /*!
 	 * \brief Get the node number of the CV to visualize.

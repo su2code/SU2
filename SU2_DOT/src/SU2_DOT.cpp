@@ -246,7 +246,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   unsigned long iVertex, iPoint;
   su2double delta_eps, my_Gradient, **Gradient, *Normal, dS, *VarCoord, Sensitivity,
       dalpha[3], deps[3], dalpha_deps;
-  bool *UpdatePoint;
+  bool *UpdatePoint, MoveSurface, Local_MoveSurface;
   CFreeFormDefBox **FFDBox;
 
   int rank = MASTER_NODE;
@@ -284,14 +284,19 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
   for (iDV = 0; iDV < nDV; iDV++) {
 
+    MoveSurface = true;
+    Local_MoveSurface = true;
+
       /*--- Free Form deformation based ---*/
 
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
+        (config->GetDesign_Variable(iDV) == FFD_TWIST_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
-        (config->GetDesign_Variable(iDV) == FFD_DIHEDRAL_ANGLE) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
+        (config->GetDesign_Variable(iDV) == FFD_NACELLE) ||
+        (config->GetDesign_Variable(iDV) == FFD_GULL) ||
+        (config->GetDesign_Variable(iDV) == FFD_TWIST) ||
         (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
         (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
@@ -317,10 +322,11 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
           for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
 
-            if (rank == MASTER_NODE)
-              cout << "Check the FFD box intersections with the solid surfaces." << endl;
+            if (rank == MASTER_NODE) cout << "Checking FFD box dimension." << endl;
+            surface_movement->CheckFFDDimension(geometry, config, FFDBox[iFFDBox], iFFDBox);
 
-          surface_movement->CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
+            if (rank == MASTER_NODE) cout << "Check the FFD box intersections with the solid surfaces." << endl;
+            surface_movement->CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
 
           }
 
@@ -329,28 +335,41 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
         }
 
+      if (rank == MASTER_NODE) {
+        cout << endl << "Design variable number "<< iDV <<"." << endl;
+        cout << "Performing 3D deformation of the surface." << endl;
+      }
+
         /*--- Apply the control point change ---*/
+
+      MoveSurface = false;
 
         for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
 
           /*--- Reset FFD box ---*/
 
         switch (config->GetDesign_Variable(iDV) ) {
-          case FFD_CONTROL_POINT_2D : surface_movement->SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwist(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_ROTATION :         surface_movement->SetFFDRotation(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CONTROL_POINT_2D : Local_MoveSurface = surface_movement->SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_CAMBER_2D :        Local_MoveSurface = surface_movement->SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_THICKNESS_2D :     Local_MoveSurface = surface_movement->SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_TWIST_2D :         Local_MoveSurface = surface_movement->SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_CONTROL_POINT :    Local_MoveSurface = surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_NACELLE :          Local_MoveSurface = surface_movement->SetFFDNacelle(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_GULL :             Local_MoveSurface = surface_movement->SetFFDGull(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_TWIST :            Local_MoveSurface = surface_movement->SetFFDTwist(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_ROTATION :         Local_MoveSurface = surface_movement->SetFFDRotation(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_CAMBER :           Local_MoveSurface = surface_movement->SetFFDCamber(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_THICKNESS :        Local_MoveSurface = surface_movement->SetFFDThickness(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
+          case FFD_CONTROL_SURFACE :   Local_MoveSurface = surface_movement->SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true); break;
           case FFD_ANGLE_OF_ATTACK :  Gradient[iDV][0] = config->GetAoA_Sens(); break;
           }
 
           /*--- Recompute cartesian coordinates using the new control points position ---*/
 
-        surface_movement->SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
+          if (Local_MoveSurface) {
+            MoveSurface = true;
+        surface_movement->SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox, true);
+          }
 
         }
 
@@ -416,9 +435,16 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     if ((config->GetDesign_Variable(iDV) != ANGLE_OF_ATTACK) &&
         (config->GetDesign_Variable(iDV) != FFD_ANGLE_OF_ATTACK)) {
       
-      delta_eps = config->GetDV_Value(iDV);
+      /*--- If the Angle of attack is not involved, reset the value of the gradient ---*/
+
       my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
       
+      if (MoveSurface) {
+
+        /*--- Load the delta change in the design variable (finite difference step). ---*/
+
+        delta_eps = config->GetDV_Value(iDV);
+
       /*--- Reset update points ---*/
       
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
@@ -453,6 +479,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
             }
           }
         }
+      }
       }
       
 #ifdef HAVE_MPI
