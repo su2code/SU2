@@ -7260,29 +7260,20 @@ void CFreeFormDefBox::SetSplineOrder(unsigned short OrderI, unsigned short Order
   /*--- The remaining lOrder/mOrder/nOrder knots are just 1.0 ---*/
 
   for (iKnot = lOrder - BSplineOrder[0]; iKnot < lOrder; iKnot++){
-    BSplineKnots[0][BSplineOrder[0]+ iKnot]  = 1.0 + 1e-05;
+    BSplineKnots[0][BSplineOrder[0]+ iKnot]  = 1.0 + 1e-06;
   }
   for (iKnot = mOrder - BSplineOrder[1] ; iKnot < mOrder; iKnot++){
-    BSplineKnots[1][BSplineOrder[1] + iKnot] = 1.0 + 1e-05;
+    BSplineKnots[1][BSplineOrder[1] + iKnot] = 1.0 + 1e-06;
   }
   for (iKnot = nOrder - BSplineOrder[2]; iKnot < nOrder; iKnot++){
-    BSplineKnots[2][BSplineOrder[2] + iKnot] = 1.0 + 1e-05;
+    BSplineKnots[2][BSplineOrder[2] + iKnot] = 1.0 + 1e-06;
   }
 
-  for (iKnot = 0; iKnot < KnotSizeI; iKnot++){
-    cout << BSplineKnots[0][iKnot] << " ";
-  }
-  cout << endl;
+  /*--- Allocate the temporary vectors for the basis evaluation ---*/
 
-  for (iKnot = 0; iKnot < KnotSizeJ; iKnot++){
-    cout << BSplineKnots[1][iKnot] << " ";
-  }
-  cout << endl;
-
-  for (iKnot = 0; iKnot < KnotSizeK; iKnot++){
-    cout << BSplineKnots[2][iKnot] << " ";
-  }
-  cout << endl;
+  unsigned short maxSize = max(BSplineOrder[0], max(BSplineOrder[1], BSplineOrder[2]));
+  N.resize(maxSize, vector<su2double>(maxSize));
+  ND.resize(maxSize);
 
   MPI_Barrier(MPI_COMM_WORLD);
 
@@ -7562,61 +7553,62 @@ su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) {
 
 su2double CFreeFormDefBox::GetSplineBasis(short val_n, short val_i, su2double val_t, short index) {
 
-  if ((val_t < BSplineKnots[index][val_i]) || (val_t > BSplineKnots[index][val_i+val_n])){ return 0.0;}
+  if ((val_t < BSplineKnots[index][val_i]) || (val_t >= BSplineKnots[index][val_i+val_n])){ return 0.0;}
 
-  if (val_n == 1){
-    return su2double(val_t >= BSplineKnots[index][val_i] && val_t < BSplineKnots[index][val_i+1]);
+  unsigned short j,k;
+  su2double saved, temp;
+
+  for (j = 0; j < val_n; j++){
+    if ((val_t >= BSplineKnots[index][val_i+j]) && (val_t < BSplineKnots[index][val_i+j+1])) N[j][0] = 1.0;
+    else N[j][0] = 0;
   }
 
-  /*--- We directly compute the values for order 2 and 3 to reduce the recursion overhead ---*/
-
-  if (val_n == 2){
-    const su2double m1 = su2double(val_t >= BSplineKnots[index][val_i] && val_t < BSplineKnots[index][val_i+1]);
-    const su2double m2 = su2double(val_t >= BSplineKnots[index][val_i+1] && val_t < BSplineKnots[index][val_i+2]);
-    return (val_t-BSplineKnots[index][val_i])/(1e-10 + BSplineKnots[index][val_i+1]-BSplineKnots[index][val_i])*m1 +
-           (BSplineKnots[index][val_i+2] - val_t)/(1e-10 + BSplineKnots[index][val_i+2]-BSplineKnots[index][val_i+1])*m2;
+  for (k = 1; k < val_n; k++){
+    if (N[0][k-1] == 0.0) saved = 0.0;
+    else saved = ((val_t - BSplineKnots[index][val_i])*N[0][k-1])/(BSplineKnots[index][val_i+k] - BSplineKnots[index][val_i]);
+    for (j = 0; j < val_n - k; j++){
+      if (N[j+1][k-1] == 0.0){
+        N[j][k] = saved; saved = 0.0;
+      } else {
+        temp = N[j+1][k-1]/(BSplineKnots[index][val_i + j + k + 1] - BSplineKnots[index][val_i + j + 1]);
+        N[j][k]  = saved+(BSplineKnots[index][val_i + j + k + 1] - val_t)*temp;
+        saved = (val_t - BSplineKnots[index][val_i + j + 1])*temp;
+      }
+  }
   }
 
-  if (val_n == 3){
-    const su2double m1 = su2double(val_t >= BSplineKnots[index][val_i] && val_t < BSplineKnots[index][val_i+1]);
-    const su2double m2 = su2double(val_t >= BSplineKnots[index][val_i+1] && val_t < BSplineKnots[index][val_i+2]);
-    const su2double m3 = su2double(val_t >= BSplineKnots[index][val_i+2] && val_t < BSplineKnots[index][val_i+3]);
+  return N[0][val_n-1];
 
-    return (val_t-BSplineKnots[index][val_i])/(BSplineKnots[index][val_i+2]-BSplineKnots[index][val_i]+1e-10)*
-        ((val_t-BSplineKnots[index][val_i])/(1e-10 + BSplineKnots[index][val_i+1]-BSplineKnots[index][val_i])*m1 +
-        (BSplineKnots[index][val_i+2] - val_t)/(1e-10 + BSplineKnots[index][val_i+2]-BSplineKnots[index][val_i+1])*m2) +
-        (BSplineKnots[index][val_i+3] - val_t)/(BSplineKnots[index][val_i+3]-BSplineKnots[index][val_i+1]+1e-10)*
-        ((val_t-BSplineKnots[index][val_i+1])/(1e-10 + BSplineKnots[index][val_i+2] - BSplineKnots[index][val_i+1])*m2 +
-        (BSplineKnots[index][val_i+3] - val_t)/(1e-10 + BSplineKnots[index][val_i+3]-BSplineKnots[index][val_i+2])*m3);
-  }
-
-  return (val_t-BSplineKnots[index][val_i])/(BSplineKnots[index][val_i+val_n-1]-BSplineKnots[index][val_i]+1e-10)*GetSplineBasis(val_n-1, val_i, val_t, index)
-      +  (BSplineKnots[index][val_i + val_n] - val_t)/(BSplineKnots[index][val_i+val_n]-BSplineKnots[index][val_i+1]+1e-10)*GetSplineBasis(val_n-1, val_i+1, val_t, index);
 }
 
 su2double CFreeFormDefBox::GetSplineDerivative(short val_n, short val_i,
                          su2double val_t, short val_order, short index) {
 
-  if (val_order >= val_n) return 0.0;
+  if ((val_t < BSplineKnots[index][val_i]) || (val_t >= BSplineKnots[index][val_i+val_n])){ return 0.0;}
 
-  if (val_order == 0){
-    return GetSplineBasis(val_n, val_i, val_t, index);
-  }
+  GetSplineBasis(val_n, val_i, val_t, index);
 
-  su2double d1 = BSplineKnots[index][val_i+val_n-1] - BSplineKnots[index][val_i];
-  su2double d2 = BSplineKnots[index][val_i+val_n] - BSplineKnots[index][val_i+1];
-  su2double a1, a2;
-
-  if (d1 > 0.0) a1 = su2double(val_n-1)/(d1);
-  else a1 = 0.0;
-  if (d2 > 0.0) a2 = su2double(val_n-1)/(d2);
-  else a2 = 0.0;
+  if (val_order == 0){ return N[0][val_n-1];}
 
   if (val_order == 1){
-    return a1*GetSplineBasis(val_n-1, val_i, val_t, index) - a2*GetSplineBasis(val_n - 1, val_i+1, val_t, index);
+    return (val_n-1.0)/(1e-10 + BSplineKnots[index][val_i+val_n-1] - BSplineKnots[index][val_i]  )*N[0][val_n-2]
+         - (val_n-1.0)/(1e-10 + BSplineKnots[index][val_i+val_n]   - BSplineKnots[index][val_i+1])*N[1][val_n-2];
   }
 
-  return a1*GetSplineDerivative(val_n-1, val_i, val_t, val_order-1, index) - a2*GetSplineDerivative(val_n - 1, val_i+1, val_t, val_order-1, index);
+  if (val_order == 2 && val_n > 2){
+    const su2double left = (val_n-2.0)/(1e-10 + BSplineKnots[index][val_i+val_n-2] - BSplineKnots[index][val_i])  *N[0][val_n-3]
+                         - (val_n-2.0)/(1e-10 + BSplineKnots[index][val_i+val_n-1] - BSplineKnots[index][val_i+1])*N[1][val_n-3];
+
+    const su2double right = (val_n-2.0)/(1e-10 + BSplineKnots[index][val_i+val_n-1] - BSplineKnots[index][val_i+1])*N[1][val_n-3]
+                          - (val_n-2.0)/(1e-10 + BSplineKnots[index][val_i+val_n]   - BSplineKnots[index][val_i+2])*N[2][val_n-3];
+
+    return (val_n-1.0)/(1e-10 + BSplineKnots[index][val_i+val_n-1] - BSplineKnots[index][val_i]  )*left
+         - (val_n-1.0)/(1e-10 + BSplineKnots[index][val_i+val_n]   - BSplineKnots[index][val_i+1])*right;
+  }
+
+  /*--- Higher order derivatives are not implemented ---*/
+
+ return 0.0;
 }
 
 su2double *CFreeFormDefBox::GetFFDGradient(su2double *val_coord, su2double *xyz) {
