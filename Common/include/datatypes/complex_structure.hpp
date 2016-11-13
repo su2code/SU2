@@ -60,11 +60,11 @@ public:
 
   CComplexType(const std::complex<float>& z) : std::complex<double>(z) {}
 
-  operator double() {return this->real();}
+  operator double() { return this->real();}
 
-  operator int() {return int(this->real());}
+  operator int() { return int(this->real());}
 
-  operator short() {return short(this->real());}
+  operator short() { return short(this->real());}
 
   /*--- To get rid of some ambiguities, we need to reimplement some operators
    * (although they are already implemented for std::complex). ---*/
