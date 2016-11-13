@@ -603,15 +603,6 @@ int main(int argc, char *argv[]) {
         
         else {
           
-          Wing_Volume_Grad = 0.0;
-          Wing_MinMaxThickness_Grad = 0.0;
-          Wing_MaxChord_Grad = 0.0;
-          Wing_MinToC_Grad = 0.0;
-          Wing_MaxTwist_Grad = 0.0;
-          Wing_MaxCurvature_Grad = 0.0;
-          Wing_MaxDihedral_Grad = 0.0;
-          FanRadius_Diff_Grad = 0.0;
-          
           for (iPlane = 0; iPlane < nPlane; iPlane++) {
             Gradient[iPlane] = 0.0;
             Gradient[1*nPlane + iPlane] = 0.0;
