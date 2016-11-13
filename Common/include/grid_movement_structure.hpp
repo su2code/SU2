@@ -126,6 +126,9 @@ public:
 
   vector<vector<su2double> > BSplineKnots;
   vector<unsigned short> BSplineOrder;
+  vector<vector<su2double> >  N;
+  vector<su2double> ND;
+
 
 public:
 	
@@ -616,7 +619,7 @@ public:
 	 * \param[in] xyz - Cartesians coordinates of the target point to compose the functional.
 	 * \param[in] val_Hessian - Value of the hessian.
 	 */
-	void GetFFDHessian(su2double *uvw, su2double *xyz, su2double **val_Hessian);
+  void GetFFDHessian(su2double *uvw, su2double *xyz, su2double **val_Hessian);
   
 	/*! 
 	 * \brief An auxiliary routine to help us compute the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2 =
