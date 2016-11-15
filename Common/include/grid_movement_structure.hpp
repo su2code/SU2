@@ -81,6 +81,191 @@ public:
   
 };
 
+/*!
+ * \class CFreeFormBlending
+ * \brief Class that defines the particular kind of blending function for the free form deformation.
+ * \author T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CFreeFormBlending {
+
+protected:
+  unsigned short Order, /*!< \brief Order of the polynomial basis. */
+   Degree,              /*!< \brief Degree (Order - 1) of the polynomial basis. */
+   nControl;            /*!< \brief Number of control points. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CFreeFormBlending();
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFreeFormBlending();
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  virtual su2double GetBasis(short val_i, su2double val_t);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  virtual su2double GetDerivative(short val_i, su2double val_t, short val_order);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_order - The new order of the function.
+   * \param[in] n_controlpoints - the new number of control points.
+   */
+  virtual void SetOrder(short val_order, short n_controlpoints);
+
+  /*!
+   * \brief Returns the current order of the function.
+   */
+  su2double GetOrder();
+
+  /*!
+   * \brief Returns the current degree of the function.
+   */
+  su2double GetDegree();
+};
+
+/*!
+ * \class CBSplineBlending
+ * \brief Class that defines the blending using uniform BSplines.
+ * \author T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CBSplineBlending : public CFreeFormBlending{
+
+private:
+  vector<su2double>          U;  /*!< \brief The knot vector for uniform BSplines on the interval [0,1]. */
+  vector<vector<su2double> > N;  /*!< \brief The temporary matrix holding the j+p basis functions up to order p. */
+  unsigned short KnotSize;       /*!< \brief The size of the knot vector. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CBSplineBlending(short val_order, short n_controlpoints);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CBSplineBlending();
+
+  /*!
+   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  su2double GetBasis(short val_i, su2double val_t);
+
+  /*!
+   * \brief Returns the value of the derivative of the i-th basis function.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  su2double GetDerivative(short val_i, su2double val_t, short val_order);
+
+
+  /*!
+   * \brief Set the order and number of control points.
+   * \param[in] val_order - The new order of the function.
+   * \param[in] n_controlpoints - the new number of control points.
+   */
+  void SetOrder(short val_order, short n_controlpoints);
+
+};
+
+/*!
+ * \class CBezierBlending
+ * \brief Class that defines the blending using Bernteinpolynomials (Bezier Curves).
+ * \author F. Palacios, T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CBezierBlending : public CFreeFormBlending{
+
+private:
+
+  vector<su2double> binomial; /*!< \brief Temporary vector for the Bernstein evaluation. */
+
+
+  /*!
+   * \brief Returns the value of the i-th Bernstein polynomial of order n.
+   * \param[in] val_n - Order of the Bernstein polynomial.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  su2double GetBernstein(short val_n, short val_i, su2double val_t);
+
+  /*!
+   * \brief Returns the value of the derivative of the i-th Bernstein polynomial of order n.
+   * \param[in] val_n - Order of the Bernstein polynomial.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  su2double GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order);
+
+  /*!
+   * \brief Get the binomial coefficient n over i, defined as n!/(m!(n-m)!)
+   * \note If the denominator is 0, the value is 1.
+   * \param[in] n - Upper coefficient.
+   * \param[in] m - Lower coefficient.
+   * \return Value of the binomial coefficient n over m.
+   */
+  su2double Binomial(unsigned short n, unsigned short m);
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_order - Max. order of the basis functions.
+   * \param[in] n_controlpoints - Not used here.
+   */
+  CBezierBlending(short val_order, short n_controlpoints);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CBezierBlending();
+
+  /*!
+   * \brief Returns the value of the i-th basis function and stores the values of the i+p basis functions in the matrix N.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the i-th basis.
+   */
+  su2double GetBasis(short val_i, su2double val_t);
+
+  /*!
+   * \brief Returns the value of the derivative of the i-th basis function.
+   * \param[in] val_i - index of the basis function.
+   * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
+   * \param[in] val_order - Order of the derivative.
+   */
+  su2double GetDerivative(short val_i, su2double val_t, short val_order);
+
+  /*!
+   * \brief Set the order and number of control points.
+   * \param[in] val_order - The new order of the function.
+   * \param[in] n_controlpoints - the new number of control points.
+   */
+  void SetOrder(short val_order, short n_controlpoints);
+
+};
+
 /*! 
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
@@ -124,10 +309,7 @@ public:
   vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
 
-  vector<vector<su2double> > BSplineKnots;
-  vector<unsigned short> BSplineOrder;
-  vector<vector<su2double> >  N;
-  vector<su2double> ND;
+  CFreeFormBlending** BlendingFunction;
 
 
 public:
@@ -143,7 +325,7 @@ public:
 	 * \param[in] val_mDegree - Degree of the FFDBox in the j direction.
 	 * \param[in] val_nDegree - Degree of the FFDBox in the k direction.
 	 */	
-	CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_mDegree, unsigned short val_nDegree);
+  CFreeFormDefBox(unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending);
 
 	/*! 
 	 * \brief Destructor of the class. 
@@ -521,24 +703,6 @@ public:
 	su2double *EvalCartesianCoord(su2double *ParamCoord);
 	
 	/*! 
-	 * \brief Set the Bernstein polynomial, defined as B_i^n(t) = Binomial(n, i)*t^i*(1-t)^(n-i).
-	 * \param[in] val_n - Degree of the Bernstein polynomial.
-	 * \param[in] val_i - Order of the Bernstein polynomial.
-	 * \param[in] val_t - Value of the parameter where the polynomial is evaluated.
-	 * \return Value of the Bernstein polynomial.
-	 */		
-  su2double GetSplineBasis(short val_n, short val_i, su2double val_t, short index);
-	
-	/*! 
-	 * \brief Get the binomial coefficient n over i, defined as n!/(m!(n-m)!)
-	 * \note If the denominator is 0, the value is 1.
-	 * \param[in] n - Upper coefficient.
-	 * \param[in] m - Lower coefficient.
-	 * \return Value of the binomial coefficient n over m.
-	 */
-	su2double Binomial(unsigned short n, unsigned short m);
-	
-	/*! 
 	 * \brief Get the order in the l direction of the FFD FFDBox.
 	 * \return Order in the l direction of the FFD FFDBox.
 	 */		
@@ -590,18 +754,6 @@ public:
 	 */		
 	void SetDeformationZone(CGeometry *geometry, CConfig *config, unsigned short iFFDBox);
 	
-	/*! 
-	 * \brief The "order" derivative of the i-th Bernstein polynomial of degree n, evaluated at t, 
-	 *        is calculated as  (B_i^n(t))^{order}(t) = n*(GetBernstein(n-1, i-1, t)-GetBernstein(n-1, i, t)), 
-	 *        having in account that if i=0, GetBernstein(n-1,-1, t) = 0.
-	 * \param[in] val_n - Degree of the Bernstein polynomial.
-	 * \param[in] val_i - Order of the Bernstein polynomial.
-	 * \param[in] val_t - Value of the parameter where the polynomial is evaluated.
-	 * \param[in] val_order - Order of the derivative.
-	 * \return Value of the Derivative of the Bernstein polynomial.
-	 */		
-  su2double GetSplineDerivative(short val_n, short val_i, su2double val_t, short val_order, short index);
-  
 	/*! 
 	 * \brief The routine computes the gradient of F(u, v, w) = ||X(u, v, w)-(x, y, z)||^2  evaluated at (u, v, w).
 	 * \param[in] val_coord - Parametric coordiates of the target point.
@@ -739,8 +891,6 @@ public:
 	su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11,
                          su2double A12, su2double A20, su2double A21, su2double A22);
   
-  void SetSplineOrder(unsigned short OrderI, unsigned short OrderJ, unsigned short OrderK, unsigned short kind_Blending);
-
 };
 
 /*! 
