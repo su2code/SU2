@@ -2037,8 +2037,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
    index for their particular solution container. ---*/
   
   switch (Kind_Solver) {
-    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE; break;
+    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; if(config->GetHeat_Inc()) SecondIndex = HEAT_SOL; else SecondIndex = NONE; ThirdIndex = NONE; break;
+    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if (transition) ThirdIndex=TRANS_SOL; else ThirdIndex = NONE;  if(config->GetHeat_Inc()) ThirdIndex = HEAT_SOL; else ThirdIndex = NONE; break;
     case POISSON_EQUATION: FirstIndex = POISSON_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case WAVE_EQUATION: FirstIndex = WAVE_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case HEAT_EQUATION: FirstIndex = HEAT_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
@@ -3917,6 +3917,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool equiv_area = config->GetEquivArea();
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool heat = config->GetHeat_Inc();
   bool frozen_turb = config->GetFrozen_Visc();
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
@@ -4039,6 +4040,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (rotating_frame) ConvHist_file[0] << rotating_frame_coeff;
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
+      if (heat) ConvHist_file[0] << heat_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
@@ -4172,7 +4174,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool adjoint = config[val_iZone]->GetContinuous_Adjoint() || config[val_iZone]->GetDiscrete_Adjoint();
     bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
-    bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
+    bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION) || (config[val_iZone]->GetHeat_Inc());
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
@@ -4527,6 +4529,19 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
         }
+
+        if (heat){
+
+          /*--- Heat coefficients  ---*/
+
+          Total_CHeat = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
+
+          /*--- Wave Residuals ---*/
+
+          for (iVar = 0; iVar < nVar_Heat; iVar++) {
+            residual_heat[iVar] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+          }
+        }
         
         break;
         
@@ -4719,6 +4734,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (nDim == 2) {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
               if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
+              if (heat) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_heat[0]), log10 (residual_flow[2]), dummy, dummy);
             }
             else {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
@@ -4780,6 +4796,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             }
             
+            if (heat){
+              SPRINTF (direct_coeff, ", %12.10f", Total_CHeat);
+              SPRINTF (heat_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_heat[0]), dummy, dummy, dummy, dummy );
+            }
+
             break;
             
           case WAVE_EQUATION:
@@ -5043,7 +5064,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << endl << " IntIter" << " ExtIter";
             
             //            if (!fluid_structure) {
-            if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+            if (incompressible && !heat) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+            if (heat){
+              cout << "   Res[Press]" << "     Res[Heat]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+            }
+
             else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
             else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
@@ -5097,7 +5122,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
-            
+            if (heat){
+              cout <<  "     Res[Heat]" << endl;
+            }
             switch (config[val_iZone]->GetKind_Turb_Model()) {
               case SA:	   cout << "       Res[nu]"; break;
               case SA_NEG: cout << "       Res[nu]"; break;
@@ -5262,6 +5289,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (!DualTime_Iteration) {
             if (compressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
             if (incompressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (heat) ConvHist_file[0] << heat_resid;
             //            if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -5283,7 +5311,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
               else { cout.width(14); cout << log10(residual_flow[4]); }
             }
-            if (incompressible) { cout.width(14); cout << log10(residual_flow[1]); }
+            if (incompressible && !heat) { cout.width(14); cout << log10(residual_flow[1]); }
+            if (heat){cout.width(15); cout << log10(residual_heat[0]);}
           }
           //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
           
@@ -5329,6 +5358,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if (!DualTime_Iteration) {
             ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
+            if (heat) ConvHist_file[0] << heat_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
@@ -5356,6 +5386,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
               cout.width(15); cout << log10(residual_turbulent[1]); break;
+          }
+          if (heat){
+             cout.width(15); cout << log10(residual_heat[0]);
           }
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }

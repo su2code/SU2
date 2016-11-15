@@ -1070,9 +1070,9 @@ inline su2double* CPotentialVariable::GetChargeDensity() { return Charge_Density
 
 inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2double negative_charge) {Charge_Density[0] = positive_charge; Charge_Density[1] = negative_charge;}
 
-inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
+//inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
 
-inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
+//inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
 
 inline void CTurbSAVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
 

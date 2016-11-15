@@ -726,9 +726,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : euler = true; heat = config->GetHeat_Inc(); break;
+    case NAVIER_STOKES: ns = true; heat = config->GetHeat_Inc(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetHeat_Inc(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -810,7 +810,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
     }
     if (heat) {
-      solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
+      solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config, iMGlevel);
     }
     if (fem) {
       solver_container[iMGlevel][FEA_SOL] = new CFEM_ElasticitySolver(geometry[iMGlevel], config);
@@ -872,9 +872,9 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : euler = true; heat = config->GetHeat_Inc(); break;
+    case NAVIER_STOKES: ns = true; heat = config->GetHeat_Inc(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetHeat_Inc(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -971,9 +971,9 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : euler = true; heat = config->GetHeat_Inc(); break;
+    case NAVIER_STOKES: ns = true; heat = config->GetHeat_Inc();break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetHeat_Inc(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1030,9 +1030,9 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : euler = true; heat = config->GetHeat_Inc(); break;
+    case NAVIER_STOKES: ns = true; heat = config->GetHeat_Inc(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetHeat_Inc(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1112,9 +1112,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case DISC_ADJ_EULER: euler = true; break;
-    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; break;
-    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : case DISC_ADJ_EULER: euler = true; heat = config->GetHeat_Inc(); break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; heat = config->GetHeat_Inc(); break;
+    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetHeat_Inc(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1497,8 +1497,12 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (heat) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Heat, config);
-    
+    numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
+    numerics_container[MESH_0][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
+
+    numerics_container[MESH_0][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+    numerics_container[MESH_0][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
+
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     numerics_container[MESH_0][HEAT_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
     numerics_container[MESH_0][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
@@ -1794,9 +1798,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case DISC_ADJ_EULER: euler = true; break;
-    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; break;
-    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : case DISC_ADJ_EULER: euler = true; heat = config->GetHeat_Inc(); break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; heat = config->GetHeat_Inc(); break;
+    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat = config->GetHeat_Inc(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;

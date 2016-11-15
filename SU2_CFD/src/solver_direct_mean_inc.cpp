@@ -1798,8 +1798,6 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
     Velocity_FreeStreamND[iDim] = config->GetVelocity_FreeStream()[iDim]/Velocity_Ref; config->SetVelocity_FreeStreamND(Velocity_FreeStreamND[iDim], iDim);
   }
   
-  Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
-  
   Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
   
   
@@ -7923,8 +7921,8 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         
         /*--- Add contributions to the Jacobian from the weak enforcement of the energy equations ---*/
         
-        Jacobian_i[nDim+1][0]      = -thermal_conductivity*theta2/dist_ij * dTdrho * Area;
-        Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*theta2/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
+//        Jacobian_i[nDim+1][0]      = -thermal_conductivity*theta2/dist_ij * dTdrho * Area;
+//        Jacobian_i[nDim+1][nDim+1] = -thermal_conductivity*theta2/dist_ij * (Gamma-1.0)/(Gas_Constant*Density) * Area;
         
         /*--- Subtract the block from the Global Jacobian structure ---*/
         

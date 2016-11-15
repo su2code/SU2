@@ -2157,24 +2157,12 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	 
 	 */	
-	CHeatVariable(su2double *val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CHeatVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
 	 */	
 	~CHeatVariable(void);
-
-	/*!
-	 * \brief Set the direct solution for the adjoint solver.
-	 * \param[in] val_solution_direct - Value of the direct solution.
-	 */
-	void SetSolution_Direct(su2double *val_solution_direct);
-
-	/*!
-	 * \brief Get the direct solution for the adjoint solver.
-	 * \return Pointer to the direct solution vector.
-	 */
-	su2double *GetSolution_Direct(void);
 
 };
 

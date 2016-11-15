@@ -9451,123 +9451,141 @@ public:
 
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
- *  \author F. Palacios
+ *  \author O. Burghardt
  *  \version 4.3.0 "Cardinal"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
-private:
-	su2double *CHeat;	     /*!< \brief Heat strength for each boundary. */
-	su2double Total_CHeat; /*!< \brief Total Heat strength for all the boundaries. */
-    
-  CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSysMatrix StiffMatrixTime;	 /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-    
-  su2double **StiffMatrix_Elem; /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-	su2double **StiffMatrix_Node;	 /*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-    
+protected:
+  unsigned short nMarker;
 public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CHeatSolver(void);
-    
-	/*!
-	 * \overload
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CHeatSolver(CGeometry *geometry, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CHeatSolver(void);
-    
-	/*!
-	 * \brief Integrate the Poisson equation using a Galerkin method.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh, unsigned short iRKStep);
-  
+
   /*!
-	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] conv_numerics - Description of the numerical method.
-	 * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                        unsigned short val_marker);
-  
+   * \brief Constructor of the class.
+   */
+  CHeatSolver(void);
+
   /*!
-	 * \brief Impose via the residual or brute force the Navier-Stokes adjoint boundary condition (heat flux).
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] conv_numerics - Description of the numerical method.
-	 * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-  
-	/*!
-	 * \brief Set residuals to zero.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \brief Constructor of the class.
+   */
+  CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CHeatSolver(void);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Restart residual and compute gradients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Output - boolean to determine whether to print output.
-	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-    
-	/*!
-	 * \brief Source term computation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] second_numerics - Description of the second numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                         CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief Update the solution using an implicit solver.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-    
-	/*!
-	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 */
-	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                              unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+   */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
-	/*!
-	 * \brief Provide the total heat strength.
-	 * \return Value of the heat strength.
-	 */
-	su2double GetTotal_CHeat(void);
-    
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                        unsigned short iMesh);
+
+  /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
+                         CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Compute the spatial integration using a upwind scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                       unsigned short iMesh);
+
+  /*!
+   * \brief Compute the viscous residuals for the turbulent equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+
+
+
+  void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                         unsigned short val_marker);
+
+  void BC_Inlet(CGeometry *geometry, CSolver **solver_container,
+                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  void BC_Outlet(CGeometry *geometry, CSolver **solver_container,
+                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Update the solution using an implicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
+   * \param[in] geometry - Geometric definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+
+
 };
 
 /*! \class CFEM_ElasticitySolver

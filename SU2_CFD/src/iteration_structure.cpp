@@ -545,6 +545,12 @@ void CMeanFlowIteration::Iterate(COutput *output,
     }
     
   }
+
+  if (config_container[val_iZone]->GetHeat_Inc()){
+    config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
+    integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
+  }
   
   /*--- Dual time stepping strategy ---*/
 
@@ -599,6 +605,13 @@ void CMeanFlowIteration::Iterate(COutput *output,
           config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
           integration_container[val_iZone][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                             config_container, RUNTIME_TRANS_SYS, IntIter, val_iZone);
+        }
+
+
+        if (config_container[val_iZone]->GetHeat_Inc()){
+          config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
+          integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                           config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
         }
         
       }

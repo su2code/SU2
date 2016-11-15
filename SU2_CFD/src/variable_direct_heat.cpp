@@ -33,40 +33,21 @@
 
 #include "../include/variable_structure.hpp"
 
-CHeatVariable::CHeatVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-	Solution_Direct = NULL;
-  
-}
+CHeatVariable::CHeatVariable(void) : CVariable() { }
 
-CHeatVariable::CHeatVariable(su2double *val_heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CHeatVariable::CHeatVariable(su2double val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
-	unsigned short iVar;
-  
-  /*--- Array initialization ---*/
-	Solution_Direct = NULL;
-  
-	/*--- Allocate residual structures ---*/
-	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
-  
-	/*--- Allocate direct solution container for adjoint problem ---*/
-	Solution_Direct = new su2double[nVar];
-  
-	/*--- Allocate aux gradient vector ---*/
-	Grad_AuxVar = new su2double [nDim];
-  
-	/*--- Initialization of variables ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar] = val_heat[iVar];
-		Solution_Old[iVar] = val_heat[iVar];
-		Solution_Direct[iVar] = 0.0;
-	}
-  
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  /*--- Initialization of heat variable ---*/
+  Solution[0] = val_Heat;		Solution_Old[0] = val_Heat;
+
+  if (dual_time) {
+    Solution_time_n[0]  = val_Heat;
+    Solution_time_n1[0] = val_Heat;
+  }
 }
 
-CHeatVariable::~CHeatVariable(void) {
-  
-  if (Solution_Direct != NULL) delete [] Solution_Direct;
-  
-}
+CHeatVariable::~CHeatVariable(void) {  }

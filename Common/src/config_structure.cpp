@@ -1720,8 +1720,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
-  if ((Kind_Solver == HEAT_EQUATION) ||
-      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
+  if ((Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
     nMGLevels = 0;
     if (Unsteady_Simulation == STEADY) nExtIter = 1;
     else Unst_nIntIter = 2;
@@ -2663,6 +2662,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if ((Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) && (Kind_Centered_AdjFlow == JST) && (SpatialOrder_AdjFlow == SECOND_ORDER_LIMITER))
     SpatialOrder_AdjFlow = SECOND_ORDER;
+
+  Kind_Centered_Heat = NONE;
+  Kind_Upwind_Heat = SCALAR_UPWIND;
+  if (Kind_Solver == HEAT_EQUATION)
+    Kind_Upwind_Heat = NONE;
+  Kind_ConvNumScheme_Heat = SPACE_UPWIND;
   
   delete [] tmp_smooth;
   
@@ -5065,7 +5070,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       break;
     case HEAT_EQUATION:
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, Kind_Centered_Heat, Kind_Upwind_Heat, NONE, SpatialOrder_Heat);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;

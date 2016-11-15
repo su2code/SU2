@@ -357,12 +357,14 @@ private:
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
 	Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
 	Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
+  Kind_Centered_Heat,		/*!< \brief Centered scheme for the heat model. */
 	Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
+  Kind_Upwind_Heat,		/*!< \brief Upwind scheme for the heat model. */
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
 	Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
@@ -370,6 +372,7 @@ private:
   Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_Heat,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/

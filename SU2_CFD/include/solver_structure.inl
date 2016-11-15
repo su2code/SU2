@@ -1620,7 +1620,7 @@ inline su2double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_inde
 
 inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
-inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
+//inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
 
 inline su2double CDiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 
