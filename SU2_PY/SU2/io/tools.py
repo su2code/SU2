@@ -328,6 +328,10 @@ optnames_geo = [ "MAX_THICKNESS"      ,
                  "VOLUME"              ]
 #: optnames_geo
 
+# Structural Optimizer Function Names
+optnames_fea = [ "REFERENCE_GEOMETRY" ]
+#: optnames_fea
+
 grad_names_directdiff = ["D_LIFT"                  ,
                          "D_DRAG"                  ,
                          "D_SIDEFORCE"             ,
@@ -337,7 +341,8 @@ grad_names_directdiff = ["D_LIFT"                  ,
                          "D_FORCE_X"               ,
                          "D_FORCE_Y"               ,
                          "D_FORCE_Z"               ,
-                         "D_EFFICIENCY"]
+                         "D_EFFICIENCY"            ,
+                         "D_REFGEO"]
 
 grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "DRAG"      : "D_DRAG"           ,
@@ -348,7 +353,8 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_X"   : "D_FORCE_X"     ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
-                   "EFFICIENCY" : "D_EFFICIENCY"}
+                   "EFFICIENCY" : "D_EFFICIENCY",
+                   "REFERENCE_GEOMETRY" : "D_REFGEO"}
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -477,7 +483,8 @@ def get_adjointSuffix(objective_function=None):
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
-                 "COMBO"                   : "combo"}
+                 "COMBO"                   : "combo"     ,
+                 "REFERENCE_GEOMETRY"      : "refgeom"}
     
     # if none or false, return map
     if not objective_function:
@@ -806,7 +813,8 @@ def get_specialCases(config):
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
                           'INV_DESIGN_HEATFLUX'              ,
-                          'OUTFLOW_GENERALIZED'                ]
+                          'OUTFLOW_GENERALIZED'              ,
+                          'FEM_ELASTICITY'                   ]
     
     special_cases = []
     for key in all_special_cases:
@@ -833,6 +841,10 @@ def get_specialCases(config):
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':
         special_cases.append('ROTATING_FRAME')
+        
+    # Special case for dynamic structural analysis        
+    if config.get('DYNAMIC_ANALYSIS','NO') != 'NO':
+        special_cases.append('DYNAMIC_ANALYSIS')        
         
     return special_cases
 
