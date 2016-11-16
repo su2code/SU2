@@ -2333,6 +2333,12 @@ public:
   unsigned short GetnTimeIntegrationADER_DG(void);
 
   /*!
+   * \brief Get the location of the time integration points for ADER-DG on the interval [-1..1].
+   * \return The location of the time integration points used in ADER-DG.
+   */
+  su2double *GetTimeIntegrationADER_DG(void);
+
+  /*!
    * \brief Get the weights of the time integration points for ADER-DG.
    * \return The weights of the time integration points used in ADER-DG.
    */

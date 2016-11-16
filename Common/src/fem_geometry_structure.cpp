@@ -4685,8 +4685,9 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
      version is needed in order to be dimensionally consistent. Moreover, for
      implicit time integration schemes the mass matrix itself is needed, while
      for explicit time integration schemes the inverse of the mass matrix is
-     much more convenient. Note that for the DG_FEM the mass matrix is local
-     to the elements. */
+     much more convenient. Furthermore, for ADER-DG both the mass matrix
+     and its inverse is needed. Note that for the DG_FEM the mass matrix is
+     local to the elements. */
   bool FullMassMatrix, FullInverseMassMatrix, LumpedMassMatrix;
   if(config->GetUnsteady_Simulation() == STEADY ||
      config->GetUnsteady_Simulation() == ROTATIONAL_FRAME) {
@@ -4700,8 +4701,17 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     FullInverseMassMatrix = false;
   }
   else {
-    FullMassMatrix        = LumpedMassMatrix = false;
-    FullInverseMassMatrix = true;
+
+    /* Time accurate explicit time integration scheme. Make a distinction
+       between ADER-DG and other time integration schemes. */
+    if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
+      FullMassMatrix   = FullInverseMassMatrix = true;
+      LumpedMassMatrix = false;
+    }
+    else {
+      FullMassMatrix        = LumpedMassMatrix = false;
+      FullInverseMassMatrix = true;
+    }
   }
 
   /* Determine the number of metric terms per integration point.
@@ -4813,7 +4823,6 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 #endif
       }
     }
-
   }
 
   /*--------------------------------------------------------------------------*/
@@ -4844,22 +4853,25 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     /*--- Check if the mass matrix or its inverse must be computed. ---*/
     if(FullMassMatrix || FullInverseMassMatrix) {
 
-      /* Allocate the memory for the mass matrix. */
-      volElem[i].massMatrix.resize(nDOFs*nDOFs);
+      /* Allocate the memory for working vector for the construction
+         of the mass matrix. */
+      vector<su2double> massMat(nDOFs*nDOFs, 0.0);
 
       /*--- Double loop over the DOFs to create the local mass matrix. ---*/
       unsigned short ll = 0;
       for(unsigned short k=0; k<nDOFs; ++k) {
         for(unsigned short j=0; j<nDOFs; ++j, ++ll) {
-          volElem[i].massMatrix[ll] = 0.0;
 
           /* Loop over the integration point to create the actual value of entry
              (k,j) of the local mass matrix. */
           for(unsigned short l=0; l<nInt; ++l)
-            volElem[i].massMatrix[ll] += volElem[i].metricTerms[l*nMetricPerPoint]
-                                       * w[l]*lag[l*nDOFs+k]*lag[l*nDOFs+j];
+            massMat[ll] += volElem[i].metricTerms[l*nMetricPerPoint]
+                         * w[l]*lag[l*nDOFs+k]*lag[l*nDOFs+j];
         }
       }
+
+      /* Store the full mass matrix in volElem[i], if needed. */
+      if( FullMassMatrix ) volElem[i].massMatrix = massMat;
 
       /*--- Check for ADER-DG time integration. ---*/
       if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
@@ -4869,9 +4881,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
         volElem[i].ADERIterationMatrix.resize(nDOFs*nDOFs*nTimeDOFs*nTimeDOFs);
 
-        /* Store the iteration matrix and the mass matrix a bit shorter. */
+        /* Store the iteration matrix a bit shorter. */
         su2double *iterMat = volElem[i].ADERIterationMatrix.data();
-        su2double *massMat = volElem[i].massMatrix.data();
 
         /*--- Create the ADER iteration matrix. ---*/
         ll = 0;
@@ -4955,7 +4966,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
            a standard inverse. */
         lapack_int errorCode;
         errorCode = LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                   volElem[i].massMatrix.data(), nDOFs);
+                                   massMat.data(), nDOFs);
         if(errorCode != 0) {
           cout << endl;
           cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
@@ -4979,7 +4990,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         }
 
         errorCode = LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                   volElem[i].massMatrix.data(), nDOFs);
+                                   massMat.data(), nDOFs);
         if(errorCode != 0) {
           cout << endl;
           cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
@@ -5006,14 +5017,16 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
            part of the matrix. Copy the data to the lower part. */
         for(unsigned short k=0; k<nDOFs; ++k) {
           for(unsigned short j=(k+1); j<nDOFs; ++j) {
-            volElem[i].massMatrix[j*nDOFs+k] = volElem[i].massMatrix[k*nDOFs+j];
+            massMat[j*nDOFs+k] = massMat[k*nDOFs+j];
           }
         }
 #else
         /* No support for Lapack. Hence an internal routine is used.
            This does not all the checking the Lapack routine does. */
-        FEMStandardElementBaseClass::InverseMatrix(nDOFs, volElem[i].massMatrix);
+        FEMStandardElementBaseClass::InverseMatrix(nDOFs, massMat);
 #endif
+        /* Store the inverse of the mass matrix in volElem[i]. */
+        volElem[i].invMassMatrix = massMat;
       }
     }
 
@@ -5046,6 +5059,14 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
 void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
                                                    vector<su2double> &timeCoefAder) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Determine the coefficients that appear in the iteration matrix of  ---*/
+  /*--- the prediction step of ADER-DG. Also determine the values of the   ---*/
+  /*--- Lagrangian interpolation functions at the beginning of the time    ---*/
+  /*--- interval, which are needed in the residual computation of the      ---*/
+  /*--- predictor step of ADER-DG.                                         ---*/
+  /*--------------------------------------------------------------------------*/
 
   /* Determine the number of time DOFs in the predictor step of ADER as well
      as their location on the interval [-1..1]. */
@@ -5172,5 +5193,72 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
   for(unsigned short j=0; j<nTimeDOFs; ++j) {
     for(unsigned short i=0; i<nTimeDOFs; ++i)
       timeCoefAder[j*nTimeDOFs+i] = lEnd[j]*lEnd[i] - S[i*nTimeDOFs+j];
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Determine the interpolation matrix from the time DOFs of ADER-DG   ---*/
+  /*--- to the time integration points. Note that in many cases this       ---*/
+  /*--- interpolation matrix is the identity matrix, i.e. the DOFs and the ---*/
+  /*--- integration points coincide.                                       ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Determine the number of time integration points of ADER as well
+     as their location on the interval [-1..1]. */
+  const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+  const su2double      *TimeIntegrationPoints = config->GetTimeIntegrationADER_DG();
+
+  /* Compute the Vandermonde matrix for the time integration points. */
+  vector<su2double> rTimeIntPoints(nTimeIntegrationPoints);
+  for(unsigned short i=0; i<nTimeIntegrationPoints; ++i)
+    rTimeIntPoints[i] = TimeIntegrationPoints[i];
+
+  V.resize(nTimeIntegrationPoints*nTimeDOFs);
+  timeElement.Vandermonde1D(nTimeDOFs, rTimeIntPoints, V);
+
+  /* Allocate the memory for the time interpolation coefficients and initialize
+     them to zero. */
+  timeInterpolDOFToIntegrationADER_DG.assign(nTimeIntegrationPoints*nTimeDOFs, 0.0);
+
+  /* Determine the matrix products V*VInv to get the correct expression for
+     mTimeInterpolDOFToIntegration. Note that from mathematical point of view the
+     transpose of V*VInv is stored, because in this way the interpolation data
+     for a time integration point is contiguous in memory. */
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+    for(unsigned short i=0; i<nTimeIntegrationPoints; ++i) {
+      const unsigned short ii = i*nTimeDOFs + j;
+
+      for(unsigned short k=0; k<nTimeDOFs; ++k) {
+        const unsigned short indV    = k*nTimeIntegrationPoints + i;
+        const unsigned short indVInv = j*nTimeDOFs + k;
+
+        timeInterpolDOFToIntegrationADER_DG[ii] += V[indV]*VInv[indVInv];
+      }
+    }
+  }
+
+  /*--- To reduce the error due to round off, make sure that the row sum is 1.
+        Also check if the difference is not too large to be solely caused by
+        roundoff.  ---*/
+  for(unsigned short j=0; j<nTimeIntegrationPoints; ++j) {
+    const unsigned short jj = j*nTimeDOFs;
+
+    val = 0.0;
+    for(unsigned short i=0; i<nTimeDOFs; ++i)
+      val += timeInterpolDOFToIntegrationADER_DG[jj+i];
+
+    if(fabs(val-1.0) > 1.e-6){
+      cout << "In CMeshFEM_DG::TimeCoefficientsPredictorADER_DG." << endl;
+      cout << "Difference is too large to be caused by roundoff" << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+
+    val = 1.0/val;
+    for(unsigned short i=0; i<nTimeDOFs; ++i)
+      timeInterpolDOFToIntegrationADER_DG[jj+i] *= val;
   }
 }

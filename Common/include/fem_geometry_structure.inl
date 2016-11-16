@@ -111,6 +111,10 @@ inline CMeshFEM_DG::CMeshFEM_DG(void) { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
 
+inline su2double* CMeshFEM_DG::GetLagrangianBeginTimeIntervalADER_DG(void) {return LagrangianBeginTimeIntervalADER_DG.data();}
+
+inline su2double* CMeshFEM_DG::GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}
+
 inline unsigned long CMeshFEM_DG::GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem;}
 
 inline unsigned long CMeshFEM_DG::GetNMatchingFaces(void) {return matchingFaces.size();}

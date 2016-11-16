@@ -626,6 +626,8 @@ inline su2double *CConfig::GetTimeDOFsADER_DG(void) { return TimeDOFsADER_DG; }
 
 inline unsigned short CConfig::GetnTimeIntegrationADER_DG(void) { return nTimeIntegrationADER_DG; }
 
+inline su2double *CConfig::GetTimeIntegrationADER_DG(void) { return TimeIntegrationADER_DG; }
+
 inline su2double *CConfig::GetWeightsIntegrationADER_DG(void) { return WeightsIntegrationADER_DG; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }

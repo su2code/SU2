@@ -1738,7 +1738,8 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config) {}
 
-inline void CSolver::ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime) {}
+inline void CSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
+                                                         unsigned short iTime) {}
 
 inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}

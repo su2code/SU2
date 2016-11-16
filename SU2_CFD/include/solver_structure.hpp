@@ -3594,7 +3594,8 @@ public:
                         integration over the time slab in the corrector
                         step of ADER-DG.
    */
-  virtual void ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime);
+  virtual void ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
+                                                   unsigned short iTime);
   
   /*!
    * \brief A virtual member.
@@ -9649,6 +9650,12 @@ protected:
   const FEMStandardInternalFaceClass *standardMatchingFacesSol;  /*!< \brief Array that contains the standard matching
                                                                   internal faces used for the solution of
                                                                   the DG solver. */
+
+  const su2double *LagrangianBeginTimeIntervalADER_DG;  /*!< \brief Array that stores the values of the Lagrangian interpolation
+                                                                    functions of the ADER time DOFs at the beginning of the time
+                                                                    interval, i.e. r == -1. */
+  const su2double *timeInterpolDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs and
+                                                                    the time integration points for ADER-DG. */
   
   unsigned short nIntegrationMax; /*!< \brief Maximum number of integration points used. */
   unsigned short nDOFsMax;        /*!< \brief Maximum number of DOFs present. */
@@ -9856,7 +9863,8 @@ public:
                         integration over the time slab in the corrector
                         step of ADER-DG.
    */
-  void ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime);
+  void ADER_DG_TimeInterpolatePredictorSol(CConfig        *config,
+                                           unsigned short iTime);
 
   /*!
    * \brief Compute the volume contributions to the spatial residual.
@@ -10438,6 +10446,24 @@ protected:
   void MultiplyResidualByInverseMassMatrix(CConfig *config);
 
 private:
+
+  /*!
+   * \brief Virtual function, which computes the spatial residual of the ADER-DG
+            predictor step for the given volume element and solution.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elem    - Volume element for which the spatial residual of the
+                           predictor step must be computed.
+   * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[out] res     - Residual of the spatial DOFs to be computed by this
+                           function.
+   * \param[out] work    - Work array.
+   */
+  virtual void ADER_DG_PredictorResidual(CConfig           *config,
+                                         CVolumeElementFEM *elem,
+                                         const su2double   *sol,
+                                         su2double         *res,
+                                         su2double         *work);
+
   /*!
    * \brief Function, which sets up the persistent communication of the flow
             variables in the DOFs.
@@ -10766,6 +10792,23 @@ public:
   void SetOmega_Max(su2double val_omega_max);
   
 private:
+
+  /*!
+   * \brief Function, which computes the spatial residual of the ADER-DG
+            predictor step for the given volume element and solution.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elem    - Volume element for which the spatial residual of the
+                           predictor step must be computed.
+   * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[out] res     - Residual of the spatial DOFs to be computed by this
+                           function.
+   * \param[out] work    - Work array.
+   */
+  void ADER_DG_PredictorResidual(CConfig           *config,
+                                 CVolumeElementFEM *elem, 
+                                 const su2double   *sol,
+                                 su2double         *res,
+                                 su2double         *work);
 
   /*!
    * \brief Function to compute the penalty terms in the integration
