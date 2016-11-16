@@ -2956,25 +2956,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     Unsteady_Simulation = TIME_STEPPING;  // Only time stepping for ADER.
 
+    /* Determine the location of the ADER time DOFs, which are the Gauss-Legendre
+       integration points corresponding to the number of time DOFs. */
     vector<su2double> GLPoints(nTimeDOFsADER_DG), GLWeights(nTimeDOFsADER_DG);
     CGaussJacobiQuadrature GaussJacobi;
     GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
 
     TimeDOFsADER_DG = new su2double[nTimeDOFsADER_DG];
-    for(iDim=0; iDim<nTimeDOFsADER_DG; iDim++)
-      TimeDOFsADER_DG[iDim] = GLPoints[iDim];
+    for(unsigned short i=0; i<nTimeDOFsADER_DG; ++i)
+      TimeDOFsADER_DG[i] = GLPoints[i];
 
+    /* Determine the number of integration points in time, their locations
+       on the interval [-1..1] and their integration weights. */
     unsigned short orderExact = ceil(Quadrature_Factor_Time_ADER_DG*(nTimeDOFsADER_DG-1));
     nTimeIntegrationADER_DG = orderExact/2 + 1;
+    nTimeIntegrationADER_DG = max(nTimeIntegrationADER_DG, nTimeDOFsADER_DG);
     GLPoints.resize(nTimeIntegrationADER_DG);
     GLWeights.resize(nTimeIntegrationADER_DG);
     GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
 
     TimeIntegrationADER_DG    = new su2double[nTimeIntegrationADER_DG];
     WeightsIntegrationADER_DG = new su2double[nTimeIntegrationADER_DG];
-    for(iDim=0; iDim<nTimeIntegrationADER_DG; iDim++) {
-      TimeIntegrationADER_DG[iDim]    = GLPoints[iDim];
-      WeightsIntegrationADER_DG[iDim] = GLWeights[iDim];
+    for(unsigned short i=0; i<nTimeIntegrationADER_DG; ++i) {
+      TimeIntegrationADER_DG[i]    = GLPoints[i];
+      WeightsIntegrationADER_DG[i] = GLWeights[i];
     }
   }
   

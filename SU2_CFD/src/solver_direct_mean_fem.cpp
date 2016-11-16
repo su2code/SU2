@@ -120,6 +120,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   standardElementsSol      = DGGeometry->GetStandardElementsSol();
   standardMatchingFacesSol = DGGeometry->GetStandardMatchingFacesSol();
 
+  LagrangianBeginTimeIntervalADER_DG  = DGGeometry->GetLagrangianBeginTimeIntervalADER_DG();
+  timeInterpolDOFToIntegrationADER_DG = DGGeometry->GetTimeInterpolDOFToIntegrationADER_DG();
+
   /*--- Determine the maximum number of integration points used. Usually this
         is for the volume integral, but to avoid problems the faces are also
         taken into account.  ---*/
@@ -178,6 +181,17 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     unsigned int sizeSur = nVar*(2*nIntegrationMax + max(nIntegrationMax,nDOFsMax));
 
     sizeVecTmp = max(sizeVol, sizeSur);
+  }
+
+  if(config->GetKind_TimeIntScheme() == ADER_DG) {
+
+    /* ADER-DG scheme. Determine the size needed for the predictor step
+       and make sure that sizeVecTmp is big enough. */
+    const unsigned short nTimeDOFs       = config->GetnTimeDOFsADER_DG();
+    const unsigned int sizePredictorADER = 4*nVar*nDOFsMax*nTimeDOFs
+                                         + 2*nVar*nDOFsMax;
+
+    sizeVecTmp = max(sizeVecTmp, sizePredictorADER);
   }
 
   VecTmpMemory.resize(sizeVecTmp);
@@ -2118,14 +2132,242 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
 
-  cout << "CFEM_DG_EulerSolver::ADER_DG_PredictorStep: Not implemented yet" << endl;
+  /*----------------------------------------------------------------------*/
+  /*---        Get the data of the ADER time integration scheme.       ---*/ 
+  /*----------------------------------------------------------------------*/
+
+  const unsigned short nTimeDOFs              = config->GetnTimeDOFsADER_DG();
+  const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+  const su2double     *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
+
+  /*----------------------------------------------------------------------*/
+  /*--- Determine the reference values for the conservative variables. ---*/
+  /*----------------------------------------------------------------------*/
+
+  /* Initialization to zero. */
+  su2double URef[5];
+  for(unsigned short i=0; i<nVar; ++i) URef[i] = 0.0;
+
+  /* Loop over the owned DOFs to determine the maximum values of the
+     conservative variables on this rank. */
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+    const su2double *solDOF = VecSolDOFs.data() + i*nVar;
+
+    for(unsigned short j=0; j<nVar; ++j)
+      URef[j] = max(URef[j], fabs(solDOF[j]));
+  }
+
+  /*--- Determine the maximum values on all ranks in case of a
+        parallel computation. */
+#ifdef HAVE_MPI
+  su2double URefLoc[5];
+  for(unsigned short i=0; i<nVar; ++i) URefLoc[i] = URef[i];
+
+  SU2_MPI::Allreduce(URefLoc, URef, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+  /*--- Determine the maximum scale of the momentum variables and adapt the
+        corresponding values of URef accordingly. ---*/
+  su2double momRef = URef[1];
+  for(unsigned short i=2; i<=nDim; ++i) momRef  = max(momRef, URef[i]);
+  for(unsigned short i=1; i<=nDim; ++i) URef[i] = momRef;
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Loop over the owned elements to compute the predictor solution.    ---*/
+  /*--- For the predictor solution only an integration over the element is ---*/
+  /*--- performed to obtain the weak formulation, i.e. no integration by   ---*/
+  /*--- parts. As a consequence there is no surface term and also no       ---*/
+  /*--- coupling with neighboring elements. This is also the reason why    ---*/
+  /*--- the ADER scheme is only conditionally stable.                      ---*/
+  /*--------------------------------------------------------------------------*/
+
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Easier storage of the number of spatial DOFs. */
+    const unsigned short nDOFs = volElem[l].nDOFsSol;
+
+    /* Set the pointers for the working variables. */
+    su2double *resInt = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    su2double *solPred = VecTmpMemory.data();
+    su2double *solOld  = solPred + nVar*nDOFs*nTimeDOFs;
+    su2double *resSol  = solOld  + nVar*nDOFs*nTimeDOFs;
+    su2double *resTot  = resSol  + nVar*nDOFs*nTimeDOFs;
+    su2double *solInt  = resTot  + nVar*nDOFs*nTimeDOFs;
+    su2double *work    = solInt  + nVar*nDOFs;
+
+    /* Initialize the predictor solution to the current solution. */
+    const su2double    *solCur = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+    const unsigned long nBytes = nVar*nDOFs*sizeof(su2double);
+
+    for(unsigned short j=0; j<nTimeDOFs; ++j) {
+      su2double *solPredTimeInd = solPred + j*nVar*nDOFs;
+      memcpy(solPredTimeInd, solCur, nBytes);
+    }
+
+    /*-------------------------------------------------------------------------*/
+    /*--- Compute the contribution of the current solution to the residual. ---*/
+    /*--- As this a constant contribution, it is stored in resSol.          ---*/
+    /*-------------------------------------------------------------------------*/
+
+    /* First compute the product of the mass matrix and the current solution. */
+    DenseMatrixProduct(nDOFs, nVar, nDOFs, volElem[l].massMatrix.data(),
+                       solCur, resSol);
+
+    /* Loop over the number of time DOFs and multiply this product by the  */
+    /* value of the Lagrangian interpolation function. Note that this loop */
+    /* starts at 1, such that the initial value is not touched yet.        */
+    for(unsigned short j=1; j<nTimeDOFs; ++j) {
+
+      su2double *resSolTimeInd = resSol + j*nVar*nDOFs;
+      for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+        resSolTimeInd[i] = resSol[i]*LagrangianBeginTimeIntervalADER_DG[j];
+    }
+
+    /* Multiply the values of resSol for the first time DOF with the */
+    /* value of its corresponding Lagrangian interpolation function. */
+    for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+      resSol[i] *= LagrangianBeginTimeIntervalADER_DG[0];
+
+    /*-------------------------------------------------------------------------*/
+    /*--- Iterative algorithm to compute the predictor solution for all     ---*/
+    /*--- the time DOFs of this element simultaneously.                     ---*/
+    /*-------------------------------------------------------------------------*/
+
+    for(;;) {
+
+      /* Initialize the total residual to resSol and store the current solution
+         in solOld, such that the updates can be determined after the new
+         solution has been computed. */
+      memcpy(resTot, resSol,  nTimeDOFs*nBytes);
+      memcpy(solOld, solPred, nTimeDOFs*nBytes);
+
+      /* Loop over the number of integration points in time to compute the
+         space time integral of the spatial derivatives of the fluxes. */
+      for(unsigned short intPoint=0; intPoint<nTimeIntegrationPoints; ++intPoint) {
+
+        /*--------------------------------------------------------------------*/
+        /*--- Interpolate the predictor solution to the current time       ---*/
+        /*--- integration point. It is likely that this integration        ---*/
+        /*--- coincides with the location of one of the time DOFs. When    ---*/
+        /*--- this is the case the interpolation boils down to a copy.     ---*/
+        /*--------------------------------------------------------------------*/
+
+        /* Store the interpolation data for this time integration point. */
+        const su2double *DOFToThisTimeInt = timeInterpolDOFToIntegrationADER_DG
+                                          + intPoint*nTimeDOFs;
+
+        /* Initialize the interpolated solution to zero. */
+        for(unsigned short i=0; i<(nVar*nDOFs); ++i) solInt[i] = 0.0;
+
+        /* Carry out the actual interpolation. */
+        for(unsigned short j=0; j<nTimeDOFs; ++j) {
+
+          const su2double *solPredTimeInd = solPred + j*nVar*nDOFs;
+          for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+            solInt[i] += DOFToThisTimeInt[j]*solPredTimeInd[i];
+        }
+
+        /*--------------------------------------------------------------------*/
+        /*--- Compute the spatial residual of the predictor step for the   ---*/
+        /*--- current time integration point.                              ---*/
+        /*--------------------------------------------------------------------*/
+
+        ADER_DG_PredictorResidual(config, &volElem[l], solInt, resInt, work);
+
+        /*--------------------------------------------------------------------*/
+        /*--- Update the total residual with the residual of the current   ---*/
+        /*--- integration point in time. Note the minus sign, because the  ---*/
+        /*--- residual is put on the RHS of the equation.                  ---*/
+        /*--------------------------------------------------------------------*/
+
+        /* Loop over all the time DOFs. */
+        for(unsigned short j=0; j<nTimeDOFs; ++j) {
+
+          /* Determine the multiplication factor for this time DOF. The factor
+             0.5 is present, because the length of the interval [-1..1] is 2. */
+          const su2double w = 0.5*timeIntegrationWeights[intPoint]
+                            * VecDeltaTime[l]*DOFToThisTimeInt[j];
+
+          /* Update the residual of this time DOF. */
+          su2double *res = resTot + j*nVar*nDOFs;
+          for(unsigned short i=0; i<(nVar*nDOFs); ++i)
+            res[i] -= w*resInt[i];
+        }
+      }
+
+      /* Solve for the new values of solPred, which are obtained by
+         carrying out the matrix product iterMat X resTot. */
+      DenseMatrixProduct(nDOFs*nTimeDOFs, nVar, nDOFs*nTimeDOFs,
+                         volElem[l].ADERIterationMatrix.data(),
+                         resTot, solPred);
+
+      /* Compute the L2 norm of the updates. */
+      su2double L2[5];
+      for(unsigned short i=0; i<nVar; ++i) L2[i] = 0.0;
+
+      for(unsigned short j=0; j<(nDOFs*nTimeDOFs); ++j) {
+        for(unsigned short i=0; i<nVar; ++i) {
+          const unsigned short ind  = j*nVar + i;
+          const su2double      diff = solPred[ind] - solOld[ind];
+          L2[i] += diff*diff;
+        }
+      }
+
+      for(unsigned short i=0; i<nVar; ++i) L2[i] = sqrt(L2[i]/(nDOFs*nTimeDOFs));
+
+      /* Check for convergence. */
+      bool converged = true;
+      for(unsigned short i=0; i<nVar; ++i) {
+        if(L2[i] > 1.e-6*URef[i]) converged = false;
+      }
+
+      if( converged ) break;
+    }
+
+    /* Store the predictor solution in the correct location of
+       VecSolDOFsPredictorADER. */
+    for(unsigned short j=0; j<nTimeDOFs; ++j) {
+      su2double *solCur      = VecSolDOFsPredictorADER.data()
+                             + nVar*(j*nDOFsLocOwned + volElem[l].offsetDOFsSolLocal);
+      su2double *solPredTime = solPred + j*nVar*nDOFs;
+
+      memcpy(solCur, solPredTime, nVar*nDOFs*sizeof(su2double));
+    }
+  }
+}
+
+void CFEM_DG_EulerSolver::ADER_DG_PredictorResidual(CConfig           *config,
+                                                    CVolumeElementFEM *elem,
+                                                    const su2double   *sol,
+                                                    su2double         *res,
+                                                    su2double         *work) {
+
+  cout << "CFEM_DG_EulerSolver::ADER_DG_PredictorResidual: Not implemented yet" << endl;
   exit(1);
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(unsigned short iTime) {
+void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
+                                                              unsigned short iTime) {
 
-  cout << "CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol: Not implemented yet" << endl;
-  exit(1);
+  /* Easier storage of the interpolation coefficients for the current time
+     integration point (iTime).       */
+  const unsigned short nTimeDOFs    = config->GetnTimeDOFsADER_DG();
+  const su2double *DOFToThisTimeInt = timeInterpolDOFToIntegrationADER_DG
+                                    + iTime*nTimeDOFs;
+
+  /* Initialize the solution of the owned DOFs to zero. */
+  for(unsigned long i=0; i<(nVar*nDOFsLocOwned); ++i)
+     VecSolDOFs[i] = 0.0;
+
+  /* Loop over the time DOFs, for which the predictor solution is present. */
+  for(unsigned short j=0; j<nTimeDOFs; ++j) {
+
+    /* Add the contribution of this predictor solution to the interpolated solution. */
+    const su2double *solPred = VecSolDOFsPredictorADER.data() + j*nVar*nDOFsLocOwned;
+    for(unsigned long i=0; i<(nVar*nDOFsLocOwned); ++i)
+       VecSolDOFs[i] += DOFToThisTimeInt[j]*solPred[i];
+  }
 }
 
 void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -2496,7 +2738,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig *config) {
       memcpy(tmpRes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
       config->GEMM_Tick(&tick);
       DenseMatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
-                         volElem[l].massMatrix.data(), tmpRes, res);
+                         volElem[l].invMassMatrix.data(), tmpRes, res);
       config->GEMM_Tock(tick, "MultiplyResidualByInverseMassMatrix",
                         volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol);
     }
@@ -4265,6 +4507,16 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMy[iMarker_Monitoring]  += Surface_CMy_Visc[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]  += Surface_CMz_Visc[iMarker_Monitoring];
   }
+}
+
+void CFEM_DG_NSSolver::ADER_DG_PredictorResidual(CConfig           *config,
+                                                 CVolumeElementFEM *elem,
+                                                 const su2double   *sol,
+                                                 su2double         *res,
+                                                 su2double         *work) {
+
+  cout << "CFEM_DG_NSSolver::ADER_DG_PredictorResidual: Not implemented yet" << endl;
+  exit(1);
 }
 
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

@@ -1076,7 +1076,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     /*--- For the ADER-DG scheme the predictor solution must be interpolated in
           time to the correct time location of the current integration point. ---*/
     if( useADER )
-      solver_container[MainSolver]->ADER_DG_TimeInterpolatePredictorSol(iTime);
+      solver_container[MainSolver]->ADER_DG_TimeInterpolatePredictorSol(config, iTime);
   
     /*--- Compute the volume portion of the residual. ---*/
     config->Tick(&tick);

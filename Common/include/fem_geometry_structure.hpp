@@ -163,7 +163,8 @@ public:
 
   vector<su2double> metricTerms;            /*!< \brief Vector of the metric terms in the
                                                         integration points of this element. */
-  vector<su2double> massMatrix;             /*!< \brief Mass matrix (or the inverse) for this element. */
+  vector<su2double> massMatrix;             /*!< \brief Mass matrix for this element. */
+  vector<su2double> invMassMatrix;          /*!< \brief Inverse mass matrix for this element. */
   vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */
 
   vector<su2double> ADERIterationMatrix;    /*!< \brief Iteration matrix used in the predictor step of
@@ -680,6 +681,9 @@ private:
                                                                     the time DOFs at the beginning of the time interval,
                                                                     i.e. r == -1. */
 
+  vector<su2double> timeInterpolDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs and
+                                                                     the time integration points for ADER-DG. */
+
   unsigned long nMatchingFacesWithHaloElem;      /*!< \brief Number of matching faces between an owned element and a halo
                                                              element. These faces are numbered first in matchingFaces. */
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
@@ -726,6 +730,20 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   void CreateStandardVolumeElements(CConfig *config);
+
+ /*!
+  * \brief Function, which makes available the Lagrangian interpolation functions
+           at the begin of the time interval for the time DOFs of ADER-DG.
+  * \return  The Lagrangian interpolation functions at the begin of the interval.
+  */
+  su2double *GetLagrangianBeginTimeIntervalADER_DG(void);
+
+ /*!
+  * \brief Function, which makes available the time interpolation matrix between
+           the time DOFs and time integration points for ADER-DG.
+  * \return  The time interpolation matrix for ADER-DG.
+  */
+  su2double *GetTimeInterpolDOFToIntegrationADER_DG(void);
 
  /*!
   * \brief Function, which makes available the number of matching internal faces
