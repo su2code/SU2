@@ -489,6 +489,102 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
 }
 
+
+su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
+  
+  unsigned long i, j, j1, j2;
+  su2double det = 0;
+  su2double **m = NULL;
+  
+  if (n < 1) { }
+  else if (n == 1) { det = a[0][0]; }
+  else if (n == 2) { det = a[0][0] * a[1][1] - a[1][0] * a[0][1]; }
+  else {
+    det = 0.0;
+
+    for (j1=0;j1<n;j1++) {
+      m = new su2double*[n-1];
+      for (i=0;i<n-1;i++)
+        m[i] = new su2double[n-1];
+      
+      for (i=1;i<n;i++) {
+        j2 = 0;
+        for (j=0;j<n;j++) {
+          if (j == j1)
+          continue;
+          m[i-1][j2] = a[i][j];
+          j2++;
+        }
+      }
+      
+      det += pow(-1.0,j1+2.0) * a[0][j1] * MatrixDeterminant(m,n-1);
+      for (i=0;i<n-1;i++)
+      delete [] m[i];
+      delete [] m;
+    }
+    
+  }
+  
+  return(det);
+  
+}
+
+void CSysMatrix::MatrixCoFactor(su2double **a, unsigned long n, su2double **b) {
+  
+  unsigned long i,j,ii,jj,i1,j1;
+  su2double det;
+  su2double **c;
+  
+  c = new su2double*[n-1];
+  for (i=0;i<n-1;i++)
+    c[i] = new su2double[n-1];
+  
+  for (j=0;j<n;j++) {
+    for (i=0;i<n;i++) {
+      
+      /*--- Form the adjoint a_ij ---*/
+      i1 = 0;
+      for (ii=0;ii<n;ii++) {
+        if (ii == i)
+        continue;
+        j1 = 0;
+        for (jj=0;jj<n;jj++) {
+          if (jj == j)
+          continue;
+          c[i1][j1] = a[ii][jj];
+          j1++;
+        }
+        i1++;
+      }
+      
+      /*--- Calculate the determinate ---*/
+      det = MatrixDeterminant(c,n-1);
+      
+      /*--- Fill in the elements of the cofactor ---*/
+      b[i][j] = pow(-1.0,i+j+2.0) * det;
+    }
+  }
+  for (i=0;i<n-1;i++)
+    delete [] c[i];
+  delete [] c;
+  
+}
+
+void CSysMatrix::MatrixTranspose(su2double **a, unsigned long n) {
+  
+  unsigned long i, j;
+  su2double tmp;
+  
+  for (i=1;i<n;i++) {
+    for (j=0;j<i;j++) {
+      tmp = a[i][j];
+      a[i][j] = a[j][i];
+      a[j][i] = tmp;
+    }
+  }
+  
+}
+
 void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed) {
   
   short iVar, jVar, kVar; // This is important, otherwise some compilers optimizations will fail
@@ -1040,13 +1136,57 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
   
+  //  cout <<"Gauss" <<endl;
+  //  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
+  //  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
+  //  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
+  //
+  //  su2double *Block = GetBlock(block_i, block_i);
+  //
+  //  Matrix = new su2double*[nVar];
+  //  CoFactor = new su2double*[nVar];
+  //  for (iVar=0;iVar<nVar;iVar++) {
+  //    Matrix[iVar] = new su2double[nVar];
+  //    CoFactor[iVar] = new su2double[nVar];
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
+  //  }
+  //
+  //  Det =  MatrixDeterminant(Matrix, nVar);
+  //  MatrixCoFactor(Matrix, nVar, CoFactor);
+  //  MatrixTranspose(CoFactor, nVar);
+  //
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    delete [] Matrix[iVar];
+  //    delete [] CoFactor[iVar];
+  //  }
+  //  delete [] Matrix;
+  //  delete [] CoFactor;
+  //
+  //  cout <<"CoFactor" <<endl;
+  //  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
+  //  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
+  //  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
+
+  
 }
 
 
 void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double *invBlock) {
   
   unsigned long iVar, jVar;
-  
+  su2double Det;
+  su2double **Matrix, **CoFactor;
+
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++)
       aux_vector[jVar] = 0.0;
@@ -1058,6 +1198,48 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
     for (jVar = 0; jVar < nVar; jVar++)
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
+  
+//  cout <<"Gauss" <<endl;
+//  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
+//  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
+//  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
+//
+//  su2double *Block = GetBlock_ILUMatrix(block_i, block_i);
+//  
+//  Matrix = new su2double*[nVar];
+//  CoFactor = new su2double*[nVar];
+//  for (iVar=0;iVar<nVar;iVar++) {
+//    Matrix[iVar] = new su2double[nVar];
+//    CoFactor[iVar] = new su2double[nVar];
+//  }
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
+//  }
+//
+//  Det =  MatrixDeterminant(Matrix, nVar);
+//  MatrixCoFactor(Matrix, nVar, CoFactor);
+//  MatrixTranspose(CoFactor, nVar);
+//  
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    for (jVar = 0; jVar < nVar; jVar++)
+//    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
+//  }
+//  
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    delete [] Matrix[iVar];
+//    delete [] CoFactor[iVar];
+//  }
+//  delete [] Matrix;
+//  delete [] CoFactor;
+//  
+//  cout <<"CoFactor" <<endl;
+//  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
+//  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
+//  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
+
   
 }
 
