@@ -100,23 +100,40 @@ def direct ( config ):
     # averaging final iterations
     final_avg = config.get('ITER_AVERAGE_OBJ',0)
 
-    # get history and objectives
-    history      = su2io.read_history( history_filename )
-    aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
+    # postprocess for CFD cases
+    if 'FEM_ELASTICITY' not in special_cases:
+      # get history and objectives
+      history      = su2io.read_history( history_filename )
+      aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
     
-    # update super config
-    config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
+      # update super config
+      config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
                     
-    # info out
-    info = su2io.State()
-    info.FUNCTIONS.update( aerodynamics )
-    info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
-    if 'EQUIV_AREA' in special_cases:
-        info.FILES.WEIGHT_NF = 'WeightNF.dat'
-    if 'INV_DESIGN_CP' in special_cases:
-        info.FILES.TARGET_CP = 'TargetCp.dat'
-    if 'INV_DESIGN_HEATFLUX' in special_cases:
-        info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
-    info.HISTORY.DIRECT = history
+      # info out
+      info = su2io.State()
+      info.FUNCTIONS.update( aerodynamics )
+      info.FILES.DIRECT = konfig['RESTART_FLOW_FILENAME']
+      if 'EQUIV_AREA' in special_cases:
+          info.FILES.WEIGHT_NF = 'WeightNF.dat'
+      if 'INV_DESIGN_CP' in special_cases:
+          info.FILES.TARGET_CP = 'TargetCp.dat'
+      if 'INV_DESIGN_HEATFLUX' in special_cases:
+          info.FILES.TARGET_HEATFLUX = 'TargetHeatFlux.dat'
+      info.HISTORY.DIRECT = history
+      
+    else:
+       # update super config
+      config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
+      
+       # info out     
+      info = su2io.State()
+      info.FILES.DIRECT = konfig['RESTART_STRUCTURE_FILENAME']
+      
+      history_filename = 'of_refgeom.dat'
+      
+      plot_file = open(history_filename)
+      line = plot_file.readline()
+      
+      info.FUNCTIONS.REFERENCE_GEOMETRY = float(line)
     
     return info

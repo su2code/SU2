@@ -268,6 +268,21 @@ class State(ordered_bunch):
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:
           register_file('TARGET_HEATFLUX',targetheatflux_name)
+          
+        # special case of Elasticity. Some redefinitions here.
+        if 'FEM_ELASTICITY' in special_cases:
+          direct_name   = config.SOLUTION_STRUCTURE_FILENAME
+          adjoint_name  = config.SOLUTION_ADJ_STRUCTURE_FILENAME
+          if restart:
+            register_file('DIRECT',direct_name)
+            for obj,suff in adj_map.iteritems():
+                ADJ_LABEL = 'ADJOINT_' + obj
+                adjoint_name_suffixed = add_suffix(adjoint_name,suff)
+                register_file(ADJ_LABEL,adjoint_name_suffixed)
+          if config.PRESTRETCH == 'YES':
+            register_file('PRESTRETCH', config.PRESTRETCH_FILENAME)
+          if config.REFERENCE_GEOMETRY == 'YES':
+            register_file('REFERENCE_GEOMETRY', config.REFERENCE_GEOMETRY_FILENAME)
         
         return
     

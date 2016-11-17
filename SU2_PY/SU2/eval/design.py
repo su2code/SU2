@@ -292,6 +292,18 @@ def obj_df(dvs,config,state=None):
                 k = k + 1
 
         vals_out.append(grad)
+    elif objectives[0] == 'REFERENCE_GEOMETRY':
+        grad_method = config.get('GRADIENT_METHOD','DISCRETE_ADJOINT')
+        config.GRADIENT_METHOD = 'DISCRETE_ADJOINT'
+        for i_obj,this_obj in enumerate(objectives):
+          grad = su2grad(this_obj,grad_method,config,state)
+          # scaling : obj scale  adn sign are accounted for in combo gradient, dv scale now applied
+          k = 0                  
+          for i_dv,dv_scl in enumerate(dv_scales):
+              for i_grd in range(dv_size[i_dv]):
+                  grad[k] = grad[k] / dv_scl
+                  k = k + 1
+          vals_out.append(grad)
     else:
         for i_obj,this_obj in enumerate(objectives):
             marker_monitored = config['MARKER_MONITORING']
