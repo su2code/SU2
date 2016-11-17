@@ -1217,7 +1217,8 @@ enum ENUM_PARAM {
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
   SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
   CUSTOM = 19,                /*!< 'CUSTOM' for use in external python analysis. */
-  CST = 20                /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  CST = 20,                /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  DV_EFIELD = 30            /*!< \brief Electric field in deformable membranes. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1240,7 +1241,9 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
 ("CUSTOM",CUSTOM)
-("CST", CST);
+("CST", CST)
+("ELECTRIC_FIELD", DV_EFIELD)
+;
 
 /*!
  * \brief types of solvers for solving linear systems
@@ -2162,6 +2165,7 @@ public:
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
         case CUSTOM: nParamDV = 1; break;
+        case DV_EFIELD: nParamDV = 0; break;
         default : {
           string newstring;
           newstring.append(this->name);

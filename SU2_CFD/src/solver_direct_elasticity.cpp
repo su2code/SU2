@@ -674,6 +674,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
    }
 
 
+
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -5066,9 +5067,18 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     if (config->GetDirectDiff() == D_MACH)    cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Mach number: " << Total_ForwardGradient << "." << endl;
     if (config->GetDirectDiff() == D_PRESSURE) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the freestream Pressure: " << Total_ForwardGradient << "." << endl;
   }
-  else {
+  else
+  {
 
-    if (!fsi) cout << "Objective function: " << Total_OFRefGeom << "." << endl;
+    // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
+    if (!fsi){
+      cout << "Objective function: " << Total_OFRefGeom << "." << endl;
+      ofstream myfile_res;
+      myfile_res.open ("of_refgeom.dat");
+      myfile_res.precision(15);
+      myfile_res << scientific << Total_OFRefGeom << endl;
+      myfile_res.close();
+    }
 
   }
 

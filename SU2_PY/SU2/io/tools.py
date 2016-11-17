@@ -65,6 +65,32 @@ def read_gradients( Grad_filename , scale = 1.0):
 
 #: def read_gradients()
 
+# -------------------------------------------------------------------
+#  Read SU2_CFD Gradient Values
+# -------------------------------------------------------------------
+
+def read_gradients_efield( Grad_filename , scale = 1.0):
+    """ reads the raw gradients from the gradient file
+        returns a list of floats
+    """
+    
+    grad_vals = []    
+    # open file and skip first line
+    with open(Grad_filename) as gradfile:
+        next(gradfile)
+        for line in gradfile:
+          row = line.strip().split(" ")
+          # read values
+          if len(row) == 0:
+              break
+          for i in range(3,len(row)):
+              grad_vals.append(float(row[i]) * scale)
+    #: for each line
+    
+    return grad_vals
+
+#: def read_gradients_efield()
+
 
 # -------------------------------------------------------------------
 #  Read All Data from a Plot File
@@ -551,7 +577,8 @@ def get_dvMap():
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
                19  : "CUSTOM"                ,
-	       20  : "CST"                   ,
+      	       20  : "CST"                   ,
+               30  : "ELECTRIC_FIELD"        ,
                101 : "MACH_NUMBER"           ,
                102 : "AOA"                    }
     
@@ -970,8 +997,12 @@ def restart2solution(config,state={}):
 
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
-        restart  = config.RESTART_FLOW_FILENAME
-        solution = config.SOLUTION_FLOW_FILENAME        
+        if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
+          restart  = config.RESTART_STRUCTURE_FILENAME
+          solution = config.SOLUTION_STRUCTURE_FILENAME
+        else:
+          restart  = config.RESTART_FLOW_FILENAME
+          solution = config.SOLUTION_FLOW_FILENAME        
         # expand unsteady time
         restarts  = expand_time(restart,config)
         solutions = expand_time(solution,config)
@@ -983,13 +1014,17 @@ def restart2solution(config,state={}):
         
     # adjoint solution
     elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
-        restart  = config.RESTART_ADJ_FILENAME
-        solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix
         func_name = config.OBJECTIVE_FUNCTION
-        suffix    = get_adjointSuffix(func_name)
-        restart   = add_suffix(restart,suffix)
-        solution  = add_suffix(solution,suffix)
+        if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
+          restart  = config.RESTART_ADJ_STRUCTURE_FILENAME
+          solution = config.SOLUTION_ADJ_STRUCTURE_FILENAME    
+        else:       
+          restart  = config.RESTART_ADJ_FILENAME
+          solution = config.SOLUTION_ADJ_FILENAME         
+          suffix    = get_adjointSuffix(func_name)
+          restart   = add_suffix(restart,suffix)
+          solution  = add_suffix(solution,suffix)
         # expand unsteady time
         restarts  = expand_time(restart,config)
         solutions = expand_time(solution,config)        

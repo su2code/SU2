@@ -151,7 +151,7 @@ class Config(ordered_bunch):
                 dv_old - optional, list or array of old dv values, defaults to zeros
                          
         """
-        
+
         dv_new = copy.deepcopy(dv_new)
         dv_old = copy.deepcopy(dv_old)
         
@@ -550,6 +550,33 @@ def read_config(filename):
                 data_dict[this_param] = this_sort
                 break
             
+            if case('ELECTRIC_FIELD_MOD'):
+                 # remove white space
+                this_value = ''.join(this_value.split())   
+                # remove parens
+                this_value = this_value.strip('()')
+                # split by comma
+                data_dict[this_param] = this_value.split(",")
+                break
+                
+            if case('ELECTRIC_FIELD_MIN'):
+                 # remove white space
+                this_value = ''.join(this_value.split())   
+                # remove parens
+                this_value = this_value.strip('()')
+                # split by comma
+                data_dict[this_param] = this_value.split(",")
+                break
+                
+            if case('ELECTRIC_FIELD_MAX'):
+                 # remove white space
+                this_value = ''.join(this_value.split())   
+                # remove parens
+                this_value = this_value.strip('()')
+                # split by comma
+                data_dict[this_param] = this_value.split(",")
+                break                
+                        
             # otherwise
             # string parameters
             if case():
@@ -772,6 +799,42 @@ def write_config(filename,param_dict):
                 #: for each constraint type
                 if not i_con: output_file.write("NONE")
                 break
+            
+            if case("ELECTRIC_FIELD_MOD"):
+                if not isinstance(new_value,list):
+                    new_value = [ new_value ]                
+                output_file.write("( ")
+                n_lists = len(new_value)
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(" )") 
+                break
+                
+            if case("ELECTRIC_FIELD_MIN"):
+                if not isinstance(new_value,list):
+                    new_value = [ new_value ]                
+                output_file.write("( ")
+                n_lists = len(new_value)
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(" )") 
+                break   
+                
+            if case("ELECTRIC_FIELD_MAX"):
+                if not isinstance(new_value,list):
+                    new_value = [ new_value ]                
+                output_file.write("( ")
+                n_lists = len(new_value)
+                for i_value in range(n_lists):
+                    output_file.write(new_value[i_value])
+                    if i_value+1 < n_lists:
+                        output_file.write(", ")
+                output_file.write(" )") 
+                break                                      
             
             # default, assume string, integer or unformatted float 
             if case():
