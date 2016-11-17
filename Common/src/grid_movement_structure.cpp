@@ -202,8 +202,16 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
      * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
     if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
-      mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS) {
+    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    		precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+    	}
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
+         StiffMatrix.BuildILUPreconditioner();
+         mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+         precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    	}
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
       /*--- Build the ILU preconditioner for the transposed system ---*/
@@ -215,7 +223,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     CSysSolve *system  = new CSysSolve();
     
-    switch (config->GetDeform_Linear_Solver()) {
+    switch (config->GetKind_Deform_Linear_Solver()) {
         
         /*--- Solve the linear system (GMRES with restart) ---*/
         
