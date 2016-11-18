@@ -767,7 +767,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;
   Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_BCThrust_Prev = 0.0;
   Total_Power = 0.0;      AoA_Prev           = 0.0;
-  Total_CL_Prev = 0.0;  Total_CD_Prev      = 0.0;
+  Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
+  Total_AeroCD = 0.0;     Total_Distortion   = 0.0;
 
   /*--- Read farfield conditions ---*/
   
@@ -821,15 +822,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   SlidingState = new su2double** [nMarker];
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 	
 	SlidingState[iMarker] = NULL;
 	  
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
       SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
 
-      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++){
+      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
         SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
       for (iVar = 0; iVar < nVar; iVar++)
         SlidingState[iMarker][iPoint][iVar] = -1;
@@ -1272,9 +1273,9 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] CharacPrimVar;
   }
   
-  if ( SlidingState != NULL ){
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      if ( SlidingState[iMarker] != NULL ){
+  if ( SlidingState != NULL ) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if ( SlidingState[iMarker] != NULL ) {
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
           delete [] SlidingState[iMarker][iVertex];
           
@@ -8556,6 +8557,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         config->SetSurface_IDC(iMarker_Analyze, IDC);
         
         SetTotal_IDC(IDC);
+        SetTotal_Distortion(IDC);
         
         IDR = 0.0;
         for (iStation = 0; iStation < nStation; iStation++) {
@@ -9490,17 +9492,24 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           DmTVector[1] = GetTotal_CFy()/ModDmT;
           if (nDim == 3)  DmTVector[2] = GetTotal_CFz()/ModDmT;
           
-          su2double SolidSurf_Drag = DmT - Force;
-          su2double SolidSurf_CD = SolidSurf_Drag / Factor;
-          
-          su2double CT = NetThrust / Factor;
-          
+          /*--- Set the aero drag ---*/
+
+          su2double Aero_Drag = DmT - Force;
+          su2double Aero_CD = Aero_Drag / Factor;
+
+          SetTotal_AeroCD(Aero_CD);
+
           /*--- Set the solid surface drag ---*/
           
+          su2double SolidSurf_Drag = DmT - Force;
+          su2double SolidSurf_CD = SolidSurf_Drag / Factor;
+
           SetTotal_CD_SolidSurf(SolidSurf_CD);
           
           /*--- Set the net thrust value---*/
           
+          su2double CT = NetThrust / Factor;
+
           SetTotal_NetCThrust(CT);
           
           /*--- Set the total power ---*/
@@ -9666,7 +9675,11 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             if (config->GetSystemMeasurements() == SI) cout << "Solid surfaces Drag (N): ";
             else if (config->GetSystemMeasurements() == US) cout << "Solid surfaces Drag (lbf): ";
             cout << setprecision(1) << SolidSurf_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << SolidSurf_CD << "." << endl;
-            
+
+            if (config->GetSystemMeasurements() == SI) cout << "Aero Drag (N): ";
+            else if (config->GetSystemMeasurements() == US) cout << "Aero Drag (lbf): ";
+            cout << setprecision(1) << Aero_Drag * Ref << ". Aero CD: " << setprecision(5) << Aero_CD << "." << endl;
+
             if (config->GetSystemMeasurements() == SI) cout << setprecision(1) <<"Net Thrust (N): ";
             else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Net Thrust (lbf): ";
             cout << setprecision(5) << -NetThrust * Ref  << ". Net CT: " << CT;
@@ -10452,6 +10465,12 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
      * TODO: print a warning to the user about that possibility. ---*/
     case EQUIVALENT_AREA:
       Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
+      break;
+    case AERO_DRAG_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_AeroCD;
+      break;
+    case DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*Total_Distortion;
       break;
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
@@ -13773,7 +13792,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           numerics->SetPrimitive( PrimVar_i, PrimVar_j );
           
-          if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ){
+          if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
 	        Secondary_i = node[iPoint]->GetSecondary();
 
 		    P_static   = PrimVar_j[nDim+1];
@@ -16084,15 +16103,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Init total coefficients ---*/
   
-  Total_CD      = 0.0;	  Total_CL           = 0.0;    Total_CSF          = 0.0;
-  Total_CMx     = 0.0;	  Total_CMy          = 0.0;    Total_CMz          = 0.0;
-  Total_CEff    = 0.0;	  Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
-  Total_CFx     = 0.0;	  Total_CFy          = 0.0;    Total_CFz          = 0.0;
-  Total_CT      = 0.0;	  Total_CQ           = 0.0;    Total_CMerit       = 0.0;
-  Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
-  Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
-  Total_Power = 0.0;      AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
+  Total_CD         = 0.0;	  Total_CL           = 0.0;    Total_CSF          = 0.0;
+  Total_CMx        = 0.0;	  Total_CMy          = 0.0;    Total_CMz          = 0.0;
+  Total_CEff       = 0.0;	  Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
+  Total_CFx        = 0.0;	  Total_CFy          = 0.0;    Total_CFz          = 0.0;
+  Total_CT         = 0.0;	  Total_CQ           = 0.0;    Total_CMerit       = 0.0;
+  Total_MaxHeat    = 0.0;   Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
+  Total_CpDiff     = 0.0;   Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
+  Total_NetCThrust = 0.0;   Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
+  Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
+  Total_AeroCD     = 0.0;	  Total_Distortion           = 0.0;
 
   /*--- Read farfield conditions from config ---*/
   
@@ -16203,15 +16223,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   SlidingState = new su2double** [nMarker];
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 	  
 	SlidingState[iMarker] = NULL;
 
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
         SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
 
-        for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++){
+        for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
           SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
         for (iVar = 0; iVar < nVar; iVar++)
           SlidingState[iMarker][iPoint][iVar] = -1;

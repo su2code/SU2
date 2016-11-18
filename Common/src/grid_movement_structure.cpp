@@ -54,18 +54,13 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 
 	  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
-	  config->SetKind_Linear_Solver_Prec(LU_SGS);
 	  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  
-}
-
-CVolumetricMovement::~CVolumetricMovement(void) {
-
 
 }
 
+CVolumetricMovement::~CVolumetricMovement(void) { }
 
 void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) {
   
@@ -202,20 +197,48 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
      * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
     if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
-      mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS) {
+        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# LU_SGS preconditioner." << endl;
+    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    		precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+    	}
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
+        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU0 preconditioner." << endl;
+    		StiffMatrix.BuildILUPreconditioner();
+    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    	}
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
+        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
+    		StiffMatrix.BuildJacobiPreconditioner();
+    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    	}
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
-      /*--- Build the ILU preconditioner for the transposed system ---*/
 
-      StiffMatrix.BuildILUPreconditioner(true);
-      mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    	/*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
+
+    	if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
+    			(config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
+        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# ILU0 preconditioner." << endl;
+    		StiffMatrix.BuildILUPreconditioner(true);
+    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    	}
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
+        if ((rank == MASTER_NODE) && Screen_Output) cout << "\n# Jacobi preconditioner." << endl;
+    		StiffMatrix.BuildJacobiPreconditioner(true);
+    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    	}
+
     }
 
     CSysSolve *system  = new CSysSolve();
     
-    switch (config->GetDeform_Linear_Solver()) {
+    switch (config->GetKind_Deform_Linear_Solver()) {
         
         /*--- Solve the linear system (GMRES with restart) ---*/
         
@@ -281,14 +304,9 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
 
-    if (!Derivative) {
-      UpdateGridCoord(geometry, config);
-    }else {
-      UpdateGridCoord_Derivatives(geometry, config);
-    }
-
-    if (UpdateGeo)
-      UpdateDualGrid(geometry, config);
+    if (!Derivative) { UpdateGridCoord(geometry, config); }
+    else { UpdateGridCoord_Derivatives(geometry, config); }
+    if (UpdateGeo) { UpdateDualGrid(geometry, config); }
     
     /*--- Check for failed deformation (negative volumes). ---*/
     
@@ -5365,10 +5383,10 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 	su2double Ampl = config->GetDV_Value(iDV);
 	su2double KulfanNum = config->GetParamDV(iDV, 1) - 1.0;
 	su2double maxKulfanNum = config->GetParamDV(iDV, 2) - 1.0;
-	if (KulfanNum < 0){
+	if (KulfanNum < 0) {
 		std::cout << "Warning: Kulfan number should be greater than 1." << std::endl;
 	}
-	if (KulfanNum > maxKulfanNum){
+	if (KulfanNum > maxKulfanNum) {
 		std::cout << "Warning: Kulfan number should be less than provided maximum." << std::endl;
 	}
 
@@ -5403,13 +5421,13 @@ void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned sho
 	su2double fact_cst = 1;
         su2double fact_cst_n = 1;
 	
-	for (int i = 1; i <= maxKulfanNum; i++){
+	for (int i = 1; i <= maxKulfanNum; i++) {
 		fact_n = fact_n * i;
 	}
-	for (int i = 1; i <= KulfanNum; i++){
+	for (int i = 1; i <= KulfanNum; i++) {
 		fact_cst = fact_cst * i;
 	}
-	for (int i = 1; i <= maxKulfanNum - KulfanNum; i++){
+	for (int i = 1; i <= maxKulfanNum - KulfanNum; i++) {
 		fact_cst_n = fact_cst_n * i;
 	} 
 	

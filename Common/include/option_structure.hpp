@@ -953,11 +953,9 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED = 31,          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
-  IDC_COEFFICIENT = 32, 	           /*!< \brief IDC coefficient objective function definition. */
-  PROPULSIVE_EFFICIENCY = 33, 	       /*!< \brief Mass flow ratio coefficient. */
-  NET_THRUST_COEFFICIENT = 34, 	     /*!< \brief Mass flow ratio coefficient. */
-  CUSTOM_COEFFICIENT = 35 	           /*!< \brief Custom coefficient objective function definition. */
+  OUTFLOW_GENERALIZED = 31,       /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
+  DISTORTION = 36 	             /*!< \brief Distortion objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -992,10 +990,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
 ("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
-("IDC_COEFFICIENT", IDC_COEFFICIENT)
-("PROPULSIVE_EFFICIENCY", PROPULSIVE_EFFICIENCY)
-("NET_THRUST_COEFFICIENT", NET_THRUST_COEFFICIENT)
-("CUSTOM_COEFFICIENT", CUSTOM_COEFFICIENT);
+("AERO_DRAG", AERO_DRAG_COEFFICIENT)
+("DISTORTION", DISTORTION);
 
 /*!
  * \brief types of residual criteria equations

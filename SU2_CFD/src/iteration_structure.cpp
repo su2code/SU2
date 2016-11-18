@@ -1804,8 +1804,8 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
     
     if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )) {
       cout << "log10[RMS Density]: "<< log10(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD()
-          <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL() << "." << endl;
+           <<", CD: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD()
+          <<", CL: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL() << "." << endl;
 
       if (turbulent) {
         cout << "log10[RMS k]: " << log10(solver_container[val_iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
@@ -2043,17 +2043,17 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Register flow variables and objective function as output ---*/
   
   /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
-  for (unsigned short iObj=0; iObj<config_container[val_iZone]->GetnObj(); iObj++){
+  for (unsigned short iObj=0; iObj<config_container[val_iZone]->GetnObj(); iObj++) {
     if (config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_OUTLET_PRESSURE ||
         config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_TOTAL_PRESSURE ||
-        config_container[val_iZone]->GetKind_ObjFunc(iObj)==MASS_FLOW_RATE){
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==MASS_FLOW_RATE) {
       output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                    geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
       break;
     }
   }
   /*--- For a combined objective function, the total should be computed and stored ---*/
-  if (config_container[val_iZone]->GetnObj()>0){
+  if (config_container[val_iZone]->GetnObj()>0) {
     solver_container[val_iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[val_iZone]);
   }
 

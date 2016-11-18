@@ -115,7 +115,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		for (jDim = 0; jDim < nDim; jDim++) {
-			if (iDim == jDim) delta[iDim][jDim]=1.0;
+			if (iDim == jDim) delta[iDim][jDim] = 1.0;
 			else delta[iDim][jDim]=0.0;
 		}
 	}
@@ -560,7 +560,7 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
     
-    val_p_tensor[0][0]=1.0;
+    val_p_tensor[0][0] = 1.0;
     val_p_tensor[0][1]=0.0;
     val_p_tensor[0][2]=0.5*rhooc;
     val_p_tensor[0][3]=0.5*rhooc;
@@ -633,7 +633,7 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 		zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa);
 
-		val_p_tensor[0][0]=1.0;
+		val_p_tensor[0][0] = 1.0;
 		val_p_tensor[0][1]=0.0;
 		val_p_tensor[0][2]=0.5*rhooc;
 		val_p_tensor[0][3]=0.5*rhooc;
@@ -742,7 +742,7 @@ void CNumerics::GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
     
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 
-		val_invp_tensor[0][0]=1.0-0.5*gm1_o_c2*sqvel;
+		val_invp_tensor[0][0] = 1.0-0.5*gm1_o_c2*sqvel;
 		val_invp_tensor[0][1]=gm1_o_c2*val_velocity[0];
 		val_invp_tensor[0][2]=gm1_o_c2*val_velocity[1];
 		val_invp_tensor[0][3]=-gm1_o_c2;
@@ -816,7 +816,7 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, su2double *val_densi
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 		dp_drho = *val_chi + 0.5*sqvel*(*val_kappa);
 
-		val_invp_tensor[0][0]=1.0 - dp_drho/c2;
+		val_invp_tensor[0][0] = 1.0 - dp_drho/c2;
 		val_invp_tensor[0][1]= k_o_c2*val_velocity[0];
 		val_invp_tensor[0][2]= k_o_c2*val_velocity[1];
 		val_invp_tensor[0][3]=-k_o_c2;

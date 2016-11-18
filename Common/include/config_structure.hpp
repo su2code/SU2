@@ -108,6 +108,7 @@ private:
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+  Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -399,6 +400,8 @@ private:
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
+  Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
+	Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
 	Kind_Linear_Solver_FSI_Struc,	 /*!< \brief Numerical solver for the structural part in FSI problems. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
@@ -497,7 +500,6 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
-  unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
@@ -3083,7 +3085,13 @@ public:
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
-  unsigned short GetDeform_Linear_Solver(void);
+  unsigned short GetKind_Deform_Linear_Solver(void);
+
+	/*!
+	 * \brief Set the kind of preconditioner for the implicit solver.
+	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
+	 */
+	void SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec);
 
 	/*!
 	 * \brief Get the kind of preconditioner for the implicit solver.
@@ -3162,6 +3170,12 @@ public:
    * \return Numerical preconditioner for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_DiscAdj_Linear_Prec(void);
+
+  /*!
+   * \brief Get the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Deform_Linear_Solver_Prec(void);
 
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
