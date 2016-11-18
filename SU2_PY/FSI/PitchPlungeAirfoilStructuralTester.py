@@ -50,11 +50,15 @@ class Point:
   """ Description. """
 
   def __init__(self):
+    self.Coord0 = np.zeros((3,1))
     self.Coord = np.zeros((3,1))
     self.Coord_n = np.zeros((3,1))
     self.Vel = np.zeros((3,1))
     self.Vel_n = np.zeros((3,1))
     self.Force = np.zeros((3,1))
+
+  def GetCoord0(self):
+    return self.Coord0
 
   def GetCoord(self):
     return self.Coord
@@ -70,6 +74,12 @@ class Point:
 
   def GetForce(self):
     return self.Force
+
+  def SetCoord0(self, val_Coord):
+    x, y, z = val_Coord
+    self.Coord0[0] = x
+    self.Coord0[1] = y
+    self.Coord0[2] = z
 
   def SetCoord(self, val_Coord):
     x, y, z = val_Coord
@@ -262,6 +272,7 @@ class Solver:
 	    if self.nDim == 3:
 	      z = float(line[2])
 	    self.node[iPoint].SetCoord((x,y,z))
+            self.node[iPoint].SetCoord0((x,y,z))
 	    self.node[iPoint].SetCoord_n((x,y,z))
 	  continue
 
@@ -622,6 +633,30 @@ class Solver:
     iPoint = self.markers[markerID][iVertex]
     Coord = self.node[iPoint].GetCoord()
     return float(Coord[2])
+
+  def getInterfaceNodeDispX(self, markerID, iVertex):
+    """ Desciption. """
+
+    iPoint = self.markers[markerID][iVertex]
+    Coord = self.node[iPoint].GetCoord()
+    Coord0 = self.node[iPoint].GetCoord0()
+    return float(Coord[0]-Coord0[0])
+
+  def getInterfaceNodeDispY(self, markerID, iVertex):
+    """ Desciption. """
+
+    iPoint = self.markers[markerID][iVertex]
+    Coord = self.node[iPoint].GetCoord()
+    Coord0 = self.node[iPoint].GetCoord0()
+    return float(Coord[1]-Coord0[1])
+
+  def getInterfaceNodeDispZ(self, markerID, iVertex):
+    """ Desciption. """
+
+    iPoint = self.markers[markerID][iVertex]
+    Coord = self.node[iPoint].GetCoord()
+    Coord0 = self.node[iPoint].GetCoord0()
+    return float(Coord[2]-Coord0[2])
 
   def getInterfaceNodeVelX(self, markerID, iVertex):
     """ Description """
