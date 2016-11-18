@@ -402,6 +402,8 @@ class Project(object):
                 if n_dv != this_ndv:
                     warn('different dv vector length during compile_results()')
         #: for each design
+        
+
             
         # populate results
         for design in self.designs:

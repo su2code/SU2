@@ -2165,7 +2165,7 @@ public:
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
         case CUSTOM: nParamDV = 1; break;
-        case DV_EFIELD: nParamDV = 0; break;
+        case DV_EFIELD: nParamDV = 2; break;
         default : {
           string newstring;
           newstring.append(this->name);

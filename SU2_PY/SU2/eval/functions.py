@@ -616,6 +616,9 @@ def structural( config, state=None ):
     for key in su2io.optnames_aero + su2io.grad_names_directdiff:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
+            
+    # Update state to have variables
+    state.VARIABLES.DV_VALUE_NEW = config.DV_VALUE_NEW
 
     return funcs
 
