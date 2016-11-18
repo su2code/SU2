@@ -258,15 +258,15 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
 #endif
 }
 
-int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface){
+int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface) {
     
   unsigned short nMarker = config->GetnMarker_All();
   unsigned short iMarker;
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
-    if (config->GetMarker_All_FSIinterface(iMarker) == val_marker_interface ){
+    if (config->GetMarker_All_FSIinterface(iMarker) == val_marker_interface ) {
 
       /*--- We have identified the identifier for the interface marker ---*/
       return iMarker;
@@ -350,7 +350,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -362,7 +362,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -421,7 +421,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
         /*--- Loop over all the boundaries to find the pair ---*/
 
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
           for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
             Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
@@ -568,7 +568,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
     
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -579,7 +579,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
     
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -640,10 +640,10 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
     /*--- Collect Face info ---*/
 
-    for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++){
+    for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++) {
       Buffer_Send_FaceIndex[iVertex] = 0;
     }
-    for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++){
+    for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++) {
       Buffer_Send_FaceNodes[iVertex] = 0;
       Buffer_Send_FaceProc[iVertex]  = 0;
     }
@@ -904,12 +904,12 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     /*--- Right hand side is [1, \vec{x}']'---*/
     for (iDonor=0; iDonor<nDonor; iDonor++) {
       isoparams[iDonor]=0;
-      A[iDonor]=1.0;
+      A[iDonor] = 1.0;
       for (iDim=0; iDim<n; iDim++)
         A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
     }
 
-    x[0]=1.0;
+    x[0] = 1.0;
     for (iDim=0; iDim<nDim; iDim++)
       x[iDim+1]=xj[iDim];
 
@@ -1047,14 +1047,14 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
       }
       // [0,1]
       if (isoparams[iDonor]<0) isoparams[iDonor]=0;
-      if (isoparams[iDonor]>1) isoparams[iDonor]=1;
+      if (isoparams[iDonor]>1) isoparams[iDonor] = 1;
       tmp +=isoparams[iDonor];
     }
     if (tmp>0)
       for (iDonor=0; iDonor< nDonor; iDonor++)
         isoparams[iDonor]=isoparams[iDonor]/tmp;
     else {
-      isoparams[k]=1.0;
+      isoparams[k] = 1.0;
     }
   }
   
@@ -1153,7 +1153,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -1164,7 +1164,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }

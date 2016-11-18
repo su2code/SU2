@@ -237,19 +237,24 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
   /*--- Set specific preconditioner matrices (ILU) ---*/
   
   if ((config->GetKind_Linear_Solver_Prec() == ILU) ||
-      (config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
+  		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+  		((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == ILU)) ||
+  		(config->GetKind_Linear_Solver() == SMOOTHER_ILU) ||
       (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Prec() == ILU)) {
     
     /*--- Reserve memory for the ILU matrix. ---*/
     
     ILU_matrix = new su2double [nnz*nVar*nEqn];
     for (iVar = 0; iVar < nnz*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
+
   }
   
   /*--- Set specific preconditioner matrices (Jacobi and Linelet) ---*/
   
   if ((config->GetKind_Linear_Solver_Prec() == JACOBI) ||
       (config->GetKind_Linear_Solver_Prec() == LINELET) ||
+   		((config->GetKind_SU2() == SU2_DEF) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
+    	((config->GetKind_SU2() == SU2_DOT) && (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI)) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_JACOBI) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET) ||
       (config->GetDiscrete_Adjoint() && config->GetKind_DiscAdj_Linear_Solver() == JACOBI))   {
@@ -258,6 +263,7 @@ void CSysMatrix::SetIndexes(unsigned long val_nPoint, unsigned long val_nPointDo
     
     invM = new su2double [nPoint*nVar*nEqn];
     for (iVar = 0; iVar < nPoint*nVar*nEqn; iVar++) invM[iVar] = 0.0;
+
   }
 
 }
@@ -1136,11 +1142,7 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
   
-  //  cout <<"Gauss" <<endl;
-  //  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
-  //  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
-  //  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
-  //
+  //  su2double Det, **Matrix, **CoFactor;
   //  su2double *Block = GetBlock(block_i, block_i);
   //
   //  Matrix = new su2double*[nVar];
@@ -1171,12 +1173,6 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
   //  }
   //  delete [] Matrix;
   //  delete [] CoFactor;
-  //
-  //  cout <<"CoFactor" <<endl;
-  //  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
-  //  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
-  //  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
-
   
 }
 
@@ -1184,8 +1180,6 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
 void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double *invBlock) {
   
   unsigned long iVar, jVar;
-  su2double Det;
-  su2double **Matrix, **CoFactor;
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++)
@@ -1199,47 +1193,37 @@ void CSysMatrix::InverseDiagonalBlock_ILUMatrix(unsigned long block_i, su2double
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
   
-//  cout <<"Gauss" <<endl;
-//  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
-//  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
-//  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
-//
-//  su2double *Block = GetBlock_ILUMatrix(block_i, block_i);
-//  
-//  Matrix = new su2double*[nVar];
-//  CoFactor = new su2double*[nVar];
-//  for (iVar=0;iVar<nVar;iVar++) {
-//    Matrix[iVar] = new su2double[nVar];
-//    CoFactor[iVar] = new su2double[nVar];
-//  }
-//  
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nVar; jVar++)
-//    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
-//  }
-//
-//  Det =  MatrixDeterminant(Matrix, nVar);
-//  MatrixCoFactor(Matrix, nVar, CoFactor);
-//  MatrixTranspose(CoFactor, nVar);
-//  
-//  
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    for (jVar = 0; jVar < nVar; jVar++)
-//    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
-//  }
-//  
-//  for (iVar = 0; iVar < nVar; iVar++) {
-//    delete [] Matrix[iVar];
-//    delete [] CoFactor[iVar];
-//  }
-//  delete [] Matrix;
-//  delete [] CoFactor;
-//  
-//  cout <<"CoFactor" <<endl;
-//  cout << invBlock[0] <<" "<< invBlock[1] <<" "<< invBlock[2] << endl;
-//  cout << invBlock[3] <<" "<< invBlock[4] <<" "<< invBlock[5] << endl;
-//  cout << invBlock[6] <<" "<< invBlock[7] <<" "<< invBlock[8] << endl;
-
+  //  su2double Det, **Matrix, **CoFactor;
+  //  su2double *Block = GetBlock_ILUMatrix(block_i, block_i);
+  //
+  //  Matrix = new su2double*[nVar];
+  //  CoFactor = new su2double*[nVar];
+  //  for (iVar=0;iVar<nVar;iVar++) {
+  //    Matrix[iVar] = new su2double[nVar];
+  //    CoFactor[iVar] = new su2double[nVar];
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    Matrix[iVar][jVar] = Block[jVar*nVar+iVar];
+  //  }
+  //
+  //  Det =  MatrixDeterminant(Matrix, nVar);
+  //  MatrixCoFactor(Matrix, nVar, CoFactor);
+  //  MatrixTranspose(CoFactor, nVar);
+  //
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    for (jVar = 0; jVar < nVar; jVar++)
+  //    invBlock[jVar*nVar+iVar] = CoFactor[iVar][jVar]/Det;
+  //  }
+  //
+  //  for (iVar = 0; iVar < nVar; iVar++) {
+  //    delete [] Matrix[iVar];
+  //    delete [] CoFactor[iVar];
+  //  }
+  //  delete [] Matrix;
+  //  delete [] CoFactor;
   
 }
 

@@ -380,6 +380,10 @@ inline su2double CSolver::GetTotal_CMerit() { return 0; }
 
 inline su2double CSolver::GetTotal_CEquivArea() { return 0; }
 
+inline su2double CSolver::GetTotal_AeroCD() { return 0; }
+
+inline su2double CSolver::GetTotal_Distortion() { return 0; }
+
 inline su2double CSolver::GetTotal_CpDiff() { return 0; }
 
 inline su2double CSolver::GetTotal_HeatFluxDiff() { return 0; }
@@ -393,6 +397,10 @@ inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
 
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
+
+inline void CSolver::SetTotal_AeroCD(su2double val_aerocd) { }
+
+inline void CSolver::SetTotal_Distortion(su2double val_distortion) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
 
@@ -704,7 +712,7 @@ inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_containe
 								  unsigned short val_marker) { }
 
 inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                         CConfig *config){ }
+                                         CConfig *config) { }
 
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                            CConfig *config, unsigned short val_marker) { }
@@ -1156,6 +1164,10 @@ inline su2double CEulerSolver::GetTotal_CMerit() { return Total_CMerit; }
 
 inline su2double CEulerSolver::GetTotal_CEquivArea() { return Total_CEquivArea; }
 
+inline su2double CEulerSolver::GetTotal_AeroCD() { return Total_AeroCD; }
+
+inline su2double CEulerSolver::GetTotal_Distortion() { return Total_Distortion; }
+
 inline su2double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
 inline su2double CEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
@@ -1164,7 +1176,11 @@ inline su2double CEulerSolver::GetTotal_CNearFieldOF() { return Total_CNearField
 
 inline void CEulerSolver::AddTotal_ComboObj(su2double val_obj) {Total_ComboObj +=val_obj;}
 
-inline void CEulerSolver::SetTotal_CEquivArea(su2double cequivarea) { Total_CEquivArea = cequivarea; }
+inline void CEulerSolver::SetTotal_CEquivArea(su2double val_cequivarea) { Total_CEquivArea = val_cequivarea; }
+
+inline void CEulerSolver::SetTotal_AeroCD(su2double val_aerocd) { Total_AeroCD = val_aerocd; }
+
+inline void CEulerSolver::SetTotal_Distortion(su2double val_distortion) { Total_CEquivArea = val_distortion; }
 
 inline void CEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
 
@@ -1549,15 +1565,15 @@ inline void CEulerSolver::SetPressure_Inf(su2double p_inf) {Pressure_Inf = p_inf
 
 inline void CEulerSolver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
 
-inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
+inline void CEulerSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component) { SlidingState[val_marker][val_vertex][val_state] = component; }
 
 inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }
 
-inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ }
+inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component) { }
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
-inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
+inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {}
 
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {}
 

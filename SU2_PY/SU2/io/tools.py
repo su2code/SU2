@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 ## \file tools.py
 #  \brief file i/o functions
@@ -210,6 +210,8 @@ def get_headerMap():
                  "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
                  "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
+                 "AeroCDrag"       : "AERO_DRAG"               ,
+                 "Distortion"      : "DISTORTION"              ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CLift)"        : "D_LIFT"                  ,
                  "D(CDrag)"        : "D_DRAG"                  ,
@@ -221,6 +223,8 @@ def get_headerMap():
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "D(AeroCDrag)"    : "D_AERO_DRAG"             ,
+                 "D(Distortion)"   : "D_DISTORTION"            ,
                  "ComboObj"        : "COMBO"}
     
     return map_dict
@@ -259,6 +263,8 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
+                  "AERO_DRAG"               ,
+                  "DISTORTION"              ,
                   "COMBO"]
 #: optnames_aero
 
@@ -337,6 +343,8 @@ grad_names_directdiff = ["D_LIFT"                  ,
                          "D_FORCE_X"               ,
                          "D_FORCE_Y"               ,
                          "D_FORCE_Z"               ,
+                         "D_AERO_DRAG"             ,
+                         "D_DISTORTION"            ,
                          "D_EFFICIENCY"]
 
 grad_names_map = { "LIFT"      : "D_LIFT"           ,
@@ -348,6 +356,8 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_X"   : "D_FORCE_X"     ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
+                   "AERO_DRAG" : "D_AERO_DRAG"   ,
+                   "DISTORTION" : "D_DISTORTION"     ,
                    "EFFICIENCY" : "D_EFFICIENCY"}
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
@@ -477,6 +487,8 @@ def get_adjointSuffix(objective_function=None):
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
+                 "AERO_DRAG"               : "acd"       ,
+                 "DISTORTION"              : "dis"       ,
                  "COMBO"                   : "combo"}
     
     # if none or false, return map
@@ -616,6 +628,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "EQUIV_AREA"     : 
                 header.append(r',"Grad_CEquivArea","Grad_CNearFieldOF"') 
                 write_format.append(", %.10f, %.10f")
+            if key == "ENGINE"     :
+                header.append(r',"Grad_AeroCDrag","Grad_Distortion"')
+                write_format.append(", %.10f, %.10f")
             if key == "1D_OUTPUT"     :
                 header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_FluxAvg_Pressure","Grad_FluxAvg_Density","Grad_FluxAvg_Velocity","Grad_FluxAvg_Enthalpy"')
                 write_format.append(", %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f")
@@ -740,6 +755,9 @@ def get_optFileFormat(plot_format,special_cases=None):
             write_format.append(r', %.10f, %.10f, %.10f')
         if key == "EQUIV_AREA"     : 
             header_list.extend(["CEquivArea","CNearFieldOF"]) 
+            write_format.append(r', %.10f, %.10f')
+        if key == "ENGINE"     :
+            header_list.extend(["AeroCDrag","Distortion"])
             write_format.append(r', %.10f, %.10f')
         if key == "1D_OUTPUT":
             header_list.extend(["Avg_TotalPress","Avg_Mach","Avg_Temperature","MassFlowRate","FluxAvg_Pressure","FluxAvg_Density","FluxAvg_Velocity","FluxAvg_Enthalpy"])

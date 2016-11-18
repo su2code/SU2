@@ -3944,16 +3944,18 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool rotating_frame = config->GetRotating_Frame();
   bool aeroelastic = config->GetAeroelastic_Simulation();
   bool equiv_area = config->GetEquivArea();
+  bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool frozen_turb = config->GetFrozen_Visc();
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
-  bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
-  bool output_comboObj = (config->GetnObj()>1);
-  if ((config->GetnMarker_Monitoring() > 1) &&(not output_comboObj)) output_per_surface = true;
+  bool output_comboObj = (config->GetnObj() > 1);
+  bool output_per_surface = false;
+  //if ((config->GetnMarker_Monitoring() > 1) && (!output_comboObj)) output_per_surface = true;
   
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -3998,6 +4000,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char flow_coeff[]= ",\"CLift\",\"CDrag\",\"CSideForce\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\"";
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
+  char engine_coeff[]= ",\"AeroCDrag\",\"Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char free_surface_coeff[]= ",\"CFreeSurface\"";
   char wave_coeff[]= ",\"CWave\"";
@@ -4008,7 +4011,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char mass_flow_rate[] = ",\"MassFlowRate\"";
   char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
-  
+  char d_engine[] = ",\"D(AeroCDrag)\",\"D(Distortion)\"";
+
   /*--- Find the markers being monitored and create a header for them ---*/
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -4065,6 +4069,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       ConvHist_file[0] << begin << flow_coeff;
       if (thermal) ConvHist_file[0] << heat_coeff;
       if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
+      if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
       if (inv_design) {
         ConvHist_file[0] << Cp_inverse_design;
         if (thermal) ConvHist_file[0] << Heat_inverse_design;
@@ -4076,7 +4081,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
       if (output_massflow && !output_1d)  ConvHist_file[0]<< mass_flow_rate;
-      if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_flow_coeff;
+      if (direct_diff != NO_DERIVATIVE) {
+        ConvHist_file[0] << d_flow_coeff;
+        if (engine || actuator_disk) ConvHist_file[0] << d_engine;
+      }
       if (output_comboObj) ConvHist_file[0] << combo_obj;
       ConvHist_file[0] << end;
       if (freesurface) {
@@ -4134,7 +4142,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
   bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
-  bool output_comboObj = (config[val_iZone]->GetnObj()>1);
+  bool output_comboObj = (config[val_iZone]->GetnObj() > 1);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
   int rank;
@@ -4231,27 +4239,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     string inMarker_Tag, outMarker_Tag;
     
     bool output_per_surface = false;
-    if ((config[val_iZone]->GetnMarker_Monitoring() > 1) &&(config[val_iZone]->GetnObj() <=1)) output_per_surface = true;
+ //   if ((config[val_iZone]->GetnMarker_Monitoring() > 1) && (config[val_iZone]->GetnObj() <= 1)) output_per_surface = true;
 
     
     unsigned short direct_diff = config[val_iZone]->GetDirectDiff();
     
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
+    
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0,
-    Total_ComboObj=0.0;
+    Total_ComboObj=0.0, Total_AeroCD = 0.0, Total_Distortion = 0.0;
     
     /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
+    
     su2double *TotalStaticEfficiency = NULL,
     *TotalTotalEfficiency = NULL,
     *KineticEnergyLoss 	  = NULL,
     *TotalPressureLoss 	  = NULL,
-    *MassFlowIn 		  = NULL,
+    *MassFlowIn 		      = NULL,
     *MassFlowOut          = NULL,
     *FlowAngleIn          = NULL,
     *FlowAngleOut         = NULL,
@@ -4271,7 +4281,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
-    su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
+    su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_Distortion = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4289,9 +4299,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
     *aeroelastic_pitch  = NULL,
-    *Surface_CL      = NULL,
-    *Surface_CD      = NULL,
-    *Surface_CSF = NULL,
+    *Surface_CL         = NULL,
+    *Surface_CD         = NULL,
+    *Surface_CSF        = NULL,
     *Surface_CEff       = NULL,
     *Surface_CFx        = NULL,
     *Surface_CFy        = NULL,
@@ -4393,27 +4403,33 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         /*--- Flow solution coefficients ---*/
         Total_CL       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
         Total_CD       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
-        Total_CSF  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
-        Total_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
-        Total_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-        Total_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-        Total_CMz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-        Total_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-        Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
-        Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-        Total_ComboObj    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
+        Total_CSF      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
+        Total_CEff     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
+        Total_CMx      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+        Total_CMy      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+        Total_CMz      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+        Total_CFx      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+        Total_CFy      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+        Total_CFz      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+        Total_ComboObj = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
 
         if (direct_diff != NO_DERIVATIVE) {
           D_Total_CL       = SU2_TYPE::GetDerivative(Total_CL);
           D_Total_CD       = SU2_TYPE::GetDerivative(Total_CD);
-          D_Total_CSF  = SU2_TYPE::GetDerivative(Total_CSF);
-          D_Total_CEff        = SU2_TYPE::GetDerivative(Total_CEff);
-          D_Total_CMx         = SU2_TYPE::GetDerivative(Total_CMx);
-          D_Total_CMy         = SU2_TYPE::GetDerivative(Total_CMy);
-          D_Total_CMz         = SU2_TYPE::GetDerivative(Total_CMz);
-          D_Total_CFx         = SU2_TYPE::GetDerivative(Total_CFx);
-          D_Total_CFy         = SU2_TYPE::GetDerivative(Total_CFy);
-          D_Total_CFz         = SU2_TYPE::GetDerivative(Total_CFz);
+          D_Total_CSF      = SU2_TYPE::GetDerivative(Total_CSF);
+          D_Total_CEff     = SU2_TYPE::GetDerivative(Total_CEff);
+          D_Total_CMx      = SU2_TYPE::GetDerivative(Total_CMx);
+          D_Total_CMy      = SU2_TYPE::GetDerivative(Total_CMy);
+          D_Total_CMz      = SU2_TYPE::GetDerivative(Total_CMz);
+          D_Total_CFx      = SU2_TYPE::GetDerivative(Total_CFx);
+          D_Total_CFy      = SU2_TYPE::GetDerivative(Total_CFy);
+          D_Total_CFz      = SU2_TYPE::GetDerivative(Total_CFz);
+          
+          if (engine || actuator_disk) {
+            D_Total_Distortion    = SU2_TYPE::GetDerivative(Total_AeroCD);
+            D_Total_AeroCD  = SU2_TYPE::GetDerivative(Total_Distortion);
+          }
+          
         }
         
         if (freesurface) {
@@ -4429,9 +4445,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_CEquivArea    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEquivArea();
           Total_CNearFieldOF  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
           
-          /*--- Note that there is a redefinition of the nearfield based functionals ---*/
           Total_CEquivArea    = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CEquivArea;
           Total_CNearFieldOF  = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CNearFieldOF;
+        }
+        
+        if (engine || actuator_disk) {
+          Total_Distortion    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Distortion();
+          Total_AeroCD  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
         }
         
         if (inv_design) {
@@ -4713,10 +4733,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
                        D_Total_CFz, D_Total_CEff);
+              if (engine || actuator_disk)
+              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
+                       D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
+                       D_Total_CFz, D_Total_CEff, D_Total_AeroCD, D_Total_Distortion);
             }
             if (thermal)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
+            if (engine || actuator_disk)
+            SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_AeroCD, Total_Distortion);
             if (equiv_area)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
             if (inv_design) {
