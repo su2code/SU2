@@ -7892,7 +7892,7 @@ void CBSplineBlending::SetOrder(short val_order, short n_controlpoints){
     U[Order + iKnot] = su2double(iKnot+1)/su2double(nControl - Order + 1);
   }
   for (iKnot = nControl - Order; iKnot < nControl; iKnot++){
-    U[Order + iKnot]  = 1.0 + 1e-06;
+    U[Order + iKnot]  = 1.0;
   }
 
   /*--- Allocate the temporary vectors for the basis evaluation ---*/
@@ -7903,6 +7903,12 @@ void CBSplineBlending::SetOrder(short val_order, short n_controlpoints){
 su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
 
   /*--- Evaluation is based on the algorithm from "The NURBS Book (Les Piegl and Wayne Tiller)" ---*/
+
+  /*--- Special cases ---*/
+
+  if ((val_i == 0 && val_t == U[0]) || (val_i == U.size()-1 && val_t == U.back())) {return 1.0;}
+
+  /*--- Local property of BSplines ---*/
 
   if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])){ return 0.0;}
 
@@ -7917,20 +7923,20 @@ su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
   for (k = 1; k < Order; k++){
     if (N[0][k-1] == 0.0) saved = 0.0;
     else saved = ((val_t - U[val_i])*N[0][k-1])/(U[val_i+k] - U[val_i]);
-    for (j = 0; j < Order - k; j++){
+    for (j = 0; j < Order-k; j++){
       if (N[j+1][k-1] == 0.0){
         N[j][k] = saved; saved = 0.0;
       } else {
-        temp = N[j+1][k-1]/(U[val_i + j + k + 1] - U[val_i + j + 1]);
-        N[j][k]  = saved+(U[val_i + j + k + 1] - val_t)*temp;
-        saved = (val_t - U[val_i + j + 1])*temp;
+        temp     = N[j+1][k-1]/(U[val_i+j+k+1] - U[val_i+j+1]);
+        N[j][k]  = saved+(U[val_i+j+k+1] - val_t)*temp;
+        saved    = (val_t - U[val_i+j+1])*temp;
       }
     }
   }
   return N[0][Order-1];
 }
 
-su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short val_order){
+su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short val_order_der){
 
   if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])){ return 0.0;}
 
@@ -7940,14 +7946,14 @@ su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short va
 
   /*--- Use the recursive definition for the derivative (hardcoded for 1st and 2nd derivative). ---*/
 
-  if (val_order == 0){ return N[0][Order-1];}
+  if (val_order_der == 0){ return N[0][Order-1];}
 
-  if (val_order == 1){
+  if (val_order_der == 1){
     return (Order-1.0)/(1e-10 + U[val_i+Order-1] - U[val_i]  )*N[0][Order-2]
          - (Order-1.0)/(1e-10 + U[val_i+Order]   - U[val_i+1])*N[1][Order-2];
   }
 
-  if (val_order == 2 && Order > 2){
+  if (val_order_der == 2 && Order > 2){
     const su2double left = (Order-2.0)/(1e-10 + U[val_i+Order-2] - U[val_i])  *N[0][Order-3]
                          - (Order-2.0)/(1e-10 + U[val_i+Order-1] - U[val_i+1])*N[1][Order-3];
 
@@ -8003,30 +8009,30 @@ su2double CBezierBlending::GetBernstein(short val_n, short val_i, su2double val_
   return value;
 }
 
-su2double CBezierBlending::GetDerivative(short val_i, su2double val_t, short val_order){
-  return GetBernsteinDerivative(Degree, val_i, val_t, val_order);
+su2double CBezierBlending::GetDerivative(short val_i, su2double val_t, short val_order_der){
+  return GetBernsteinDerivative(Degree, val_i, val_t, val_order_der);
 }
 
-su2double CBezierBlending::GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order){
+su2double CBezierBlending::GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order_der){
 
   su2double value = 0.0;
 
   /*--- Verify this subroutine, it provides negative val_n,
    which is a wrong value for GetBernstein ---*/
 
-  if (val_order == 0) {
+  if (val_order_der == 0) {
     value = GetBernstein(val_n, val_i, val_t); return value;
   }
 
   if (val_i == 0) {
-    value = val_n*(-GetBernsteinDerivative(val_n-1, val_i, val_t, val_order-1)); return value;
+    value = val_n*(-GetBernsteinDerivative(val_n-1, val_i, val_t, val_order_der-1)); return value;
   }
   else {
     if (val_n == 0) {
       value = val_t; return value;
     }
     else {
-      value = val_n*(GetBernsteinDerivative(val_n-1, val_i-1, val_t, val_order-1) - GetBernsteinDerivative(val_n-1, val_i, val_t, val_order-1));
+      value = val_n*(GetBernsteinDerivative(val_n-1, val_i-1, val_t, val_order_der-1) - GetBernsteinDerivative(val_n-1, val_i, val_t, val_order_der-1));
       return value;
     }
   }
