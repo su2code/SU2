@@ -145,7 +145,7 @@ def main():
     print('\n***************************** Connect fluid and solid solvers *****************************')
   if have_MPI == True:
     comm.barrier()
-  FSIInterface.connect(FluidSolver, SolidSolver)
+  FSIInterface.connect(FSI_config, FluidSolver, SolidSolver)
 
   if myid == rootProcess:
     print('\n***************************** Mapping fluid-solid interfaces *****************************')

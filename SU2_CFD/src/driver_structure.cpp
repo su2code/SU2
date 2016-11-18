@@ -2642,7 +2642,7 @@ su2double CDriver::Get_Mz(){
 
 unsigned short CDriver::GetMovingMarker(){
 
-  unsigned short IDtoSend(0),iMarker, jMarker, Moving;
+  unsigned short IDtoSend, iMarker, jMarker, Moving;
   string Marker_Tag, Moving_Tag;
 
   for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
