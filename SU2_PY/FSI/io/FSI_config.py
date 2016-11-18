@@ -93,6 +93,7 @@ class FSIConfig:
 		    break
 
 	        #float values
+                if case("RBF_RADIUS")                 : pass
 		if case("AITKEN_PARAM")		      : pass
 		if case("START_TIME")		      : pass
 		if case("UNST_TIMESTEP")	      : pass
@@ -107,6 +108,7 @@ class FSIConfig:
 		if case("CSD_CONFIG_FILE_NAME")	      : pass
 		if case("RESTART_SOL")		      : pass
 		if case("MATCHING_MESH")	      : pass
+                if case("MESH_INTERP_METHOD")         : pass
 		if case("DISP_PRED")		      : pass
 		if case("AITKEN_RELAX")               : pass
 	        if case("UNSTEADY_SIMULATION")	      : pass
