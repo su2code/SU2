@@ -74,6 +74,7 @@ class Config(ordered_bunch):
             write()      - write to a config file (requires existing file)
             dump()       - dump a raw config file
             unpack_dvs() - unpack a design vector 
+            update_efield() - updates Electric Field variables
             diff()       - returns the difference from another config
             dist()       - computes the distance from another config
     """    
@@ -186,7 +187,29 @@ class Config(ordered_bunch):
         self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
                       'DV_VALUE_OLD'     : dv_old              ,
                       'DV_VALUE_NEW'     : dv_new              })
+                      
+    def update_efield(self,dv_new,dv_old=None):
+        """ updates config with electric field variables
+            will scale according to each DEFINITION_DV scale parameter
+            
+            Modifies:
+                ELECTRIC_FIELD_MOD
+            
+            Inputs:
+                dv_new - list or array of new dv values
+                dv_old - optional, list or array of old dv values, defaults to zeros
+                         
+        """
+
+        dv_new = copy.deepcopy(dv_new)
+        dv_old = copy.deepcopy(dv_old)
         
+        ## Change the parameters of the design variables
+        self['ELECTRIC_FIELD_MOD'] = dv_new     
+        
+        ## handle param
+        efield_mod = self['ELECTRIC_FIELD_MOD']   
+                
     def __eq__(self,konfig):
         return super(Config,self).__eq__(konfig)
     def __ne__(self,konfig):
@@ -551,31 +574,43 @@ def read_config(filename):
                 break
             
             if case('ELECTRIC_FIELD_MOD'):
-                 # remove white space
-                this_value = ''.join(this_value.split())   
+                # remove white space
+                this_value = ''.join(this_value.split())
                 # remove parens
-                this_value = this_value.strip('()')
-                # split by comma
-                data_dict[this_param] = this_value.split(",")
+                this_value = this_value.strip('()') 
+                # split by commas
+                this_value = this_value.split(",")     
+                # initialize data dict for this parameter
+                data_dict[this_param] = []                          
+                for this_obj in this_value:       
+                    data_dict[this_param].append(float(this_obj))
                 break
                 
             if case('ELECTRIC_FIELD_MIN'):
-                 # remove white space
-                this_value = ''.join(this_value.split())   
+                # remove white space
+                this_value = ''.join(this_value.split())
                 # remove parens
-                this_value = this_value.strip('()')
-                # split by comma
-                data_dict[this_param] = this_value.split(",")
+                this_value = this_value.strip('()') 
+                # split by commas
+                this_value = this_value.split(",")     
+                # initialize data dict for this parameter
+                data_dict[this_param] = []                          
+                for this_obj in this_value:       
+                    data_dict[this_param].append(float(this_obj))
                 break
                 
             if case('ELECTRIC_FIELD_MAX'):
-                 # remove white space
-                this_value = ''.join(this_value.split())   
+                # remove white space
+                this_value = ''.join(this_value.split())
                 # remove parens
-                this_value = this_value.strip('()')
-                # split by comma
-                data_dict[this_param] = this_value.split(",")
-                break                
+                this_value = this_value.strip('()') 
+                # split by commas
+                this_value = this_value.split(",")     
+                # initialize data dict for this parameter
+                data_dict[this_param] = []                          
+                for this_obj in this_value:       
+                    data_dict[this_param].append(float(this_obj))
+                break            
                         
             # otherwise
             # string parameters
@@ -806,7 +841,7 @@ def write_config(filename,param_dict):
                 output_file.write("( ")
                 n_lists = len(new_value)
                 for i_value in range(n_lists):
-                    output_file.write(new_value[i_value])
+                    output_file.write(str(new_value[i_value]))
                     if i_value+1 < n_lists:
                         output_file.write(", ")
                 output_file.write(" )") 
@@ -818,7 +853,7 @@ def write_config(filename,param_dict):
                 output_file.write("( ")
                 n_lists = len(new_value)
                 for i_value in range(n_lists):
-                    output_file.write(new_value[i_value])
+                    output_file.write(str(new_value[i_value]))
                     if i_value+1 < n_lists:
                         output_file.write(", ")
                 output_file.write(" )") 
@@ -830,7 +865,7 @@ def write_config(filename,param_dict):
                 output_file.write("( ")
                 n_lists = len(new_value)
                 for i_value in range(n_lists):
-                    output_file.write(new_value[i_value])
+                    output_file.write(str(new_value[i_value]))
                     if i_value+1 < n_lists:
                         output_file.write(", ")
                 output_file.write(" )") 

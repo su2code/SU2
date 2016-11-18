@@ -3096,8 +3096,6 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
       /*--- Number of electric field variables ---*/
       unsigned short n_EField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
 
-      n_EField = 1;
-
       for (unsigned short iEField; iEField < n_EField; iEField++)
         myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(iEField) << " ";
 
