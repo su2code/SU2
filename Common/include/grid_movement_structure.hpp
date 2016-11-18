@@ -177,7 +177,7 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
 
 
   /*!
@@ -217,7 +217,7 @@ private:
    * \param[in] val_t - Point at which we want to evaluate the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order);
+  su2double GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order_der);
 
   /*!
    * \brief Get the binomial coefficient n over i, defined as n!/(m!(n-m)!)
@@ -255,7 +255,7 @@ public:
    * \param[in] val_t - Point at which we want to evaluate the derivative of the i-th basis.
    * \param[in] val_order - Order of the derivative.
    */
-  su2double GetDerivative(short val_i, su2double val_t, short val_order);
+  su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
 
   /*!
    * \brief Set the order and number of control points.
