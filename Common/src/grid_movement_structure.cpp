@@ -54,18 +54,13 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 
 	  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
-	  config->SetKind_Linear_Solver_Prec(LU_SGS);
 	  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 	  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  
-}
-
-CVolumetricMovement::~CVolumetricMovement(void) {
-
 
 }
 
+CVolumetricMovement::~CVolumetricMovement(void) { }
 
 void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) {
   
@@ -208,17 +203,32 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     		precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
     	}
     	if (config->GetKind_Deform_Linear_Solver_Prec() == ILU) {
-         StiffMatrix.BuildILUPreconditioner();
-         mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-         precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    		StiffMatrix.BuildILUPreconditioner();
+    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    	}
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
+    		StiffMatrix.BuildJacobiPreconditioner();
+    		mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
     	}
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
-      /*--- Build the ILU preconditioner for the transposed system ---*/
 
-      StiffMatrix.BuildILUPreconditioner(true);
-      mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    	/*--- Build the ILU or Jacobi preconditioner for the transposed system ---*/
+
+    	if ((config->GetKind_Deform_Linear_Solver_Prec() == ILU) ||
+    			(config->GetKind_Deform_Linear_Solver_Prec() == LU_SGS)) {
+    		StiffMatrix.BuildILUPreconditioner(true);
+    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
+    		precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+    	}
+    	if (config->GetKind_Deform_Linear_Solver_Prec() == JACOBI) {
+    		StiffMatrix.BuildJacobiPreconditioner(true);
+    		mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
+    		precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    	}
+
     }
 
     CSysSolve *system  = new CSysSolve();
