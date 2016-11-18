@@ -324,14 +324,22 @@ inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor) {
 	PeriodicPoint[0] = val_periodicpoint; 
 	PeriodicPoint[1] = val_processor; 
 	PeriodicPoint[2] = 0;
+	PeriodicPoint[3] = 0;
 }
 
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex) { 
 	PeriodicPoint[0] = val_periodicpoint; 
 	PeriodicPoint[1] = val_processor; 
 	PeriodicPoint[2] = val_globalindex;
+	PeriodicPoint[3] = 0;
 }
 
+inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex, long val_markerindex) {
+	PeriodicPoint[0] = val_periodicpoint;
+	PeriodicPoint[1] = val_processor;
+	PeriodicPoint[2] = val_globalindex;
+	PeriodicPoint[3] = val_markerindex;
+}
 
 inline void CVertex::SetDonorElem(long val_donorelem) { Donor_Elem = val_donorelem; }
 
@@ -346,6 +354,8 @@ inline long CVertex::GetDonorPoint(void) { return PeriodicPoint[0]; }
 inline long CVertex::GetDonorProcessor(void) { return PeriodicPoint[1]; }
 
 inline long CVertex::GetGlobalDonorPoint(void) { return PeriodicPoint[2]; }
+
+inline long CVertex::GetDonorMarker(void) {return PeriodicPoint[3]; }
 
 inline void CVertex::SetBasisFunction(unsigned short val_node, su2double val_basis) { Basis_Function[val_node] = val_basis; }
 

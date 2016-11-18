@@ -11111,6 +11111,9 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
       nPeriodic++;
     }
   }
+	
+	cout << "nperiodic= "<< nPeriodic << endl;
+	
   bool *CreateMirror = new bool[nPeriodic+1];
   CreateMirror[0] = false;
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
@@ -11120,7 +11123,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   
   /*--- Send an initial message to the console. ---*/
   cout << "Setting the periodic boundary conditions." << endl;
-  
+	
   /*--- Loop through each marker to find any periodic boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
@@ -11216,6 +11219,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
         
         /*--- Set the periodic point for this iPoint. ---*/
         vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
+				
+				cout << "Point = "<< iPoint << " Donor = " << pPoint << endl;
         
         /*--- Print warning if the nearest point was not within
          the specified tolerance. Computation will continue. ---*/
@@ -11288,7 +11293,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     }
   }
   
-  /*--- Sort the points that must be sended and delete repeated points ---*/
+  /*--- Sort the points that must be sent and delete repeated points ---*/
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (CreateMirror[iPeriodic]) {
       sort( PeriodicPoint[iPeriodic][0].begin(), PeriodicPoint[iPeriodic][0].end());
