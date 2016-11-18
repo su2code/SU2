@@ -3750,7 +3750,7 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   }
   
   /*--- Source term for a turbulence model ---*/
-  if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
+  if (config_container[ZONE_0]->GetKind_Solver() == RANS || config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) {
     
     /*--- Extra variables needed if we have a turbulence model. ---*/
     unsigned short nVar_Turb = solver_container[ZONE_0][MESH_0][TURB_SOL]->GetnVar();
