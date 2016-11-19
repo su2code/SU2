@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -385,8 +387,7 @@ int main(int argc, char *argv[]) {
             case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_DIHEDRAL_ANGLE :   surface_movement->SetFFDDihedralAngle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwistAngle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+            case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwist(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_ROTATION :         surface_movement->SetFFDRotation(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
@@ -409,6 +410,16 @@ int main(int argc, char *argv[]) {
           cout << "Perform 2D deformation of the surface." << endl;
         }
         surface_movement->SetHicksHenne(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
+      }
+
+      /*--- CST design variable ---*/
+      
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CST) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_movement->SetCST(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
       
       /*--- Translation design variable ---*/

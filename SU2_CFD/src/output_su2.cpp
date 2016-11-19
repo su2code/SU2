@@ -2,7 +2,7 @@
  * \file output_su2.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -49,6 +51,14 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
 
   output_file << "NDIME= " << nDim << endl;
   
+  /*--- Write the angle of attack offset. ---*/
+  
+  output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
+  
+  /*--- Write the angle of attack offset. ---*/
+  
+  output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
+
   /*--- Write connectivity data. ---*/
   
   nElem = nGlobal_Tria+nGlobal_Quad+nGlobal_Tetr+nGlobal_Hexa+nGlobal_Pris+nGlobal_Pyra;
@@ -228,6 +238,8 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
     output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
     
   }
+  
+  output_file.close();
 
 }
 

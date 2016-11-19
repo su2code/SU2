@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -79,7 +81,7 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
-
+  output   = new COutput(config_container[ZONE_0]);
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -265,15 +267,20 @@ int main(int argc, char *argv[]) {
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel 
    requires to move all the data to the master node---*/
   
-  output = new COutput(config_container[ZONE_0]);
+  bool NewFile = false;
+  if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
   
-  output->SetMesh_Files(geometry_container, config_container, nZone, false, true);
+  output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, NewFile, true);
   
-  /*--- Write the the free-form deformation boxes after deformation. ---*/
-
-  if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
+  if (config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
+  
+    /*--- Write the the free-form deformation boxes after deformation. ---*/
     
-  surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
+    if (rank == MASTER_NODE) cout << "Adding any FFD information to the SU2 file." << endl;
+    
+    surface_movement[ZONE_0]->WriteFFDInfo(surface_movement, geometry_container, config_container);
+    
+  }
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
