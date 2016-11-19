@@ -3972,6 +3972,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           phi_hybrid_j = phi_max * tanh(pow(Aaux,ch1));
 
           dissipation = max(0.5*(phi_hybrid_i+phi_hybrid_j),0.05);
+          numerics->SetRoeDissipation(dissipation);
           //cout << dissipation << endl;
           
       }
