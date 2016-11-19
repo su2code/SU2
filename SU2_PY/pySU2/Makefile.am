@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python-wrapper
 # \author D. Thomas
-# \version 4.2.0 "Cardinal"
+# \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -32,12 +34,11 @@
 ################################################################################
 
 
-SU2_DIR = ${abs_top_srcdir}
-CURRENT_DIR = ${SU2_DIR}/SU2_PY/pySU2
+CURRENT_DIR = ${abs_top_builddir}/SU2_PY/pySU2
 
 SO_EXT=so
 
-SWIG_SRC = ${CURRENT_DIR}/pySU2.i
+SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _SU2Solver.${SO_EXT}
 
@@ -47,20 +48,20 @@ NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
 
 SWIG = swig
 
-pySU2_INCLUDE = -I${SU2_DIR}/Common/include \
-	-I${SU2_DIR}/SU2_CFD/include \
-	-I${SU2_DIR}/SU2_DEF/include \
-	-I${SU2_DIR}/SU2_DOT/include \
-	-I${SU2_DIR}/SU2_DOT/include \
-	-I${SU2_DIR}/SU2_GEO/include \
-	-I${SU2_DIR}/SU2_MSH/include \
-	-I${SU2_DIR}/SU2_SOL/include
+pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
+	-I${abs_top_srcdir}/SU2_CFD/include \
+	-I${abs_top_srcdir}/SU2_DEF/include \
+	-I${abs_top_srcdir}/SU2_DOT/include \
+	-I${abs_top_srcdir}/SU2_DOT/include \
+	-I${abs_top_srcdir}/SU2_GEO/include \
+	-I${abs_top_srcdir}/SU2_MSH/include \
+	-I${abs_top_srcdir}/SU2_SOL/include
 
 
 #PY_INCLUDE = ${PYTHON_INCLUDE} -I${NUMPY_INCLUDE} -I${MPI4PY_INCLUDE}
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${NUMPY_INCLUDE}
-SWIG_INCLUDE = -I${SU2_DIR}/SU2_CFD/include \
-		-I${SU2_DIR}/Common/include
+SWIG_INCLUDE = -I${abs_top_srcdir}/SU2_CFD/include \
+		-I${abs_top_srcdir}/Common/include
 
 SUBDIR_EXEC = ${bindir}
 
@@ -74,22 +75,22 @@ real: ${SWIG_SO_REAL}
 EXTRA_CC_FLAGS = -fPIC -O3
 
 #External includes
-METIS_INCLUDE = -I${SU2_DIR}/externals/metis/include
-PARMETIS_INCLUDE = -I${SU2_DIR}/externals/parmetis/include
-TECIO_INCLUDE = -I${SU2_DIR}/externals/tecio/include
+METIS_INCLUDE = -I${abs_top_srcdir}/externals/metis/include
+PARMETIS_INCLUDE = -I${abs_top_srcdir}/externals/parmetis/include
+TECIO_INCLUDE = -I${abs_top_srcdir}/externals/tecio/include
 
 #External libraries (METIS_LIB and PARMETIS_LIB are already defined)
-TECIO_LIB = ${SU2_DIR}/externals/tecio/libtecio.a
+TECIO_LIB = ${abs_top_builddir}/externals/tecio/libtecio.a
 
 #SU2Core lib
-SU2SOLVER_LIB = ${SU2_DIR}/SU2_CFD/obj/libSU2Core.a \
-		${SU2_DIR}/Common/lib/libSU2.a
+SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
+		${abs_top_builddir}/Common/lib/libSU2.a
 
 # Set the linking flags to use
-pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB}
+pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB}
 
 # Set the command line flags to use for compilation
-pySU2_CC_FLAGS = ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${pySU2_INCLUDE}
+pySU2_CC_FLAGS = ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${CGNS_INCLUDE} ${pySU2_INCLUDE}
 
 SO_LINK_FLAGS= -fPIC -shared 
 

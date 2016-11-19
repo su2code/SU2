@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -* 
 
-# \file LaunchFSIComputation.py
+# \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation using C++ fluid and solid solvers.
 #  \author D. THOMAS, University of Liege, Belgium. Department of Mechanical and Aerospace Engineering.
 #  \version BETA
@@ -51,13 +51,10 @@ def main():
   parser=OptionParser()
   parser.add_option("-f", "--file",       dest="filename",
                       help="read config from FILE", metavar="FILE")
-  parser.add_option("-d", "--divide_grid",dest="divide_grid",default="True",
-                      help="DIVIDE_GRID the numerical grid", metavar="DIVIDE_GRID")
 
   (options, args)=parser.parse_args()
 
   confFile = str(options.filename)
-  options.divide_grid = options.divide_grid.upper() == 'TRUE'
 
   FSI_config = FSI.io.FSIConfig(confFile) 		# FSI configuration file
   CFD_ConFile = FSI_config['CFD_CONFIG_FILE_NAME']	# CFD configuration file
@@ -84,7 +81,7 @@ def main():
   # --- Initialize the fluid solver --- #
   if myid == rootProcess:
     print('\n***************************** Initializing fluid solver *****************************')
-  FluidSolver = SU2Solver.CSingleZoneDriver(CFD_ConFile, 1, 2)
+  FluidSolver = SU2Solver.CFluidDriver(CFD_ConFile, 1, FSI_config['NDIM'])
 
   comm.barrier()
   
@@ -100,6 +97,8 @@ def main():
     elif CSD_Solver == 'GETDP':
       import GetDPSolver
       SolidSolver = GetDPSolver.GetDPSolver(CSD_ConFile, True)
+    elif CSD_Solver == 'TESTER':
+      SolidSolver = FSI.PitchPlungeAirfoilStructuralTester.Solver(CSD_ConFile)
   else:
     SolidSolver = None
 

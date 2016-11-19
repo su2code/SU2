@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -31,25 +33,25 @@
  
 #pragma once
 
-inline su2_adtComparePointClass::~su2_adtComparePointClass(){}
+inline su2_adtComparePointClass::~su2_adtComparePointClass() {}
 
 inline bool su2_adtComparePointClass::operator()(const unsigned long p0,
                                                  const unsigned long p1) const {
   return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
 }
 
-inline su2_adtNodeClass::su2_adtNodeClass(){}
+inline su2_adtNodeClass::su2_adtNodeClass() {}
 
-inline su2_adtNodeClass::~su2_adtNodeClass(){}
+inline su2_adtNodeClass::~su2_adtNodeClass() {}
 
 inline su2_adtNodeClass::su2_adtNodeClass(const su2_adtNodeClass &other) {Copy(other);}
 
 inline su2_adtNodeClass& su2_adtNodeClass::operator=(const su2_adtNodeClass &other) {Copy(other); return (*this);}
 
-inline su2_adtBaseClass::su2_adtBaseClass(){}
+inline su2_adtBaseClass::su2_adtBaseClass() {}
 
-inline su2_adtBaseClass::~su2_adtBaseClass(){}
+inline su2_adtBaseClass::~su2_adtBaseClass() {}
 
-inline bool su2_adtBaseClass::IsEmpty(void) const {return isEmpty;}
+inline bool su2_adtBaseClass::IsEmpty(void) const { return isEmpty;}
 
-inline su2_adtPointsOnlyClass::~su2_adtPointsOnlyClass(){}
+inline su2_adtPointsOnlyClass::~su2_adtPointsOnlyClass() {}

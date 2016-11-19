@@ -1,8 +1,8 @@
 /*!
  * \file SU2_CFD.cpp
- * \brief Main file of the Computational Fluid Dynamics code
+ * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -49,6 +51,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   /*--- Create a pointer to the main SU2 Driver ---*/
+  
   CDriver *driver = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
@@ -72,34 +75,22 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  if (nZone == SINGLE_ZONE) {
+  if ( (config->GetKind_Solver() == FEM_ELASTICITY || config->GetKind_Solver() == POISSON_EQUATION || config->GetKind_Solver() == WAVE_EQUATION || config->GetKind_Solver() == HEAT_EQUATION) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
-  	if (config->GetDiscrete_Adjoint()){
-  		if (config->GetBoolTurbomachinery()){
-
-  			driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim);
-
-  		} else {
-
-  			driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim);
-
+    
+    if(nZone > 1 ) {
+      cout << "The required solver doesn't support multizone simulations" << endl; 
+      exit(EXIT_FAILURE);
   		}
-  	} else if (config->GetBoolTurbomachinery()){
 
-  		driver = new CTurbomachineryDriver(config_file_name, nZone, nDim);
+    driver = new CGeneralDriver(config_file_name, nZone, nDim);
 
-  	} else {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
-  		driver = new CSingleZoneDriver(config_file_name, nZone, nDim);
+    /*--- Use the Harmonic Balance driver. ---*/
 
-  	}
-
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-
-    /*--- Use the spectral method driver. ---*/
-
-    driver = new CSpectralDriver(config_file_name, nZone, nDim);
+    driver = new CHBDriver(config_file_name, nZone, nDim);
 
   } else if ((nZone == 2) && fsi) {
 
@@ -110,7 +101,7 @@ int main(int argc, char *argv[]) {
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
-     or a specialized driver class for a particular multi-physics problem. ---*/
+    or a specialized driver class for a particular multi-physics problem. ---*/
 
   	if (config->GetDiscrete_Adjoint()){
 
@@ -129,10 +120,8 @@ int main(int argc, char *argv[]) {
 
   	} else {
 
-  		driver = new CMultiZoneDriver(config_file_name, nZone, nDim);
-
+  		driver = new CFluidDriver(config_file_name, nZone, nDim);
   	}
-    /*--- Future multi-zone drivers instatiated here. ---*/
 
   }
 
@@ -140,16 +129,19 @@ int main(int argc, char *argv[]) {
   config = NULL;
 
   /*--- Launch the main external loop of the solver ---*/
+  
   driver->StartSolver();
 
   /*--- Postprocess all the containers, close history file, exit SU2 ---*/
+  
   driver->Postprocessing();
 
-  if(driver != NULL) delete driver;
+  if (driver != NULL) delete driver;
   driver = NULL;
 
-#ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
+
+#ifdef HAVE_MPI
   MPI_Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
   MPI_Finalize();
