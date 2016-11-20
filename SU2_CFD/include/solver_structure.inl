@@ -1749,7 +1749,8 @@ inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_cont
 
 inline void CSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight) {}
 
-inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig *config) {}
+inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig    *config,
+                                                          const bool useADER) {}
 
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)

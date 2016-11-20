@@ -785,7 +785,10 @@ private:
   vector<su2double> sDOFs;     /*!< \brief s-location of the DOFs for this standard element, if needed. */
   vector<su2double> tDOFs;     /*!< \brief t-location of the DOFs for this standard element, if needed. */
 
-  vector<su2double> lagBasisIntegration; /*!< \brief Lagrangian basis functions in the integration points. */
+  vector<su2double> lagBasisIntegration;       /*!< \brief Lagrangian basis functions in the integration points. */
+  vector<su2double> lagBasisIntegrationTrans;  /*!< \brief Transpose of lagBasisIntegration. It is stored such that
+                                                           in the ADER-DG predictor step the residual is obtained
+                                                           by one matrix multiplication. */
 
   vector<su2double> drLagBasisIntegration; /*!< \brief r-derivatives of the Lagrangian basis functions in the integration points. */
   vector<su2double> dsLagBasisIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the integration points. */
@@ -857,6 +860,12 @@ public:
   * \return The pointer to data, which stores the basis functions.
   */
   su2double *GetBasisFunctionsIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the transpose of the basis functions in the integration points.
+  * \return The pointer to data, which stores the transpose matrix of the basis functions.
+  */
+  const su2double *GetBasisFunctionsIntegrationTrans(void) const;
 
   /*!
   * \brief Function, which makes available the r-derivatives of the basis functions in the integration points.

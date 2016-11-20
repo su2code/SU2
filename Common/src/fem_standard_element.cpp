@@ -1991,9 +1991,21 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFs,
                                                 dtLagBasisIntegration);
 
-  /*--- If the BLAS routines are used it is beneficial to store lagBasisIntegration,
+  /*--- Create the transpose of lagBasisIntegration. This is needed for the
+        efficient residual computation for the ADER-DG predictor step. ---*/
+  lagBasisIntegrationTrans.resize(lagBasisIntegration.size());
+
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<nDOFs; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i, ++ii) {
+      const unsigned int ind = i*nDOFs + j;
+      lagBasisIntegrationTrans[ii] = lagBasisIntegration[ind];
+    }
+  }
+
+  /*--- For efficiency reasons it is beneficial to store lagBasisIntegration,
         drLagBasisIntegration, dsLagBasisIntegration and dtLagBasisIntegration in
-        one array for efficiency reasons. ---*/
+        one array. ---*/
   unsigned long sizeDerMat = drLagBasisIntegration.size() + dsLagBasisIntegration.size()
                            + dtLagBasisIntegration.size();
   unsigned long sizeMat    = lagBasisIntegration.size() + sizeDerMat;
@@ -2001,7 +2013,7 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
   matBasisIntegration.resize(sizeMat);
   matDerBasisIntTrans.resize(sizeDerMat);
 
-  unsigned int ii = 0;
+  ii = 0;
   for(unsigned long i=0; i<lagBasisIntegration.size(); ++i, ++ii)
     matBasisIntegration[ii] = lagBasisIntegration[i];
 
@@ -2062,7 +2074,8 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   sDOFs = other.sDOFs;
   tDOFs = other.tDOFs;
 
-  lagBasisIntegration = other.lagBasisIntegration;
+  lagBasisIntegration      = other.lagBasisIntegration;
+  lagBasisIntegrationTrans = other.lagBasisIntegrationTrans;
 
   drLagBasisIntegration = other.drLagBasisIntegration;
   dsLagBasisIntegration = other.dsLagBasisIntegration;

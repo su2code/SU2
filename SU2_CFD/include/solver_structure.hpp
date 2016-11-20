@@ -3632,9 +3632,11 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in]  config - Definition of the particular problem.
+   * \param[in] config  - Definition of the particular problem.
+   * \param[in] useADER - Whether or not the ADER residual must be multiplied.
    */
-  virtual void MultiplyResidualByInverseMassMatrix(CConfig *config);
+  virtual void MultiplyResidualByInverseMassMatrix(CConfig    *config,
+                                                   const bool useADER);
   
   /*!
    * \brief A virtual member.
@@ -10441,9 +10443,11 @@ protected:
   /*!
    * \brief Function, which multiplies the residual by the inverse
             of the (lumped) mass matrix.
-   * \param[in]  config - Definition of the particular problem.
+   * \param[in] config  - Definition of the particular problem.
+   * \param[in] useADER - Whether or not the ADER residual must be multiplied.
    */
-  void MultiplyResidualByInverseMassMatrix(CConfig *config);
+  void MultiplyResidualByInverseMassMatrix(CConfig    *config,
+                                           const bool useADER);
 
 private:
 
