@@ -183,13 +183,14 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     sizeVecTmp = max(sizeVol, sizeSur);
   }
 
-  if(config->GetKind_TimeIntScheme() == ADER_DG) {
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
 
     /* ADER-DG scheme. Determine the size needed for the predictor step
        and make sure that sizeVecTmp is big enough. */
     const unsigned short nTimeDOFs       = config->GetnTimeDOFsADER_DG();
     const unsigned int sizePredictorADER = 4*nVar*nDOFsMax*nTimeDOFs
-                                         + 2*nVar*nDOFsMax;
+                                         + 2*nVar*nDOFsMax
+                                         + (nDim+1)*nVar*nIntegrationMax;
 
     sizeVecTmp = max(sizeVecTmp, sizePredictorADER);
   }
@@ -286,7 +287,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Check for the ADER-DG time integration scheme and allocate the memory
         for the additional vectors. ---*/
-  if(config->GetKind_TimeIntScheme() == ADER_DG) {
+  if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
 
     const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
 
@@ -2343,8 +2344,115 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorResidual(CConfig           *config,
                                                     su2double         *res,
                                                     su2double         *work) {
 
-  cout << "CFEM_DG_EulerSolver::ADER_DG_PredictorResidual: Not implemented yet" << endl;
-  exit(1);
+  /* Set the pointers for solAndGradInt and divFlux to work. The same array
+     can be used form both help arrays. */
+  su2double *solAndGradInt = work;
+  su2double *divFlux       = work;
+
+  /*--- Get the necessary information from the standard element. ---*/
+  const unsigned short ind                = elem->indStandardElement;
+  const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
+  const unsigned short nDOFs              = elem->nDOFsSol;
+  const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+  const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+  const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  /* Determine the offset between the solution variables and the r-derivatives,
+     which is also the offset between the r- and s-derivatives and the offset
+     between s- and t-derivatives. */
+  const unsigned short offDeriv = nVar*nInt;
+
+  /* Store the number of metric points per integration point, which depends
+     on the number of dimensions. */
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+
+  /* Initialize the residuals to zero. */
+  for(unsigned short i=0; i<(nVar*nDOFs); ++i) res[i] = 0.0;
+
+  /* Compute the solution and the derivatives w.r.t. the parametric coordinates
+     in the integration points. */
+  DenseMatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, sol, solAndGradInt);
+
+  /*--- Loop over the integration points to compute the divergence of the inviscid
+        fluxes in these integration points, multiplied by the integration weight. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the location where the solution data of this
+       integration point starts. */
+    const su2double *sol = solAndGradInt + nVar*i;
+
+    /*--- Compute the velocities and static energy in this integration point. ---*/
+    const su2double DensityInv = 1.0/sol[0];
+    su2double vel[3], Velocity2 = 0.0;
+    for(unsigned short j=0; j<nDim; ++j) {
+      vel[j]     = sol[j+1]*DensityInv;
+      Velocity2 += vel[j]*vel[j];
+    }
+
+    const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
+    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+
+    /*--- Compute the pressure and the total enthalpy. ---*/
+    FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+    const su2double Pressure  = FluidModel->GetPressure();
+    const su2double Htot      = (sol[nDim+1]+Pressure)*DensityInv;
+
+    /* Easier storage of the metric terms in this integration point. The +1
+       is present, because the first element of the metric terms is the
+       Jacobian in the integration point. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint + 1;
+
+    /*--- Compute the Cartesian gradients of the independent solution
+          variables from the gradients in parametric coordinates and the
+          metric terms in this integration point. Note that these gradients
+          must be scaled with the Jacobian. This scaling is already present
+          in the metric terms. ---*/
+    su2double solGradCart[5][3];
+    for(unsigned short k=0; k<nDim; ++k) {
+      for(unsigned short j=0; j<nVar; ++j) {
+        solGradCart[j][k] = 0.0;
+        for(unsigned short l=0; l<nDim; ++l)
+          solGradCart[j][k] += sol[j+(l+1)*offDeriv]*metricTerms[k+l*nDim];
+      }
+    }
+
+    /*--- Compute the Cartesian gradients of the pressure, scaled with
+          the Jacobian. ---*/
+    su2double pGradCart[3];
+    for(unsigned short k=0; k<nDim; ++k) {
+      pGradCart[k] = solGradCart[nVar-1][k] + 0.5*Velocity2*solGradCart[0][k];
+      for(unsigned short l=0; l<nDim; ++l)
+        pGradCart[k] -= vel[l]*solGradCart[l+1][k];
+      pGradCart[k] *= Gamma_Minus_One;
+    }
+
+    /*--- Abbreviations, which make it easier to compute the divergence term. ---*/
+    su2double abv1 = 0.0, abv2 = 0.0, abv3 = 0.0;
+    for(unsigned short k=0; k<nDim; ++k) {
+      abv1 += solGradCart[k+1][k];
+      abv2 += vel[k]*solGradCart[0][k];
+      abv3 += vel[k]*(solGradCart[nVar-1][k] + pGradCart[k]);
+    }
+
+    /*--- Set the pointer to store the divergence terms for this integration point.
+          and compute these terms, multiplied by the integration weight. */
+    su2double *divFluxInt = divFlux + nVar*i;
+
+    divFluxInt[0]      = weights[i]*abv1;
+    divFluxInt[nVar-1] = weights[i]*(abv3 + Htot*(abv1 - abv2));
+
+    for(unsigned short k=0; k<nDim; ++k) {
+      divFluxInt[k+1] = pGradCart[k] + vel[k]*(abv1 - abv2);
+      for(unsigned short l=0; l<nDim; ++l)
+        divFluxInt[k+1] += vel[l]*solGradCart[k+1][l];
+
+      divFluxInt[k+1] *= weights[i];
+    }
+  }
+
+  /* Compute the residual in the DOFs, which is the matrix product of
+     basisFunctionsIntTrans and divFlux. */
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
@@ -2704,17 +2812,22 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, 
   }
 }
 
-void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig *config) {
+void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(CConfig    *config,
+                                                              const bool useADER) {
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *tmpRes = VecTmpMemory.data();
   su2double tick = 0.0;
 
+  /*--- Set the reference to the correct residual. This depends
+        whether or not the ADER scheme is used. ---*/
+  vector<su2double> &VecRes = useADER ? VecTotResDOFsADER : VecResDOFs;
+
   /* Loop over the owned volume elements. */
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
     /* Easier storage of the residuals for this volume element. */
-    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+    su2double *res = VecRes.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Check whether a multiplication must be carried out with the inverse of
        the lumped mass matrix or the full mass matrix. Note that it is crucial

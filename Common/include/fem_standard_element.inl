@@ -53,6 +53,8 @@ inline FEMStandardElementClass& FEMStandardElementClass::operator=(const FEMStan
 
 inline su2double* FEMStandardElementClass::GetBasisFunctionsIntegration(void){return lagBasisIntegration.data();}
 
+inline const su2double* FEMStandardElementClass::GetBasisFunctionsIntegrationTrans(void) const {return lagBasisIntegrationTrans.data();}
+
 inline su2double* FEMStandardElementClass::GetDrBasisFunctionsIntegration(void){return drLagBasisIntegration.data();}
 
 inline su2double* FEMStandardElementClass::GetDsBasisFunctionsIntegration(void){return dsLagBasisIntegration.data();}
