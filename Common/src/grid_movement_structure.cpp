@@ -2825,8 +2825,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output original FFD FFDBox ---*/
         
         if (rank == MASTER_NODE) {
-          cout << "Writing a Tecplot file of the FFD boxes." << endl;
-          FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+          if (config->GetOutput_FileFormat() == PARAVIEW) {
+            cout << "Writing a Paraview file of the FFD boxes." << endl;
+            FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
+          }
+          else {
+            cout << "Writing a Tecplot file of the FFD boxes." << endl;
+            FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+          }
         }
         
       }
@@ -2894,9 +2900,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       /*--- Output original FFD FFDBox ---*/
       
       if (rank == MASTER_NODE) {
-        cout << "Writing a Tecplot file of the FFD boxes." << endl;
-        for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-          FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+        if (config->GetOutput_FileFormat() == PARAVIEW) {
+          cout << "Writing a Paraview file of the FFD boxes." << endl;
+          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+            FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
+          }
+        }
+        else {
+          cout << "Writing a Tecplot file of the FFD boxes." << endl;
+          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+            FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
+          }
         }
       }
       
@@ -3020,9 +3034,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output the deformed FFD Boxes ---*/
         
         if (rank == MASTER_NODE) {
-          cout << "Writing a Tecplot file of the FFD boxes." << endl;
-          for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
-            FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
+          if (config->GetOutput_FileFormat() == PARAVIEW) {
+            cout << "Writing a Paraview file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
+            }
+          }
+          else {
+            cout << "Writing a Tecplot file of the FFD boxes." << endl;
+            for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
+            }
           }
         }
         
@@ -8276,6 +8298,60 @@ void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bo
 	FFDBox_file.close();
 }
 
+void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, bool original) {
+  
+  ofstream FFDBox_file;
+  char FFDBox_filename[MAX_STRING_SIZE];
+  bool new_file;
+  unsigned short iDim, iDegree, jDegree, kDegree;
+  
+  nDim = geometry->GetnDim();
+  
+  SPRINTF (FFDBox_filename, "ffd_boxes.vtk");
+  
+  if ((original) && (iFFDBox == 0)) new_file = true;
+  else new_file = false;
+  
+  if (new_file) {
+    FFDBox_file.open(FFDBox_filename, ios::out);
+    FFDBox_file << "# vtk DataFile Version 3.0" << endl;
+    FFDBox_file << "vtk output" << endl;
+    FFDBox_file << "ASCII" << endl;
+    FFDBox_file << "DATASET STRUCTURED_GRID" << endl;
+  }
+  else FFDBox_file.open(FFDBox_filename, ios::out | ios::app);
+  
+  FFDBox_file << "ZONE T= \"" << Tag;
+  if (nDim == 2) FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<< endl;
+  else FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<<" "<<nDegree+1<< endl;
+  if (nDim == 2) FFDBox_file << "POINTS "<<(lDegree+1)*(mDegree+1)<<" float"<< endl;
+  else FFDBox_file << "POINTS "<<(lDegree+1)*(mDegree+1)*(nDegree+1)<<" float"<< endl;
+
+  FFDBox_file.precision(15);
+  
+  if (nDim == 2) {
+    for (jDegree = 0; jDegree <= mDegree; jDegree++) {
+      for (iDegree = 0; iDegree <= lDegree; iDegree++) {
+        for (iDim = 0; iDim < nDim; iDim++)
+        FFDBox_file << scientific << Coord_Control_Points[iDegree][jDegree][0][iDim] << "\t";
+        FFDBox_file << "\n";
+      }
+    }
+  }
+  else {
+    for (kDegree = 0; kDegree <= nDegree; kDegree++) {
+      for (jDegree = 0; jDegree <= mDegree; jDegree++) {
+        for (iDegree = 0; iDegree <= lDegree; iDegree++) {
+          for (iDim = 0; iDim < nDim; iDim++)
+          FFDBox_file << scientific << Coord_Control_Points[iDegree][jDegree][kDegree][iDim] << "\t";
+          FFDBox_file << "\n";
+        }
+      }
+    }
+  }
+		
+  FFDBox_file.close();
+}
 
 su2double *CFreeFormDefBox::GetParametricCoord_Analytical(su2double *cart_coord) {
 	unsigned short iDim;

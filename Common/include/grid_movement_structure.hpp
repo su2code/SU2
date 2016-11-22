@@ -471,7 +471,14 @@ public:
 	 * \param[in] original - Original box (before deformation).
 	 */		
 	void SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bool original);
-	
+		
+  /*!
+   * \brief Set the paraview file of the FFD chuck structure.
+   * \param[in] iFFDBox - Index of the FFD box.
+   * \param[in] original - Original box (before deformation).
+   */
+  void SetParaview(CGeometry *geometry, unsigned short iFFDBox, bool original);
+
   /*!
    * \brief Set Cylindrical to Cartesians_ControlPoints.
    * \param[in] config - Definition of the particular problem.
