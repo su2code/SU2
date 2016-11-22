@@ -3985,7 +3985,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
   else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
            (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".vtk");
   strcat(cstr, buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -4682,7 +4682,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Header frequency: analogy for dynamic structural analysis ---*/
     /*--- DualTime_Iteration is a bool we receive, which is true if it comes from FEM_StructuralIteration and false from SU2_CFD ---*/
     /*--- We maintain the name, as it is an input of the function ---*/
-    /*--- TODO: The function GetWrt_Con_Freq_DualTime should be modified to be able to define different frequencies ---*/
+    /*--- The function GetWrt_Con_Freq_DualTime should be modified to be able to define different frequencies ---*/
     /*--- dynamic determines if the problem is, or not, time dependent ---*/
     bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
     bool In_NoDynamic = (!DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
@@ -8958,6 +8958,11 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	unsigned long Total_Index;
 	bool Engine_HalfModel = config->GetEngine_HalfModel();
 	double SignFlip = 1.0;
+  su2double Beta, Alpha;
+  su2double Mach_ij, Mach_ip1j, Mach_im1j, Mach_ijp1, Mach_ijm1, Filtered_Mach;
+  su2double Alpha_ij, Alpha_ip1j, Alpha_im1j, Alpha_ijp1, Alpha_ijm1, Filtered_Alpha;
+  su2double Beta_ij, Beta_ip1j, Beta_im1j, Beta_ijp1, Beta_ijm1, Filtered_Beta;
+  su2double a, b, c, d;
 
 	int rank, iProcessor, nProcessor;
 	rank = MASTER_NODE;
@@ -8974,13 +8979,22 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 
 	ofstream SurfFlow_file;
 
-	strcpy (cstr, "Surface_Analysis.dat");
+  if (config->GetOutput_FileFormat() == PARAVIEW) strcpy (cstr, "surface_analysis.vtk");
+  else strcpy (cstr, "surface_analysis.dat");
+  
 	SurfFlow_file.precision(15);
 	SurfFlow_file.open(cstr, ios::out);
 
-	SurfFlow_file <<"TITLE = \"Surface Analysis\"" <<endl;
-	SurfFlow_file <<"VARIABLES = \"y(in)\", \"z(in)\", \"PT/PT<sub>inf</sub>\", \"TT/TT<sub>inf</sub>\", \"P/P<sub>inf</sub>\", \"T/T<sub>inf</sub>\", \"v<sub>x</sub>/v<sub>inf</sub>\", \"v<sub>y</sub>/v<sub>inf</sub>\", \"v<sub>z</sub>/v<sub>inf</sub>\", \"<greek>a</greek> (deg)\", \"<greek>b</greek> (deg)\", \"Mach\", \"Filtered <greek>a</greek> (deg)\", \"Filtered <greek>b</greek> (deg)\", \"Filtered Mach\"" << endl;
-
+  if (config->GetOutput_FileFormat() == PARAVIEW) {
+    SurfFlow_file << "# vtk DataFile Version 3.0" << endl;
+    SurfFlow_file << "vtk output" << endl;
+    SurfFlow_file << "ASCII" << endl;
+  }
+  else {
+    SurfFlow_file <<"TITLE = \"Surface Analysis\"" <<endl;
+    SurfFlow_file <<"VARIABLES = \"y(in)\", \"z(in)\", \"PT/PT<sub>inf</sub>\", \"TT/TT<sub>inf</sub>\", \"P/P<sub>inf</sub>\", \"T/T<sub>inf</sub>\", \"v<sub>x</sub>/v<sub>inf</sub>\", \"v<sub>y</sub>/v<sub>inf</sub>\", \"v<sub>z</sub>/v<sub>inf</sub>\", \"<greek>a</greek> (deg)\", \"<greek>b</greek> (deg)\", \"Mach\", \"Filtered <greek>a</greek> (deg)\", \"Filtered <greek>b</greek> (deg)\", \"Filtered Mach\"" << endl;
+  }
+  
 	/*--- Loop over all the markers to analyze ---*/
 
 	for (iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++) {
@@ -9669,92 +9683,170 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 			}
 		}
 
-		SurfFlow_file <<"ZONE T= \"" << Analyze_TagBound <<"\", NODES=" << nAngle*nStation << " , ELEMENTS= " << nAngle*(nStation-1) <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
+    if (config->GetOutput_FileFormat() == PARAVIEW) {
+      
+      SurfFlow_file << "\nDATASET UNSTRUCTURED_GRID" << endl;
+      SurfFlow_file <<"POINTS " << nAngle*nStation << " float" << endl;
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          SurfFlow_file << ProbeArray[iAngle][iStation][1]-yCoord_CG << " " << ProbeArray[iAngle][iStation][2]-zCoord_CG << " 0.0 " <<" ";
+        }
+      }
+      
+      SurfFlow_file <<"\nCELLS " << nAngle*(nStation-1) <<" "<< nAngle*(nStation-1)*5 << endl;
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation-1; iStation++) {
+          a = iAngle*nStation+iStation; b = a + nStation; c = b+1; d = a +1;
+          if (iAngle == nAngle-1) { b = iStation; c = b+1;	 }
+          SurfFlow_file << "4 " << a  <<" "<< b <<" "<< c <<" "<< d <<" ";
+        }
+      }
+      
+      SurfFlow_file <<"\nCELL_TYPES " << nAngle*(nStation-1) << endl;
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation-1; iStation++) {
+          SurfFlow_file << "9 " ;
+        }
+      }
+      
+      SurfFlow_file <<"\nPOINT_DATA " << nAngle*nStation << endl;
+      SurfFlow_file <<"SCALARS PT/PT_inf float" << endl;
+      SurfFlow_file <<"LOOKUP_TABLE default" << endl;
 
-		for (iAngle = 0; iAngle < nAngle; iAngle++) {
-			for (iStation = 0; iStation < nStation; iStation++) {
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          SurfFlow_file << ProbeArray[iAngle][iStation][3] << " ";
+        }
+      }
+      
+      SurfFlow_file <<"SCALARS TT/TT_inf float" << endl;
+      SurfFlow_file <<"LOOKUP_TABLE default" << endl;
+      
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          SurfFlow_file << ProbeArray[iAngle][iStation][4] << " ";
+        }
+      }
+      
+      SurfFlow_file <<"SCALARS Alpha float" << endl;
+      SurfFlow_file <<"LOOKUP_TABLE default" << endl;
 
-				su2double Alpha = 0.0;
-				Alpha = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          Alpha = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+          SurfFlow_file << Alpha << " ";
+        }
+      }
+      
+      SurfFlow_file <<"SCALARS Beta float" << endl;
+      SurfFlow_file <<"LOOKUP_TABLE default" << endl;
 
-				su2double Beta = 0.0;
-				Beta = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          Beta = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+          SurfFlow_file << Beta << " ";
+        }
+      }
+      
+      SurfFlow_file <<"SCALARS Mach float" << endl;
+      SurfFlow_file <<"LOOKUP_TABLE default" << endl;
+      
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          SurfFlow_file << ProbeArray[iAngle][iStation][7] << " ";
+        }
+      }
+      
+      SurfFlow_file <<"VECTORS Velocity float" << endl;
+      
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          SurfFlow_file << ProbeArray[iAngle][iStation][8] << " " << ProbeArray[iAngle][iStation][9] << " " << ProbeArray[iAngle][iStation][10] << " ";
+        }
+      }
+      
+    }
+    else {
+      
+      SurfFlow_file <<"ZONE T= \"" << Analyze_TagBound <<"\", NODES=" << nAngle*nStation << " , ELEMENTS= " << nAngle*(nStation-1) <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL" << endl;
+      
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation; iStation++) {
+          
+          Alpha = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+          Beta = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
 
-				su2double Mach_ij, Mach_ip1j, Mach_im1j, Mach_ijp1, Mach_ijm1, Filtered_Mach;
-				Mach_ij = ProbeArray[iAngle][iStation][7];
-				if (iAngle+1 != nAngle) Mach_ip1j = ProbeArray[iAngle+1][iStation][7];
-				else Mach_ip1j = ProbeArray[0][iStation][7];
-				if (iAngle-1 != -1) Mach_im1j = ProbeArray[iAngle-1][iStation][7];
-				else Mach_im1j = ProbeArray[nAngle-1][iStation][7];
-				if (iStation+1 != nStation) Mach_ijp1 = ProbeArray[iAngle][iStation+1][7];
-				else Mach_ijp1 = ProbeArray[iAngle][0][7];
-				if (iStation-1 != -1) Mach_ijm1 = ProbeArray[iAngle][iStation-1][7];
-				else Mach_ijm1 = ProbeArray[iAngle][nStation-1][7];
-				Filtered_Mach = (4.0*Mach_ij+Mach_ip1j+Mach_im1j+Mach_ijp1+Mach_ijm1)/8.0;
-
-				su2double Alpha_ij, Alpha_ip1j, Alpha_im1j, Alpha_ijp1, Alpha_ijm1, Filtered_Alpha;
-				Alpha_ij = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-				if (iAngle+1 != nAngle) Alpha_ip1j = atan(ProbeArray[iAngle+1][iStation][10]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
-				else Alpha_ip1j = atan(ProbeArray[0][iStation][10]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
-				if (iAngle-1 != -1) Alpha_im1j = atan(ProbeArray[iAngle-1][iStation][10]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-				else Alpha_im1j = atan(ProbeArray[nAngle-1][iStation][10]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-				if (iStation+1 != nStation) Alpha_ijp1 = atan(ProbeArray[iAngle][iStation+1][10]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
-				else Alpha_ijp1 = atan(ProbeArray[iAngle][0][10]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
-				if (iStation-1 != -1) Alpha_ijm1 = atan(ProbeArray[iAngle][iStation-1][10]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
-				else Alpha_ijm1 = atan(ProbeArray[iAngle][nStation-1][10]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
-				Filtered_Alpha = (4.0*Alpha_ij+Alpha_ip1j+Alpha_im1j+Alpha_ijp1+Alpha_ijm1)/8.0;
-
-
-				su2double Beta_ij, Beta_ip1j, Beta_im1j, Beta_ijp1, Beta_ijm1, Filtered_Beta;
-				Beta_ij = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
-				if (iAngle+1 != nAngle) Beta_ip1j = atan(ProbeArray[iAngle+1][iStation][9]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
-				else Beta_ip1j = atan(ProbeArray[0][iStation][9]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
-				if (iAngle-1 != -1) Beta_im1j = atan(ProbeArray[iAngle-1][iStation][9]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-				else Beta_im1j = atan(ProbeArray[nAngle-1][iStation][9]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
-				if (iStation+1 != nStation) Beta_ijp1 = atan(ProbeArray[iAngle][iStation+1][9]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
-				else Beta_ijp1 = atan(ProbeArray[iAngle][0][9]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
-				if (iStation-1 != -1) Beta_ijm1 = atan(ProbeArray[iAngle][iStation-1][9]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
-				else Beta_ijm1 = atan(ProbeArray[iAngle][nStation-1][9]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
-				Filtered_Beta = (4.0*Beta_ij+Beta_ip1j+Beta_im1j+Beta_ijp1+Beta_ijm1)/8.0;
-
-
-        SurfFlow_file
-        << " "  << ProbeArray[iAngle][iStation][1]-yCoord_CG
-        <<" " << ProbeArray[iAngle][iStation][2]-zCoord_CG
-        <<" " << ProbeArray[iAngle][iStation][3] <<" " << ProbeArray[iAngle][iStation][4]
-        <<" " << ProbeArray[iAngle][iStation][5] <<" " << ProbeArray[iAngle][iStation][6]
-        <<" " << ProbeArray[iAngle][iStation][8] <<" " << ProbeArray[iAngle][iStation][9]
-        <<" " << ProbeArray[iAngle][iStation][10]
-        <<" " << Alpha <<" " << Beta << " " << ProbeArray[iAngle][iStation][7]
-        <<" " << Filtered_Alpha <<" " << Filtered_Beta << " " << Filtered_Mach << endl;
-
-			}
-		}
-
-		for (iAngle = 0; iAngle < nAngle; iAngle++) {
-			for (iStation = 0; iStation < nStation-1; iStation++) {
-				su2double a, b, c, d;
-				a = iAngle*nStation+iStation; b = a + nStation; c = b+1; d = a +1;
-				if (iAngle == nAngle-1) { b = iStation; c = b+1;	 }
-				SurfFlow_file << a+1  <<" "<< b+1  <<" "<< c+1 <<" "<< d+1 << endl;
-			}
-		}
-
-		/*--- Add extra info ---*/
-
-		SurfFlow_file << "TEXT X=14, Y=86, F=HELV-BOLD, C=BLUE, H=2.0, ";
-		unsigned short RackProbes = SU2_TYPE::Int(config->GetDistortionRack()[0]);
-		unsigned short RackAngle = SU2_TYPE::Int(config->GetDistortionRack()[1]);
-		SurfFlow_file << "T=\"Rack Size: " << RackProbes << " probes at "<< RackAngle << "deg." << "\\" << "\\n";
-		SurfFlow_file << "Mach " << config->GetMach() << ", Reynolds " << config->GetReynolds() << ", <greek>a</greek> "
-				<< config->GetAoA() << "deg, <greek>b</greek> " << config->GetAoS() << "deg." << "\\" << "\\n";
-		SurfFlow_file.precision(1);
-		SurfFlow_file << fixed << "NetC<sub>T</sub> " << FlowSolver->GetTotal_NetCThrust()*10000 << "cts., Power " << FlowSolver->GetTotal_Power() <<  "HP";
-		SurfFlow_file.precision(4);
-		SurfFlow_file << ", MassFlow " << config->GetSurface_MassFlow(iMarker_Analyze) << ",\\" << "\\n";
-		SurfFlow_file << "IDC " << config->GetSurface_IDC(iMarker_Analyze)*100 << "%, IDCM " << config->GetSurface_IDC_Mach(iMarker_Analyze)*100 << "%, IDR " << config->GetSurface_IDR(iMarker_Analyze)*100 << "%,\\" << "\\n";
-		SurfFlow_file << "DC60 " << config->GetSurface_DC60(iMarker_Analyze) << ".\"" << endl;
-
+          Mach_ij = ProbeArray[iAngle][iStation][7];
+          if (iAngle+1 != nAngle) Mach_ip1j = ProbeArray[iAngle+1][iStation][7];
+          else Mach_ip1j = ProbeArray[0][iStation][7];
+          if (iAngle-1 != -1) Mach_im1j = ProbeArray[iAngle-1][iStation][7];
+          else Mach_im1j = ProbeArray[nAngle-1][iStation][7];
+          if (iStation+1 != nStation) Mach_ijp1 = ProbeArray[iAngle][iStation+1][7];
+          else Mach_ijp1 = ProbeArray[iAngle][0][7];
+          if (iStation-1 != -1) Mach_ijm1 = ProbeArray[iAngle][iStation-1][7];
+          else Mach_ijm1 = ProbeArray[iAngle][nStation-1][7];
+          Filtered_Mach = (4.0*Mach_ij+Mach_ip1j+Mach_im1j+Mach_ijp1+Mach_ijm1)/8.0;
+          
+          Alpha_ij = atan(ProbeArray[iAngle][iStation][10]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+          if (iAngle+1 != nAngle) Alpha_ip1j = atan(ProbeArray[iAngle+1][iStation][10]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
+          else Alpha_ip1j = atan(ProbeArray[0][iStation][10]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
+          if (iAngle-1 != -1) Alpha_im1j = atan(ProbeArray[iAngle-1][iStation][10]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+          else Alpha_im1j = atan(ProbeArray[nAngle-1][iStation][10]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+          if (iStation+1 != nStation) Alpha_ijp1 = atan(ProbeArray[iAngle][iStation+1][10]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
+          else Alpha_ijp1 = atan(ProbeArray[iAngle][0][10]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
+          if (iStation-1 != -1) Alpha_ijm1 = atan(ProbeArray[iAngle][iStation-1][10]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
+          else Alpha_ijm1 = atan(ProbeArray[iAngle][nStation-1][10]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
+          Filtered_Alpha = (4.0*Alpha_ij+Alpha_ip1j+Alpha_im1j+Alpha_ijp1+Alpha_ijm1)/8.0;
+          
+          Beta_ij = atan(ProbeArray[iAngle][iStation][9]/ProbeArray[iAngle][iStation][8])*360.0/(2.0*PI_NUMBER);
+          if (iAngle+1 != nAngle) Beta_ip1j = atan(ProbeArray[iAngle+1][iStation][9]/ProbeArray[iAngle+1][iStation][8])*360.0/(2.0*PI_NUMBER);
+          else Beta_ip1j = atan(ProbeArray[0][iStation][9]/ProbeArray[0][iStation][8])*360.0/(2.0*PI_NUMBER);
+          if (iAngle-1 != -1) Beta_im1j = atan(ProbeArray[iAngle-1][iStation][9]/ProbeArray[iAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+          else Beta_im1j = atan(ProbeArray[nAngle-1][iStation][9]/ProbeArray[nAngle-1][iStation][8])*360.0/(2.0*PI_NUMBER);
+          if (iStation+1 != nStation) Beta_ijp1 = atan(ProbeArray[iAngle][iStation+1][9]/ProbeArray[iAngle][iStation+1][8])*360.0/(2.0*PI_NUMBER);
+          else Beta_ijp1 = atan(ProbeArray[iAngle][0][9]/ProbeArray[iAngle][0][8])*360.0/(2.0*PI_NUMBER);
+          if (iStation-1 != -1) Beta_ijm1 = atan(ProbeArray[iAngle][iStation-1][9]/ProbeArray[iAngle][iStation-1][8])*360.0/(2.0*PI_NUMBER);
+          else Beta_ijm1 = atan(ProbeArray[iAngle][nStation-1][9]/ProbeArray[iAngle][nStation-1][8])*360.0/(2.0*PI_NUMBER);
+          Filtered_Beta = (4.0*Beta_ij+Beta_ip1j+Beta_im1j+Beta_ijp1+Beta_ijm1)/8.0;
+          
+          
+          SurfFlow_file
+          << " "  << ProbeArray[iAngle][iStation][1]-yCoord_CG
+          <<" " << ProbeArray[iAngle][iStation][2]-zCoord_CG
+          <<" " << ProbeArray[iAngle][iStation][3] <<" " << ProbeArray[iAngle][iStation][4]
+          <<" " << ProbeArray[iAngle][iStation][5] <<" " << ProbeArray[iAngle][iStation][6]
+          <<" " << ProbeArray[iAngle][iStation][8] <<" " << ProbeArray[iAngle][iStation][9]
+          <<" " << ProbeArray[iAngle][iStation][10]
+          <<" " << Alpha <<" " << Beta << " " << ProbeArray[iAngle][iStation][7]
+          <<" " << Filtered_Alpha <<" " << Filtered_Beta << " " << Filtered_Mach << endl;
+          
+        }
+      }
+      
+      for (iAngle = 0; iAngle < nAngle; iAngle++) {
+        for (iStation = 0; iStation < nStation-1; iStation++) {
+          a = iAngle*nStation+iStation; b = a + nStation; c = b+1; d = a +1;
+          if (iAngle == nAngle-1) { b = iStation; c = b+1;	 }
+          SurfFlow_file << a+1  <<" "<< b+1  <<" "<< c+1 <<" "<< d+1 << endl;
+        }
+      }
+      
+      /*--- Add extra info ---*/
+      
+      SurfFlow_file << "TEXT X=14, Y=86, F=HELV-BOLD, C=BLUE, H=2.0, ";
+      unsigned short RackProbes = SU2_TYPE::Int(config->GetDistortionRack()[0]);
+      unsigned short RackAngle = SU2_TYPE::Int(config->GetDistortionRack()[1]);
+      SurfFlow_file << "T=\"Rack Size: " << RackProbes << " probes at "<< RackAngle << "deg." << "\\" << "\\n";
+      SurfFlow_file << "Mach " << config->GetMach() << ", Reynolds " << config->GetReynolds() << ", <greek>a</greek> "
+      << config->GetAoA() << "deg, <greek>b</greek> " << config->GetAoS() << "deg." << "\\" << "\\n";
+      SurfFlow_file.precision(1);
+      SurfFlow_file << fixed << "NetC<sub>T</sub> " << FlowSolver->GetTotal_NetCThrust()*10000 << "cts., Power " << FlowSolver->GetTotal_Power() <<  "HP";
+      SurfFlow_file.precision(4);
+      SurfFlow_file << ", MassFlow " << config->GetSurface_MassFlow(iMarker_Analyze) << ",\\" << "\\n";
+      SurfFlow_file << "IDC " << config->GetSurface_IDC(iMarker_Analyze)*100 << "%, IDCM " << config->GetSurface_IDC_Mach(iMarker_Analyze)*100 << "%, IDR " << config->GetSurface_IDR(iMarker_Analyze)*100 << "%,\\" << "\\n";
+      SurfFlow_file << "DC60 " << config->GetSurface_DC60(iMarker_Analyze) << ".\"" << endl;
+      
+    }
 
 		/*--- Release the recv buffers on the master node ---*/
 
