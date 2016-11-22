@@ -223,8 +223,6 @@ def get_headerMap():
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
-                 "D(AeroCDrag)"    : "D_AERO_DRAG"             ,
-                 "D(Distortion)"   : "D_DISTORTION"            ,
                  "ComboObj"        : "COMBO"}
     
     return map_dict
@@ -343,8 +341,6 @@ grad_names_directdiff = ["D_LIFT"                  ,
                          "D_FORCE_X"               ,
                          "D_FORCE_Y"               ,
                          "D_FORCE_Z"               ,
-                         "D_AERO_DRAG"             ,
-                         "D_DISTORTION"            ,
                          "D_EFFICIENCY"]
 
 grad_names_map = { "LIFT"      : "D_LIFT"           ,
@@ -356,8 +352,6 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_X"   : "D_FORCE_X"     ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
-                   "AERO_DRAG" : "D_AERO_DRAG"   ,
-                   "DISTORTION" : "D_DISTORTION"     ,
                    "EFFICIENCY" : "D_EFFICIENCY"}
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
