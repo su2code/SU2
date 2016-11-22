@@ -8460,10 +8460,10 @@ void CEulerSolver::SetBC_NonUniform(CGeometry *geometry, CConfig *config){
   	exit(EXIT_FAILURE);
   }
   dVar2_1 = (InputVar2[1]-InputVar2[0])/(InputVar1[1]-InputVar1[0]);
-  dVar2_N = (InputVar2[InputDim-1]-InputVar2[InputDim])/(InputVar1[InputDim-1]-InputVar1[InputDim]);
+  dVar2_N = (InputVar2[InputDim-2]-InputVar2[InputDim-1])/(InputVar1[InputDim-2]-InputVar1[InputDim-1]);
   NonUniformBC_d2Var2.resize(InputDim);
   dVar3_1 = (InputVar3[1]-InputVar3[0])/(InputVar1[1]-InputVar1[0]);
-  dVar3_N = (InputVar3[InputDim-1]-InputVar3[InputDim])/(InputVar1[InputDim-1]-InputVar1[InputDim]);
+  dVar3_N = (InputVar3[InputDim-2]-InputVar3[InputDim-1])/(InputVar1[InputDim-2]-InputVar1[InputDim-1]);
   NonUniformBC_d2Var3.resize(InputDim);
 
   geometry->SetSpline(InputVar1, InputVar2, InputDim, dVar2_1, dVar2_N, NonUniformBC_d2Var2);
