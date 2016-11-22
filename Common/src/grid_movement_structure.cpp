@@ -8307,21 +8307,19 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   
   nDim = geometry->GetnDim();
   
-  SPRINTF (FFDBox_filename, "ffd_boxes.vtk");
-  
   if ((original) && (iFFDBox == 0)) new_file = true;
   else new_file = false;
+
+  if (new_file) SPRINTF (FFDBox_filename, "ffd_boxes.vtk");
+  else SPRINTF (FFDBox_filename, "ffd_boxes_def.vtk");
   
-  if (new_file) {
-    FFDBox_file.open(FFDBox_filename, ios::out);
-    FFDBox_file << "# vtk DataFile Version 3.0" << endl;
-    FFDBox_file << "vtk output" << endl;
-    FFDBox_file << "ASCII" << endl;
-    FFDBox_file << "DATASET STRUCTURED_GRID" << endl;
-  }
-  else FFDBox_file.open(FFDBox_filename, ios::out | ios::app);
   
-  FFDBox_file << "ZONE T= \"" << Tag;
+  FFDBox_file.open(FFDBox_filename, ios::out);
+  FFDBox_file << "# vtk DataFile Version 3.0" << endl;
+  FFDBox_file << "vtk output" << endl;
+  FFDBox_file << "ASCII" << endl;
+  FFDBox_file << "DATASET STRUCTURED_GRID" << endl;
+  
   if (nDim == 2) FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<< endl;
   else FFDBox_file << "DIMENSIONS "<<lDegree+1<<" "<<mDegree+1<<" "<<nDegree+1<< endl;
   if (nDim == 2) FFDBox_file << "POINTS "<<(lDegree+1)*(mDegree+1)<<" float"<< endl;
@@ -8351,6 +8349,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   }
 		
   FFDBox_file.close();
+  
 }
 
 su2double *CFreeFormDefBox::GetParametricCoord_Analytical(su2double *cart_coord) {
