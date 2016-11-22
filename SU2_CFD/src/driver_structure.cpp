@@ -4589,12 +4589,17 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
+  	iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
   }
+
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-    for (iZone = 0; iZone < nZone; iZone++){
-      SetGeoTurboAvgValues(iZone, true);
-    }
+  	for (iZone = 0; iZone < nZone; iZone++){
+  		SetGeoTurboAvgValues(iZone, true);
+  	}
+  	for (iZone = 0; iZone < nZone; iZone++){
+  		solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+  		solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+  	}
   }
 
 
@@ -4619,7 +4624,6 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
                                    geometry_container[iZone][MESH_0], config_container[iZone]);
 
   }
-   SetSpectralAverage();
 
   /* --- Set turboperformance for multi-zone ---*/
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){
@@ -4629,6 +4633,8 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
       solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
     }
   }
+
+  SetSpectralAverage();
 
   RecordingState = kind_recording;
 
