@@ -4695,9 +4695,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             a2 = 0.5/avg_vel*(3.0*pow(Vn,2.0) - avg_vel2)*Density*one_over_mdot;
             /* dj / drho */
             Grad_chain[0] =   config->GetCoeff_ObjChainRule(0)*
-                (-avg_pressure*a1*one_over_mdot)*( 0.5*Vn*Velocity2 - avg_enthalpy*Vn) ;
+                Gamma/Gamma_Minus_One/(avg_enthalpy-0.5*avg_vel2)*(Density/Area_Monitored/Pressure); // drho avg/ d P avg * dPavg dr
+            Grad_chain[0] +=   config->GetCoeff_ObjChainRule(0)*(
+                (-avg_pressure*a1*one_over_mdot*Vn)*( 0.5*Velocity2 - avg_enthalpy)
+                -avg_pressure*a1*(Gamma/(Gamma_Minus_One) )*Vn*one_over_mdot*Density/Pressure); //drho avg/ dh avg * dhavg /dr
             Grad_chain[0] +=  config->GetCoeff_ObjChainRule(0)*
-                ( avg_pressure*a1*avg_vel * dVdr);
+                ( avg_pressure*a1*avg_vel * dVdr); // drho avg/ dV avg * dV avg/dr
             Grad_chain[0] +=  config->GetCoeff_ObjChainRule(1)*dVdr;
             /* dj / d\vec{v} */
             for (iDim = 0; iDim<nDim; iDim++){
@@ -4711,6 +4714,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             }
             /* dj / d P */
             Grad_chain[4] =  config->GetCoeff_ObjChainRule(0)*(Gamma/Gamma_Minus_One/(avg_enthalpy-0.5*avg_vel2) * (1.0/Area_Monitored));
+            Grad_chain[4] += config->GetCoeff_ObjChainRule(0)*(-avg_pressure*a1*Vn*one_over_mdot*Gamma/Gamma_Minus_One);
             Grad_chain[4] += config->GetCoeff_ObjChainRule(4)/Area_Monitored;
           }
           if  (config->GetKind_OneD() == ONED_FLUX){
