@@ -181,14 +181,16 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 enum ONED_TYPE {
   ONED_NONE = 0, /*!< \brief no one-dimensionalization. */
   ONED_AREA = 1, /*!< \brief Area-weighted average. */
-  ONED_FLUX = 2, /*!< \brief Mass-flux weighted average. */
-  ONED_LANGLEY = 3 /*!< \brief Langley Distortion method */
+  ONED_MFLUX = 2, /*!< \brief Mass-flux weighted average. */
+  ONED_LANGLEY = 3, /*!< \brief Langley Distortion method */
+  ONED_LANGLEY_V1 = 4 /*!< \brief A variation on the Langley Distortion method (uses velocity magnitude rather than momentum)*/
 };
 static const map<string, ONED_TYPE> OneD_Map = CCreateMap<string, ONED_TYPE>
 ("NONE", ONED_NONE)
 ("AREA", ONED_AREA)
-("FLUX", ONED_FLUX)
-("LANGLEY", ONED_LANGLEY);
+("MASSFLUX", ONED_MFLUX)
+("LANGLEY", ONED_LANGLEY)
+("LANGLEY1", ONED_LANGLEY_V1);
 
 
 /*!
