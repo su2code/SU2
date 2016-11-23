@@ -37,8 +37,8 @@ CHeatSolver::CHeatSolver(void) : CSolver() { }
 
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
-  unsigned short iVar, iDim, nLineLets;
-  unsigned long iPoint, index;
+  unsigned short iVar, iDim, nLineLets, iMarker;
+  unsigned long iPoint, index, iVertex;
   su2double dull_val;
 
   unsigned short iZone = config->GetiZone();
@@ -149,6 +149,18 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     }
 
   }
+  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
+
+  //CharacPrimVar = new su2double** [nMarker];
+  //for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  //  CharacPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+  //  for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+  //    CharacPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
+  //    for (iVar = 0; iVar < nPrimVar; iVar++) {
+  //      CharacPrimVar[iMarker][iVertex][iVar] = 0.0;
+  //    }
+  //  }
+  //}
 
 
   /*--- Non-dimensionalization of heat equation */
@@ -337,8 +349,6 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
-  //cout << "Computing viscous residual - number of edges: " << geometry->GetnEdge() << endl;
-
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -387,13 +397,6 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
-
-    if (iEdge == 42 && true) cout << "Temp_i = " << Temp_i << ", Temp_j = " << Temp_j
-                          << ", Temp_i_Grad = (" << Temp_i_Grad[0][0] << ", " << Temp_i_Grad[0][1] << ")"
-                          << ", Jacobian_i: " << Jacobian_i[0][0] << endl;
-    }
-
-
 }
 
 
@@ -476,6 +479,12 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal = new su2double[nDim];
 
+  su2double *Coord_i, *Coord_j, Area, dist_ij, eddy_viscosity, laminar_viscosity, thermal_conductivity, Twall, dTdn, Prandtl_Lam, Prandtl_Turb;
+  Prandtl_Lam = config->GetPrandtl_Lam();
+  Prandtl_Turb = config->GetPrandtl_Turb();
+  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  Twall = config->GetTemperature_FreeStreamND();
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -492,14 +501,14 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
             /*--- Retrieve solution at this boundary node ---*/
 
-            V_domain = node[iPoint]->GetPrimitive();
+            V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
 
             /*--- Retrieve the specified velocity for the inlet. ---*/
 
             Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
             Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 
-            V_inlet = GetCharacPrimVar(val_marker, iVertex);
+            V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
             for (iDim = 0; iDim < nDim; iDim++)
               V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
@@ -527,7 +536,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Viscous contribution ---*/
 
-        if (viscous || true ) {
+        if (viscous && false ) {
 
           /*--- Set the normal vector and the coordinates ---*/
 
@@ -559,6 +568,46 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           if (implicit)
             Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+        }
+
+        if (viscous || true) {
+
+
+          Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+          geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt (Area);
+
+          Coord_i = geometry->node[iPoint]->GetCoord();
+          Coord_j = geometry->node[Point_Normal]->GetCoord();
+          dist_ij = 0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+          dist_ij = sqrt(dist_ij);
+
+          dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
+
+          if(flow)
+            eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+          else
+            eddy_viscosity = 0.0;
+
+          thermal_conductivity = eddy_viscosity/Prandtl_Turb + laminar_viscosity/Prandtl_Lam;
+
+          Res_Visc[0] = thermal_conductivity*dTdn*Area;
+
+          if(implicit) {
+
+            Jacobian_i[0][0] = -thermal_conductivity/dist_ij * Area;
+
+          }
+          /*--- Viscous contribution to the residual at the wall ---*/
+
+          LinSysRes.SubtractBlock(iPoint, Res_Visc);
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
         }
     }
@@ -602,11 +651,11 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
             /*--- Retrieve solution at this boundary node ---*/
 
-            V_domain = node[iPoint]->GetPrimitive();
+            V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
 
             /*--- Retrieve the specified velocity for the inlet. ---*/
 
-            V_outlet = GetCharacPrimVar(val_marker, iVertex);
+            V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
             for (iDim = 0; iDim < nDim; iDim++)
               V_outlet[iDim+1] = solver_container[FLOW_SOL]->node[Point_Normal]->GetPrimitive(iDim+1);
 
@@ -634,7 +683,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Viscous contribution ---*/
 
-        if (viscous || true) {
+        if (false) {
 
           /*--- Set the normal vector and the coordinates ---*/
 

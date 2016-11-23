@@ -1498,7 +1498,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     numerics_container[MESH_0][HEAT_SOL][VISC_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
-    numerics_container[MESH_0][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_Heat(nDim, nVar_Heat, config);
+    numerics_container[MESH_0][HEAT_SOL][VISC_BOUND_TERM] = new CAvgGrad_Heat(nDim, nVar_Heat, config);
 
     numerics_container[MESH_0][HEAT_SOL][CONV_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);
     numerics_container[MESH_0][HEAT_SOL][CONV_BOUND_TERM] = new CUpwSca_Heat(nDim, nVar_Heat, config);

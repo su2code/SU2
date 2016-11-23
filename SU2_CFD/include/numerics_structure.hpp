@@ -3755,6 +3755,48 @@ public:
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+
+/*!
+ * \class CAvgGrad_Heat
+ * \brief Class for computing viscous term using average of gradients without correction (heat equation).
+ * \ingroup ViscDiscr
+ * \author O. Burghardt.
+ * \version 4.3.0 "Cardinal"
+ */
+class CAvgGrad_Heat : public CNumerics {
+private:
+  su2double **Mean_GradHeatVar;
+  su2double *Proj_Mean_GradHeatVar_Normal, *Proj_Mean_GradHeatVar_Corrected;
+  su2double *Edge_Vector;
+  bool implicit;
+  su2double dist_ij_2, proj_vector_ij, Thermal_Conductivity_Mean;
+  unsigned short iVar, iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Heat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_Heat(void);
+
+  /*!
+   * \brief Compute the viscous heat residual using an average of gradients with correction.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+};
+
 /*!
  * \class CAvgGradCorrected_Heat
  * \brief Class for computing viscous term using average of gradients with correction (heat equation).
