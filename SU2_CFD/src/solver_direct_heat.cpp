@@ -397,6 +397,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
     Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
     Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+  }
 }
 
 
