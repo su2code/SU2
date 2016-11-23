@@ -4500,15 +4500,20 @@ void CDiscAdjSpectralDriver::Run() {
 
   /*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-    if(ExtIter == 0){
-      for (iZone = 0; iZone < nZone; iZone++){
-        SetGeoTurboAvgValues(iZone, true);
-      }
-    }
+  	if(ExtIter == 0){
+  		for (iZone = 0; iZone < nZone; iZone++){
+  			SetGeoTurboAvgValues(iZone, true);
+  		}
+  	}
+  	for (iZone = 0; iZone < nZone; iZone++){
+  		solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+  		solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+  	}
   }
-   SetSpectralAverage();
-  SetSensitivity(SOLUTION);
 
+  SetSpectralAverage();
+
+  SetSensitivity(SOLUTION);
 
   if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
       ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)) ||
@@ -4558,6 +4563,7 @@ void CDiscAdjSpectralDriver::SetSensitivity(unsigned short kind_sensitivity){
 
 
 void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned short iZone;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -4602,10 +4608,10 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
   	}
   }
 
-
-  for (iZone = 0; iZone < nZone; iZone++)
-     SetSpectralMethod(iZone);
-
+  if(ExtIter == 0){
+  	for (iZone = 0; iZone < nZone; iZone++)
+  		SetSpectralMethod(iZone);
+  }
   for (iZone = 0; iZone < nZone; iZone++) {
 
     direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
@@ -4635,6 +4641,9 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
   }
 
   SetSpectralAverage();
+
+  for (iZone = 0; iZone < nZone; iZone++)
+     SetSpectralMethod(iZone);
 
   RecordingState = kind_recording;
 
