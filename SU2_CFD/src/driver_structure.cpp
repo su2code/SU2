@@ -300,8 +300,8 @@ CDriver::CDriver(char* confFile,
       FFDBox[iZone] = new CFreeFormDefBox*[MAX_NUMBER_FFD];
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
-      if (config_container[iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD)
-        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
+//      if (config_container[iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD)
+//        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
     }
 
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN){
@@ -4608,10 +4608,9 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
   	}
   }
 
-  if(ExtIter == 0){
-  	for (iZone = 0; iZone < nZone; iZone++)
-  		SetSpectralMethod(iZone);
-  }
+  for (iZone = 0; iZone < nZone; iZone++)
+  	SetSpectralMethod(iZone);
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
@@ -4641,9 +4640,6 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
   }
 
   SetSpectralAverage();
-
-  for (iZone = 0; iZone < nZone; iZone++)
-     SetSpectralMethod(iZone);
 
   RecordingState = kind_recording;
 
