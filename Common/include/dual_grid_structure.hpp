@@ -899,7 +899,7 @@ private:
   su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
   su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
   unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
-  
+	
 public:
 
 	/*! 
@@ -1060,7 +1060,7 @@ public:
 	 * \param[in] val_periodicpoint - Value of periodic point of the vertex.
 	 * \param[in] val_processor - Processor where the point belong.
 	 * \param[in] val_globalindex - Global index of the donor point.
-	 * \param[in] val_markerindex - Marker index.
+	 * \param[in] val_markerindex - Marker index of the donor point.
 	 */
 	void SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex, long val_markerindex);
 

@@ -324,14 +324,14 @@ inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor) {
 	PeriodicPoint[0] = val_periodicpoint; 
 	PeriodicPoint[1] = val_processor; 
 	PeriodicPoint[2] = 0;
-	PeriodicPoint[3] = 0;
+	PeriodicPoint[3] = 100;
 }
 
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex) { 
 	PeriodicPoint[0] = val_periodicpoint; 
 	PeriodicPoint[1] = val_processor; 
 	PeriodicPoint[2] = val_globalindex;
-	PeriodicPoint[3] = 0;
+	PeriodicPoint[3] = 100;
 }
 
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex, long val_markerindex) {

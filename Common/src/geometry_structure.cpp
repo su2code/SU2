@@ -11218,9 +11218,10 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
         }
         
         /*--- Set the periodic point for this iPoint. ---*/
-        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
+        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE, 0, jMarker);
 				
 				cout << "Point = "<< iPoint << " Donor = " << pPoint << endl;
+				cout << "Current Marker = "<< iMarker << " Donor point Marker = "<< vertex[iMarker][iVertex]->GetDonorMarker() << endl;
         
         /*--- Print warning if the nearest point was not within
          the specified tolerance. Computation will continue. ---*/
