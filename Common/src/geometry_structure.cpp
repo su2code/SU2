@@ -9186,7 +9186,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           unsigned short VTK_Type     = typeRead%100;
           unsigned short nDOFEdgeGrid = nPolyGrid + 1;
 
-          unsigned short nDOFsGrid;
+          unsigned short nDOFsGrid = 0;
           FaceOfElementClass thisFace;
           thisFace.cornerPoints[0] = 0; thisFace.cornerPoints[1] = nPolyGrid;
           switch( VTK_Type ) {
@@ -13233,7 +13233,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     /*--- Compute the Jacobians in the integration points and determine
           the minimum and maximum values. Make a distinction between
           a 2D and 3D element. ---*/
-    su2double jacMin, jacMax;
+    su2double jacMin = 1.e+25, jacMax = -1.e+25;
 
     switch( nDim ) {
       case 2: {
@@ -13249,8 +13249,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
 
           const su2double Jac = dxdr*dyds - dxds*dydr;
 
-          if(j == 0) jacMin = jacMax = Jac;
-          else {jacMin = min(jacMin, Jac); jacMax = max(jacMax, Jac);}
+          jacMin = min(jacMin, Jac);
+          jacMax = max(jacMax, Jac);
         }
 
         break;
@@ -13270,8 +13270,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
           const su2double Jac = dxdr*(dyds*dzdt - dzds*dydt) - dxds*(dydr*dzdt - dzdr*dydt)
                               + dxdt*(dydr*dzds - dzdr*dyds);
 
-          if(j == 0) jacMin = jacMax = Jac;
-          else {jacMin = min(jacMin, Jac); jacMax = max(jacMax, Jac);}
+          jacMin = min(jacMin, Jac);
+          jacMax = max(jacMax, Jac);
         }
 
         break;
@@ -13336,7 +13336,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       }
 
       /*--- Set the pointer to store the face connectivity of this face. ---*/
-      unsigned short *connFace;
+      unsigned short *connFace = NULL;
       switch( j) {
         case 0: connFace = standardVolumeElements[ii].GetConnFace0(); break;
         case 1: connFace = standardVolumeElements[ii].GetConnFace1(); break;
@@ -13534,7 +13534,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     for(unsigned short j=0; j<nFaces; ++j) {
 
       /* Determine the VTK type of the face. */
-      unsigned short VTK_Type_Face;
+      unsigned short VTK_Type_Face = 0;
       switch( nPointsPerFace[j] ) {
         case 2: VTK_Type_Face = LINE;          break;
         case 3: VTK_Type_Face = TRIANGLE;      break;

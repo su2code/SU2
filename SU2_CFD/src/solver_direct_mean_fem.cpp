@@ -1544,7 +1544,7 @@ void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
 
   /*--- Loop over the markers for which a rotational periodic
         correction must be applied to the momentum variables. ---*/
-  unsigned int ii;
+  unsigned int ii = 0;
   const unsigned short nRotPerMarkers = halosRotationalPeriodicity.size();
   for(unsigned short k=0; k<nRotPerMarkers; ++k) {
 
@@ -1616,7 +1616,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(void) {
 
   /*--- Loop over the markers for which a rotational periodic
         correction must be applied to the momentum variables. ---*/
-  unsigned int ii;
+  unsigned int ii = 0;
   const unsigned short nRotPerMarkers = halosRotationalPeriodicity.size();
   for(unsigned short k=0; k<nRotPerMarkers; ++k) {
 
@@ -2146,16 +2146,17 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
   /*----------------------------------------------------------------------*/
 
   /* Initialization to zero. */
-  su2double URef[5];
-  for(unsigned short i=0; i<nVar; ++i) URef[i] = 0.0;
+  su2double URef[] = {0.0, 0.0, 0.0, 0.0, 0.0};
 
   /* Loop over the owned DOFs to determine the maximum values of the
      conservative variables on this rank. */
   for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
     const su2double *solDOF = VecSolDOFs.data() + i*nVar;
 
-    for(unsigned short j=0; j<nVar; ++j)
-      URef[j] = max(URef[j], fabs(solDOF[j]));
+    for(unsigned short j=0; j<nVar; ++j) {
+      const su2double solAbs = fabs(solDOF[j]);
+      if(solAbs > URef[j]) URef[j] = solAbs;
+    }
   }
 
   /*--- Determine the maximum values on all ranks in case of a
@@ -2418,7 +2419,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorResidual(CConfig           *config,
 
     /*--- Compute the Cartesian gradients of the pressure, scaled with
           the Jacobian. ---*/
-    su2double pGradCart[3];
+    su2double pGradCart[] = {0.0, 0.0, 0.0};
     for(unsigned short k=0; k<nDim; ++k) {
       pGradCart[k] = solGradCart[nVar-1][k] + 0.5*Velocity2*solGradCart[0][k];
       for(unsigned short l=0; l<nDim; ++l)
@@ -2992,7 +2993,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
             /*-- Compute the vector from the reference point to the integration
                  point and update the inviscid force. Note that the normal points
                  into the geometry, hence no minus sign. ---*/
-            su2double MomentDist[3], Force[3];
+            su2double MomentDist[] = {0.0, 0.0, 0.0}, Force[] = {0.0, 0.0, 0.0};
             const su2double forceMag = (Pressure - Pressure_Inf)*weights[i]
                                      * normals[nDim]*factor;
 
@@ -5379,7 +5380,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
     const su2double nu0 = DensityInv0*viscosityInt0[i], nu1 = DensityInv1*viscosityInt1[i];
 
     su2double velNorm0 = 0.0, velNorm1 = 0.0, velSquared0 = 0.0, velSquared1 = 0.0;
-    su2double vel0[3], vel1[3];
+    su2double vel0[] = {0.0,0.0,0.0}, vel1[] = {0.0,0.0,0.0};
     for(unsigned short j=0; j<nDim; ++j) {
       vel0[j] = DensityInv0*sol0[j+1];
       vel1[j] = DensityInv1*sol1[j+1];
@@ -5402,7 +5403,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
     const su2double nuEminVelSquaredAve = 0.5*(nu0*(Etot0-velSquared0)
                                         +      nu1*(Etot1-velSquared1));
 
-    su2double nuVelAvg[3], nuVelVelAvg[3];
+    su2double nuVelAvg[] = {0.0,0.0,0.0}, nuVelVelAvg[] = {0.0,0.0,0.0};
     for(unsigned short j=0; j<nDim; ++j) {
       nuVelAvg[j]    = 0.5*(nu0*vel0[j]          + nu1*vel1[j]);
       nuVelVelAvg[j] = 0.5*(nu0*vel0[j]*velNorm0 + nu1*vel1[j]*velNorm1);

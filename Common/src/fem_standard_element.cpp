@@ -44,7 +44,7 @@ unsigned short FEMStandardElementBaseClass::GetNDOFsStatic(unsigned short VTK_Ty
                                                            unsigned short nPoly,
                                                            unsigned long  typeErrorMessage) {
   unsigned short nDOFsEdge = nPoly + 1;
-  unsigned short nDOFs;
+  unsigned short nDOFs = 0;    // To avoid a compiler warning.
 
   switch(VTK_Type) {
 
@@ -1066,7 +1066,7 @@ su2double FEMStandardElementBaseClass::ViscousPenaltyParameter(
 
   /*--- Determine the element type and set the value of the penalty
         parameter accordingly. ---*/
-  su2double penParam;
+  su2double penParam = 0;  // To avoid a compiler warning.
 
   switch( VTK_TypeElem ) {
     case TRIANGLE:
@@ -2887,7 +2887,7 @@ unsigned short FEMStandardElementClass::GetNDOFsPerSubElem(unsigned short val_VT
   
   /*--- Distinguish between the possible element types for a linear
    sub-element and set the nDOFs accordingly. ---*/
-  unsigned short nDOFsSubElem;
+  unsigned short nDOFsSubElem = 0;   // To avoid a compiler warning.
   switch( val_VTK_Type ) {
     case NONE:          nDOFsSubElem = 0; break;
     case LINE:          nDOFsSubElem = 2; break;
@@ -2932,7 +2932,8 @@ void FEMStandardElementClass::ChangeDirectionQuadConn(vector<unsigned short> &co
         depend on how the corner points coincide with each other. This is
         determined below. The bool verticesDontMatch is there to check if vertices
         do not match. This should not happen, but it is checked for security. ---*/
-  signed short a, b, c, d, e, f;
+
+  signed short a=0, b=0, c=0, d=0, e=0, f=0;  // Initialization to avoid a compiler warning.
   bool verticesDontMatch = false;
 
   if(vert0 == connQuad[ind0]) {
@@ -3098,7 +3099,7 @@ void FEMStandardElementClass::ChangeDirectionTriangleConn(vector<unsigned short>
         depend on how the corner points coincide with each other. This is
         determined below. The bool verticesDontMatch is there to check if vertices
         do not match. This should not happen, but it is checked for security. ---*/
-  signed short a, b, c, d, e, f;
+  signed short a=0, b=0, c=0, d=0, e=0, f=0;
   bool verticesDontMatch = false;
 
   if(vert0 == connTriangle[ind0]) {
@@ -3637,7 +3638,7 @@ unsigned short FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace(void) const {
 
   /*--- Distinguish between the possible element types for a boundary surface
         and set the number nDOFs for a subface accordingly. ---*/
-  unsigned short nDOFsSubface;
+  unsigned short nDOFsSubface = 0;
   switch( VTK_Type ) {
     case LINE:          nDOFsSubface = 2; break;
     case TRIANGLE:      nDOFsSubface = 3; break;

@@ -192,8 +192,7 @@ void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
 su2double CSurfaceElementFEM::DetermineLengthScale(vector<CPointFEM> &meshPoints) {
 
   /* Variables needed to make a generic treatment possible. */
-  unsigned short nDim;
-  unsigned short nEdges;
+  unsigned short nDim=0, nEdges=0;  // To avoid a compiler warning.
   unsigned long  edgeVertices[4][2];
 
   su2double lenScale;
@@ -2324,10 +2323,10 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
       /*--- Determine the number of DOFs on both sides of the face for both the
             grid and solution. This value depends on the face type. ---*/
-      unsigned short sizeDOFsGridFaceSide0, sizeDOFsGridFaceSide1;
-      unsigned short sizeDOFsSolFaceSide0,  sizeDOFsSolFaceSide1;
+      unsigned short sizeDOFsGridFaceSide0 = 0, sizeDOFsGridFaceSide1 = 0;
+      unsigned short sizeDOFsSolFaceSide0  = 0, sizeDOFsSolFaceSide1  = 0;
 
-      unsigned short VTK_Type;
+      unsigned short VTK_Type = 0;  // To avoid a compiler warning.
       switch( localFaces[i].nCornerPoints ) {
         case 2:
           /* Face is a line. */
@@ -2509,9 +2508,9 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
          /*--- Determine the number of DOFs of the face for both the grid
                and solution. This value depends on the face type. ---*/
-        unsigned short sizeDOFsGridFace, sizeDOFsSolFace;
+        unsigned short sizeDOFsGridFace = 0, sizeDOFsSolFace = 0;
 
-        unsigned short VTK_Type;
+        unsigned short VTK_Type = 0; // To avoid a compiler warning.
         switch( localFaces[i].nCornerPoints ) {
           case 2:
             /* Face is a line. */
@@ -2975,7 +2974,7 @@ void CMeshFEM_DG::CreateConnectivitiesLineAdjacentQuadrilateral(
         of the quad. This is determined below. The bool verticesDontMatch is
         there to check if vertices do not match. This should not happen, but
         it is checked for security. ---*/
-  signed short a, b, c, d, e, f;
+  signed short a=0, b=0, c=0, d=0, e=0, f=0;
   bool verticesDontMatch = false;
 
   if(vert0 == quadNodeIDsGrid[ind0]) {
@@ -3112,7 +3111,7 @@ void CMeshFEM_DG::CreateConnectivitiesLineAdjacentTriangle(
         of the triangle. This is determined below. The bool verticesDontMatch is
         there to check if vertices do not match. This should not happen, but
         it is checked for security. ---*/
-  signed short a, b, c, d, e, f;
+  signed short a=0, b=0, c=0, d=0, e=0, f=0;
   bool verticesDontMatch = false;
 
   if(vert0 == triaNodeIDsGrid[ind0]) {

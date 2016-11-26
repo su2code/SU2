@@ -444,7 +444,7 @@ su2double CGaussJacobiQuadrature::class_matrix(int kind, int m, su2double alpha,
       bj[i-1] = sqrt ( abi * abi / ( abj * abj - 1.0 ) );
     }
   }
-  else if ( kind == 8 )
+  else   // if ( kind == 8 )
   {
     ab = alpha + beta;
     zemu = tgamma ( alpha + 1.0 ) * tgamma ( - ( ab + 1.0 ) ) 
@@ -550,7 +550,7 @@ void CGaussJacobiQuadrature::imtqlx(int n, su2double d[], su2double e[], su2doub
   int j;
   int k;
   int l;
-  int m;
+  int m = 0;  // To avoid a compiler warning.
   int mml;
   su2double p;
   su2double prec;
@@ -1049,7 +1049,7 @@ void CGaussJacobiQuadrature::scqf(int nt, su2double t[], int mlt[], su2double wt
     al = alpha;
     be = beta;
   }
-  else if ( kind == 9 )
+  else  // if ( kind == 9 )
   {
     al = 0.5;
     be = 0.5;

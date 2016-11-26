@@ -630,7 +630,7 @@ su2_adtElemClass::su2_adtElemClass(unsigned short               val_nDim,
   nDOFsPerElem[0] = 0;
   for(unsigned long i=0; i<nElem; ++i) {
 
-    unsigned short nDOFs;
+    unsigned short nDOFs = 0;
     switch( elemVTK_Type[i] ) {
       case LINE:          nDOFs = 2; break;
       case TRIANGLE:      nDOFs = 3; break;
