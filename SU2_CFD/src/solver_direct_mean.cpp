@@ -3976,6 +3976,123 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           //cout << dissipation << endl;
           
       }
+       else if (config->GetKind_RoeLowDiss() == FD_DUCROS){
+            su2double uijuij, nu, nut, dist_wall, k2, r_d, f_d_i, f_d_j;
+           su2double *Vorticity_aux, Omega_aux, ujxj, Ducros_i, Ducros_j, Ducros_ij;
+           unsigned short jDim;
+//           su2double  **Gradient_aux;
+//           unsigned short nNeigh, iNeigh, NumNeigh;
+//           su2double *Coord_i, *Coord_j;
+//           Coord_i = geometry->node[iPoint]->GetCoord();
+//           Coord_j = geometry->node[jPoint]->GetCoord();
+
+            /*--- For iPoint ---*/
+            
+            dist_wall = geometry->node[iPoint]->GetWall_Distance();
+            uijuij=0.0;
+            
+            for(iDim=0;iDim<nDim;++iDim){
+                for(jDim=0;jDim<nDim;++jDim){
+                    uijuij+= Gradient_i[1+iDim][jDim]*Gradient_i[1+iDim][jDim];}}
+            
+            uijuij=sqrt(fabs(uijuij));
+            uijuij=max(uijuij,1e-10);
+            
+            
+            nu = V_i[nDim+5]/V_i[nDim+2];
+            nut = V_i[nDim+6]/V_i[nDim+2];
+            k2=pow(0.41,2.0);
+            r_d= (nut+nu)/(uijuij*k2*pow(dist_wall, 2.0));
+            f_d_i= 1.0-tanh(pow(8.0*r_d,3.0));
+           
+           /*---- Ducros sensor for iPoint ---*/
+           
+           Vorticity_aux = node[iPoint]->GetVorticity();
+           Omega_aux = sqrt(Vorticity_aux[0]*Vorticity_aux[0]+ Vorticity_aux[1]*Vorticity_aux[1]+ Vorticity_aux[2]*Vorticity_aux[2]);
+
+           /*---- Dilatation for iPoint ---*/
+           ujxj=0.0;
+           for(iDim=0;iDim<nDim;++iDim){
+                   ujxj+= Gradient_i[1+iDim][iDim];}
+           
+           Ducros_i = -ujxj /(fabs(ujxj)+ Omega_aux + 1.0e-20);
+           
+           /*---- Ducros sensor for neighbor points of iPoint to avoid lower the dissipation in regions near the shock ---*/
+           
+           
+//           nNeigh = geometry->node[iPoint]->GetnPoint();
+//           for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
+//               NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
+//               Gradient_aux = node[NumNeigh]->GetGradient_Primitive();
+//               Vorticity_aux = node[NumNeigh]->GetVorticity();
+//               Omega_aux = sqrt(Vorticity_aux[0]*Vorticity_aux[0]+ Vorticity_aux[1]*Vorticity_aux[1]+ Vorticity_aux[2]*Vorticity_aux[2]);
+//               
+//               ujxj=0.0;
+//               for(iDim=0;iDim<nDim;++iDim){
+//                   ujxj+= Gradient_aux[1+iDim][iDim];}
+//               
+//               Ducros_i += -ujxj /(fabs(ujxj)+ Omega_aux + 1.0e-20);
+//           }
+//           Ducros_i = Ducros_i/(nNeigh + 1.0);
+           
+            /*--- For jPoint ---*/
+            
+            dist_wall = geometry->node[jPoint]->GetWall_Distance();
+            uijuij=0.0;
+            
+            for(iDim=0;iDim<nDim;++iDim){
+                for(jDim=0;jDim<nDim;++jDim){
+                    uijuij+= Gradient_j[1+iDim][jDim]*Gradient_j[1+iDim][jDim];}}
+            
+            uijuij=sqrt(fabs(uijuij));
+            uijuij=max(uijuij,1e-10);
+            
+            nu = V_j[nDim+5]/V_j[nDim+2];
+            nut = V_j[nDim+6]/V_j[nDim+2];
+            k2=pow(0.41,2.0);
+            r_d= (nut+nu)/(uijuij*k2*pow(dist_wall, 2.0));
+            f_d_j= 1.0-tanh(pow(8.0*r_d,3.0));
+           
+           /*---- Ducros sensor for jPoint ---*/
+           
+           Vorticity_aux = node[jPoint]->GetVorticity();
+           Omega_aux = sqrt(Vorticity_aux[0]*Vorticity_aux[0]+ Vorticity_aux[1]*Vorticity_aux[1]+ Vorticity_aux[2]*Vorticity_aux[2]);
+           
+           /*---- Dilatation for jPoint ---*/
+           ujxj=0.0;
+           for(iDim=0;iDim<nDim;++iDim){
+               ujxj+= Gradient_j[1+iDim][iDim];}
+           
+           Ducros_j = -ujxj /(fabs(ujxj)+ Omega_aux + 1.0e-20);
+           
+           /*---- Ducros sensor for neighbor points of jPoint to avoid lower the dissipation in regions near the shock ---*/
+           
+//           nNeigh = geometry->node[jPoint]->GetnPoint();
+//           for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
+//               NumNeigh = geometry->node[jPoint]->GetPoint(iNeigh);
+//               Gradient_aux = node[NumNeigh]->GetGradient_Primitive();
+//               Vorticity_aux = node[NumNeigh]->GetVorticity();
+//               Omega_aux = sqrt(Vorticity_aux[0]*Vorticity_aux[0]+ Vorticity_aux[1]*Vorticity_aux[1]+ Vorticity_aux[2]*Vorticity_aux[2]);
+//               
+//               ujxj=0.0;
+//               for(iDim=0;iDim<nDim;++iDim){
+//                   ujxj+= Gradient_aux[1+iDim][iDim];}
+//               
+//               Ducros_j += -ujxj /(fabs(ujxj)+ Omega_aux + 1.0e-20);
+//           }
+//           Ducros_j = Ducros_j/(nNeigh + 1.0);
+
+           /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
+           
+            if (0.5*(Ducros_i + Ducros_j) > 0.65)
+                Ducros_ij = 1.0;
+            else
+                Ducros_ij = 0.05;
+           
+            dissipation = max(Ducros_ij,1.0 - (0.5 * (f_d_i + f_d_j)));
+            numerics->SetRoeDissipation(dissipation);
+        }
+
       else if(config->GetKind_RoeLowDiss() == NTS_DUCROS){
           
           su2double Delta_aux, Laminar_Viscosity_aux, Eddy_Viscosity_aux, StrainMag_aux, *Vorticity_aux, Omega_aux;
@@ -4240,9 +4357,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       node[iPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
       node[jPoint]->SetPreconditioner_Beta(numerics->GetPrecond_Beta());
     }
-      
-  }
     
+  }
+
   /*--- Warning message about non-physical reconstructions ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
