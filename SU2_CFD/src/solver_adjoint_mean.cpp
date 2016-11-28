@@ -50,7 +50,9 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
   CSensitivity = NULL;
   FlowPrimVar_i = NULL;
   FlowPrimVar_j = NULL;
-  
+  DonorAdjVar = NULL;
+  DonorGlobalIndex = NULL;
+
 }
 
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -60,6 +62,10 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   string filename, AdjExt;
   su2double dull_val, myArea_Monitored, Area, *Normal;
+  su2double dCD_dCL_, dCD_dCM_;
+  string::size_type position;
+  unsigned long ExtIter_;
+
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -82,6 +88,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 #endif
   
   /*--- Array initialization ---*/
+  
   Phi_Inf = NULL;
   Sens_Mach = NULL;
   Sens_AoA = NULL;
@@ -95,6 +102,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CSensitivity = NULL;
   FlowPrimVar_i = NULL;
   FlowPrimVar_j = NULL;
+  DonorAdjVar = NULL;
+  DonorGlobalIndex = NULL;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
@@ -218,6 +227,30 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     CSensitivity[iMarker] = new su2double [geometry->nVertex[iMarker]];
   }
+  
+  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
+  
+  DonorAdjVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorAdjVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorAdjVar[iMarker][iVertex] = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        DonorAdjVar[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
+  
+  DonorGlobalIndex = new unsigned long* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorGlobalIndex[iMarker][iVertex] = 0;
+    }
+  }
+  
   Sens_Geo  = new su2double[nMarker];
   Sens_Mach = new su2double[nMarker];
   Sens_AoA  = new su2double[nMarker];
@@ -299,19 +332,26 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
+    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
+      
       iPoint_Local = Global2Local[iPoint_Global];
+      
       if (iPoint_Local >= 0) {
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
@@ -326,31 +366,97 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
         }
         node[iPoint_Local] = new CAdjEulerVariable(Solution, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
+    }
+    
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+    
+    while (getline (restart_file, text_line)) {
+      
+      
+      if (config->GetEval_dCD_dCX() == true) {
+        
+        /*--- dCD_dCL coefficient ---*/
+        
+        position = text_line.find ("DCD_DCL_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+          config->SetdCD_dCL(dCD_dCL_);
+        }
+        
+        /*--- dCD_dCM coefficient ---*/
+        
+        position = text_line.find ("DCD_DCM_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
+          config->SetdCD_dCM(dCD_dCM_);
+        }
+        
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        config->SetExtIter_OffSet(ExtIter_);
+      }
+      
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
+    
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       node[iPoint] = new CAdjEulerVariable(Solution, nDim, nVar, config);
     }
     
     /*--- Close the restart file ---*/
+    
     restart_file.close();
     
     /*--- Free memory needed for the transformation ---*/
+    
     delete [] Global2Local;
+    
   }
   
   /*--- Define solver parameters needed for execution of destructor ---*/
+  
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
   else space_centered = false;
 
-  
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
+  
   myArea_Monitored = 0.0;
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
@@ -1118,6 +1224,961 @@ void CAdjEulerSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *c
   }
 }
 
+void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
+  Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
+  unsigned short iVar, iMarker, jMarker;
+  long nDomain = 0, iDomain, jDomain;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  
+  /*--- MPI initialization ---*/
+  
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  /*--- MPI status and request arrays for non-blocking communications ---*/
+  
+  MPI_Status status, status_;
+  MPI_Request request, request_;
+  
+#endif
+  
+  /*--- Define buffer vector interior domain ---*/
+  
+  su2double        *Buffer_Send_AdjVar          = NULL;
+  su2double        *iAdjVar          = new su2double [nVar];
+  
+  unsigned long *nPointTotal_s = new unsigned long[size];
+  unsigned long *nPointTotal_r = new unsigned long[size];
+  
+  unsigned long Buffer_Size_AdjVar          = 0;
+  unsigned long PointTotal_Counter = 0;
+  
+  /*--- Allocate the memory that we only need if we have MPI support ---*/
+  
+  su2double        *Buffer_Receive_AdjVar          = NULL;
+  
+  /*--- Basic dimensionalization ---*/
+  
+  nDomain = size;
+  
+  /*--- This loop gets the array sizes of points for each
+   rank to send to each other rank. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Loop over the markers to perform the dimensionalizaton
+     of the domain variables ---*/
+    
+    Buffer_Send_nPointTotal = 0;
+    
+    /*--- Loop over all of the markers and count the number of each
+     type of point and element that needs to be sent. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            Buffer_Send_nPointTotal++;
+          }
+        }
+      }
+    }
+    
+    /*--- Store the counts on a partition by partition basis. ---*/
+    
+    nPointTotal_s[iDomain] = Buffer_Send_nPointTotal;
+    
+    /*--- Total counts for allocating send buffers below ---*/
+    
+    Buffer_Size_AdjVar          += nPointTotal_s[iDomain]*(nVar+3);
+    
+  }
+  
+  /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
+  
+  Buffer_Send_AdjVar          = new su2double[Buffer_Size_AdjVar];
+  
+  /*--- Now that we know the sizes of the point, we can
+   allocate and send the information in large chunks to all processors. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- A rank does not communicate with itself through MPI ---*/
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
+      
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+      
+#endif
+      
+    } else {
+      
+      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
+      
+      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
+      
+    }
+    
+    /*--- Receive the counts. All processors are sending their counters to
+     iDomain up above, so only iDomain needs to perform the recv here from
+     all other ranks. ---*/
+    
+    if (rank == iDomain) {
+      
+      for (jDomain = 0; jDomain < size; jDomain++) {
+        
+        /*--- A rank does not communicate with itself through MPI ---*/
+        
+        if (rank != jDomain) {
+          
+#ifdef HAVE_MPI
+          
+          /*--- Recv the data by probing for the current sender, jDomain,
+           first and then receiving the values from it. ---*/
+          
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+          
+#endif
+          
+        }
+      }
+      
+    }
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Initialize the counters for the larger send buffers (by domain) ---*/
+  
+  PointTotal_Counter  = 0;
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Set the value of the interior geometry. Initialize counters. ---*/
+    
+    iPointTotal = 0;
+    
+    /*--- Load up the actual values into the buffers for sending. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            
+            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
+            jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
+            
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetSolution(iVar);
+            }
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+0)]  = su2double(iGlobalIndex);
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+1)] = su2double(jVertex);
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+2)]  = su2double(jMarker);
+            
+            iPointTotal++;
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+    /*--- Send the buffers with the geometrical information ---*/
+    
+    if (iDomain != rank) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the coordinates, global index, colors, and element
+       date to iDomain with non-blocking sends. ---*/
+      
+      SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
+                     nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
+                     iDomain,  MPI_COMM_WORLD);
+      
+#endif
+      
+    }
+    
+    else {
+      
+      /*--- Allocate local memory for the local recv of the elements ---*/
+      
+      Buffer_Receive_AdjVar            = new su2double[nPointTotal_s[iDomain]*(nVar+3)];
+      
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(nVar+3); iter++)
+        Buffer_Receive_AdjVar[iter] = Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)+iter];
+      
+      /*--- Recv the point data from ourselves (same procedure as above) ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        iGlobal       =  SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+2)]);
+        for (iVar = 0; iVar < nVar; iVar++)
+          iAdjVar[iVar] = Buffer_Receive_AdjVar[iPoint*(nVar+3)+iVar];
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          SetDonorAdjVar(iMarker, iVertex, iVar, iAdjVar[iVar]);
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_AdjVar;
+      
+    }
+    
+    /*--- Increment the counters for the send buffers (iDomain loop) ---*/
+    
+    PointTotal_Counter += iPointTotal;
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- The next section begins the recv of all data for the interior
+   points/elements in the mesh. First, create the domain structures for
+   the points on this rank. First, we recv all of the point data ---*/
+  
+  for (iDomain = 0; iDomain < size; iDomain++) {
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Allocate the receive buffer vector. Send the colors so that we
+       know whether what we recv is an owned or halo node. ---*/
+      
+      Buffer_Receive_AdjVar            = new su2double [nPointTotal_r[iDomain]*nVar];
+      
+      /*--- Receive the buffers with the coords, global index, and colors ---*/
+      
+      SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
+                    iDomain, rank, MPI_COMM_WORLD, &status_);
+      
+      /*--- Loop over all of the points that we have recv'd and store the
+       coords, global index vertex and markers ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        iGlobal      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+2)]);
+        for (iVar = 0; iVar < nVar; iVar++)
+          iAdjVar[iVar] = Buffer_Receive_AdjVar[iPoint*(nVar+3)+iVar];
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          SetDonorAdjVar(iMarker, iVertex, iVar, iAdjVar[iVar]);
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_AdjVar;
+      
+#endif
+      
+    }
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Free all of the memory used for communicating points and elements ---*/
+  
+  delete[] Buffer_Send_AdjVar;
+  
+  /*--- Release all of the temporary memory ---*/
+  
+  delete [] nPointTotal_s;
+  delete [] nPointTotal_r;
+  delete [] iAdjVar;
+  
+}
+
+void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
+  Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
+  unsigned short iVar, iMarker, jMarker;
+  long nDomain = 0, iDomain, jDomain;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  
+  /*--- MPI initialization ---*/
+  
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  /*--- MPI status and request arrays for non-blocking communications ---*/
+  
+  MPI_Status status, status_;
+  MPI_Request request, request_;
+  
+#endif
+  
+  /*--- Define buffer vector interior domain ---*/
+  
+  su2double        *Buffer_Send_AdjVar          = NULL;
+  
+  unsigned long *nPointTotal_s = new unsigned long[size];
+  unsigned long *nPointTotal_r = new unsigned long[size];
+  su2double        *iAdjVar          = new su2double [nVar];
+  
+  unsigned long Buffer_Size_AdjVar          = 0;
+  
+  unsigned long PointTotal_Counter = 0;
+  
+  /*--- Allocate the memory that we only need if we have MPI support ---*/
+  
+  
+  su2double        *Buffer_Receive_AdjVar          = NULL;
+  
+  /*--- Basic dimensionalization ---*/
+  
+  nDomain = size;
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- This loop gets the array sizes of points for each
+   rank to send to each other rank. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Loop over the markers to perform the dimensionalizaton
+     of the domain variables ---*/
+    
+    Buffer_Send_nPointTotal = 0;
+    
+    /*--- Loop over all of the markers and count the number of each
+     type of point and element that needs to be sent. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            Buffer_Send_nPointTotal++;
+          }
+        }
+      }
+    }
+    
+    /*--- Store the counts on a partition by partition basis. ---*/
+    
+    nPointTotal_s[iDomain] = Buffer_Send_nPointTotal;
+    
+    /*--- Total counts for allocating send buffers below ---*/
+    
+    Buffer_Size_AdjVar          += nPointTotal_s[iDomain]*(nVar+3);
+    
+  }
+  
+  /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
+  
+  Buffer_Send_AdjVar          = new su2double[Buffer_Size_AdjVar];
+  
+  /*--- Now that we know the sizes of the point, we can
+   allocate and send the information in large chunks to all processors. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- A rank does not communicate with itself through MPI ---*/
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
+      
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+      
+#endif
+      
+    } else {
+      
+      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
+      
+      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
+      
+    }
+    
+    /*--- Receive the counts. All processors are sending their counters to
+     iDomain up above, so only iDomain needs to perform the recv here from
+     all other ranks. ---*/
+    
+    if (rank == iDomain) {
+      
+      for (jDomain = 0; jDomain < size; jDomain++) {
+        
+        /*--- A rank does not communicate with itself through MPI ---*/
+        
+        if (rank != jDomain) {
+          
+#ifdef HAVE_MPI
+          
+          /*--- Recv the data by probing for the current sender, jDomain,
+           first and then receiving the values from it. ---*/
+          
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+          
+#endif
+          
+        }
+      }
+      
+    }
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Initialize the counters for the larger send buffers (by domain) ---*/
+  
+  PointTotal_Counter  = 0;
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Set the value of the interior geometry. Initialize counters. ---*/
+    
+    iPointTotal = 0;
+    
+    /*--- Load up the actual values into the buffers for sending. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            
+            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
+            jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
+            
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetSolution(iVar);
+            }
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+0)]  = su2double(iGlobalIndex);
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+1)] = su2double(jVertex);
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+2)]  = su2double(jMarker);
+            
+            iPointTotal++;
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+    /*--- Send the buffers with the geometrical information ---*/
+    
+    if (iDomain != rank) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the coordinates, global index, colors, and element
+       date to iDomain with non-blocking sends. ---*/
+      
+      SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
+                     nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
+                     iDomain,  MPI_COMM_WORLD);
+      
+#endif
+      
+    }
+    
+    else {
+      
+      /*--- Allocate local memory for the local recv of the elements ---*/
+      
+      Buffer_Receive_AdjVar            = new su2double[nPointTotal_s[iDomain]*(nVar+3)];
+      
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(nVar+3); iter++)
+        Buffer_Receive_AdjVar[iter] = Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)+iter];
+      
+      /*--- Recv the point data from ourselves (same procedure as above) ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        iGlobal       =  SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+2)]);
+        for (iVar = 0; iVar < nVar; iVar++)
+          iAdjVar[iVar] = Buffer_Receive_AdjVar[iPoint*(nVar+3)+iVar];
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          SetDonorAdjVar(iMarker, iVertex, iVar, iAdjVar[iVar]);
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_AdjVar;
+      
+    }
+    
+    /*--- Increment the counters for the send buffers (iDomain loop) ---*/
+    
+    PointTotal_Counter += iPointTotal;
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- The next section begins the recv of all data for the interior
+   points/elements in the mesh. First, create the domain structures for
+   the points on this rank. First, we recv all of the point data ---*/
+  
+  for (iDomain = 0; iDomain < size; iDomain++) {
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Allocate the receive buffer vector. Send the colors so that we
+       know whether what we recv is an owned or halo node. ---*/
+      
+      Buffer_Receive_AdjVar            = new su2double [nPointTotal_r[iDomain]*(nVar+3)];
+      
+      /*--- Receive the buffers with the coords, global index, and colors ---*/
+      
+      SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
+                    iDomain, rank, MPI_COMM_WORLD, &status_);
+      
+      
+      /*--- Loop over all of the points that we have recv'd and store the
+       coords, global index vertex and markers ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        iGlobal      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+2)]);
+        for (iVar = 0; iVar < nVar; iVar++)
+          iAdjVar[iVar] = Buffer_Receive_AdjVar[iPoint*(nVar+3)+iVar];
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          SetDonorAdjVar(iMarker, iVertex, iVar,  iAdjVar[iVar]);
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_AdjVar;
+      
+#endif
+      
+    }
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Free all of the memory used for communicating points and elements ---*/
+  
+  delete[] Buffer_Send_AdjVar;
+  
+  /*--- Release all of the temporary memory ---*/
+  
+  delete [] nPointTotal_s;
+  delete [] nPointTotal_r;
+  delete [] iAdjVar;
+  
+}
+
+void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
+  Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
+  unsigned short iVar, iMarker, jMarker;
+  long nDomain = 0, iDomain, jDomain;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  
+  /*--- MPI initialization ---*/
+  
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  /*--- MPI status and request arrays for non-blocking communications ---*/
+  
+  MPI_Status status, status_;
+  MPI_Request request, request_;
+  
+#endif
+  
+  /*--- Define buffer vector interior domain ---*/
+  
+  su2double        *Buffer_Send_AdjVar          = NULL;
+  su2double        *iAdjVar          = new su2double [nVar];
+  
+  unsigned long *nPointTotal_s = new unsigned long[size];
+  unsigned long *nPointTotal_r = new unsigned long[size];
+  
+  unsigned long Buffer_Size_AdjVar          = 0;
+  unsigned long PointTotal_Counter = 0;
+  
+  /*--- Allocate the memory that we only need if we have MPI support ---*/
+  
+  su2double        *Buffer_Receive_AdjVar          = NULL;
+  
+  /*--- Basic dimensionalization ---*/
+  
+  nDomain = size;
+  
+  /*--- This loop gets the array sizes of points for each
+   rank to send to each other rank. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Loop over the markers to perform the dimensionalizaton
+     of the domain variables ---*/
+    
+    Buffer_Send_nPointTotal = 0;
+    
+    /*--- Loop over all of the markers and count the number of each
+     type of point and element that needs to be sent. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            Buffer_Send_nPointTotal++;
+          }
+        }
+      }
+    }
+    
+    /*--- Store the counts on a partition by partition basis. ---*/
+    
+    nPointTotal_s[iDomain] = Buffer_Send_nPointTotal;
+    
+    /*--- Total counts for allocating send buffers below ---*/
+    
+    Buffer_Size_AdjVar          += nPointTotal_s[iDomain]*(nVar+3);
+    
+  }
+  
+  /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
+  
+  Buffer_Send_AdjVar          = new su2double[Buffer_Size_AdjVar];
+  
+  /*--- Now that we know the sizes of the point, we can
+   allocate and send the information in large chunks to all processors. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- A rank does not communicate with itself through MPI ---*/
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
+      
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+      
+#endif
+      
+    } else {
+      
+      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
+      
+      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
+      
+    }
+    
+    /*--- Receive the counts. All processors are sending their counters to
+     iDomain up above, so only iDomain needs to perform the recv here from
+     all other ranks. ---*/
+    
+    if (rank == iDomain) {
+      
+      for (jDomain = 0; jDomain < size; jDomain++) {
+        
+        /*--- A rank does not communicate with itself through MPI ---*/
+        
+        if (rank != jDomain) {
+          
+#ifdef HAVE_MPI
+          
+          /*--- Recv the data by probing for the current sender, jDomain,
+           first and then receiving the values from it. ---*/
+          
+          MPI_Probe(jDomain, rank, MPI_COMM_WORLD, &status);
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+          
+#endif
+          
+        }
+      }
+      
+    }
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Initialize the counters for the larger send buffers (by domain) ---*/
+  
+  PointTotal_Counter  = 0;
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Set the value of the interior geometry. Initialize counters. ---*/
+    
+    iPointTotal = 0;
+    
+    /*--- Load up the actual values into the buffers for sending. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            
+            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
+            jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
+            
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetSolution(iVar);
+            }
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+0)]  = su2double(iGlobalIndex);
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+1)] = su2double(jVertex);
+            Buffer_Send_AdjVar[(nVar+3)*(PointTotal_Counter+iPointTotal)+(nVar+2)]  = su2double(jMarker);
+            
+            iPointTotal++;
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+    /*--- Send the buffers with the geometrical information ---*/
+    
+    if (iDomain != rank) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the coordinates, global index, colors, and element
+       date to iDomain with non-blocking sends. ---*/
+      
+      SU2_MPI::Bsend(&Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)],
+                     nPointTotal_s[iDomain]*(nVar+3), MPI_DOUBLE, iDomain,
+                     iDomain,  MPI_COMM_WORLD);
+      
+#endif
+      
+    }
+    
+    else {
+      
+      /*--- Allocate local memory for the local recv of the elements ---*/
+      
+      Buffer_Receive_AdjVar            = new su2double[nPointTotal_s[iDomain]*(nVar+3)];
+      
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(nVar+3); iter++)
+        Buffer_Receive_AdjVar[iter] = Buffer_Send_AdjVar[PointTotal_Counter*(nVar+3)+iter];
+      
+      /*--- Recv the point data from ourselves (same procedure as above) ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        iGlobal       =  SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+2)]);
+        for (iVar = 0; iVar < nVar; iVar++)
+          iAdjVar[iVar] = Buffer_Receive_AdjVar[iPoint*(nVar+3)+iVar];
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          SetDonorAdjVar(iMarker, iVertex, iVar, iAdjVar[iVar]);
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_AdjVar;
+      
+    }
+    
+    /*--- Increment the counters for the send buffers (iDomain loop) ---*/
+    
+    PointTotal_Counter += iPointTotal;
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- The next section begins the recv of all data for the interior
+   points/elements in the mesh. First, create the domain structures for
+   the points on this rank. First, we recv all of the point data ---*/
+  
+  for (iDomain = 0; iDomain < size; iDomain++) {
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Allocate the receive buffer vector. Send the colors so that we
+       know whether what we recv is an owned or halo node. ---*/
+      
+      Buffer_Receive_AdjVar            = new su2double [nPointTotal_r[iDomain]*(nVar+3)];
+      
+      /*--- Receive the buffers with the coords, global index, and colors ---*/
+      
+      SU2_MPI::Recv(Buffer_Receive_AdjVar, nPointTotal_r[iDomain]*(nVar+3) , MPI_DOUBLE,
+                    iDomain, rank, MPI_COMM_WORLD, &status_);
+      
+      
+      /*--- Loop over all of the points that we have recv'd and store the
+       coords, global index vertex and markers ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        iGlobal      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+0)]);
+        iVertex      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+1)]);
+        iMarker      = SU2_TYPE::Int(Buffer_Receive_AdjVar[iPoint*(nVar+3)+(nVar+2)]);
+        for (iVar = 0; iVar < nVar; iVar++)
+          iAdjVar[iVar] = Buffer_Receive_AdjVar[iPoint*(nVar+3)+iVar];
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          SetDonorAdjVar(iMarker, iVertex, iVar, iAdjVar[iVar]);
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_AdjVar;
+      
+#endif
+      
+    }
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Free all of the memory used for communicating points and elements ---*/
+  
+  delete[] Buffer_Send_AdjVar;
+  
+  /*--- Release all of the temporary memory ---*/
+  
+  delete [] nPointTotal_s;
+  delete [] nPointTotal_r;
+  delete [] iAdjVar;
+  
+}
+
 void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   su2double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, CD, CL, Cp, CpTarget,
@@ -1138,6 +2199,10 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
   su2double RefLengthMoment  = config->GetRefLengthMoment();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
+  su2double dCD_dCL 				 = config->GetdCD_dCL();
+  su2double dCD_dCM 			   = config->GetdCD_dCM();
+  bool Fixed_CL              = config->GetFixed_CL_Mode();
+  bool Fixed_CM              = config->GetFixed_CM_Mode();
 
   ForceProj_Vector = new su2double[nDim];
   
@@ -1152,10 +2217,9 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
-  /*--- Evaluate the boundary condition coefficients. ---*/
-  /*--- Since there may be more than one objective per marker, first we have to set all
-   * Force projection vectors to 0.
-   */
+  /*--- Evaluate the boundary condition coefficients,
+   Since there may be more than one objective per marker, first we have to set all Force projection vectors to 0 ---*/
+  
   for (iMarker = 0; iMarker<nMarker; iMarker++) {
     if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
            (config->GetMarker_All_Monitoring(iMarker) == YES))
@@ -1167,9 +2231,10 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
       }
   }
 
+  /*--- Find the matching iMarker ---*/
+
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    /*--- Find the matching iMarker ---*/
     Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
     for (jMarker=0; jMarker<nMarker; jMarker++) {
       Marker_Tag = config->GetMarker_All_TagBound(jMarker);
@@ -1195,8 +2260,29 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 
         switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha)*cos(Beta); ForceProj_Vector[1] += Weight_ObjFunc*sin(Beta); ForceProj_Vector[2] += Weight_ObjFunc*sin(Alpha)*cos(Beta); }
+            if (nDim == 2) {
+              
+              ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha);
+              ForceProj_Vector[1] += Weight_ObjFunc*sin(Alpha);
+              
+              /*--- Modification to run at a fixed CL and CM value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
+              if (Fixed_CM) { ForceProj_Vector[0] -= dCD_dCM*Weight_ObjFunc*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+
+            }
+            if (nDim == 3) {
+              
+              ForceProj_Vector[0] += Weight_ObjFunc*cos(Alpha)*cos(Beta);
+              ForceProj_Vector[1] += Weight_ObjFunc*sin(Beta);
+              ForceProj_Vector[2] += Weight_ObjFunc*sin(Alpha)*cos(Beta);
+              
+              /*--- Modification to run at a fixed CL value ---*/
+              
+              if (Fixed_CL) { ForceProj_Vector[0] += dCD_dCL*Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] -= 0.0; ForceProj_Vector[2] -= dCD_dCL*Weight_ObjFunc*cos(Alpha); }
+              if (Fixed_CM) { ForceProj_Vector[0] += dCD_dCM*Weight_ObjFunc*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] -= dCD_dCM*Weight_ObjFunc*(x - x_origin)/RefLengthMoment; }
+              
+            }
             break;
           case LIFT_COEFFICIENT :
             if (nDim == 2) { ForceProj_Vector[0] += -Weight_ObjFunc*sin(Alpha); ForceProj_Vector[1] += Weight_ObjFunc*cos(Alpha); }
@@ -1712,11 +2798,12 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  bool engine         = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool fixed_cl       = config->GetFixed_CL_Mode();
+  bool eval_dcd_dcx   = config->GetEval_dCD_dCX();
 
-  /*--- Compute nacelle inflow and exhaust properties ---*/
+  /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
-  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
+  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
@@ -2157,12 +3244,14 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
           Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
           
           /*--- Interpolate & compute difference in the conserved variables ---*/
+          
           for (iVar = 0; iVar < nVar; iVar++) {
             Psi_mirror[iVar] = 2.0*node[iPoint]->GetSolution(iVar) - node[Point_Normal]->GetSolution(iVar);
             Diff[iVar]   = node[iPoint]->GetSolution(iVar) - Psi_mirror[iVar];
           }
           
           /*--- Subtract contribution at the boundary node only ---*/
+          
           node[iPoint]->SubtractUnd_Lapl(Diff);
         }
       }
@@ -2176,6 +3265,7 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
   delete [] Diff;
   
   /*--- MPI parallelization ---*/
+  
   Set_MPI_Undivided_Laplacian(geometry, config);
   
 }
@@ -3056,73 +4146,92 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
   
 }
 
-void CAdjEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
-  unsigned short iDim, iMarker, iVar;
-  unsigned long iVertex, iPoint;
-  su2double Area, Flow_Dir[3], alpha;
+void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                                      CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short nMarker_EngineInflow = config->GetnMarker_EngineInflow();
-  unsigned short nMarker_EngineBleed = config->GetnMarker_EngineBleed();
-  unsigned short nMarker_EngineExhaust = config->GetnMarker_EngineExhaust();
+  unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
+  unsigned long ExtIter       = config->GetExtIter();
+  bool Update_AoA             = false;
+  su2double dCL_dAlpha   = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   
-  if ((nMarker_EngineInflow != 0) || (nMarker_EngineBleed != 0) || (nMarker_EngineExhaust != 0)) {
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  if (ExtIter == 0) AoA_Counter = 0;
+  
+  /*--- Only the fine mesh level should check the convergence criteria ---*/
+  
+  if ((iMesh == MESH_0) && Output) {
     
-    /*--- Check the flow orientation in the nacelle inflow ---*/
+    /*--- Initialize the update flag to false ---*/
     
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      
-      if ((config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) || (config->GetMarker_All_KindBC(iMarker) == ENGINE_BLEED)) {
-        
-        /*--- Loop over all the vertices on this boundary marker ---*/
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          /*--- Normal vector for this vertex (negate for outward convention) ---*/
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-          
-          for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = -Vector[iDim];
-          
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Area += Vector[iDim]*Vector[iDim];
-          Area = sqrt (Area);
-          
-          /*--- Compute unitary vector ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            Vector[iDim] /= Area;
-          
-          /*--- The flow direction is defined by the local velocity on the surface ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++)
-            Flow_Dir[iDim] = node[iPoint]->GetSolution(iDim+1) / node[iPoint]->GetSolution(0);
-          
-          /*--- Dot product of normal and flow direction. ---*/
-          
-          alpha = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            alpha += Vector[iDim]*Flow_Dir[iDim];
-          
-          /*--- Flow in the wrong direction. ---*/
-          
-          if (alpha < 0.0) {
-            
-            /*--- Copy the old solution ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++)
-              node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_Old(iVar));
-            
-          }
-          
-        }
-      }
-      
+    Update_AoA = false;
+    
+    /*--- Reevaluate the lift derivative with respect to Angle of Attack
+     at a fix number of iterations ---*/
+    
+    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+      AoA_Counter++;
+      if (AoA_Counter >= 2) Update_AoA = true;
+      else Update_AoA = false;
     }
     
+    /*--- Store the update boolean for use on other mesh levels in the MG ---*/
+    
+    config->SetUpdate_AoA(Update_AoA);
+    
   }
+  
+  else {
+    Update_AoA = config->GetUpdate_AoA();
+  }
+  
+  /*--- If we are within two digits of convergence in the CL coefficient,
+   compute an updated value for the AoA at the farfield. We are iterating
+   on the AoA in order to match the specified fixed lift coefficient. ---*/
+  
+  if (Update_AoA && Output) {
+    
+    /*--- Retrieve the old ACoeff ---*/
+    
+    ACoeff_old = config->GetdCD_dCL();
+    
+    /*--- Estimate the increment in the A coeff, (note that the slope is negative, a decrease in
+     * 	the CL derivative requires an increase in the A coeff ---*/
+    
+    /*--- A good estimation to d(dOF/dalpha)/dA_coeff is dCL_dAlpha ---*/
+    
+    ACoeff_inc =  (1.0/dCL_dAlpha)*Total_Sens_AoA;
+    
+    /*--- Compute a new value for the A coeff based on the fine mesh only (radians)---*/
+    
+    if (iMesh == MESH_0) { ACoeff = ACoeff_old + ACoeff_inc; }
+    else { ACoeff = config->GetdCD_dCL(); }
+    
+    /*--- Only the fine mesh stores the updated values for ACoeff in config ---*/
+    
+    if (iMesh == MESH_0) config->SetdCD_dCL(ACoeff);
+    
+    /*--- Compute the adjoint boundary condition ---*/
+    
+    SetForceProj_Vector(geometry, solver_container, config);
+    
+  }
+  
+  /*--- Output some information to the console with the headers ---*/
+  
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
+  if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
+    cout.precision(7);
+    cout.setf(ios::fixed, ios::floatfield);
+    cout << endl << "-------------------------- Adjoint Fixed CL Mode -------------------------" << endl;
+    cout << "Target dCL/dAlpha: 0.0 (1/deg), current dCL/dAlpha: " << Total_Sens_AoA*PI_NUMBER/180;
+    cout << " (1/deg), current dCD/dCL: " << config->GetdCD_dCL() <<" "<< endl;
+    cout << "-------------------------------------------------------------------------" << endl << endl;
+  }
+  
   
 }
 
@@ -3540,11 +4649,11 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                            CConfig *config) {
+                                            CConfig *config, unsigned short val_marker) {
   
-  unsigned long iVertex, iPoint, jPoint;
-  unsigned short iDim, iVar, iMarker;
-  su2double *V_i, *V_j;
+  unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
+  unsigned short iDim, iVar;
+  su2double *V_i;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
@@ -3552,184 +4661,47 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
   su2double *Psi_i = new su2double[nVar];
   su2double *Psi_j = new su2double[nVar];
   
-#ifndef HAVE_MPI
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
-    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
+    
+    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
       
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          /*--- Adjoint variables w/o reconstruction ---*/
-          
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
-            Psi_j[iVar] = node[jPoint]->GetSolution(iVar);
-          }
-          numerics->SetAdjointVar(Psi_i, Psi_j);
-          
-          /*--- Conservative variables w/o reconstruction ---*/
-          
-          V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          numerics->SetPrimitive(V_i, V_j);
-          
-          /*--- Set face vector, and area ---*/
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-          numerics->SetNormal(Normal);
-          
-          /*--- Compute residual ---*/
-          
-          numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-          
-          /*--- Add Residuals and Jacobians ---*/
-          
-          LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-          if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-          
-        }
+      /*--- Store the solution for both points ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Psi_j[iVar] = GetDonorAdjVar(val_marker, iVertex, iVar);
       }
+      
+      /*--- Set adjoint Variables ---*/
+      
+      numerics->SetAdjointVar(Psi_i, Psi_j);
+      
+      /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
+      
+      V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      numerics->SetPrimitive(V_i, V_i);
+      
+      /*--- Set Normal ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      numerics->SetNormal(Normal);
+      
+      /*--- Compute the convective residual using an upwind scheme ---*/
+      numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      
+      /*--- Add Residuals and Jacobians ---*/
+      
+      LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
+      if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
     }
   }
   
-#else
-  
-  int rank, jProcessor;
-  MPI_Status send_stat[1], recv_stat[1];
-  MPI_Request send_req[1], recv_req[1];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  bool compute;
-  su2double *Buffer_Send_Psi = new su2double[nVar];
-  su2double *Buffer_Receive_Psi = new su2double[nVar];
-  
-  /*--- Do the send process, by the moment we are sending each
-   node individually, this must be changed ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if (config->GetMarker_All_KindBC(iMarker) == INTERFACE_BOUNDARY) {
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          /*--- Find the associate pair to the original node ---*/
-          
-          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-          
-          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-          else compute = true;
-          
-          /*--- We only send the information that belong to other boundary ---*/
-          
-          if (compute) {
-            
-            if (jProcessor != rank) {
-              
-              /*--- Copy the adjoint variable ---*/
-              
-              for (iVar = 0; iVar < nVar; iVar++)
-                Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
-              
-              SU2_MPI::Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-              
-              /*--- Wait for this set of non-blocking comm. to complete ---*/
-              
-              SU2_MPI::Waitall(1, send_req, send_stat);
-              
-            }
-            
-          }
-          
-        }
-      }
-      
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          /*--- Find the associate pair to the original node ---*/
-          
-          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-          
-          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-          else compute = true;
-          
-          if (compute) {
-            
-            /*--- We only receive the information that belong to other boundary ---*/
-            
-            if (jProcessor != rank) {
-              
-              SU2_MPI::Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
-              
-              /*--- Wait for the this set of non-blocking recv's to complete ---*/
-              
-              SU2_MPI::Waitall(1, recv_req, recv_stat);
-              
-            } else {
-              for (iVar = 0; iVar < nVar; iVar++)
-                Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
-            }
-            
-            /*--- Store the solution for both points ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
-              Psi_j[iVar] = Buffer_Receive_Psi[iVar];
-            }
-            
-            /*--- Set adjoint Variables ---*/
-            
-            numerics->SetAdjointVar(Psi_i, Psi_j);
-            
-            /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
-            
-            V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-            V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-            numerics->SetPrimitive(V_i, V_j);
-            
-            /*--- Set Normal ---*/
-            
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-            numerics->SetNormal(Normal);
-            
-            /*--- Compute the convective residual using an upwind scheme ---*/
-            numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-            
-            /*--- Add Residuals and Jacobians ---*/
-            
-            LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-            if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-            
-          }
-          
-        }
-      }
-    }
-  }
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  delete[] Buffer_Send_Psi;
-  delete[] Buffer_Receive_Psi;
-  
-#endif
   
   delete[] Normal;
   delete[] Psi_i;
@@ -3738,11 +4710,11 @@ void CAdjEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solve
 }
 
 void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                            CConfig *config) {
+                                            CConfig *config, unsigned short val_marker) {
   
-  unsigned long iVertex, iPoint, jPoint, Pin, Pout;
-  unsigned short iDim, iVar, iMarker;
-  su2double *V_i, *V_j, *IntBoundary_Jump;
+  unsigned long iVertex, iPoint, GlobalIndex_iPoint, GlobalIndex_jPoint;
+  unsigned short iDim, iVar;
+  su2double *V_i, *IntBoundary_Jump;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
@@ -3751,285 +4723,91 @@ void CAdjEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solve
   su2double *Psi_j = new su2double[nVar];
   su2double *Psi_out = new su2double[nVar];
   su2double *Psi_in = new su2double[nVar];
-  su2double *MeanPsi = new su2double[nVar];
   su2double *Psi_out_ghost = new su2double[nVar];
   su2double *Psi_in_ghost = new su2double[nVar];
   
-  
-#ifndef HAVE_MPI
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_jPoint = GetDonorGlobalIndex(val_marker, iVertex);
+    
+    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
       
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+      /*--- Store the solution for both points ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Psi_j[iVar] = GetDonorAdjVar(val_marker, iVertex, iVar);
+      }
+      
+      /*--- Set Normal ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      numerics->SetNormal(Normal);
+      
+      /*--- If equivalent area or nearfield pressure condition ---*/
+      
+      if ((config->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
+          (config->GetKind_ObjFunc() == NEARFIELD_PRESSURE)) {
         
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          /*--- Adjoint variables w/o reconstruction ---*/
-          
+        /*--- Read the jump ---*/
+        
+        IntBoundary_Jump = node[iPoint]->GetIntBoundary_Jump();
+        
+        /*--- Inner point ---*/
+        
+        if (Normal[nDim-1] < 0.0)  {
           for (iVar = 0; iVar < nVar; iVar++) {
-            Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
-            Psi_j[iVar] = node[jPoint]->GetSolution(iVar);
+            Psi_in[iVar] = Psi_i[iVar]; Psi_out[iVar] = Psi_j[iVar];
+            Psi_in_ghost[iVar] = Psi_out[iVar] - IntBoundary_Jump[iVar];
           }
-          
-          /*--- If equivalent area or nearfield pressure condition ---*/
-          
-          if ((config->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
-              (config->GetKind_ObjFunc() == NEARFIELD_PRESSURE)) {
-            
-            /*--- Identify the inner and the outer point (based on the normal direction) ---*/
-            
-            if (Normal[nDim-1] < 0.0) { Pin = iPoint; Pout = jPoint; }
-            else { Pout = iPoint; Pin = jPoint; }
-            
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Psi_out[iVar] = node[Pout]->GetSolution(iVar);
-              Psi_in[iVar] = node[Pin]->GetSolution(iVar);
-              MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
-            }
-            
-            IntBoundary_Jump = node[iPoint]->GetIntBoundary_Jump();
-            
-            /*--- Inner point ---*/
-            
-            if (iPoint == Pin) {
-              for (iVar = 0; iVar < nVar; iVar++)
-                Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar] - IntBoundary_Jump[iVar];
-              numerics->SetAdjointVar(Psi_in, Psi_in_ghost);
-            }
-            
-            /*--- Outer point ---*/
-            
-            if (iPoint == Pout) {
-              for (iVar = 0; iVar < nVar; iVar++)
-                Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar] + IntBoundary_Jump[iVar];
-              numerics->SetAdjointVar(Psi_out, Psi_out_ghost);
-            }
-            
+          numerics->SetAdjointVar(Psi_in, Psi_in_ghost);
+        }
+        
+        /*--- Outer point ---*/
+        
+        else {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            Psi_in[iVar] = Psi_j[iVar]; Psi_out[iVar] = Psi_i[iVar];
+            Psi_out_ghost[iVar] =  Psi_in[iVar] + IntBoundary_Jump[iVar];
           }
-          else {
-            
-            /*--- Just do a periodic BC ---*/
-            
-            numerics->SetAdjointVar(Psi_i, Psi_j);
-            
-          }
-          
-          /*--- Conservative variables w/o reconstruction ---*/
-          
-          V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-          numerics->SetPrimitive(V_i, V_j);
-          
-          /*--- Set Normal ---*/
-          
-          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-          for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-          numerics->SetNormal(Normal);
-          
-          
-          /*--- Compute residual ---*/
-          
-          numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-          
-          /*--- Add Residuals and Jacobians ---*/
-          
-          LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-          if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-          
+          numerics->SetAdjointVar(Psi_out, Psi_out_ghost);
         }
       }
+      else {
+        
+        /*--- Just do a periodic BC ---*/
+        
+        numerics->SetAdjointVar(Psi_i, Psi_j);
+        
+      }
+      
+      /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
+      
+      V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      numerics->SetPrimitive(V_i, V_i);
+      
+      /*--- Compute residual ---*/
+      
+      numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      
+      /*--- Add Residuals and Jacobians ---*/
+      
+      LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
+      if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
     }
   }
-  
-#else
-  
-  int rank, jProcessor;
-  MPI_Status status;
-  //MPI_Status send_stat[1], recv_stat[1];
-  //MPI_Request send_req[1], recv_req[1];
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  bool compute;
-  su2double *Buffer_Send_Psi = new su2double[nVar];
-  su2double *Buffer_Receive_Psi = new su2double[nVar];
-  
-  /*--- Do the send process, by the moment we are sending each
-   node individually, this must be changed ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          /*--- Find the associate pair to the original node ---*/
-          
-          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-          
-          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-          else compute = true;
-          
-          /*--- We only send the information that belong to other boundary ---*/
-          if (compute) {
-            
-            if (jProcessor != rank) {
-              
-              /*--- Copy the adjoint variable ---*/
-              
-              for (iVar = 0; iVar < nVar; iVar++)
-                Buffer_Send_Psi[iVar] = node[iPoint]->GetSolution(iVar);
-              
-              SU2_MPI::Bsend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD);
-              
-              //          SU2_MPI::Isend(Buffer_Send_Psi, nVar, MPI_DOUBLE, jProcessor, iPoint, MPI_COMM_WORLD, &send_req[0]);
-              
-              /*--- Wait for this set of non-blocking comm. to complete ---*/
-              
-              //          SU2_MPI::Waitall(1, send_req, send_stat);
-              
-            }
-            
-          }
-          
-        }
-      }
-      
-      
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-          
-          /*--- Find the associate pair to the original node ---*/
-          
-          jPoint = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-          jProcessor = geometry->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-          
-          if ((iPoint == jPoint) && (jProcessor == rank)) compute = false;
-          else compute = true;
-          
-          if (compute) {
-            
-            /*--- We only receive the information that belong to other boundary ---*/
-            
-            if (jProcessor != rank) {
-              
-              SU2_MPI::Recv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &status);
-              
-              //          SU2_MPI::Irecv(Buffer_Receive_Psi, nVar, MPI_DOUBLE, jProcessor, jPoint, MPI_COMM_WORLD, &recv_req[0]);
-              
-              /*--- Wait for the this set of non-blocking recv's to complete ---*/
-              
-              //          SU2_MPI::Waitall(1, recv_req, recv_stat);
-              
-            }
-            else {
-              for (iVar = 0; iVar < nVar; iVar++)
-                Buffer_Receive_Psi[iVar] = node[jPoint]->GetSolution(iVar);
-            }
-            
-            /*--- Store the solution for both points ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Psi_i[iVar] = node[iPoint]->GetSolution(iVar);
-              Psi_j[iVar] = Buffer_Receive_Psi[iVar];
-            }
-            
-            /*--- If equivalent area or nearfield pressure condition ---*/
-            
-            if ((config->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
-                (config->GetKind_ObjFunc() == NEARFIELD_PRESSURE)) {
-              
-              /*--- Identify the inner and the outer point (based on the normal direction) ---*/
-              
-              if (Normal[nDim-1] < 0.0) { Pin = iPoint; Pout = jPoint; }
-              else { Pout = iPoint; Pin = jPoint; }
-              
-              IntBoundary_Jump = node[iPoint]->GetIntBoundary_Jump();
-              
-              /*--- Inner point ---*/
-              
-              if (iPoint == Pin) {
-                for (iVar = 0; iVar < nVar; iVar++) {
-                  Psi_in[iVar] = Psi_i[iVar]; Psi_out[iVar] = Psi_j[iVar];
-                  MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
-                  Psi_in_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_in[iVar] - IntBoundary_Jump[iVar];
-                }
-                numerics->SetAdjointVar(Psi_in, Psi_in_ghost);
-              }
-              
-              /*--- Outer point ---*/
-              
-              if (iPoint == Pout) {
-                for (iVar = 0; iVar < nVar; iVar++) {
-                  Psi_in[iVar] = Psi_j[iVar]; Psi_out[iVar] = Psi_i[iVar];
-                  MeanPsi[iVar] = 0.5*(Psi_out[iVar] + Psi_in[iVar]);
-                  Psi_out_ghost[iVar] = 2.0*MeanPsi[iVar] - Psi_out[iVar] + IntBoundary_Jump[iVar];
-                }
-                numerics->SetAdjointVar(Psi_out, Psi_out_ghost);
-              }
-            }
-            else {
-              
-              /*--- Just do a periodic BC ---*/
-              
-              numerics->SetAdjointVar(Psi_i, Psi_j);
-              
-            }
-            
-            /*--- Conservative variables w/o reconstruction (the same at both points) ---*/
-            
-            V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-            V_j = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-            numerics->SetPrimitive(V_i, V_j);
-            
-            /*--- Set Normal ---*/
-            
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-            numerics->SetNormal(Normal);
-            
-            /*--- Compute residual ---*/
-            
-            numerics->ComputeResidual(Res_Conv_i, Res_Conv_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-            
-            /*--- Add Residuals and Jacobians ---*/
-            
-            LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
-            if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-            
-          }
-        }
-      }
-    }
-  }
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  delete[] Buffer_Send_Psi;
-  delete[] Buffer_Receive_Psi;
-  
-#endif
   
   delete[] Normal;
   delete[] Psi_i;
   delete[] Psi_j;
   delete[] Psi_out;
   delete[] Psi_in;
-  delete[] MeanPsi;
   delete[] Psi_out_ghost;
   delete[] Psi_in_ghost;
-  
   
 }
 
@@ -4845,7 +5623,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- When Psi_outlet[nVar-1] is not 0, the other terms of Psi_outlet must be updated
         This occurs when subsonic, or for certain objective functions ---*/
-        if ( Psi_outlet[nVar-1]!=0.0 ) {
+        if ( Psi_outlet[nVar-1] !=0.0 ) {
           /*--- Shorthand for repeated term in the boundary conditions ---*/
           a1 = 0.0;
           if (Vn!=0.0)
@@ -5026,9 +5804,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan;
-  su2double Velocity[3] = {0.0,0.0,0.0}, Velocity2, Density, Vn;
-  su2double UnitNormal[3] = {0.0,0.0,0.0}, Area, a1;
+  su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan, Velocity[3],
+  Velocity2, Density, Vn, UnitNormal[3], Area, a1;
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   
@@ -5041,109 +5818,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
   /*--- Loop over all the vertices ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
-    /*--- If the node belong to the domain ---*/
-    
-    if (geometry->node[iPoint]->GetDomain()) {
-      
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      conv_numerics->SetNormal(Normal);
-
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-      
-      /*--- Allocate the value at the inflow ---*/
-      
-      V_inflow = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-      
-      /*--- Retrieve solution at the boundary node ---*/
-      
-      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      
-      /*--- Adjoint flow solution at the boundary ---*/
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
-      
-      /*--- Subsonic flow is assumed. ---*/
-      
-      P_Fan = config->GetInflow_Pressure(Marker_Tag);
-      Density = V_domain[nDim+2];
-      Velocity2 = 0.0; Vn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity[iDim] = V_domain[iDim+1];
-        Velocity2 += Velocity[iDim]*Velocity[iDim];
-        Vn += Velocity[iDim]*UnitNormal[iDim];
-      }
-      
-      /*--- Shorthand for repeated term in the boundary conditions ---*/
-      
-      a1 = Gamma*(P_Fan/(Density*Gamma_Minus_One))/Vn;
-      
-      /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
-      
-      Psi_inflow[nVar-1] = Psi_domain[nVar-1];
-      Psi_inflow[0] = 0.5*Psi_inflow[nVar-1]*Velocity2;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Psi_inflow[0]   += Psi_inflow[nVar-1]*a1*Velocity[iDim]*UnitNormal[iDim];
-        Psi_inflow[iDim+1] = -Psi_inflow[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
-      }
-      
-      /*--- Set the flow and adjoint states in the solver ---*/
-      
-      conv_numerics->SetPrimitive(V_domain, V_inflow);
-      conv_numerics->SetAdjointVar(Psi_domain, Psi_inflow);
-      
-      /*--- Compute the residual ---*/
-      
-      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
-                                     Jacobian_ji, Jacobian_jj, config);
-      
-      /*--- Add and Subtract Residual ---*/
-      
-      LinSysRes.SubtractBlock(iPoint, Residual_i);
-      
-      /*--- Implicit contribution to the residual ---*/
-      
-      if (implicit)
-        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-      
-    }
-  }
-  
-  /*--- Free locally allocated memory ---*/
-
-  delete [] Normal;
-  delete [] Psi_domain; delete [] Psi_inflow;
-  
-}
-
-void CAdjEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
-  su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan;
-  su2double Velocity[3] = {0.0,0.0,0.0}, Velocity2, Density, Vn;
-  su2double UnitNormal[3] = {0.0,0.0,0.0}, Area, a1;
-  unsigned short iVar, iDim;
-  unsigned long iVertex, iPoint;
-  
-  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
-  Normal = new su2double[nDim];
-  Psi_domain = new su2double[nVar]; Psi_inflow = new su2double[nVar];
-  
-  /*--- Loop over all the vertices ---*/
-  
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     /*--- If the node belong to the domain ---*/
@@ -5177,9 +5852,10 @@ void CAdjEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_cont
       for (iVar = 0; iVar < nVar; iVar++)
         Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
       
-      /*--- Subsonic flow is assumed. ---*/
+      /*--- Subsonic flow is assumed, note that there is no non-dimensionalization. ---*/
       
       P_Fan = config->GetInflow_Pressure(Marker_Tag);
+      
       Density = V_domain[nDim+2];
       Velocity2 = 0.0; Vn = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -5188,9 +5864,29 @@ void CAdjEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_cont
         Vn += Velocity[iDim]*UnitNormal[iDim];
       }
       
+      /*---Subsonic Case(s) using Riemann invariants ---*/
+      
+      //      Pressure = V_domain[nDim+1];
+      //      SoundSpeed = sqrt(Pressure*Gamma/Density);
+      //      Mach_Fan  = sqrt(Velocity2)/SoundSpeed;
+      //      Entropy = Pressure*pow(1.0/Density, Gamma);
+      //      Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+      
+      //      /*--- Compute (Vn - Ubn).n term for use in the BC.
+      //      Compute the new fictious state at the outlet ---*/
+      
+      //      Density    = pow(P_Fan/Entropy,1.0/Gamma);
+      //      SoundSpeed = sqrt(Gamma*P_Fan/Density);
+      //      Vn_Fan    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+      //      Velocity2  = 0.0;
+      //      for (iDim = 0; iDim < nDim; iDim++) {
+      //        Velocity[iDim] = Velocity[iDim] + (Vn_Fan-Vn)*UnitNormal[iDim];
+      //        Velocity2 += Velocity[iDim]*Velocity[iDim];
+      //      }
+      
       /*--- Shorthand for repeated term in the boundary conditions ---*/
       
-      a1 = Gamma*(P_Fan/(Density*Gamma_Minus_One))/Vn;
+      a1 = sqrt(Gamma*P_Fan/Density)/(Gamma_Minus_One);
       
       /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
       
@@ -5226,14 +5922,15 @@ void CAdjEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_cont
   /*--- Free locally allocated memory ---*/
   
   delete [] Normal;
-  delete [] Psi_domain; delete [] Psi_inflow;
+  delete [] Psi_domain;
+  delete [] Psi_inflow;
   
 }
 
 void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
+  su2double Area, UnitNormal[3], *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
   unsigned short iVar, iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -5256,6 +5953,14 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Index of the closest interior node ---*/
       
@@ -5285,7 +5990,7 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
       
       conv_numerics->SetPrimitive(V_domain, V_exhaust);
       conv_numerics->SetAdjointVar(Psi_domain, Psi_exhaust);
-
+      
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
@@ -5298,12 +6003,240 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
       
       if (implicit)
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-
+      
     }
   }
   
   delete [] Normal;
   delete [] Psi_domain; delete [] Psi_exhaust;
+  
+}
+
+void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet,
+  UnitNormal[3], Area;
+  unsigned short iVar, iDim;
+  unsigned long iVertex, iPoint, GlobalIndex_inlet, GlobalIndex;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  
+  Normal = new su2double[nDim];
+  Psi_domain = new su2double[nVar]; Psi_inlet = new su2double[nVar];
+  
+  /*--- Loop over all the vertices ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    GlobalIndex_inlet = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+    
+    /*--- If the node belong to the domain ---*/
+    
+    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex != GlobalIndex_inlet)) {
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+      
+      /*--- Allocate the value at the inlet ---*/
+      
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      
+      /*--- Retrieve solution at the boundary node ---*/
+      
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      
+      /*--- Adjoint flow solution at the boundary ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
+        Psi_inlet[iVar] =  0.0;// node[iPoint]->GetSolution(iVar);
+      }
+      
+#ifdef CHECK
+      
+      /*--- Subsonic flow is assumed, note that there is no non-dimensionalization. ---*/
+      
+      P_Fan = V_domain[nDim+1] ;
+      
+      Density = V_domain[nDim+2];
+      Velocity2 = 0.0; Vn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = V_domain[iDim+1];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+        Vn += Velocity[iDim]*UnitNormal[iDim];
+      }
+      
+      /*---Subsonic Case(s) using Riemann invariants ---*/
+      
+      Pressure = V_domain[nDim+1];
+      SoundSpeed = sqrt(Pressure*Gamma/Density);
+      
+      Entropy = Pressure*pow(1.0/Density, Gamma);
+      Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+      
+      /*--- Compute (Vn - Ubn).n term for use in the BC.
+       Compute the new fictious state at the outlet ---*/
+      
+      Density    = pow(P_Fan/Entropy,1.0/Gamma);
+      SoundSpeed = sqrt(Gamma*P_Fan/Density);
+      Vn_Fan    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+      
+      Velocity2  = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = Velocity[iDim] + (Vn_Fan-Vn)*UnitNormal[iDim];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+      }
+      
+      /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
+      
+      Psi_inlet[nVar-1] = Psi_domain[nVar-1];
+      
+      a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
+      
+      Psi_inlet[0] = Psi_inlet[nVar-1]*(Velocity2*0.5+Vn_Fan*a1);
+      Psi_inlet[iDim+1] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Psi_inlet[iDim+1] += -Psi_inlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
+      }
+      
+#endif
+      
+      /*--- Set the flow and adjoint states in the solver ---*/
+      
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+      conv_numerics->SetAdjointVar(Psi_domain, Psi_inlet);
+      
+      /*--- Compute the residual ---*/
+      
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij,
+                                     Jacobian_ji, Jacobian_jj, config);
+      
+      /*--- Add and Subtract Residual ---*/
+      
+      LinSysRes.SubtractBlock(iPoint, Residual_i);
+      
+      /*--- Implicit contribution to the residual ---*/
+      
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
+    }
+  }
+  
+  /*--- Free locally allocated memory ---*/
+  
+  delete [] Normal;
+  delete [] Psi_domain;
+  delete [] Psi_inlet;
+  
+}
+
+void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  
+  unsigned long iVertex, iPoint, Point_Normal, GlobalIndex_inlet, GlobalIndex;
+  su2double *Normal, *V_domain, *V_outlet, *Psi_domain, *Psi_outlet;
+  unsigned short iVar, iDim;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  
+  Normal = new su2double[nDim];
+  Psi_domain = new su2double[nVar];
+  Psi_outlet = new su2double[nVar];
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    GlobalIndex_inlet = solver_container[FLOW_SOL]->GetDonorGlobalIndex(val_marker, iVertex);
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+    
+    /*--- Check that the node belongs to the domain (i.e., not a halo node) and to discard the perimeter ---*/
+    
+    if ((geometry->node[iPoint]->GetDomain()) && (GlobalIndex != GlobalIndex_inlet)) {
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+      
+      /*--- Index of the closest interior node ---*/
+      
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      
+      /*--- Allocate the value at the outlet ---*/
+      
+      V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+      
+      /*--- Retrieve solution at the boundary node ---*/
+      
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+      
+      /*--- Adjoint flow solution at the boundary ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
+        Psi_outlet[iVar] = 0.0; //node[iPoint]->GetSolution(iVar);
+      }
+      
+#ifdef CHECK
+      
+      /*--- Adjoint flow solution at the outlet (this should be improved using characteristics bc) ---*/
+      
+      Psi_outlet[0] = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Psi_outlet[iDim+1] = node[Point_Normal]->GetSolution(iDim+1);
+      Psi_outlet[nDim+1] = 0.0;
+      
+#endif
+      
+      /*--- Set the flow and adjoint states in the solver ---*/
+      
+      conv_numerics->SetPrimitive(V_domain, V_outlet);
+      conv_numerics->SetAdjointVar(Psi_domain, Psi_outlet);
+      
+      /*--- Compute the residual using an upwind scheme ---*/
+      
+      conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
+      
+      /*--- Add and Subtract Residual ---*/
+      
+      LinSysRes.SubtractBlock(iPoint, Residual_i);
+      
+      /*--- Implicit contribution to the residual ---*/
+      
+      if (implicit)
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+      
+    }
+    
+  }
+  
+  delete [] Normal;
+  delete [] Psi_domain;
+  delete [] Psi_outlet;
+  
+}
+
+void CAdjEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, bool inlet_surface) {
   
 }
 
@@ -5381,8 +6314,11 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, index, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
+  su2double dCD_dCL_, dCD_dCM_;
   ifstream restart_file;
   string filename, AdjExt;
+  string::size_type position;
+  unsigned long ExtIter_;
 
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
@@ -5527,6 +6463,30 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iMarker=0; iMarker<nMarker; iMarker++) {
     CSensitivity[iMarker] = new su2double [geometry->nVertex[iMarker]];
   }
+  
+  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
+  
+  DonorAdjVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorAdjVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorAdjVar[iMarker][iVertex] = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        DonorAdjVar[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
+  
+  DonorGlobalIndex = new unsigned long* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      DonorGlobalIndex[iMarker][iVertex] = 0;
+    }
+  }
+  
   Sens_Geo   = new su2double[nMarker];
   Sens_Mach  = new su2double[nMarker];
   Sens_AoA   = new su2double[nMarker];
@@ -5592,12 +6552,16 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
+    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      getline (restart_file, text_line);
+
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -5619,10 +6583,70 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
         }
         node[iPoint_Local] = new CAdjNSVariable(Solution, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+    
+    while (getline (restart_file, text_line)) {
+      
+      if (config->GetEval_dCD_dCX() ==  true) {
+        
+        /*--- dCD_dCL coefficient ---*/
+        
+        position = text_line.find ("DCD_DCL_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+          config->SetdCD_dCL(dCD_dCL_);
+        }
+        
+        /*--- dCD_dCM coefficient ---*/
+        
+        position = text_line.find ("DCD_DCM_VALUE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+          if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+            cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjointsolution file: " << dCD_dCM_ << " ." << endl;
+          config->SetdCD_dCM(dCD_dCM_);
+        }
+        
+      }
+      
+      /*--- External iteration ---*/
+      
+      position = text_line.find ("EXT_ITER=",0);
+      if (position != string::npos) {
+        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        config->SetExtIter_OffSet(ExtIter_);
+      }
+      
+    }
+
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
@@ -5725,6 +6749,7 @@ void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
    *    The time step depends on the characteristic velocity, which is the same
    *    for the adjoint and flow solutions, albeit in the opposite direction. ---*/
   solver_container[FLOW_SOL]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
+  
 }
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -5747,11 +6772,12 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  bool engine         = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
+  bool fixed_cl       = config->GetFixed_CL_Mode();
+  bool eval_dcd_dcx       = config->GetEval_dCD_dCX();
 
-  /*--- Compute nacelle inflow and exhaust properties ---*/
+  /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
-  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
+  if (fixed_cl && eval_dcd_dcx) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Residual initialization ---*/
   
