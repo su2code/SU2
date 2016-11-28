@@ -3216,7 +3216,7 @@ CFluidDriver::~CFluidDriver(void) { }
 
 void CFluidDriver::Run() {
   
-  unsigned short iZone, , checkConvergence;
+  unsigned short iZone, jZone, checkConvergence;
   unsigned long IntIter, nIntIter;
   bool unsteady;
 
