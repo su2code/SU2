@@ -188,6 +188,16 @@ public:
 	 * \param[in] iExtIter - Current external (time) iteration.
 	 */
   void OneDimensionalOutput(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Create and write the file with the flow coefficient on the surface.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] FlowSolution - Flow solution.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Current zone number in the grid file.
+   */
+  void WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolver *FlowSolver);
 
   /*!
    * \brief Writes mass flow rate output at monitored marker.
