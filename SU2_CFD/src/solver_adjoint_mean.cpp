@@ -1243,8 +1243,8 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
   MPI_Status status, status_;
-  MPI_Request request, request_;
   
+
 #endif
   
   /*--- Define buffer vector interior domain ---*/
@@ -1559,8 +1559,8 @@ void CAdjEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
   MPI_Status status, status_;
-  MPI_Request request, request_;
   
+
 #endif
   
   /*--- Define buffer vector interior domain ---*/
@@ -1882,8 +1882,8 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
   MPI_Status status, status_;
-  MPI_Request request, request_;
   
+
 #endif
   
   /*--- Define buffer vector interior domain ---*/
@@ -5930,7 +5930,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
 void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, UnitNormal[3], *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
+  su2double Area, *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
   unsigned short iVar, iDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -5958,9 +5958,6 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Index of the closest interior node ---*/
       
