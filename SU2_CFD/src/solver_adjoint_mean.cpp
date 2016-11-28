@@ -5467,7 +5467,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Set chain rule/ generalized outflow coefficients ---*/
         /*--- Requires translation between gradients w.r.t. averaged quantities and w.r.t local quantities --*/
         if (config->GetKind_ObjFunc(iMarker_Monitoring) == OUTFLOW_GENERALIZED){
-          switch(config->GetKindOneD){
+          switch(config->GetKind_OneD()){
           case ONED_LANGLEY:
             avg_enthalpy  = solver_container[FLOW_SOL]->GetOneD_AvgEnthalpy();
             avg_pressure  = solver_container[FLOW_SOL]->GetOneD_AvgPress();
