@@ -5350,7 +5350,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Vn = 0.0, SoundSpeed = 0.0,  LevelSet=0.0, Vn_Exit=0.0, ProjGridVel = 0.0,
       Riemann=0.0, Entropy=0.0, Density_Outlet = 0.0, Vn_rel=0.0;
   su2double Velocity[3]={0.0,0.0,0.0}, UnitNormal[3]={0.0,0.0,0.0};
-  su2double avg_enthalpy  = 0.0, avg_pressure  = 0.0,one_over_mdot = 0.0, avg_vel = 0.0, avg_vel2  = 0.0;
+  su2double avg_enthalpy  = 0.0, avg_pressure  = 0.0,one_over_mdot = 0.0, avg_vel = 0.0, avg_vel2  = 0.0,
+      avg_density=0.0;
   /*---Solution value containers---*/
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   /*---Placeholder terms and simplifying expressions/ repeated terms---*/
