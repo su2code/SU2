@@ -5382,7 +5382,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   }
 
   if (config->GetKind_ObjFunc(iMarker_Monitoring) == OUTFLOW_GENERALIZED){
-    if (config->GetKind_OneD() == ONED_AREA || config->GetKind_OneD() == NONE){
+    if (config->GetKind_OneD() == ONED_AREA || config->GetKind_OneD() == ONED_NONE){
       for (iVar=0; iVar<5; iVar++)
         dobj_dV[iVar] =config->GetCoeff_ObjChainRule(iVar)/Area_Monitored;
     }
