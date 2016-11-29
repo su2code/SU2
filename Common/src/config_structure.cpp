@@ -4090,7 +4090,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
         case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
         case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
-        case DISTORTION:              cout << "Distortion objective function." << endl; break;
+        case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
+        case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
 
       }
 		}
@@ -5614,8 +5615,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";      break;
       case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
-      case DISTORTION:              AdjExt = "_dis";      break;
-
+      case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
+      case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
       }
     }
     else{

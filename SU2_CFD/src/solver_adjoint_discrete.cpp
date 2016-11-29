@@ -428,8 +428,11 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case AERO_DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_AeroCD();
       break;
-    case DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_Distortion();
+    case RADIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
+      break;
+    case CIRCUMFERENTIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
       break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();

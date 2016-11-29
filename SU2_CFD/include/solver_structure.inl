@@ -382,7 +382,9 @@ inline su2double CSolver::GetTotal_CEquivArea() { return 0; }
 
 inline su2double CSolver::GetTotal_AeroCD() { return 0; }
 
-inline su2double CSolver::GetTotal_Distortion() { return 0; }
+inline su2double CSolver::GetTotal_RadialDistortion() { return 0; }
+
+inline su2double CSolver::GetTotal_CircumferentialDistortion() { return 0; }
 
 inline su2double CSolver::GetTotal_CpDiff() { return 0; }
 
@@ -400,7 +402,9 @@ inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
 
 inline void CSolver::SetTotal_AeroCD(su2double val_aerocd) { }
 
-inline void CSolver::SetTotal_Distortion(su2double val_distortion) { }
+inline void CSolver::SetTotal_RadialDistortion(su2double val_distortion) { }
+
+inline void CSolver::SetTotal_CircumferentialDistortion(su2double val_distortion) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
 
@@ -1166,7 +1170,9 @@ inline su2double CEulerSolver::GetTotal_CEquivArea() { return Total_CEquivArea; 
 
 inline su2double CEulerSolver::GetTotal_AeroCD() { return Total_AeroCD; }
 
-inline su2double CEulerSolver::GetTotal_Distortion() { return Total_Distortion; }
+inline su2double CEulerSolver::GetTotal_RadialDistortion() { return Total_RadialDistortion; }
+
+inline su2double CEulerSolver::GetTotal_CircumferentialDistortion() { return Total_CircumferentialDistortion; }
 
 inline su2double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 
@@ -1180,7 +1186,9 @@ inline void CEulerSolver::SetTotal_CEquivArea(su2double val_cequivarea) { Total_
 
 inline void CEulerSolver::SetTotal_AeroCD(su2double val_aerocd) { Total_AeroCD = val_aerocd; }
 
-inline void CEulerSolver::SetTotal_Distortion(su2double val_distortion) { Total_CEquivArea = val_distortion; }
+inline void CEulerSolver::SetTotal_RadialDistortion(su2double val_distortion) { Total_RadialDistortion = val_distortion; }
+
+inline void CEulerSolver::SetTotal_CircumferentialDistortion(su2double val_distortion) { Total_CircumferentialDistortion = val_distortion; }
 
 inline void CEulerSolver::SetTotal_CpDiff(su2double pressure) { Total_CpDiff = pressure; }
 
