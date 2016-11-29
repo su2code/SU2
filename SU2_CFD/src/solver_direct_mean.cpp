@@ -5273,7 +5273,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         for (iDim = 0; iDim < nDim; iDim++) {
             vel_i_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
                     + z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
-            vel_j_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+            vel_j_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
                     + z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
 
             velocity2_j += vel_j_corr[iDim]*vel_j_corr[iDim];
