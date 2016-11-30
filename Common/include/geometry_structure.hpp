@@ -331,7 +331,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void SetPositive_ZArea(CConfig *config);
-
+  
 	/*! 
 	 * \brief A virtual member.
 	 */	
@@ -1051,7 +1051,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetPositive_ZArea(CConfig *config);
-
+  
 	/*! 
 	 * \brief Set points which surround a point.
 	 */

@@ -1,6 +1,6 @@
 /*!
  * \file SU2_CFD.cpp
- * \brief Main file of the Computational Fluid Dynamics code
+ * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
  * \version 4.3.0 "Cardinal"
  *

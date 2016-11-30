@@ -56,6 +56,14 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
 
   output_file << "NDIME= " << nDim << endl;
   
+  /*--- Write the angle of attack offset. ---*/
+  
+  output_file << "AOA_OFFSET= " << config->GetAoA_Offset() << endl;
+  
+  /*--- Write the angle of attack offset. ---*/
+  
+  output_file << "AOS_OFFSET= " << config->GetAoS_Offset() << endl;
+
   /*--- Write connectivity data. ---*/
   
   nElem = nGlobal_Tria+nGlobal_Quad+nGlobal_Tetr+nGlobal_Hexa+nGlobal_Pris+nGlobal_Pyra;
