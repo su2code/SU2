@@ -205,8 +205,8 @@ def get_headerMap():
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
                  "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
                  "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
-                 "Avg_Density"     : "AVG_OUTLET_DENSITY"  ,
-                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY" ,
+                 "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
+                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
                  "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
                  "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
@@ -985,6 +985,8 @@ def restart2solution(config,state={}):
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
         # udpate state
+        if "," in func_name:
+            func_name="COMBO"
         ADJ_NAME = 'ADJOINT_' + func_name
         if state: state.FILES[ADJ_NAME] = solution
         
