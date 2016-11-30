@@ -295,7 +295,7 @@ def obj_df(dvs,config,state=None):
                 k = k + 1
 
         vals_out.append(grad)
-    elif objectives[0] == 'REFERENCE_GEOMETRY':
+    elif (objectives[0] == 'REFERENCE_GEOMETRY' or objectives[0] == 'REFERENCE_NODE'):
         grad_method = config.get('GRADIENT_METHOD','DISCRETE_ADJOINT')
         config.GRADIENT_METHOD = 'DISCRETE_ADJOINT'
         for i_obj,this_obj in enumerate(objectives):

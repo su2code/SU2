@@ -2381,6 +2381,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the objective function for a reference node.
+   */
+  virtual su2double GetTotal_OFRefNode(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
    */
   virtual void SetTotal_CEquivArea(su2double val_cequivarea);
@@ -2415,6 +2421,12 @@ public:
    */
   virtual void SetTotal_OFRefGeom(su2double val_ofrefgeom);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_ofrefgeom - Value of the objective function for a reference node.
+   */
+  virtual void SetTotal_OFRefNode(su2double val_ofrefnode);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
@@ -3449,6 +3461,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -8681,6 +8701,7 @@ private:
   CSysVector LinSysRes_Adj;		/*!< \brief Vector to store the residual of the adjoint problem */
   
   su2double Total_OFRefGeom;        /*!< \brief Total FEA coefficient for all the boundaries. */
+  su2double Total_OFRefNode;        /*!< \brief Total FEA coefficient for all the boundaries. */
   su2double Total_ForwardGradient;  /*!< \brief Vector of the total forward gradient. */
   
 public:
@@ -9048,6 +9069,12 @@ public:
   su2double GetTotal_OFRefGeom(void);
   
   /*!
+   * \brief Retrieve the value of the objective function for a reference geometry
+   * \param[out] OFRefGeom - value of the objective function.
+   */
+  su2double GetTotal_OFRefNode(void);
+
+  /*!
    * \brief Set the value of the FEA coefficient.
    * \param[in] val_cfea - Value of the FEA coefficient.
    */
@@ -9059,6 +9086,12 @@ public:
    */
   void SetTotal_OFRefGeom(su2double val_ofrefgeom);
   
+  /*!
+   * \brief Set the value of the objective function for a reference node.
+   * \param[in] val_ofrefnode - Value of the objective function for a reference node.
+   */
+  void SetTotal_OFRefNode(su2double val_ofrefnode);
+
   /*!
    * \brief Set the the tractions in the in the FEA solver (matching mesh).
    * \param[in] fea_geometry - Geometrical definition of the problem.
@@ -9125,6 +9158,14 @@ public:
    */
   void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
+  /*!
+   * \brief Compute the objective function for a reference node
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
   /*!
    * \brief Get the value of the FSI convergence.
    * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.

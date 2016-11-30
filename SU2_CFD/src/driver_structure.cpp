@@ -4677,6 +4677,7 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
     Kind_Objective_Function = FLOW_OBJECTIVE_FUNCTION;
     break;
   case REFERENCE_GEOMETRY:
+  case REFERENCE_NODE:
     Kind_Objective_Function = FEM_OBJECTIVE_FUNCTION;
     break;
   default:
@@ -5141,6 +5142,10 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
         case REFERENCE_GEOMETRY:
           kind_OFunction = "(Reference Geometry): ";
           val_OFunction = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefGeom();
+          break;
+        case REFERENCE_NODE:
+          kind_OFunction = "(Reference Node): ";
+          val_OFunction = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
           break;
         default:
           val_OFunction = 0.0;  // If the objective function is computed in a different physical problem
