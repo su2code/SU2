@@ -638,6 +638,15 @@ void CDriver::Geometrical_Preprocessing() {
       cout << "Setting the multigrid structure." << endl;
 
   }
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  for (unsigned long iElem = 0; iElem < geometry_container[ZONE_0][MESH_0]->GetnElem(); iElem++)
+    cout << rank << ":  " << geometry_container[ZONE_0][MESH_0]->elem[iElem]->GetGlobalIndex() << endl;
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
 
   /*--- Loop over all the new grid ---*/
 
