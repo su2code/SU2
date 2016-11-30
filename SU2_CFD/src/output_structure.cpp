@@ -447,6 +447,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   ofstream SurfAdj_file;
   
   /*--- Write file name with extension if unsteady ---*/
+  
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
@@ -466,6 +467,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SurfAdj_file.precision(15);
   SurfAdj_file.open(cstr, ios::out);
   
+  SurfAdj_file << "SENS_AOA=" << AdjSolver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
   if (geometry->GetnDim() == 2) {
     SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
     if (config->GetDiscrete_Adjoint()) {
@@ -704,6 +707,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     SurfAdj_file.open(cstr, ios::out);
     SurfAdj_file.precision(15);
     
+    SurfAdj_file << "SENS_AOA=" << AdjSolver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
     /*--- Write the 2D surface flow coefficient file ---*/
     if (geometry->GetnDim() == 2) {
       
@@ -3667,7 +3672,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
 		  	  (config->GetKind_Solver() == ADJ_ELASTICITY));
   ofstream restart_file;
   string filename;
-  
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+
   /*--- Retrieve filename from config ---*/
   
   if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
@@ -3850,6 +3856,15 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     restart_file << "\n";
   }
+  
+  /*--- Write the general header and flow conditions ----*/
+  
+  restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+  restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+  restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+  restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+  if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+  restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
   
   restart_file.close();
   
@@ -4171,7 +4186,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     unsigned long iIntIter = config[val_iZone]->GetIntIter();
     unsigned long iExtIter = config[val_iZone]->GetExtIter();
-    
+    unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
+
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
      may have to adjust them to be larger if adding more entries. ---*/
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
@@ -4195,6 +4211,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool rotating_frame = config[val_iZone]->GetRotating_Frame();
     bool aeroelastic = config[val_iZone]->GetAeroelastic_Simulation();
     bool equiv_area = config[val_iZone]->GetEquivArea();
+    bool engine        = ((config[val_iZone]->GetnMarker_EngineInflow() != 0) || (config[val_iZone]->GetnMarker_EngineExhaust() != 0));
+    bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
     bool thermal = false; /* flag for whether to print heat flux values */
@@ -4557,7 +4575,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           Total_Sens_Geo   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
           Total_Sens_Mach  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
-          Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA();
+          Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
           Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
           Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
           
@@ -4708,7 +4726,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       if (!DualTime_Iteration) {
         
         /*--- Write the begining of the history file ---*/
-        SPRINTF (begin, "%12d", SU2_TYPE::Int(iExtIter));
+        SPRINTF(begin, "%12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet));
         
         /*--- Write the end of the history file ---*/
         SPRINTF (end, ", %12.10f, %12.10f, %12.10f\n", su2double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
@@ -5165,7 +5183,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 default:
                   break;
               }
-            else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+            else cout << "     Res[Rho]" << "     Res[RhoE]" << "      CL(Total)" << "      CD(Total)" << endl;
             //            }
             //            else if (fluid_structure) cout << "     Res[Rho]" << "   Res[Displx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
             
@@ -5226,8 +5244,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 default:
                   break;
               }
-            
-            else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
+            else if (actuator_disk) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else if (engine) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else cout << "      CL(Total)" << "      CD(Total)" << endl;
             
             break;
             
@@ -5299,9 +5318,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
             if (disc_adj) {
-              cout << "    Sens_Press" << "     Sens_Mach" << endl;
+              cout << "    Sens_Press" << "      Sens_AoA" << endl;
             } else {
-                cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+              cout << "      Sens_Geo" << "      Sens_AoA" << endl;
             }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
@@ -5344,10 +5363,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "     Res[Psi_E]";
             }
             if (disc_adj) {
-              cout << "    Sens_Press" << "     Sens_Mach" << endl;
+              cout << "    Sens_Press" << "      Sens_AoA" << endl;
             } else {
-               cout << "      Sens_Geo" << "     Sens_Mach" << endl;
-            }
+              cout << "      Sens_Geo" << "      Sens_AoA" << endl;
+                          }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
                 cout << "   Sens_Mach" << endl;
@@ -5364,7 +5383,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       if (!fem) {
         if (!Unsteady) {
-          cout.width(5); cout << iExtIter;
+          cout.width(5); cout << iExtIter + ExtIter_OffSet;
           cout.width(11); cout << timeiter;
           
         } else if (Unsteady && DualTime_Iteration) {
@@ -5649,12 +5668,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_Mach;
+            cout.width(14); cout << Total_Sens_AoA;
           }else {
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_Mach;
+              cout.width(14); cout << Total_Sens_AoA;
             }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
@@ -5672,7 +5691,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(3);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-              cout.width(12); cout << Total_Sens_Mach;
+              cout.width(12); cout << Total_Sens_AoA;
             cout.unsetf(ios_base::floatfield);
             cout << endl;
           }
@@ -5708,12 +5727,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_Mach;
+            cout.width(14); cout << Total_Sens_AoA;
           }else {
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_Mach;
+              cout.width(14); cout << Total_Sens_AoA;
             }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
@@ -5732,7 +5751,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_Mach;
+              cout.width(14); cout << Total_Sens_AoA;
             cout << endl;
             cout.unsetf(ios_base::floatfield);
           }
@@ -8983,12 +9002,11 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	unsigned short iMarker, iDim, iMarker_Analyze;
 	unsigned long iPoint, iVertex, Global_Index;
 	su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
-	su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0;
+	su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0, Distance_Mirror = 0.0;
 	su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0;
 	unsigned short iStation, iAngle, nAngle;
 	char cstr[200];
-	su2double *** ProbeArray, dx = 0.0, dy = 0.0, dz = 0.0,
-			UpVector[3], radians, RotatedVector[3];
+	su2double *** ProbeArray, dx = 0.0, dy = 0.0, dz = 0.0, dx_ = 0.0, dy_ = 0.0, dz_ = 0.0, UpVector[3], radians, RotatedVector[3];
 	su2double Pressure, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf,
 	Temperature, TotalTemperature, Pressure_Inf, Temperature_Inf, TotalTemperature_Inf, Velocity_Inf;
 	su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
@@ -8998,6 +9016,8 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	unsigned long nVertex_Surface, nLocalVertex_Surface, MaxLocalVertex_Surface;
 	unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
 	unsigned long Total_Index;
+	bool Engine_HalfModel = config->GetEngine_HalfModel();
+	double SignFlip = 1.0;
 
 	int rank, iProcessor, nProcessor;
 	rank = MASTER_NODE;
@@ -9525,6 +9545,10 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		yCoord_CG = yCoord_CG / TotalArea;
 		zCoord_CG = zCoord_CG / TotalArea;
 
+		/*--- If it is a half model, CGy = 0 ---*/
+
+		if (Engine_HalfModel) { yCoord_CG = 0.0; }
+
 		/*--- Compute hub and tip radius ---*/
 
 		TipRadius = 1E-6; HubRadius = 1E6;
@@ -9634,31 +9658,55 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 						if (nDim == 3) Distance += dz*dz;
 						Distance = sqrt(Distance);
 
+						SignFlip = 1.0;
+
+						if (Engine_HalfModel) {
+
+							yCoord = -yCoord;
+
+							dx_ = (xCoord_ - xCoord);
+							dy_ = (yCoord_ - yCoord);
+							if (nDim == 3) dz_ = (zCoord_ - zCoord);
+
+							Distance_Mirror = dx_*dx_ + dy_*dy_;
+							if (nDim == 3) Distance_Mirror += dz_*dz_;
+							Distance_Mirror = sqrt(Distance_Mirror);
+
+							if (Distance_Mirror < Distance) {
+								SignFlip = -1.0;
+								Distance = Distance_Mirror;
+								dx = dx_; dy = dy_;
+								if (nDim == 3) dz = dz_;
+							}
+
+						}
+
+
 						if (Distance <= MinDistance) {
 							MinDistance = Distance;
-							ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][4] = Buffer_Recv_TT[Total_Index] + Buffer_Recv_dTT_dx[Total_Index]*dx + Buffer_Recv_dTT_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][4] = Buffer_Recv_TT[Total_Index] + Buffer_Recv_dTT_dx[Total_Index]*dx + Buffer_Recv_dTT_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dTT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][5] = Buffer_Recv_P[Total_Index] + Buffer_Recv_dP_dx[Total_Index]*dx + Buffer_Recv_dP_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][5] = Buffer_Recv_P[Total_Index] + Buffer_Recv_dP_dx[Total_Index]*dx + Buffer_Recv_dP_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][5] += Buffer_Recv_dP_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][6] = Buffer_Recv_T[Total_Index] + Buffer_Recv_dT_dx[Total_Index]*dx + Buffer_Recv_dT_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][6] = Buffer_Recv_T[Total_Index] + Buffer_Recv_dT_dx[Total_Index]*dx + Buffer_Recv_dT_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][6] += Buffer_Recv_dT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][7] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][7] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][7] += Buffer_Recv_dMach_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][8] = Buffer_Recv_Vel_x[Total_Index] + Buffer_Recv_dVel_x_dx[Total_Index]*dx + Buffer_Recv_dVel_x_dy[Total_Index]*dy;
+							ProbeArray[iAngle][iStation][8] = Buffer_Recv_Vel_x[Total_Index] + Buffer_Recv_dVel_x_dx[Total_Index]*dx + Buffer_Recv_dVel_x_dy[Total_Index]*dy*SignFlip;
 							if (nDim == 3) ProbeArray[iAngle][iStation][8] += Buffer_Recv_dVel_x_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][9] = Buffer_Recv_Vel_y[Total_Index] + Buffer_Recv_dVel_y_dx[Total_Index]*dx + Buffer_Recv_dVel_y_dy[Total_Index]*dy;
-							if (nDim == 3) ProbeArray[iAngle][iStation][9] += Buffer_Recv_dVel_y_dz[Total_Index]*dz;
+							ProbeArray[iAngle][iStation][9] = SignFlip * (Buffer_Recv_Vel_y[Total_Index] + Buffer_Recv_dVel_y_dx[Total_Index]*dx + Buffer_Recv_dVel_y_dy[Total_Index]*dy*SignFlip );
+							if (nDim == 3) ProbeArray[iAngle][iStation][9] += SignFlip * Buffer_Recv_dVel_y_dz[Total_Index]*dz;
 
 							if (nDim == 3) {
-								ProbeArray[iAngle][iStation][10] = Buffer_Recv_Vel_z[Total_Index] + Buffer_Recv_dVel_z_dx[Total_Index]*dx + Buffer_Recv_dVel_z_dy[Total_Index]*dy;
+								ProbeArray[iAngle][iStation][10] = Buffer_Recv_Vel_z[Total_Index] + Buffer_Recv_dVel_z_dx[Total_Index]*dx + Buffer_Recv_dVel_z_dy[Total_Index]*dy*SignFlip;
 								ProbeArray[iAngle][iStation][10] += Buffer_Recv_dVel_z_dz[Total_Index]*dz;
 							}
 
