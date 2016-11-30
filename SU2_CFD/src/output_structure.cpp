@@ -10232,11 +10232,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
    conservative variables, so these follow next. ---*/
   
   nVar_Par += nVar_Consv_Par;
-  Variable_Names.push_back("Density");
-  Variable_Names.push_back("X-Momentum");
-  Variable_Names.push_back("Y-Momentum");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-  Variable_Names.push_back("Energy");
+  if (incompressible) {
+    Variable_Names.push_back("Pressure");
+    Variable_Names.push_back("X-Momentum");
+    Variable_Names.push_back("Y-Momentum");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  } else {
+    Variable_Names.push_back("Density");
+    Variable_Names.push_back("X-Momentum");
+    Variable_Names.push_back("Y-Momentum");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+    Variable_Names.push_back("Energy");
+  }
   if (SecondIndex != NONE) {
     if (config->GetKind_Turb_Model() == SST) {
       Variable_Names.push_back("TKE");
@@ -10256,11 +10263,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Limiter_Density");
-      Variable_Names.push_back("Limiter_X-Momentum");
-      Variable_Names.push_back("Limiter_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-      Variable_Names.push_back("Limiter_Energy");
+      if (incompressible) {
+        Variable_Names.push_back("Limiter_Pressure");
+        Variable_Names.push_back("Limiter_X-Momentum");
+        Variable_Names.push_back("Limiter_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+      } else {
+        Variable_Names.push_back("Limiter_Density");
+        Variable_Names.push_back("Limiter_X-Momentum");
+        Variable_Names.push_back("Limiter_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+        Variable_Names.push_back("Limiter_Energy");
+      }
       if (SecondIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
           Variable_Names.push_back("Limiter_TKE");
@@ -10276,11 +10290,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Residual_Density");
-      Variable_Names.push_back("Residual_X-Momentum");
-      Variable_Names.push_back("Residual_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-      Variable_Names.push_back("Residual_Energy");
+      if (incompressible) {
+        Variable_Names.push_back("Residual_Pressure");
+        Variable_Names.push_back("Residual_X-Momentum");
+        Variable_Names.push_back("Residual_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+      } else {
+        Variable_Names.push_back("Residual_Density");
+        Variable_Names.push_back("Residual_X-Momentum");
+        Variable_Names.push_back("Residual_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+        Variable_Names.push_back("Residual_Energy");
+      }
       if (SecondIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
           Variable_Names.push_back("Residual_TKE");
