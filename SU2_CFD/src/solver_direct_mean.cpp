@@ -768,7 +768,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_BCThrust_Prev = 0.0;
   Total_Power = 0.0;      AoA_Prev           = 0.0;
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
-  Total_AeroCD = 0.0;     Total_Distortion   = 0.0;
+  Total_AeroCD = 0.0;     Total_RadialDistortion   = 0.0;    Total_CircumferentialDistortion   = 0.0;
 
   /*--- Read farfield conditions ---*/
   
@@ -8572,7 +8572,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         config->SetSurface_IDC(iMarker_Analyze, IDC);
         
         SetTotal_IDC(IDC);
-        SetTotal_Distortion(IDC);
+        SetTotal_CircumferentialDistortion(IDC);
         
         IDR = 0.0;
         for (iStation = 0; iStation < nStation; iStation++) {
@@ -8582,7 +8582,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         config->SetSurface_IDR(iMarker_Analyze, IDR);
         
         SetTotal_IDR(IDR);
-        
+        SetTotal_RadialDistortion(IDR);
+
         /*--- Release IDX parameters ---*/
         
         delete [] PT_Station_Min;
@@ -10484,8 +10485,11 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
     case AERO_DRAG_COEFFICIENT:
       Total_ComboObj+=Weight_ObjFunc*Total_AeroCD;
       break;
-    case DISTORTION:
-      Total_ComboObj+=Weight_ObjFunc*Total_Distortion;
+    case RADIAL_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*Total_RadialDistortion;
+      break;
+    case CIRCUMFERENTIAL_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*Total_CircumferentialDistortion;
       break;
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
@@ -16127,7 +16131,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CpDiff     = 0.0;   Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
   Total_NetCThrust = 0.0;   Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
   Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
-  Total_AeroCD     = 0.0;	  Total_Distortion           = 0.0;
+  Total_AeroCD     = 0.0;	  Total_RadialDistortion   = 0.0; Total_CircumferentialDistortion           = 0.0;
 
   /*--- Read farfield conditions from config ---*/
   

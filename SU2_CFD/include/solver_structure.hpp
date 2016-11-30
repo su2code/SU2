@@ -2228,8 +2228,14 @@ public:
    * \brief A virtual member.
    * \return Value of the fan face distortion.
    */
-  virtual su2double GetTotal_Distortion(void);
+  virtual su2double GetTotal_RadialDistortion(void);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the fan face distortion.
+   */
+  virtual su2double GetTotal_CircumferentialDistortion(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the difference of the presure and the target pressure.
@@ -2283,8 +2289,14 @@ public:
    * \brief A virtual member.
    * \param[in] val_distortion - Value of the fan face distortion.
    */
-  virtual void SetTotal_Distortion(su2double val_distortion);
+  virtual void SetTotal_RadialDistortion(su2double val_distortion);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_distortion - Value of the fan face distortion.
+   */
+  virtual void SetTotal_CircumferentialDistortion(su2double val_distortion);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_pressure - Value of the difference between pressure and the target pressure.
@@ -3794,7 +3806,8 @@ protected:
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
   Total_AeroCD,			/*!< \brief Total aero drag coefficient for all the boundaries. */
-  Total_Distortion,			/*!< \brief Total fan face distortion for all the boundaries. */
+  Total_RadialDistortion,			/*!< \brief Total fan face radial distortion for all the boundaries. */
+  Total_CircumferentialDistortion,			/*!< \brief Total fan face circumferential distortion for all the boundaries. */
   Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CFreeSurface,			/*!< \brief Total Free Surface coefficient for all the boundaries. */
@@ -5175,7 +5188,13 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
    * \return Value of the fan face distortion (inviscid + viscous contribution).
    */
-  su2double GetTotal_Distortion(void);
+  su2double GetTotal_RadialDistortion(void);
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
+   * \return Value of the fan face distortion (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CircumferentialDistortion(void);
 
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
@@ -5218,7 +5237,13 @@ public:
    * \brief Set the value of the fan face distortion.
    * \param[in] val_cequivarea - Value of the fan face distortion.
    */
-  void SetTotal_Distortion(su2double val_distortion);
+  void SetTotal_RadialDistortion(su2double val_distortion);
+
+  /*!
+   * \brief Set the value of the fan face distortion.
+   * \param[in] val_cequivarea - Value of the fan face distortion.
+   */
+  void SetTotal_CircumferentialDistortion(su2double val_distortion);
   
   /*!
    * \brief Set the value of the Equivalent Area coefficient.
