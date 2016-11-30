@@ -237,8 +237,15 @@ def obj_f(dvs,config,state=None):
         
         # Evaluate Objective Function
         # scaling and sign
-        func += su2func(this_obj,config,state) * sign * scale
-        
+        if def_objs[this_obj]['CTYPE']=='NONE':
+            func += su2func(this_obj,config,state) * sign * scale
+        else:
+            value = su2func(this_obj,config,state)
+            valuec = float(def_objs[this_obj]['CVAL'])                   
+            if (def_objs[this_obj]['CTYPE']=='=' or \
+                (def_objs[this_obj]['CTYPE']=='>' and value < valuec) or \
+                (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
+                func +=scale*(value - valuec)**2.0
     vals_out.append(func)
     #: for each objective
     
@@ -278,8 +285,24 @@ def obj_df(dvs,config,state=None):
     if (multi_objective and n_obj>1):
         scale = [1.0]*n_obj
         for i_obj,this_obj in enumerate(objectives):
-            sign = su2io.get_objectiveSign(this_obj)
-            scale[i_obj] = def_objs[this_obj]['SCALE']*sign
+            scale[i_obj] = def_objs[this_obj]['SCALE']
+            
+            if def_objs[this_obj]['CTYPE']== 'NONE':
+                sign = su2io.get_objectiveSign(this_obj)
+                scale[i_obj]*=sign
+            else:
+                # If penalty constraint active, set value:
+                value = su2func(this_obj,config,state)
+                valuec = float(def_objs[this_obj]['CVAL'])
+                if (def_objs[this_obj]['CTYPE']=='=' or\
+                     (def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
+                     (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
+                    scale[i_obj]*=2.0*(value - valuec)
+                # For inequality constraints, if inactive set scale to 0.0
+                if ((def_objs[this_obj]['CTYPE']=='>' and value > valuec) or\
+                    (def_objs[this_obj]['CTYPE']=='<' and value < valuec )):
+                    scale[i_obj] = 0.0
+ 
             
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         
