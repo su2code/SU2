@@ -5879,11 +5879,12 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
-  su2double Pressure = 0.0, *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord, Area,
+  su2double Pressure = 0.0, *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
   factor, NFPressOF, RefVel2, RefTemp, RefDensity, RefPressure, Mach2Vel, Mach_Motion,
   Force[3] = {0.0,0.0,0.0};
   string Marker_Tag, Monitoring_Tag;
-  
+  su2double AxiFactor = 1.0;
+
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv, MyAllBound_CMx_Inv, MyAllBound_CMy_Inv, MyAllBound_CMz_Inv, MyAllBound_CFx_Inv, MyAllBound_CFy_Inv, MyAllBound_CFz_Inv, MyAllBound_CT_Inv, MyAllBound_CQ_Inv, MyAllBound_CNearFieldOF_Inv, *MySurface_CL_Inv = NULL, *MySurface_CD_Inv = NULL, *MySurface_CSF_Inv = NULL, *MySurface_CEff_Inv = NULL, *MySurface_CFx_Inv = NULL, *MySurface_CFy_Inv = NULL, *MySurface_CFz_Inv = NULL, *MySurface_CMx_Inv = NULL, *MySurface_CMy_Inv = NULL, *MySurface_CMz_Inv = NULL;
 #endif
@@ -5898,7 +5899,8 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   bool compressible         = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
-  
+  bool axisymmetric         = config->GetAxisymmetric();
+
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream
@@ -6007,16 +6009,20 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           
           NFPressOF += 0.5*(Pressure - Pressure_Inf)*(Pressure - Pressure_Inf)*Normal[nDim-1];
           
-          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) {
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
           }
           
+          /*--- Axisymmetric simulation ---*/
+
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          else AxiFactor = 1.0;
+
           /*--- Force computation, note the minus sign due to the
            orientation of the normal (outward) ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim]*factor;
+            Force[iDim] = -(Pressure - Pressure_Inf)*Normal[iDim]*factor*AxiFactor;
             ForceInviscid[iDim] += Force[iDim];
           }
           
@@ -6244,7 +6250,8 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   UnitNormal[3] = {0.0,0.0,0.0}, Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density, Vel_Infty2, Vel_Infty;
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
-
+  su2double AxiFactor = 1.0;
+  
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Mnt, MyAllBound_CL_Mnt, MyAllBound_CSF_Mnt,
   MyAllBound_CEff_Mnt,
@@ -6263,8 +6270,9 @@ MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   su2double RefLengthMoment  = config->GetRefLengthMoment();
   su2double Gas_Constant     = config->GetGas_ConstantND();
   su2double *Origin          = config->GetRefOriginMoment(0);
-  bool grid_movement      = config->GetGrid_Movement();
-  
+  bool grid_movement         = config->GetGrid_Movement();
+  bool axisymmetric          = config->GetAxisymmetric();
+
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values,
@@ -6368,11 +6376,16 @@ MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
           }
           Vel_Infty = sqrt (Vel_Infty2);
           
+          /*--- Axisymmetric simulation ---*/
+          
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          else AxiFactor = 1.0;
+
           /*--- Force computation, note the minus sign due to the
            orientation of the normal (outward) ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = MassFlow * Velocity[iDim] * factor;
+            Force[iDim] = MassFlow * Velocity[iDim] * factor * AxiFactor;
             ForceMomentum[iDim] += Force[iDim];
           }
           
@@ -7673,9 +7686,11 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
         if (geometry->node[iPoint]->GetDomain()) {
           
           geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-          AxiFactor = 1.0;
-          if (axisymmetric)
-            AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          
+          /*--- Axisymmetric simulation ---*/
+
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          else AxiFactor = 1.0;
           
           Density = node[iPoint]->GetSolution(0);
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
@@ -17053,6 +17068,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0,
   Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
+  su2double AxiFactor = 1.0;
   
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc, MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = NULL, *MySurface_CD_Visc = NULL, *MySurface_CSF_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL, *MySurface_HF_Visc = NULL, *MySurface_MaxHF_Visc;
@@ -17071,7 +17087,8 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
-  
+  bool axisymmetric         = config->GetAxisymmetric();
+
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
    for computing the force coefficients. Otherwise, use the freestream values,
@@ -17166,8 +17183,10 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           Viscosity = node[iPoint]->GetLaminarViscosityInc();
           Density = node[iPoint]->GetDensityInc();
         }
-        
+
         Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+        
+
         for (iDim = 0; iDim < nDim; iDim++) {
           UnitNormal[iDim] = Normal[iDim]/Area;
           MomentDist[iDim] = Coord[iDim] - Origin[iDim];
@@ -17233,10 +17252,15 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         
         if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
           
+          /*--- Axisymmetric simulation ---*/
+
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          else AxiFactor = 1.0;
+
           /*--- Force computation ---*/
           
           for (iDim = 0; iDim < nDim; iDim++) {
-            Force[iDim] = TauElem[iDim]*Area*factor;
+            Force[iDim] = TauElem[iDim]*Area*factor*AxiFactor;
             ForceViscous[iDim] += Force[iDim];
           }
           
