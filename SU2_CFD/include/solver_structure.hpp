@@ -539,6 +539,9 @@ public:
    */
   virtual void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
   
+
+  virtual void ExtractCAA_Sensitivity(CGeometry *geometry,  CConfig *config, int iExtIter);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9160,6 +9163,9 @@ private:
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
+  su2double **dJdU_CAA;
+  unsigned long nPanel;
+  short *LocalPointIndex;
   
 public:
   
@@ -9333,5 +9339,9 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  void ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config, int iExtIter);
+
+
 };
 #include "solver_structure.inl"

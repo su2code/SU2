@@ -513,6 +513,7 @@ fi
 if test $build_REVERSE == "yes"
 then
   build_DOT=yes
+  build_SOL=yes
 fi
 ###########################
 

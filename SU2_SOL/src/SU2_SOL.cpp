@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  su2double Objective_Function;
 
   ofstream CFD_pressure_file ;
   CFD_pressure_file.open("p_CFD.dat");
@@ -323,6 +324,10 @@ for (iZone = 0; iZone < nZone; iZone++) {
 			bool StopCalc = false;
 			bool SolutionInstantiated = false;
 
+
+			if (config_container[ZONE_0]->GetAD_Mode()) AD::StartRecording();
+
+
 			/*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
 			if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
 				iExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
@@ -373,6 +378,8 @@ for (iZone = 0; iZone < nZone; iZone++) {
 				iExtIter++;
 				if (StopCalc) break;
 			}
+
+			if (config_container[ZONE_0]->GetAD_Mode()) AD::StopRecording();
 
 		}
     
@@ -477,7 +484,44 @@ for (iZone = 0; iZone < nZone; iZone++) {
 
         cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
-         if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+         if (config_container[ZONE_0]->GetAD_Mode()){
+             if (rank == MASTER_NODE)
+               cout << endl <<"------------------------- Computing Far Field Noise (Primal+Adjoint) -----------------------" << endl;
+
+             AD::StartRecording();
+             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+             Objective_Function = FWH_container[ZONE_0]-> SPL;
+
+             //cout<<Objective_Function.getGradientData()<<endl;
+             if (rank==MASTER_NODE){
+             SU2_TYPE::SetDerivative(Objective_Function,1.0);
+               }else{
+                 SU2_TYPE::SetDerivative(Objective_Function,0.0);
+               }
+             AD::StopRecording();
+             AD::ComputeAdjoint();
+
+             cout<<"Finished Computing FWH Adjoint"<<endl;
+
+             su2double extracted_derivative;
+
+             for (int iSample=0; iSample<FWH_container[ZONE_0]->nSample; iSample++){
+                for (int iPanel=0; iPanel<FWH_container[ZONE_0]->nPanel; iPanel++){
+                  for (int i =0; i< FWH_container[ZONE_0]->nDim+3; i++){
+                         FWH_container[ZONE_0]-> dJdU[i][iPanel][iSample]=SU2_TYPE::GetDerivative(extracted_derivative);
+                         cout<<"dJdU= "<< FWH_container[ZONE_0]-> dJdU[i][iPanel][iSample]<<endl;
+                    }
+               }
+             }
+
+
+             cout<<"Finished Extracting"<<endl;
+
+            FWH_container[ZONE_0]->Write_Sensitivities(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+
+
+
+
 
 
 

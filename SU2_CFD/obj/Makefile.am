@@ -68,6 +68,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/postprocessing_structure.hpp \
+  ../include/postprocessing_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \

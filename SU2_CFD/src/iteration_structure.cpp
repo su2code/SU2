@@ -1823,7 +1823,10 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
       }
     }
   }
-
+  /* read in dJ/dU here */
+  if (config_container[val_iZone]->GetExtIter()<config_container[val_iZone]->GetIter_Avg_Objective() && config_container[val_iZone]->GetKind_ObjFunc()==NOISE){
+  solver_container[val_iZone][MESH_0][ADJFLOW_SOL]-> ExtractCAA_Sensitivity(geometry_container[val_iZone][MESH_0], config_container[val_iZone], Direct_Iter);
+    }
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
   if (turbulent) {
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);

@@ -5451,6 +5451,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
+      case NOISE:                   AdjExt = "_no";        break;
       }
     }
     else{

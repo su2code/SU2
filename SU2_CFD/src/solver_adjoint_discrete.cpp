@@ -226,6 +226,73 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->SetSolution_Direct(direct_solver->node[iPoint]->GetSolution());
   }
+
+  /* FWH */
+  if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
+// unsigned long nPanel =  0;
+ unsigned long panelCount = 0;
+ nPanel = 0;
+ su2double x, y, z, nx, ny, nz, Area;
+ su2double *Coord,   *Normal;
+ su2double CheckNormal=0.0;
+ for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+ /* --- Loop over boundary markers to select those on the FWH surface --- */
+  if (config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY) {
+
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          if( geometry->node[iPoint]->GetDomain()){
+
+              Coord = geometry->node[iPoint]->GetCoord();
+              Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+              Area  = 0.0; for ( iDim = 0; iDim < nDim; iDim++)   Area += Normal[iDim]*Normal[iDim];  Area  = sqrt( Area );
+
+              x  = SU2_TYPE::GetValue(Coord[0]);                                                                     // x
+              y  = SU2_TYPE::GetValue(Coord[1]);                                                                     // y
+              z  = 0.0;
+              if (nDim==3) z = SU2_TYPE::GetValue(Coord[2]);
+
+              nx = Normal[0]/Area  ;                                                                                 // n_x
+              ny = Normal[1]/Area  ;                                                                                 // n_y
+              nz = 0.0;
+              if (nDim==3)  nz = Normal[2]/Area  ;
+
+              CheckNormal =  x*nx+y*ny+z*nz;
+   //         if (CheckNormal >0    ){
+                panelCount++;
+    //          }
+            }
+      }
+     nPanel = panelCount;
+ }
+ }
+
+ dJdU_CAA = new su2double* [nPanel];
+ for(int iPanel = 0;  iPanel< nPanel; iPanel++)
+ {
+      dJdU_CAA[iPanel] = new su2double[nDim+3];
+     for (iVar=0; iVar < nDim+3; iVar++){
+         dJdU_CAA[iPanel][iVar]= 0.0;
+       }
+ }
+ LocalPointIndex = new short[nPoint];
+
+ for(int iPoint = 0;  iPoint< nPoint; iPoint++)
+ {
+    LocalPointIndex[iPoint] = -1;
+ }
+
+  }
+
+
+
+
+
+
+
+
+
 }
 
 CDiscAdjSolver::~CDiscAdjSolver(void) { 
@@ -433,6 +500,8 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
       break;
     case CUSTOM_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_Custom();
+    case NOISE:
+        ObjFunc_Value = 0.0;
       break;
 
     }
@@ -601,8 +670,27 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
+
+    // FWH
+    if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
+    if (config->GetExtIter()<config->GetIter_Avg_Objective()){
+    if (LocalPointIndex[iPoint] >= 0){
+        for (iVar = 0; iVar < nVar; iVar++){
+            Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
+         }
+    }
+      }
+      }
+
+
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
+
+
+
+
+
+
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
@@ -717,3 +805,123 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
     }
 }
+
+
+
+
+void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config, int iExtIter){
+   unsigned long iPoint, iVar, iPanel;
+   string  text_line;
+   ifstream CAA_AdjointFile;
+   char buffer [50];
+
+   char cstr [64];
+
+   SPRINTF (cstr, "Adj_CAA");
+   if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
+   if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
+   if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
+   if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(iExtIter));
+   if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
+   string filename = strcat (cstr, buffer);
+   cout<<"Accessing CAA Adjoint file: "<<filename <<endl;
+   //CAA_AdjointFile.precision(15);
+   CAA_AdjointFile.open(filename.data() , ios::in);
+   if (CAA_AdjointFile.fail()) {
+//     if (rank == MASTER_NODE)
+       cout << "There is no flow restart file!! " <<  filename.data()  << "."<< endl;
+     exit(EXIT_FAILURE);
+   }
+
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  long *Global2Local = NULL;
+  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  /*--- First, set all indices to a negative value by default ---*/
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    Global2Local[iPoint] = -1;
+  }
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local = 0;
+  unsigned long iPoint_Global = 0;
+  iPanel=0;
+
+
+  int rank ;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+//   ofstream dJdU_file;
+//  if (iExtIter==1051){
+
+//      dJdU_file.open("dJdU_read.dat");
+//      dJdU_file.precision(15);
+
+//    }
+
+
+  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+
+  /*--- The first line is the header ---*/
+
+ // getline (CAA_AdjointFile, text_line);
+//  cout<<"Passed getline!!!"<<endl;
+  while (getline (CAA_AdjointFile, text_line)) {
+   //   cout<<"iPanel= "<<iPanel<<",   rank= "<<rank<<endl;
+    istringstream point_line(text_line);
+     point_line >> iPoint_Global ;
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1, as
+     initialized above. Otherwise, the local index for this node on the
+     current processor will be returned and used to instantiate the vars. ---*/
+
+    iPoint_Local = Global2Local[iPoint_Global];
+   // cout<<"iPoint_Local= "<<iPoint_Local<< ", rank="<<rank<<endl;
+    if (iPoint_Local >= 0) {
+      LocalPointIndex[iPoint_Local] =  iPanel;
+  //    if (rank==3)dJdU_file << scientific <<  iPoint_Global  << "\t";
+      for (iVar=0; iVar<nDim+3; iVar++){
+          point_line >> dJdU_CAA[iPanel][iVar];
+
+ //         if (rank==3)
+  //        dJdU_file << scientific <<   dJdU_CAA[iPanel][iVar]  << "\t";
+        }
+        //cout<<"iPanel= "<<iPanel<<",   rank= "<<rank<<endl;
+     iPanel++;
+ //    if (rank==3)  dJdU_file   << "\n";
+    }
+
+
+  }
+
+
+  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
+
+  /*--- Close the restart file ---*/
+
+  CAA_AdjointFile.close();
+
+  /*--- Free memory needed for the transformation ---*/
+
+  delete [] Global2Local;
+
+
+
+
+
+}
+
+
+
+

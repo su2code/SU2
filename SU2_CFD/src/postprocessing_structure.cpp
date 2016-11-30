@@ -152,10 +152,13 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
                    nz = 0.0;
                    if (nDim==3)  nz = Normal[2]/Area  ;
 
-                   CheckNormal =  x*nx+y*ny+z*nz;
-            //      if (CheckNormal>0){
+        //           CheckNormal =  x*nx+y*ny+z*nz;
+               //    if(CheckNormal<0) nx=-nx; ny=-ny;
+
+                //  if (CheckNormal>0){
                      panelCount++;
-                  // }
+                //   }
+     cout<<"Normal="<<CheckNormal<<", x="<<x<<", y="<<y<<", nx="<<nx<<", ny="<<ny<<endl;
                  }
            }
           nPanel = panelCount;
@@ -605,14 +608,19 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                       y  = SU2_TYPE::GetValue(Coord[1]);                                                                            // y
                       z  = 0.0;
                       if (nDim==3) z = SU2_TYPE::GetValue(Coord[2]);
-                      nx = -Normal[0]/Area  ;                                                                                        // n_x
-                      ny = -Normal[1]/Area  ;                                                                                        // n_y
+                      nx = Normal[0]/Area  ;                                                                                        // n_x
+                      ny = Normal[1]/Area  ;                                                                                        // n_y
                       nz = 0.0;
-                      if (nDim==3)  nz = -Normal[2]/Area  ;
+                      if (nDim==3)  nz = Normal[2]/Area  ;
                       dS = Area ;                                                                                                   // dS
 
                     //only extract flow data for points on the boundary that has surface normal pointing AWAY from the body.
                      CheckNormal =  x*nx+y*ny+z*nz;
+                     if(CheckNormal<0) {
+                      cout<<"Inward Pointing Normal Detected!!! Flipping Normals"<<", x="<<x<<", y="<<y<<", nx="<<nx<<", ny="<<ny<<endl;
+                      nx=-nx; ny=-ny;
+                      }
+
                 //  if (CheckNormal>0){
 
                       /*write out geometric info of the permeable surface only once*/
@@ -637,6 +645,19 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                       if (nDim==3)  rho_uz = solver->node[iPoint]->GetSolution(nDim+3);
                       rho_E = solver->node[iPoint]->GetSolution(2*nDim+1);
                       TKE = 0.0;
+
+                      //Register CONSERVATIVE variables as input for adjoint computation
+                      if (config->GetAD_Mode()){
+                      AD::RegisterInput(rho );
+                      AD::RegisterInput(rho_ux );
+                      AD::RegisterInput(rho_uy );
+                      if (nDim==3) AD::RegisterInput(rho_uz );
+                      AD::RegisterInput(rho_E );
+                      AD::RegisterInput(TKE);
+                        }
+
+
+
 
                       //compute primitive variables from conservative variables
                       ux = rho_ux/rho;

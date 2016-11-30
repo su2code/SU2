@@ -805,6 +805,8 @@ inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 inline void CSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) { }
 
+inline void CSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config, int iExtIter) { }
+
 inline void CSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Dissipation_Switch(CGeometry *geometry, CConfig *config) { }

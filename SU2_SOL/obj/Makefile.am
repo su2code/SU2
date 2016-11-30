@@ -32,53 +32,91 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
-
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-bin_PROGRAMS = ../bin/SU2_SOL
+bin_PROGRAMS = 
 
-___bin_SU2_SOL_SOURCES = \
-  ../include/SU2_SOL.hpp \
-  ../src/SU2_SOL.cpp
+if BUILD_NORMAL
+bin_PROGRAMS += ../bin/SU2_SOL
+endif
 
-___bin_SU2_SOL_CXXFLAGS =
-___bin_SU2_SOL_LDADD = \
-  ../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
+if BUILD_REVERSE
+bin_PROGRAMS += ../bin/SU2_SOL_AD
+endif
+
+su2_sol_sources = ../include/SU2_SOL.hpp \
+		../src/SU2_SOL.cpp
+
+su2_sol_ldadd =
+su2_sol_cxx_flags =
+
+if BUILD_NORMAL
+su2_sol_ldadd += \
+  ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-postprocessing_structure.$(OBJEXT) \
   ../../Common/lib/libSU2.a
+endif
+
+if BUILD_REVERSE
+su2_sol_ldadd += \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-postprocessing_structure.$(OBJEXT) \
+   ../../Common/lib/libSU2_AD.a
+endif
 
 # always link to built dependencies from ./externals
-___bin_SU2_SOL_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_SOL_LDADD += @su2_externals_LIBS@
-
-# if BUILD_HDF5
-___bin_SU2_SOL_CXXFLAGS += @HDF5_CXX@
-___bin_SU2_SOL_LDADD += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-___bin_SU2_SOL_CXXFLAGS += @SZIP_CXX@
-___bin_SU2_SOL_LDADD += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-___bin_SU2_SOL_CXXFLAGS += @ZLIB_CXX@
-___bin_SU2_SOL_LDADD += @ZLIB_LD@
-# endif
+su2_sol_cxx_flags += @su2_externals_INCLUDES@
+su2_sol_ldadd += @su2_externals_LIBS@
 
 # if BUILD_MUTATIONPP
-___bin_SU2_SOL_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
+su2_sol_cxx_flags += @MUTATIONPP_CXX@
+su2_sol_ldadd += @MUTATIONPP_LD@
 # endif
 
 # if BUILD_JSONCPP
-___bin_SU2_SOL_CXXFLAGS += @JSONCPP_CXX@
-___bin_SU2_SOL_LDADD += @JSONCPP_LD@
+su2_sol_cxx_flags += @JSONCPP_CXX@
+su2_sol_ldadd += @JSONCPP_LD@
 # endif
+
+# if BUILD_HDF5
+su2_sol_cxx_flags += @HDF5_CXX@
+su2_sol_ldadd += @HDF5_LD@
+# endif
+
+# if BUILD_SZIP
+su2_sol_cxx_flags += @SZIP_CXX@
+su2_sol_ldadd += @SZIP_LD@
+# endif
+
+# if BUILD_ZLIB
+su2_sol_cxx_flags += @ZLIB_CXX@
+su2_sol_ldadd += @ZLIB_LD@
+# endif
+
+if BUILD_NORMAL
+___bin_SU2_SOL_SOURCES = ${su2_sol_sources}
+___bin_SU2_SOL_CXXFLAGS = ${su2_sol_cxx_flags}
+___bin_SU2_SOL_LDADD =  ${su2_sol_ldadd}
+endif
+
+if BUILD_REVERSE
+___bin_SU2_SOL_AD_SOURCES = ${su2_sol_sources}
+___bin_SU2_SOL_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_sol_cxx_flags} 
+___bin_SU2_SOL_AD_LDADD = @REVERSE_LIBS@ ${su2_sol_ldadd}
+endif
+
