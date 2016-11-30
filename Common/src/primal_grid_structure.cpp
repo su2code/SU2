@@ -42,6 +42,7 @@ CPrimalGrid::CPrimalGrid(void) {
 	Neighbor_Elements = NULL;
 	Coord_CG = NULL;
 	Coord_FaceElems_CG = NULL;
+  GlobalIndex = 0;
   
 }
 
