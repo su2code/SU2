@@ -102,6 +102,7 @@ private:
   *DensityLimits,
   *TemperatureLimits; /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;  /*!< \brief actuator disk double surface  */
+  bool Engine_HalfModel;  /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
@@ -134,6 +135,11 @@ private:
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCM; /*!< \brief Weight of the drag coefficient. */
+  su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
+  su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
+  su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
@@ -350,6 +356,7 @@ private:
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
+  unsigned long ExtIter_OffSet;			/*!< \brief External iteration number offset. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long FSIIter;			/*!< \brief Current Fluid Structure Interaction sub-iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
@@ -511,19 +518,28 @@ private:
 	su2double Reynolds;	/*!< \brief Reynolds number. */
 	su2double Froude;	/*!< \brief Froude number. */
 	su2double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
-	su2double AoA,			/*!< \brief Angle of attack (just external flow). */
-	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
+  su2double AoA,			/*!< \brief Angle of attack (just external flow). */
+  iH, AoS, AoA_Offset, AoS_Offset, AoA_Sens;		/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Fixed_CM_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Eval_dCD_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Discard_InFiles; /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double dCl_dAlpha;			/*!< \brief Lift curve slope for fixed CL mode (1/deg, external flow only). */
+  su2double Target_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Total_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Total_CD;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double dCL_dAlpha;        /*!< \brief value of dCl/dAlpha. */
+  su2double dCM_diH;        /*!< \brief value of dCM/dHi. */
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   su2double dNetThrust_dBCThrust;        /*!< \brief value of dCl/dAlpha. */
   bool Update_BCThrust_Bool;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  bool Update_HTPIncidence;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -593,6 +609,7 @@ private:
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
   *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
   *CFL,
+  *HTP_Axis,      /*!< \brief Location of the HTP axis. */
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
 	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
@@ -672,7 +689,6 @@ private:
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
-  NuFactor_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   SecondaryFlow_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Initial_BCThrust,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
@@ -859,6 +875,7 @@ private:
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1380,6 +1397,12 @@ public:
   bool GetCFL_Adapt(void);
   
   /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  su2double GetHTP_Axis(unsigned short val_index);
+
+  /*!
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.
 	 */
@@ -1693,12 +1716,6 @@ public:
    * \return Non-dimensionalized engine intensity.
    */
   su2double GetNuFactor_Engine(void);
-
-  /*!
-   * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
-   * \return Non-dimensionalized actuator disk intensity.
-   */
-  su2double GetNuFactor_ActDisk(void);
   
   /*!
    * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
@@ -2221,12 +2238,50 @@ public:
 	 * \return Value of the angle of attack.
 	 */
 	su2double GetAoA(void);
+  
+  /*!
+   * \brief Get the off set angle of attack of the body. The solution and the geometry 
+   *        file are able to modifity the angle of attack in the config file
+   * \return Value of the off set angle of attack.
+   */
+  su2double GetAoA_Offset(void);
+  
+  /*!
+   * \brief Get the off set sideslip angle of the body. The solution and the geometry
+   *        file are able to modifity the angle of attack in the config file
+   * \return Value of the off set sideslip angle.
+   */
+  su2double GetAoS_Offset(void);
+  
+  /*!
+   * \brief Get the functional sensitivity with respect to changes in the angle of attack.
+   * \return Value of the angle of attack.
+   */
+  su2double GetAoA_Sens(void);
 
 	/*!
 	 * \brief Set the angle of attack.
 	 * \param[in] val_AoA - Value of the angle of attack.
 	 */
 	void SetAoA(su2double val_AoA);
+  
+  /*!
+   * \brief Set the off set angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetAoA_Offset(su2double val_AoA_offset);
+  
+  /*!
+   * \brief Set the off set sideslip angle.
+   * \param[in] val_AoA - Value of the off set sideslip angle.
+   */
+  void SetAoS_Offset(su2double val_AoS_offset);
+  
+  /*!
+   * \brief Set the angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetAoA_Sens(su2double val_AoA_sens);
 
   /*!
 	 * \brief Set the angle of attack.
@@ -2531,6 +2586,12 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void SetExtIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Set the current external iteration number.
+   * \param[in] val_iter - Current external iteration number.
+   */
+  void SetExtIter_OffSet(unsigned long val_iter);
 
 	/*!
 	 * \brief Set the current FSI iteration number.
@@ -2549,6 +2610,12 @@ public:
 	 * \return Current external iteration.
 	 */
 	unsigned long GetExtIter(void);
+  
+  /*!
+   * \brief Get the current internal iteration number.
+   * \return Current external iteration.
+   */
+  unsigned long GetExtIter_OffSet(void);
 
 	/*!
 	 * \brief Get the current FSI iteration number.
@@ -4446,6 +4513,12 @@ public:
   bool GetActDisk_DoubleSurface(void);
   
   /*!
+   * \brief Only halg of the engine is in the compputational grid.
+   * \return <code>TRUE</code> if the engine is complete; otherwise <code>FALSE</code>.
+   */
+  bool GetEngine_HalfModel(void);
+
+  /*!
    * \brief Actuator disk defined with a double surface.
    * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
    */
@@ -5021,7 +5094,55 @@ public:
 	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
 	 */
 	su2double GetFixAzimuthalLine(void);
-
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCD_dCM(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetCM_Target(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCD_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCD_dCL(su2double val_dcd_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCL_dAlpha(su2double val_dcl_dalpha);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCM_diH(su2double val_dcm_dhi);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCD_dCM(su2double val_dcd_dcm);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetCL_Target(void);
+  
 	/*!
 	 * \brief Set the global parameters of each simulation for each runtime system.
 	 * \param[in] val_solver - Solver of the simulation.
@@ -6535,6 +6656,24 @@ public:
 	 * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
 	 */
 	bool GetFixed_CL_Mode(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetFixed_CM_Mode(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetEval_dCD_dCX(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetDiscard_InFiles(void);
 
   /*!
 	 * \brief Get the value specified for the target CL.
@@ -6546,8 +6685,20 @@ public:
 	 * \brief Get the value for the lift curve slope for fixed CL mode.
 	 * \return Lift curve slope for fixed CL mode.
 	 */
-	su2double GetdCl_dAlpha(void);
+	su2double GetdCL_dAlpha(void);
   
+  /*!
+   * \brief Get the value of iterations to re-evaluate the angle of attack.
+   * \return Number of iterations.
+   */
+  unsigned long GetUpdate_Alpha(void);
+
+  /*!
+   * \brief Get the value of the damping coefficient for fixed CL mode.
+   * \return Damping coefficient for fixed CL mode.
+   */
+  su2double GetdCM_diH(void);
+
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
    * \return Number of iterations.

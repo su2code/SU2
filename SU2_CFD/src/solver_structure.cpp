@@ -1771,8 +1771,11 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 	getline (restart_file_n, text_line);
 
-	while (getline (restart_file_n, text_line)) {
-		istringstream point_line(text_line);
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (restart_file_n, text_line);
+    
+    istringstream point_line(text_line);
 
 		/*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
@@ -1794,7 +1797,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 			iPoint_Global_Local++;
 		}
-		iPoint_Global++;
 	}
 
 	/*--- Detect a wrong solution file ---*/
@@ -1808,7 +1810,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 #else
 	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-
 	if (rbuf_NotMatching != 0) {
 		if (rank == MASTER_NODE) {
 			cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file!" << endl;
@@ -1875,8 +1876,11 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 		getline (restart_file_n, text_line);
 
-		while (getline (restart_file_n, text_line)) {
-			istringstream point_line(text_line);
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file_n, text_line);
+      
+      istringstream point_line(text_line);
 
 			/*--- Retrieve local index. If this node from the restart file lives
            on a different processor, the value of iPoint_Local will be -1.
@@ -1898,8 +1902,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 				iPoint_Global_Local++;
 			}
-			iPoint_Global++;
-		}
+
+    }
 
 		/*--- Detect a wrong solution file ---*/
 
@@ -1912,7 +1916,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 #else
 		SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-
 		if (rbuf_NotMatching != 0) {
 			if (rank == MASTER_NODE) {
 				cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file!" << endl;
@@ -1984,6 +1987,8 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 #endif
   
   unsigned long iPoint, index, iPoint_Global;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
   long iPoint_Local;
   unsigned short iField, iVar;
   string Tag, text_line, AdjExt, UnstExt;
@@ -2073,6 +2078,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Identify the number of fields (and names) in the restart file ---*/
   
   getline (restart_file, text_line);
+  
   stringstream ss(text_line);
   while (ss >> Tag) {
     config->fields.push_back(Tag);
@@ -2109,9 +2115,33 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
         point_line >> Solution[iField];
       
       node[iPoint_Local] = new CBaselineVariable(Solution, nVar, config);
+      iPoint_Global_Local++;
     }
 
   }
+  
+		/*--- Detect a wrong solution file ---*/
+  
+		rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+		if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
+#ifndef HAVE_MPI
+		rbuf_NotMatching = sbuf_NotMatching;
+#else
+		SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+		if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
   
   /*--- Instantiate the variable class with an arbitrary solution
    at any halo/periodic nodes. The initial solution can be arbitrary,

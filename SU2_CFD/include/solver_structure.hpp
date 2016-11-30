@@ -4085,9 +4085,12 @@ protected:
   OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
+  AoA_Prev, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CL,		/*!< \brief Total lift coefficient for all the boundaries. */
+  Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CD_SolidSurf, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_NetCThrust, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_Power, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_ReverseFlow, /*!< \brief Total drag coefficient for all the boundaries. */
@@ -4166,7 +4169,7 @@ protected:
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
   unsigned long BCThrust_Counter;
-  
+
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   
   su2double **AveragedVelocity,
@@ -7430,6 +7433,10 @@ protected:
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
   
+  unsigned long AoA_Counter;
+  su2double ACoeff, ACoeff_inc, ACoeff_old;
+  bool Update_ACoeff;
+
 public:
   
   /*!
@@ -7654,6 +7661,17 @@ public:
   void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
   
   /*!
+   * \brief Update the AoA and freestream velocity at the farfield.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                       CConfig *config, unsigned short iMesh, bool Output);
+
+    /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
