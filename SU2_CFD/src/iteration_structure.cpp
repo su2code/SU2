@@ -517,82 +517,79 @@ void CMeanFlowIteration::Iterate(COutput *output,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) {
   
-  unsigned long IntIter, ExtIter, nIntIter; 
+  unsigned long IntIter, ExtIter;
   
-  bool fsi = config_container[val_iZone]->GetFSI_Simulation();
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
-  int rank = MASTER_NODE;
+  ExtIter = config_container[val_iZone]->GetExtIter();
   
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  /* --- Setting up iteration values depending on if this is a
+   steady or an unsteady simulaiton */
   
-	  ExtIter = config_container[val_iZone]->GetExtIter();
+  if ( !unsteady ) IntIter = ExtIter;
+  else IntIter = config_container[val_iZone]->GetIntIter();
   
-	  /* --- Setting up iteration values depending on if this is a 
-	   steady or an unsteady simulaiton */
-	   
-	  if ( !unsteady ) 
-			IntIter = ExtIter;
-	  else
-	        IntIter = config_container[val_iZone]->GetIntIter();
-
-      /*--- Update global parameters ---*/
+  /*--- Update global parameters ---*/
+  
+  switch( config_container[val_iZone]->GetKind_Solver() ) {
       
-      switch( config_container[val_iZone]->GetKind_Solver() ) {
+    case EULER: case DISC_ADJ_EULER:
+      config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
+      
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
+      config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+      
+    case RANS: case DISC_ADJ_RANS:
+      config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;
+      
+  }
+  
+  /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+  
+  integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                  config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
+  
+  
+  if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
+      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
+    
+    /*--- Solve the turbulence model ---*/
+    
+    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
+    integration_container[val_iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_TURB_SYS, IntIter, val_iZone);
+    
+    /*--- Solve transition model ---*/
+    
+    if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {
+      config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
+      integration_container[val_iZone][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                        config_container, RUNTIME_TRANS_SYS, IntIter, val_iZone);
+    }
+    
+  }
+  
+  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
+  
+  if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
 		  
-		case EULER: case DISC_ADJ_EULER:
-				config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
-
-		case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
-				config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
-
-		case RANS: case DISC_ADJ_RANS:
-				config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;			    
-	  }
-	  
-      /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-      
-      integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                      config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
-      
-      
-      if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
-        
-        /*--- Solve the turbulence model ---*/
-        
-        config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
-        integration_container[val_iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                         config_container, RUNTIME_TURB_SYS, IntIter, val_iZone);
-        
-        /*--- Solve transition model ---*/
-        
-        if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {
-          config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
-          integration_container[val_iZone][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                            config_container, RUNTIME_TRANS_SYS, IntIter, val_iZone);
-        }
-        
-      }
-      
-      /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-      if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
-		  
-			SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, val_iZone, IntIter, ExtIter);
-							 
-			/*--- Apply a Wind Gust ---*/
-			if (config_container[val_iZone]->GetWind_Gust()) {
-			  if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0 && IntIter != 0)
-				SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone], solver_container[val_iZone]);
-			}
-      }
-      
-
-	  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) 
-			/*--- Write the convergence history (only screen output) ---*/
-			output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);     
+    SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, val_iZone, IntIter, ExtIter);
+    
+    /*--- Apply a Wind Gust ---*/
+    
+    if (config_container[val_iZone]->GetWind_Gust()) {
+      if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0 && IntIter != 0)
+        SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone], solver_container[val_iZone]);
+    }
+    
+  }
+  
+  
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() )
+    
+  /*--- Write the convergence history (only screen output) ---*/
+    
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
   
 }
 
@@ -1814,9 +1811,11 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
   if (CurrentRecording != FLOW_VARIABLES || unsteady) {
     
-    if (rank == MASTER_NODE) {
+    if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )) {
+      cout << endl << "-------------------------------------------------------------------------" << endl;
       cout << "Direct iteration to store computational graph." << endl;
       cout << "Compute residuals to check the convergence of the direct problem." << endl;
+      cout << "-------------------------------------------------------------------------" << endl << endl;
     }
     
     /*--- Record one mean flow iteration with flow variables as input ---*/
@@ -1835,7 +1834,9 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
         cout << "log10[RMS k]: " << log10(solver_container[val_iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
       }
     }
+    
   }
+  
 }
 
 
