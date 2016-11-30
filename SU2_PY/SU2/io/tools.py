@@ -211,7 +211,8 @@ def get_headerMap():
                  "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "AeroCDrag"       : "AERO_DRAG"               ,
-                 "Distortion"      : "DISTORTION"              ,
+                 "Radial_Distortion"      : "RADIAL_DISTORTION"              ,
+                 "Circumferential_Distortion"      : "CIRCUMFERENTIAL_DISTORTION"              ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CLift)"        : "D_LIFT"                  ,
                  "D(CDrag)"        : "D_DRAG"                  ,
@@ -262,7 +263,8 @@ optnames_aero = [ "LIFT"                    ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
                   "AERO_DRAG"               ,
-                  "DISTORTION"              ,
+                  "RADIAL_DISTORTION"              ,
+                  "CIRCUMFERENTIAL_DISTORTION"              ,
                   "COMBO"]
 #: optnames_aero
 
@@ -482,7 +484,8 @@ def get_adjointSuffix(objective_function=None):
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
                  "AERO_DRAG"               : "acd"       ,
-                 "DISTORTION"              : "dis"       ,
+                 "RADIAL_DISTORTION"              : "rdis"       ,
+                 "CIRCUMFERENTIAL_DISTORTION"              : "cdis"       ,
                  "COMBO"                   : "combo"}
     
     # if none or false, return map
