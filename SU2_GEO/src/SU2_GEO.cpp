@@ -387,8 +387,7 @@ int main(int argc, char *argv[]) {
             case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_DIHEDRAL_ANGLE :   surface_movement->SetFFDDihedralAngle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwistAngle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+            case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwist(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_ROTATION :         surface_movement->SetFFDRotation(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
