@@ -497,7 +497,20 @@ def read_config(filename):
                     this_scale = 1.0
                     if len(this_obj) > 1:
                         this_scale = float( this_obj[1] )
-                    this_def.update({ this_name : {'SCALE':this_scale} })
+                    # check for penalty-based constraint function 
+                    for this_sgn in ['<','>','=']:
+                        if this_sgn in this_name: break
+                    this_obj = this_name.strip('()').split(this_sgn)
+                    if len(this_obj)>1:
+                        this_type = this_sgn
+                        this_val = this_obj[1]
+                    else:
+                        this_type = 'NONE'
+                        this_val  = 0.0
+                    this_name = this_obj[0]
+                       
+ 
+                    this_def.update({ this_name : {'SCALE':this_scale, 'CTYPE':this_type, 'CVAL':this_val} })
                 # save to output dictionary
                 data_dict[this_param] = this_def
                 break
@@ -756,7 +769,11 @@ def write_config(filename,param_dict):
                 i_name = 0
                 for name,value in new_value.iteritems():
                     if i_name>0: output_file.write("; ")
-                    output_file.write( "%s * %s" % (name,value['SCALE']) )
+                    if value['CTYPE']=='NONE':
+                        output_file.write( "%s * %s " % (name,value['SCALE']) )
+                    else:
+                        output_file.write( "( %s %s %s ) * %s" 
+                                           % (name, value['CTYPE'], value['CVAL'], value['SCALE']) )
                     i_name += 1
                 break
             
