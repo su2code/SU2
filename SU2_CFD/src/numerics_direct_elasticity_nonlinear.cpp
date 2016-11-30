@@ -185,6 +185,10 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 			for (iVar = 0; iVar < nElectric_Field; iVar++) {
 				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
 			}
+      if (config->GetDirectDiff() == D_EFIELD){
+        unsigned short iID_DE = config->GetnID_DE();
+        SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
+      }
 		}
 
 		/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
@@ -246,9 +250,7 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 
 	if (cijkl != NULL){
 	  for (iVar = 0; iVar < 3; iVar++){
-	    cout << iVar << endl;
 	    for (jVar = 0; jVar < 3; jVar++){
-	      cout << jVar << endl;
 	      for (kVar = 0; kVar < 3;kVar++){
 	        delete [] cijkl[iVar][jVar][kVar];
 	      }

@@ -104,6 +104,8 @@ inline void CSolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fe
 
 inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { }
 
 inline void CSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
@@ -402,6 +404,8 @@ inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 
 inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
 
+inline su2double CSolver::GetTotal_OFRefNode() { return 0; }
+
 inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
 
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
@@ -413,6 +417,8 @@ inline void CSolver::SetTotal_HeatFluxDiff(su2double val_heat) { }
 inline void CSolver::SetTotal_CFEA(su2double val_cfea) { }
 
 inline void CSolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { }
+
+inline void CSolver::SetTotal_OFRefNode(su2double val_ofrefnode) { }
 
 inline su2double CSolver::GetWAitken_Dyn(void) { return 0; }
 
@@ -1584,6 +1590,8 @@ inline void CFEM_ElasticitySolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = 
 
 inline void CFEM_ElasticitySolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { Total_OFRefGeom = val_ofrefgeom; }
 
+inline void CFEM_ElasticitySolver::SetTotal_OFRefNode(su2double val_ofrefnode) { Total_OFRefNode = val_ofrefnode; }
+
 inline su2double CFEM_ElasticitySolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
 
 inline su2double CFEM_ElasticitySolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
@@ -1599,6 +1607,8 @@ inline void CFEM_ElasticitySolver::SetFSI_ConvValue(unsigned short val_index, su
 inline su2double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_index) { return FSI_Conv[val_index]; }
 
 inline su2double CFEM_ElasticitySolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
+
+inline su2double CFEM_ElasticitySolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
 
 inline void CFEM_ElasticitySolver_Adj::Set_DV_Val(su2double val_EField, unsigned short i_DV){ DV_Val[i_DV] = val_EField;}
 

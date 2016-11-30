@@ -351,7 +351,7 @@ void CConfig::SetPointersNull(void) {
   Disp_Dir = NULL;            Disp_Dir_Value = NULL;          Disp_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
   Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      Electric_Field_Max = NULL;
-  Electric_Field_Min = NULL;  Electric_Field_Del = NULL;
+  Electric_Field_Min = NULL;  Electric_Field_Del = NULL;      RefNode_Displacement = NULL;
   DV_Del_X = NULL;        DV_Del_Y = NULL;            DV_Del_Z = NULL;
 
   /*--- Actuator Disk Boundary Condition settings ---*/
@@ -1543,7 +1543,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Design variable for FEA problems (Temp) \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, YOUNG_MODULUS);
 
-
   /*  DESCRIPTION: Consider a reference solution for the structure (optimization applications)
   *  Options: NO, YES \ingroup Config */
   addBoolOption("REFERENCE_GEOMETRY", RefGeom, false);
@@ -1553,6 +1552,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("REFERENCE_GEOMETRY_FILENAME", RefGeom_FEMFileName, string("reference_geometry.dat"));
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("REFERENCE_GEOMETRY_FORMAT", RefGeom_FileFormat, Input_Ref_Map, SU2_REF);
+
+  /*!\brief REFERENCE_NODE\n  DESCRIPTION: Reference node for the structure (optimization applications) */
+  addUnsignedLongOption("REFERENCE_NODE", refNodeID, 0);
+  /* DESCRIPTION: Modulus of the electric fields */
+  addDoubleListOption("REFERENCE_NODE_DISPLACEMENT", nDim_RefNode, RefNode_Displacement);
+  /*!\brief REFERENCE_NODE_PENALTY\n DESCRIPTION: Penalty weight value for the objective function \ingroup Config*/
+  addDoubleOption("REFERENCE_NODE_PENALTY", RefNode_Penalty, 1E6);
 
   /*  DESCRIPTION: Run an adjoint solution of the structural problem (temporary - this will be modified later on)
   *  Options: NO, YES \ingroup Config */
@@ -1653,9 +1659,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("FSI_LINEAR_SOLVER_ERROR_STRUC", Linear_Solver_Error_FSI_Struc, 1E-6);
 
-  /*!\brief AD_FSI_STRATEGY
-   *  \n DESCRIPTION: FSI strategy \n OPTIONS: see \link FSI_Strategy_Map \endlink \n DEFAULT: PARTITIONED \ingroup Config*/
-  addEnumOption("AD_FSI_STRATEGY", AD_FSI_Strategy, FSI_Strategy_Map, PARTITIONED);
+  /* DESCRIPTION: DE for which we want number of iterations of the turbulent adjoint linear solver for the implicit formulation */
+  addUnsignedShortOption("DE_INDEX_DIRECTDIFF", nID_DE, 0);
 
   /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
   addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);
@@ -2986,6 +2991,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nDel_EField == 0) {
 	nDel_EField = 1;
 	Electric_Field_Del = new su2double[1]; Electric_Field_Del[0] = 0.0;
+  }
+
+  if (nDim_RefNode == 0) {
+  nDim_RefNode = 3;
+  RefNode_Displacement = new su2double[3];
+  RefNode_Displacement[0] = 0.0; RefNode_Displacement[1] = 0.0; RefNode_Displacement[2] = 0.0;
   }
 
   if ((nDV_Del_X == 0) || (nDV_Del_X == 1)) {
@@ -5716,6 +5727,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
       case REFERENCE_GEOMETRY:      AdjExt = "_refgeom";       break;
+      case REFERENCE_NODE:          AdjExt = "_refnode";       break;
       }
     }
     else{

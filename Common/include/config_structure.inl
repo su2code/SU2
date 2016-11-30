@@ -315,6 +315,12 @@ inline unsigned short CConfig::GetDV_FEA(void) { return Kind_DV_FEA; }
 
 inline bool CConfig::GetStructural_Adj(void) { return Structural_Adj; }
 
+inline unsigned long CConfig::GetRefNode_ID(void) { return refNodeID; }
+
+inline su2double CConfig::GetRefNode_Displacement(unsigned short val_coeff) { return RefNode_Displacement[val_coeff]; }
+
+inline su2double CConfig::GetRefNode_Penalty(void) { return RefNode_Penalty; }
+
 inline bool CConfig::GetRefGeom(void) { return RefGeom; }
 
 inline string CConfig::GetRefGeom_FEMFileName(void) { return RefGeom_FEMFileName; }
@@ -1486,7 +1492,7 @@ inline su2double CConfig::GetIncLoad_Criteria(unsigned short val_var) { return I
 
 inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
-inline bool CConfig::GetAD_FSI_Strategy(void) { return AD_FSI_Strategy; }
+inline unsigned short CConfig::GetnID_DE(void) { return nID_DE; }
 
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }
 

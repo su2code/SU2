@@ -355,7 +355,8 @@ optnames_geo = [ "MAX_THICKNESS"      ,
 #: optnames_geo
 
 # Structural Optimizer Function Names
-optnames_fea = [ "REFERENCE_GEOMETRY" ]
+optnames_fea = [ "REFERENCE_GEOMETRY",
+                 "REFERENCE_NODE"]
 #: optnames_fea
 
 grad_names_directdiff = ["D_LIFT"                  ,
@@ -380,7 +381,8 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
                    "EFFICIENCY" : "D_EFFICIENCY",
-                   "REFERENCE_GEOMETRY" : "D_REFGEO"}
+                   "REFERENCE_GEOMETRY" : "D_REFGEO",
+                   "REFERENCE_NODE" : "D_REFNODE"}
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -510,7 +512,8 @@ def get_adjointSuffix(objective_function=None):
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
                  "COMBO"                   : "combo"     ,
-                 "REFERENCE_GEOMETRY"      : "refgeom"}
+                 "REFERENCE_GEOMETRY"      : "refgeom"   ,
+                 "REFERENCE_NODE"          : "refnode"}
     
     # if none or false, return map
     if not objective_function:

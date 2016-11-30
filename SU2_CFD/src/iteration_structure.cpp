@@ -1485,6 +1485,10 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
   switch (config_container[val_iZone]->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:
       solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefGeom(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+      break;
+    case REFERENCE_NODE:
+       solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+       break;
   }
 
 }
@@ -1841,6 +1845,10 @@ void CFEAIteration_Adj::Iterate_Direct(COutput *output,
   switch (config_container[val_iZone]->GetKind_ObjFunc()){
     case REFERENCE_GEOMETRY:
       solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefGeom(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+      break;
+    case REFERENCE_NODE:
+       solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+       break;
   }
 
 

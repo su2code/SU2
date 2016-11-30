@@ -129,11 +129,17 @@ def direct ( config ):
       info = su2io.State()
       info.FILES.DIRECT = konfig['RESTART_STRUCTURE_FILENAME']
       
-      history_filename = 'of_refgeom.dat'
+      if config.OBJECTIVE_FUNCTION == 'REFERENCE_GEOMETRY':
+        history_filename = 'of_refgeom.dat'
+      elif config.OBJECTIVE_FUNCTION == 'REFERENCE_NODE':
+        history_filename = 'of_refnode.dat'
       
       plot_file = open(history_filename)
       line = plot_file.readline()
       
-      info.FUNCTIONS.REFERENCE_GEOMETRY = float(line)
+      if config.OBJECTIVE_FUNCTION == 'REFERENCE_GEOMETRY':
+        info.FUNCTIONS.REFERENCE_GEOMETRY = float(line)
+      elif config.OBJECTIVE_FUNCTION == 'REFERENCE_NODE':
+        info.FUNCTIONS.REFERENCE_NODE = float(line)
     
     return info

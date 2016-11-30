@@ -2454,6 +2454,9 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
   case REFERENCE_GEOMETRY:
       ObjFunc_Value = direct_solver->GetTotal_OFRefGeom();
       break;
+  case REFERENCE_NODE:
+      ObjFunc_Value = direct_solver->GetTotal_OFRefNode();
+      break;
   default:
       ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
       break;

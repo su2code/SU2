@@ -460,7 +460,7 @@ private:
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-  unsigned short AD_FSI_Strategy;  /*!< \brief Strategy for AD FSI problems. */
+  unsigned short nID_DE;  /*!< \brief ID for the DE when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
@@ -711,6 +711,7 @@ private:
   bool DE_Predicted;            /*!< Application of DE effects to FE analysis */
 	bool RefGeom; 						/*!< Read a reference geometry for optimization purposes. */
 	bool Structural_Adj; 						/*!< Decide whether a structural adjoint iteration needs to be run (temporary). */
+  unsigned long refNodeID;     /*!< \brief Global ID for the reference node (optimization). */
 	string RefGeom_FEMFileName;    			/*!< \brief File name for reference geometry. */
 	unsigned short RefGeom_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
@@ -811,12 +812,14 @@ private:
   unsigned short nElectric_Field_Max, /*!< \brief Number of different values for the max electric field in the membrane. */
   nElectric_Field_Min;                  /*!< \brief Number of different values for the min electric field in the membrane. */
   unsigned short nDel_EField;		/*!< \brief Number of delimiters for the electric field (must be nElectric_Field + 1). */
+  unsigned short nDim_RefNode;   /*!< \brief Dimensionality of the vector . */
   unsigned short Axis_EField;		/*!< \brief Axis along which the delimiters are set. */
   su2double *Electric_Field_Mod, 	/*!< \brief Values of the modulus of the electric field. */
   *Electric_Field_Dir;				/*!< \brief Direction of the electric field. */
   su2double *Electric_Field_Max,  /*!< \brief Maximum value of the modulus of the electric field. */
   *Electric_Field_Min;            /*!< \brief Minimum value of the modulus of the electric field. */
   su2double *Electric_Field_Del;	/*!< \brief Values of the delimiters of the Electric Field (along axis Axis_EField). */
+  su2double *RefNode_Displacement;  /*!< \brief Displacement of the reference node. */
   su2double *DV_Del_X,        /*!< \brief Values of the delimiters of the Electric Field (along axis X). */
   *DV_Del_Y,                  /*!< \brief Values of the delimiters of the Electric Field (along axis Y). */
   *DV_Del_Z;                  /*!< \brief Values of the delimiters of the Electric Field (along axis Z). */
@@ -837,7 +840,8 @@ private:
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
-  su2double RefGeom_Penalty;   /*!< \brief Penalty weight value for the reference geometry objective function. */
+  su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
+  RefNode_Penalty;            /*!< \brief Penalty weight value for the reference node objective function. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;           /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -1802,6 +1806,24 @@ public:
 	  */
 
 	bool GetStructural_Adj(void);
+
+	/*!
+	 * \brief Get the ID of the reference node.
+	 * \return Number of FSI subiters.
+	 */
+	unsigned long GetRefNode_ID(void);
+
+	/*!
+	 * \brief Get the values for the reference node displacement.
+	 * \param[in] val_coeff - Index of the displacement.
+	 */
+	su2double GetRefNode_Displacement(unsigned short val_coeff);
+
+	/*!
+	 * \brief Get the penalty weight value for the objective function.
+	 * \return  Penalty weight value for the reference geometry objective function.
+	 */
+	su2double GetRefNode_Penalty(void);
 
 	/*!
 	  * \brief Decide whether it's necessary to read a reference geometry.
@@ -6932,10 +6954,10 @@ public:
 	 bool GetFSI_Simulation(void);
 
 	 /*!
-	  * \brief Get the AD strategy for FSI
-	  * \return Kind of strategy.
+	  * \brief Get the ID for the DE region we want to compute the gradient for using direct differentiation
+	  * \return ID
 	  */
-	 bool GetAD_FSI_Strategy(void);
+	 unsigned short GetnID_DE(void);
 
 	/*!
 	 * \brief Check if we want to apply an incremental load to the nonlinear structural simulation

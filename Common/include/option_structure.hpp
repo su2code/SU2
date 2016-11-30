@@ -1008,7 +1008,8 @@ enum ENUM_OBJECTIVE {
   PROPULSIVE_EFFICIENCY = 33, 	       /*!< \brief Mass flow ratio coefficient. */
   NET_THRUST_COEFFICIENT = 34, 	     /*!< \brief Mass flow ratio coefficient. */
   CUSTOM_COEFFICIENT = 35, 	           /*!< \brief Custom coefficient objective function definition. */
-  REFERENCE_GEOMETRY=50          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  REFERENCE_GEOMETRY=50,          /*!<\brief Objective function defined as the difference of all structural points respect to a reference position. */
+  REFERENCE_NODE=51               /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1047,7 +1048,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("PROPULSIVE_EFFICIENCY", PROPULSIVE_EFFICIENCY)
 ("NET_THRUST_COEFFICIENT", NET_THRUST_COEFFICIENT)
 ("CUSTOM_COEFFICIENT", CUSTOM_COEFFICIENT)
-("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY);
+("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
+("REFERENCE_NODE", REFERENCE_NODE);
 
 /*!
  * \brief types of residual criteria equations
@@ -1438,18 +1440,6 @@ enum ENUM_DYNAMIC {
 static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYNAMIC>
 ("NO", STATIC)
 ("YES", DYNAMIC);
-
-/*!
- * \brief types of criteria to determine when the solution is converged
- */
-enum ENUM_FSI_STRAT {
-  PARTITIONED = 0,     /*!< \brief Partitioned strategy. */
-  MONOLITHIC = 1       /*!< \brief Monolithic strategy. */
-};
-static const map<string, ENUM_FSI_STRAT> FSI_Strategy_Map = CCreateMap<string, ENUM_FSI_STRAT>
-("PARTITIONED", PARTITIONED)
-("MONOLITHIC", MONOLITHIC);
-
 
 /*!
  * \brief types of input file formats
