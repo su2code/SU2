@@ -118,6 +118,7 @@ const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domai
 const unsigned int MAX_NUMBER_FFD = 10;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 6;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;            	/*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
@@ -390,6 +391,13 @@ const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis te
 const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the numerics container array. */
 const int FEA_ADJ = 2;     /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_ADJ = 3;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
+
+const int MAT_NHCOMP  = 4;   /*!< \brief Position of the Neo-Hookean compressible material model. */
+const int MAT_NHINC   = 5;   /*!< \brief Position of the Neo-Hookean incompressible material model. */
+const int MAT_IDEALDE = 6;   /*!< \brief Position of the Ideal-DE material model. */
+const int MAT_KNOWLES = 7;   /*!< \brief Position of the Knowles material model. */
+
+
 
 /*!
  * \brief types of finite elements (in 2D or 3D)

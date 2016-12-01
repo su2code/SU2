@@ -1526,6 +1526,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
 
+  /*!\brief FEA_FILENAME \n DESCRIPTION: Filename to input for element-based properties \n Default: element_properties.dat \ingroup Config */
+  addStringOption("FEA_FILENAME", FEA_FileName, string("element_properties.dat"));
+
   /* DESCRIPTION: Modulus of elasticity */
   addDoubleOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
   /* DESCRIPTION: Poisson ratio */

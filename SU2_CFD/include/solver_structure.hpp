@@ -3720,6 +3720,13 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Set_ElementProperties(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] solver - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
@@ -8695,6 +8702,8 @@ private:
   su2double **mZeros_Aux;      /*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
   su2double **mId_Aux;        /*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
   
+  unsigned long *elProperties;  /*!< \brief Auxiliary vector to read the element properties from file */
+
   unsigned short *iElem_iDe;			/*!< \brief For DE cases, ID of the region considered for each iElem. */
   su2double *DV_Val;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
   unsigned short n_DV;          /*!< \brief For DE cases, number of design variables. */
@@ -8725,6 +8734,8 @@ private:
 public:
   
   CElement*** element_container;   /*!< \brief Vector which the define the finite element structure for each problem. */
+  CElementProperty** element_properties; /*!< \brief Vector which stores the properties of each element */
+
   
   /*!
    * \brief Constructor of the class.
@@ -9274,6 +9285,13 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
+  /*!
+   * \brief Set container of element properties.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_ElementProperties(CGeometry *geometry, CConfig *config);
+
 };
 
 /*! \class CFEM_ElasticitySolver_Adj

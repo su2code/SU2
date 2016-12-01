@@ -1000,6 +1000,8 @@ inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
 inline void CSolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_Prestretch(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) { }
 										  
 inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
