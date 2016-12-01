@@ -46,7 +46,7 @@ from numpy.linalg import norm
 # format needed by pyopt
 def obj_func(x, *args, **kwargs):
     project = kwargs['p1']
-    f = obj_f(x,project)
+    f = obj_f(x['x'],project)
     g = 0.0
     fail = 0
     return f,g,fail
@@ -54,7 +54,7 @@ def obj_func(x, *args, **kwargs):
 def grad_func(x,f,g, *args, **kwargs):
     project = kwargs['p1']
     g_obj = [0.0]*project.n_dv
-    grad = obj_df(x,project)
+    grad = obj_df(x['x'],project)
     for i in range(project.n_dv):
         g_obj[i] =grad[i]
     g_con=zeros([1,project.n_dv])
