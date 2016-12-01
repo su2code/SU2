@@ -245,7 +245,7 @@ def obj_f(dvs,config,state=None):
             if (def_objs[this_obj]['CTYPE']=='=' or \
                 (def_objs[this_obj]['CTYPE']=='>' and value < valuec) or \
                 (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
-                func +=scale*(value - valuec)**2.0
+                func +=scale*(valuec - value)**2.0
     vals_out.append(func)
     #: for each objective
     
@@ -297,7 +297,7 @@ def obj_df(dvs,config,state=None):
                 if (def_objs[this_obj]['CTYPE']=='=' or\
                      (def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
                      (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
-                    scale[i_obj]*=2.0*(value - valuec)
+                    scale[i_obj]*=2.0*abs(valuec - value)
                 # For inequality constraints, if inactive set scale to 0.0
                 if ((def_objs[this_obj]['CTYPE']=='>' and value > valuec) or\
                     (def_objs[this_obj]['CTYPE']=='<' and value < valuec )):
