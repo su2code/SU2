@@ -82,7 +82,7 @@ su2double CPengRobinson::T_v_h(su2double v, su2double h) {
 	return T*T;
 }
 
-su2double CPengRobinson::T_P_rho(su2double P, su2double rho){
+su2double CPengRobinson::T_P_rho(su2double P, su2double rho) {
 	su2double A, B, C, T, vb1, vb2;
 	vb1 = (1/rho -b);
 	vb2 = (1/rho/rho + 2*b/rho - b*b);
@@ -216,7 +216,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 		x1 = Zed*v;
 		x2 = v;
 
-	} else{
+	} else {
 		x1 = 0.2*v;
 		x2 = v;
 	}
@@ -245,7 +245,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
         atanh = (log(1.0+( b*sqrt2/(x1 + b))) - log(1.0-( b*sqrt2/(x1 + b))))/2.0;
 				fv = atanh;
 				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-			} else{
+			} else {
 				x2 += FACTOR*(x2-x1);
 				T = T_v_h(x2, h);
         atanh = (log(1.0+( b*sqrt2/(x2 + b))) - log(1.0-( b*sqrt2/(x2 + b))))/2.0;
@@ -289,7 +289,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 //					countnw++;
 //			}while(abs(f/x2) > toll && countnw<ITMAXNW);
 //
-//		} else{
+//		} else {
 	}
 	if (v!=v) {
 		cout <<"not physical solution found, h and s input " << h << " "<< s << endl;
@@ -344,7 +344,7 @@ void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
 	SetTDState_rhoe(rho, e);
 }
 
-void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
+void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 
 	su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
 	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
@@ -355,11 +355,11 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
 	v = (T*Gas_Constant)/P;
 
-	if(Zed<0.9999){
+	if(Zed<0.9999) {
 		x1 = Zed*v;
 		x2 = v;
 
-	}else{
+	}else {
 		x1 = 0.2*v;
 		x2 = v;
 	}
@@ -379,8 +379,8 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	// zbrac algorithm NR
 
 	for (int j=1;j<=NTRY;j++) {
-		if (fx1*fx2 > 0.0){
-			if (fabs(fx1) < fabs(fx2)){
+		if (fx1*fx2 > 0.0) {
+			if (fabs(fx1) < fabs(fx2)) {
 				x1 += FACTOR*(x1-x2);
 				T = T_P_rho(P,1.0/x1);
         
@@ -388,7 +388,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
         fv = atanh;
         
 				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-			}else{
+			}else {
 				T = T_P_rho(P,1.0/x2);
         
         atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
@@ -404,7 +404,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 
 	f=fx1;
 	fmid=fx2;
-	if (f*fmid >= 0.0){
+	if (f*fmid >= 0.0) {
 		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
 		SetTDState_rhoT(Density, Temperature);
 	}
@@ -421,7 +421,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 		count++;
 		}while(abs(fmid) > toll && count<ITMAX);
 
-		if(count==ITMAX){
+		if(count==ITMAX) {
 			cout <<"Too many bisections in rtbis" << endl;
 		}
 
@@ -433,7 +433,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	cons_P= abs((Pressure -P)/P);
 	cons_s= abs((Entropy-s)/s);
 
-	if(cons_P >1e-3 || cons_s >1e-3){
+	if(cons_P >1e-3 || cons_s >1e-3) {
 		cout<< "TD consistency not verified in hs call"<< endl;
 	}
 

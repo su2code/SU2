@@ -84,7 +84,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
   
-  if (config->GetKind_SU2() == SU2_DOT){
+  if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
       filename = config->GetSurfSens_FileName();
     else
@@ -96,20 +96,22 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
 
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
+
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
-        (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+        (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
+
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
     
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
-        (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+        (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
     
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
@@ -760,7 +762,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
       VarCounter++;
 
-      if (nDim == 3){
+      if (nDim == 3) {
         Paraview_File << "\nSCALARS Sensitivity_z float 1\n";
         Paraview_File << "LOOKUP_TABLE default\n";
 
@@ -797,7 +799,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
            }
          VarCounter++;
 
-         if (nDim == 3){
+         if (nDim == 3) {
 
      			Paraview_File << "\nSCALARS Velocity_3 float 1\n";
      			Paraview_File << "LOOKUP_TABLE default\n";
@@ -830,7 +832,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
            }
          VarCounter++;
 
-         if (nDim == 3){
+         if (nDim == 3) {
 
    			Paraview_File << "\nSCALARS Acceleration_3 float 1\n";
    			Paraview_File << "LOOKUP_TABLE default\n";
@@ -875,7 +877,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
     VarCounter++;
 
-    if (nDim == 3){
+    if (nDim == 3) {
 
 			Paraview_File << "\nSCALARS Szz float 1\n";
 			Paraview_File << "LOOKUP_TABLE default\n";
@@ -968,18 +970,18 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     else
       filename = config->GetFlow_FileName();
   }
-  if (config->GetKind_SU2()==SU2_DEF){
-    if (new_file){
+  if (config->GetKind_SU2()==SU2_DEF) {
+    if (new_file) {
       if (surf_sol) filename = "surface_grid";
       else filename = "volumetric_grid";
     }
-    else{
+    else {
       if (surf_sol) filename = "surface_deformed_grid";
       else filename = "volumetric_deformed_grid";
     }
   }
   
-	if (Kind_Solver == FEM_ELASTICITY){
+	if (Kind_Solver == FEM_ELASTICITY) {
 		if (surf_sol)
 			filename = config->GetSurfStructure_FileName().c_str();
 		else
@@ -1000,19 +1002,19 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
   
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
   
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
@@ -1284,7 +1286,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     
   }
   
-  else if (config->GetKind_SU2()!=SU2_DEF){
+  else if (config->GetKind_SU2()!=SU2_DEF) {
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
@@ -1629,7 +1631,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
             }
           VarCounter++;
 
-          if (nDim == 3){
+          if (nDim == 3) {
 
       			Paraview_File << "\nSCALARS Velocity_3 float 1\n";
       			Paraview_File << "LOOKUP_TABLE default\n";
@@ -1662,7 +1664,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
             }
           VarCounter++;
 
-          if (nDim == 3){
+          if (nDim == 3) {
 
     			Paraview_File << "\nSCALARS Acceleration_3 float 1\n";
     			Paraview_File << "LOOKUP_TABLE default\n";
@@ -1707,7 +1709,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
        }
      VarCounter++;
 
-     if (nDim == 3){
+     if (nDim == 3) {
 
  			Paraview_File << "\nSCALARS Szz float 1\n";
  			Paraview_File << "LOOKUP_TABLE default\n";
