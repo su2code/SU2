@@ -3285,6 +3285,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
   
+  /*--- Set the value of Global_nElemDomain (stored in the geometry container that is passed in) ---*/
+
+  Global_nElemDomain = geometry->GetGlobal_nElemDomain();
+
   /*--- Store total number of each element type after incrementing the
    counters in the recv loop above (to make sure there aren't repeats). ---*/
   
@@ -5366,7 +5370,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
   }
   
-  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
+  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0; Global_nElemDomain = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -6119,6 +6123,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   mesh_file.close();
   
+  /*--- Store the number of elements on the whole domain, excluding halos. ---*/
+
+  Global_nElemDomain = element_count;
+
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   

@@ -856,6 +856,7 @@ private:
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
+  string FEA_FileName;         /*!< \brief File name for element-based properties. */
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty;            /*!< \brief Penalty weight value for the reference node objective function. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
@@ -1886,6 +1887,12 @@ public:
     */
 
   void Set_CrossTerm(bool needCrossTerm);
+
+  /*!
+   * \brief Get the name of the file with the element properties for structural problems.
+   * \return Name of the file with the element properties of the structural problem.
+   */
+  string GetFEA_FileName(void);
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.

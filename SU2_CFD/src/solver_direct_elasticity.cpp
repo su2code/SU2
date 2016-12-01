@@ -54,6 +54,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
   element_container = NULL;
   node = NULL;
 
+  element_properties = NULL;
+  elProperties = NULL;
+
   GradN_X = NULL;
   GradN_x = NULL;
 
@@ -167,6 +170,12 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   }
 
   node              = new CVariable*[nPoint];
+
+  /*--- Set element properties ---*/
+  elProperties = new unsigned long[4];
+  for (iVar = 0; iVar < 4; iVar++)
+    elProperties[iVar] = 0;
+  Set_ElementProperties(geometry, config);
 
   GradN_X = new su2double [nDim];
   GradN_x = new su2double [nDim];
@@ -674,8 +683,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
      myfile_res.close();
 
    }
-
-
+//   if (rank == 3){
+//   cout << "OUTPUT GLOBAL ELEMENT ID" << endl;
+//
+//   /*--- If there are no multiple regions, the ID is 0 for all the cases ---*/
+//   for (unsigned short iElem = 0; iElem < nElement; iElem++){
+//     cout << geometry->elem[iElem]->GetGlobalIndex() << " " << geometry->node[geometry->elem[iElem]->GetNode(0)]->GetGlobalIndex() << endl;
+//   }
+//   }
 
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -690,6 +705,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 
   unsigned short iVar, jVar;
+  unsigned long iElem;
   
   if (element_container != NULL) {
     for (iVar = 0; iVar < MAX_TERMS; iVar++){
@@ -699,6 +715,12 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
       delete [] element_container[iVar];
     }
     delete [] element_container;
+  }
+
+  if (element_properties != NULL){
+    for (iElem = 0; iElem < nElement; iElem++)
+      if (element_properties[iElem] != NULL) delete element_properties[iElem];
+    delete [] element_properties;
   }
 
   for (iVar = 0; iVar < nVar; iVar++){
@@ -1330,6 +1352,146 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   /*--- MPI solution ---*/
 
   solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+
+}
+
+void CFEM_ElasticitySolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iElem;
+  unsigned long index;
+
+  unsigned short iVar;
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+
+  string filename;
+  ifstream properties_file;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  element_properties = new CElementProperty*[nElement];
+
+  /*--- Restart the solution from file information ---*/
+
+  filename = config->GetFEA_FileName();
+
+  /*--- If multizone, append zone name ---*/
+  if (nZone > 1)
+    filename = config->GetMultizone_FileName(filename, iZone);
+
+  cout << "Filename: " << filename << "." << endl;
+
+  properties_file.open(filename.data(), ios::in);
+
+  /*--- In case there is no file, all elements get the same property (0) ---*/
+
+  if (properties_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no element-based properties file. All elements get uniform properties." << endl;
+
+    for (iElem = 0; iElem < nElement; iElem++){
+      element_properties[iElem] = new CElementProperty(0, 0, 0, 0);
+    }
+
+  }
+  else{
+
+//    for (iElem = 0; iElem < nElement; iElem++){
+//      element_properties[iElem] = new CElementProperty(0, 0, 0, 0);
+//    }
+
+    /*--- In case this is a parallel simulation, we need to perform the
+       Global2Local index transformation first. ---*/
+
+    long *Global2Local = new long[geometry->GetGlobal_nElemDomain()];
+
+    /*--- First, set all indices to a negative value by default ---*/
+
+    for (iElem = 0; iElem < geometry->GetGlobal_nElemDomain(); iElem++)
+      Global2Local[iElem] = -1;
+
+    /*--- Now fill array with the transform values only for the points in the rank (including halos) ---*/
+
+    for (iElem = 0; iElem < nElement; iElem++)
+      Global2Local[geometry->elem[iElem]->GetGlobalIndex()] = iElem;
+
+    /*--- Read all lines in the restart file ---*/
+
+    long iElem_Local;
+    unsigned long iElem_Global_Local = 0, iElem_Global = 0; string text_line;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+    /*--- The first line is the header ---*/
+
+    getline (properties_file, text_line);
+
+    for (iElem_Global = 0; iElem_Global < geometry->GetGlobal_nElemDomain(); iElem_Global++ ) {
+
+      getline (properties_file, text_line);
+
+      istringstream point_line(text_line);
+
+      /*--- Retrieve local index. If this element from the restart file lives
+         only on a different processor, the value of iPoint_Local will be -1.
+         Otherwise, the local index for this node on the current processor
+         will be returned and used to instantiate the vars. ---*/
+
+      iElem_Local = Global2Local[iElem_Global];
+
+      if (iElem_Local >= 0) {
+
+        if (config->GetDE_Effects())
+          point_line >> index >> elProperties[0] >> elProperties[1] >> elProperties[2] >> elProperties[3];
+        else
+          point_line >> index >> elProperties[0] >> elProperties[1] >> elProperties[2] >> elProperties[3];
+
+        element_properties[iElem_Local] = new CElementProperty(elProperties[0],
+                                                         elProperties[1],
+                                                         elProperties[2],
+                                                         elProperties[3]);
+
+        iElem_Global_Local++;
+      }
+
+    }
+
+    /*--- Detect a wrong solution file ---*/
+
+    if (iElem_Global_Local < nElement) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The properties file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+
+    /*--- Close the restart file ---*/
+
+    properties_file.close();
+
+    /*--- Free memory needed for the transformation ---*/
+
+    delete [] Global2Local;
+
+
+  }
+
 
 }
 

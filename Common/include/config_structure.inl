@@ -351,6 +351,8 @@ inline bool CConfig::Add_CrossTerm(void) { return addCrossTerm; }
 
 inline void CConfig::Set_CrossTerm(bool needCrossTerm) { addCrossTerm = needCrossTerm; }
 
+inline string CConfig::GetFEA_FileName(void) { return FEA_FileName; }
+
 inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
 inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }

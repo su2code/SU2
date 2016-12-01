@@ -642,8 +642,8 @@ void CDriver::Geometrical_Preprocessing() {
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  for (unsigned long iElem = 0; iElem < geometry_container[ZONE_0][MESH_0]->GetnElem(); iElem++)
-    cout << rank << ":  " << geometry_container[ZONE_0][MESH_0]->elem[iElem]->GetGlobalIndex() << endl;
+//  for (unsigned long iElem = 0; iElem < geometry_container[ZONE_0][MESH_0]->GetnElem(); iElem++)
+//    cout << rank << ":  " << geometry_container[ZONE_0][MESH_0]->elem[iElem]->GetGlobalIndex() << endl;
 #ifdef HAVE_MPI
   MPI_Barrier(MPI_COMM_WORLD);
 #endif
@@ -1181,11 +1181,19 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nDim = geometry[MESH_0]->GetnDim();
   
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
-  
-  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    numerics_container[iMGlevel] = new CNumerics** [MAX_SOLS];
-    for (iSol = 0; iSol < MAX_SOLS; iSol++)
-      numerics_container[iMGlevel][iSol] = new CNumerics* [MAX_TERMS];
+  if (fem){
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel] = new CNumerics** [MAX_SOLS];
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        numerics_container[iMGlevel][iSol] = new CNumerics* [MAX_TERMS_FEA];
+    }
+  }
+  else{
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      numerics_container[iMGlevel] = new CNumerics** [MAX_SOLS];
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        numerics_container[iMGlevel][iSol] = new CNumerics* [MAX_TERMS];
+    }
   }
   
   /*--- Solver definition for the template problem ---*/
