@@ -889,7 +889,7 @@ private:
 	su2double CartCoord[3];		/*!< \brief Vertex cartesians coordinates. */
 	su2double VarCoord[3];		/*!< \brief Used for storing the coordinate variation due to a surface modification. */
 	su2double *VarRot;   /*!< \brief Used for storing the rotation variation due to a surface modification. */
-	long PeriodicPoint[4];			/*!< \brief Store the periodic point of a boundary */
+	long PeriodicPoint[4];				/*!< \brief Store the periodic point of a boundary */
 	short Rotation_Type;			/*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
 	unsigned long Normal_Neighbor; /*!< \brief Index of the closest neighbor. */
 	unsigned long *Donor_Points; /*!< \brief indices of donor points for interpolation across zones */
@@ -1063,7 +1063,7 @@ public:
 	 * \param[in] val_markerindex - Marker index of the donor point.
 	 */
 	void SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex, long val_markerindex);
-
+	
 	/*!
 	 * \brief Get the value of the periodic point of a vertex.
 	 * \return Value of the periodic point of a vertex.

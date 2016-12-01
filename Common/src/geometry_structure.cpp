@@ -11120,130 +11120,133 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     if (iPeriodic <= nPeriodic/2) CreateMirror[iPeriodic] = false;
     else CreateMirror[iPeriodic] = true;
   }
-  
+
   /*--- Send an initial message to the console. ---*/
   cout << "Setting the periodic boundary conditions." << endl;
 	
   /*--- Loop through each marker to find any periodic boundaries. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      
-      /*--- Get marker index of the periodic donor boundary. ---*/
-      jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
-      
-      /*--- Write some info to the console. ---*/
-      cout << "Checking " << config->GetMarker_All_TagBound(iMarker);
-      cout << " boundary against periodic donor, " << config->GetMarker_All_TagBound(jMarker) << ". ";
-      
-      /*--- Retrieve the supplied periodic information. ---*/
-      center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
-      angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
-      trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
-      
-      /*--- Store (center+trans) as it is constant and will be added on. ---*/
-      translation[0] = center[0] + trans[0];
-      translation[1] = center[1] + trans[1];
-      translation[2] = center[2] + trans[2];
-      
-      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-      theta = angles[0];
-      phi   = angles[1];
-      psi   = angles[2];
-      
-      cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-      sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-      
-      /*--- Compute the rotation matrix. Note that the implicit
-       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-      rotMatrix[0][0] = cosPhi*cosPsi;
-      rotMatrix[1][0] = cosPhi*sinPsi;
-      rotMatrix[2][0] = -sinPhi;
-      
-      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-      rotMatrix[2][1] = sinTheta*cosPhi;
-      
-      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-      rotMatrix[2][2] = cosTheta*cosPhi;
-      
-      /*--- Loop through all vertices and find/set the periodic point. ---*/
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        
-        /*--- Retrieve node information for this boundary point. ---*/
-        iPoint  = vertex[iMarker][iVertex]->GetNode();
-        Coord_i = node[iPoint]->GetCoord();
-        
-        /*--- Get the position vector from rot center to point. ---*/
-        dx = Coord_i[0] - center[0];
-        dy = Coord_i[1] - center[1];
-        if (nDim == 3) {
-          dz = Coord_i[2] - center[2];
-        } else {
-          dz = 0.0;
-        }
-        
-        /*--- Compute transformed point coordinates. ---*/
-        rotCoord[0] = rotMatrix[0][0]*dx
-        + rotMatrix[0][1]*dy
-        + rotMatrix[0][2]*dz + translation[0];
-        
-        rotCoord[1] = rotMatrix[1][0]*dx
-        + rotMatrix[1][1]*dy
-        + rotMatrix[1][2]*dz + translation[1];
-        
-        rotCoord[2] = rotMatrix[2][0]*dx
-        + rotMatrix[2][1]*dy
-        + rotMatrix[2][2]*dz + translation[2];
-        
-        /*--- Perform a search to find the closest donor point. ---*/
-        mindist = 1e10;
-        for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
-          
-          /*--- Retrieve information for this jPoint. ---*/
-          jPoint = vertex[jMarker][jVertex]->GetNode();
-          Coord_j = node[jPoint]->GetCoord();
-          
-          /*--- Check the distance between the computed periodic
-           location and this jPoint. ---*/
-          dist = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            dist += (Coord_j[iDim]-rotCoord[iDim])*(Coord_j[iDim]-rotCoord[iDim]);
-          }
-          dist = sqrt(dist);
-          
-          /*---  Store vertex information if this is the closest
-           point found thus far. ---*/
-          if (dist < mindist) { mindist = dist; pPoint = jPoint; }
-        }
-        
-        /*--- Set the periodic point for this iPoint. ---*/
-        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE, 0, jMarker);
+
+			/*--- Get marker index of the periodic donor boundary. ---*/
+			jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
+			
+			/*--- Write some info to the console. ---*/
+			cout << "Checking " << config->GetMarker_All_TagBound(iMarker);
+			cout << " boundary against periodic donor, " << config->GetMarker_All_TagBound(jMarker) << ". ";
+			
+			/*--- Retrieve the supplied periodic information. ---*/
+			center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
+			angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+			trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
+			
+			/*--- Store (center+trans) as it is constant and will be added on. ---*/
+			translation[0] = center[0] + trans[0];
+			translation[1] = center[1] + trans[1];
+			translation[2] = center[2] + trans[2];
+			
+			/*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+			theta = angles[0];
+			phi   = angles[1];
+			psi   = angles[2];
+			
+			cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+			sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+			
+			/*--- Compute the rotation matrix. Note that the implicit
+			 ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+			rotMatrix[0][0] = cosPhi*cosPsi;
+			rotMatrix[1][0] = cosPhi*sinPsi;
+			rotMatrix[2][0] = -sinPhi;
+			
+			rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+			rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+			rotMatrix[2][1] = sinTheta*cosPhi;
+			
+			rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+			rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+			rotMatrix[2][2] = cosTheta*cosPhi;
+			
+			/*--- Loop through all vertices and find/set the periodic point. ---*/
+			for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 				
-				cout << "Point = "<< iPoint << " Donor = " << pPoint << endl;
-				cout << "Current Marker = "<< iMarker << " Donor point Marker = "<< vertex[iMarker][iVertex]->GetDonorMarker() << endl;
-        
-        /*--- Print warning if the nearest point was not within
-         the specified tolerance. Computation will continue. ---*/
-        if (mindist > epsilon) {
-          isBadMatch = true;
-          cout.precision(10);
-          cout << endl;
-          cout << "   Bad match for point " << iPoint << ".\tNearest";
-          cout << " donor distance: " << scientific << mindist << ".";
-        }
-      }
-      
-      /*--- Print final warning when finding bad matches. ---*/
-      if (isBadMatch) {
-        cout << endl;
-        cout << "\n !!! Warning !!!" << endl;
-        cout << "Bad matches found. Computation will continue, but be cautious.\n";
-      }
-      cout << endl;
-      isBadMatch = false;
-      
-    }
+				/*--- Retrieve node information for this boundary point. ---*/
+				iPoint  = vertex[iMarker][iVertex]->GetNode();
+				Coord_i = node[iPoint]->GetCoord();
+				
+				/*--- Get the position vector from rot center to point. ---*/
+				dx = Coord_i[0] - center[0];
+				dy = Coord_i[1] - center[1];
+				if (nDim == 3) {
+					dz = Coord_i[2] - center[2];
+				} else {
+					dz = 0.0;
+				}
+				
+				/*--- Compute transformed point coordinates. ---*/
+				rotCoord[0] = rotMatrix[0][0]*dx
+				+ rotMatrix[0][1]*dy
+				+ rotMatrix[0][2]*dz + translation[0];
+				
+				rotCoord[1] = rotMatrix[1][0]*dx
+				+ rotMatrix[1][1]*dy
+				+ rotMatrix[1][2]*dz + translation[1];
+				
+				rotCoord[2] = rotMatrix[2][0]*dx
+				+ rotMatrix[2][1]*dy
+				+ rotMatrix[2][2]*dz + translation[2];
+				
+				/*--- Perform a search to find the closest donor point. ---*/
+				mindist = 1e10;
+				for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+					
+					/*--- Retrieve information for this jPoint. ---*/
+					jPoint = vertex[jMarker][jVertex]->GetNode();
+					Coord_j = node[jPoint]->GetCoord();
+					
+					/*--- Check the distance between the computed periodic
+					 location and this jPoint. ---*/
+					dist = 0.0;
+					for (iDim = 0; iDim < nDim; iDim++) {
+						dist += (Coord_j[iDim]-rotCoord[iDim])*(Coord_j[iDim]-rotCoord[iDim]);
+					}
+					dist = sqrt(dist);
+					
+					/*---  Store vertex information if this is the closest
+					 point found thus far. ---*/
+					if (dist < mindist) { mindist = dist; pPoint = jPoint; }
+				}
+				
+				/*--- Set the periodic point for this iPoint. ---*/
+				vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE, 0, jMarker);
+				
+				//cout << "\n Point = "<< iPoint << " Marker= " << iMarker << endl;
+				//cout << "iVertex # " << iVertex << endl;
+				
+				//cout << "Donor = " << vertex[iMarker][iVertex]->GetDonorPoint() <<" Marker= " << iMarker << endl;
+				
+				/*--- Print warning if the nearest point was not within
+				 the specified tolerance. Computation will continue. ---*/
+				if (mindist > epsilon) {
+					isBadMatch = true;
+					cout.precision(10);
+					cout << endl;
+					cout << "   Bad match for point " << iPoint << ".\tNearest";
+					cout << " donor distance: " << scientific << mindist << ".";
+				}
+			}
+			
+			/*--- Print final warning when finding bad matches. ---*/
+			if (isBadMatch) {
+				cout << endl;
+				cout << "\n !!! Warning !!!" << endl;
+				cout << "Bad matches found. Computation will continue, but be cautious.\n";
+			}
+			cout << endl;
+			isBadMatch = false;
+			
+		}
+	
   
   /*--- Create a vector to identify the points that belong to each periodic boundary condition ---*/
   bool *PeriodicBC = new bool [nPoint];
@@ -11269,7 +11272,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
          equivalent point in the other periodic surface ---*/
         iPoint = vertex[iMarker][iVertex]->GetNode();
         jPoint = vertex[iMarker][iVertex]->GetDonorPoint();
-        
+				jMarker = vertex[iMarker][iVertex]->GetDonorMarker();
+				
         /*--- First the case in which it is necessary to create a mirror set of elements ---*/
         if (CreateMirror[iPeriodic]) {
           /*--- Now we must determine the neighbor points (including indirect ones) to the periodic points
@@ -11281,7 +11285,14 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
             PeriodicElem[iPeriodic].push_back(iElem);
             for (unsigned short iNode = 0; iNode <	elem[iElem]->GetnNodes(); iNode ++) {
               kPoint = elem[iElem]->GetNode(iNode);
-              if (!PeriodicBC[kPoint]) PeriodicPoint[iPeriodic][0].push_back(kPoint);
+							//if (iPoint == 15)
+							//cout << "KPoint = " <<kPoint << endl;
+							bool isPoint_marker = true;
+							for (long jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
+								long iPoint_mark = vertex[jMarker][jVertex]->GetNode();
+								if(iPoint_mark == kPoint) isPoint_marker = false;
+							}
+							if(isPoint_marker) PeriodicPoint[iPeriodic][0].push_back(kPoint);
             }
           }
         }
@@ -11307,8 +11318,9 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   nPointPeriodic = nPoint;
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (CreateMirror[iPeriodic]) {
+			
       for (iPoint = 0; iPoint < PeriodicPoint[iPeriodic][0].size(); iPoint++) {
-        PeriodicPoint[iPeriodic][1].push_back(nPointPeriodic);
+				PeriodicPoint[iPeriodic][1].push_back(nPointPeriodic);
         nPointPeriodic++;
       }
     }
