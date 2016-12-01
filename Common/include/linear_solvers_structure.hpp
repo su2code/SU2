@@ -167,7 +167,7 @@ public:
    */
   unsigned long CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                   CPreconditioner & precond, su2double tol,
-                                  unsigned long m, bool monitoring);
+                                  unsigned long m, su2double *Residual, bool monitoring);
 	
   /*!
    * \brief Flexible Generalized Minimal Residual method

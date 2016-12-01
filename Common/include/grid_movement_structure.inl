@@ -188,13 +188,13 @@ inline void CFreeFormDefBox::SetOriginalControlPoints() {
   nControlPoints = nControlPoints_Copy;
 }
 
-inline void CFreeFormDefBox::CrossProduct (su2double *v1, su2double *v2, su2double *v3) {
+inline void CGridMovement::CrossProduct (su2double *v1, su2double *v2, su2double *v3) {
 	v3[0] = v1[1]*v2[2]-v1[2]*v2[1];
 	v3[1] = v1[2]*v2[0]-v1[0]*v2[2];
 	v3[2] = v1[0]*v2[1]-v1[1]*v2[0];
 }
 
-inline su2double CFreeFormDefBox::DotProduct (su2double *v1, su2double *v2) { su2double scalar = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]; return scalar; }
+inline su2double CGridMovement::DotProduct (su2double *v1, su2double *v2) { su2double scalar = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]; return scalar; }
 
 inline su2double CFreeFormDefBox::GetNorm(su2double *a) { su2double  norm = sqrt(a[0]*a[0] + a[1]*a[1]+ a[2]*a[2]); return norm; }
 
@@ -217,14 +217,6 @@ inline su2double CVolumetricMovement::Determinant_3x3(su2double A00, su2double A
 inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
-
-inline void CVolumetricMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {  }
-
-inline void CVolumetricMovement::Boundary_Dependencies(CGeometry **geometry, CConfig *config) {  }
-
-inline void CElasticityMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
-
-inline unsigned long CElasticityMovement::Get_nIterMesh() { return nIterMesh; }
 
 inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV) {
   for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {

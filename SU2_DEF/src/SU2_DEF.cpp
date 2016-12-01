@@ -236,7 +236,6 @@ int main(int argc, char *argv[]) {
       cout << "Performing the deformation of the volumetric grid." << endl;
     
     grid_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false);
-    
   }
   
   /*--- Computational grid preprocesing ---*/

@@ -211,7 +211,7 @@ void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2d
 }
 
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, su2double tol, unsigned long m, bool monitoring) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double* Residual, bool monitoring) {
 	
 int rank = 0;
 
@@ -311,7 +311,7 @@ int rank = 0;
 //      cout << "# true_res - calc_res = " << true_res - norm_r << endl;
 //    }
 //  }
-	
+  (*Residual) = norm_r;
 	return (unsigned long) i;
   
 }
@@ -669,7 +669,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
       case CONJUGATE_GRADIENT:
-        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;

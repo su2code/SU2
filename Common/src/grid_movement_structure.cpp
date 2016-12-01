@@ -48,23 +48,123 @@ CVolumetricMovement::CVolumetricMovement(void) : CGridMovement() {
 
 CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
 	
-	  /*--- Initialize the number of spatial dimensions, length of the state
-	   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
-	  nDim   = geometry->GetnDim();
-	  nVar   = geometry->GetnDim();
-	  nPoint = geometry->GetnPoint();
-	  nPointDomain = geometry->GetnPointDomain();
+  /*--- Initialize the number of spatial dimensions, length of the state
+   vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
-	  nIterMesh = 0;
+  unsigned short iDim, jDim, iVar;
 
-	  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+  nDim         = geometry->GetnDim();
+  nVar         = geometry->GetnDim();
+  nPoint       = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
 
-	  config->SetKind_Linear_Solver_Prec(LU_SGS);
-	  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-	  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-	  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-  
+  nIterMesh   = 0;
+  valResidual = 0.0;
+
+  MinVolume = 0.0;
+  MaxVolume = 0.0;
+
+  Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
+  Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
+
+  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+
+  /*--- Matrices to impose boundary conditions ---*/
+
+  matrixZeros = new su2double *[nDim];
+  matrixId    = new su2double *[nDim];
+  for(iDim = 0; iDim < nDim; iDim++){
+    matrixZeros[iDim] = new su2double[nDim];
+    matrixId[iDim]    = new su2double[nDim];
+  }
+
+  for(iDim = 0; iDim < nDim; iDim++){
+    for (jDim = 0; jDim < nDim; jDim++){
+      matrixZeros[iDim][jDim] = 0.0;
+      matrixId[iDim][jDim]    = 0.0;
+    }
+    matrixId[iDim][iDim] = 1.0;
+  }
+
+  /*--- Structural parameters ---*/
+
+  E      = config->GetDeform_ElasticityMod();
+  Nu     = config->GetDeform_PoissonRatio();
+
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+
+  /*--- Element container structure ---*/
+
+  element_container = new CElement* [MAX_FE_KINDS];
+  for (unsigned short iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
+    element_container[iKind] = NULL;
+  }
+  if (nDim == 2){
+    element_container[EL_TRIA] = new CTRIA1(nDim, config);
+    element_container[EL_QUAD] = new CQUAD4(nDim, config);
+  }
+  else if (nDim == 3){
+    element_container[EL_TETRA] = new CTETRA1(nDim, config);
+    element_container[EL_HEXA] = new CHEXA8(nDim, config);
+    element_container[EL_PYRAM] = new CHEXA8(nDim, config);
+    element_container[EL_PRISM] = new CHEXA8(nDim, config);
+  }
+
+  /*--- Term ij of the Jacobian ---*/
+
+  Jacobian_ij = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Jacobian_ij[iDim] = new su2double [nDim];
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Jacobian_ij[iDim][jDim] = 0.0;
+    }
+  }
+
+  TransformMatrix = new su2double*[nDim];
+  for (iVar = 0; iVar < nDim; iVar++){
+    TransformMatrix[iVar] = new su2double[nDim];
+  }
+
+  KAux_ab = new su2double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    KAux_ab[iDim] = new su2double[nDim];
+  }
+
+  if (nDim == 2){
+    Ba_Mat  = new su2double* [3];
+    Bb_Mat  = new su2double* [3];
+    D_Mat   = new su2double* [3];
+    GradNi_Ref_Mat = new su2double* [4];
+    for (iVar = 0; iVar < 3; iVar++) {
+      Ba_Mat[iVar]    = new su2double[nDim];
+      Bb_Mat[iVar]    = new su2double[nDim];
+      D_Mat[iVar]     = new su2double[3];
+    }
+    for (iVar = 0; iVar < 4; iVar++) {
+      GradNi_Ref_Mat[iVar]  = new su2double[nDim];
+    }
+  }
+  else if (nDim == 3){
+    Ba_Mat  = new su2double* [6];
+    Bb_Mat  = new su2double* [6];
+    D_Mat   = new su2double* [6];
+    GradNi_Ref_Mat = new su2double* [8];
+    for (iVar = 0; iVar < 6; iVar++) {
+      Ba_Mat[iVar]      = new su2double[nDim];
+      Bb_Mat[iVar]      = new su2double[nDim];
+      D_Mat[iVar]       = new su2double[6];
+    }
+    for (iVar = 0; iVar < 8; iVar++) {
+      GradNi_Ref_Mat[iVar]  = new su2double[nDim];
+    }
+  }
 }
 
 CVolumetricMovement::~CVolumetricMovement(void) {
@@ -127,257 +227,755 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
  
 }
 
-void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
-  
-  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
-  su2double MinVolume, MaxVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
+void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
+
+  unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
   bool Screen_Output;
-  
+
+  bool discrete_adjoint = config->GetDiscrete_Adjoint();
+
   int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
-  
-  Smoothing_Iter = config->GetGridDef_Linear_Iter();
-  Screen_Output  = config->GetDeform_Output();
-  Tol_Factor     = config->GetDeform_Tol_Factor();
-  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
-  
-  /*--- Disable the screen output if we're running SU2_CFD ---*/
-  
-  if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
-
-  /*--- Set the number of nonlinear iterations to 1 if Derivative computation is enabled ---*/
-
-  if (Derivative) Nonlinear_Iter = 1;
-  
-  /*--- Loop over the total number of grid deformation iterations. The surface
-   deformation can be divided into increments to help with stability. In
-   particular, the linear elasticity equations hold only for small deformations. ---*/
-  
-  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
-    
-    /*--- Initialize vector and sparse matrix ---*/
-    
-    LinSysSol.SetValZero();
-    LinSysRes.SetValZero();
-    StiffMatrix.SetValZero();
-    
-    /*--- Compute the stiffness matrix entries for all nodes/elements in the
-     mesh. FEA uses a finite element method discretization of the linear
-     elasticity equations (transfers element stiffnesses to point-to-point). ---*/
-    
-    MinVolume = SetFEAMethodContributions_Elem(geometry, config);
-    
-    /*--- Compute the tolerance of the linear solver using MinLength ---*/
-    
-    NumError = MinVolume * Tol_Factor;
-    
-    /*--- Set the boundary displacements (as prescribed by the design variable
-     perturbations controlling the surface shape) as a Dirichlet BC. ---*/
-    
-    SetBoundaryDisplacements(geometry, config);
-
-    /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
-
-    if (Derivative) {
-      SetBoundaryDerivatives(geometry, config);
-    }
-    
-    /*--- Fix the location of any points in the domain, if requested. ---*/
-    
-    if (config->GetHold_GridFixed())
-      SetDomainDisplacements(geometry, config);
-    
-    CMatrixVectorProduct* mat_vec = NULL;
-    CPreconditioner* precond = NULL;
-
-    /*--- Communicate any prescribed boundary displacements via MPI,
-     so that all nodes have the same solution and r.h.s. entries
-     across all partitions. ---*/
-
-    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
-
-    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
-
-    /*--- If we want no derivatives or the direct derivatives,
-     * we solve the system using the normal matrix vector product and preconditioner.
-     * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
-     * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
-      mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-
-    } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
-      /*--- Build the ILU preconditioner for the transposed system ---*/
-
-      StiffMatrix.BuildILUPreconditioner(true);
-      mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
-      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
-    }
-
-    CSysSolve *system  = new CSysSolve();
-    
-    switch (config->GetDeform_Linear_Solver()) {
-        
-        /*--- Solve the linear system (GMRES with restart) ---*/
-        
-      case RESTARTED_FGMRES:
-        
-        Tot_Iter = 0; MaxIter = RestartIter;
-        
-        system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
-        
-        if ((rank == MASTER_NODE) && Screen_Output) {
-          cout << "\n# FGMRES (with restart) residual history" << endl;
-          cout << "# Residual tolerance target = " << NumError << endl;
-          cout << "# Initial residual norm     = " << Residual_Init << endl;
-        }
-        
-        if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
-        
-        while (Tot_Iter < Smoothing_Iter) {
-          
-          if (IterLinSol + RestartIter > Smoothing_Iter)
-            MaxIter = Smoothing_Iter - IterLinSol;
-          
-          IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
-          Tot_Iter += IterLinSol;
-          
-          if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-          
-          if (Residual < Residual_Init*NumError) { break; }
-          
-        }
-        
-        if ((rank == MASTER_NODE) && Screen_Output) {
-          cout << "# FGMRES (with restart) final (true) residual:" << endl;
-          cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
-        }
-        
-        break;
-        
-        /*--- Solve the linear system (GMRES) ---*/
-        
-      case FGMRES:
-        
-        Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
-        break;
-        
-        /*--- Solve the linear system (BCGSTAB) ---*/
-        
-      case BCGSTAB:
-        
-        Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
-        break;
-        
-    }
-    
-    /*--- Deallocate memory needed by the Krylov linear solver ---*/
-    
-    delete system;
-    delete mat_vec;
-    delete precond;
-    
-    /*--- Update the grid coordinates and cell volumes using the solution
-     of the linear system (usol contains the x, y, z displacements). ---*/
-
-    if (!Derivative) {
-      UpdateGridCoord(geometry, config);
-    }else {
-      UpdateGridCoord_Derivatives(geometry, config);
-    }
-
-    if (UpdateGeo)
-      UpdateDualGrid(geometry, config);
-    
-    /*--- Check for failed deformation (negative volumes). ---*/
-    
-    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
-    
-    /*--- Set number of iterations in the mesh update. ---*/
-
-    Set_nIterMesh(Tot_Iter);
-
-    if (rank == MASTER_NODE) {
-      cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << Tot_Iter << ". ";
-      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
-      else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
-    }
-    
-  }
-  
-
-}
-
-void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume) {
-  
-  unsigned long iElem, ElemCounter = 0, PointCorners[8];
-  su2double Volume = 0.0, CoordCorners[8][3];
-  unsigned short nNodes = 0, iNodes, iDim;
-  bool RightVol = true;
-  
-  int rank = MASTER_NODE;
-  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  if (rank == MASTER_NODE)
-    cout << "Computing volumes of the grid elements." << endl;
-  
-  MaxVolume = -1E22; MinVolume = 1E22;
-  
-  /*--- Load up each triangle and tetrahedron to check for negative volumes. ---*/
-  
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        nNodes = 6;
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   nNodes = 8;
-    
-    for (iNodes = 0; iNodes < nNodes; iNodes++) {
-      PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
-      for (iDim = 0; iDim < nDim; iDim++) {
-        CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
+
+  /*--- Retrieve number or internal iterations from config ---*/
+
+  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+
+  /*--- Disable the screen output if we're running SU2_CFD ---*/
+  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
+
+  /*--- Loop over the total number of grid deformation iterations. The surface
+   deformation can be divided into increments to help with stability. ---*/
+
+  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
+
+    /*--- Initialize vector and sparse matrix ---*/
+    LinSysSol.SetValZero();
+    LinSysRes.SetValZero();
+    StiffMatrix.SetValZero();
+
+    /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
+    SetMinMaxVolume(geometry, config);
+    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+      if (nDim == 2) cout << scientific << "Min. area: "<< MinVolume <<", max. area: " << MaxVolume <<"." << endl;
+      else           cout << scientific << "Min. volume: "<< MinVolume <<", max. volume: " << MaxVolume <<"." << endl;
+    }
+
+    /*--- Compute the stiffness matrix. ---*/
+    SetStiffnessMatrix(geometry, config);
+
+    /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
+    SetBoundaryDisplacements(geometry, config);
+
+    /*--- Solve the linear system. ---*/
+    Solve_System(geometry, config);
+
+    /*--- Transform DoFs back to x,y,z coordinate system ---*/
+
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+      if (GetContraintMoving_Boundary(config, iMarker)){
+//        Transform_DoFs(geometry, config, LinSysSol, iMarker, true);
       }
     }
-    
-    /*--- 2D elements ---*/
-    
-    if (nDim == 2) {
-      if (nNodes == 3) Volume = GetTriangle_Area(CoordCorners);
-      if (nNodes == 4) Volume = GetQuadrilateral_Area(CoordCorners);
+
+    /*--- Update the grid coordinates and cell volumes using the solution
+     of the linear system (usol contains the x, y, z displacements). ---*/
+    UpdateGridCoord(geometry, config);
+
+    if (UpdateGeo)
+      UpdateDualGrid(geometry, config);
+
+    /*--- Check for failed deformation (negative volumes). ---*/
+    /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh. ---*/
+    SetMinMaxVolume(geometry, config);
+
+    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
+      cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
+      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << valResidual << "." << endl;
+      else cout << "Min. volume: " << MinVolume << ". Error: " << valResidual << "." << endl;
     }
-    
-    /*--- 3D Elementes ---*/
-    
-    if (nDim == 3) {
-      if (nNodes == 4) Volume = GetTetra_Volume(CoordCorners);
-      if (nNodes == 5) Volume = GetPyram_Volume(CoordCorners);
-      if (nNodes == 6) Volume = GetPrism_Volume(CoordCorners);
-      if (nNodes == 8) Volume = GetHexa_Volume(CoordCorners);
-    }
-    
-    RightVol = true;
-    if (Volume < 0.0) RightVol = false;
-    
-    MaxVolume = max(MaxVolume, Volume);
-    MinVolume = min(MinVolume, Volume);
-    geometry->elem[iElem]->SetVolume(Volume);
-    
-    if (!RightVol) ElemCounter++;
-    
+
   }
-  
+
+}
+
+
+void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config){
+
+  unsigned short iMarker;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (GetMoving_Boundary(config, iMarker)) {
+      SetMoving_Boundary(geometry, config, iMarker);
+    }
+    if (GetContraintMoving_Boundary(config, iMarker)) {
+      SetConstraintMoving_Boundary(geometry, config, iMarker);
+    }
+    if (GetClamped_Boundary(config, iMarker)) {
+      SetClamped_Boundary(geometry, config, iMarker);
+    }
+  }
+
+  /*--- All others are pending. ---*/
+
+}
+
+bool CVolumetricMovement::GetClamped_Boundary(CConfig* config, unsigned short val_marker){
+
+  bool send_receive = config->GetMarker_All_KindBC(val_marker) == SEND_RECEIVE;
+  bool periodic     = config->GetMarker_All_KindBC(val_marker) == PERIODIC_BOUNDARY;
+  bool moving       = GetMoving_Boundary(config, val_marker);
+  bool const_moving = GetContraintMoving_Boundary(config, val_marker);
+  bool clamped      = false;
+
+  /*--- Send Receive, Periodic and Moving boundaries are allowed to move. Everything else is fixed. ---*/
+
+  clamped = !send_receive && !periodic && !moving;// && !const_moving;
+
+  return clamped;
+}
+
+bool CVolumetricMovement::GetMoving_Boundary(CConfig* config, unsigned short val_marker){
+
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+  bool marker_moving      = config->GetMarker_All_Moving(val_marker);
+  bool marker_dv          = config->GetMarker_All_DV(val_marker);
+  bool direct_diff        = (config->GetDirectDiff() == D_DESIGN);
+  bool marker_fsi         = config->GetMarker_All_FSIinterface(val_marker);
+  bool moving             = false;
+
+  switch(Kind_SU2){
+    case SU2_CFD:
+      moving = marker_moving || (direct_diff && marker_dv) || marker_fsi;
+      break;
+    case SU2_DEF: case SU2_DOT:
+      moving = marker_dv;
+      break;
+  }
+
+  return moving;
+}
+
+bool CVolumetricMovement::GetContraintMoving_Boundary(CConfig* config, unsigned short val_marker){
+
+  bool symmetry = (config->GetMarker_All_KindBC(val_marker) == SYMMETRY_PLANE);
+
+  return symmetry;
+
+}
+
+void CVolumetricMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+
+  unsigned long iNode, iVertex;
+  unsigned long iPoint, jNode;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->node[iNode]->GetDomain()) {
+
+      if (nDim == 2) {
+        Solution[0] = 0.0;  Solution[1] = 0.0;
+        Residual[0] = 0.0;  Residual[1] = 0.0;
+      }
+      else {
+        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
+        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
+      }
+
+      /*--- Initialize the reaction vector ---*/
+
+      LinSysRes.SetBlock(iNode, Residual);
+      LinSysSol.SetBlock(iNode, Solution);
+
+      /*--- STRONG ENFORCEMENT OF THE CLAMPED BOUNDARY CONDITION ---*/
+
+      StiffMatrix.SetBlock(iNode,iNode, matrixId);
+
+      /*--- Delete the full column and row for node iNode ---*/
+      for (iPoint = 0; iPoint < geometry->node[iNode]->GetnNeighbor(); iPoint++){
+
+        jNode = geometry->node[iNode]->GetPoint(iPoint);
+
+        StiffMatrix.SetBlock(jNode, iNode, matrixZeros);
+        StiffMatrix.SetBlock(iNode, jNode, matrixZeros);
+
+      }
+    }
+  }
+}
+
+
+void CVolumetricMovement::SetConstraintMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+
+  unsigned long iVertex, iPoint, iNode, jNode;
+  unsigned short iVar;
+  su2double* Block_ij, *Block_ji, *Block_ii;
+
+//  /*--- Transform DoFs to normal and tangential coordinate system ---*/
+
+//  Transform_DoFs(geometry, config, LinSysSol, val_marker, false);
+//  Transform_DoFs(geometry, config, LinSysRes, val_marker, false);
+
+//  /*--- Apply tangential boundary condition on the specified markers or if it is a symmetry plane ---*/
+
+//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+//    /*--- Get node index ---*/
+
+//    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+//    if (geometry->node[iNode]->GetDomain()) {
+
+//      /*--- Delete the rows and columns corresponding to the normal component and set the RHS to zero ---*/
+
+//      LinSysRes[iNode*nDim+(nDim-1)] = 0.0;
+//      LinSysSol[iNode*nDim+(nDim-1)] = 0.0;
+
+//      Block_ii = StiffMatrix.GetBlock(iNode, iNode);
+
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        Block_ii[(nDim-1)*nDim+iVar] = 0.0;
+//        Block_ii[iVar*nDim+(nDim-1)] = 0.0;
+//      }
+//      Block_ii[(nDim-1)*nDim+(nDim-1)] = 1.0;
+
+//      for (iPoint = 0; iPoint < geometry->node[iNode]->GetnNeighbor(); iPoint++){
+
+//        jNode = geometry->node[iNode]->GetPoint(iPoint);
+
+//        Block_ij = StiffMatrix.GetBlock(iNode, jNode);
+//        Block_ji = StiffMatrix.GetBlock(jNode, iNode);
+//        for (iVar = 0; iVar < nVar; iVar++){
+//          Block_ij[(nDim-1)*nDim+iVar] = 0.0;
+//          Block_ji[iVar*nDim+(nDim-1)] = 0.0;
+//        }
+//      }
+//    }
+//  }
+
+
+
+
+//    /*--- Apply normal boundary condition on the specified markers ---*/
+
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+//    if ((config->GetMarker_All_DeformNormal(iMarker) == YES )){
+//      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+////        if (geometry->node[iPoint]->GetDomain()){
+
+//          /*--- Delete the rows corresponding to the tangential component(s) and set the RHS to zero---*/
+
+//          if (nDim == 2){
+//            LinSysRes[iPoint*nDim+0] = 0; LinSysSol[iPoint*nDim+0] = 0;
+//            StiffMatrix.DeleteValsRowi(iPoint*nDim+0);
+//          }else {
+//            LinSysRes[iPoint*nDim+0] = 0; LinSysSol[iPoint*nDim+0] = 0;
+//            LinSysRes[iPoint*nDim+1] = 0; LinSysSol[iPoint*nDim+1] = 0;
+//            StiffMatrix.DeleteValsRowi(iPoint*nDim+0);
+//            StiffMatrix.DeleteValsRowi(iPoint*nDim+1);
+//          }
+////        }
+//      }
+//    }
+//  }
+
+
+}
+
+void CVolumetricMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+
+  unsigned short iDim, jDim;
+
+  su2double *VarCoord;
+
+  unsigned long iNode, iVertex;
+  unsigned long iPoint, jNode;
+
+  su2double VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
+  su2double* auxJacobian_ij;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Get the displ;acement on the vertex ---*/
+
+    VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
+
+    if (geometry->node[iNode]->GetDomain()) {
+
+      if (nDim == 2) {
+        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;
+        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;
+      }
+      else {
+        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;  Solution[2] = VarCoord[2] * VarIncrement;
+        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;  Residual[2] = VarCoord[2] * VarIncrement;
+      }
+
+      /*--- Initialize the reaction vector ---*/
+
+      LinSysRes.SetBlock(iNode, Residual);
+      LinSysSol.SetBlock(iNode, Solution);
+
+      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
+
+      StiffMatrix.SetBlock(iNode, iNode, matrixId);
+
+      /*--- Delete the columns and rows for a particular node ---*/
+
+      for (iPoint = 0; iPoint < geometry->node[iNode]->GetnNeighbor(); iPoint++){
+
+        jNode = geometry->node[iNode]->GetPoint(iPoint);
+
+        /*--- Retrieve the Jacobian term ---*/
+
+        auxJacobian_ij = StiffMatrix.GetBlock(jNode, iNode);
+
+        /*--- Multiply by the imposed displacement ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            Residual[iDim] += auxJacobian_ij[iDim*nDim+jDim] * VarCoord[jDim];
+          }
+        }
+        /*--- The term is substracted from the residual (right hand side) ---*/
+        LinSysRes.SubtractBlock(jNode, Residual);
+
+        /*--- The Jacobian term is now set to 0 ---*/
+        StiffMatrix.SetBlock(jNode, iNode, matrixZeros);
+        StiffMatrix.SetBlock(iNode, jNode, matrixZeros);
+
+      }
+    }
+  }
+}
+
+su2double CVolumetricMovement::Get_Tangent2D(su2double* Normal, su2double* t1){
+
+  su2double UnitNormal[3];
+  su2double Area = 0.0;
+  unsigned short iDim = 0;
+
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    Area += Normal[iDim]*Normal[iDim];
+    UnitNormal[iDim] = Normal[iDim];
+  }
+
+  Area = sqrt(Area);
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    UnitNormal[iDim] /= Area;
+  }
+
+  t1[0] = -UnitNormal[1];
+  t1[1] =  UnitNormal[0];
+
+  return Area;
+}
+
+su2double CVolumetricMovement::Get_Tangent3D(su2double* Normal, su2double* t1, su2double* t2){
+  su2double UnitI[] = {1, 0, 0}, UnitJ[] = {0, 1, 0}, UnitK[] = {0, 0, 1};
+  su2double UnitNormal[3];
+  su2double nCrossI[3], nCrossJ[3], nCrossK[3], AbsnCrossI, AbsnCrossJ, AbsnCrossK, Area = 0.0;
+  unsigned short iDim = 0;
+
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    Area += Normal[iDim]*Normal[iDim];
+    UnitNormal[iDim] = Normal[iDim];
+  }
+
+  Area = sqrt(Area);
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    UnitNormal[iDim] /= Area;
+  }
+
+  CrossProduct(UnitNormal, UnitI, nCrossI);
+  CrossProduct(UnitNormal, UnitJ, nCrossJ);
+  CrossProduct(UnitNormal, UnitK, nCrossK);
+  AbsnCrossI = sqrt(DotProduct(nCrossI, nCrossI));
+  AbsnCrossJ = sqrt(DotProduct(nCrossJ, nCrossJ));
+  AbsnCrossK = sqrt(DotProduct(nCrossK, nCrossK));
+
+  /*--- Choose a tangential vector t1 (we choose more or less an arbitrary one)---*/
+
+  if (max(max(AbsnCrossI, AbsnCrossJ), AbsnCrossK) == AbsnCrossI){
+    for (iDim = 0; iDim < nDim; iDim++) t1[iDim] = nCrossI[iDim];
+
+  }
+  else if (max(max(AbsnCrossI, AbsnCrossJ), AbsnCrossK) == AbsnCrossJ){
+    for (iDim = 0; iDim < nDim; iDim++) t1[iDim] = nCrossJ[iDim];
+
+  }
+  else if (max(max(AbsnCrossI, AbsnCrossJ), AbsnCrossK) == AbsnCrossK){
+    for (iDim = 0; iDim < nDim; iDim++) t1[iDim] = nCrossK[iDim];
+  }
+
+  /*--- Compute tangential vector t2 ---*/
+
+  CrossProduct(UnitNormal, t1, t2);
+
+  /*--- Return norm of normal vector ---*/
+
+  return Area;
+}
+
+void CVolumetricMovement::SetTangential_BC(unsigned long* indexNode, CElement *elem, CGeometry* geometry, CConfig *config){
+
+  su2double *Kab = NULL, *Kab_T = NULL;
+  unsigned short iVar = 0, jVar = 0, kVar = 0, iNode = 0, jNode = 0, iMarker = 0, iDim = 0;
+  su2double* Normal = NULL;
+  su2double t1[3], t2[3], Area = 0;
+  long iVertex;
+  unsigned short nNodes = elem->GetnNodes();
+
+  /*--- We transform the local coordinate system of each node on the tangential boundary,
+   * to coincide with the tangential and normal direction. ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    if (GetContraintMoving_Boundary(config, iMarker)){
+
+      for (iNode = 0; iNode < nNodes; iNode++){
+
+        iVertex = geometry->node[indexNode[iNode]]->GetVertex(iMarker);
+
+        /*--- Determine whether the point is on the tangential boundary ---*/
+
+        if (iVertex != -1){
+
+          /*--- Compute the entries of the transformation matrix ---*/
+
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          if (nDim == 2){
+
+            /*--- Get one tangential vector in 2D ---*/
+
+            Area = Get_Tangent2D(Normal, t1);
+
+            for (iDim = 0; iDim < nDim; iDim++){
+              TransformMatrix[0][iDim] = t1[iDim];
+              TransformMatrix[1][iDim] = Normal[iDim]/Area;
+            }
+          } else {
+
+            /*--- Get two tangential vectors in 3D ---*/
+
+            Area = Get_Tangent3D(Normal, t1, t2);
+
+            for (iDim = 0; iDim < nDim; iDim++){
+              TransformMatrix[0][iDim] = t1[iDim];
+              TransformMatrix[1][iDim] = t2[iDim];
+              TransformMatrix[2][iDim] = Normal[iDim]/Area;
+            }
+          }
+
+          for (jNode = 0; jNode < nNodes; jNode++){
+
+            Kab =   elem->Get_Kab(iNode, jNode);
+            Kab_T = elem->Get_Kab(jNode, iNode);
+
+            /*--- Postmultiply by transposed Transformation matrix --- */
+
+            for (iVar = 0; iVar < nDim; iVar++){
+              for (jVar = 0; jVar < nDim; jVar++){
+                Jacobian_ij[iVar][jVar] = Kab[iVar*nDim+jVar];
+//                for (kVar = 0; kVar < nDim; kVar++){
+//                  Jacobian_ij[iVar][jVar] += Kab[iVar*nDim+kVar] * TransformMatrix[jVar][kVar];
+//                }
+              }
+            }
+
+            /*--- Premultiply by Transformation matrix ---*/
+            for (iVar = 0; iVar < nDim; iVar++){
+              for (jVar = 0; jVar < nDim; jVar++){
+//                Kab  [iVar*nDim+jVar] = 0.0;
+                KAux_ab[iVar][jVar]   = 0.0;
+                KAux_ab[iVar][jVar]   = Jacobian_ij[iVar][jVar];
+//                for (kVar = 0; kVar < nDim; kVar++){
+//                  KAux_ab[iVar][jVar] += TransformMatrix[iVar][kVar] * Jacobian_ij[kVar][jVar];
+//                }
+              }
+            }
+//            elem->Add_Kab(KAux_ab, iNode, jNode);
+//            if (iNode != jNode){
+//              elem->Add_Kab_T(KAux_ab, jNode, iNode);
+//            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void CVolumetricMovement::Transform_DoFs(CGeometry *geometry, CConfig *config, CSysVector& vector, unsigned short val_marker, bool transpose){
+
+  unsigned short iDim;
+  unsigned long iPoint, iVertex;
+  su2double *Normal, t1[3], t2[3], TempSol[3], Area;
+
+  /*--- Transform entries vector back to x,y,z coordinate system (transpose = true) or
+   * to tangential and normal coordinate system (transpose = true) ---*/
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+    if (geometry->node[iPoint]->GetDomain()){
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        TempSol[iDim] = 0.0;
+      }
+      if (nDim == 2){
+        Area = Get_Tangent2D(Normal, t1);
+        if (transpose){
+          for (iDim = 0; iDim < nDim; iDim++){
+            TempSol[iDim] += vector[iPoint*nDim+0]*t1[iDim];
+            TempSol[iDim] += vector[iPoint*nDim+1]*Normal[iDim]/Area;
+          }
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++){
+            TempSol[0] += vector[iPoint*nDim+iDim]*t1[iDim];
+            TempSol[1] += vector[iPoint*nDim+iDim]*Normal[iDim]/Area;
+          }
+        }
+      } else {
+        Area = Get_Tangent3D(Normal, t1, t2);
+        if (transpose){
+          for (iDim = 0; iDim < nDim; iDim++){
+            TempSol[iDim] += vector[iPoint*nDim+0]*t1[iDim];
+            TempSol[iDim] += vector[iPoint*nDim+1]*t2[iDim];
+            TempSol[iDim] += vector[iPoint*nDim+2]*Normal[iDim]/Area;
+          }
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++){
+            TempSol[0] += vector[iPoint*nDim+iDim]*t1[iDim];
+            TempSol[1] += vector[iPoint*nDim+iDim]*t2[iDim];
+            TempSol[2] += vector[iPoint*nDim+iDim]*Normal[iDim]/Area;
+          }
+        }
+      }
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        vector[iPoint*nDim+iDim] = TempSol[iDim];
+      }
+    }
+  }
+}
+
+void CVolumetricMovement::Solve_System(CGeometry *geometry, CConfig *config){
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
+
+  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), System_Residual;
+
+  unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
+  unsigned long IterLinSol = 0;
+
+  bool Screen_Output= config->GetDeform_Output();
+
+  /*--- Initialize the structures to solve the system ---*/
+
+  CMatrixVectorProduct* mat_vec = NULL;
+  CPreconditioner* precond = NULL;
+  CSysSolve *system  = new CSysSolve();
+
+  /*--- Communicate any prescribed boundary displacements via MPI,
+   so that all nodes have the same solution and r.h.s. entries
+   across all partitions. ---*/
+
+  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+
+  bool TapeActive = NO;
+
+  if (config->GetDiscrete_Adjoint()){
+#ifdef CODI_REVERSE_TYPE
+
+    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
+
+    TapeActive = AD::globalTape.isActive();
+
+
+    /*--- Stop the recording for the linear solver ---*/
+
+    AD::StopRecording();
+#endif
+  }
+
+  /*--- Solve the linear system using a Krylov subspace method ---*/
+
+  if (config->GetDeform_Linear_Solver() == BCGSTAB ||
+      config->GetDeform_Linear_Solver() == FGMRES ||
+      config->GetDeform_Linear_Solver() == RESTARTED_FGMRES ||
+      config->GetDeform_Linear_Solver() == CONJUGATE_GRADIENT) {
+
+    /*--- Independently of whether we are using or not derivatives,
+     *--- as the matrix is now symmetric, the matrix-vector product
+     *--- can be done in the same way in the forward and the reverse mode
+     */
+
+    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
+    mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    CPreconditioner* precond = NULL;
+
+    switch (config->GetKind_Deform_Linear_Solver_Prec()) {
+    case JACOBI:
+      StiffMatrix.BuildJacobiPreconditioner();
+      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+      break;
+    case ILU:
+      StiffMatrix.BuildILUPreconditioner();
+      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
+      break;
+    case LU_SGS:
+      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+      break;
+    case LINELET:
+      StiffMatrix.BuildJacobiPreconditioner();
+      precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
+      break;
+    default:
+      StiffMatrix.BuildJacobiPreconditioner();
+      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+      break;
+    }
+
+    switch (config->GetDeform_Linear_Solver()) {
+    case BCGSTAB:
+      IterLinSol = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+      break;
+    case FGMRES:
+      IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+      break;
+    case CONJUGATE_GRADIENT:
+      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+      break;
+    case RESTARTED_FGMRES:
+      IterLinSol = 0;
+      while (IterLinSol < config->GetLinear_Solver_Iter()) {
+        if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+          MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
+        IterLinSol += system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+        if (LinSysRes.norm() < SolverTol) break;
+        SolverTol = SolverTol*(1.0/LinSysRes.norm());
+      }
+      break;
+    }
+
+    /*--- Dealocate memory of the Krylov subspace method ---*/
+
+    delete mat_vec;
+    delete precond;
+
+  }
+
+  if(TapeActive){
+    /*--- Start recording if it was stopped for the linear solver ---*/
+
+    AD::StartRecording();
+
+    /*--- Prepare the externally differentiated linear solver ---*/
+
+    system->SetExternalSolve_Mesh(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+
+  }
+
+  delete system;
+
+  /*--- Set number of iterations in the mesh update. ---*/
+
+  nIterMesh = IterLinSol;
+
+  /*--- Store the value of the residual. ---*/
+
+  valResidual = System_Residual;
+
+
+}
+
+void CVolumetricMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iElem, ElemCounter = 0;
+  unsigned short iNode, iDim, jDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord;
+  int EL_KIND = 0;
+
+  bool discrete_adjoint = config->GetDiscrete_Adjoint();
+
+  bool RightVol = true;
+
+  su2double ElemVolume;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if ((rank == MASTER_NODE) && (!discrete_adjoint))
+    cout << "Computing volumes of the grid elements." << endl;
+
+  MaxVolume = -1E22; MinVolume = 1E22;
+
+  /*--- Loops over all the elements ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
+
+    }
+
+    /*--- Compute the volume of the element (or the area in 2D cases ) ---*/
+
+    if (nDim == 2)  ElemVolume = element_container[EL_KIND]->ComputeArea();
+    else            ElemVolume = element_container[EL_KIND]->ComputeVolume();
+
+    RightVol = true;
+    if (ElemVolume < 0.0) RightVol = false;
+
+    MaxVolume = max(MaxVolume, ElemVolume);
+    MinVolume = min(MinVolume, ElemVolume);
+    geometry->elem[iElem]->SetVolume(ElemVolume);
+
+    if (!RightVol) ElemCounter++;
+
+  }
+
 #ifdef HAVE_MPI
   unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
   su2double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
@@ -386,1514 +984,391 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
   SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 #endif
-  
+
   /*--- Volume from  0 to 1 ---*/
-  
+
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    Volume = geometry->elem[iElem]->GetVolume()/MaxVolume;
-    geometry->elem[iElem]->SetVolume(Volume);
+    ElemVolume = geometry->elem[iElem]->GetVolume()/MaxVolume;
+    geometry->elem[iElem]->SetVolume(ElemVolume);
   }
-  
+
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
-  
+
 }
 
-void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
-  
-  su2double *coord, dist2, dist;
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall;
-  
+
+void CVolumetricMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *config){
+
+  unsigned long iElem;
+  unsigned short iNode, iDim, jDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, MinDistance = 0.0, MaxDistance = 0.0;
+  int EL_KIND = 0;
+
+  su2double *Kab = NULL;
+  unsigned short NelNodes, jNode;
+
+  su2double ElemVolume;
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  MaxDistance = -1E22; MinDistance = 1E22;
-  
-  
-  if (rank == MASTER_NODE)
-    cout << "Computing distances to the nearest deforming surface." << endl;
-  
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
-   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
-  
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-  
-#ifndef HAVE_MPI
-  
-  /*--- Compute the total number of nodes on deforming boundaries ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      nVertex_SolidWall += geometry->GetnVertex(iMarker);
-  
-  /*--- Allocate an array to hold boundary node coordinates ---*/
-  
-  su2double **Coord_bound;
-  Coord_bound = new su2double* [nVertex_SolidWall];
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    Coord_bound[iVertex] = new su2double [nDim];
-  
-  /*--- Retrieve and store the coordinates of the deforming boundary nodes ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Coord_bound[nVertex_SolidWall][iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
-  }
-  
-  /*--- Loop over all interior mesh nodes and compute the distances to each
-   of the deforming boundary nodes. Store the minimum distance to the wall for
-   each interior mesh node. Store the global minimum distance. ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
-      dist2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim]) *(coord[iDim]-Coord_bound[iVertex][iDim]);
-      if (dist2 < dist) dist = dist2;
-    }
-    
-    MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS) MinDistance = min(MinDistance, sqrt(dist));
-    
-    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
-  }
-  
-  /*--- Distance from  0 to 1 ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
-    geometry->node[iPoint]->SetWall_Distance(dist);
-  }
-  
-  /*--- Deallocate the vector of boundary coordinates. ---*/
-  
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    delete[] Coord_bound[iVertex];
-  delete[] Coord_bound;
-  
-  
-#else
-  
-  /*--- Variables and buffers needed for MPI ---*/
-  
-  int iProcessor, nProcessor;
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
-  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  /*--- Count the total number of nodes on deforming boundaries within the
-   local partition. ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      nLocalVertex_NS += geometry->GetnVertex(iMarker);
-  
-  /*--- Communicate to all processors the total number of deforming boundary
-   nodes, the maximum number of deforming boundary nodes on any single
-   partition, and the number of deforming nodes on each partition. ---*/
-  
-  Buffer_Send_nVertex[0] = nLocalVertex_NS;
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  /*--- Create and initialize to zero some buffers to hold the coordinates
-   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
-  
-  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_NS*nDim];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_NS*nDim];
-  unsigned long nBuffer = MaxLocalVertex_NS*nDim;
-  
-  for (iVertex = 0; iVertex < MaxLocalVertex_NS; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-  
-  /*--- Retrieve and store the coordinates of the deforming boundary nodes on
-   the local partition and broadcast them to all partitions. ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
-
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-  
-  /*--- Loop over all interior mesh nodes on the local partition and compute
-   the distances to each of the deforming boundary nodes in the entire mesh.
-   Store the minimum distance to the wall for each interior mesh node. ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-      for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-        
-        if (dist2 < dist) dist = dist2;
-      }
-    
-    MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS)  MinDistance = min(MinDistance, sqrt(dist));
-    
-    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
-  }
-  
-  su2double MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
-  su2double MinDistance_Local = MinDistance; MinDistance = 0.0;
-  SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-  
-  /*--- Distance from  0 to 1 ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
-    geometry->node[iPoint]->SetWall_Distance(dist);
-  }
-  
-  /*--- Deallocate the buffers needed for the MPI communication. ---*/
-  
-  delete[] Buffer_Send_Coord;
-  delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex;
-  delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
-}
-
-su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config) {
-  
-  unsigned short iVar, iDim, nNodes = 0, iNodes, StiffMatrix_nElem = 0;
-  unsigned long iElem, PointCorners[8];
-  su2double **StiffMatrix_Elem = NULL, CoordCorners[8][3];
-  su2double MinVolume = 0.0, MaxVolume = 0.0, MinDistance = 0.0, MaxDistance = 0.0, ElemVolume = 0.0, ElemDistance = 0.0;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  /*--- Allocate maximum size (quadrilateral and hexahedron) ---*/
-  
-  if (nDim == 2) StiffMatrix_nElem = 8;
-  else StiffMatrix_nElem = 24;
-    
-  StiffMatrix_Elem = new su2double* [StiffMatrix_nElem];
-  for (iVar = 0; iVar < StiffMatrix_nElem; iVar++)
-    StiffMatrix_Elem[iVar] = new su2double [StiffMatrix_nElem];
-  
-  /*--- Compute min volume in the entire mesh. ---*/
-  
-  ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
-  if (rank == MASTER_NODE) cout <<"Min. volume: "<< MinVolume <<", max. volume: "<< MaxVolume <<"." << endl;
-  
-  
   /*--- Compute the distance to the nearest deforming surface if needed
    as part of the stiffness calculation.. ---*/
-  
+
   if (config->GetDeform_Stiffness_Type() == WALL_DISTANCE) {
     ComputeDeforming_Wall_Distance(geometry, config, MinDistance, MaxDistance);
     if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
   }
-  
-	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/
-  
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      nNodes = 3;
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   nNodes = 4;
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       nNodes = 5;
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         nNodes = 6;
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    nNodes = 8;
-    
-    for (iNodes = 0; iNodes < nNodes; iNodes++) {
-      PointCorners[iNodes] = geometry->elem[iElem]->GetNode(iNodes);
+
+  /*--- Loops over all the elements ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
       for (iDim = 0; iDim < nDim; iDim++) {
-        CoordCorners[iNodes][iDim] = geometry->node[PointCorners[iNodes]]->GetCoord(iDim);
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
+
     }
-    
-    /*--- Extract Element volume and distance to compute the stiffness ---*/
-    
+
+    /*--- Retrieve the volume of the element (previously computed in SetMinMaxVolume()) ---*/
+
     ElemVolume = geometry->elem[iElem]->GetVolume();
-    
+
     if (config->GetDeform_Stiffness_Type() == WALL_DISTANCE) {
-      ElemDistance = 0.0;
-      for (iNodes = 0; iNodes < nNodes; iNodes++)
-        ElemDistance += geometry->node[PointCorners[iNodes]]->GetWall_Distance();
-      ElemDistance = ElemDistance/(su2double)nNodes;
+      ElemVolume = 0.0;
+      for (iNode = 0; iNode < nNodes; iNode++)
+        ElemVolume  += geometry->node[indexNode[iNode]]->GetWall_Distance();
+      ElemVolume  = ElemVolume /(su2double)nNodes;
     }
-    
-    if (nDim == 2) SetFEA_StiffMatrix2D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
-    if (nDim == 3) SetFEA_StiffMatrix3D(geometry, config, StiffMatrix_Elem, PointCorners, CoordCorners, nNodes, ElemVolume, ElemDistance);
-    
-    AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
-    
-	}
-  
-  /*--- Deallocate memory and exit ---*/
-  
-  for (iVar = 0; iVar < StiffMatrix_nElem; iVar++)
-    delete [] StiffMatrix_Elem[iVar];
-  delete [] StiffMatrix_Elem;
-  
-  return MinVolume;
 
-}
+    /*--- Compute the stiffness of the element ---*/
+    Set_Element_Stiffness(ElemVolume, config);
 
-su2double CVolumetricMovement::ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
-  
-  int i, j, k;
-  su2double c0, c1, xsj;
-  su2double xs[3][3], ad[3][3];
-  
-  /*--- Shape functions ---*/
-  
-  DShapeFunction[0][3] = Xi;
-  DShapeFunction[1][3] = Eta;
-  DShapeFunction[2][3] = 1-Xi-Eta;
-  
-  /*--- dN/d xi, dN/d eta ---*/
-  
-  DShapeFunction[0][0] = 1.0;  DShapeFunction[0][1] = 0.0;
-  DShapeFunction[1][0] = 0.0;  DShapeFunction[1][1] = 1.0;
-  DShapeFunction[2][0] = -1.0; DShapeFunction[2][1] = -1.0;
-  
-  /*--- Jacobian transformation ---*/
-  
-  for (i = 0; i < 2; i++) {
-    for (j = 0; j < 2; j++) {
-      xs[i][j] = 0.0;
-      for (k = 0; k < 3; k++) {
-        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
-      }
-    }
-  }
-  
-  /*--- Adjoint to Jacobian ---*/
-  
-  ad[0][0] = xs[1][1];
-  ad[0][1] = -xs[0][1];
-  ad[1][0] = -xs[1][0];
-  ad[1][1] = xs[0][0];
-  
-  /*--- Determinant of Jacobian ---*/
-  
-  xsj = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
-  
-  /*--- Jacobian inverse ---*/
-  
-  for (i = 0; i < 2; i++) {
-    for (j = 0; j < 2; j++) {
-      xs[i][j] = ad[i][j]/xsj;
-    }
-  }
-  
-  /*--- Derivatives with repect to global coordinates ---*/
-  
-  for (k = 0; k < 3; k++) {
-    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]; // dN/dx
-    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]; // dN/dy
-    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
-    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-  }
-  
-  return xsj;
-  
-}
+    /*--- Compute the element contribution to the stiffness matrix ---*/
 
-su2double CVolumetricMovement::ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
-  
-  int i, j, k;
-  su2double c0, c1, xsj;
-  su2double xs[3][3], ad[3][3];
-  
-  /*--- Shape functions ---*/
-  
-  DShapeFunction[0][3] = 0.25*(1.0-Xi)*(1.0-Eta);
-  DShapeFunction[1][3] = 0.25*(1.0+Xi)*(1.0-Eta);
-  DShapeFunction[2][3] = 0.25*(1.0+Xi)*(1.0+Eta);
-  DShapeFunction[3][3] = 0.25*(1.0-Xi)*(1.0+Eta);
-  
-  /*--- dN/d xi, dN/d eta ---*/
-  
-  DShapeFunction[0][0] = -0.25*(1.0-Eta); DShapeFunction[0][1] = -0.25*(1.0-Xi);
-  DShapeFunction[1][0] =  0.25*(1.0-Eta); DShapeFunction[1][1] = -0.25*(1.0+Xi);
-  DShapeFunction[2][0] =  0.25*(1.0+Eta); DShapeFunction[2][1] =  0.25*(1.0+Xi);
-  DShapeFunction[3][0] = -0.25*(1.0+Eta); DShapeFunction[3][1] =  0.25*(1.0-Xi);
-  
-  /*--- Jacobian transformation ---*/
-  
-  for (i = 0; i < 2; i++) {
-    for (j = 0; j < 2; j++) {
-      xs[i][j] = 0.0;
-      for (k = 0; k < 4; k++) {
-        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
-      }
-    }
-  }
-  
-  /*--- Adjoint to Jacobian ---*/
-  
-  ad[0][0] = xs[1][1];
-  ad[0][1] = -xs[0][1];
-  ad[1][0] = -xs[1][0];
-  ad[1][1] = xs[0][0];
-  
-  /*--- Determinant of Jacobian ---*/
-  
-  xsj = ad[0][0]*ad[1][1]-ad[0][1]*ad[1][0];
-  
-  /*--- Jacobian inverse ---*/
-  
-  for (i = 0; i < 2; i++) {
-    for (j = 0; j < 2; j++) {
-      xs[i][j] = ad[i][j]/xsj;
-    }
-  }
-  
-  /*--- Derivatives with repect to global coordinates ---*/
-  
-  for (k = 0; k < 4; k++) {
-    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]; // dN/dx
-    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]; // dN/dy
-    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
-    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-  }
-  
-  return xsj;
-  
-}
+    Compute_Element_Contribution(element_container[EL_KIND], config);
 
-su2double CVolumetricMovement::ShapeFunc_Tetra(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
-  
-  int i, j, k;
-  su2double c0, c1, c2, xsj;
-  su2double xs[3][3], ad[3][3];
-  
-  /*--- Shape functions ---*/
-  
-  DShapeFunction[0][3] = Xi;
-  DShapeFunction[1][3] = Zeta;
-  DShapeFunction[2][3] = 1.0 - Xi - Eta - Zeta;
-  DShapeFunction[3][3] = Eta;
-  
-  /*--- dN/d xi, dN/d eta, dN/d zeta ---*/
-  
-  DShapeFunction[0][0] = 1.0;  DShapeFunction[0][1] = 0.0;  DShapeFunction[0][2] = 0.0;
-  DShapeFunction[1][0] = 0.0;  DShapeFunction[1][1] = 0.0;  DShapeFunction[1][2] = 1.0;
-  DShapeFunction[2][0] = -1.0; DShapeFunction[2][1] = -1.0; DShapeFunction[2][2] = -1.0;
-  DShapeFunction[3][0] = 0.0;  DShapeFunction[3][1] = 1.0;  DShapeFunction[3][2] = 0.0;
-  
-  /*--- Jacobian transformation ---*/
-  
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = 0.0;
-      for (k = 0; k < 4; k++) {
-        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
-      }
-    }
-  }
-  
-  /*--- Adjoint to Jacobian ---*/
-  
-  ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
-  ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
-  ad[0][2] = xs[0][1]*xs[1][2]-xs[0][2]*xs[1][1];
-  ad[1][0] = xs[1][2]*xs[2][0]-xs[1][0]*xs[2][2];
-  ad[1][1] = xs[0][0]*xs[2][2]-xs[0][2]*xs[2][0];
-  ad[1][2] = xs[0][2]*xs[1][0]-xs[0][0]*xs[1][2];
-  ad[2][0] = xs[1][0]*xs[2][1]-xs[1][1]*xs[2][0];
-  ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
-  ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
-  
-  /*--- Determinant of Jacobian ---*/
-  
-  xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
-  
-  /*--- Jacobian inverse ---*/
-  
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = ad[i][j]/xsj;
-    }
-  }
-  
-  /*--- Derivatives with repect to global coordinates ---*/
-  
-  for (k = 0; k < 4; k++) {
-    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]+xs[0][2]*DShapeFunction[k][2]; // dN/dx
-    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]+xs[1][2]*DShapeFunction[k][2]; // dN/dy
-    c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
-    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
-    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
-  }
-  
-  return xsj;
-  
-}
+    /*--- Set tangential/normal boundary conditions ---*/
 
-su2double CVolumetricMovement::ShapeFunc_Pyram(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
-  
-  int i, j, k;
-  su2double c0, c1, c2, xsj;
-  su2double xs[3][3], ad[3][3];
-  
-  /*--- Shape functions ---*/
-  
-  DShapeFunction[0][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[4][3] = 0.5*(1.0+Zeta);
-  
-  /*--- dN/d xi ---*/
-  
-  DShapeFunction[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[4][0] = 0.0;
-  
-  /*--- dN/d eta ---*/
-  
-  DShapeFunction[0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
-  DShapeFunction[1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[2][1] = 0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[3][1] = 0.125*(1.0-Xi)*(1.0-Zeta);
-  DShapeFunction[4][1] = 0.0;
-  
-  /*--- dN/d zeta ---*/
-  
-  DShapeFunction[0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
-  DShapeFunction[1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
-  DShapeFunction[2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
-  DShapeFunction[3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
-  DShapeFunction[4][2] = 0.5;
-  
-  /*--- Jacobian transformation ---*/
-  
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = 0.0;
-      for (k = 0; k < 5; k++) {
-        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
-      }
-    }
-  }
-  
-  /*--- Adjoint to Jacobian ---*/
-  
-  ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
-  ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
-  ad[0][2] = xs[0][1]*xs[1][2]-xs[0][2]*xs[1][1];
-  ad[1][0] = xs[1][2]*xs[2][0]-xs[1][0]*xs[2][2];
-  ad[1][1] = xs[0][0]*xs[2][2]-xs[0][2]*xs[2][0];
-  ad[1][2] = xs[0][2]*xs[1][0]-xs[0][0]*xs[1][2];
-  ad[2][0] = xs[1][0]*xs[2][1]-xs[1][1]*xs[2][0];
-  ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
-  ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
-  
-  /*--- Determinant of Jacobian ---*/
-  
-  xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
-  
-  /*--- Jacobian inverse ---*/
-  
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = ad[i][j]/xsj;
-    }
-  }
-  
-  /*--- Derivatives with repect to global coordinates ---*/
-  
-  for (k = 0; k < 5; k++) {
-    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]+xs[0][2]*DShapeFunction[k][2]; // dN/dx
-    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]+xs[1][2]*DShapeFunction[k][2]; // dN/dy
-    c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
-    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
-    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
-  }
-  
-  return xsj;
-  
-}
+    SetTangential_BC(indexNode, element_container[EL_KIND], geometry, config);
 
-su2double CVolumetricMovement::ShapeFunc_Prism(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
-  
-  int i, j, k;
-  su2double c0, c1, c2, xsj;
-  su2double xs[3][3], ad[3][3];
-  
-  /*--- Shape functions ---*/
-  
-  DShapeFunction[0][3] = 0.5*Eta*(1.0-Xi);
-  DShapeFunction[1][3] = 0.5*Zeta*(1.0-Xi);
-  DShapeFunction[2][3] = 0.5*(1.0-Eta-Zeta)*(1.0-Xi);
-  DShapeFunction[3][3] = 0.5*Eta*(Xi+1.0);
-  DShapeFunction[4][3] = 0.5*Zeta*(Xi+1.0);
-  DShapeFunction[5][3] = 0.5*(1.0-Eta-Zeta)*(Xi+1.0);
-  
-  /*--- dN/d Xi, dN/d Eta, dN/d Zeta ---*/
-  
-  DShapeFunction[0][0] = -0.5*Eta;            DShapeFunction[0][1] = 0.5*(1.0-Xi);      DShapeFunction[0][2] = 0.0;
-  DShapeFunction[1][0] = -0.5*Zeta;           DShapeFunction[1][1] = 0.0;               DShapeFunction[1][2] = 0.5*(1.0-Xi);
-  DShapeFunction[2][0] = -0.5*(1.0-Eta-Zeta); DShapeFunction[2][1] = -0.5*(1.0-Xi);     DShapeFunction[2][2] = -0.5*(1.0-Xi);
-  DShapeFunction[3][0] = 0.5*Eta;             DShapeFunction[3][1] = 0.5*(Xi+1.0);      DShapeFunction[3][2] = 0.0;
-  DShapeFunction[4][0] = 0.5*Zeta;            DShapeFunction[4][1] = 0.0;               DShapeFunction[4][2] = 0.5*(Xi+1.0);
-  DShapeFunction[5][0] = 0.5*(1.0-Eta-Zeta);  DShapeFunction[5][1] = -0.5*(Xi+1.0);     DShapeFunction[5][2] = -0.5*(Xi+1.0);
-  
-  /*--- Jacobian transformation ---*/
-  
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = 0.0;
-      for (k = 0; k < 6; k++) {
-        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
-      }
-    }
-  }
-  
-  /*--- Adjoint to Jacobian ---*/
-  
-  ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
-  ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
-  ad[0][2] = xs[0][1]*xs[1][2]-xs[0][2]*xs[1][1];
-  ad[1][0] = xs[1][2]*xs[2][0]-xs[1][0]*xs[2][2];
-  ad[1][1] = xs[0][0]*xs[2][2]-xs[0][2]*xs[2][0];
-  ad[1][2] = xs[0][2]*xs[1][0]-xs[0][0]*xs[1][2];
-  ad[2][0] = xs[1][0]*xs[2][1]-xs[1][1]*xs[2][0];
-  ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
-  ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
-  
-  /*--- Determinant of Jacobian ---*/
-  
-  xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
-  
-  /*--- Jacobian inverse ---*/
-  
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = ad[i][j]/xsj;
-    }
-  }
-  
-  /*--- Derivatives with repect to global coordinates ---*/
-  
-  for (k = 0; k < 6; k++) {
-    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]+xs[0][2]*DShapeFunction[k][2]; // dN/dx
-    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]+xs[1][2]*DShapeFunction[k][2]; // dN/dy
-    c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
-    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
-    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
-  }
-  
-  return xsj;
-  
-}
+    /*--- Retrieve number of nodes ---*/
 
-su2double CVolumetricMovement::ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Zeta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]) {
-  
-  int i, j, k;
-  su2double c0, c1, c2, xsj;
-  su2double xs[3][3], ad[3][3];
-  
-  
-  /*--- Shape functions ---*/
-  
-  DShapeFunction[0][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[4][3] = 0.125*(1.0-Xi)*(1.0-Eta)*(1.0+Zeta);
-  DShapeFunction[5][3] = 0.125*(1.0+Xi)*(1.0-Eta)*(1.0+Zeta);
-  DShapeFunction[6][3] = 0.125*(1.0+Xi)*(1.0+Eta)*(1.0+Zeta);
-  DShapeFunction[7][3] = 0.125*(1.0-Xi)*(1.0+Eta)*(1.0+Zeta);
-  
-  /*--- dN/d xi ---*/
-  
-  DShapeFunction[0][0] = -0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[1][0] = 0.125*(1.0-Eta)*(1.0-Zeta);
-  DShapeFunction[2][0] = 0.125*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[3][0] = -0.125*(1.0+Eta)*(1.0-Zeta);
-  DShapeFunction[4][0] = -0.125*(1.0-Eta)*(1.0+Zeta);
-  DShapeFunction[5][0] = 0.125*(1.0-Eta)*(1.0+Zeta);
-  DShapeFunction[6][0] = 0.125*(1.0+Eta)*(1.0+Zeta);
-  DShapeFunction[7][0] = -0.125*(1.0+Eta)*(1.0+Zeta);
-  
-  /*--- dN/d eta ---*/
-  
-  DShapeFunction[0][1] = -0.125*(1.0-Xi)*(1.0-Zeta);
-  DShapeFunction[1][1] = -0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[2][1] = 0.125*(1.0+Xi)*(1.0-Zeta);
-  DShapeFunction[3][1] = 0.125*(1.0-Xi)*(1.0-Zeta);
-  DShapeFunction[4][1] = -0.125*(1.0-Xi)*(1.0+Zeta);
-  DShapeFunction[5][1] = -0.125*(1.0+Xi)*(1.0+Zeta);
-  DShapeFunction[6][1] = 0.125*(1.0+Xi)*(1.0+Zeta);
-  DShapeFunction[7][1] = 0.125*(1.0-Xi)*(1.0+Zeta);
-  
-  /*--- dN/d zeta ---*/
-  
-  DShapeFunction[0][2] = -0.125*(1.0-Xi)*(1.0-Eta);
-  DShapeFunction[1][2] = -0.125*(1.0+Xi)*(1.0-Eta);
-  DShapeFunction[2][2] = -0.125*(1.0+Xi)*(1.0+Eta);
-  DShapeFunction[3][2] = -0.125*(1.0-Xi)*(1.0+Eta);
-  DShapeFunction[4][2] = 0.125*(1.0-Xi)*(1.0-Eta);
-  DShapeFunction[5][2] = 0.125*(1.0+Xi)*(1.0-Eta);
-  DShapeFunction[6][2] = 0.125*(1.0+Xi)*(1.0+Eta);
-  DShapeFunction[7][2] = 0.125*(1.0-Xi)*(1.0+Eta);
-  
-  /*--- Jacobian transformation ---*/
-  
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = 0.0;
-      for (k = 0; k < 8; k++) {
-        xs[i][j] = xs[i][j]+CoordCorners[k][j]*DShapeFunction[k][i];
-      }
-    }
-  }
-  
-  /*--- Adjoint to Jacobian ---*/
-  
-  ad[0][0] = xs[1][1]*xs[2][2]-xs[1][2]*xs[2][1];
-  ad[0][1] = xs[0][2]*xs[2][1]-xs[0][1]*xs[2][2];
-  ad[0][2] = xs[0][1]*xs[1][2]-xs[0][2]*xs[1][1];
-  ad[1][0] = xs[1][2]*xs[2][0]-xs[1][0]*xs[2][2];
-  ad[1][1] = xs[0][0]*xs[2][2]-xs[0][2]*xs[2][0];
-  ad[1][2] = xs[0][2]*xs[1][0]-xs[0][0]*xs[1][2];
-  ad[2][0] = xs[1][0]*xs[2][1]-xs[1][1]*xs[2][0];
-  ad[2][1] = xs[0][1]*xs[2][0]-xs[0][0]*xs[2][1];
-  ad[2][2] = xs[0][0]*xs[1][1]-xs[0][1]*xs[1][0];
-  
-  /*--- Determinant of Jacobian ---*/
-  
-  xsj = xs[0][0]*ad[0][0]+xs[0][1]*ad[1][0]+xs[0][2]*ad[2][0];
-  
-  /*--- Jacobian inverse ---*/
-  for (i = 0; i < 3; i++) {
-    for (j = 0; j < 3; j++) {
-      xs[i][j] = ad[i][j]/xsj;
-    }
-  }
-  
-  /*--- Derivatives with repect to global coordinates ---*/
-  
-  for (k = 0; k < 8; k++) {
-    c0 = xs[0][0]*DShapeFunction[k][0]+xs[0][1]*DShapeFunction[k][1]+xs[0][2]*DShapeFunction[k][2]; // dN/dx
-    c1 = xs[1][0]*DShapeFunction[k][0]+xs[1][1]*DShapeFunction[k][1]+xs[1][2]*DShapeFunction[k][2]; // dN/dy
-    c2 = xs[2][0]*DShapeFunction[k][0]+xs[2][1]*DShapeFunction[k][1]+xs[2][2]*DShapeFunction[k][2]; // dN/dz
-    DShapeFunction[k][0] = c0; // store dN/dx instead of dN/d xi
-    DShapeFunction[k][1] = c1; // store dN/dy instead of dN/d eta
-    DShapeFunction[k][2] = c2; // store dN/dz instead of dN/d zeta
-  }
-  
-  return xsj;
-  
-}
+    NelNodes = element_container[EL_KIND]->GetnNodes();
 
-su2double CVolumetricMovement::GetTriangle_Area(su2double CoordCorners[8][3]) {
-  
-  unsigned short iDim;
-  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
-  su2double *Coord_0, *Coord_1, *Coord_2, Area;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[1];
-  Coord_2 = CoordCorners[2];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-  }
-  
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-  
-  return Area;
-  
-}
+    /*--- Assemble the stiffness matrix ---*/
 
-su2double CVolumetricMovement::GetQuadrilateral_Area(su2double CoordCorners[8][3]) {
-  
-  unsigned short iDim;
-  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
-  su2double *Coord_0, *Coord_1, *Coord_2, Area;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[1];
-  Coord_2 = CoordCorners[2];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-  }
-  
-  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[2];
-  Coord_2 = CoordCorners[3];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-    b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-  }
-  
-  Area += 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-  
-  return Area;
-  
-}
+    for (iNode = 0; iNode < NelNodes; iNode++){
 
-su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
-  
-  unsigned short iDim;
-  su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
-  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0}, Volume;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[1];
-  Coord_2 = CoordCorners[2];
-  Coord_3 = CoordCorners[3];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  return Volume;
-  
-}
+      for (jNode = 0; jNode < NelNodes; jNode++){
 
-su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
-  
-  unsigned short iDim;
-  su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
-  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0}, Volume;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[1];
-  Coord_2 = CoordCorners[2];
-  Coord_3 = CoordCorners[4];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[2];
-  Coord_2 = CoordCorners[3];
-  Coord_3 = CoordCorners[4];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  return Volume;
+        Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
 
-}
-
-su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
-  
-  unsigned short iDim;
-  su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
-  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0}, Volume;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[2];
-  Coord_2 = CoordCorners[1];
-  Coord_3 = CoordCorners[5];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-    
-  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[5];
-  Coord_2 = CoordCorners[1];
-  Coord_3 = CoordCorners[4];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[5];
-  Coord_2 = CoordCorners[4];
-  Coord_3 = CoordCorners[3];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  return Volume;
-
-}
-
-su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
-  
-  unsigned short iDim;
-  su2double *Coord_0, *Coord_1, *Coord_2, *Coord_3;
-  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0}, Volume;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[1];
-  Coord_2 = CoordCorners[2];
-  Coord_3 = CoordCorners[5];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[2];
-  Coord_2 = CoordCorners[7];
-  Coord_3 = CoordCorners[5];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[2];
-  Coord_2 = CoordCorners[3];
-  Coord_3 = CoordCorners[7];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = CoordCorners[0];
-  Coord_1 = CoordCorners[5];
-  Coord_2 = CoordCorners[7];
-  Coord_3 = CoordCorners[4];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  Coord_0 = CoordCorners[2];
-  Coord_1 = CoordCorners[7];
-  Coord_2 = CoordCorners[5];
-  Coord_3 = CoordCorners[6];
-  
-  for (iDim = 0; iDim < nDim; iDim++) {
-    r1[iDim] = Coord_1[iDim] - Coord_0[iDim];
-    r2[iDim] = Coord_2[iDim] - Coord_0[iDim];
-    r3[iDim] = Coord_3[iDim] - Coord_0[iDim];
-  }
-  
-	CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
-	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
-	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
-  
-  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
-  
-  return Volume;
-
-}
-
-void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
-                                               unsigned short nNodes, su2double ElemVolume, su2double ElemDistance) {
-  
-  su2double B_Matrix[3][8], D_Matrix[3][3], Aux_Matrix[8][3];
-  su2double Xi = 0.0, Eta = 0.0, Det = 0.0, E = 1/EPS, Lambda = 0.0, Mu = 0.0, Nu = 0.0;
-  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  su2double Location[4][3], Weight[4];
-  unsigned short nVar = geometry->GetnDim();
-  
-  for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-    for (jVar = 0; jVar < nNodes*nVar; jVar++) {
-      StiffMatrix_Elem[iVar][jVar] = 0.0;
-    }
-  }
-  
-  /*--- Integration formulae from "Shape functions and points of
-   integration of the Résumé" by Josselin DELMAS (2013) ---*/
-  
-  /*--- Triangle. Nodes of numerical integration at 1 point (order 1). ---*/
-  
-  if (nNodes == 3) {
-    nGauss = 1;
-    Location[0][0] = 0.333333333333333;  Location[0][1] = 0.333333333333333;  Weight[0] = 0.5;
-  }
-  
-  /*--- Quadrilateral. Nodes of numerical integration at 4 points (order 2). ---*/
-  
-  if (nNodes == 4) {
-    nGauss = 4;
-    Location[0][0] = -0.577350269189626;  Location[0][1] = -0.577350269189626;  Weight[0] = 1.0;
-    Location[1][0] = 0.577350269189626;   Location[1][1] = -0.577350269189626;  Weight[1] = 1.0;
-    Location[2][0] = 0.577350269189626;   Location[2][1] = 0.577350269189626;   Weight[2] = 1.0;
-    Location[3][0] = -0.577350269189626;  Location[3][1] = 0.577350269189626;   Weight[3] = 1.0;
-  }
-  
-  for (iGauss = 0; iGauss < nGauss; iGauss++) {
-    
-    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];
-    
-    if (nNodes == 3) Det = ShapeFunc_Triangle(Xi, Eta, CoordCorners, DShapeFunction);
-    if (nNodes == 4) Det = ShapeFunc_Quadrilateral(Xi, Eta, CoordCorners, DShapeFunction);
-    
-    /*--- Compute the B Matrix ---*/
-    
-    for (iVar = 0; iVar < 3; iVar++)
-      for (jVar = 0; jVar < nNodes*nVar; jVar++)
-        B_Matrix[iVar][jVar] = 0.0;
-    
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      B_Matrix[0][0+iNode*nVar] = DShapeFunction[iNode][0];
-      B_Matrix[1][1+iNode*nVar] = DShapeFunction[iNode][1];
-      
-      B_Matrix[2][0+iNode*nVar] = DShapeFunction[iNode][1];
-      B_Matrix[2][1+iNode*nVar] = DShapeFunction[iNode][0];
-    }
-    
-    /*--- Impose a type of stiffness for each element ---*/
-    
-    switch (config->GetDeform_Stiffness_Type()) {
-      case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
-      case WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case CONSTANT_STIFFNESS: E=1.0/EPS; break;
-    }
-    
-    Nu = config->GetDeform_Coeff();
-    Mu = E / (2.0*(1.0 + Nu));
-    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-    
-    /*--- Compute the D Matrix (for plane strain and 3-D)---*/
-    
-    D_Matrix[0][0] = Lambda + 2.0*Mu;		D_Matrix[0][1] = Lambda;            D_Matrix[0][2] = 0.0;
-    D_Matrix[1][0] = Lambda;            D_Matrix[1][1] = Lambda + 2.0*Mu;   D_Matrix[1][2] = 0.0;
-    D_Matrix[2][0] = 0.0;               D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = Mu;
-    
-    
-    /*--- Compute the BT.D Matrix ---*/
-    
-    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        Aux_Matrix[iVar][jVar] = 0.0;
-        for (kVar = 0; kVar < 3; kVar++)
-          Aux_Matrix[iVar][jVar] += B_Matrix[kVar][iVar]*D_Matrix[kVar][jVar];
-      }
-    }
-    
-    /*--- Compute the BT.D.B Matrix (stiffness matrix), and add to the original
-     matrix using Gauss integration ---*/
-    
-    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-      for (jVar = 0; jVar < nNodes*nVar; jVar++) {
-        for (kVar = 0; kVar < 3; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * fabs(Det);
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            Jacobian_ij[iDim][jDim] = Kab[iDim*nDim+jDim];
+          }
         }
-      }
-    }
-    
-  }
-  
-}
 
-void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
-                                               unsigned short nNodes, su2double ElemVolume, su2double ElemDistance) {
-  
-  su2double B_Matrix[6][24], D_Matrix[6][6] = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}, Aux_Matrix[24][6];
-  su2double Xi = 0.0, Eta = 0.0, Zeta = 0.0, Det = 0.0, Mu = 0.0, E = 0.0, Lambda = 0.0, Nu = 0.0;
-  unsigned short iNode, iVar, jVar, kVar, iGauss, nGauss = 0;
-  su2double DShapeFunction[8][4] = {{0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0}};
-  su2double Location[8][3], Weight[8];
-  unsigned short nVar = geometry->GetnDim();
-  
-  for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-    for (jVar = 0; jVar < nNodes*nVar; jVar++) {
-      StiffMatrix_Elem[iVar][jVar] = 0.0;
-    }
-  }
-  
-  /*--- Integration formulae from "Shape functions and points of
-   integration of the Résumé" by Josselin Delmas (2013) ---*/
-  
-  /*--- Tetrahedrons. Nodes of numerical integration at 1 point (order 1). ---*/
-  
-  if (nNodes == 4) {
-    nGauss = 1;
-    Location[0][0] = 0.25;  Location[0][1] = 0.25;  Location[0][2] = 0.25;  Weight[0] = 0.166666666666666;
-  }
-  
-  /*--- Pyramids. Nodes numerical integration at 5 points. ---*/
-  
-  if (nNodes == 5) {
-    nGauss = 5;
-    Location[0][0] = 0.5;   Location[0][1] = 0.0;   Location[0][2] = 0.1531754163448146;  Weight[0] = 0.133333333333333;
-    Location[1][0] = 0.0;   Location[1][1] = 0.5;   Location[1][2] = 0.1531754163448146;  Weight[1] = 0.133333333333333;
-    Location[2][0] = -0.5;  Location[2][1] = 0.0;   Location[2][2] = 0.1531754163448146;  Weight[2] = 0.133333333333333;
-    Location[3][0] = 0.0;   Location[3][1] = -0.5;  Location[3][2] = 0.1531754163448146;  Weight[3] = 0.133333333333333;
-    Location[4][0] = 0.0;   Location[4][1] = 0.0;   Location[4][2] = 0.6372983346207416;  Weight[4] = 0.133333333333333;
-  }
-  
-  /*--- Prism. Nodes of numerical integration at 6 points (order 3 in Xi, order 2 in Eta and Mu ). ---*/
-  
-  if (nNodes == 6) {
-    nGauss = 6;
-    Location[0][0] = 0.5;                 Location[0][1] = 0.5;                 Location[0][2] = -0.577350269189626;  Weight[0] = 0.166666666666666;
-    Location[1][0] = -0.577350269189626;  Location[1][1] = 0.0;                 Location[1][2] = 0.5;                 Weight[1] = 0.166666666666666;
-    Location[2][0] = 0.5;                 Location[2][1] = -0.577350269189626;  Location[2][2] = 0.0;                 Weight[2] = 0.166666666666666;
-    Location[3][0] = 0.5;                 Location[3][1] = 0.5;                 Location[3][2] = 0.577350269189626;   Weight[3] = 0.166666666666666;
-    Location[4][0] = 0.577350269189626;   Location[4][1] = 0.0;                 Location[4][2] = 0.5;                 Weight[4] = 0.166666666666666;
-    Location[5][0] = 0.5;                 Location[5][1] = 0.577350269189626;   Location[5][2] = 0.0;                 Weight[5] = 0.166666666666666;
-  }
-  
-  /*--- Hexahedrons. Nodes of numerical integration at 6 points (order 3). ---*/
-  
-  if (nNodes == 8) {
-    nGauss = 8;
-    Location[0][0] = -0.577350269189626;  Location[0][1] = -0.577350269189626;  Location[0][2] = -0.577350269189626;  Weight[0] = 1.0;
-    Location[1][0] = -0.577350269189626;  Location[1][1] = -0.577350269189626;  Location[1][2] = 0.577350269189626;   Weight[1] = 1.0;
-    Location[2][0] = -0.577350269189626;  Location[2][1] = 0.577350269189626;   Location[2][2] = -0.577350269189626;  Weight[2] = 1.0;
-    Location[3][0] = -0.577350269189626;  Location[3][1] = 0.577350269189626;   Location[3][2] = 0.577350269189626;   Weight[3] = 1.0;
-    Location[4][0] = 0.577350269189626;   Location[4][1] = -0.577350269189626;  Location[4][2] = -0.577350269189626;  Weight[4] = 1.0;
-    Location[5][0] = 0.577350269189626;   Location[5][1] = -0.577350269189626;  Location[5][2] = 0.577350269189626;   Weight[5] = 1.0;
-    Location[6][0] = 0.577350269189626;   Location[6][1] = 0.577350269189626;   Location[6][2] = -0.577350269189626;  Weight[6] = 1.0;
-    Location[7][0] = 0.577350269189626;   Location[7][1] = 0.577350269189626;   Location[7][2] = 0.577350269189626;   Weight[7] = 1.0;
-  }
-  
-  for (iGauss = 0; iGauss < nGauss; iGauss++) {
-    
-    Xi = Location[iGauss][0]; Eta = Location[iGauss][1];  Zeta = Location[iGauss][2];
-    
-    if (nNodes == 4) Det = ShapeFunc_Tetra(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
-    if (nNodes == 5) Det = ShapeFunc_Pyram(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
-    if (nNodes == 6) Det = ShapeFunc_Prism(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
-    if (nNodes == 8) Det = ShapeFunc_Hexa(Xi, Eta, Zeta, CoordCorners, DShapeFunction);
-    
-    /*--- Compute the B Matrix ---*/
-    
-    for (iVar = 0; iVar < 6; iVar++)
-      for (jVar = 0; jVar < nNodes*nVar; jVar++)
-        B_Matrix[iVar][jVar] = 0.0;
-    
-    for (iNode = 0; iNode < nNodes; iNode++) {
-      B_Matrix[0][0+iNode*nVar] = DShapeFunction[iNode][0];
-      B_Matrix[1][1+iNode*nVar] = DShapeFunction[iNode][1];
-      B_Matrix[2][2+iNode*nVar] = DShapeFunction[iNode][2];
-      
-      B_Matrix[3][0+iNode*nVar] = DShapeFunction[iNode][1];
-      B_Matrix[3][1+iNode*nVar] = DShapeFunction[iNode][0];
-      
-      B_Matrix[4][1+iNode*nVar] = DShapeFunction[iNode][2];
-      B_Matrix[4][2+iNode*nVar] = DShapeFunction[iNode][1];
-      
-      B_Matrix[5][0+iNode*nVar] = DShapeFunction[iNode][2];
-      B_Matrix[5][2+iNode*nVar] = DShapeFunction[iNode][0];
-    }
-    
-    /*--- Impose a type of stiffness for each element ---*/
-    
-    switch (config->GetDeform_Stiffness_Type()) {
-      case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
-      case WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case CONSTANT_STIFFNESS: E=1.0/EPS; break;
-    }
-    
-    Nu = config->GetDeform_Coeff();
-    Mu = E / (2.0*(1.0 + Nu));
-    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-    
-    /*--- Compute the D Matrix (for plane strain and 3-D)---*/
-    
-    D_Matrix[0][0] = Lambda + 2.0*Mu;	D_Matrix[0][1] = Lambda;					D_Matrix[0][2] = Lambda;
-    D_Matrix[1][0] = Lambda;					D_Matrix[1][1] = Lambda + 2.0*Mu;	D_Matrix[1][2] = Lambda;
-    D_Matrix[2][0] = Lambda;					D_Matrix[2][1] = Lambda;					D_Matrix[2][2] = Lambda + 2.0*Mu;
-    D_Matrix[3][3] = Mu;
-    D_Matrix[4][4] = Mu;
-    D_Matrix[5][5] = Mu;
-    
-    
-    /*--- Compute the BT.D Matrix ---*/
-    
-    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-      for (jVar = 0; jVar < 6; jVar++) {
-        Aux_Matrix[iVar][jVar] = 0.0;
-        for (kVar = 0; kVar < 6; kVar++)
-          Aux_Matrix[iVar][jVar] += B_Matrix[kVar][iVar]*D_Matrix[kVar][jVar];
-      }
-    }
-    
-    /*--- Compute the BT.D.B Matrix (stiffness matrix), and add to the original
-     matrix using Gauss integration ---*/
-    
-    for (iVar = 0; iVar < nNodes*nVar; iVar++) {
-      for (jVar = 0; jVar < nNodes*nVar; jVar++) {
-        for (kVar = 0; kVar < 6; kVar++) {
-          StiffMatrix_Elem[iVar][jVar] += Weight[iGauss] * Aux_Matrix[iVar][kVar]*B_Matrix[kVar][jVar] * fabs(Det);
-        }
-      }
-    }
-    
-  }
-  
-}
+        StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
 
-void CVolumetricMovement::AddFEA_StiffMatrix(CGeometry *geometry, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], unsigned short nNodes) {
-  
-  unsigned short iVar, jVar, iDim, jDim;
-  
-  unsigned short nVar = geometry->GetnDim();
-
-  su2double **StiffMatrix_Node;
-  StiffMatrix_Node = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-    StiffMatrix_Node[iVar] = new su2double [nVar];
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    for (jVar = 0; jVar < nVar; jVar++)
-      StiffMatrix_Node[iVar][jVar] = 0.0;
-  
-  /*--- Transform the stiffness matrix for the hexahedral element into the
-   contributions for the individual nodes relative to each other. ---*/
-  
-  for (iVar = 0; iVar < nNodes; iVar++) {
-    for (jVar = 0; jVar < nNodes; jVar++) {
-      
-      for (iDim = 0; iDim < nVar; iDim++) {
-        for (jDim = 0; jDim < nVar; jDim++) {
-          StiffMatrix_Node[iDim][jDim] = StiffMatrix_Elem[(iVar*nVar)+iDim][(jVar*nVar)+jDim];
-        }
       }
 
-      StiffMatrix.AddBlock(PointCorners[iVar], PointCorners[jVar], StiffMatrix_Node);
-      
     }
+
   }
-  
-  /*--- Deallocate memory and exit ---*/
-  
-  for (iVar = 0; iVar < nVar; iVar++)
-    delete [] StiffMatrix_Node[iVar];
-  delete [] StiffMatrix_Node;
-  
-}
-
-void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config) {
-
-	unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
-	unsigned long iPoint, total_index, iVertex;
-	su2double *VarCoord, MeanCoord[3] = {0.0,0.0,0.0}, VarIncrement = 1.0;
-  
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
-   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
-  
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-  
-  /*--- If requested (no by default) impose the surface deflections in
-   increments and solve the grid deformation equations iteratively with
-   successive small deformations. ---*/
-  
-  VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
-	
-  /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
-         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = 0.0;
-          LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
-        }
-      }
-    }
-  }
-
-  /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
-
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-	  if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
-
-	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
-	    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-	      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-	      VarCoord = geometry->node[iPoint]->GetCoord();
-	      for (iDim = 0; iDim < nDim; iDim++)
-	        MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
-	    }
-	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-	    if (nDim==3) {
-	      if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
-	      if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
-	      if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
-	    }
-	    else {
-	      if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
-	      if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
-	    }
-
-	    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-	      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-	      total_index = iPoint*nDim + axis;
-	      LinSysRes[total_index] = 0.0;
-	      LinSysSol[total_index] = 0.0;
-	      StiffMatrix.DeleteValsRowi(total_index);
-	    }
-	  }
-	}
-
-	/*--- Set the known displacements, note that some points of the moving surfaces
-   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
-  
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
-    }
-  }
-  
-  /*--- Don't move the nearfield plane ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = 0.0;
-					LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
-    }
-  }
-
-  /*--- Move the FSI interfaces ---*/
-
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-					StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
-		}
-	}
-
 
 }
 
-void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config) {
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, total_index, iVertex;
 
-  su2double * VarCoord;
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_DV(iMarker) == YES)) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-          for (iDim = 0; iDim < nDim; iDim++) {
-            total_index = iPoint*nDim + iDim;
-            LinSysRes[total_index] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
-            LinSysSol[total_index] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
+void CVolumetricMovement::Set_Element_Stiffness(su2double ElemVolume, CConfig *config) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  switch (config->GetDeform_Stiffness_Type()) {
+    case INVERSE_VOLUME: case WALL_DISTANCE:
+      E = 1.0 / ElemVolume;           // Stiffness inverse of the volume of the element
+      Nu = config->GetDeform_Coeff(); // Nu is normally a very large number, for rigid-body rotations, see Dwight (2009)
+      break;
+    case CONSTANT_STIFFNESS:
+      E      = config->GetDeform_ElasticityMod();
+      Nu     = config->GetDeform_PoissonRatio();
+      break;
+  }
+
+  /*--- Lamé parameters ---*/
+
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+
+}
+
+
+void CVolumetricMovement::Compute_Element_Contribution(CElement *element, CConfig *config){
+
+  unsigned short iVar, jVar, kVar;
+  unsigned short iGauss, nGauss;
+  unsigned short iNode, jNode, nNode;
+  unsigned short iDim;
+  unsigned short bDim;
+
+  su2double Weight, Jac_X;
+
+  su2double AuxMatrix[3][6];
+
+  /*--- Initialize auxiliary matrices ---*/
+
+  if (nDim == 2) bDim = 3;
+  else bDim = 6;
+
+  for (iVar = 0; iVar < bDim; iVar++){
+    for (jVar = 0; jVar < nDim; jVar++){
+      Ba_Mat[iVar][jVar] = 0.0;
+      Bb_Mat[iVar][jVar] = 0.0;
+    }
+  }
+
+  for (iVar = 0; iVar < 3; iVar++){
+    for (jVar = 0; jVar < 6; jVar++){
+      AuxMatrix[iVar][jVar] = 0.0;
+    }
+  }
+
+  element->clearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ComputeGrad_Linear();
+  nNode = element->GetnNodes();
+  nGauss = element->GetnGaussPoints();
+
+  /*--- Compute the constitutive matrix (D_Mat) for the element - it only depends on lambda and mu, constant for the element ---*/
+  Compute_Constitutive_Matrix();
+
+  for (iGauss = 0; iGauss < nGauss; iGauss++){
+
+    Weight = element->GetWeight(iGauss);
+    Jac_X = element->GetJ_X(iGauss);
+
+    /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
+    /*--- This avoids repeated operations ---*/
+    for (iNode = 0; iNode < nNode; iNode++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+      }
+    }
+
+    for (iNode = 0; iNode < nNode; iNode++){
+
+      if (nDim == 2){
+        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
+      }
+      else if (nDim == 3){
+        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
+        Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
+        Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
+        Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
+      }
+
+        /*--- Compute the BT.D Matrix ---*/
+
+      for (iVar = 0; iVar < nDim; iVar++){
+        for (jVar = 0; jVar < bDim; jVar++){
+          AuxMatrix[iVar][jVar] = 0.0;
+          for (kVar = 0; kVar < bDim; kVar++){
+            AuxMatrix[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
           }
         }
       }
-    }
-    if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
-  } else if (Kind_SU2 == SU2_DOT) {
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint*nDim + iDim;
-        LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
-        LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
-      }
-    }
-  }
-}
+      /*--- Assumming symmetry ---*/
+      for (jNode = iNode; jNode < nNode; jNode++){
+        if (nDim == 2){
+          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
+        }
+        else if (nDim ==3){
+          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
+          Bb_Mat[3][0] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[3][1] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[4][0] = GradNi_Ref_Mat[jNode][2];
+          Bb_Mat[4][2] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[5][1] = GradNi_Ref_Mat[jNode][2];
+          Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
+        }
 
-void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config) {
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, total_index, iVertex;
-  su2double *new_coord = new su2double[3];
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- Update derivatives of the grid coordinates using the solution of the linear system
-     after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      new_coord[0] = 0.0; new_coord[1] = 0.0; new_coord[2] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint*nDim + iDim;
-        new_coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetValue(LinSysSol[total_index]));
-      }
-      geometry->node[iPoint]->SetCoord(new_coord);
-    }
-  } else if (Kind_SU2 == SU2_DOT) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
-         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()) {
-            for (iDim = 0; iDim < nDim; iDim++) {
-              total_index = iPoint*nDim + iDim;
-              geometry->SetSensitivity(iPoint,iDim, LinSysSol[total_index]);
+        for (iVar = 0; iVar < nDim; iVar++){
+          for (jVar = 0; jVar < nDim; jVar++){
+            KAux_ab[iVar][jVar] = 0.0;
+            for (kVar = 0; kVar < bDim; kVar++){
+              KAux_ab[iVar][jVar] += Weight * AuxMatrix[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
             }
           }
         }
+
+        element->Add_Kab(KAux_ab,iNode, jNode);
+        /*--- Symmetric terms --*/
+        if (iNode != jNode){
+          element->Add_Kab_T(KAux_ab, jNode, iNode);
+        }
+
+      }
+
+    }
+
+  }
+
+}
+
+void CVolumetricMovement::Compute_Constitutive_Matrix(void){
+
+  /*--- Compute the D Matrix (for plane strain and 3-D)---*/
+
+  if (nDim == 2){
+
+    /*--- Assuming plane strain ---*/
+    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
+    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
+    D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
+
+  }
+  else if (nDim == 3){
+
+    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;           D_Mat[0][2] = Lambda;           D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
+    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = Lambda;           D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
+    D_Mat[2][0] = Lambda;           D_Mat[2][1] = Lambda;           D_Mat[2][2] = Lambda + 2.0*Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
+    D_Mat[3][0] = 0.0;              D_Mat[3][1] = 0.0;              D_Mat[3][2] = 0.0;              D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
+    D_Mat[4][0] = 0.0;              D_Mat[4][1] = 0.0;              D_Mat[4][2] = 0.0;              D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
+    D_Mat[5][0] = 0.0;              D_Mat[5][1] = 0.0;              D_Mat[5][2] = 0.0;              D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
+
+  }
+
+}
+void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  MaxDistance = -1E22; MinDistance = 1E22;
+
+  unsigned short iMarker, nDim = geometry->GetnDim();
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+
+  if (rank == MASTER_NODE)
+    cout << "Computing distances to the nearest deforming surface." << endl;
+
+  /*--- Compute the total number of nodes on no-slip boundaries ---*/
+
+  unsigned long nVertex_SolidWall = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))){
+      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY){
+        nVertex_SolidWall += geometry->GetnVertex(iMarker);
+      }
+    }
+
+  /*--- Allocate the vectors to hold boundary node coordinates
+        and its local ID. ---*/
+
+  vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
+  vector<unsigned long> PointIDs(nVertex_SolidWall);
+
+  /*--- Retrieve and store the coordinates of the no-slip boundary nodes
+        and their local point IDs. ---*/
+
+  unsigned long ii = 0, jj = 0;
+  for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+          ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))){
+        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY){
+          for(unsigned long iVertex=0; iVertex < geometry->GetnVertex(iMarker); ++iVertex) {
+            unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            PointIDs[jj++] = iPoint;
+            for(unsigned short iDim=0; iDim<nDim; ++iDim)
+              Coord_bound[ii++] = geometry->node[iPoint]->GetCoord(iDim);
+          }
+        }
+      }
+  }
+
+  /*--- Build the ADT of the boundary nodes. ---*/
+
+  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+
+  /*--- Loop over all interior mesh nodes and compute the distances to each
+        of the no-slip boundary nodes. Store the minimum distance to the wall
+        for each interior mesh node. ---*/
+
+  if( WallADT.IsEmpty() ) {
+
+    /*--- No solid wall boundary nodes in the entire mesh.
+          Set the wall distance to zero for all nodes. ---*/
+
+    for(unsigned long iPoint=0; iPoint < geometry->GetnPoint(); ++iPoint)
+      geometry->node[iPoint]->SetWall_Distance(0.0);
+  }
+  else {
+
+    /*--- Solid wall boundary nodes are present. Compute the wall
+          distance for all nodes. ---*/
+
+    for(unsigned long iPoint=0; iPoint < geometry->GetnPoint(); ++iPoint) {
+
+      su2double dist;
+      unsigned long pointID;
+      int rankID;
+
+      WallADT.DetermineNearestNode(geometry->node[iPoint]->GetCoord(), dist,
+                                   pointID, rankID);
+      geometry->node[iPoint]->SetWall_Distance(dist);
+      if (dist != 0.0){
+        if (dist > MaxDistance) MaxDistance = dist;
+        if (dist < MinDistance) MinDistance = dist;
       }
     }
   }
-  
-  delete [] new_coord;
+
+#ifdef HAVE_MPI
+  su2double MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
+  su2double MinDistance_Local = MinDistance; MinDistance = 0.0;
+  SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#endif
 }
 
 void CVolumetricMovement::SetDomainDisplacements(CGeometry *geometry, CConfig *config) {
@@ -7842,1070 +7317,5 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 }
 
 
-
-CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CVolumetricMovement() {
-
-    /*--- Initialize the number of spatial dimensions, length of the state
-     vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
-
-    unsigned short iDim, jDim;
-
-    nDim         = geometry->GetnDim();
-    nVar         = geometry->GetnDim();
-    nPoint       = geometry->GetnPoint();
-    nPointDomain = geometry->GetnPointDomain();
-
-    nIterMesh   = 0;
-    valResidual = 0.0;
-
-    MinVolume = 0.0;
-    MaxVolume = 0.0;
-
-    Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
-    Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
-
-    /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
-
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
-
-    /*--- Matrices to impose boundary conditions ---*/
-
-    matrixZeros = new su2double *[nDim];
-    matrixId    = new su2double *[nDim];
-    for(iDim = 0; iDim < nDim; iDim++){
-      matrixZeros[iDim] = new su2double[nDim];
-      matrixId[iDim]    = new su2double[nDim];
-    }
-
-    for(iDim = 0; iDim < nDim; iDim++){
-      for (jDim = 0; jDim < nDim; jDim++){
-        matrixZeros[iDim][jDim] = 0.0;
-        matrixId[iDim][jDim]    = 0.0;
-      }
-      matrixId[iDim][iDim] = 1.0;
-    }
-
-    /*--- Structural parameters ---*/
-
-    E      = config->GetDeform_ElasticityMod();
-    Nu     = config->GetDeform_PoissonRatio();
-
-    Mu     = E / (2.0*(1.0 + Nu));
-    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-
-    /*--- Element container structure ---*/
-
-    element_container = new CElement* [MAX_FE_KINDS];
-    for (unsigned short iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
-      element_container[iKind] = NULL;
-    }
-    if (nDim == 2){
-      element_container[EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[EL_QUAD] = new CQUAD4(nDim, config);
-    }
-    else if (nDim == 3){
-      element_container[EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[EL_HEXA] = new CHEXA8(nDim, config);
-      element_container[EL_PYRAM] = new CHEXA8(nDim, config);
-      element_container[EL_PRISM] = new CHEXA8(nDim, config);
-    }
-
-    /*--- Term ij of the Jacobian ---*/
-
-    Jacobian_ij = new su2double*[nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Jacobian_ij[iDim] = new su2double [nDim];
-      for (jDim = 0; jDim < nDim; jDim++) {
-        Jacobian_ij[iDim][jDim] = 0.0;
-      }
-    }
-
-    KAux_ab = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++) {
-      KAux_ab[iDim] = new su2double[nDim];
-    }
-
-    unsigned short iVar;
-
-    if (nDim == 2){
-      Ba_Mat  = new su2double* [3];
-      Bb_Mat  = new su2double* [3];
-      D_Mat   = new su2double* [3];
-      GradNi_Ref_Mat = new su2double* [4];
-      for (iVar = 0; iVar < 3; iVar++) {
-        Ba_Mat[iVar]    = new su2double[nDim];
-        Bb_Mat[iVar]    = new su2double[nDim];
-        D_Mat[iVar]     = new su2double[3];
-      }
-      for (iVar = 0; iVar < 4; iVar++) {
-        GradNi_Ref_Mat[iVar]  = new su2double[nDim];
-      }
-    }
-    else if (nDim == 3){
-      Ba_Mat  = new su2double* [6];
-      Bb_Mat  = new su2double* [6];
-      D_Mat   = new su2double* [6];
-      GradNi_Ref_Mat = new su2double* [8];
-      for (iVar = 0; iVar < 6; iVar++) {
-        Ba_Mat[iVar]      = new su2double[nDim];
-        Bb_Mat[iVar]      = new su2double[nDim];
-        D_Mat[iVar]       = new su2double[6];
-      }
-      for (iVar = 0; iVar < 8; iVar++) {
-        GradNi_Ref_Mat[iVar]  = new su2double[nDim];
-      }
-    }
-
-
-
-}
-
-CElasticityMovement::~CElasticityMovement(void) {
-
-  unsigned short iDim, iVar, nElemContainer;
-
-  if (nDim == 2) nElemContainer = 2;
-  else nElemContainer = 4;
-
-  delete [] Residual;
-  delete [] Solution;
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    delete [] matrixZeros[iDim];
-    delete [] matrixId[iDim];
-    delete [] Jacobian_ij[iDim];
-    delete [] KAux_ab[iDim];
-  }
-  delete [] matrixZeros;
-  delete [] matrixId;
-  delete [] Jacobian_ij;
-  delete [] KAux_ab;
-
-  if (nDim == 2){
-    for (iVar = 0; iVar < 3; iVar++){
-      delete [] Ba_Mat[iVar];
-      delete [] Bb_Mat[iVar];
-      delete [] D_Mat[iVar];
-    }
-    for (iVar = 0; iVar < 4; iVar++){
-      delete [] GradNi_Ref_Mat[iVar];
-    }
-  }
-  else if (nDim == 3){
-    for (iVar = 0; iVar < 6; iVar++){
-      delete [] Ba_Mat[iVar];
-      delete [] Bb_Mat[iVar];
-      delete [] D_Mat[iVar];
-    }
-    for (iVar = 0; iVar < 8; iVar++){
-      delete [] GradNi_Ref_Mat[iVar];
-    }
-  }
-
-  delete [] Ba_Mat;
-  delete [] Bb_Mat;
-  delete [] D_Mat;
-  delete [] GradNi_Ref_Mat;
-
-  if (element_container != NULL) {
-    for (iVar = 0; iVar < MAX_FE_KINDS; iVar++){
-      if (element_container[iVar] != NULL) delete element_container[iVar];
-    }
-    delete [] element_container;
-  }
-
-}
-
-
-void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
-
-  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Nonlinear_Iter = 0;
-  su2double NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
-  bool Screen_Output;
-
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  /*--- Retrieve number or internal iterations from config ---*/
-
-  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
-
-  /*--- Disable the screen output if we're running SU2_CFD ---*/
-  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
-
-  /*--- Loop over the total number of grid deformation iterations. The surface
-   deformation can be divided into increments to help with stability. ---*/
-
-  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
-
-    /*--- Initialize vector and sparse matrix ---*/
-    LinSysSol.SetValZero();
-    LinSysRes.SetValZero();
-    StiffMatrix.SetValZero();
-
-    /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
-    SetMinMaxVolume(geometry, config);
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-      if (nDim == 2) cout << scientific << "Min. area: "<< MinVolume <<", max. area: " << MaxVolume <<"." << endl;
-      else           cout << scientific << "Min. volume: "<< MinVolume <<", max. volume: " << MaxVolume <<"." << endl;
-    }
-
-    /*--- Compute the stiffness matrix. ---*/
-    SetStiffnessMatrix(geometry, config);
-
-    /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-    SetBoundaryDisplacements(geometry, config);
-
-    /*--- Solve the linear system. ---*/
-    Solve_System(geometry, config);
-
-    /*--- Update the grid coordinates and cell volumes using the solution
-     of the linear system (usol contains the x, y, z displacements). ---*/
-    UpdateGridCoord(geometry, config);
-
-    if (UpdateGeo)
-      UpdateDualGrid(geometry, config);
-
-    /*--- Check for failed deformation (negative volumes). ---*/
-    /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh. ---*/
-    SetMinMaxVolume(geometry, config);
-
-    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
-      cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
-      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << valResidual << "." << endl;
-      else cout << "Min. volume: " << MinVolume << ". Error: " << valResidual << "." << endl;
-    }
-
-  }
-
-}
-
-
-void CElasticityMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config){
-
-  unsigned short iDim;
-  unsigned long iPoint, total_index;
-  su2double new_coord;
-
-  /*--- Update the grid coordinates using the solution of the linear system
-   after grid deformation (LinSysSol contains the x, y, z displacements). ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iDim = 0; iDim < nDim; iDim++) {
-      total_index = iPoint*nDim + iDim;
-      new_coord = geometry->node[iPoint]->GetCoord(iDim)+LinSysSol[total_index];
-      if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
-      geometry->node[iPoint]->SetCoord(iDim, new_coord);
-    }
-
-  /* --- LinSysSol contains the non-transformed displacements in the periodic halo cells.
-   * Hence we still need a communication of the transformed coordinates, otherwise periodicity
-   * is not maintained. ---*/
-
-  geometry->Set_MPI_Coord(config);
-
-}
-
-
-void CElasticityMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config){
-
-  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
-   dual mesh control volumes in the domain and on the boundaries. ---*/
-
-  geometry->SetCoord_CG();
-  geometry->SetControlVolume(config, UPDATE);
-  geometry->SetBoundControlVolume(config, UPDATE);
-
-}
-
-
-void CElasticityMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
-
-  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetnMGLevels();
-
-  /*--- Update the multigrid structure after moving the finest grid,
-   including computing the grid velocities on the coarser levels. ---*/
-
-  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
-    iMGfine = iMGlevel-1;
-    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
-    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
-    geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
-    if (config->GetGrid_Movement())
-      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
-  }
-
-}
-
-void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config){
-
-  unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
-  unsigned long iPoint, total_index, iVertex;
-  su2double *VarCoord, MeanCoord[3] = {0.0,0.0,0.0}, VarIncrement = 1.0;
-
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_FSI_INTERFACE). ---*/
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- First of all, move the FSI interfaces. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-      SetMoving_Boundary(geometry, config, iMarker);
-    }
-  }
-
-  /*--- Now, set to zero displacements of all the other boundary conditions, except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
-
-
-  /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-   plane, the receive boundaries and periodic boundaries. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
-         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
-
-      /*--- We must note that the FSI surfaces are not clamped ---*/
-      if (config->GetMarker_All_FSIinterface(iMarker) == 0){
-        SetClamped_Boundary(geometry, config, iMarker);
-      }
-    }
-  }
-
-  /*--- All others are pending. ---*/
-
-}
-
-
-void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
-
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double valJacobian_ij_00 = 0.0;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      if (nDim == 2) {
-        Solution[0] = 0.0;  Solution[1] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;
-      }
-      else {
-        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
-        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE CLAMPED BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
-          }
-        }
-      }
-
-      /*--- Delete the full column for node iNode ---*/
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint, iNode,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != iPoint) {
-            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-          }
-        }
-      }
-    }
-  }
-
-}
-
-void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
-
-  unsigned long iElem;
-  unsigned short iDim, jDim;
-
-  su2double *VarCoord;
-
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jPoint;
-
-  su2double VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
-
-  su2double valJacobian_ij_00 = 0.0;
-  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Get the displ;acement on the vertex ---*/
-
-    for (iDim = 0; iDim < nDim; iDim++)
-       VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      if (nDim == 2) {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;
-      }
-      else {
-        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;  Solution[2] = VarCoord[2] * VarIncrement;
-        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;  Residual[2] = VarCoord[2] * VarIncrement;
-      }
-
-      /*--- Initialize the reaction vector ---*/
-
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
-
-      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
-
-      /*--- Delete the full row for node iNode ---*/
-      for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          /*--- Set the rest of the row to 0 ---*/
-          if (iNode != jPoint) {
-            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
-          }
-          /*--- And the diagonal to 1.0 ---*/
-          else{
-            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
-          }
-        }
-      }
-
-      /*--- Delete the columns for a particular node ---*/
-
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
-
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
-
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
-            }
-          }
-
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
-            }
-          }
-
-          /*--- For the whole column, except the diagonal term ---*/
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-          }
-        }
-      }
-    }
-  }
-
-}
-
-void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
-
-  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), System_Residual;
-
-  unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
-  unsigned long IterLinSol = 0;
-
-  bool Screen_Output= config->GetDeform_Output();
-
-  /*--- Initialize the structures to solve the system ---*/
-
-  CMatrixVectorProduct* mat_vec = NULL;
-  CPreconditioner* precond = NULL;
-  CSysSolve *system  = new CSysSolve();
-
-  /*--- Communicate any prescribed boundary displacements via MPI,
-   so that all nodes have the same solution and r.h.s. entries
-   across all partitions. ---*/
-
-  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
-
-  bool TapeActive = NO;
-
-  if (config->GetDiscrete_Adjoint()){
-#ifdef CODI_REVERSE_TYPE
-
-    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
-
-    TapeActive = AD::globalTape.isActive();
-
-
-    /*--- Stop the recording for the linear solver ---*/
-
-    AD::StopRecording();
-#endif
-  }
-
-  /*--- Solve the linear system using a Krylov subspace method ---*/
-
-  if (config->GetDeform_Linear_Solver() == BCGSTAB ||
-      config->GetDeform_Linear_Solver() == FGMRES ||
-      config->GetDeform_Linear_Solver() == RESTARTED_FGMRES ||
-      config->GetDeform_Linear_Solver() == CONJUGATE_GRADIENT) {
-
-    /*--- Independently of whether we are using or not derivatives,
-     *--- as the matrix is now symmetric, the matrix-vector product
-     *--- can be done in the same way in the forward and the reverse mode
-     */
-
-    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
-    mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-    CPreconditioner* precond = NULL;
-
-    switch (config->GetKind_Deform_Linear_Solver_Prec()) {
-    case JACOBI:
-      StiffMatrix.BuildJacobiPreconditioner();
-      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-      break;
-    case ILU:
-      StiffMatrix.BuildILUPreconditioner();
-      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
-      break;
-    case LU_SGS:
-      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
-      break;
-    case LINELET:
-      StiffMatrix.BuildJacobiPreconditioner();
-      precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
-      break;
-    default:
-      StiffMatrix.BuildJacobiPreconditioner();
-      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
-      break;
-    }
-
-    switch (config->GetDeform_Linear_Solver()) {
-    case BCGSTAB:
-      IterLinSol = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
-      break;
-    case FGMRES:
-      IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
-      break;
-    case CONJUGATE_GRADIENT:
-      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, Screen_Output);
-      break;
-    case RESTARTED_FGMRES:
-      IterLinSol = 0;
-      while (IterLinSol < config->GetLinear_Solver_Iter()) {
-        if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-          MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-        IterLinSol += system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
-        if (LinSysRes.norm() < SolverTol) break;
-        SolverTol = SolverTol*(1.0/LinSysRes.norm());
-      }
-      break;
-    }
-
-    /*--- Dealocate memory of the Krylov subspace method ---*/
-
-    delete mat_vec;
-    delete precond;
-
-  }
-
-  if(TapeActive){
-    /*--- Start recording if it was stopped for the linear solver ---*/
-
-    AD::StartRecording();
-
-    /*--- Prepare the externally differentiated linear solver ---*/
-
-    system->SetExternalSolve_Mesh(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
-
-  }
-
-  delete system;
-
-  /*--- Set number of iterations in the mesh update. ---*/
-
-  nIterMesh = IterLinSol;
-
-  /*--- Store the value of the residual. ---*/
-
-  valResidual = System_Residual;
-
-
-}
-
-void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) {
-
-  unsigned long iElem, ElemCounter = 0;
-  unsigned short iNode, iDim, jDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
-  int EL_KIND = 0;
-
-  bool discrete_adjoint = config->GetDiscrete_Adjoint();
-
-  bool RightVol = true;
-
-  su2double ElemVolume;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if ((rank == MASTER_NODE) && (!discrete_adjoint))
-    cout << "Computing volumes of the grid elements." << endl;
-
-  MaxVolume = -1E22; MinVolume = 1E22;
-
-  /*--- Loops over all the elements ---*/
-
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
-
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
-
-    for (iNode = 0; iNode < nNodes; iNode++) {
-
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-      }
-
-    }
-
-    /*--- Compute the volume of the element (or the area in 2D cases ) ---*/
-
-    if (nDim == 2)  ElemVolume = element_container[EL_KIND]->ComputeArea();
-    else            ElemVolume = element_container[EL_KIND]->ComputeVolume();
-
-    RightVol = true;
-    if (ElemVolume < 0.0) RightVol = false;
-
-    MaxVolume = max(MaxVolume, ElemVolume);
-    MinVolume = min(MinVolume, ElemVolume);
-    geometry->elem[iElem]->SetVolume(ElemVolume);
-
-    if (!RightVol) ElemCounter++;
-
-  }
-
-#ifdef HAVE_MPI
-  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
-  su2double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
-  su2double MinVolume_Local = MinVolume; MinVolume = 0.0;
-  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-#endif
-
-  /*--- Volume from  0 to 1 ---*/
-
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    ElemVolume = geometry->elem[iElem]->GetVolume()/MaxVolume;
-    geometry->elem[iElem]->SetVolume(ElemVolume);
-  }
-
-  if ((ElemCounter != 0) && (rank == MASTER_NODE))
-    cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
-
-}
-
-
-void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *config){
-
-  unsigned long iElem;
-  unsigned short iNode, iDim, jDim, nNodes = 0;
-  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
-  int EL_KIND = 0;
-
-  su2double *Kab = NULL;
-  unsigned short NelNodes, jNode;
-
-  su2double ElemVolume;
-
-  /*--- Loops over all the elements ---*/
-
-  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
-    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
-    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
-
-    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
-
-    for (iNode = 0; iNode < nNodes; iNode++) {
-
-      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-      }
-
-    }
-
-    /*--- Retrieve the volume of the element (previously computed in SetMinMaxVolume()) ---*/
-
-    ElemVolume = geometry->elem[iElem]->GetVolume();
-
-    /*--- Compute the stiffness of the element ---*/
-    Set_Element_Stiffness(ElemVolume, config);
-
-    /*--- Compute the element contribution to the stiffness matrix ---*/
-
-    Compute_Element_Contribution(element_container[EL_KIND], config);
-
-    /*--- Retrieve number of nodes ---*/
-
-    NelNodes = element_container[EL_KIND]->GetnNodes();
-
-    /*--- Assemble the stiffness matrix ---*/
-
-    for (iNode = 0; iNode < NelNodes; iNode++){
-
-      for (jNode = 0; jNode < NelNodes; jNode++){
-
-        Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
-
-        for (iDim = 0; iDim < nDim; iDim++){
-          for (jDim = 0; jDim < nDim; jDim++){
-            Jacobian_ij[iDim][jDim] = Kab[iDim*nDim+jDim];
-          }
-        }
-
-        StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-
-      }
-
-    }
-
-  }
-
-}
-
-
-void CElasticityMovement::Set_Element_Stiffness(su2double ElemVolume, CConfig *config) {
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  switch (config->GetDeform_Stiffness_Type()) {
-    case INVERSE_VOLUME:
-      E = 1.0 / ElemVolume;           // Stiffness inverse of the volume of the element
-      Nu = config->GetDeform_Coeff(); // Nu is normally a very large number, for rigid-body rotations, see Dwight (2009)
-      break;
-    case WALL_DISTANCE:
-      if (rank == MASTER_NODE)
-        cout << "WALL DISTANCE METHOD NOT YET IMPLEMENTED FOR THIS APPROACH!!" << endl;
-      exit(EXIT_FAILURE);
-      break;
-    case CONSTANT_STIFFNESS:
-      E      = config->GetDeform_ElasticityMod();
-      Nu     = config->GetDeform_PoissonRatio();
-      break;
-  }
-
-  /*--- Lamé parameters ---*/
-
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-
-}
-
-
-void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfig *config){
-
-  unsigned short iVar, jVar, kVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, jNode, nNode;
-  unsigned short iDim;
-  unsigned short bDim;
-
-  su2double Weight, Jac_X;
-
-  su2double AuxMatrix[3][6];
-
-  /*--- Initialize auxiliary matrices ---*/
-
-  if (nDim == 2) bDim = 3;
-  else bDim = 6;
-
-  for (iVar = 0; iVar < bDim; iVar++){
-    for (jVar = 0; jVar < nDim; jVar++){
-      Ba_Mat[iVar][jVar] = 0.0;
-      Bb_Mat[iVar][jVar] = 0.0;
-    }
-  }
-
-  for (iVar = 0; iVar < 3; iVar++){
-    for (jVar = 0; jVar < 6; jVar++){
-      AuxMatrix[iVar][jVar] = 0.0;
-    }
-  }
-
-  element->clearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
-  element->ComputeGrad_Linear();
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
-
-  /*--- Compute the constitutive matrix (D_Mat) for the element - it only depends on lambda and mu, constant for the element ---*/
-  Compute_Constitutive_Matrix();
-
-  for (iGauss = 0; iGauss < nGauss; iGauss++){
-
-    Weight = element->GetWeight(iGauss);
-    Jac_X = element->GetJ_X(iGauss);
-
-    /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
-    /*--- This avoids repeated operations ---*/
-    for (iNode = 0; iNode < nNode; iNode++){
-      for (iDim = 0; iDim < nDim; iDim++){
-        GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
-      }
-    }
-
-    for (iNode = 0; iNode < nNode; iNode++){
-
-      if (nDim == 2){
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
-      }
-      else if (nDim == 3){
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
-      }
-
-        /*--- Compute the BT.D Matrix ---*/
-
-      for (iVar = 0; iVar < nDim; iVar++){
-        for (jVar = 0; jVar < bDim; jVar++){
-          AuxMatrix[iVar][jVar] = 0.0;
-          for (kVar = 0; kVar < bDim; kVar++){
-            AuxMatrix[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
-          }
-        }
-      }
-
-      /*--- Assumming symmetry ---*/
-      for (jNode = iNode; jNode < nNode; jNode++){
-        if (nDim == 2){
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
-        }
-        else if (nDim ==3){
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[3][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[3][1] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[4][0] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[4][2] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[5][1] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
-        }
-
-        for (iVar = 0; iVar < nDim; iVar++){
-          for (jVar = 0; jVar < nDim; jVar++){
-            KAux_ab[iVar][jVar] = 0.0;
-            for (kVar = 0; kVar < bDim; kVar++){
-              KAux_ab[iVar][jVar] += Weight * AuxMatrix[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
-            }
-          }
-        }
-
-        element->Add_Kab(KAux_ab,iNode, jNode);
-        /*--- Symmetric terms --*/
-        if (iNode != jNode){
-          element->Add_Kab_T(KAux_ab, jNode, iNode);
-        }
-
-      }
-
-    }
-
-  }
-
-}
-
-void CElasticityMovement::Compute_Constitutive_Matrix(void){
-
-  /*--- Compute the D Matrix (for plane strain and 3-D)---*/
-
-  if (nDim == 2){
-
-    /*--- Assuming plane strain ---*/
-    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
-    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
-    D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
-
-  }
-  else if (nDim == 3){
-
-    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;           D_Mat[0][2] = Lambda;           D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
-    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = Lambda;           D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
-    D_Mat[2][0] = Lambda;           D_Mat[2][1] = Lambda;           D_Mat[2][2] = Lambda + 2.0*Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
-    D_Mat[3][0] = 0.0;              D_Mat[3][1] = 0.0;              D_Mat[3][2] = 0.0;              D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
-    D_Mat[4][0] = 0.0;              D_Mat[4][1] = 0.0;              D_Mat[4][2] = 0.0;              D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
-    D_Mat[5][0] = 0.0;              D_Mat[5][1] = 0.0;              D_Mat[5][2] = 0.0;              D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
-
-  }
-
-}
-
-void CElasticityMovement::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
-
-  unsigned short iDim, jDim;
-  unsigned long iNode, iVertex;
-
-  su2double *VarCoord;
-  su2double new_coord;
-
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-    /*--- Get node index ---*/
-
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Get the displacement on the vertex ---*/
-
-    VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
-
-    if (geometry->node[iNode]->GetDomain()) {
-
-      /*--- Update the grid coordinates using the solution of the structural problem
-       *--- recorded in VarCoord. */
-
-      for (iDim = 0; iDim < nDim; iDim++) {
-        new_coord = geometry->node[iNode]->GetCoord(iDim)+VarCoord[iDim];
-        if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
-        geometry->node[iNode]->SetCoord(iDim, new_coord);
-      }
-    }
-
-  }
-
-}
-
-void CElasticityMovement::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
-
-
-  unsigned short iMarker;
-
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_FSI_INTERFACE). ---*/
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- Set the dependencies on the FSI interfaces. ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-      Transfer_Boundary_Displacements(geometry[MESH_0], config, iMarker);
-    }
-  }
-
-//  /*--- Initialize vector and sparse matrix ---*/
-//  LinSysSol.SetValZero();
-//  LinSysRes.SetValZero();
-//  StiffMatrix.SetValZero();
-//
-//  /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
-//  SetBoundaryDisplacements(geometry[MESH_0], config);
-//
-//  /*--- Update the grid coordinates and cell volumes using the solution
-//   of the linear system (usol contains the x, y, z displacements). ---*/
-//  UpdateGridCoord(geometry[MESH_0], config);
-
-  UpdateDualGrid(geometry[MESH_0], config);
-
-  /*--- Update Dual Grid and Multigrid to recompute normals ---*/
-//  UpdateDualGrid(geometry[MESH_0], config);
-//  UpdateMultiGrid(geometry, config);
-//  geometry[MESH_0]->SetCoord_CG();
-//  geometry[MESH_0]->SetControlVolume(config, UPDATE);
-//  geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-
-}
 
 
