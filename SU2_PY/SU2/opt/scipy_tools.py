@@ -104,7 +104,8 @@ def pyopt_snopt(project,x0=None,xb=None,its=100,accu=1e-10,maxstep=1e-3,partialp
         fprime_ieqcons = con_dcieq        
     
     # number of design variables
-    n_dv = len( project.config['DEFINITION_DV']['KIND'] )
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    n_dv = sum( dv_size)
     project.n_dv = n_dv
     
     # Initial guess
@@ -112,7 +113,11 @@ def pyopt_snopt(project,x0=None,xb=None,its=100,accu=1e-10,maxstep=1e-3,partialp
     
     # prescale x0
     dv_scales = project.config['DEFINITION_DV']['SCALE']
-    x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
+    k = 0
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            x0[k] =x0[k]/dv_scl;
+            k = k + 1
     
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
@@ -201,15 +206,22 @@ def pyopt_snopt2(project,x0=None,xb=None,its=100,accu=1e-10,maxstep=1e-3,partial
     # Initial guess
     if not x0: x0 = [0.0]*n_dv
     
+    # number of design variables
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    n_dv = sum( dv_size)
+    project.n_dv = n_dv
+    
+    # Initial guess
+    if not x0: x0 = [0.0]*n_dv
+    
     # prescale x0
     dv_scales = project.config['DEFINITION_DV']['SCALE']
-    x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
-    
-    # scale accuracy
-    obj = project.config['OPT_OBJECTIVE']
-    obj_scale = []
-    for this_obj in obj.keys():
-        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
+    k = 0
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            x0[k] =x0[k]/dv_scl;
+            k = k + 1
+
     
     # scale accuracy
     eps = 1.0e-04
@@ -287,7 +299,8 @@ def pyopt_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
         fprime_ieqcons = con_dcieq        
     
     # number of design variables
-    n_dv = len( project.config['DEFINITION_DV']['KIND'] )
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    n_dv = sum( dv_size)
     project.n_dv = n_dv
     
     # Initial guess
@@ -295,7 +308,11 @@ def pyopt_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     
     # prescale x0
     dv_scales = project.config['DEFINITION_DV']['SCALE']
-    x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
+    k = 0
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            x0[k] =x0[k]/dv_scl;
+            k = k + 1  
     
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
