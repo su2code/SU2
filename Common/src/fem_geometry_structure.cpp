@@ -665,6 +665,23 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(unsigned long i=0; i<haloElements.size(); ++i)
     mapGlobalHaloElemToInd[haloElements[i]] = nVolElemOwned + i;
 
+  /*--- Check in parallel mode for empty partitions. If present, print a warning.
+        The solver is capable of handling empty partitions, but it may not be
+        efficient. ---*/
+#ifdef HAVE_MPI
+  unsigned long thisPartitionEmpty = nVolElemOwned ? 0 : 1;
+  unsigned long nEmptyPartitions;
+
+  SU2_MPI::Allreduce(&thisPartitionEmpty, &nEmptyPartitions, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+  if(rank == MASTER_NODE && nEmptyPartitions) {
+    cout << endl << "         WARNING" << endl;
+    cout << "There are " << nEmptyPartitions << " empty partitions present." << endl;
+    cout << "SU2 is able to handle this, but it may be inefficient." << endl << endl;
+  }
+#endif
+
   /*--- Allocate the memory for the volume elements, the nodes
         and the surface elements of the boundaries.    ---*/
   volElem.resize(nVolElemTot);
@@ -2680,8 +2697,10 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   /*            data that must be communicated.                              ---*/
   /*----------------------------------------------------------------------------*/
 
-  /* Determine for every element the local offset of the solution DOFs. */
-  volElem[0].offsetDOFsSolLocal = 0;
+  /* Determine for every element the local offset of the solution DOFs.
+     The if statement in the line below is to avoid problems when the
+     partition is empty. */
+  if( nVolElemTot ) volElem[0].offsetDOFsSolLocal = 0;
   for(unsigned long i=1; i<nVolElemTot; ++i)
     volElem[i].offsetDOFsSolLocal = volElem[i-1].offsetDOFsSolLocal
                                   + volElem[i-1].nDOFsSol;
