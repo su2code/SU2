@@ -65,6 +65,8 @@ inline const su2double* FEMStandardElementClass::GetMatBasisFunctionsIntegration
 
 inline const su2double* FEMStandardElementClass::GetDerMatBasisFunctionsIntTrans(void) const {return matDerBasisIntTrans.data();}
 
+inline const su2double* FEMStandardElementClass::GetMatDerBasisFunctionsSolDOFs(void) const {return matDerBasisSolDOFs.data();}
+
 inline unsigned short* FEMStandardElementClass::GetConnFace0(void){return connFace0.data();}
 
 inline unsigned short* FEMStandardElementClass::GetConnFace1(void){return connFace1.data();}
@@ -92,6 +94,12 @@ inline unsigned short FEMStandardElementClass::GetVTK_Type2(void) const {return 
 inline unsigned short FEMStandardElementClass::GetNSubElemsType2(void) const {return subConn2ForPlotting.size()/GetNDOFsPerSubElem(GetVTK_Type2());}
 
 inline const unsigned short* FEMStandardElementClass::GetSubConnType2(void) const {return subConn2ForPlotting.data();}
+
+inline const vector<su2double>* FEMStandardElementClass::GetRDOFs(void) const {return &rDOFs;}
+
+inline const vector<su2double>* FEMStandardElementClass::GetSDOFs(void) const {return &sDOFs;}
+
+inline const vector<su2double>* FEMStandardElementClass::GetTDOFs(void) const {return &tDOFs;}
 
 inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){}
 

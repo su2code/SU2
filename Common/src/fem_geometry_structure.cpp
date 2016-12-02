@@ -2654,7 +2654,10 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
                                                              volElem[i].nPolyGrid,
                                                              volElem[i].JacIsConsideredConstant,
                                                              config,
-                                                             standardElementsSol[j].GetOrderExact()) );
+                                                             standardElementsSol[j].GetOrderExact(),
+                                                             standardElementsSol[j].GetRDOFs(),
+                                                             standardElementsSol[j].GetSDOFs(),
+                                                             standardElementsSol[j].GetTDOFs()) );
       volElem[i].indStandardElement = j;
     }
   }
@@ -4719,8 +4722,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Determine the metric terms, drdx, drdy, drdz, dsdx, etc.   ---*/
-  /*---         and the Jacobian in the integration points of the owned    ---*/
-  /*---         volume elements.                                           ---*/
+  /*---         and the Jacobian in the integration points and solution    ---*/
+  /*---         DOFs of the owned volume elements.                         ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Loop over the owned volume elements. */
@@ -4728,45 +4731,59 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
     /* Easier storage of the index of the corresponding standard element
        and determine the number of integration points as well as the number
-       of DOFs for the grid. */
-    const unsigned short ind   = volElem[i].indStandardElement;
-    const unsigned short nInt  = standardElementsGrid[ind].GetNIntegration();
-    const unsigned short nDOFs = volElem[i].nDOFsGrid;
+       of DOFs for the grid and solution. */
+    const unsigned short ind       = volElem[i].indStandardElement;
+    const unsigned short nInt      = standardElementsGrid[ind].GetNIntegration();
+    const unsigned short nDOFsGrid = volElem[i].nDOFsGrid;
+    const unsigned short nDOFsSol  = volElem[i].nDOFsSol;
 
     /* Allocate the memory for the metric terms of this element. */
     volElem[i].metricTerms.resize(nMetricPerPoint*nInt);
+    volElem[i].metricTermsSolDOFs.resize(nMetricPerPoint*nDOFsSol);
 
     /* Get the pointer to the matrix storage of the basis functions
-       and its derivatives. The first nDOFs*nInt entries of this matrix
+       and its derivatives. The first nDOFsGrid*nInt entries of this matrix
        correspond to the interpolation data to the integration points
        and are not needed. Hence this part is skipped. */
     const su2double *matBasisInt    = standardElementsGrid[ind].GetMatBasisFunctionsIntegration();
-    const su2double *matDerBasisInt = &matBasisInt[nDOFs*nInt];
+    const su2double *matDerBasisInt = &matBasisInt[nDOFsGrid*nInt];
 
-    /* Allocate the memory for the result vector. */
-    vector<su2double> helpVecResult(nInt*nDim*nDim);
-    su2double *vecResult = helpVecResult.data();
+    /* Also get the pointer to the matrix storage of the derivatives of the
+       basis functions in the sol DOFs. */
+    const su2double *matDerBasisSolDOFs = standardElementsGrid[ind].GetMatDerBasisFunctionsSolDOFs();
+
+    /* Allocate the memory for the result vectors. */
+    vector<su2double> helpVecResultInt(nInt*nDim*nDim);
+    vector<su2double> helpVecResultDOFsSol(nDOFsSol*nDim*nDim);
+    su2double *vecResultInt     = helpVecResultInt.data();
+    su2double *vecResultDOFsSol = helpVecResultDOFsSol.data();
 
     /* Compute the gradient of the coordinates w.r.t. the parametric
-       coordinates for this element. */
-    ComputeGradientsCoorWRTParam(nInt, nDOFs, matDerBasisInt,
+       coordinates for this element in the integration points. */
+    ComputeGradientsCoorWRTParam(nInt, nDOFsGrid, matDerBasisInt,
                                  volElem[i].nodeIDsGrid.data(),
-                                 vecResult);
+                                 vecResultInt);
+
+    /* Compute the gradient of the coordinates w.r.t. the parametric
+       coordinates for this element in the solution DOFs. */
+    ComputeGradientsCoorWRTParam(nDOFsSol, nDOFsGrid, matDerBasisSolDOFs,
+                                 volElem[i].nodeIDsGrid.data(),
+                                 vecResultDOFsSol);
 
     /*--- Convert the dxdr, dydr, etc. to the required metric terms.
           Make a distinction between 2D and 3D. ---*/
-    unsigned short ii = 0;
     switch( nDim ) {
       case 2: {
 
         /* 2D computation. Store the offset between the r and s derivatives. */
-        const unsigned short off = 2*nInt;
+        unsigned short off = 2*nInt;
 
         /* Loop over the integration points and store the metric terms. */
+        unsigned short ii = 0;
         for(unsigned short j=0; j<nInt; ++j) {
           const unsigned short jx = 2*j; const unsigned short jy = jx+1;
-          const su2double dxdr = vecResult[jx],     dydr = vecResult[jy];
-          const su2double dxds = vecResult[jx+off], dyds = vecResult[jy+off];
+          su2double dxdr = vecResultInt[jx],     dydr = vecResultInt[jy];
+          su2double dxds = vecResultInt[jx+off], dyds = vecResultInt[jy+off];
 
           volElem[i].metricTerms[ii++] =  dxdr*dyds - dxds*dydr; // J
           volElem[i].metricTerms[ii++] =  dyds;   // J drdx
@@ -4775,19 +4792,35 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
           volElem[i].metricTerms[ii++] =  dxdr;   // J dsdy
         }
 
+        /* Loop over the solution DOFs and store the metric terms. */
+        off = 2*nDOFsSol;
+        ii = 0;
+        for(unsigned short j=0; j<nDOFsSol; ++j) {
+          const unsigned short jx = 2*j; const unsigned short jy = jx+1;
+          su2double dxdr = vecResultDOFsSol[jx],     dydr = vecResultDOFsSol[jy];
+          su2double dxds = vecResultDOFsSol[jx+off], dyds = vecResultDOFsSol[jy+off];
+
+          volElem[i].metricTermsSolDOFs[ii++] =  dxdr*dyds - dxds*dydr; // J
+          volElem[i].metricTermsSolDOFs[ii++] =  dyds;   // J drdx
+          volElem[i].metricTermsSolDOFs[ii++] = -dxds;   // J drdy
+          volElem[i].metricTermsSolDOFs[ii++] = -dydr;   // J dsdx
+          volElem[i].metricTermsSolDOFs[ii++] =  dxdr;   // J dsdy
+        }
+
         break;
       }
 
       case 3: {
         /* 3D computation. Store the offset between the r and s and r and t derivatives. */
-        const unsigned short offS = 3*nInt, offT = 6*nInt;
+        unsigned short offS = 3*nInt, offT = 6*nInt;
 
         /* Loop over the integration points and store the metric terms. */
+        unsigned short ii = 0;
         for(unsigned short j=0; j<nInt; ++j) {
           const unsigned short jx = 3*j; const unsigned short jy = jx+1, jz = jx+2;
-          const su2double dxdr = vecResult[jx],      dydr = vecResult[jy],      dzdr = vecResult[jz];
-          const su2double dxds = vecResult[jx+offS], dyds = vecResult[jy+offS], dzds = vecResult[jz+offS];
-          const su2double dxdt = vecResult[jx+offT], dydt = vecResult[jy+offT], dzdt = vecResult[jz+offT];
+          su2double dxdr = vecResultInt[jx],      dydr = vecResultInt[jy],      dzdr = vecResultInt[jz];
+          su2double dxds = vecResultInt[jx+offS], dyds = vecResultInt[jy+offS], dzds = vecResultInt[jz+offS];
+          su2double dxdt = vecResultInt[jx+offT], dydt = vecResultInt[jy+offT], dzdt = vecResultInt[jz+offT];
 
           volElem[i].metricTerms[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
                                        - dxds*(dydr*dzdt - dzdr*dydt)
@@ -4806,21 +4839,55 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
           volElem[i].metricTerms[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
         }
 
+        /* Loop over the solution DOFs and store the metric terms. */
+        offS = 3*nDOFsSol; offT = 6*nDOFsSol;
+        ii = 0;
+        for(unsigned short j=0; j<nDOFsSol; ++j) {
+          const unsigned short jx = 3*j; const unsigned short jy = jx+1, jz = jx+2;
+          su2double dxdr = vecResultDOFsSol[jx],      dydr = vecResultDOFsSol[jy],      dzdr = vecResultDOFsSol[jz];
+          su2double dxds = vecResultDOFsSol[jx+offS], dyds = vecResultDOFsSol[jy+offS], dzds = vecResultDOFsSol[jz+offS];
+          su2double dxdt = vecResultDOFsSol[jx+offT], dydt = vecResultDOFsSol[jy+offT], dzdt = vecResultDOFsSol[jz+offT];
+
+          volElem[i].metricTermsSolDOFs[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
+                                              - dxds*(dydr*dzdt - dzdr*dydt)
+                                              + dxdt*(dydr*dzds - dzdr*dyds); // J
+
+          volElem[i].metricTermsSolDOFs[ii++] = dyds*dzdt - dzds*dydt;  // J drdx
+          volElem[i].metricTermsSolDOFs[ii++] = dzds*dxdt - dxds*dzdt;  // J drdy
+          volElem[i].metricTermsSolDOFs[ii++] = dxds*dydt - dyds*dxdt;  // J drdz
+
+          volElem[i].metricTermsSolDOFs[ii++] = dzdr*dydt - dydr*dzdt;  // J dsdx
+          volElem[i].metricTermsSolDOFs[ii++] = dxdr*dzdt - dzdr*dxdt;  // J dsdy
+          volElem[i].metricTermsSolDOFs[ii++] = dydr*dxdt - dxdr*dydt;  // J dsdz
+
+          volElem[i].metricTermsSolDOFs[ii++] = dydr*dzds - dzdr*dyds;  // J dtdx
+          volElem[i].metricTermsSolDOFs[ii++] = dzdr*dxds - dxdr*dzds;  // J dtdy
+          volElem[i].metricTermsSolDOFs[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
+        }
+
         break;
       }
     }
 
-    /* Check for negative Jacobians in the integrations points. */
+    /* Check for negative Jacobians in the integrations points and at the
+       location of the solution DOFs. */
+    bool negJacobian = false;
     for(unsigned short j=0; j<nInt; ++j) {
-      if(volElem[i].metricTerms[nMetricPerPoint*j] <= 0.0) {
-        cout << "Negative Jacobian found" << endl;
+      if(volElem[i].metricTerms[nMetricPerPoint*j] <= 0.0) negJacobian = true;
+    }
+
+    for(unsigned short j=0; j<nDOFsSol; ++j) {
+      if(volElem[i].metricTermsSolDOFs[nMetricPerPoint*j] <= 0.0) negJacobian = true;
+    }
+
+    if( negJacobian ) {
+      cout << "Negative Jacobian found" << endl;
 #ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
+      exit(EXIT_FAILURE);
 #else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #endif
-      }
     }
   }
 

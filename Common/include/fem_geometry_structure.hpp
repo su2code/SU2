@@ -163,6 +163,8 @@ public:
 
   vector<su2double> metricTerms;            /*!< \brief Vector of the metric terms in the
                                                         integration points of this element. */
+  vector<su2double> metricTermsSolDOFs;     /*!< \brief Vector of the metric terms in the
+                                                        solution DOFs of this element. */
   vector<su2double> massMatrix;             /*!< \brief Mass matrix for this element. */
   vector<su2double> invMassMatrix;          /*!< \brief Inverse mass matrix for this element. */
   vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */

@@ -798,6 +798,8 @@ private:
                                                       and dtLagBasisIntegration combined for efficiency when using BLAS routines. */
   vector<su2double> matDerBasisIntTrans;  /*!< \brief Matrix of the transpose of the derivative part of matBasisIntegration. It is
                                                       stored such that the volume residual can be computed in one matrix multiplication. */
+  vector<su2double> matDerBasisSolDOFs;   /*!< \brief Matrix of the derivatives of the Lagrangian basis functions in the solution
+                                                      DOFs. Needed to compute the metric terms in the solution DOFs. */
 
   vector<unsigned short> connFace0; /*!< \brief Local connectivity of face 0 of the element. The numbering of the DOFs is
                                                 such that the element is to the left of the face. */
@@ -836,12 +838,21 @@ public:
   * \param[in] val_orderExact - Default argument. If specified, it contains the
                                 order of the polynomials that must be integrated
                                 exactly by the integration rule.
+  * \param[in] rLocSolDOFs    - Default argument. If specified, it contains the
+                                parametric r location of the solution DOFs.
+  * \param[in] sLocSolDOFs    - Default argument. If specified, it contains the
+                                parametric s location of the solution DOFs.
+  * \param[in] tLocSolDOFs    - Default argument. If specified, it contains the
+                                parametric t location of the solution DOFs.
   */
-  FEMStandardElementClass(unsigned short val_VTK_Type,
-                          unsigned short val_nPoly,
-                          bool           val_constJac,
-                          CConfig        *config,
-                          unsigned short val_orderExact = 0);
+  FEMStandardElementClass(unsigned short          val_VTK_Type,
+                          unsigned short          val_nPoly,
+                          bool                    val_constJac,
+                          CConfig                 *config,
+                          unsigned short          val_orderExact = 0,
+                          const vector<su2double> *rLocSolDOFs = NULL,
+                          const vector<su2double> *sLocSolDOFs = NULL,
+                          const vector<su2double> *tLocSolDOFs = NULL);
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.
@@ -896,6 +907,12 @@ public:
   * \return  The pointer to matDerBasisIntTrans;
   */
   const su2double *GetDerMatBasisFunctionsIntTrans(void) const;
+
+  /*!
+  * \brief Function, which makes available the matrix storage of the derivative of the basis functions in the solution DOFs.
+  * \return  The pointer to matDerBasisSolDOFs.
+  */
+  const su2double *GetMatDerBasisFunctionsSolDOFs(void) const;
 
   /*!
   * \brief Function, which makes available the connectivity of face 0.
@@ -986,6 +1003,27 @@ public:
    * \return  The number of DOFs of the linear elements.
    */
   unsigned short GetNDOFsPerSubElem(unsigned short val_VTK_Type) const;
+
+  /*!
+   * \brief Function, which makes available the r-location of the DOFs as a
+            const pointer to the vector.
+   * \return  The address of the vector, which stores the r-location of the DOFs.
+   */
+  const vector<su2double> *GetRDOFs(void) const;
+
+  /*!
+   * \brief Function, which makes available the s-location of the DOFs as a
+            const pointer to the vector.
+   * \return  The address of the vector, which stores the s-location of the DOFs.
+   */
+  const vector<su2double> *GetSDOFs(void) const;
+
+  /*!
+   * \brief Function, which makes available the t-location of the DOFs as a
+            const pointer to the vector.
+   * \return  The address of the vector, which stores the t-location of the DOFs.
+   */
+  const vector<su2double> *GetTDOFs(void) const;
   
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.

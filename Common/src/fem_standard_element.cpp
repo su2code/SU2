@@ -1954,11 +1954,14 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Hexahedron(unsigned short   
 /*           Public member functions of FEMStandardElementClass.                    */
 /*----------------------------------------------------------------------------------*/
 
-FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
-                                                 unsigned short val_nPoly,
-                                                 bool           val_constJac,
-                                                 CConfig        *config,
-                                                 unsigned short val_orderExact)
+FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK_Type,
+                                                 unsigned short          val_nPoly,
+                                                 bool                    val_constJac,
+                                                 CConfig                 *config,
+                                                 unsigned short          val_orderExact,
+                                                 const vector<su2double> *rLocSolDOFs,
+                                                 const vector<su2double> *sLocSolDOFs,
+                                                 const vector<su2double> *tLocSolDOFs)
 
   : FEMStandardElementBaseClass(val_VTK_Type, val_nPoly, val_constJac,
                                 config, val_orderExact) {
@@ -1976,6 +1979,11 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
     case PRISM:         DataStandardPrism();         break;
     case HEXAHEDRON:    DataStandardHexahedron();    break;
   }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Create the data of the basis functions and its derivatives in the  ---*/
+  /*--- integration points of the element.                                 ---*/
+  /*--------------------------------------------------------------------------*/
 
   /*--- Check the sum of the Lagrangian basis functions. ---*/
   CheckSumLagrangianBasisFunctions(nIntegration, nDOFs, lagBasisIntegration);
@@ -2044,6 +2052,127 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
       }
     }
   }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Create the data of the derivatives of the basis functions  in the  ---*/
+  /*--- solution DOFs of the element.                                      ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Store the location of the solution DOFs, depending whether or not these
+     locations were specified when calling the constructor. */
+  const vector<su2double> rSolDOFs = rLocSolDOFs ? *rLocSolDOFs : rDOFs;
+  const vector<su2double> sSolDOFs = sLocSolDOFs ? *sLocSolDOFs : sDOFs;
+  const vector<su2double> tSolDOFs = tLocSolDOFs ? *tLocSolDOFs : tDOFs;
+
+  /* Define the variables, such that the general functions to compute
+     the gradients of the basis functions can be used. Note that some
+     of these variables are dummy variables. */
+  unsigned short    nDOFsDummy;
+  vector<su2double> rDOFsDummy, sDOFsDummy, tDOFsDummy, lagBasisDummy;
+  vector<su2double> drLagBasisSolDOFs, dsLagBasisSolDOFs, dtLagBasisSolDOFs;
+
+  /*--- Determine the element type and compute the gradients of the
+        basis functions in the solution DOFs. ---*/
+  switch( VTK_Type ) {
+    case LINE:
+      LagrangianBasisFunctionAndDerivativesLine(nPoly,      rSolDOFs,
+                                                nDOFsDummy, rDOFsDummy,
+                                                lagBasisDummy,
+                                                drLagBasisSolDOFs);
+      break;
+
+    case TRIANGLE:
+      LagrangianBasisFunctionAndDerivativesTriangle(nPoly,      rSolDOFs,
+                                                    sSolDOFs,   nDOFsDummy,
+                                                    rDOFsDummy, sDOFsDummy,
+                                                    lagBasisDummy,
+                                                    drLagBasisSolDOFs,
+                                                    dsLagBasisSolDOFs);
+      break;
+
+    case QUADRILATERAL:
+      LagrangianBasisFunctionAndDerivativesQuadrilateral(nPoly,      rSolDOFs,
+                                                         sSolDOFs,   nDOFsDummy,
+                                                         rDOFsDummy, sDOFsDummy, 
+                                                         lagBasisDummy,
+                                                         drLagBasisSolDOFs,
+                                                         dsLagBasisSolDOFs);
+      break;
+
+    case TETRAHEDRON:
+      LagrangianBasisFunctionAndDerivativesTetrahedron(nPoly,      rSolDOFs,
+                                                       sSolDOFs,   tSolDOFs,
+                                                       nDOFsDummy, rDOFsDummy,
+                                                       sDOFsDummy, tDOFsDummy,
+                                                       lagBasisDummy,
+                                                       drLagBasisSolDOFs,
+                                                       dsLagBasisSolDOFs,
+                                                       dtLagBasisSolDOFs);
+      break;
+
+    case PYRAMID:
+      LagrangianBasisFunctionAndDerivativesPyramid(nPoly,      rSolDOFs,
+                                                   sSolDOFs,   tSolDOFs,
+                                                   nDOFsDummy, rDOFsDummy,
+                                                   sDOFsDummy, tDOFsDummy,
+                                                   lagBasisDummy,
+                                                   drLagBasisSolDOFs,
+                                                   dsLagBasisSolDOFs,
+                                                   dtLagBasisSolDOFs);
+      break;
+
+    case PRISM:
+      LagrangianBasisFunctionAndDerivativesPrism(nPoly,      rSolDOFs,
+                                                 sSolDOFs,   tSolDOFs,
+                                                 nDOFsDummy, rDOFsDummy,
+                                                 sDOFsDummy, tDOFsDummy,
+                                                 lagBasisDummy,
+                                                 drLagBasisSolDOFs,
+                                                 dsLagBasisSolDOFs,
+                                                 dtLagBasisSolDOFs);
+      break;
+
+    case HEXAHEDRON:
+      LagrangianBasisFunctionAndDerivativesHexahedron(nPoly,      rSolDOFs,
+                                                      sSolDOFs,   tSolDOFs,
+                                                      nDOFsDummy, rDOFsDummy,
+                                                      sDOFsDummy, tDOFsDummy,
+                                                      lagBasisDummy,
+                                                      drLagBasisSolDOFs,
+                                                      dsLagBasisSolDOFs,
+                                                      dtLagBasisSolDOFs);
+      break;
+  }
+
+  /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
+  const unsigned short nSolDOFs = rSolDOFs.size();
+
+  if( !drLagBasisSolDOFs.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nSolDOFs, nDOFs,
+                                                drLagBasisSolDOFs);
+  if( !dsLagBasisSolDOFs.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nSolDOFs, nDOFs,
+                                                dsLagBasisSolDOFs);
+  if( !dtLagBasisSolDOFs.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nSolDOFs, nDOFs,
+                                                dtLagBasisSolDOFs);
+
+  /*--- For efficiency reasons it is beneficial to store drLagBasisSolDOFs,
+        dsLagBasisSolDOFs and dtLagBasisSolDOFs in one array. ---*/
+  sizeDerMat = drLagBasisSolDOFs.size() + dsLagBasisSolDOFs.size()
+             + dtLagBasisSolDOFs.size();
+
+  matDerBasisSolDOFs.resize(sizeDerMat);
+
+  ii = 0;
+  for(unsigned long i=0; i<drLagBasisSolDOFs.size(); ++i, ++ii)
+    matDerBasisSolDOFs[ii] = drLagBasisSolDOFs[i];
+
+  for(unsigned long i=0; i<dsLagBasisSolDOFs.size(); ++i, ++ii)
+    matDerBasisSolDOFs[ii] = dsLagBasisSolDOFs[i];
+
+  for(unsigned long i=0; i<dtLagBasisSolDOFs.size(); ++i, ++ii)
+    matDerBasisSolDOFs[ii] = dtLagBasisSolDOFs[i];
 }
 
 bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
@@ -2093,6 +2222,7 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
 
   matBasisIntegration = other.matBasisIntegration;
   matDerBasisIntTrans = other.matDerBasisIntTrans;
+  matDerBasisSolDOFs  = other.matDerBasisSolDOFs;
 }
 
 void FEMStandardElementClass::DataStandardLine(void) {
