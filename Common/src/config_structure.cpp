@@ -3185,9 +3185,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:     cout << "Spalart Allmaras" << endl; break;
+          case SA:     cout << "Spalart Allmaras"          << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
-          case SST:    cout << "Menter's SST"     << endl; break;
+          case SST:    cout << "Menter's SST"              << endl; break;
+          case KE:     cout << "Zeta-f KE"                 << endl; break;
         }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
