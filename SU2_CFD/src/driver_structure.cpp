@@ -745,6 +745,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true;           break;
+      case KE:     zetaf_ke = true;             break;
         
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
@@ -779,6 +780,11 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       }
       else if (menter_sst) {
         solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+      }
+      else if (zetaf_ke) {
+        solver_container[iMGlevel][TURB_SOL] = new CTurbKESolver(geometry[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
       }
@@ -866,6 +872,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true;           break;
+      case KE:     zetaf_ke = true;             break;
     }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
@@ -1100,6 +1107,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
+      case KE:     zetaf_ke = true; constants = solver_container[MESH_0][TURB_SOL]->GetConstants(); break;
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   
@@ -1402,6 +1410,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
           else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
           else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
+          else if (zetaf_ke) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpwSca_TurbKE(nDim, nVar_Turb, config);
         }
         break;
       default :
@@ -1415,6 +1424,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
       else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA_Neg(nDim, nVar_Turb, config);
       else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
+      else if (zetaf_ke) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbKE(nDim, nVar_Turb, constants, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1423,6 +1433,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
       else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_Neg(nDim, nVar_Turb, config);
       else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
+      else if (zetaf_ke) numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbKE(nDim, nVar_Turb, constants, config);
       numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
     }
     
@@ -1440,6 +1451,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       else if (menter_sst) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
         numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, config);
+      }
+      else if (zetaf_ke) {
+        numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbKE(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbKE(nDim, nVar_Turb, constants, config);
       }
     }
   }
@@ -1684,6 +1699,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           }
           else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
           else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+          else if (zetaf_ke) {cout << "Adjoint K-E turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
         break;
       default :
         cout << "Convective scheme not implemented (adj_turb)." << endl; exit(EXIT_FAILURE);
@@ -1697,6 +1713,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       }
       else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
       else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (zetaf_ke) {cout << "Adjoint K-E turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1707,6 +1724,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       }
       else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
       else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (zetaf_ke) {cout << "Adjoint K-E turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
     /*--- Definition of the boundary condition method ---*/
@@ -1714,6 +1732,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       if (spalart_allmaras) numerics_container[iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
       else if (neg_spalart_allmaras) {cout << "Adjoint Neg SA turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
       else if (menter_sst) {cout << "Adjoint SST turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
+      else if (zetaf_ke) {cout << "Adjoint K-E turbulence model not implemented." << endl; exit(EXIT_FAILURE);}
     }
     
   }
@@ -1810,8 +1829,8 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;  break;
-        
+      case SST:    menter_sst = true;           break;
+      case KE:     zetaf_ke = true;             break;
     }
   
   /*--- Solver definition for the template problem ---*/

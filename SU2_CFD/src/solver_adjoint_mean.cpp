@@ -4901,6 +4901,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
 
+        if (config->GetKind_Turb_Model() == KE)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
 
         /*--- Gradient and limiter of Adjoint Variables ---*/
 
@@ -6125,6 +6128,8 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             /*--- Turbulent kinetic energy ---*/
             
             if (config->GetKind_Turb_Model() == SST)
+              val_turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+            else if (config->GetKind_Turb_Model() == KE)
               val_turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
             else
               val_turb_ke = 0.0;
