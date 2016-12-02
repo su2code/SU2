@@ -9222,7 +9222,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   su2double PressFreeSurface = GetPressure_Inf();
   su2double Froude           = config->GetFroude();
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE));
   su2double *Normal = new su2double[nDim];
   
@@ -9419,7 +9419,7 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
         
         /*--- Turbulent kinetic energy ---*/
-        if (config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == KE))
+        if (config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == KE)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
         /*--- Compute and update residual ---*/
@@ -10137,8 +10137,8 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool viscous = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE);
+  bool tkeNeeded = ( ((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                      (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == KE) );
   su2double Baseline_Press = 0.25 * config->GetPressure_FreeStreamND();
   
   su2double *Normal = new su2double[nDim];
