@@ -1048,6 +1048,10 @@ inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
 
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
+inline su2double CTurbKEVariable::GetTm() { return Tm; }
+
+inline su2double CTurbKEVariable::GetLm() { return Lm; }
+
 inline void CAdjTurbVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
   for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {
     EddyViscSens[iVar] = val_EddyViscSens[iVar];}
