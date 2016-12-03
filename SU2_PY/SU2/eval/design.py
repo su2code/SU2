@@ -294,10 +294,11 @@ def obj_df(dvs,config,state=None):
                 # If penalty constraint active, set value:
                 value = su2func(this_obj,config,state)
                 valuec = float(def_objs[this_obj]['CVAL'])
-                if (def_objs[this_obj]['CTYPE']=='=' or\
-                     (def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
+                if ((def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
                      (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
                     scale[i_obj]*=2.0*abs(valuec - value)
+                elif (def_objs[this_obj]['CTYPE']=='='):
+                    scale[i_obj]*=2.0*(value -valuec)
                 # For inequality constraints, if inactive set scale to 0.0
                 if ((def_objs[this_obj]['CTYPE']=='>' and value > valuec) or\
                     (def_objs[this_obj]['CTYPE']=='<' and value < valuec )):
