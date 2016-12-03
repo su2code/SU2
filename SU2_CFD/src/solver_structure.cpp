@@ -213,7 +213,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
       if (rank == MASTER_NODE)
         cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
       
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
       
     }
     
@@ -1936,6 +1938,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif

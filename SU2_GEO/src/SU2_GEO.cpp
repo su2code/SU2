@@ -543,10 +543,11 @@ int main(int argc, char *argv[]) {
           cout << "Press any key to exit..." << endl;
           cin.get();
 #ifdef HAVE_MPI
+          MPI_Barrier(MPI_COMM_WORLD);
           MPI_Abort(MPI_COMM_WORLD,1);
           MPI_Finalize();
 #else
-          exit(1);
+          exit(EXIT_FAILURE);
 #endif
         }
 

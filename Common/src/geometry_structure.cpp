@@ -905,8 +905,10 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
         geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
     }
+
     if (config->GetKind_Solver() == DISC_ADJ_RANS)
       geometry_container[MESH_0]->ComputeWall_Distance(config);
+
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
@@ -1362,6 +1364,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -4859,6 +4862,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -5353,6 +5357,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -5500,6 +5505,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -6592,6 +6598,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -6751,6 +6758,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -6930,6 +6938,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -6965,6 +6974,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -6998,6 +7008,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -7075,6 +7086,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -7167,6 +7179,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
           exit(EXIT_FAILURE);
 #else
+          MPI_Barrier(MPI_COMM_WORLD);
           MPI_Abort(MPI_COMM_WORLD,1);
           MPI_Finalize();
 #endif
@@ -7385,6 +7398,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -7546,6 +7560,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
 #else
+                MPI_Barrier(MPI_COMM_WORLD);
                 MPI_Abort(MPI_COMM_WORLD,1);
                 MPI_Finalize();
 #endif
@@ -8130,6 +8145,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -8317,6 +8333,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -8355,6 +8372,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -8934,7 +8952,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
-  /*--- Compute the total number of nodes on no-slip boundaries ---*/
+	/*--- Compute the total number of nodes on no-slip boundaries ---*/
   
   unsigned long nVertex_SolidWall = 0;
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
@@ -8998,6 +9016,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
       node[iPoint]->SetWall_Distance(dist);
     }
   }
+
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {

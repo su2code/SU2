@@ -6887,6 +6887,14 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
   Partial_Gradient, Partial_Res, *Normal;
   
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_1a";
+
   /*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
   PrimVar_Vertex = new su2double [nPrimVarGrad];
@@ -6896,7 +6904,13 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   /*--- Set Gradient_Primitive to zero ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
-  
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_1b";
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_2a";
+
   /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -6920,6 +6934,12 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
     }
   }
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_2b";
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_3a";
+
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
@@ -6940,6 +6960,12 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
     }
   }
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_3b";
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_4a";
+
   /*--- Update gradient value ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -6950,12 +6976,27 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
     }
   }
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_4b";
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_5a";
+
   delete [] PrimVar_Vertex;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_5b";
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_6a";
+
   Set_MPI_Primitive_Gradient(geometry, config);
-  
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_6b";
+
 }
 
 void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -7663,11 +7704,11 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  su2double  *Surface_MassFlow = new su2double[nMarker];
-  su2double  *Surface_Mach = new su2double[nMarker];
-  su2double  *Surface_Pressure = new su2double[nMarker];
+  su2double  *Surface_MassFlow    = new su2double[nMarker];
+  su2double  *Surface_Mach        = new su2double[nMarker];
+  su2double  *Surface_Pressure    = new su2double[nMarker];
   su2double  *Surface_Temperature = new su2double[nMarker];
-  su2double  *Surface_Area = new su2double[nMarker];
+  su2double  *Surface_Area        = new su2double[nMarker];
   
   /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
   
@@ -7694,10 +7735,10 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
           Density = node[iPoint]->GetSolution(0);
           Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Area += (Vector[iDim]*AxiFactor)*(Vector[iDim]*AxiFactor);
-            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1)/Density;
-            Velocity2 += Velocity[iDim]*Velocity[iDim];
-            MassFlow += Vector[iDim]*AxiFactor*node[iPoint]->GetSolution(iDim+1);
+            Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+            Velocity[iDim] = node[iPoint]->GetSolution(iDim+1) / Density;
+            Velocity2 += Velocity[iDim] * Velocity[iDim];
+            MassFlow += Vector[iDim] * AxiFactor * node[iPoint]->GetSolution(iDim+1);
           }
           
           Area       = sqrt (Area);
@@ -7736,17 +7777,17 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
   su2double *Surface_Area_Total = new su2double [nMarker_Analyze];
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Local[iMarker_Analyze] = 0.0;
-    Surface_Mach_Local[iMarker_Analyze] = 0.0;
+    Surface_MassFlow_Local[iMarker_Analyze]    = 0.0;
+    Surface_Mach_Local[iMarker_Analyze]        = 0.0;
     Surface_Temperature_Local[iMarker_Analyze] = 0.0;
-    Surface_Pressure_Local[iMarker_Analyze] = 0.0;
-    Surface_Area_Local[iMarker_Analyze] = 0.0;
+    Surface_Pressure_Local[iMarker_Analyze]    = 0.0;
+    Surface_Area_Local[iMarker_Analyze]        = 0.0;
     
-    Surface_MassFlow_Total[iMarker_Analyze] = 0.0;
-    Surface_Mach_Total[iMarker_Analyze] = 0.0;
+    Surface_MassFlow_Total[iMarker_Analyze]    = 0.0;
+    Surface_Mach_Total[iMarker_Analyze]        = 0.0;
     Surface_Temperature_Total[iMarker_Analyze] = 0.0;
-    Surface_Pressure_Total[iMarker_Analyze] = 0.0;
-    Surface_Area_Total[iMarker_Analyze] = 0.0;
+    Surface_Pressure_Total[iMarker_Analyze]    = 0.0;
+    Surface_Area_Total[iMarker_Analyze]        = 0.0;
   }
   
   /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
@@ -7760,11 +7801,11 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
         /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
         
         if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_Analyze_TagBound(iMarker_Analyze)) {
-          Surface_MassFlow_Local[iMarker_Analyze] += Surface_MassFlow[iMarker];
-          Surface_Mach_Local[iMarker_Analyze] += Surface_Mach[iMarker];
+          Surface_MassFlow_Local[iMarker_Analyze]    += Surface_MassFlow[iMarker];
+          Surface_Mach_Local[iMarker_Analyze]        += Surface_Mach[iMarker];
           Surface_Temperature_Local[iMarker_Analyze] += Surface_Temperature[iMarker];
-          Surface_Pressure_Local[iMarker_Analyze] += Surface_Pressure[iMarker];
-          Surface_Area_Local[iMarker_Analyze] += Surface_Area[iMarker];
+          Surface_Pressure_Local[iMarker_Analyze]    += Surface_Pressure[iMarker];
+          Surface_Area_Local[iMarker_Analyze]        += Surface_Area[iMarker];
         }
         
       }
@@ -7784,11 +7825,11 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
 #else
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    Surface_MassFlow_Total[iMarker_Analyze]  = Surface_MassFlow_Local[iMarker_Analyze];
-    Surface_Mach_Total[iMarker_Analyze]  = Surface_Mach_Local[iMarker_Analyze];
+    Surface_MassFlow_Total[iMarker_Analyze]    = Surface_MassFlow_Local[iMarker_Analyze];
+    Surface_Mach_Total[iMarker_Analyze]        = Surface_Mach_Local[iMarker_Analyze];
     Surface_Temperature_Total[iMarker_Analyze] = Surface_Temperature_Local[iMarker_Analyze];
-    Surface_Pressure_Total[iMarker_Analyze]   = Surface_Pressure_Local[iMarker_Analyze];
-    Surface_Area_Total[iMarker_Analyze]      = Surface_Area_Local[iMarker_Analyze];
+    Surface_Pressure_Total[iMarker_Analyze]    = Surface_Pressure_Local[iMarker_Analyze];
+    Surface_Area_Total[iMarker_Analyze]        = Surface_Area_Local[iMarker_Analyze];
   }
   
 #endif
@@ -7873,6 +7914,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
   su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
   su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
+	su2double SignFlip = 1.0;
+
   unsigned short iMarker_Analyze;
   int rank, iProcessor, nProcessor;
   rank = MASTER_NODE;
@@ -7882,17 +7925,17 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   unsigned long Total_Index;
   unsigned short nDim = geometry->GetnDim();
   unsigned short Theta_DC60 = 60, nStation_DC60 = 5;
-  bool Evaluate_ActDisk = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
-	bool Engine_HalfModel = config->GetEngine_HalfModel();
-	double SignFlip = 1.0;
+
+  bool Evaluate_Distortion = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool write_heads         = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+	bool Engine_HalfModel    = config->GetEngine_HalfModel();
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
   
-  if (Evaluate_ActDisk) {
+  if (Evaluate_Distortion) {
     
     for (iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++) {
 
@@ -8060,7 +8103,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 Buffer_Send_dMach_dz[nVertex_Surface] = dMach_dz;
               }
               
-              TotalPressure    = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+              TotalPressure      = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
               TotalPressure_Inf  = Pressure_Inf * pow( 1.0 + Mach_Inf * Mach_Inf * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
               
               Buffer_Send_PT[nVertex_Surface] = TotalPressure / TotalPressure_Inf;
@@ -8150,12 +8193,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         Buffer_Recv_GlobalIndex[iVertex] = Buffer_Send_GlobalIndex[iVertex];
       }
 #endif
-      
-      /*--- The master node unpacks the data and writes the surface CSV file ---*/
-      
+
       if (rank == MASTER_NODE) {
-        
-        /*--- Compute the location of the critical points of the distortion measure ---*/
         
         /*--- Compute center of gravity ---*/
         
@@ -8174,9 +8213,9 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
             xCoord = Buffer_Recv_Coord_x[Total_Index];
             yCoord = Buffer_Recv_Coord_y[Total_Index];
             if (nDim == 3) zCoord = Buffer_Recv_Coord_z[Total_Index];
-            PT = Buffer_Recv_PT[Total_Index];
+            PT   = Buffer_Recv_PT[Total_Index];
             Mach = Buffer_Recv_Mach[Total_Index];
-            q = Buffer_Recv_q[Total_Index];
+            q    = Buffer_Recv_q[Total_Index];
             
             Area       = Buffer_Recv_Area[Total_Index];
             TotalArea += Area;
@@ -8196,8 +8235,8 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         yCoord_CG /= TotalArea;
         zCoord_CG /= TotalArea;
         PT_Mean   /= TotalArea;
-        Mach_Mean   /= TotalArea;
-        q_Mean   /=  TotalArea;
+        Mach_Mean /= TotalArea;
+        q_Mean    /=  TotalArea;
         
     		/*--- If it is a half model, CGy = 0 ---*/
 
@@ -8428,12 +8467,11 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         Theta = SU2_TYPE::Int(config->GetDistortionRack()[1]);
         
         nAngle = SU2_TYPE::Int(360/float(Theta));
-        r = new su2double [nStation+1];
+
         
         /*--- Allocate memory ---*/
-        
-        PT_Station = new su2double [nStation];
-        PT_Station_Min = new su2double [nStation];
+
+        r = new su2double [nStation+1];
         ProbeArray = new su2double ** [nAngle];
         for (iAngle = 0; iAngle < nAngle; iAngle++) {
           ProbeArray[iAngle] = new su2double * [nStation];
@@ -8540,6 +8578,9 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
         /*--- Evaluate the average and min. pressure at each station/radius  ---*/
         
+        PT_Station = new su2double [nStation];
+        PT_Station_Min = new su2double [nStation];
+
         for (iStation = 0; iStation < nStation; iStation++) {
           PT_Station[iStation] = 0.0;
           PT_Station_Min[iStation] = ProbeArray[0][iStation][3];
@@ -8589,9 +8630,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         delete [] PT_Station;
         
         /*--- Evaluate the IDC Mach parameter ---*/
-        
-        Mach_Station = new su2double [nStation];
-        Mach_Station_Min = new su2double [nStation];
         
         /*--- Compute the Mach number at each probe, closes grid point to the location ---*/
         
@@ -8663,6 +8701,9 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
         /*--- Evaluate the average and min. pressure at each station/radius  ---*/
         
+        Mach_Station = new su2double [nStation];
+        Mach_Station_Min = new su2double [nStation];
+
         for (iStation = 0; iStation < nStation; iStation++) {
           Mach_Station[iStation] = 0.0;
           Mach_Station_Min[iStation] = ProbeArray[0][iStation][3];
@@ -8696,12 +8737,13 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
         SetTotal_IDC_Mach(IDC_Mach);
         
-        /*--- Release IDX parameters ---*/
-        
-        delete[] r;
         delete [] Mach_Station_Min;
         delete [] Mach_Station;
-        for (iAngle = 0; iAngle < nAngle; iAngle++) {
+
+        /*--- Release distortion parameters ---*/
+        
+        delete[] r;
+         for (iAngle = 0; iAngle < nAngle; iAngle++) {
           for (iStation = 0; iStation < nStation; iStation++) {
             delete[] ProbeArray[iAngle][iStation];
           }
@@ -16585,8 +16627,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
   
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -16617,37 +16659,75 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Set the primitive variables ---*/
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_1a_";
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
- 
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_1b_";
+
   /*--- Compute the engine properties ---*/
 
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_2a_";
   if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_2b_";
 
   /*--- Compute the control volume properties ---*/
 
   if (marker_analyze) {
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_3a_";
     GetSurface_Properties(geometry, NULL, NULL, config, iMesh, Output);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_3b_";
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_4a_";
     GetSurface_Distortion(geometry, config, iMesh, Output);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_4b_";
   }
 
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
   if (actuator_disk) {
-    Set_MPI_ActDisk(solver_container, geometry, config);
-    GetPower_Properties(geometry, config, iMesh, Output);
-    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_5a_";
+  	Set_MPI_ActDisk(solver_container, geometry, config);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_5b_";
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_6a_";
+  	GetPower_Properties(geometry, config, iMesh, Output);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_6b_";
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_7a_";
+  	SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) cout <<"_7b_";
   }
 
   /*--- Compute Interface MPI ---*/
 
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_8a_";
   if (interface) { Set_MPI_Interface(geometry, config); }
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_8b_";
 
   /*--- Compute NearField MPI ---*/
 
+  MPI_Barrier(MPI_COMM_WORLD);
+   if (rank == MASTER_NODE) cout <<"_9a_";
   if (nearfield) { Set_MPI_Nearfield(geometry, config); }
+  MPI_Barrier(MPI_COMM_WORLD);
+   if (rank == MASTER_NODE) cout <<"_9b_";
  
   /*--- Artificial dissipation ---*/
-  
+
+   MPI_Barrier(MPI_COMM_WORLD);
+   if (rank == MASTER_NODE) cout <<"_10a_";
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
@@ -16655,9 +16735,13 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
       SetUndivided_Laplacian(geometry, config);
     }
   }
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_10b_";
   
   /*--- Compute gradient of the primitive variables ---*/
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11a_";
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
     //	  if (compressible && !ideal_gas) SetSecondary_Gradient_GG(geometry, config);
@@ -16666,7 +16750,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
     //	  if (compressible && !ideal_gas) SetSecondary_Gradient_LS(geometry, config);
   }
-  
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_11b_";
+
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
   
@@ -16674,6 +16760,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     //  if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
   }
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_12a_";
+
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
   StrainMag_Max = 0.0, Omega_Max = 0.0;
@@ -16717,6 +16806,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
   }
   
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rank == MASTER_NODE) cout <<"_12b_";
+
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {

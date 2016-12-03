@@ -8965,7 +8965,7 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	unsigned long Buffer_Send_nVertex[1], *Buffer_Recv_nVertex = NULL;
 	unsigned long Total_Index;
 	bool Engine_HalfModel = config->GetEngine_HalfModel();
-	double SignFlip = 1.0;
+	su2double SignFlip = 1.0;
   su2double Beta, Alpha;
   su2double Mach_ij, Mach_ip1j, Mach_im1j, Mach_ijp1, Mach_ijm1, Filtered_Mach;
   su2double Alpha_ij, Alpha_ip1j, Alpha_im1j, Alpha_ijp1, Alpha_ijm1, Filtered_Alpha;
@@ -9398,12 +9398,12 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		SU2_MPI::Gather(Buffer_Send_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 		SU2_MPI::Gather(Buffer_Send_dVel_x_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 		SU2_MPI::Gather(Buffer_Send_dVel_x_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 		SU2_MPI::Gather(Buffer_Send_dVel_y_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 		SU2_MPI::Gather(Buffer_Send_dVel_y_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		if (nDim == 3) {
 			SU2_MPI::Gather(Buffer_Send_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);

@@ -137,6 +137,7 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -808,8 +809,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
-  /* DESCRIPTION: Limits for the pressure (Min, Max) */
-  default_distortion[0] =  0.0; default_distortion[1] =  1E6;
+  /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
+  default_distortion[0] =  5.0; default_distortion[1] =  15.0;
   addDoubleArrayOption("DISTORTION_RACK", 2, DistortionRack, default_distortion);
   /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
   default_eng_val[0]=0.0; default_eng_val[1]=0.0; default_eng_val[2]=0.0;
@@ -2969,7 +2970,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     
     RefLengthMoment = RefLengthMoment/12.0;
-    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
+    if ((val_nDim == 2) && (!Axisymmetric)) RefAreaCoeff = RefAreaCoeff/12.0;
     else RefAreaCoeff = RefAreaCoeff/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
