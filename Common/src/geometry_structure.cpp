@@ -9013,7 +9013,6 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   int iProcessor = 0, nProcessor = SINGLE_NODE;
   
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
   
