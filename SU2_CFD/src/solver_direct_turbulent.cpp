@@ -813,21 +813,21 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
         
-        for (iVar = 0; iVar < 2; iVar++) {
+        for (iVar = 0; iVar < 2; iVar++) {  // tke and epsi
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
                               +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
-        for (iVar = 2; iVar < 3; iVar++) {
+        for (iVar = 2; iVar < 3; iVar++) { // zeta
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = ( U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
                               +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
-        for (iVar = 3; iVar < nVar; iVar++) {
+        for (iVar = 3; iVar < nVar; iVar++) { // f
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = 0.0;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
@@ -3911,12 +3911,14 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
       
       beta_1 = constants[4];
       wall_k = node[iPoint]->GetSolution(0);
+      wall_zeta = node[iPoint]->GetSolution(2);
 
-      // swh: needs a mod here...      
+      // wall boundary conditions (https://turbmodels.larc.nasa.gov/k-e-zeta-f.html)
       Solution[0] = 0.0;
       Solution[1] = 2.0*laminar_viscosity*wall_k/(distance*distance);
       Solution[2] = 0.0;
-      Solution[3] = 0.0;
+      //Solution[3] = 0.0;
+      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
