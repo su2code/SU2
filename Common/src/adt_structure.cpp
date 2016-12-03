@@ -367,9 +367,9 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
   unsigned long kk = leaves[0].centralNodeID, minIndex;
   const su2double *coorTarget = coorPoints.data() + nDimADT*kk;
 
-  pointID = localPointIDs[kk];
-  rankID  = ranksOfPoints[kk];
-
+  pointID  = localPointIDs[kk];
+  rankID   = ranksOfPoints[kk];
+  minIndex = kk;
   dist = 0.0;
   for(unsigned short l=0; l<nDimADT; ++l) {
     const su2double ds = coor[l] - coorTarget[l];
