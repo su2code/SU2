@@ -11364,12 +11364,13 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
               for (jElem = 0; jElem < nElem_Bound[iMarker]; jElem++) {
                 isJPoint = false; isPeriodic = false;
                 for (iNode = 0; iNode < bound[iMarker][jElem]->GetnNodes(); iNode++) {
+									
                   if (bound[iMarker][jElem]->GetNode(iNode) == jPoint) isJPoint = true;
                   if (PeriodicBC[bound[iMarker][jElem]->GetNode(iNode)]) isPeriodic = true;
                 }
                 
                 /*--- If both points were found, store this element. ---*/
-                if (isJPoint && isPeriodic) {
+                if ((isJPoint && isPeriodic) && (jElem == 0 || (jElem == nElem_Bound[iMarker]-1))) {
                   OldBoundaryElems[iMarker].push_back(jElem);
                 }
                 
@@ -11388,7 +11389,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     IterNewElem[iMarker] = unique( OldBoundaryElems[iMarker].begin(), OldBoundaryElems[iMarker].end());
     OldBoundaryElems[iMarker].resize( IterNewElem[iMarker] - OldBoundaryElems[iMarker].begin() );
   }
-  
+	
   /*--- Create the new boundary elements. Points making up these new
    elements must either be SEND/RECEIVE or periodic points. ---*/
   nNewElem_Bound = new unsigned long[nMarker];
@@ -11397,56 +11398,69 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
     
     nNewElem_Bound[iMarker] = OldBoundaryElems[iMarker].size();
     newBound[iMarker] = new CPrimalGrid*[nNewElem_Bound[iMarker]];
-    
+		
     /*--- Loop through all new elements to be added. ---*/
     for (iElem = 0; iElem < nNewElem_Bound[iMarker]; iElem++) {
       jElem = OldBoundaryElems[iMarker][iElem];
-      
-      /*--- Loop through all nodes of this element. ---*/
-      for (iNode = 0; iNode < bound[iMarker][jElem]->GetnNodes(); iNode++) {
-        pPoint = bound[iMarker][jElem]->GetNode(iNode);
-        
-        /*--- Check if this node is a send point. If so, the corresponding
-         receive point will be used in making the new boundary element. ---*/
-        for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
-          for (kElem = 0; kElem < PeriodicPoint[iPeriodic][0].size(); kElem++) {
-            if (pPoint == PeriodicPoint[iPeriodic][0][kElem]) newNodes[iNode] = PeriodicPoint[iPeriodic][1][kElem];
-          }
-        }
-        
-        /*--- Check if this node is a periodic point. If so, the corresponding
-         periodic point will be used in making the new boundary element. ---*/
-        if (PeriodicBC[pPoint]) {
-          
-          /*--- Find the corresponding periodic point. ---*/
-          for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++) {
-            if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
-              for (iVertex = 0; iVertex < nVertex[jMarker]; iVertex++) {
-                if (pPoint == vertex[jMarker][iVertex]->GetNode()) {kMarker = jMarker; jVertex = iVertex;}
-              }
-            }
-          }
-          newNodes[iNode] = vertex[kMarker][jVertex]->GetDonorPoint();
-        }
-      }
-      
-      /*--- Now instantiate the new element. ---*/
-      VTK_Type = bound[iMarker][jElem]->GetVTK_Type();
-      switch(VTK_Type) {
-        case LINE:
-          newBound[iMarker][iElem] = new CLine(newNodes[0], newNodes[1],2);
-          break;
-        case TRIANGLE:
-          newBound[iMarker][iElem] = new CTriangle(newNodes[0], newNodes[1], newNodes[2],3);
-          break;
-        case QUADRILATERAL:
-          newBound[iMarker][iElem] = new CQuadrilateral(newNodes[0], newNodes[1], newNodes[2], newNodes[3],3);
-          break;
-      }
-      
-    }
+			//cout << "jElem = " << jElem << " Marker = " << iMarker << endl;
+				
+			/*--- Loop through all nodes of this element. ---*/
+			for (iNode = 0; iNode < bound[iMarker][jElem]->GetnNodes(); iNode++) {
+				bool isNew = true;
+				pPoint = bound[iMarker][jElem]->GetNode(iNode);
+				//cout << "Point = " << pPoint << endl;
+				
+				/*--- Check if this node is a send point. If so, the corresponding
+				 receive point will be used in making the new boundary element. ---*/
+				for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
+					for (kElem = 0; kElem < PeriodicPoint[iPeriodic][0].size(); kElem++) {
+						if (pPoint == PeriodicPoint[iPeriodic][0][kElem]){
+							newNodes[iNode] = PeriodicPoint[iPeriodic][1][kElem];
+							isNew = false;
+							//cout << "iNode= " << iNode << " old num = " << pPoint << " new num = " << newNodes[iNode] << " Marker = "<< iMarker << " Element = " << iElem << endl;
+						}
+					}
+				}
+				
+				/*--- Check if this node is a periodic point. If so, the corresponding
+				 periodic point will be used in making the new boundary element. ---*/
+				if (PeriodicBC[pPoint]) {
+					
+					/*--- Find the corresponding periodic point. ---*/
+					for (jMarker = 0; jMarker < config->GetnMarker_All(); jMarker++) {
+						if (config->GetMarker_All_KindBC(jMarker) == PERIODIC_BOUNDARY) {
+							for (iVertex = 0; iVertex < nVertex[jMarker]; iVertex++) {
+								
+								if ((pPoint == vertex[jMarker][iVertex]->GetNode()) && !(iMarker == jMarker)) {
+									//cout << "jMarker = " << jMarker << " iMarker = " << iMarker<< endl;
+									kMarker = jMarker; jVertex = iVertex;
+									cout << " Marker = "<< iMarker << " Element = " << iElem << "DonorPoint = " << " New Nodes = "<< vertex[iMarker][jVertex]->GetDonorPoint() << newNodes[0] << " " << newNodes[1] << endl;
+								}
+							}
+						}
+					}
+					if (isNew)
+						newNodes[iNode] = vertex[kMarker][jVertex]->GetDonorPoint();
+				}
+			}
+			
+			
+			/*--- Now instantiate the new element. ---*/
+			VTK_Type = bound[iMarker][jElem]->GetVTK_Type();
+			switch(VTK_Type) {
+				case LINE:
+					newBound[iMarker][iElem] = new CLine(newNodes[0], newNodes[1],2);
+					break;
+				case TRIANGLE:
+					newBound[iMarker][iElem] = new CTriangle(newNodes[0], newNodes[1], newNodes[2],3);
+					break;
+				case QUADRILATERAL:
+					newBound[iMarker][iElem] = new CQuadrilateral(newNodes[0], newNodes[1], newNodes[2], newNodes[3],3);
+					break;
+			}
+		}
   }
-  
+	cout << "We are out!" << endl;
   delete [] PeriodicBC;
   delete [] CreateMirror;
   
