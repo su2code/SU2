@@ -4033,10 +4033,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:	   SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
+    case SA:	 SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
     case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
-    case KE:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\",\"Res_Turb[2]\",\"Res_Turb[3]\""); break;
+    case SST:    SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case KE:   	 SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\",\"Res_Turb[2]\",\"Res_Turb[3]\""); break;
   }
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
   char levelset_resid[]= ",\"Res_LevelSet\"";
@@ -4247,7 +4247,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     *TotalTotalEfficiency = NULL,
     *KineticEnergyLoss 	  = NULL,
     *TotalPressureLoss 	  = NULL,
-    *MassFlowIn 		  = NULL,
+    *MassFlowIn 	  = NULL,
     *MassFlowOut          = NULL,
     *FlowAngleIn          = NULL,
     *FlowAngleOut         = NULL,
@@ -4366,7 +4366,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     TotalTotalEfficiency  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     KineticEnergyLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     TotalPressureLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowIn 		      = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MassFlowIn 		  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     MassFlowOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleOut          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
@@ -4525,15 +4525,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         for (iVar = 0; iVar < nVar_Flow; iVar++)
           residual_flow[iVar] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
         
-        /*--- Turbulent residual ---*/
-        
+        /*--- Turbulent residual ---*/        
         if (turbulent) {
           for (iVar = 0; iVar < nVar_Turb; iVar++)
             residual_turbulent[iVar] = solver_container[val_iZone][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
         
         /*--- Transition residual ---*/
-        
         if (transition) {
           for (iVar = 0; iVar < nVar_Trans; iVar++)
             residual_transition[iVar] = solver_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
@@ -4798,6 +4796,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               switch(nVar_Turb) {
                 case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
                 case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
+	        case 4: SPRINTF (turb_resid, ", %12.10f, %12.10f, %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1]), log10(residual_turbulent[2]), log10(residual_turbulent[3])); break;
               }
             }
             /*---- Averaged stagnation pressure at an exit ----*/
@@ -5443,7 +5442,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           switch(nVar_Turb) {
             case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
-              cout.width(15); cout << log10(residual_turbulent[1]); break;
+                    cout.width(15); cout << log10(residual_turbulent[1]); break;
+            case 4: cout.width(14); cout << log10(residual_turbulent[0]);
+                    cout.width(15); cout << log10(residual_turbulent[1]);
+                    cout.width(16); cout << log10(residual_turbulent[2]);
+                    cout.width(17); cout << log10(residual_turbulent[3]); break;
           }
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
