@@ -8912,6 +8912,30 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
         cout << Global_nElem << " interior elements before parallel partitioning." << endl;
 
+      /*--- Check if the number of cores used is larger than the number of
+            elements. Terminate if this is the case, because it does not make
+            sense to do this. ---*/
+      unsigned long nCores = size;   // Correct for the number of cores per rank.
+      if(nCores > Global_nElem) {
+
+        if (rank == MASTER_NODE) {
+          cout << endl;
+          cout << "Congratulations. You just qualified for the title \"Idiot user\"." << endl;
+          cout << "The number of cores, " << nCores
+               << ", is larger than the number of elements, " << Global_nElem << "." << endl;
+          cout << "This is not exactly an efficient use of the resources and therefore "
+               << "SU2 will terminate." << endl << endl;
+        }
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
       /*--- Compute the number of elements that will be on each processor.
             This is a linear partitioning with the addition of a simple load
             balancing for any remainder elements. ---*/
