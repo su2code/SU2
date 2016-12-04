@@ -7916,10 +7916,10 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   su2double *** ProbeArray, *Mach_Station, *Mach_Station_Min, *PT_Sector, *PT_Station, *PT_Station_Min,
   PT_Sector_Min, PT_Mean, Mach_Mean, q_Mean, UpVector[3], radians, RotatedVector[3],
   RefDensity, RefVel, Factor, DC60, IDR, IDC, IDC_Mach;
-  su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
-//  su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
+  su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf, Gas_Constant;
+//  su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0
 //  su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
-//  su2double SignFlip = 1.0;
+  su2double SignFlip = 1.0;
   
   unsigned short iMarker_Analyze;
   int rank, iProcessor, nProcessor;
