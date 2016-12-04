@@ -8956,9 +8956,9 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	char cstr[200];
 	su2double *** ProbeArray, dx = 0.0, dy = 0.0, dz = 0.0, dx_ = 0.0, dy_ = 0.0, dz_ = 0.0, UpVector[3], radians, RotatedVector[3];
 	su2double Pressure, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf,
-	Temperature, TotalTemperature, Pressure_Inf, Temperature_Inf, TotalTemperature_Inf, Velocity_Inf;
-	su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0, Gas_Constant;
-	su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dTT_dT = 0.0, dPT_dMach = 0.0, dTT_dMach = 0.0, Aux = 0.0;
+	Temperature, TotalTemperature, Pressure_Inf, Temperature_Inf, TotalTemperature_Inf, Velocity_Inf, Gas_Constant;
+//	su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0;
+//	su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dTT_dT = 0.0, dPT_dMach = 0.0, dTT_dMach = 0.0, Aux = 0.0;
 	unsigned short nDim = geometry->GetnDim();
 	unsigned short Theta, nStation;
 	unsigned long nVertex_Surface, nLocalVertex_Surface, MaxLocalVertex_Surface;
@@ -9054,98 +9054,98 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		su2double *Buffer_Send_PT = NULL, *Buffer_Recv_PT = NULL;
 		Buffer_Send_PT = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dPT_dx = NULL, *Buffer_Recv_dPT_dx = NULL;
-		Buffer_Send_dPT_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dPT_dx = NULL, *Buffer_Recv_dPT_dx = NULL;
+//		Buffer_Send_dPT_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dPT_dy = NULL, *Buffer_Recv_dPT_dy = NULL;
-		Buffer_Send_dPT_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dPT_dy = NULL, *Buffer_Recv_dPT_dy = NULL;
+//		Buffer_Send_dPT_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dPT_dz = NULL, *Buffer_Recv_dPT_dz = NULL;
-		if (nDim == 3) Buffer_Send_dPT_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dPT_dz = NULL, *Buffer_Recv_dPT_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dPT_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_TT = NULL, *Buffer_Recv_TT = NULL;
 		Buffer_Send_TT = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dTT_dx = NULL, *Buffer_Recv_dTT_dx = NULL;
-		Buffer_Send_dTT_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dTT_dx = NULL, *Buffer_Recv_dTT_dx = NULL;
+//		Buffer_Send_dTT_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dTT_dy = NULL, *Buffer_Recv_dTT_dy = NULL;
-		Buffer_Send_dTT_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dTT_dy = NULL, *Buffer_Recv_dTT_dy = NULL;
+//		Buffer_Send_dTT_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dTT_dz = NULL, *Buffer_Recv_dTT_dz = NULL;
-		if (nDim == 3) Buffer_Send_dTT_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dTT_dz = NULL, *Buffer_Recv_dTT_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dTT_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_P = NULL, *Buffer_Recv_P = NULL;
 		Buffer_Send_P = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dP_dx = NULL, *Buffer_Recv_dP_dx = NULL;
-		Buffer_Send_dP_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dP_dx = NULL, *Buffer_Recv_dP_dx = NULL;
+//		Buffer_Send_dP_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dP_dy = NULL, *Buffer_Recv_dP_dy = NULL;
-		Buffer_Send_dP_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dP_dy = NULL, *Buffer_Recv_dP_dy = NULL;
+//		Buffer_Send_dP_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dP_dz = NULL, *Buffer_Recv_dP_dz = NULL;
-		if (nDim == 3) Buffer_Send_dP_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dP_dz = NULL, *Buffer_Recv_dP_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dP_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_T = NULL, *Buffer_Recv_T = NULL;
 		Buffer_Send_T = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dT_dx = NULL, *Buffer_Recv_dT_dx = NULL;
-		Buffer_Send_dT_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dT_dx = NULL, *Buffer_Recv_dT_dx = NULL;
+//		Buffer_Send_dT_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dT_dy = NULL, *Buffer_Recv_dT_dy = NULL;
-		Buffer_Send_dT_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dT_dy = NULL, *Buffer_Recv_dT_dy = NULL;
+//		Buffer_Send_dT_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dT_dz = NULL, *Buffer_Recv_dT_dz = NULL;
-		if (nDim == 3) Buffer_Send_dT_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dT_dz = NULL, *Buffer_Recv_dT_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dT_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_Mach = NULL, *Buffer_Recv_Mach = NULL;
 		Buffer_Send_Mach = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dMach_dx = NULL, *Buffer_Recv_dMach_dx = NULL;
-		Buffer_Send_dMach_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dMach_dx = NULL, *Buffer_Recv_dMach_dx = NULL;
+//		Buffer_Send_dMach_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dMach_dy = NULL, *Buffer_Recv_dMach_dy = NULL;
-		Buffer_Send_dMach_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dMach_dy = NULL, *Buffer_Recv_dMach_dy = NULL;
+//		Buffer_Send_dMach_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dMach_dz = NULL, *Buffer_Recv_dMach_dz = NULL;
-		if (nDim == 3) Buffer_Send_dMach_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dMach_dz = NULL, *Buffer_Recv_dMach_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dMach_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_Vel_x = NULL, *Buffer_Recv_Vel_x = NULL;
 		Buffer_Send_Vel_x = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_x_dx = NULL, *Buffer_Recv_dVel_x_dx = NULL;
-		Buffer_Send_dVel_x_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_x_dx = NULL, *Buffer_Recv_dVel_x_dx = NULL;
+//		Buffer_Send_dVel_x_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_x_dy = NULL, *Buffer_Recv_dVel_x_dy = NULL;
-		Buffer_Send_dVel_x_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_x_dy = NULL, *Buffer_Recv_dVel_x_dy = NULL;
+//		Buffer_Send_dVel_x_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_x_dz = NULL, *Buffer_Recv_dVel_x_dz = NULL;
-		if (nDim == 3) Buffer_Send_dVel_x_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_x_dz = NULL, *Buffer_Recv_dVel_x_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dVel_x_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_Vel_y = NULL, *Buffer_Recv_Vel_y = NULL;
 		Buffer_Send_Vel_y = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_y_dx = NULL, *Buffer_Recv_dVel_y_dx = NULL;
-		Buffer_Send_dVel_y_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_y_dx = NULL, *Buffer_Recv_dVel_y_dx = NULL;
+//		Buffer_Send_dVel_y_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_y_dy = NULL, *Buffer_Recv_dVel_y_dy = NULL;
-		Buffer_Send_dVel_y_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_y_dy = NULL, *Buffer_Recv_dVel_y_dy = NULL;
+//		Buffer_Send_dVel_y_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_y_dz = NULL, *Buffer_Recv_dVel_y_dz = NULL;
-		if (nDim == 3) Buffer_Send_dVel_y_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_y_dz = NULL, *Buffer_Recv_dVel_y_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dVel_y_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_Vel_z = NULL, *Buffer_Recv_Vel_z = NULL;
 		if (nDim == 3) Buffer_Send_Vel_z = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_z_dx = NULL, *Buffer_Recv_dVel_z_dx = NULL;
-		if (nDim == 3) Buffer_Send_dVel_z_dx = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_z_dx = NULL, *Buffer_Recv_dVel_z_dx = NULL;
+//		if (nDim == 3) Buffer_Send_dVel_z_dx = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_z_dy = NULL, *Buffer_Recv_dVel_z_dy = NULL;
-		if (nDim == 3) Buffer_Send_dVel_z_dy = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_z_dy = NULL, *Buffer_Recv_dVel_z_dy = NULL;
+//		if (nDim == 3) Buffer_Send_dVel_z_dy = new su2double [MaxLocalVertex_Surface];
 
-		su2double *Buffer_Send_dVel_z_dz = NULL, *Buffer_Recv_dVel_z_dz = NULL;
-		if (nDim == 3) Buffer_Send_dVel_z_dz = new su2double [MaxLocalVertex_Surface];
+//		su2double *Buffer_Send_dVel_z_dz = NULL, *Buffer_Recv_dVel_z_dz = NULL;
+//		if (nDim == 3) Buffer_Send_dVel_z_dz = new su2double [MaxLocalVertex_Surface];
 
 		su2double *Buffer_Send_Area = NULL, *Buffer_Recv_Area = NULL;
 		Buffer_Send_Area = new su2double [MaxLocalVertex_Surface];
@@ -9161,38 +9161,38 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 			Buffer_Recv_Coord_y = new su2double [nProcessor*MaxLocalVertex_Surface];
 			if (nDim == 3) Buffer_Recv_Coord_z = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_PT = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dPT_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dPT_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-			if (nDim == 3) Buffer_Recv_dPT_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dPT_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dPT_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			if (nDim == 3) Buffer_Recv_dPT_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_TT = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dTT_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dTT_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-			if (nDim == 3) Buffer_Recv_dTT_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dTT_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dTT_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			if (nDim == 3) Buffer_Recv_dTT_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_P = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dP_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dP_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-			if (nDim == 3) Buffer_Recv_dP_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dP_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dP_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			if (nDim == 3) Buffer_Recv_dP_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_T = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dT_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dT_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-			if (nDim == 3) Buffer_Recv_dT_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dT_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dT_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			if (nDim == 3) Buffer_Recv_dT_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_Mach = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dMach_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dMach_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-			if (nDim == 3) Buffer_Recv_dMach_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dMach_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dMach_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			if (nDim == 3) Buffer_Recv_dMach_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_Vel_x = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dVel_x_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dVel_x_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-			if (nDim == 3) Buffer_Recv_dVel_x_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dVel_x_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dVel_x_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			if (nDim == 3) Buffer_Recv_dVel_x_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_Vel_y = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dVel_y_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_dVel_y_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-			if (nDim == 3) Buffer_Recv_dVel_y_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dVel_y_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			Buffer_Recv_dVel_y_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//			if (nDim == 3) Buffer_Recv_dVel_y_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			if (nDim == 3) {
 				Buffer_Recv_Vel_z = new su2double [nProcessor*MaxLocalVertex_Surface];
-				Buffer_Recv_dVel_z_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
-				Buffer_Recv_dVel_z_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
-				Buffer_Recv_dVel_z_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
+//				Buffer_Recv_dVel_z_dx = new su2double [nProcessor*MaxLocalVertex_Surface];
+//				Buffer_Recv_dVel_z_dy = new su2double [nProcessor*MaxLocalVertex_Surface];
+//				Buffer_Recv_dVel_z_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			}
 			Buffer_Recv_Area = new su2double [nProcessor*MaxLocalVertex_Surface];
 			Buffer_Recv_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_Surface];
@@ -9232,75 +9232,75 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 						                 + config->GetVelocity_FreeStreamND()[2]*config->GetVelocity_FreeStreamND()[2]);
 
 						Buffer_Send_P[nVertex_Surface] = Pressure / Pressure_Inf;
-						Buffer_Send_dP_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 0) / Pressure_Inf;
-						Buffer_Send_dP_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 1) / Pressure_Inf;
-						if (nDim == 3) { Buffer_Send_dP_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 2) / Pressure_Inf; }
+//						Buffer_Send_dP_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 0) / Pressure_Inf;
+//						Buffer_Send_dP_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 1) / Pressure_Inf;
+//						if (nDim == 3) { Buffer_Send_dP_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 2) / Pressure_Inf; }
 
 						Buffer_Send_T[nVertex_Surface]     = Temperature / Temperature_Inf;
-						Buffer_Send_dT_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(0, 0) / Temperature_Inf;
-						Buffer_Send_dT_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(0, 1) / Temperature_Inf;
-						if (nDim == 3) { Buffer_Send_dT_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(0, 2) / Temperature_Inf; }
+//						Buffer_Send_dT_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(0, 0) / Temperature_Inf;
+//						Buffer_Send_dT_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(0, 1) / Temperature_Inf;
+//						if (nDim == 3) { Buffer_Send_dT_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(0, 2) / Temperature_Inf; }
 
 						Buffer_Send_Mach[nVertex_Surface] = Mach;
-						dMach_dVel_x = 0.0; dMach_dVel_y = 0.0; dMach_dVel_z = 0.0;
-            if ((Velocity2 != 0.0) && (Mach != 0.0)) {
-							dMach_dVel_x = FlowSolver->node[iPoint]->GetVelocity(0) / (Mach * sqrt(Velocity2));
-							dMach_dVel_y = FlowSolver->node[iPoint]->GetVelocity(1) / (Mach * sqrt(Velocity2));
-							if (nDim == 3) { dMach_dVel_z = FlowSolver->node[iPoint]->GetVelocity(2) / (Mach * sqrt(Velocity2)); }
-						}
-						Aux = Gas_Constant*Temperature;
-						dMach_dT = - Gas_Constant * sqrt(Velocity2) / (2.0 * sqrt(Gamma) * pow(Aux, 1.5));
+//						dMach_dVel_x = 0.0; dMach_dVel_y = 0.0; dMach_dVel_z = 0.0;
+//            if ((Velocity2 != 0.0) && (Mach != 0.0)) {
+//							dMach_dVel_x = FlowSolver->node[iPoint]->GetVelocity(0) / (Mach * sqrt(Velocity2));
+//							dMach_dVel_y = FlowSolver->node[iPoint]->GetVelocity(1) / (Mach * sqrt(Velocity2));
+//							if (nDim == 3) { dMach_dVel_z = FlowSolver->node[iPoint]->GetVelocity(2) / (Mach * sqrt(Velocity2)); }
+//						}
+//						Aux = Gas_Constant*Temperature;
+//						dMach_dT = - Gas_Constant * sqrt(Velocity2) / (2.0 * sqrt(Gamma) * pow(Aux, 1.5));
 
-						dMach_dx = dMach_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 0) +
-								dMach_dVel_x*FlowSolver->node[iPoint]->GetGradient_Primitive(1, 0) + dMach_dVel_y*FlowSolver->node[iPoint]->GetGradient_Primitive(2, 0);
-						if (nDim == 3) { Buffer_Send_dMach_dx[nVertex_Surface] += dMach_dVel_z*FlowSolver->node[iPoint]->GetGradient_Primitive(3, 0); }
-						Buffer_Send_dMach_dx[nVertex_Surface] = dMach_dx;
+//						dMach_dx = dMach_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 0) +
+//								dMach_dVel_x*FlowSolver->node[iPoint]->GetGradient_Primitive(1, 0) + dMach_dVel_y*FlowSolver->node[iPoint]->GetGradient_Primitive(2, 0);
+//						if (nDim == 3) { Buffer_Send_dMach_dx[nVertex_Surface] += dMach_dVel_z*FlowSolver->node[iPoint]->GetGradient_Primitive(3, 0); }
+//						Buffer_Send_dMach_dx[nVertex_Surface] = dMach_dx;
 
-						dMach_dy = dMach_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 1) +
-								dMach_dVel_x*FlowSolver->node[iPoint]->GetGradient_Primitive(1, 1) + dMach_dVel_y*FlowSolver->node[iPoint]->GetGradient_Primitive(2, 1);
-						if (nDim == 3) { Buffer_Send_dMach_dx[nVertex_Surface] += dMach_dVel_z*FlowSolver->node[iPoint]->GetGradient_Primitive(3, 1); }
-						Buffer_Send_dMach_dy[nVertex_Surface] = dMach_dy;
+//						dMach_dy = dMach_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 1) +
+//								dMach_dVel_x*FlowSolver->node[iPoint]->GetGradient_Primitive(1, 1) + dMach_dVel_y*FlowSolver->node[iPoint]->GetGradient_Primitive(2, 1);
+//						if (nDim == 3) { Buffer_Send_dMach_dx[nVertex_Surface] += dMach_dVel_z*FlowSolver->node[iPoint]->GetGradient_Primitive(3, 1); }
+//						Buffer_Send_dMach_dy[nVertex_Surface] = dMach_dy;
 
-						if (nDim == 3) {
-							dMach_dz = dMach_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 2) +
-									dMach_dVel_x*FlowSolver->node[iPoint]->GetGradient_Primitive(1, 2) + dMach_dVel_y*FlowSolver->node[iPoint]->GetGradient_Primitive(2, 2) +
-									dMach_dVel_z*FlowSolver->node[iPoint]->GetGradient_Primitive(3, 2);
-							Buffer_Send_dMach_dz[nVertex_Surface] = dMach_dz;
-						}
+//						if (nDim == 3) {
+//							dMach_dz = dMach_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 2) +
+//									dMach_dVel_x*FlowSolver->node[iPoint]->GetGradient_Primitive(1, 2) + dMach_dVel_y*FlowSolver->node[iPoint]->GetGradient_Primitive(2, 2) +
+//									dMach_dVel_z*FlowSolver->node[iPoint]->GetGradient_Primitive(3, 2);
+//							Buffer_Send_dMach_dz[nVertex_Surface] = dMach_dz;
+//						}
 
 						TotalPressure    = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
 						TotalPressure_Inf  = Pressure_Inf * pow( 1.0 + Mach_Inf * Mach_Inf * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
 						Buffer_Send_PT[nVertex_Surface] = TotalPressure / TotalPressure_Inf;
-						dPT_dP = (pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0))) / TotalPressure_Inf;
-						dPT_dMach = (Gamma * Mach * Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), 1.0 / (Gamma - 1.0))) / TotalPressure_Inf;
-						Buffer_Send_dPT_dx[nVertex_Surface] = dPT_dP*FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 0) + dPT_dMach * dMach_dx;
-						Buffer_Send_dPT_dy[nVertex_Surface] = dPT_dP*FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 1) + dPT_dMach * dMach_dy;
-						if (nDim == 3) { Buffer_Send_dPT_dz[nVertex_Surface] = dPT_dP*FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 2) + dPT_dMach * dMach_dz; }
+//						dPT_dP = (pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0))) / TotalPressure_Inf;
+//						dPT_dMach = (Gamma * Mach * Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), 1.0 / (Gamma - 1.0))) / TotalPressure_Inf;
+//						Buffer_Send_dPT_dx[nVertex_Surface] = dPT_dP*FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 0) + dPT_dMach * dMach_dx;
+//						Buffer_Send_dPT_dy[nVertex_Surface] = dPT_dP*FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 1) + dPT_dMach * dMach_dy;
+//						if (nDim == 3) { Buffer_Send_dPT_dz[nVertex_Surface] = dPT_dP*FlowSolver->node[iPoint]->GetGradient_Primitive(nDim+1, 2) + dPT_dMach * dMach_dz; }
 
 						TotalTemperature = Temperature * (1.0 + Mach * Mach  * 0.5 * (Gamma - 1.0));
 						TotalTemperature_Inf  = Temperature_Inf * (1.0 + Mach * Mach  * 0.5 * (Gamma - 1.0));
 						Buffer_Send_TT[nVertex_Surface] = TotalTemperature / TotalTemperature_Inf;
-						dTT_dT = (1.0 + Mach * Mach  * 0.5 * (Gamma - 1.0)) / TotalTemperature_Inf;
-						dTT_dMach = (Temperature * Mach * (Gamma - 1.0)) / TotalTemperature_Inf;
-						Buffer_Send_dTT_dx[nVertex_Surface] = dTT_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 0) + dTT_dMach * dMach_dx;
-						Buffer_Send_dTT_dy[nVertex_Surface] = dTT_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 1) + dTT_dMach * dMach_dy;
-						if (nDim == 3) { Buffer_Send_dTT_dz[nVertex_Surface] = dTT_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 2) + dTT_dMach * dMach_dz; }
+//						dTT_dT = (1.0 + Mach * Mach  * 0.5 * (Gamma - 1.0)) / TotalTemperature_Inf;
+//						dTT_dMach = (Temperature * Mach * (Gamma - 1.0)) / TotalTemperature_Inf;
+//						Buffer_Send_dTT_dx[nVertex_Surface] = dTT_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 0) + dTT_dMach * dMach_dx;
+//						Buffer_Send_dTT_dy[nVertex_Surface] = dTT_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 1) + dTT_dMach * dMach_dy;
+//						if (nDim == 3) { Buffer_Send_dTT_dz[nVertex_Surface] = dTT_dT*FlowSolver->node[iPoint]->GetGradient_Primitive(0, 2) + dTT_dMach * dMach_dz; }
 
 						Buffer_Send_Vel_x[nVertex_Surface] = FlowSolver->node[iPoint]->GetVelocity(0) / Velocity_Inf;
-						Buffer_Send_dVel_x_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(1, 0) / Velocity_Inf;
-						Buffer_Send_dVel_x_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(1, 1) / Velocity_Inf;
-						if (nDim == 3) { Buffer_Send_dVel_x_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(1, 2) / Velocity_Inf; }
+//						Buffer_Send_dVel_x_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(1, 0) / Velocity_Inf;
+//						Buffer_Send_dVel_x_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(1, 1) / Velocity_Inf;
+//						if (nDim == 3) { Buffer_Send_dVel_x_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(1, 2) / Velocity_Inf; }
 
 						Buffer_Send_Vel_y[nVertex_Surface] = FlowSolver->node[iPoint]->GetVelocity(1) / Velocity_Inf;
-						Buffer_Send_dVel_y_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(2, 0) / Velocity_Inf;
-						Buffer_Send_dVel_y_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(2, 1) / Velocity_Inf;
-						if (nDim == 3) { Buffer_Send_dVel_y_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(2, 2) / Velocity_Inf; }
+//						Buffer_Send_dVel_y_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(2, 0) / Velocity_Inf;
+//						Buffer_Send_dVel_y_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(2, 1) / Velocity_Inf;
+//						if (nDim == 3) { Buffer_Send_dVel_y_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(2, 2) / Velocity_Inf; }
 
 						if (nDim == 3) {
 							Buffer_Send_Vel_z[nVertex_Surface] = FlowSolver->node[iPoint]->GetVelocity(2) / Velocity_Inf;
-							Buffer_Send_dVel_z_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(3, 0) / Velocity_Inf;
-							Buffer_Send_dVel_z_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(3, 1) / Velocity_Inf;
-							Buffer_Send_dVel_z_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(3, 2) / Velocity_Inf;
+//							Buffer_Send_dVel_z_dx[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(3, 0) / Velocity_Inf;
+//							Buffer_Send_dVel_z_dy[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(3, 1) / Velocity_Inf;
+//							Buffer_Send_dVel_z_dz[nVertex_Surface] = FlowSolver->node[iPoint]->GetGradient_Primitive(3, 2) / Velocity_Inf;
 						}
 
 						Vector = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -9316,39 +9316,39 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 							if (nDim == 3) Buffer_Send_Coord_z[nVertex_Surface] *= 12.0;
 							Buffer_Send_Area[nVertex_Surface] *= 144.0;
 
-							Buffer_Send_dP_dx[nVertex_Surface] /= 12.0;
-							Buffer_Send_dP_dy[nVertex_Surface] /= 12.0;
-							if (nDim == 3) Buffer_Send_dP_dz[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dP_dx[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dP_dy[nVertex_Surface] /= 12.0;
+//							if (nDim == 3) Buffer_Send_dP_dz[nVertex_Surface] /= 12.0;
 
-							Buffer_Send_dT_dx[nVertex_Surface] /= 12.0;
-							Buffer_Send_dT_dy[nVertex_Surface] /= 12.0;
-							if (nDim == 3) Buffer_Send_dT_dz[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dT_dx[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dT_dy[nVertex_Surface] /= 12.0;
+//							if (nDim == 3) Buffer_Send_dT_dz[nVertex_Surface] /= 12.0;
 
-							Buffer_Send_dPT_dx[nVertex_Surface] /= 12.0;
-							Buffer_Send_dPT_dy[nVertex_Surface] /= 12.0;
-							if (nDim == 3) Buffer_Send_dPT_dz[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dPT_dx[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dPT_dy[nVertex_Surface] /= 12.0;
+//							if (nDim == 3) Buffer_Send_dPT_dz[nVertex_Surface] /= 12.0;
 
-							Buffer_Send_dTT_dx[nVertex_Surface] /= 12.0;
-							Buffer_Send_dTT_dy[nVertex_Surface] /= 12.0;
-							if (nDim == 3) Buffer_Send_dTT_dz[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dTT_dx[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dTT_dy[nVertex_Surface] /= 12.0;
+//							if (nDim == 3) Buffer_Send_dTT_dz[nVertex_Surface] /= 12.0;
 
-							Buffer_Send_dVel_x_dx[nVertex_Surface] /= 12.0;
-							Buffer_Send_dVel_x_dy[nVertex_Surface] /= 12.0;
-							if (nDim == 3) Buffer_Send_dVel_x_dz[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dVel_x_dx[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dVel_x_dy[nVertex_Surface] /= 12.0;
+//							if (nDim == 3) Buffer_Send_dVel_x_dz[nVertex_Surface] /= 12.0;
 
-							Buffer_Send_dVel_y_dx[nVertex_Surface] /= 12.0;
-							Buffer_Send_dVel_y_dy[nVertex_Surface] /= 12.0;
-							if (nDim == 3) Buffer_Send_dVel_y_dz[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dVel_y_dx[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dVel_y_dy[nVertex_Surface] /= 12.0;
+//							if (nDim == 3) Buffer_Send_dVel_y_dz[nVertex_Surface] /= 12.0;
 
-							if (nDim == 3) {
-								Buffer_Send_dVel_z_dx[nVertex_Surface] /= 12.0;
-								Buffer_Send_dVel_z_dy[nVertex_Surface] /= 12.0;
-								Buffer_Send_dVel_z_dz[nVertex_Surface] /= 12.0;
-							}
+//							if (nDim == 3) {
+//								Buffer_Send_dVel_z_dx[nVertex_Surface] /= 12.0;
+//								Buffer_Send_dVel_z_dy[nVertex_Surface] /= 12.0;
+//								Buffer_Send_dVel_z_dz[nVertex_Surface] /= 12.0;
+//							}
 
-							Buffer_Send_dMach_dx[nVertex_Surface] /= 12.0;
-							Buffer_Send_dMach_dy[nVertex_Surface] /= 12.0;
-							if (nDim == 3) Buffer_Send_dMach_dz[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dMach_dx[nVertex_Surface] /= 12.0;
+//							Buffer_Send_dMach_dy[nVertex_Surface] /= 12.0;
+//							if (nDim == 3) Buffer_Send_dMach_dz[nVertex_Surface] /= 12.0;
 
 						}
 
@@ -9371,45 +9371,45 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Coord_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_PT, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_PT, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dPT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dPT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dPT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dPT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dPT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dPT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dPT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_TT, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_TT, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dTT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dTT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dTT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dTT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dTT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dTT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dTT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dTT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dTT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dTT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dTT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dTT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_P, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_P, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dP_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dP_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dP_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dP_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dP_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dP_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dP_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dP_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dP_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dP_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dP_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dP_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_T, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_T, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dT_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dT_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dT_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dMach_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dMach_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dMach_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dMach_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dMach_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dMach_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dMach_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dVel_x_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dVel_x_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dVel_x_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dVel_x_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_x_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		SU2_MPI::Gather(Buffer_Send_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dVel_y_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_dVel_y_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dVel_y_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		SU2_MPI::Gather(Buffer_Send_dVel_y_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//		if (nDim == 3) SU2_MPI::Gather(Buffer_Send_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_y_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 
 		if (nDim == 3) {
 			SU2_MPI::Gather(Buffer_Send_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Vel_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-			SU2_MPI::Gather(Buffer_Send_dVel_z_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_z_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-			SU2_MPI::Gather(Buffer_Send_dVel_z_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_z_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-			SU2_MPI::Gather(Buffer_Send_dVel_z_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_z_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//			SU2_MPI::Gather(Buffer_Send_dVel_z_dx, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_z_dx, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//			SU2_MPI::Gather(Buffer_Send_dVel_z_dy, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_z_dy, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//			SU2_MPI::Gather(Buffer_Send_dVel_z_dz, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_dVel_z_dz, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 		}
 
 		SU2_MPI::Gather(Buffer_Send_Area, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Area, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -9423,45 +9423,45 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		if (nDim == 3) Buffer_Recv_Coord_z[iVertex] = Buffer_Send_Coord_z[iVertex];
 
 		Buffer_Recv_PT[iVertex] = Buffer_Send_PT[iVertex];
-		Buffer_Recv_dPT_dx[iVertex] = Buffer_Send_dPT_dx[iVertex];
-		Buffer_Recv_dPT_dy[iVertex] = Buffer_Send_dPT_dy[iVertex];
-		if (nDim == 3) Buffer_Recv_dPT_dz[iVertex] = Buffer_Send_dPT_dz[iVertex];
+//		Buffer_Recv_dPT_dx[iVertex] = Buffer_Send_dPT_dx[iVertex];
+//		Buffer_Recv_dPT_dy[iVertex] = Buffer_Send_dPT_dy[iVertex];
+//		if (nDim == 3) Buffer_Recv_dPT_dz[iVertex] = Buffer_Send_dPT_dz[iVertex];
 
 		Buffer_Recv_TT[iVertex] = Buffer_Send_TT[iVertex];
-		Buffer_Recv_dTT_dx[iVertex] = Buffer_Send_dTT_dx[iVertex];
-		Buffer_Recv_dTT_dy[iVertex] = Buffer_Send_dTT_dy[iVertex];
-		if (nDim == 3) Buffer_Recv_dTT_dz[iVertex] = Buffer_Send_dTT_dz[iVertex];
+//		Buffer_Recv_dTT_dx[iVertex] = Buffer_Send_dTT_dx[iVertex];
+//		Buffer_Recv_dTT_dy[iVertex] = Buffer_Send_dTT_dy[iVertex];
+//		if (nDim == 3) Buffer_Recv_dTT_dz[iVertex] = Buffer_Send_dTT_dz[iVertex];
 
 		Buffer_Recv_P[iVertex] = Buffer_Send_P[iVertex];
-		Buffer_Recv_dP_dx[iVertex] = Buffer_Send_dP_dx[iVertex];
-		Buffer_Recv_dP_dy[iVertex] = Buffer_Send_dP_dy[iVertex];
-		if (nDim == 3) Buffer_Recv_dP_dz[iVertex] = Buffer_Send_dP_dz[iVertex];
+//		Buffer_Recv_dP_dx[iVertex] = Buffer_Send_dP_dx[iVertex];
+//		Buffer_Recv_dP_dy[iVertex] = Buffer_Send_dP_dy[iVertex];
+//		if (nDim == 3) Buffer_Recv_dP_dz[iVertex] = Buffer_Send_dP_dz[iVertex];
 
 		Buffer_Recv_T[iVertex] = Buffer_Send_T[iVertex];
-		Buffer_Recv_dT_dx[iVertex] = Buffer_Send_dT_dx[iVertex];
-		Buffer_Recv_dT_dy[iVertex] = Buffer_Send_dT_dy[iVertex];
-		if (nDim == 3) Buffer_Recv_dT_dz[iVertex] = Buffer_Send_dT_dz[iVertex];
+//		Buffer_Recv_dT_dx[iVertex] = Buffer_Send_dT_dx[iVertex];
+//		Buffer_Recv_dT_dy[iVertex] = Buffer_Send_dT_dy[iVertex];
+//		if (nDim == 3) Buffer_Recv_dT_dz[iVertex] = Buffer_Send_dT_dz[iVertex];
 
 		Buffer_Recv_Mach[iVertex] = Buffer_Send_Mach[iVertex];
-		Buffer_Recv_dMach_dx[iVertex] = Buffer_Send_dMach_dx[iVertex];
-		Buffer_Recv_dMach_dy[iVertex] = Buffer_Send_dMach_dy[iVertex];
-		if (nDim == 3) Buffer_Recv_dMach_dz[iVertex] = Buffer_Send_dMach_dz[iVertex];
+//		Buffer_Recv_dMach_dx[iVertex] = Buffer_Send_dMach_dx[iVertex];
+//		Buffer_Recv_dMach_dy[iVertex] = Buffer_Send_dMach_dy[iVertex];
+//		if (nDim == 3) Buffer_Recv_dMach_dz[iVertex] = Buffer_Send_dMach_dz[iVertex];
 
 		Buffer_Recv_Vel_x[iVertex] = Buffer_Send_Vel_x[iVertex];
-		Buffer_Recv_dVel_x_dx[iVertex] = Buffer_Send_dVel_x_dx[iVertex];
-		Buffer_Recv_dVel_x_dy[iVertex] = Buffer_Send_dVel_x_dy[iVertex];
-		if (nDim == 3) Buffer_Recv_dVel_x_dz[iVertex] = Buffer_Send_dVel_x_dz[iVertex];
+//		Buffer_Recv_dVel_x_dx[iVertex] = Buffer_Send_dVel_x_dx[iVertex];
+//		Buffer_Recv_dVel_x_dy[iVertex] = Buffer_Send_dVel_x_dy[iVertex];
+//		if (nDim == 3) Buffer_Recv_dVel_x_dz[iVertex] = Buffer_Send_dVel_x_dz[iVertex];
 
 		Buffer_Recv_Vel_y[iVertex] = Buffer_Send_Vel_y[iVertex];
-		Buffer_Recv_dVel_y_dx[iVertex] = Buffer_Send_dVel_y_dx[iVertex];
-		Buffer_Recv_dVel_y_dy[iVertex] = Buffer_Send_dVel_y_dy[iVertex];
-		if (nDim == 3) Buffer_Recv_dVel_y_dz[iVertex] = Buffer_Send_dVel_y_dz[iVertex];
+//		Buffer_Recv_dVel_y_dx[iVertex] = Buffer_Send_dVel_y_dx[iVertex];
+//		Buffer_Recv_dVel_y_dy[iVertex] = Buffer_Send_dVel_y_dy[iVertex];
+//		if (nDim == 3) Buffer_Recv_dVel_y_dz[iVertex] = Buffer_Send_dVel_y_dz[iVertex];
 
 		if (nDim == 3) {
 			Buffer_Recv_Vel_z[iVertex] = Buffer_Send_Vel_z[iVertex];
-			Buffer_Recv_dVel_z_dx[iVertex] = Buffer_Send_dVel_z_dx[iVertex];
-			Buffer_Recv_dVel_z_dy[iVertex] = Buffer_Send_dVel_z_dy[iVertex];
-			Buffer_Recv_dVel_z_dz[iVertex] = Buffer_Send_dVel_z_dz[iVertex];
+//			Buffer_Recv_dVel_z_dx[iVertex] = Buffer_Send_dVel_z_dx[iVertex];
+//			Buffer_Recv_dVel_z_dy[iVertex] = Buffer_Send_dVel_z_dy[iVertex];
+//			Buffer_Recv_dVel_z_dz[iVertex] = Buffer_Send_dVel_z_dz[iVertex];
 		}
 
 		Buffer_Recv_Area[iVertex] = Buffer_Send_Area[iVertex];
@@ -9646,30 +9646,30 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 
 						if (Distance <= MinDistance) {
 							MinDistance = Distance;
-							ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index] + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
-							if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
+              ProbeArray[iAngle][iStation][3] = Buffer_Recv_PT[Total_Index]; // + Buffer_Recv_dPT_dx[Total_Index]*dx + Buffer_Recv_dPT_dy[Total_Index]*dy*SignFlip;
+//							if (nDim == 3) ProbeArray[iAngle][iStation][3] += Buffer_Recv_dPT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][4] = Buffer_Recv_TT[Total_Index] + Buffer_Recv_dTT_dx[Total_Index]*dx + Buffer_Recv_dTT_dy[Total_Index]*dy*SignFlip;
-							if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dTT_dz[Total_Index]*dz;
+              ProbeArray[iAngle][iStation][4] = Buffer_Recv_TT[Total_Index]; // + Buffer_Recv_dTT_dx[Total_Index]*dx + Buffer_Recv_dTT_dy[Total_Index]*dy*SignFlip;
+//							if (nDim == 3) ProbeArray[iAngle][iStation][4] += Buffer_Recv_dTT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][5] = Buffer_Recv_P[Total_Index] + Buffer_Recv_dP_dx[Total_Index]*dx + Buffer_Recv_dP_dy[Total_Index]*dy*SignFlip;
-							if (nDim == 3) ProbeArray[iAngle][iStation][5] += Buffer_Recv_dP_dz[Total_Index]*dz;
+							ProbeArray[iAngle][iStation][5] = Buffer_Recv_P[Total_Index]; // + Buffer_Recv_dP_dx[Total_Index]*dx + Buffer_Recv_dP_dy[Total_Index]*dy*SignFlip;
+//							if (nDim == 3) ProbeArray[iAngle][iStation][5] += Buffer_Recv_dP_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][6] = Buffer_Recv_T[Total_Index] + Buffer_Recv_dT_dx[Total_Index]*dx + Buffer_Recv_dT_dy[Total_Index]*dy*SignFlip;
-							if (nDim == 3) ProbeArray[iAngle][iStation][6] += Buffer_Recv_dT_dz[Total_Index]*dz;
+							ProbeArray[iAngle][iStation][6] = Buffer_Recv_T[Total_Index]; // + Buffer_Recv_dT_dx[Total_Index]*dx + Buffer_Recv_dT_dy[Total_Index]*dy*SignFlip;
+//							if (nDim == 3) ProbeArray[iAngle][iStation][6] += Buffer_Recv_dT_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][7] = Buffer_Recv_Mach[Total_Index] + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy*SignFlip;
-							if (nDim == 3) ProbeArray[iAngle][iStation][7] += Buffer_Recv_dMach_dz[Total_Index]*dz;
+							ProbeArray[iAngle][iStation][7] = Buffer_Recv_Mach[Total_Index]; // + Buffer_Recv_dMach_dx[Total_Index]*dx + Buffer_Recv_dMach_dy[Total_Index]*dy*SignFlip;
+//							if (nDim == 3) ProbeArray[iAngle][iStation][7] += Buffer_Recv_dMach_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][8] = Buffer_Recv_Vel_x[Total_Index] + Buffer_Recv_dVel_x_dx[Total_Index]*dx + Buffer_Recv_dVel_x_dy[Total_Index]*dy*SignFlip;
-							if (nDim == 3) ProbeArray[iAngle][iStation][8] += Buffer_Recv_dVel_x_dz[Total_Index]*dz;
+							ProbeArray[iAngle][iStation][8] = Buffer_Recv_Vel_x[Total_Index]; // + Buffer_Recv_dVel_x_dx[Total_Index]*dx + Buffer_Recv_dVel_x_dy[Total_Index]*dy*SignFlip;
+//							if (nDim == 3) ProbeArray[iAngle][iStation][8] += Buffer_Recv_dVel_x_dz[Total_Index]*dz;
 
-							ProbeArray[iAngle][iStation][9] = SignFlip * (Buffer_Recv_Vel_y[Total_Index] + Buffer_Recv_dVel_y_dx[Total_Index]*dx + Buffer_Recv_dVel_y_dy[Total_Index]*dy*SignFlip );
-							if (nDim == 3) ProbeArray[iAngle][iStation][9] += SignFlip * Buffer_Recv_dVel_y_dz[Total_Index]*dz;
+              ProbeArray[iAngle][iStation][9] =  SignFlip * Buffer_Recv_Vel_y[Total_Index]; // + SignFlip * (Buffer_Recv_dVel_y_dx[Total_Index]*dx + Buffer_Recv_dVel_y_dy[Total_Index]*dy*SignFlip );
+//							if (nDim == 3) ProbeArray[iAngle][iStation][9] += SignFlip * Buffer_Recv_dVel_y_dz[Total_Index]*dz;
 
 							if (nDim == 3) {
-								ProbeArray[iAngle][iStation][10] = Buffer_Recv_Vel_z[Total_Index] + Buffer_Recv_dVel_z_dx[Total_Index]*dx + Buffer_Recv_dVel_z_dy[Total_Index]*dy*SignFlip;
-								ProbeArray[iAngle][iStation][10] += Buffer_Recv_dVel_z_dz[Total_Index]*dz;
+                ProbeArray[iAngle][iStation][10] = Buffer_Recv_Vel_z[Total_Index]; // + Buffer_Recv_dVel_z_dx[Total_Index]*dx + Buffer_Recv_dVel_z_dy[Total_Index]*dy*SignFlip;
+//								ProbeArray[iAngle][iStation][10] += Buffer_Recv_dVel_z_dz[Total_Index]*dz;
 							}
 
 						}
@@ -9863,46 +9863,46 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		if (nDim == 3) delete [] Buffer_Recv_Coord_z;
 
 		delete [] Buffer_Recv_PT;
-		delete [] Buffer_Recv_dPT_dx;
-		delete [] Buffer_Recv_dPT_dy;
-		if (nDim == 3) delete [] Buffer_Recv_dPT_dz;
+//		delete [] Buffer_Recv_dPT_dx;
+//		delete [] Buffer_Recv_dPT_dy;
+//		if (nDim == 3) delete [] Buffer_Recv_dPT_dz;
 
 
 		delete [] Buffer_Recv_TT;
-		delete [] Buffer_Recv_dTT_dx;
-		delete [] Buffer_Recv_dTT_dy;
-		if (nDim == 3) delete [] Buffer_Recv_dTT_dz;
+//		delete [] Buffer_Recv_dTT_dx;
+//		delete [] Buffer_Recv_dTT_dy;
+//		if (nDim == 3) delete [] Buffer_Recv_dTT_dz;
 
 		delete [] Buffer_Recv_P;
-		delete [] Buffer_Recv_dP_dx;
-		delete [] Buffer_Recv_dP_dy;
-		if (nDim == 3) delete [] Buffer_Recv_dP_dz;
+//		delete [] Buffer_Recv_dP_dx;
+//		delete [] Buffer_Recv_dP_dy;
+//		if (nDim == 3) delete [] Buffer_Recv_dP_dz;
 
 		delete [] Buffer_Recv_T;
-		delete [] Buffer_Recv_dT_dx;
-		delete [] Buffer_Recv_dT_dy;
-		if (nDim == 3) delete [] Buffer_Recv_dT_dz;
+//		delete [] Buffer_Recv_dT_dx;
+//		delete [] Buffer_Recv_dT_dy;
+//		if (nDim == 3) delete [] Buffer_Recv_dT_dz;
 
 		delete [] Buffer_Recv_Mach;
-		delete [] Buffer_Recv_dMach_dx;
-		delete [] Buffer_Recv_dMach_dy;
-		if (nDim == 3) delete [] Buffer_Recv_dMach_dz;
+//		delete [] Buffer_Recv_dMach_dx;
+//		delete [] Buffer_Recv_dMach_dy;
+//		if (nDim == 3) delete [] Buffer_Recv_dMach_dz;
 
 		delete [] Buffer_Recv_Vel_x;
-		delete [] Buffer_Recv_dVel_x_dx;
-		delete [] Buffer_Recv_dVel_x_dy;
-		if (nDim == 3) delete [] Buffer_Recv_dVel_x_dz;
+//		delete [] Buffer_Recv_dVel_x_dx;
+//		delete [] Buffer_Recv_dVel_x_dy;
+//		if (nDim == 3) delete [] Buffer_Recv_dVel_x_dz;
 
 		delete [] Buffer_Recv_Vel_y;
-		delete [] Buffer_Recv_dVel_y_dx;
-		delete [] Buffer_Recv_dVel_y_dy;
-		if (nDim == 3) delete [] Buffer_Recv_dVel_y_dz;
+//		delete [] Buffer_Recv_dVel_y_dx;
+//		delete [] Buffer_Recv_dVel_y_dy;
+//		if (nDim == 3) delete [] Buffer_Recv_dVel_y_dz;
 
 		if (nDim == 3) {
 			delete [] Buffer_Recv_Vel_z;
-			delete [] Buffer_Recv_dVel_z_dx;
-			delete [] Buffer_Recv_dVel_z_dy;
-			delete [] Buffer_Recv_dVel_z_dz;
+//			delete [] Buffer_Recv_dVel_z_dx;
+//			delete [] Buffer_Recv_dVel_z_dy;
+//			delete [] Buffer_Recv_dVel_z_dz;
 		}
 
 		delete [] Buffer_Recv_Area;
@@ -9928,45 +9928,45 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 	if (nDim == 3) delete [] Buffer_Send_Coord_z;
 
 	delete [] Buffer_Send_PT;
-	delete [] Buffer_Send_dPT_dx;
-	delete [] Buffer_Send_dPT_dy;
-	if (nDim == 3) delete [] Buffer_Send_dPT_dz;
+//	delete [] Buffer_Send_dPT_dx;
+//	delete [] Buffer_Send_dPT_dy;
+//	if (nDim == 3) delete [] Buffer_Send_dPT_dz;
 
 	delete [] Buffer_Send_TT;
-	delete [] Buffer_Send_dTT_dx;
-	delete [] Buffer_Send_dTT_dy;
-	if (nDim == 3) delete [] Buffer_Send_dTT_dz;
+//	delete [] Buffer_Send_dTT_dx;
+//	delete [] Buffer_Send_dTT_dy;
+//	if (nDim == 3) delete [] Buffer_Send_dTT_dz;
 
 	delete [] Buffer_Send_P;
-	delete [] Buffer_Send_dP_dx;
-	delete [] Buffer_Send_dP_dy;
-	if (nDim == 3) delete [] Buffer_Send_dP_dz;
+//	delete [] Buffer_Send_dP_dx;
+//	delete [] Buffer_Send_dP_dy;
+//	if (nDim == 3) delete [] Buffer_Send_dP_dz;
 
 	delete [] Buffer_Send_T;
-	delete [] Buffer_Send_dT_dx;
-	delete [] Buffer_Send_dT_dy;
-	if (nDim == 3) delete [] Buffer_Send_dT_dz;
+//	delete [] Buffer_Send_dT_dx;
+//	delete [] Buffer_Send_dT_dy;
+//	if (nDim == 3) delete [] Buffer_Send_dT_dz;
 
 	delete [] Buffer_Send_Mach;
-	delete [] Buffer_Send_dMach_dx;
-	delete [] Buffer_Send_dMach_dy;
-	if (nDim == 3) delete [] Buffer_Send_dMach_dz;
+//	delete [] Buffer_Send_dMach_dx;
+//	delete [] Buffer_Send_dMach_dy;
+//	if (nDim == 3) delete [] Buffer_Send_dMach_dz;
 
 	delete [] Buffer_Send_Vel_x;
-	delete [] Buffer_Send_dVel_x_dx;
-	delete [] Buffer_Send_dVel_x_dy;
-	if (nDim == 3) delete [] Buffer_Send_dVel_x_dz;
+//	delete [] Buffer_Send_dVel_x_dx;
+//	delete [] Buffer_Send_dVel_x_dy;
+//	if (nDim == 3) delete [] Buffer_Send_dVel_x_dz;
 
 	delete [] Buffer_Send_Vel_y;
-	delete [] Buffer_Send_dVel_y_dx;
-	delete [] Buffer_Send_dVel_y_dy;
-	if (nDim == 3) delete [] Buffer_Send_dVel_y_dz;
+//	delete [] Buffer_Send_dVel_y_dx;
+//	delete [] Buffer_Send_dVel_y_dy;
+//	if (nDim == 3) delete [] Buffer_Send_dVel_y_dz;
 
 	if (nDim == 3) {
 		delete [] Buffer_Send_Vel_z;
-		delete [] Buffer_Send_dVel_z_dx;
-		delete [] Buffer_Send_dVel_z_dy;
-		delete [] Buffer_Send_dVel_z_dz;
+//		delete [] Buffer_Send_dVel_z_dx;
+//		delete [] Buffer_Send_dVel_z_dy;
+//		delete [] Buffer_Send_dVel_z_dz;
 	}
 	delete [] Buffer_Send_Area;
 
