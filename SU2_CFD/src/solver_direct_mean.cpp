@@ -13760,96 +13760,79 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   
-  su2double coeff;
-  su2double P_static, rho_static;
-  
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
   su2double *tmp_residual = new su2double[nPrimVar];
   
+  su2double coeff;
+  su2double P_static, rho_static;
+   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE)   {
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        if (geometry->node[iPoint]->GetDomain()) {
+      if (geometry->node[iPoint]->GetDomain()) {
 
-          nDonorVertex = GetnSlidingStates(iMarker, iVertex );
+        nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
-<<<<<<< HEAD
-          for (iVar = 0; iVar < nPrimVar; iVar++)
-            Residual[iVar] = 0.0;
-                    
-          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+        for (iVar = 0; iVar < nPrimVar; iVar++)
+          Residual[iVar] = 0.0;
 
-            for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-              PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
-            }
+        for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
 
-            coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
-=======
+          for (iVar = 0; iVar < nPrimVar; iVar++) {
+            PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+            PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+          }
+
+          coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+          /*--- Set primitive variables ---*/
+
           numerics->SetPrimitive( PrimVar_i, PrimVar_j );
-          
+
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ){
             Secondary_i = node[iPoint]->GetSecondary();
 
             P_static   = PrimVar_j[nDim+1];
             rho_static = PrimVar_j[nDim+2];           
             FluidModel->SetTDState_Prho(P_static, rho_static);
-            
+
             Secondary_j[0] = FluidModel->GetdPdrho_e();
             Secondary_j[1] = FluidModel->GetdPde_rho();  
-                   
+
             numerics->SetSecondary(Secondary_i, Secondary_j);
           }
->>>>>>> develop
 
-            /*--- Set primitive variables ---*/
+          /*--- Set the normal vector ---*/
 
-            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+          geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+          for (iDim = 0; iDim < nDim; iDim++) 
+            Normal[iDim] = -Normal[iDim];
 
-            if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ){
-              Secondary_i = node[iPoint]->GetSecondary();
+          numerics->SetNormal(Normal);
 
-              P_static   = PrimVar_j[nDim+1];
-              rho_static = PrimVar_j[nDim+2];             
-              FluidModel->SetTDState_Prho(P_static, rho_static);
+          if (grid_movement)
+            numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+ 
+          /*--- Compute the convective residual using an upwind scheme ---*/
 
-              Secondary_j[0] = FluidModel->GetdPdrho_e();
-              Secondary_j[1] = FluidModel->GetdPde_rho();  
+          numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
 
-              numerics->SetSecondary(Secondary_i, Secondary_j);
-            }
+          for (iVar = 0; iVar < nPrimVar; iVar++)
+            Residual[iVar] += coeff*tmp_residual[iVar];
+        }
 
-            /*--- Set the normal vector ---*/
+        /*--- Add Residuals and Jacobians ---*/
 
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            for (iDim = 0; iDim < nDim; iDim++) 
-              Normal[iDim] = -Normal[iDim];
-
-            numerics->SetNormal(Normal);
-
-            if (grid_movement)
-              numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-
-            /*--- Compute the convective residual using an upwind scheme ---*/
-
-            numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
-
-            /*--- Add Residuals and Jacobians ---*/
-
-            for (iVar = 0; iVar < nPrimVar; iVar++)
-              Residual[iVar] += coeff*tmp_residual[iVar];
-          }
-
-          LinSysRes.AddBlock(iPoint, Residual);
-          if (implicit) 
-            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
+        LinSysRes.AddBlock(iPoint, Residual);
+        if (implicit) 
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+          
         }
       }
     }
@@ -13860,7 +13843,6 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-  delete [] tmp_residual;
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
