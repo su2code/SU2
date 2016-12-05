@@ -823,7 +823,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   SlidingStateNodes  = new int*         [nMarker];
   
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-
     SlidingState[iMarker]      = NULL;
     SlidingStateNodes[iMarker] = NULL;
 
@@ -2404,7 +2403,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   long nDomain = 0, iDomain, jDomain;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-  bool ActDisk_Perimeter;
+  //bool ActDisk_Perimeter;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   
   unsigned short nPrimVar_ = nPrimVar;
@@ -2463,7 +2462,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
       if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
           (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
+          //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
 //          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
@@ -2570,7 +2569,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           
           jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-          ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
+          //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
           
 //          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
           if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
@@ -2771,8 +2770,8 @@ void CEulerSolver::Set_MPI_Nearfield(CGeometry *geometry, CConfig *config) {
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
   MPI_Status status, status_;
-  MPI_Request request, request_;
   
+
 #endif
   
   /*--- Define buffer vector interior domain ---*/
@@ -3096,8 +3095,8 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   /*--- MPI status and request arrays for non-blocking communications ---*/
   
   MPI_Status status, status_;
-  MPI_Request request, request_;
   
+
 #endif
   
   /*--- Define buffer vector interior domain ---*/
@@ -5164,8 +5163,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel, Non_Physical = 1.0;
+  
+  su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
+  
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
+  
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
   
   
@@ -5267,8 +5270,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Low-Mach number correction ---*/
 
       if (low_mach_corr) {
-        su2double z, velocity2_i = 0.0, velocity2_j = 0.0, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
 
+        velocity2_i = 0.0;
+        velocity2_j = 0.0;
+        
         for (iDim = 0; iDim < nDim; iDim++) {
           velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
           velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
@@ -5280,16 +5285,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         velocity2_i = 0.0;
         velocity2_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-            vel_i_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+            vel_i_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
                     + z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
-            vel_j_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+            vel_j_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
                     + z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
 
-            velocity2_j += vel_j_corr[iDim+1]*vel_j_corr[iDim+1];
-            velocity2_i += vel_i_corr[iDim+1]*vel_i_corr[iDim+1];
+            velocity2_j += vel_j_corr[iDim]*vel_j_corr[iDim];
+            velocity2_i += vel_i_corr[iDim]*vel_i_corr[iDim];
 
-            Primitive_i[iDim+1] = vel_i_corr[iDim+1];
-            Primitive_j[iDim+1] = vel_j_corr[iDim+1];
+            Primitive_i[iDim+1] = vel_i_corr[iDim];
+            Primitive_j[iDim+1] = vel_j_corr[iDim];
         }
 
         FluidModel->SetEnergy_Prho(Primitive_i[nDim+1],Primitive_i[nDim+2]);
@@ -6254,8 +6259,8 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
   su2double *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord, Area,
-  factor, RefVel2, RefTemp, RefDensity, RefPressure, Mach2Vel, Mach_Motion,
-  UnitNormal[3] = {0.0,0.0,0.0}, Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density, Vel_Infty2, Vel_Infty;
+  factor, RefVel2, RefTemp, RefDensity,  Mach2Vel, Mach_Motion,
+  Force[3] = {0.0,0.0,0.0}, Velocity[3], MassFlow, Density;
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
 
@@ -6286,7 +6291,6 @@ MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   
   RefTemp     = Temperature_Inf;
   RefDensity  = Density_Inf;
-  RefPressure = Pressure_Inf;
   if (grid_movement) {
     Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
     Mach_Motion = config->GetMach_Motion();
@@ -6372,15 +6376,12 @@ MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
           
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           
-          Vel_Infty2 =0.0; MassFlow = 0.0;
+          MassFlow = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
             Velocity[iDim]  = node[iPoint]->GetVelocity(iDim);
-            UnitNormal[iDim] = Normal[iDim]/Area;
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
             MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
-            Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
           }
-          Vel_Infty = sqrt (Vel_Infty2);
           
           /*--- Force computation, note the minus sign due to the
            orientation of the normal (outward) ---*/
@@ -13778,6 +13779,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           nDonorVertex = GetnSlidingStates(iMarker, iVertex );
 
+<<<<<<< HEAD
           for (iVar = 0; iVar < nPrimVar; iVar++)
             Residual[iVar] = 0.0;
                     
@@ -13789,6 +13791,22 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             }
 
             coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+=======
+          numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          
+          if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ){
+            Secondary_i = node[iPoint]->GetSecondary();
+
+            P_static   = PrimVar_j[nDim+1];
+            rho_static = PrimVar_j[nDim+2];           
+            FluidModel->SetTDState_Prho(P_static, rho_static);
+            
+            Secondary_j[0] = FluidModel->GetdPdrho_e();
+            Secondary_j[1] = FluidModel->GetdPde_rho();  
+                   
+            numerics->SetSecondary(Secondary_i, Secondary_j);
+          }
+>>>>>>> develop
 
             /*--- Set primitive variables ---*/
 
@@ -14680,7 +14698,6 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
     unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;      // Number of markers on FSI problem, FEA and Flow side
     unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;      // Variables for iteration over markers
-
     unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
 
     unsigned long nBuffer_StructCoord = 0, nBuffer_FlowNewCoord = 0;
@@ -14994,7 +15011,6 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
             delete [] Buffer_Send_SetIndex;
             delete [] Counter_Processor_Flow;
         }
-
 
     }
 
