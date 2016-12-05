@@ -3261,7 +3261,8 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   su2double *CartCoordNew, *ParamCoord, CartCoord[3], ParamCoordGuess[3], MaxDiff, my_MaxDiff = 0.0, Diff, *Coord;
   int rank;
   unsigned short nDim = geometry->GetnDim();
-  
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
+
   unsigned short BoxFFD = true;
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
@@ -3327,27 +3328,22 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
         /*--- Transform the cartesian into polar ---*/
         
         if (cylindrical) {
-          su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC;
           X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-          Theta_BC = PI_NUMBER/2.0;
           
           Xbar =  CartCoord[0] - X_0; Ybar =  CartCoord[1] - Y_0; Zbar =  CartCoord[2] - Z_0;
           
           CartCoord[0] = sqrt(Ybar*Ybar + Zbar*Zbar);
-          CartCoord[1] = atan2 ( Zbar, Ybar);
-          if (CartCoord[1] > Theta_BC) CartCoord[1]  -= 2.0*PI_NUMBER;
-          CartCoord[2] =  Xbar;
+          CartCoord[1] = atan2(Zbar, Ybar); if (CartCoord[1] > PI_NUMBER/2.0) CartCoord[1] -= 2.0*PI_NUMBER;
+          CartCoord[2] = Xbar;
         }
         else if (spherical) {
-          su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC, Phi_BC;
           X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-          Theta_BC = PI_NUMBER/2.0; Phi_BC = -PI_NUMBER/2.0;
           
           Xbar =  CartCoord[0] - X_0; Ybar =  CartCoord[1] - Y_0; Zbar =  CartCoord[2] - Z_0;
           
           CartCoord[0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
-          CartCoord[1] = atan2 ( Zbar, Ybar);  if (CartCoord[1] > Theta_BC) CartCoord[1]  -= 2.0*PI_NUMBER;
-          CartCoord[2] = acos ( Xbar/CartCoord[0]);  if (CartCoord[2] > Phi_BC) CartCoord[2]  -= 2.0*PI_NUMBER;
+          CartCoord[1] = atan2(Zbar, Ybar);  if (CartCoord[1] > PI_NUMBER/2.0) CartCoord[1] -= 2.0*PI_NUMBER;
+          CartCoord[2] = acos(Xbar/CartCoord[0]);
         }
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -3562,7 +3558,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   bool IPlane_Intersect_A = false, IPlane_Intersect_B = false;
   bool JPlane_Intersect_A = false, JPlane_Intersect_B = false;
   bool KPlane_Intersect_A = false, KPlane_Intersect_B = false;
-  
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
+
   unsigned short Kind_SU2 = config->GetKind_SU2();
   bool FFD_Symmetry_Plane = config->GetFFD_Symmetry_Plane();
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
@@ -3675,41 +3672,37 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
                 
                 if (cylindrical) {
                   
-                  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC;
                   X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-                  Theta_BC = PI_NUMBER/2.0;
                   
                   Xbar =  Coord_0[0] - X_0; Ybar =  Coord_0[1] - Y_0; Zbar =  Coord_0[2] - Z_0;
                   
                   Coord_0[0] = sqrt(Ybar*Ybar + Zbar*Zbar);
-                  Coord_0[1] = atan2 ( Zbar, Ybar); if (Coord_0[1] > Theta_BC) Coord_0[1]  -= 2.0*PI_NUMBER;
-                  Coord_0[2] =  Xbar;
+                  Coord_0[1] = atan2(Zbar, Ybar); if (Coord_0[1] > PI_NUMBER/2.0) Coord_0[1] -= 2.0*PI_NUMBER;
+                  Coord_0[2] = Xbar;
                   
                   Xbar =  Coord_1[0] - X_0; Ybar =  Coord_1[1] - Y_0; Zbar =  Coord_1[2] - Z_0;
                   
                   Coord_1[0] = sqrt(Ybar*Ybar + Zbar*Zbar);
-                  Coord_1[1] = atan2 ( Zbar, Ybar); if (Coord_1[1] > Theta_BC) Coord_1[1]  -= 2.0*PI_NUMBER;
-                  Coord_1[2] =  Xbar;
+                  Coord_1[1] = atan2(Zbar, Ybar); if (Coord_1[1] > PI_NUMBER/2.0) Coord_1[1] -= 2.0*PI_NUMBER;
+                  Coord_1[2] = Xbar;
                   
                 }
                 
                 else if (spherical) {
                   
-                  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC, Phi_BC;
                   X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-                  Theta_BC = PI_NUMBER/2.0; Phi_BC = -PI_NUMBER/2.0;
                   
                   Xbar =  Coord_0[0] - X_0; Ybar =  Coord_0[1] - Y_0; Zbar =  Coord_0[2] - Z_0;
                   
                   Coord_0[0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
-                  Coord_0[1] = atan2 ( Zbar, Ybar);  if (Coord_0[1] > Theta_BC) Coord_0[1]  -= 2.0*PI_NUMBER;
-                  Coord_0[2] = acos ( Xbar/Coord_0[0]);  if (Coord_0[2] > Phi_BC) Coord_0[2]  -= 2.0*PI_NUMBER;
+                  Coord_0[1] = atan2(Zbar, Ybar);  if (Coord_0[1] > PI_NUMBER/2.0) Coord_0[1] -= 2.0*PI_NUMBER;
+                  Coord_0[2] = acos (Xbar/Coord_0[0]);
                   
                   Xbar =  Coord_1[0] - X_0; Ybar =  Coord_1[1] - Y_0; Zbar =  Coord_1[2] - Z_0;
                   
                   Coord_1[0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
-                  Coord_1[1] = atan2 ( Zbar, Ybar);  if (Coord_1[1] > Theta_BC) Coord_1[1]  -= 2.0*PI_NUMBER;
-                  Coord_1[2] = acos ( Xbar/Coord_1[0]);  if (Coord_1[2] > Phi_BC) Coord_1[2]  -= 2.0*PI_NUMBER;
+                  Coord_1[1] = atan2(Zbar, Ybar);  if (Coord_1[1] > PI_NUMBER/2.0) Coord_1[1] -= 2.0*PI_NUMBER;
+                  Coord_1[2] = acos(Xbar/Coord_1[0]);
                   
                 }
                 
@@ -8002,10 +7995,9 @@ void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig *config) {
   
   unsigned short iDegree, jDegree, kDegree;
   su2double CartCoord[3];
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
   
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC;
   X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-  Theta_BC = PI_NUMBER/2.0;
   
   for (kDegree = 0; kDegree <= nDegree; kDegree++) {
     for (jDegree = 0; jDegree <= mDegree; jDegree++) {
@@ -8019,8 +8011,7 @@ void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig *config) {
         
         Coord_Control_Points[iDegree][jDegree][kDegree][0] = sqrt(Ybar*Ybar + Zbar*Zbar);
         Coord_Control_Points[iDegree][jDegree][kDegree][1] = atan2 ( Zbar, Ybar);
-        if (Coord_Control_Points[iDegree][jDegree][kDegree][1] > Theta_BC)
-          Coord_Control_Points[iDegree][jDegree][kDegree][1]  -= 2.0*PI_NUMBER;
+        if (Coord_Control_Points[iDegree][jDegree][kDegree][1] > PI_NUMBER/2.0) Coord_Control_Points[iDegree][jDegree][kDegree][1] -= 2.0*PI_NUMBER;
         Coord_Control_Points[iDegree][jDegree][kDegree][2] = Xbar;
         
         CartCoord[0] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][0];
@@ -8031,8 +8022,7 @@ void CFreeFormDefBox::SetCart2Cyl_ControlPoints(CConfig *config) {
         
         Coord_Control_Points_Copy[iDegree][jDegree][kDegree][0] = sqrt(Ybar*Ybar + Zbar*Zbar);
         Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1] = atan2 (Zbar, Ybar);
-        if (Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1] > Theta_BC)
-          Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1]  -= 2.0*PI_NUMBER;
+        if (Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1] > PI_NUMBER/2.0) Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1] -= 2.0*PI_NUMBER;
         Coord_Control_Points_Copy[iDegree][jDegree][kDegree][2] = Xbar;
         
       }
@@ -8079,10 +8069,9 @@ void CFreeFormDefBox::SetCart2Cyl_CornerPoints(CConfig *config) {
   
   unsigned short iCornerPoint;
   su2double *CartCoord;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC;
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
   
   X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-  Theta_BC = PI_NUMBER/2.0;
   
   for (iCornerPoint = 0; iCornerPoint < 8; iCornerPoint++) {
     
@@ -8090,7 +8079,7 @@ void CFreeFormDefBox::SetCart2Cyl_CornerPoints(CConfig *config) {
     Xbar =  CartCoord[0] - X_0; Ybar =  CartCoord[1] - Y_0; Zbar =  CartCoord[2] - Z_0;
     
     CartCoord[0] = sqrt(Ybar*Ybar + Zbar*Zbar);
-    CartCoord[1] = atan2 ( Zbar, Ybar); if (CartCoord[1] > Theta_BC) CartCoord[1]  -= 2.0*PI_NUMBER;
+    CartCoord[1] = atan2 ( Zbar, Ybar); if (CartCoord[1] > PI_NUMBER/2.0) CartCoord[1] -= 2.0*PI_NUMBER;
     CartCoord[2] =  Xbar;
     
   }
@@ -8124,10 +8113,9 @@ void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig *config) {
   
   unsigned short iDegree, jDegree, kDegree;
   su2double CartCoord[3];
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
   
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC, Phi_BC;
   X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-  Theta_BC = PI_NUMBER/2.0; Phi_BC = -PI_NUMBER/2.0;
   
   for (kDegree = 0; kDegree <= nDegree; kDegree++) {
     for (jDegree = 0; jDegree <= mDegree; jDegree++) {
@@ -8141,11 +8129,8 @@ void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig *config) {
         
         Coord_Control_Points[iDegree][jDegree][kDegree][0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
         Coord_Control_Points[iDegree][jDegree][kDegree][1] = atan2 ( Zbar, Ybar);
-        if (Coord_Control_Points[iDegree][jDegree][kDegree][1] > Theta_BC)
-          Coord_Control_Points[iDegree][jDegree][kDegree][1]  -= 2.0*PI_NUMBER;
-        Coord_Control_Points[iDegree][jDegree][kDegree][2] = acos ( Xbar/Coord_Control_Points[iDegree][jDegree][kDegree][0] );
-        if (Coord_Control_Points[iDegree][jDegree][kDegree][2] > Phi_BC)
-          Coord_Control_Points[iDegree][jDegree][kDegree][2]  -= 2.0*PI_NUMBER;
+        if (Coord_Control_Points[iDegree][jDegree][kDegree][1] > PI_NUMBER/2.0) Coord_Control_Points[iDegree][jDegree][kDegree][1] -= 2.0*PI_NUMBER;
+        Coord_Control_Points[iDegree][jDegree][kDegree][2] = acos(Xbar/Coord_Control_Points[iDegree][jDegree][kDegree][0] );
         
         CartCoord[0] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][0];
         CartCoord[1] = Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1];
@@ -8155,11 +8140,9 @@ void CFreeFormDefBox::SetCart2Sphe_ControlPoints(CConfig *config) {
         
         Coord_Control_Points_Copy[iDegree][jDegree][kDegree][0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
         Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1] = atan2 ( Zbar, Ybar);
-        if (Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1] > Theta_BC)
+        if (Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1] > PI_NUMBER/2.0)
           Coord_Control_Points_Copy[iDegree][jDegree][kDegree][1]  -= 2.0*PI_NUMBER;
-        Coord_Control_Points_Copy[iDegree][jDegree][kDegree][2] = acos ( Xbar/Coord_Control_Points_Copy[iDegree][jDegree][kDegree][0]);
-        if (Coord_Control_Points_Copy[iDegree][jDegree][kDegree][2] > Phi_BC)
-          Coord_Control_Points_Copy[iDegree][jDegree][kDegree][2]  -= 2.0*PI_NUMBER;
+        Coord_Control_Points_Copy[iDegree][jDegree][kDegree][2] = acos(Xbar/Coord_Control_Points_Copy[iDegree][jDegree][kDegree][0]);
         
       }
     }
@@ -8205,10 +8188,9 @@ void CFreeFormDefBox::SetCart2Sphe_CornerPoints(CConfig *config) {
   
   unsigned short iCornerPoint;
   su2double *CartCoord;
-  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC, Phi_BC;
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
   
   X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-  Theta_BC = PI_NUMBER/2.0; Phi_BC = -PI_NUMBER/2.0;
   
   for (iCornerPoint = 0; iCornerPoint < 8; iCornerPoint++) {
     
@@ -8216,8 +8198,8 @@ void CFreeFormDefBox::SetCart2Sphe_CornerPoints(CConfig *config) {
     Xbar =  CartCoord[0] - X_0; Ybar =  CartCoord[1] - Y_0; Zbar =  CartCoord[2] - Z_0;
     
     CartCoord[0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
-    CartCoord[1] = atan2 ( Zbar, Ybar);  if (CartCoord[1] > Theta_BC) CartCoord[1]  -= 2.0*PI_NUMBER;
-    CartCoord[2] = acos ( Xbar/CartCoord[0]);  if (CartCoord[2] > Phi_BC) CartCoord[2]  -= 2.0*PI_NUMBER;
+    CartCoord[1] = atan2(Zbar, Ybar);  if (CartCoord[1] > PI_NUMBER/2.0) CartCoord[1] -= 2.0*PI_NUMBER;
+    CartCoord[2] = acos(Xbar/CartCoord[0]);
     
   }
   
@@ -8671,11 +8653,12 @@ su2double CFreeFormDefBox::Binomial(unsigned short n, unsigned short m) {
 bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned long iPoint) {
   su2double Coord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar, jVar, iDim;
-  
+  su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar;
+
   bool Inside = false;
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
-  
+
   unsigned short Index[5][7] = {
     {0, 1, 2, 5, 0, 1, 2},
     {0, 2, 7, 5, 0, 2, 7},
@@ -8689,29 +8672,25 @@ bool CFreeFormDefBox::GetPointFFD(CGeometry *geometry, CConfig *config, unsigned
   
   if (cylindrical) {
     
-    su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC;
     X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-    Theta_BC = PI_NUMBER/2.0;
     
     Xbar =  Coord[0] - X_0; Ybar =  Coord[1] - Y_0; Zbar =  Coord[2] - Z_0;
     
     Coord[0] = sqrt(Ybar*Ybar + Zbar*Zbar);
-    Coord[1] = atan2 ( Zbar, Ybar); if (Coord[1] > Theta_BC) Coord[1]  -= 2.0*PI_NUMBER;
-    Coord[2] =  Xbar;
+    Coord[1] = atan2(Zbar, Ybar); if (Coord[1] > PI_NUMBER/2.0) Coord[1] -= 2.0*PI_NUMBER;
+    Coord[2] = Xbar;
     
   }
   
   else if (spherical) {
     
-    su2double X_0, Y_0, Z_0, Xbar, Ybar, Zbar, Theta_BC, Phi_BC;
     X_0 = config->GetFFD_Axis(0); Y_0 = config->GetFFD_Axis(1);  Z_0 = config->GetFFD_Axis(2);
-    Theta_BC = PI_NUMBER/2.0; Phi_BC = -PI_NUMBER/2.0;
     
     Xbar =  Coord[0] - X_0; Ybar =  Coord[1] - Y_0; Zbar =  Coord[2] - Z_0;
     
     Coord[0] = sqrt(Xbar*Xbar + Ybar*Ybar + Zbar*Zbar);
-    Coord[1] = atan2 ( Zbar, Ybar);  if (Coord[1] > Theta_BC) Coord[1]  -= 2.0*PI_NUMBER;
-    Coord[2] = acos ( Xbar/Coord[0]);  if (Coord[2] > Phi_BC) Coord[2]  -= 2.0*PI_NUMBER;
+    Coord[1] = atan2(Zbar, Ybar);  if (Coord[1] > PI_NUMBER/2.0) Coord[1] -= 2.0*PI_NUMBER;
+    Coord[2] = acos(Xbar/Coord[0]);
     
   }
   
