@@ -378,8 +378,6 @@ CDriver::CDriver(char* confFile,
 
 void CDriver::Postprocessing() {
 
-  unsigned short jZone;
-
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
@@ -2203,7 +2201,7 @@ void CDriver::Interface_Preprocessing() {
   int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
 
   #ifdef HAVE_MPI
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
