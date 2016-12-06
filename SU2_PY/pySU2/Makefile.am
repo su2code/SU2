@@ -40,7 +40,7 @@ SO_EXT=so
 
 SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
-SWIG_SO_REAL = _SU2Solver.${SO_EXT}
+SWIG_SO_REAL = _WrapSU2.${SO_EXT}
 
 PYTHON_INCLUDE = -I/usr/include/python2.7
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
@@ -112,6 +112,6 @@ clean:
 	rm -f ${CURRENT_DIR}/*.py
 
 install: all
-	${INSTALL} SU2Solver.py ${bindir}
-	${INSTALL} _SU2Solver.so ${bindir}
+	${INSTALL} WrapSU2.py ${bindir}
+	${INSTALL} _WrapSU2.so ${bindir}
 

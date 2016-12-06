@@ -45,7 +45,8 @@ import FSI	# imports FSI python tools
 
 
 # imports the CFD (SU2) module for FSI computation
-import SU2Solver
+#import SU2Solver
+import WrapSU2
 
 # -------------------------------------------------------------------
 #  Main 
@@ -102,9 +103,9 @@ def main():
   if myid == rootProcess:
     print('\n***************************** Initializing fluid solver *****************************')
   try:
-    FluidSolver = SU2Solver.CSingleZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
+    FluidSolver = WrapSU2.CSingleZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
   except TypeError as exception:
-    print('A TypeError occured in SU2Solver.CSingleZoneDriver : ',exception)
+    print('A TypeError occured in WrapSU2.CSingleZoneDriver : ',exception)
     if have_MPI == True:
       print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
     else:
