@@ -81,6 +81,8 @@ inline void CNumerics::Compute_Eigenproblem(CElement *element_container, CConfig
 
 inline void CFEM_Elasticity::Compute_Eigenproblem(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
+
 inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
 
 inline void CFEM_Elasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
@@ -102,28 +104,45 @@ inline void CNumerics::SetMaterial_Properties(su2double val_E, su2double val_Nu)
 inline void CNumerics::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ }
 
 inline void CFEM_Elasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
-  E = val_Young; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu;
+  E_i[0] = val_Young; 
+//  Mu     = E / (2.0*(1.0 + Nu));
+//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+//  Kappa  = Lambda + (2/3)*Mu;
 }
 
 inline void CFEM_NonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
-  E = val_Young; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu; 
+  E_i[0] = val_Young; 
+//  Mu     = E / (2.0*(1.0 + Nu));
+//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+//  Kappa  = Lambda + (2/3)*Mu;
 }
 
 inline void CFEM_NeoHookean_Comp_Adj::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
-  E = val_Young; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu;
+  E_i[0] = val_Young; 
+//  Mu     = E / (2.0*(1.0 + Nu));
+//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+//  Kappa  = Lambda + (2/3)*Mu;
 }
 
 inline void CFEM_Elasticity::SetMaterial_Properties(su2double val_E, su2double val_Nu){ 
-  E = val_E; Nu = val_Nu; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu;
+  E_i[0] = val_E; 
+  Nu_i[0] = val_Nu; 
+//  Mu     = E / (2.0*(1.0 + Nu));
+//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+//  Kappa  = Lambda + (2/3)*Mu;
 }
 
 inline void CFEM_NonlinearElasticity::SetMaterial_Properties(su2double val_E, su2double val_Nu){ 
-  E = val_E; Nu = val_Nu; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu;
+  E_i[0] = val_E; 
+  Nu_i[0] = val_Nu; 
+//  Mu     = E / (2.0*(1.0 + Nu));
+//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+//  Kappa  = Lambda + (2/3)*Mu;
 }
 
-inline void CFEM_Elasticity::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ Rho_s = val_Rho; Rho_s_DL = val_Rho_DL;}
+inline void CFEM_Elasticity::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ Rho_s_i[0] = val_Rho; Rho_s_DL_i[0] = val_Rho_DL;}
 
-inline void CFEM_NonlinearElasticity::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ Rho_s = val_Rho; Rho_s_DL = val_Rho_DL;}
+inline void CFEM_NonlinearElasticity::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ Rho_s_i[0] = val_Rho; Rho_s_DL_i[0] = val_Rho_DL;}
 
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
 

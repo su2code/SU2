@@ -1958,6 +1958,9 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
       }
     }
 
+    /*--- Set the properties of the element ---*/
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+
     numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
@@ -2052,6 +2055,11 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
         element_container[DE_TERM][EL_KIND]->Set_iDe(0);
       }
     }
+
+
+//    cout << "INDEX: " << geometry->elem[iElem]->GetGlobalIndex() << " ";
+    /*--- Set the properties of the element ---*/
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     /*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
 
@@ -2158,6 +2166,9 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
       }
     }
 
+    /*--- Set the properties of the element ---*/
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+
     numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
@@ -2230,6 +2241,9 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
         }
       }
     }
+
+    /*--- Set the properties of the element ---*/
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
 
@@ -2310,6 +2324,9 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
         }
       }
     }
+
+    /*--- Set the properties of the element ---*/
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
 
@@ -2569,6 +2586,9 @@ void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solv
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
+
+    /*--- Set the properties of the element ---*/
+    element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     numerics[FEA_TERM]->Compute_Dead_Load(element_container[FEA_TERM][EL_KIND], config);
 

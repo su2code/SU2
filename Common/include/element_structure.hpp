@@ -78,6 +78,8 @@ protected:
 	su2double **FDL_a;						/*!< \brief Structure for the dead loads for the residual computation. */
 	su2double el_Pressure;					/*!< \brief Pressure in the element */
 	unsigned short iDe;					/*!< \brief ID of the dielectric elastomer */
+	unsigned long iDV;          /*!< \brief ID of the Design Variable (if it is element based) */
+	unsigned long iProp;        /*!< \brief ID of the Element Property */
 
 public:
 	/*!
@@ -378,6 +380,12 @@ public:
 	 */
 	su2double Get_NodalStress(unsigned short iNode, unsigned short iVar);
 
+  /*!
+   * \brief Store the value of the identifier for the Dielectric Elastomers.
+   * \param[in] val_iDe - identifier of the DE property.
+   */
+  void Set_ElProperties(CElementProperty *element_property);
+
 	/*!
 	 * \brief Store the value of the identifier for the Dielectric Elastomers.
 	 * \param[in] val_iDe - identifier of the DE property.
@@ -389,6 +397,18 @@ public:
 	 * \param[out] val_iDe - identifier of the DE property.
 	 */
 	unsigned short Get_iDe(void);
+
+  /*!
+   * \brief Return the value of the identifier for the Design Variable.
+   * \param[out] val_iDV - identifier of the DV.
+   */
+  unsigned long Get_iDV(void);
+
+  /*!
+   * \brief Return the value of the identifier for the Element Property.
+   * \param[out] val_iProp - identifier of the property.
+   */
+  unsigned long Get_iProp(void);
 
   /*!
    * \brief Compute the value of the area of the element

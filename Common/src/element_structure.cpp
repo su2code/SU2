@@ -65,6 +65,9 @@ CElement::CElement(void) {
   
   FDL_a = NULL;
   
+  iDe = 0;
+  iDV = 0;
+  iProp = 0;
 }
 
 
@@ -101,6 +104,10 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
   
   FDL_a = NULL;
   
+  iDe = 0;
+  iDV = 0;
+  iProp = 0;
+
 }
 
 CElement::~CElement(void) {
@@ -309,5 +316,15 @@ void CElement::clearStress(void) {
     }
   }
   
+}
+
+void CElement::Set_ElProperties(CElementProperty *input_element) {
+
+  /*--- Set the properties local to the element ---*/
+
+  iDV = input_element->GetDV();
+  iProp = input_element->GetMat_Prop();
+
+
 }
 

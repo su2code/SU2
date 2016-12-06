@@ -1469,6 +1469,12 @@ public:
   virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to compute the element-based Lame parameters and set the local properties
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  /*!
    * \brief A virtual member to add the Maxwell stress contribution
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -3971,13 +3977,19 @@ class CFEM_Elasticity : public CNumerics {
 
 protected:
 
-	su2double E;				/*!< \brief Young's modulus of elasticity. */
-	su2double Nu;			/*!< \brief Poisson's ratio. */
-	su2double Rho_s;		    /*!< \brief Structural density. */
-  su2double Rho_s_DL;     /*!< \brief Structural density (for dead loads). */
-	su2double Mu;			/*!< \brief Lame's coeficient. */
-	su2double Lambda;		/*!< \brief Lame's coeficient. */
-	su2double Kappa;		/*!< \brief Compressibility constant. */
+	su2double E;				      /*!< \brief Aux. variable, Young's modulus of elasticity. */
+	su2double Nu;			        /*!< \brief Aux. variable, Poisson's ratio. */
+	su2double Rho_s;		      /*!< \brief Aux. variable, Structural density. */
+  su2double Rho_s_DL;       /*!< \brief Aux. variable, Structural density (for dead loads). */
+	su2double Mu;			        /*!< \brief Aux. variable, Lame's coeficient. */
+	su2double Lambda;		      /*!< \brief Aux. variable, Lame's coeficient. */
+	su2double Kappa;		      /*!< \brief Aux. variable, Compressibility constant. */
+
+  su2double *E_i;           /*!< \brief Young's modulus of elasticity. */
+  su2double *Nu_i;          /*!< \brief Poisson's ratio. */
+  su2double *Rho_s_i;       /*!< \brief Structural density. */
+  su2double *Rho_s_DL_i;    /*!< \brief Structural density (for dead loads). */
+
 	bool plane_stress;		/*!< \brief Checks if we are solving a plane stress case */
 
 	su2double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
@@ -4014,6 +4026,8 @@ public:
 	void Compute_Dead_Load(CElement *element_container, CConfig *config);
 
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
+  void SetElement_Properties(CElement *element_container, CConfig *config);
 
 	virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 

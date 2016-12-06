@@ -48,6 +48,12 @@ CFEM_LinearElasticity::CFEM_LinearElasticity(unsigned short val_nDim, unsigned s
 		for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
 	}
 
+  /*--- Initialize values for the material model considered ---*/
+  E   = E_i[0];  Nu  = Nu_i[0];
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+  Kappa  = Lambda + (2/3)*Mu;
+  /*-----------------------------------------------------------*/
 
 	/*--- If it is linear elasticity, D is constant along the calculations ---*/
 
@@ -183,7 +189,7 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *c
 
 void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void) {
 
-     /*--- Compute the D Matrix (for plane stress and 2-D)---*/
+  /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
 
 	if (nDim == 2) {

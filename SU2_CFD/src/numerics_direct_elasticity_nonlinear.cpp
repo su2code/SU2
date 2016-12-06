@@ -282,6 +282,11 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 	su2double AuxMatrixKc[3][6];
 	su2double AuxMatrixKs[3];
 
+  /*--- TODO: Initialize values for the material model considered ---*/
+//	cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
+  SetElement_Properties(element, config);
+  /*-----------------------------------------------------------*/
+
 	/*--- Initialize auxiliary matrices ---*/
 
 	if (nDim == 2) bDim = 3;
@@ -522,6 +527,9 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 	su2double Avg_kappa;
 	su2double el_Pressure;
 
+  /*--- TODO: Initialize values for the material model considered ---*/
+  SetElement_Properties(element, config);
+  /*-----------------------------------------------------------*/
 
 	/*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
 
@@ -614,6 +622,10 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, nNode;
 	unsigned short iDim;
+
+  /*--- TODO: Initialize values for the material model considered ---*/
+  SetElement_Properties(element, config);
+  /*-----------------------------------------------------------*/
 
 	su2double Weight, Jac_x;
 
@@ -982,6 +994,10 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
 	unsigned short iDim, iNode, nNode;
+
+  /*--- TODO: Initialize values for the material model considered ---*/
+  SetElement_Properties(element, config);
+  /*-----------------------------------------------------------*/
 
 	su2double Weight, Jac_x;
 
