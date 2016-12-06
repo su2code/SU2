@@ -38,10 +38,10 @@
 %feature("autodoc","1");
 
 %module(docstring=
-"'SU2Solver' module",
+"'WrapSU2' module",
 directors="1",
 threads="1"
-) SU2Solver
+) WrapSU2
 %{
 
 #include "../../SU2_CFD/include/driver_structure.hpp"
