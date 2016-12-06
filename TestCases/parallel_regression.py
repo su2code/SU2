@@ -238,7 +238,7 @@ def main():
     ###      Transition      ###
     ############################
 
-	# Schubauer-Klebanoff Natural Transition Case
+    # Schubauer-Klebanoff Natural Transition Case
     schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
     schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
     schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
