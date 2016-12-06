@@ -2640,6 +2640,28 @@ su2double CDriver::Get_Mz(){
 
 }
 
+su2double CDriver::Get_DragCoeff(){
+
+    unsigned short val_iZone = ZONE_0;
+    unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
+    su2double CDrag(0.0);
+
+    CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
+
+    return CDrag;
+}
+
+su2double CDriver::Get_LiftCoeff(){
+
+    unsigned short val_iZone = ZONE_0;
+    unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
+    su2double CLift(0.0);
+
+    CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
+
+    return CLift;
+}
+
 unsigned short CDriver::GetMovingMarker(){
 
   unsigned short IDtoSend, iMarker, jMarker, Moving;
@@ -2665,11 +2687,9 @@ unsigned short CDriver::GetMovingMarker(){
 
 unsigned long CDriver::GetNumberVertices(unsigned short iMarker){
 
-  unsigned long nFluidVertex;
+  unsigned long nVertices(0);
   unsigned short jMarker, Moving;
   string Marker_Tag, Moving_Tag;
-
-  nFluidVertex = 0;
 
   Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
   if (Moving == YES) {
@@ -2677,13 +2697,36 @@ unsigned long CDriver::GetNumberVertices(unsigned short iMarker){
       Moving_Tag = config_container[ZONE_0]->GetMarker_Moving(jMarker);
       Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
       if (Marker_Tag == Moving_Tag) {
-        nFluidVertex = geometry_container[ZONE_0][MESH_0]->nVertex[iMarker];
+        nVertices = geometry_container[ZONE_0][MESH_0]->nVertex[iMarker];
       }
     }
   }
 
-  return nFluidVertex;
+  return nVertices;
 
+}
+
+unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker){
+
+  unsigned long nHalovertices(0), iVertex, iPoint;
+  unsigned short jMarker, Moving;
+  string Marker_Tag, Moving_Tag;
+
+  Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
+  if (Moving == YES) {
+    for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
+      Moving_Tag = config_container[ZONE_0]->GetMarker_Moving(jMarker);
+      Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+      if (Marker_Tag == Moving_Tag) {
+        for(iVertex = 0; iVertex < geometry_container[ZONE_0][MESH_0]->nVertex[iMarker]; iVertex++){
+          iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
+          if(!(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain())) nHalovertices += 1;
+        }
+      }
+    }
+  }
+
+  return nHalovertices;
 }
 
 unsigned int CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex){
@@ -2706,6 +2749,11 @@ bool CDriver::IsAHaloNode(unsigned short iMarker, unsigned short iVertex){
   if(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain()) return false;
   else return true;
 
+}
+
+unsigned long CDriver::GetnExtIter(){
+
+    return config_container[ZONE_0]->GetnExtIter();
 }
 
 su2double CDriver::GetVertexCoordX(unsigned short iMarker, unsigned short iVertex){
