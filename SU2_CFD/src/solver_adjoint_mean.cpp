@@ -5915,8 +5915,7 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
 
 void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet,
-  Area;
+  su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet;
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, GlobalIndex_inlet, GlobalIndex;
   
@@ -5960,9 +5959,8 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
       }
       
 #ifdef CHECK
-      su2double UnitNormal[3];
+      su2double UnitNormal[3], Area=0.0;
       
-      Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
