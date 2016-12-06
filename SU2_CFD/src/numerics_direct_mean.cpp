@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -76,6 +78,9 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   AD::SetPreaccIn(Sensor_i);    AD::SetPreaccIn(Sensor_j);
   AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
   AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
+  if (grid_movement){
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
@@ -2385,7 +2390,9 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
-
+  if (grid_movement){
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
   /*--- Face area (norm or the normal vector) ---*/
   
   Area = 0.0;
@@ -2439,8 +2446,8 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
   RoeSoundSpeed2 = (Gamma-1)*(RoeEnthalpy-0.5*sq_vel);
   
-  /*--- Negative RoeSoundSpeed2, the jump 
-   variables is too large, exit the subrotuine 
+  /*--- Negative RoeSoundSpeed2, the jump
+   variables is too large, exit the subrotuine
    without computing the fluxes ---*/
   
   if (RoeSoundSpeed2 <= 0.0) {
@@ -2455,7 +2462,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     AD::EndPreacc();
     return;
   }
-
+  
   RoeSoundSpeed = sqrt(RoeSoundSpeed2);
   
   /*--- Compute ProjFlux_i ---*/
@@ -2506,111 +2513,65 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
   }
   
-  if (!implicit) {
-    
-    /*--- Compute wave amplitudes (characteristics) ---*/
-    
-    proj_delta_vel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      delta_vel[iDim] = Velocity_j[iDim] - Velocity_i[iDim];
-      proj_delta_vel += delta_vel[iDim]*Normal[iDim];
-    }
-    delta_p = Pressure_j - Pressure_i;
-    delta_rho = Density_j - Density_i;
-    proj_delta_vel = proj_delta_vel/Area;
-    
-    if (nDim == 2) {
-      delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
-      delta_wave[1] = UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1];
-      delta_wave[2] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
-      delta_wave[3] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
-    } else {
-      delta_wave[0] = delta_rho - delta_p/(RoeSoundSpeed*RoeSoundSpeed);
-      delta_wave[1] = UnitNormal[0]*delta_vel[2]-UnitNormal[2]*delta_vel[0];
-      delta_wave[2] = UnitNormal[1]*delta_vel[0]-UnitNormal[0]*delta_vel[1];
-      delta_wave[3] = proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
-      delta_wave[4] = -proj_delta_vel + delta_p/(RoeDensity*RoeSoundSpeed);
-    }
-    
-    /*--- Roe's Flux approximation ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
-      val_residual[iVar] = 0.5*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
-      for (jVar = 0; jVar < nVar; jVar++)
-        val_residual[iVar] -= 0.5*Lambda[jVar]*delta_wave[jVar]*P_Tensor[iVar][jVar]*Area;
-    }
-    
-    /*--- Flux contribution due to grid motion ---*/
-    
-    if (grid_movement) {
-      ProjVelocity = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
-      }
-    }
-  }
+  /*--- Compute inverse P ---*/
   
-  else {
-
-    /*--- Compute inverse P ---*/
-    
-    GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
-
-    /*--- Jacobians of the inviscid flux, scaled by
-     kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
-    
+  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  
+  /*--- Jacobians of the inviscid flux, scaled by
+   kappa because val_resconv ~ kappa*(fc_i+fc_j)*Normal ---*/
+  if (implicit) {
     GetInviscidProjJac(Velocity_i, &Energy_i, Normal, kappa, val_Jacobian_i);
     GetInviscidProjJac(Velocity_j, &Energy_j, Normal, kappa, val_Jacobian_j);
-
-    /*--- Diference variables iPoint and jPoint ---*/
+  }
+  
+  /*--- Diference variables iPoint and jPoint ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++)
+    Diff_U[iVar] = U_j[iVar]-U_i[iVar];
+  
+  /*--- Roe's Flux approximation ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
     
-    for (iVar = 0; iVar < nVar; iVar++)
-      Diff_U[iVar] = U_j[iVar]-U_i[iVar];
-    
-    /*--- Roe's Flux approximation ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
+    for (jVar = 0; jVar < nVar; jVar++) {
+      Proj_ModJac_Tensor_ij = 0.0;
       
-      val_residual[iVar] = kappa*(ProjFlux_i[iVar]+ProjFlux_j[iVar]);
-      for (jVar = 0; jVar < nVar; jVar++) {
-        Proj_ModJac_Tensor_ij = 0.0;
-        
-        /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
-        
-        for (kVar = 0; kVar < nVar; kVar++)
-          Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
-        
-        val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+      /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
+      
+      for (kVar = 0; kVar < nVar; kVar++)
+        Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
+      
+      val_residual[iVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+      
+      if (implicit) {
         val_Jacobian_i[iVar][jVar] += (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
         val_Jacobian_j[iVar][jVar] -= (1.0-kappa)*Proj_ModJac_Tensor_ij*Area;
-        
       }
-      
     }
     
-    /*--- Jacobian contributions due to grid motion ---*/
-    
-    if (grid_movement) {
-      ProjVelocity = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
-        
-        /*--- Implicit terms ---*/
-
+  }
+  
+  /*--- Jacobian contributions due to grid motion ---*/
+  
+  if (grid_movement) {
+    ProjVelocity = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjVelocity += 0.5*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      val_residual[iVar] -= ProjVelocity * 0.5*(U_i[iVar]+U_j[iVar]);
+      
+      /*--- Implicit terms ---*/
+      if (implicit) {
         val_Jacobian_i[iVar][iVar] -= 0.5*ProjVelocity;
         val_Jacobian_j[iVar][iVar] -= 0.5*ProjVelocity;
       }
     }
-    
   }
   
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
-
+  
 }
 
 
@@ -2663,6 +2624,12 @@ CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
 
 void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(S_i, 2); AD::SetPreaccIn(S_j, 2);
+  if (grid_movement){
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
 	/*--- Face area (norm or the normal vector) ---*/
@@ -2895,6 +2862,8 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
 	}
 
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 }
 
 
@@ -3427,6 +3396,9 @@ CUpwArtComp_Flow::~CUpwArtComp_Flow(void) {
 
 void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+3); AD::SetPreaccIn(V_j, nDim+3); AD::SetPreaccIn(Normal, nDim);
+
   /*--- Face area (norm or the normal vector) ---*/
   
   Area = 0.0;
@@ -3525,7 +3497,8 @@ void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       }
     }
   }
-  
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 }
 
 CUpwArtComp_FreeSurf_Flow::CUpwArtComp_FreeSurf_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -4687,6 +4660,13 @@ CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
 
 void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+5);   AD::SetPreaccIn(V_j, nDim+5);
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(PrimVar_Grad_i, nVar, nDim);
+  AD::SetPreaccIn(PrimVar_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(Normal, nDim);
+
   /*--- Normalized normal vector ---*/
   
   Area = 0.0;
@@ -4764,6 +4744,9 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2
     }
     
   }
+
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
   
 }
 

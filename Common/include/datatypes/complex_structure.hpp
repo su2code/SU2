@@ -2,7 +2,7 @@
  * \file complex_structure.hpp
  * \brief Headers for complex datatype definition.
  * \author T. Albring
- * \version 4.1.3 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -43,7 +45,7 @@ inline double real(const double& r);
  * \brief Class for defining the complex datatype for complex step gradient computation.
  * Based on complexify.h by Peter Sturdza.
  * \author T. Albring
- * \version 4.1.3 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 
 class CComplexType : public std::complex<double> {

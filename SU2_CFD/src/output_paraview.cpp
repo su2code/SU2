@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -82,9 +84,17 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
   
+  if (config->GetKind_SU2() == SU2_DOT){
+    if (surf_sol)
+      filename = config->GetSurfSens_FileName();
+    else
+      filename = config->GetVolSens_FileName();
+  }
+
 	strcpy (cstr, filename.c_str());
 	if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
     
+
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
@@ -183,7 +193,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       if (LocalIndex[iPoint+1] != 0) {
         
           /*--- Write the node coordinates ---*/
-          if (config->GetKind_SU2() != SU2_SOL) {
+          if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
             for (iDim = 0; iDim < nDim; iDim++)
               Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
             if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
@@ -198,7 +208,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       
     } else {
       
-        if (config->GetKind_SU2() != SU2_SOL) {
+        if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
           for (iDim = 0; iDim < nDim; iDim++)
             Paraview_File << scientific << Coords[iDim][iPoint] << "\t";
           if (nDim == 2) Paraview_File << scientific << "0.0" << "\t";
@@ -325,7 +335,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   unsigned short VarCounter = 0;
   
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
@@ -596,7 +606,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
       VarCounter++;
       
-      Paraview_File << "\nSCALARS Skin_Friction_Coefficient float 1\n";
+      Paraview_File << "\nSCALARS Skin_Friction_Coefficient_X float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";
       
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
@@ -611,6 +621,42 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
         }
       }
       VarCounter++;
+      
+      Paraview_File << "\nSCALARS Skin_Friction_Coefficient_Y float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+      
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (surf_sol) {
+          if (LocalIndex[iPoint+1] != 0) {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        } else {
+          /*--- Loop over the vars/residuals and write the values to file ---*/
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+      
+      if (nDim == 3) {
+        
+        Paraview_File << "\nSCALARS Skin_Friction_Coefficient_Z float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+        
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (surf_sol) {
+            if (LocalIndex[iPoint+1] != 0) {
+              /*--- Loop over the vars/residuals and write the values to file ---*/
+              Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+            }
+          } else {
+            /*--- Loop over the vars/residuals and write the values to file ---*/
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+        VarCounter++;
+        
+      }
       
       Paraview_File << "\nSCALARS Heat_Flux float 1\n";
       Paraview_File << "LOOKUP_TABLE default\n";

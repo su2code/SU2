@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 4.1.3 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -16,6 +16,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -119,6 +121,8 @@ const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms 
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 4;            	/*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
+
+const unsigned int OVERHEAD = 4; /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
 
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
@@ -623,14 +627,12 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
-  KE      = 4, /*!< \brief Kind of Turbulence model (Chien KE). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST)
-("KE", KE);
+("SST", SST);
 
 /*!
  * \brief types of transition models
@@ -1651,15 +1653,22 @@ class COptionDoubleArray : public COptionBase{
   su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   const int size;
+  su2double * def;
+  su2double * vals;
   su2double * default_value;
 
 public:
   COptionDoubleArray(string option_field_name, const int list_size, su2double * & option_field, su2double * default_value) : field(option_field), size(list_size) {
     this->name = option_field_name;
     this->default_value = default_value;
+    def  = NULL;
+    vals = NULL;
   }
 
-  ~COptionDoubleArray() {};
+  ~COptionDoubleArray() {
+     if(def  != NULL) delete [] def; 
+     if(vals != NULL) delete [] vals; 
+  };
   string SetValue(vector<string> option_value) {
     // Check that the size is correct
     if (option_value.size() != (unsigned long)this->size) {
@@ -1676,7 +1685,7 @@ public:
       newstring.append(" found");
       return newstring;
     }
-    su2double * vals = new su2double[this->size];
+    vals = new su2double[this->size];
     for (int i  = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
       su2double val;
@@ -1691,7 +1700,11 @@ public:
   }
 
   void SetDefault() {
-    this->field = this->default_value;
+    def = new su2double [size];
+    for (int i = 0; i < size; i++) {
+      def[i] = default_value[i];
+    }
+    this->field = def;
   }
 };
 
