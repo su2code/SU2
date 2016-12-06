@@ -7755,9 +7755,9 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
           /*--- Compute the mass Surface_MassFlow ---*/
           
           Surface_MassFlow[iMarker] += MassFlow;
-          Surface_Mach[iMarker] += (sqrt(Velocity2)/SoundSpeed)*Area;
-          Surface_Pressure[iMarker] += Pressure*Area;
-          Surface_Temperature[iMarker] += Temperature*Area;
+          Surface_Mach[iMarker] += (sqrt(Velocity2)/SoundSpeed)*MassFlow;
+          Surface_Pressure[iMarker] += Pressure*MassFlow;
+          Surface_Temperature[iMarker] += Temperature*MassFlow;
           Surface_Area[iMarker] += Area;
           
         }
@@ -7843,11 +7843,11 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
    set the value in the config structure for future use ---*/
   
   for (iMarker_Analyze = 0; iMarker_Analyze < nMarker_Analyze; iMarker_Analyze++) {
-    if (Surface_Area_Total[iMarker_Analyze] != 0.0) Surface_Mach_Total[iMarker_Analyze] /= Surface_Area_Total[iMarker_Analyze];
+    if (Surface_MassFlow[iMarker_Analyze] != 0.0) Surface_Mach_Total[iMarker_Analyze] /= Surface_MassFlow[iMarker_Analyze];
     else Surface_Mach_Total[iMarker_Analyze] = 0.0;
-    if (Surface_Area_Total[iMarker_Analyze] != 0.0) Surface_Temperature_Total[iMarker_Analyze] /= Surface_Area_Total[iMarker_Analyze];
+    if (Surface_MassFlow[iMarker_Analyze] != 0.0) Surface_Temperature_Total[iMarker_Analyze] /= Surface_MassFlow[iMarker_Analyze];
     else Surface_Temperature_Total[iMarker_Analyze] = 0.0;
-    if (Surface_Area_Total[iMarker_Analyze] != 0.0) Surface_Pressure_Total[iMarker_Analyze] /= Surface_Area_Total[iMarker_Analyze];
+    if (Surface_MassFlow[iMarker_Analyze] != 0.0) Surface_Pressure_Total[iMarker_Analyze] /= Surface_MassFlow[iMarker_Analyze];
     else Surface_Pressure_Total[iMarker_Analyze] = 0.0;
   }
   
