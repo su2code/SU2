@@ -107,6 +107,10 @@ inline void CElement::Set_iDe(unsigned short val_iDe) { iDe = val_iDe;}
 
 inline unsigned short CElement::Get_iDe(void) { return iDe;}
 
+inline unsigned long CElement::Get_iDV(void) { return iDV;}
+
+inline unsigned long CElement::Get_iProp(void) { return iProp;}
+
 inline void CElement::ComputeGrad_Pressure(void){ }
 
 inline void CQUAD4::ComputeGrad_Pressure(void) { }

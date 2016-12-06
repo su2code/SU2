@@ -40,21 +40,37 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 	bool pseudo_static = config->GetPseudoStatic();
 
-	E = config->GetElasticyMod();
-	Nu = config->GetPoissonRatio();
-	Rho_s = config->GetMaterialDensity();       // For inertial effects
-	Rho_s_DL = config->GetMaterialDensity();    // For dead loads
+  // Initialize values
+  E = 0.0;  Nu = 0.0;     Rho_s = 0.0; Rho_s_DL = 0.0;
+  Mu = 0.0; Lambda = 0.0; Kappa = 0.0;
 
-	if (config->GetDirectDiff() == D_YOUNG)   SU2_TYPE::SetDerivative(E,1.0);
-	if (config->GetDirectDiff() == D_POISSON) SU2_TYPE::SetDerivative(Nu,1.0);
-  if (config->GetDirectDiff() == D_RHO)     SU2_TYPE::SetDerivative(Rho_s,1.0);
-  if (config->GetDirectDiff() == D_RHO_DL)  SU2_TYPE::SetDerivative(Rho_s_DL,1.0);
+	/*--- Initialize vector structures for multiple material definition ---*/
+	E_i         = new su2double[1];
+	Nu_i        = new su2double[1];
+	Rho_s_i     = new su2double[1];
+	Rho_s_DL_i  = new su2double[1];
 
-	if (pseudo_static) Rho_s = 0.0;             // Pseudo-static: no inertial effects considered
-	Mu = E / (2.0*(1.0 + Nu));
-	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-	Kappa = Lambda + (2/3)*Mu;
-	//Kappa = config->GetBulk_Modulus_Struct();
+	E_i[0]        = config->GetElasticyMod();
+	Nu_i[0]       = config->GetPoissonRatio();
+	Rho_s_i[0]    = config->GetMaterialDensity();       // For inertial effects
+	Rho_s_DL_i[0] = config->GetMaterialDensity();    // For dead loads
+
+	if (config->GetDirectDiff() == D_YOUNG)   SU2_TYPE::SetDerivative(E_i[0],1.0);
+	if (config->GetDirectDiff() == D_POISSON) SU2_TYPE::SetDerivative(Nu_i[0],1.0);
+  if (config->GetDirectDiff() == D_RHO)     SU2_TYPE::SetDerivative(Rho_s_i[0],1.0);
+  if (config->GetDirectDiff() == D_RHO_DL)  SU2_TYPE::SetDerivative(Rho_s_DL_i[0],1.0);
+
+	if (pseudo_static) Rho_s_i[0] = 0.0;             // Pseudo-static: no inertial effects considered
+
+	// Initialization
+  E   = E_i[0];
+  Nu  = Nu_i[0];
+  Rho_s = Rho_s_i[0];
+  Rho_s_DL = Rho_s_DL_i[0];
+
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+  Kappa  = Lambda + (2/3)*Mu;
 
 	// Auxiliary vector for body forces (dead load)
 	if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
@@ -149,6 +165,10 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 
 void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
+  /*--- Initialize values for the material model considered ---*/
+  SetElement_Properties(element, config);
+  /*-----------------------------------------------------------*/
+
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
 
@@ -196,6 +216,10 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config) {
 
 void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
+  /*--- Initialize values for the material model considered ---*/
+  SetElement_Properties(element, config);
+  /*-----------------------------------------------------------*/
+
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, iDim, nNode;
 
@@ -238,6 +262,22 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 		}
 
 	}
+
+}
+
+void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) {
+
+
+//  cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
+
+  E   = E_i[0];
+  Nu  = Nu_i[0];
+  Rho_s = Rho_s_i[0];
+  Rho_s_DL = Rho_s_DL_i[0];
+
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+  Kappa  = Lambda + (2/3)*Mu;
 
 }
 
