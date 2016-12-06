@@ -407,7 +407,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       Buffer_Recv_TargetIndices[iVariable] = Buffer_Send_TargetIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check =0;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -724,7 +724,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check=0;
 
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -1050,7 +1050,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check=0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
@@ -1339,7 +1339,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
       Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check = 0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
