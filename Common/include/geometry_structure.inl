@@ -43,6 +43,8 @@ inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElem(void) { return 0; }
 
+inline unsigned long CGeometry::GetGlobal_nElemDomain(void) { return 0; }
+
 inline unsigned long CGeometry::GetGlobal_nElemLine(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElemTria(void) { return 0; }
@@ -231,6 +233,8 @@ inline unsigned long CPhysicalGeometry::GetGlobal_nPoint(void) { return Global_n
 inline unsigned long CPhysicalGeometry::GetGlobal_nPointDomain(void) { return Global_nPointDomain; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElem(void) { return Global_nElem; }
+
+inline unsigned long CPhysicalGeometry::GetGlobal_nElemDomain(void) { return Global_nElemDomain; }
 
 inline unsigned long CPhysicalGeometry::GetGlobal_nElemLine(void) { return Global_nelem_edge; }
 
