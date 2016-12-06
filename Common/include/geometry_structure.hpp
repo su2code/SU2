@@ -79,6 +79,7 @@ protected:
 	Global_nPointDomain,	/*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
 	nElem,					/*!< \brief Number of elements of the mesh. */
   Global_nElem,	/*!< \brief Total number of elements in a simulation across all processors (all types). */
+  Global_nElemDomain,  /*!< \brief Total number of elements in a simulation across all processors (excluding halos). */
 	nEdge,					/*!< \brief Number of edges of the mesh. */
 	nFace,					/*!< \brief Number of faces of the mesh. */
   nelem_edge,             /*!< \brief Number of edges in the mesh. */
@@ -712,6 +713,12 @@ public:
 	 * \returns Total number of elements in a simulation across all processors.
 	 */
 	virtual unsigned long GetGlobal_nElem();
+
+  /*!
+   * \brief A virtual member.
+   * \returns Total number of elements in a simulation across all processors (excluding halos).
+   */
+  virtual unsigned long GetGlobal_nElemDomain();
   
   /*!
 	 * \brief A virtual member.
@@ -1276,6 +1283,12 @@ public:
 	 */
   unsigned long GetGlobal_nElem();
   
+  /*!
+   * \brief  Retrieve total number of elements in a simulation across all processors (excluding halos).
+   * \returns Total number of elements in a simulation across all processors (excluding halos).
+   */
+  unsigned long GetGlobal_nElemDomain();
+
   /*!
 	 * \brief Retrieve total number of triangular elements in a simulation across all processors.
 	 * \returns Total number of line elements in a simulation across all processors.
