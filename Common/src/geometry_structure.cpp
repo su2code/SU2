@@ -2908,6 +2908,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iElemPris = 0;
   unsigned long iElemPyra = 0;
   
+  unsigned long iElemRecv = 0;
+  
   /*--- Reset presence before storing elems now that we know nElem ---*/
   
   Triangle_presence.clear();
@@ -2983,6 +2985,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
        reusing the presence arrays to make sure that we find the exact same
        set of elements that were counted above to get nElem. ---*/
       
+      iElemRecv = 0;
+      
       for (iElemTriangle = 0; iElemTriangle < nElemTriangle_r[iDomain]; iElemTriangle++) {
         map<unsigned long, bool>::const_iterator MI = Triangle_presence.find(Buffer_Receive_Triangle_presence[iDomain][iElemTriangle]);
         if (MI == Triangle_presence.end()) {
@@ -2990,8 +2994,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           elem[iElem] = new CTriangle(Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+0]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+1]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+2]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemTria++;
         }
+        iElemRecv++;
       }
       
       for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
@@ -3002,8 +3008,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+1]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+2]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+3]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemRect++;
         }
+        iElemRecv++;
       }
       
       for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron_r[iDomain]; iElemTetrahedron++) {
@@ -3014,8 +3022,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+1]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+2]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+3]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemTetr++;
         }
+        iElemRecv++;
       }
       
       for (iElemHexahedron = 0; iElemHexahedron < nElemHexahedron_r[iDomain]; iElemHexahedron++) {
@@ -3030,8 +3040,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+5]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+6]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+7]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemHexa++;
         }
+        iElemRecv++;
       }
       
       for (iElemPrism = 0; iElemPrism < nElemPrism_r[iDomain]; iElemPrism++) {
@@ -3044,8 +3056,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+3]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+4]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+5]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemPris++;
         }
+        iElemRecv++;
       }
       
       for (iElemPyramid = 0; iElemPyramid < nElemPyramid_r[iDomain]; iElemPyramid++) {
@@ -3057,8 +3071,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+2]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+3]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+4]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemPyra++;
         }
+        iElemRecv++;
       }
       
       /*--- Free memory for the element data --*/
@@ -3084,6 +3100,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Store the element data from our local rank ---*/
       
+      iElemRecv = 0;
+      
       for (iElemTriangle = 0; iElemTriangle < nElemTriangle_r[iDomain]; iElemTriangle++) {
         map<unsigned long, bool>::const_iterator MI = Triangle_presence.find(Buffer_Receive_Triangle_presence_loc[iElemTriangle]);
         if (MI == Triangle_presence.end()) {
@@ -3091,8 +3109,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           elem[iElem] = new CTriangle(Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+0]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+1]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+2]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemTria++;
         }
+        iElemRecv++;
       }
       
       for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
@@ -3103,8 +3123,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+1]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+2]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+3]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemRect++;
         }
+        iElemRecv++;
       }
       
       for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron_r[iDomain]; iElemTetrahedron++) {
@@ -3115,8 +3137,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+1]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+2]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+3]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemTetr++;
         }
+        iElemRecv++;
       }
       
       for (iElemHexahedron = 0; iElemHexahedron < nElemHexahedron_r[iDomain]; iElemHexahedron++) {
@@ -3131,8 +3155,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+5]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+6]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+7]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemHexa++;
         }
+        iElemRecv++;
       }
       
       for (iElemPrism = 0; iElemPrism < nElemPrism_r[iDomain]; iElemPrism++) {
@@ -3145,8 +3171,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+3]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+4]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+5]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemPris++;
         }
+        iElemRecv++;
       }
       
       for (iElemPyramid = 0; iElemPyramid < nElemPyramid_r[iDomain]; iElemPyramid++) {
@@ -3158,8 +3186,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+2]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+3]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+4]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemPyra++;
         }
+        iElemRecv++;
       }
       
       /*--- Free memory for element data ---*/
@@ -3244,6 +3274,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
   
+  /*--- Set the value of Global_nElemDomain (stored in the geometry container that is passed in) ---*/
+
+  Global_nElemDomain = geometry->GetGlobal_nElemDomain();
+
   /*--- Store total number of each element type after incrementing the
    counters in the recv loop above (to make sure there aren't repeats). ---*/
   
@@ -5325,7 +5359,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
   }
   
-  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
+  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0; Global_nElemDomain = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -6078,6 +6112,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   mesh_file.close();
   
+  /*--- Store the number of elements on the whole domain, excluding halos. ---*/
+
+  Global_nElemDomain = element_count;
+
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   
