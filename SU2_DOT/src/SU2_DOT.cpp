@@ -161,18 +161,20 @@ int main(int argc, char *argv[]) {
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
+  
   if (!config_container[ZONE_0]->GetDiscrete_Adjoint()){
     if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
     geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
-  } else {
+  }
+  else {
     if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
     mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
     geometry_container[ZONE_0]->SetSensitivity(config_container[ZONE_0]);
-
+    
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
     mesh_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false, true);
-
+    
     COutput *output = new COutput();
     output->SetSensitivity_Files(geometry_container, config_container, nZone);
   }
@@ -296,7 +298,8 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
         (config->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
         (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
-        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
+        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
+        (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
 
         /*--- Read the FFD information in the first iteration ---*/
 
@@ -341,12 +344,12 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
           case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_DIHEDRAL_ANGLE :   surface_movement->SetFFDDihedralAngle(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwistAngle(geometry, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwist(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_ROTATION :         surface_movement->SetFFDRotation(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_ANGLE_OF_ATTACK :  Gradient[iDV][0] = config->GetAoA_Sens(); break;
           }
 
           /*--- Recompute cartesian coordinates using the new control points position ---*/
@@ -362,11 +365,22 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
       surface_movement->SetHicksHenne(geometry, config, iDV, true);
       }
+      
+      /*--- Kulfan (CST) design variable ---*/
+    else if (config->GetDesign_Variable(iDV) == CST) {
+      surface_movement->SetCST(geometry, config, iDV, true);
+      }
 
       /*--- Displacement design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == TRANSLATION) {
       surface_movement->SetTranslation(geometry, config, iDV, true);
+      }
+
+    /*--- Angle of Attack design variable ---*/
+    
+    else if (config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) {
+      Gradient[iDV][0] = config->GetAoA_Sens();
       }
 
       /*--- Scale design variable ---*/
@@ -401,54 +415,59 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
       else { cout << "Design Variable not implement yet" << endl; }
 
-      /*--- Load the delta change in the design variable (finite difference step). ---*/
-
-    delta_eps = config->GetDV_Value(iDV);
-    my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
+    /*--- Load the delta change in the design variable (finite difference step). ---*/
+    
+    if ((config->GetDesign_Variable(iDV) != ANGLE_OF_ATTACK) &&
+        (config->GetDesign_Variable(iDV) != FFD_ANGLE_OF_ATTACK)) {
+      
+      delta_eps = config->GetDV_Value(iDV);
+      my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
       
       /*--- Reset update points ---*/
-
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
         UpdatePoint[iPoint] = true;
       
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_DV(iMarker) == YES) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if ((iPoint < geometry->GetnPointDomain()) && UpdatePoint[iPoint]) {
-
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-            Sensitivity = geometry->vertex[iMarker][iVertex]->GetAuxVar();
-
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_DV(iMarker) == YES) {
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            if ((iPoint < geometry->GetnPointDomain()) && UpdatePoint[iPoint]) {
+              
+              Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+              VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+              Sensitivity = geometry->vertex[iMarker][iVertex]->GetAuxVar();
+              
               dS = 0.0;
-            for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+              for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                 dS += Normal[iDim]*Normal[iDim];
                 deps[iDim] = VarCoord[iDim] / delta_eps;
               }
               dS = sqrt(dS);
-
+              
               dalpha_deps = 0.0;
-            for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+              for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                 dalpha[iDim] = Normal[iDim] / dS;
                 dalpha_deps -= dalpha[iDim]*deps[iDim];
               }
-
+              
               my_Gradient += Sensitivity*dalpha_deps;
               UpdatePoint[iPoint] = false;
             }
           }
         }
       }
-
+      
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][0], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][0], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-    Gradient[iDV][0] = my_Gradient;
+      Gradient[iDV][0] = my_Gradient;
 #endif
+    }
+    
   }
-
+  
   /* --- Print gradients to screen and file ---*/
 
   OutputGradient(Gradient, config, Gradient_file);
@@ -570,6 +589,15 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 #else
       Gradient[iDV][iDV_Value] = my_Gradient;
 #endif
+      
+      /*--- Angle of Attack design variable (this is different,
+       the value comes form the input file) ---*/
+      
+      if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
+          (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
+        Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
+      }
+
     }
   }
 
