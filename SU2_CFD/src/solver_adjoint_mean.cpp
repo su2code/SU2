@@ -1,7 +1,7 @@
 /*!
  * \file solution_adjoint_mean.cpp
- * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
- * \author F. Palacios, T. Economon
+ * \brief Main subroutines for solving adjoint problems (Euler, Navier-Stokes, etc.).
+ * \author F. Palacios, T. Economon, H. Kline
  * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
