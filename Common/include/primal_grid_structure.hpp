@@ -48,12 +48,13 @@ using namespace std;
 /*!
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 4.3.0 "Cardinal"
  */
 class CPrimalGrid {
 protected:
 	unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
+  unsigned long GlobalIndex;    /*!< \brief The global index of an element. */
 	long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
  short *PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
                                            A -1 indicates no periodic transformation to the neighbor. */
@@ -230,7 +231,19 @@ public:
   * \return The color of the element in the partitioning.
   */
  virtual unsigned long GetColor(void);
-	
+  
+  /*!
+   * \brief Get the element global index in a parallel computation.
+   * \return Global index of the element in a parallel computation.
+   */
+  unsigned long GetGlobalIndex(void);
+  
+  /*!
+   * \brief Set the global index for an element in a parallel computation.
+   * \return Global index of an element in a parallel computation.
+   */
+  void SetGlobalIndex(unsigned long val_globalindex);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_domainelement Index of the domain element which has a face shared by this boundary element.
