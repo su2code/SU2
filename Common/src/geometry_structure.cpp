@@ -4990,7 +4990,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
 #else
               if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
-              else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = node_count; }
+              else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = node_count;
+}
 #endif
               node[iPoint] = new CPoint(Coord_2D[0], Coord_2D[1], GlobalIndex, config);
               iPoint++; break;
@@ -11292,7 +11293,10 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 								long iPoint_mark = vertex[jMarker][jVertex]->GetNode();
 								if(iPoint_mark == kPoint) isPoint_marker = false;
 							}
-							if(isPoint_marker) PeriodicPoint[iPeriodic][0].push_back(kPoint);
+							if(isPoint_marker) {
+								PeriodicPoint[iPeriodic][0].push_back(kPoint);
+							}
+							
             }
           }
         }
@@ -11313,7 +11317,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
       PeriodicPoint[iPeriodic][0].resize( IterPoint[iPeriodic][0] - PeriodicPoint[iPeriodic][0].begin() );
     }
   }
-  
+	
   /*--- Create a list of the points that receive the values (only the new points) ---*/
   nPointPeriodic = nPoint;
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
@@ -11408,13 +11412,14 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 			for (iNode = 0; iNode < bound[iMarker][jElem]->GetnNodes(); iNode++) {
 				bool isNew = true;
 				pPoint = bound[iMarker][jElem]->GetNode(iNode);
-				//cout << "Point = " << pPoint << endl;
+				//cout << "Point = " << pPoint << " iNode = " << iNode << endl;
 				
 				/*--- Check if this node is a send point. If so, the corresponding
 				 receive point will be used in making the new boundary element. ---*/
 				for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
 					for (kElem = 0; kElem < PeriodicPoint[iPeriodic][0].size(); kElem++) {
-						if (pPoint == PeriodicPoint[iPeriodic][0][kElem]){
+						
+						if (pPoint == PeriodicPoint[iPeriodic][0][kElem] && CreateMirror[iPeriodic]){
 							newNodes[iNode] = PeriodicPoint[iPeriodic][1][kElem];
 							isNew = false;
 							//cout << "iNode= " << iNode << " old num = " << pPoint << " new num = " << newNodes[iNode] << " Marker = "<< iMarker << " Element = " << iElem << endl;
@@ -11432,9 +11437,9 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 							for (iVertex = 0; iVertex < nVertex[jMarker]; iVertex++) {
 								
 								if ((pPoint == vertex[jMarker][iVertex]->GetNode()) && !(iMarker == jMarker)) {
-									//cout << "jMarker = " << jMarker << " iMarker = " << iMarker<< endl;
 									kMarker = jMarker; jVertex = iVertex;
-									cout << " Marker = "<< iMarker << " Element = " << iElem << "DonorPoint = " << " New Nodes = "<< vertex[iMarker][jVertex]->GetDonorPoint() << newNodes[0] << " " << newNodes[1] << endl;
+									
+									//cout << " Marker we are in= "<< iMarker << " Element = " << iElem <<" Marker we mirror = "<< kMarker << " pPoint = "<< pPoint << " DonorPoint = " << vertex[kMarker][jVertex]->GetDonorPoint() << endl;
 								}
 							}
 						}
@@ -11443,6 +11448,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 						newNodes[iNode] = vertex[kMarker][jVertex]->GetDonorPoint();
 				}
 			}
+			
+			//cout << " New Nodes = " << newNodes[0] << " " << newNodes[1] << endl;
 			
 			
 			/*--- Now instantiate the new element. ---*/
@@ -11460,7 +11467,6 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
 			}
 		}
   }
-	cout << "We are out!" << endl;
   delete [] PeriodicBC;
   delete [] CreateMirror;
   
@@ -14301,6 +14307,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
       if (config->GetMarker_All_SendRecv(iMarker) < 0) {
+				cout << "SendRecv Marker = " << iMarker << "Num elem = " << nElem_Bound[iMarker] << endl;
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
           if (bound[iMarker][iElem_Bound]->GetNode(0) < geometry->GetnPoint()) {
             NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] = Index;
@@ -14311,7 +14318,12 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       }
     }
   }
-  
+	
+	for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		cout << NewSort[iPoint] << endl;
+	}
+
+	
   
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
