@@ -1369,6 +1369,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Solve the aeroelastic equations every given number of internal iterations. */
   addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
   
+  /*!\par CONFIG_CATEGORY: Optimization Problem*/
+  
+  /* DESCRIPTION: Setup for design variables (upper bound) */
+  addDoubleOption("OPT_BOUND_UPPER", DVBound_Upper, 1E6);
+  /* DESCRIPTION: Setup for design variables (lower bound) */
+  addDoubleOption("OPT_BOUND_LOWER", DVBound_Lower, -1E6);
+
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
 
@@ -1722,12 +1729,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Requested accuracy */
   addPythonOption("OPT_ACCURACY");
   
-  /* DESCRIPTION: Setup for design variables (upper bound) */
-  addPythonOption("OPT_BOUND_UPPER");
-  
-  /* DESCRIPTION: Setup for design variables (lower bound) */
-  addPythonOption("OPT_BOUND_LOWER");
-  
   /*!\brief OPT_COMBINE_OBJECTIVE
    *  \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
   addPythonOption("OPT_COMBINE_OBJECTIVE");
@@ -2075,10 +2076,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Don't do any deformation if there is no Design variable information ---*/
   
-//  if (Design_Variable == NULL) {
-//    Design_Variable = new unsigned short [1];
-//    nDV = 1; Design_Variable[0] = NONE;
-//  }
+  if (Design_Variable == NULL) {
+    Design_Variable = new unsigned short [1];
+    nDV = 1; Design_Variable[0] = NONE;
+  }
+  
+  /*--- Apply a bound to the deformation if there is any design variable ---*/
+  else {
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      if (DV_Value != NULL)
+        DV_Value[iDV][0] = max(min(DV_Value[iDV][0], DVBound_Upper), DVBound_Lower);
+    }
+  }
   
   /*--- Identification of free-surface problem, this problems are always 
    unsteady and incompressible. ---*/

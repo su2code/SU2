@@ -142,6 +142,8 @@ private:
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
+  su2double DVBound_Upper;		/*!< \brief Previous value of the design variable. */
+  su2double DVBound_Lower;		/*!< \brief Previous value of the design variable. */
 	su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
