@@ -53,16 +53,34 @@ def main():
                     metavar="DIMENSIONS")
   parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
                     metavar="ZONES")
-  parser.add_option("--fsi", dest="fsi", action="store_true", default="False", 
-                    help="Launch the FSI driver", metavar="FSI")
-  parser.add_option("--spectral", action="store_true", dest="time_spectral", default="False",
-                    help="Launch the time SPECTRAL driver", metavar="SPECTRAL")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
+
+  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
+
+  parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
+
+  parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
+                    help="Launch the Harmonic Balance (HB) driver", metavar="HB")
+
+  parser.add_option("--poisson_equation", dest="poisson_equation", default="False",
+                    help="Launch the poisson equation driver (General driver)", metavar="POIS_EQ")
+
+  parser.add_option("--wave_equation", dest="wave_equation", default="False",
+                    help="Launch the wave equation driver (General driver)", metavar="WAVE_EQ")
+
+  parser.add_option("--heat_equation", dest="heat_equation", default="False",
+                    help="Launch the heat equation driver (General driver)", metavar="HEAT_EQ")
 
   (options, args) = parser.parse_args()
   options.nDim  = int( options.nDim )
   options.nZone = int( options.nZone )
+  options.fsi = options.fsi.upper() == 'TRUE'
+  options.fem = options.fem.upper() == 'TRUE'
+  options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
+  options.poisson_equation = options.poisson_equation.upper() == 'TRUE'
+  options.wave_equation    = options.wave_equation.upper()    == 'TRUE'
+  options.heat_equation    = options.heat_equation.upper()    == 'TRUE'
 
   if options.filename == None:
     raise Exception("No config file provided. Use -f flag")
@@ -75,14 +93,14 @@ def main():
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    if options.nZone == 1:
-      SU2Driver = SU2Solver.CSingleZoneDriver(options.filename, options.nZone, options.nDim, comm);
-    elif options.time_spectral == True:
-      SU2Driver = SU2Solver.CSpectralDriver(options.filename, options.nZone, options.nDim, comm);
-    elif (options.nZone == 2) and (options.fsi == True):
+    if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
+      SU2Driver = SU2Solver.CGeneralDriver(options.filename, options.nZone, options.nDim, comm);
+    elif options.options.harmonic_balance:
+      SU2Driver = SU2Solver.CHBDriver(options.filename, options.nZone, options.nDim, comm);
+    elif (options.nZone == 2) and (options.fsi):
       SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
     else:
-      SU2Driver = SU2Solver.CMultiZoneDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = SU2Solver.CFluidDriver(options.filename, options.nZone, options.nDim, comm);
   except TypeError as exception:
     print('A TypeError occured in SU2Solver.CSingleZoneDriver : ',exception)
     if options.with_MPI == True:

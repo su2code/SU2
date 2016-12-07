@@ -103,7 +103,7 @@ def main():
   if myid == rootProcess:
     print('\n***************************** Initializing fluid solver *****************************')
   try:
-    FluidSolver = WrapSU2.CSingleZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
+    FluidSolver = WrapSU2.CFluidDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
   except TypeError as exception:
     print('A TypeError occured in WrapSU2.CSingleZoneDriver : ',exception)
     if have_MPI == True:

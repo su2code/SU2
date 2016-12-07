@@ -42,7 +42,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
-
 #include <ctime>
 
 #include "geometry_structure.hpp"
@@ -530,7 +529,7 @@ public:
 	 * \param[in] n - Upper coefficient.
 	 * \param[in] m - Lower coefficient.
 	 * \return Value of the binomial coefficient n over m.
-	 */		
+	 */
 	su2double Binomial(unsigned short n, unsigned short m);
 	
 	/*! 
@@ -1107,6 +1106,24 @@ public:
 	 */
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
+  /*!
+   * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  void SetAngleOfAttack(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
+	/*! 
+	 * \brief Set a deformation based on a change in the Kulfan parameters for an airfoil.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetCST(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
 	/*! 
 	 * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
 	 * \param[in] boundary - Geometry of the boundary.
@@ -1136,7 +1153,7 @@ public:
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */
 	void SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
-  
+
   /*!
 	 * \brief Set the translational/rotational velocity for a moving wall.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1185,6 +1202,16 @@ public:
 	 */
 	void Surface_Rotating(CGeometry *geometry, CConfig *config,
                         unsigned long iter, unsigned short iZone);
+  
+  /*!
+   * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current physical time iteration.
+   * \param[in] iZone - Zone number in the mesh.
+   */
+  void HTP_Rotation(CGeometry *geometry, CConfig *config,
+                    unsigned long iter, unsigned short iZone);
 
     /*!
 	 * \brief Unsteady aeroelastic grid movement by deforming the mesh.
@@ -1369,17 +1396,17 @@ public:
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
 	void SetFFDThickness(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-	
-	/*! 
-	 * \brief Set a dihedral angle deformation of the Free From box using the control point position.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-	 * \param[in] iDV - Index of the design variable.
-	 * \param[in] ResetDef - Reset the deformation before starting a new one.
-	 */		
-	void SetFFDDihedralAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
-	
+  
+  /*!
+   * \brief Set a thickness deformation of the Free From box using the control point position.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
+   * \param[in] iDV - Index of the design variable.
+   * \param[in] ResetDef - Reset the deformation before starting a new one.
+   */
+  void SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, unsigned short iDV, bool ResetDef);
+
 	/*! 
 	 * \brief Set a twist angle deformation of the Free From box using the control point position.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1388,7 +1415,7 @@ public:
 	 * \param[in] iDV - Index of the design variable.
 	 * \param[in] ResetDef - Reset the deformation before starting a new one.
 	 */		
-	void SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
+	void SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iDV, bool ResetDef);
 	
 	/*! 
 	 * \brief Set a rotation angle deformation of the Free From box using the control point position.

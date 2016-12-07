@@ -388,7 +388,7 @@ void COutput::SetCGNS_Solution(CConfig *config, CGeometry *geometry, unsigned sh
 //		/*--- write CGNS base data (one base assumed currently) ---*/
 //		cgns_err = cg_base_write(cgns_file,"SU2 Base", element_dims, physical_dims, &cgns_base);
 //		if (cgns_err) cg_error_print();
-    
+        
 //		/*--- write CGNS zone data ---*/
 //		cgns_err = cg_zone_write(cgns_file, cgns_base,"SU2 Zone", isize[0],Unstructured, &cgns_zone);
 //		if (cgns_err) cg_error_print();

@@ -48,7 +48,7 @@ bin_SCRIPTS = \
     discrete_adjoint.py \
     direct_differentiation.py \
     fsi_computation.py \
-    SU2_CFD.py
+    pyWrap_SU2_CFD.py
 
 
 mypkgdir = $(prefix)/bin

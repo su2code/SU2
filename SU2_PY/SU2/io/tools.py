@@ -544,8 +544,9 @@ def get_dvMap():
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
                19  : "CUSTOM"                ,
-               101 : "MACH_NUMBER"           ,
-               102 : "AOA"                    }
+               20  : "CST"                   ,
+               101 : "ANGLE_OF_ATTACK"       ,
+               102 : "FFD_ANGLE_OF_ATTACK"                    }
     
     return dv_map
 
@@ -644,6 +645,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "HICKS_HENNE"        :
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r', %s, %s')
+    elif kindID == "CST"        :
+        header.append(r',"Up/Down","Kulfan number", "Total Kulfan numbers"')
+        write_format.append(r', %s, %s', '%s')
     elif kindID == "GAUSS_BUMP"       :
         header.append(r',"Up/Down","Loc_Max","Size_Bump"')
         write_format.append(r', %s, %s, %s')
@@ -677,9 +681,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "FFD_THICKNESS"      : 
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
-    elif kindID == "MACH_NUMBER"        : pass
-    elif kindID == "AOA"                : pass
-    elif kindID == "CUSTOM"             : pass
+    elif kindID == "ANGLE_OF_ATTACK"      : pass
+    elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass
+    elif kindID == "CUSTOM"               : pass
     
     # otherwise...
     else: raise Exception('Unrecognized Design Variable Kind') 
@@ -822,9 +826,9 @@ def get_specialCases(config):
     if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
-    # Special case for time-spectral
-    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'TIME_SPECTRAL':
-        special_cases.append('TIME_SPECTRAL')
+    # Special case for harmonic balance
+    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'HARMONIC_BALANCE':
+        special_cases.append('HARMONIC_BALANCE')
 
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':

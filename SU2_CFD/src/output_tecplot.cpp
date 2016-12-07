@@ -81,7 +81,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
-  if (config->GetKind_SU2() == SU2_DOT){
+  if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol) filename = config->GetSurfSens_FileName();
     else filename = config->GetVolSens_FileName();
   }
@@ -92,23 +92,12 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) ) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    
-    if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
-    
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
-    
-  }
-  else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+ if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(iExtIter));
     if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(iExtIter));
@@ -215,7 +204,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
           ( Kind_Solver == DISC_ADJ_RANS               )) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-        if (geometry->GetnDim() == 3){
+        if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
         }
       }
@@ -233,7 +222,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
           if (headings == NULL) {
             Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
-          } else{
+          } else {
             Tecplot_File << ", \""<< headings[iVar] <<"\"";
           }
         }
@@ -285,11 +274,11 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   Tecplot_File << "ZONE ";
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-    su2double period = config->GetTimeSpectral_Period();
+    su2double period = config->GetHarmonicBalance_Period();
     su2double deltaT = period/(su2double)(config->GetnTimeInstances());
-    Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<deltaT*iExtIter<<", ";
+    Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone+1)<<", SOLUTIONTIME="<<deltaT*val_iZone<<", ";
   }
   
   if (nDim == 2) {
@@ -419,7 +408,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   Tecplot_File.close();
   
-  if (surf_sol){
+  if (surf_sol) {
     delete [] LocalIndex;
     delete[] SurfacePoint;
   }
@@ -516,7 +505,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
           ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
           ( Kind_Solver == DISC_ADJ_RANS               )) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-        if (geometry->GetnDim() == 3){
+        if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
         }
       }
