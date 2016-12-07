@@ -6897,9 +6897,6 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_1a";
-
   /*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho)
    Gradient primitive variables incompressible (rho, vx, vy, vz, beta) ---*/
   PrimVar_Vertex = new su2double [nPrimVarGrad];
@@ -6909,12 +6906,6 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   /*--- Set Gradient_Primitive to zero ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
     node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_1b";
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_2a";
 
   /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -6938,12 +6929,6 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
       }
     }
   }
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_2b";
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_3a";
 
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -6964,12 +6949,6 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
       }
     }
   }
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_3b";
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_4a";
 
   /*--- Update gradient value ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -6980,27 +6959,12 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
       }
     }
   }
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_4b";
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_5a";
 
   delete [] PrimVar_Vertex;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_5b";
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_6a";
 
   Set_MPI_Primitive_Gradient(geometry, config);
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_6b";
 
 }
 
@@ -16664,75 +16628,36 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Set the primitive variables ---*/
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_1a_";
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_1b_";
 
   /*--- Compute the engine properties ---*/
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_2a_";
   if (engine) { GetPower_Properties(geometry, config, iMesh, Output); }
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_2b_";
 
   /*--- Compute the control volume properties ---*/
 
   if (marker_analyze) {
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_3a_";
-    GetSurface_Properties(geometry, NULL, NULL, config, iMesh, Output);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_3b_";
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_4a_";
+     GetSurface_Properties(geometry, NULL, NULL, config, iMesh, Output);
     GetSurface_Distortion(geometry, config, iMesh, Output);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_4b_";
   }
 
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
   if (actuator_disk) {
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_5a_";
   	Set_MPI_ActDisk(solver_container, geometry, config);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_5b_";
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_6a_";
-  	GetPower_Properties(geometry, config, iMesh, Output);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_6b_";
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_7a_";
   	SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == MASTER_NODE) cout <<"_7b_";
   }
 
   /*--- Compute Interface MPI ---*/
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_8a_";
   if (interface) { Set_MPI_Interface(geometry, config); }
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_8b_";
 
   /*--- Compute NearField MPI ---*/
 
-  MPI_Barrier(MPI_COMM_WORLD);
-   if (rank == MASTER_NODE) cout <<"_9a_";
   if (nearfield) { Set_MPI_Nearfield(geometry, config); }
-  MPI_Barrier(MPI_COMM_WORLD);
-   if (rank == MASTER_NODE) cout <<"_9b_";
  
   /*--- Artificial dissipation ---*/
 
-   MPI_Barrier(MPI_COMM_WORLD);
-   if (rank == MASTER_NODE) cout <<"_10a_";
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
@@ -16740,13 +16665,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
       SetUndivided_Laplacian(geometry, config);
     }
   }
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_10b_";
   
   /*--- Compute gradient of the primitive variables ---*/
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11a_";
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetPrimitive_Gradient_GG(geometry, config);
     //    if (compressible && !ideal_gas) SetSecondary_Gradient_GG(geometry, config);
@@ -16755,8 +16676,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Gradient_LS(geometry, config);
     //    if (compressible && !ideal_gas) SetSecondary_Gradient_LS(geometry, config);
   }
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_11b_";
 
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
@@ -16765,9 +16684,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     //  if (compressible && !ideal_gas) SetSecondary_Limiter(geometry, config);
   }
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_12a_";
-
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
   StrainMag_Max = 0.0, Omega_Max = 0.0;
@@ -16811,9 +16727,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     
   }
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_12b_";
-
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {

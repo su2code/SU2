@@ -93,6 +93,8 @@ class COutput {
   unsigned short wrote_base_file;
   su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
+  su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
+
   
 protected:
 

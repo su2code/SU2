@@ -67,10 +67,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_13a_";
-
   /*--- Compute inviscid residuals ---*/
   
   switch (config->GetKind_ConvNumScheme()) {
@@ -82,24 +78,13 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       break;
   }
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_13b_";
-
   /*--- Compute viscous residuals ---*/
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_14a_";
-
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_14b_";
 
   
   /*--- Compute source term residuals ---*/
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_15a_";
 
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
@@ -111,12 +96,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_15b_";
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_16a_";
 
   /*--- Weak boundary conditions ---*/
   
@@ -198,12 +177,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 		break;
     }
   }
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_16b_";
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_17a_";
 
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
@@ -225,10 +198,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_17b_";
-
 
 }
 
@@ -359,9 +328,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_18a_";
-
   /*--- Perform the time integration ---*/
 
   /*--- Fluid time integration schemes ---*/
@@ -397,9 +363,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 		  break;
 	  }
 	}
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (rank == MASTER_NODE) cout <<"_18b_" << endl;
 
 }
 
