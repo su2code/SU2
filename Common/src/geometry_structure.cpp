@@ -14047,7 +14047,6 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(2)],
                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(3)], 2);
 						
-						cout << "Element = " << iElem << "Points = " << Index[iPeriodic][geometry->elem[jElem]->GetNode(0)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(1)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(2)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(3)] << endl;
             iElem++; nelem_quad++;
             break;
             
@@ -14318,8 +14317,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
       if (config->GetMarker_All_SendRecv(iMarker) < 0) {
-				cout << "SendRecv Marker = " << iMarker << "Num elem = " << nElem_Bound[iMarker] << endl;
-        for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
+				for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
           if (bound[iMarker][iElem_Bound]->GetNode(0) < geometry->GetnPoint()) {
             NewSort[bound[iMarker][iElem_Bound]->GetNode(0)] = Index;
             NewSort[Index] = bound[iMarker][iElem_Bound]->GetNode(0);
@@ -14329,12 +14327,6 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       }
     }
   }
-	
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		cout << NewSort[iPoint] << endl;
-	}
-
-	
   
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
