@@ -39,13 +39,13 @@ CPrimalGrid::CPrimalGrid(void) {
 
   /*--- Set the default values for the pointers ---*/
   Nodes = NULL;
- Neighbor_Elements = NULL;
- ElementOwnsFace = NULL;
- PeriodIndexNeighbors = NULL;
- Coord_CG = NULL;
- Coord_FaceElems_CG = NULL;
- JacobianFaceIsConstant = NULL;
-
+  Neighbor_Elements = NULL;
+  ElementOwnsFace = NULL;
+  PeriodIndexNeighbors = NULL;
+  Coord_CG = NULL;
+  Coord_FaceElems_CG = NULL;
+  JacobianFaceIsConstant = NULL;
+  GlobalIndex = 0;
 }
 
 CPrimalGrid::~CPrimalGrid() {
