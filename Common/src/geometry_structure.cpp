@@ -11339,7 +11339,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
       PeriodicElem[iPeriodic].resize( IterElem - PeriodicElem[iPeriodic].begin() );
     }
   }
-  
+
   /*--- Check all SEND points to see if they also lie on another boundary. ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -13918,7 +13918,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   newBoundPer       = geometry->newBound;
   
   /*--- Count the number of new boundary elements. ---*/
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     newElementsBound += nNewElem_BoundPer[iMarker];
   
   /*--- Loop over the original grid to perform the dimensionalizaton of the new vectors ---*/
@@ -13995,15 +13995,24 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  /*--- Create a list with all the points and the new index ---*/
-  unsigned long *Index = new unsigned long [geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) Index[iPoint] = 0;
-  
+  /*--- Create a list with all the points and the new index for each marker ---*/
+  unsigned long **Index = new unsigned long *[nPeriodic+1];
+	for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++)
+		Index[iPeriodic] = new unsigned long [geometry->GetnPoint()];
+	
+	for(iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++){
+		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++){
+			Index[iPeriodic][iPoint] = 0;
+		}
+	}
+	
+	/*--- Puts the new points into the Index vector using the old point number as a key ---*/
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (CreateMirror[iPeriodic]) {
       for (iIndex = 0; iIndex < geometry->PeriodicPoint[iPeriodic][0].size(); iIndex++) {
         iPoint =  geometry->PeriodicPoint[iPeriodic][0][iIndex];
-        Index[iPoint] = geometry->PeriodicPoint[iPeriodic][1][iIndex];
+        Index[iPeriodic][iPoint] = geometry->PeriodicPoint[iPeriodic][1][iIndex];
+				
       }
     }
   }
@@ -14011,14 +14020,14 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+				iPeriodic = config->GetMarker_All_PerBound(iMarker);
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         jPoint = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
-        Index[iPoint] = jPoint;
+        Index[iPeriodic][jPoint] = iPoint;
       }
-  
+	
   /*--- Add the new elements due to the periodic boundary condtion ---*/
   iElem = geometry->GetnElem();
-  
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (CreateMirror[iPeriodic]) {
       for (iIndex = 0; iIndex < geometry->PeriodicElem[iPeriodic].size(); iIndex++) {
@@ -14026,56 +14035,58 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
         
         switch(geometry->elem[jElem]->GetVTK_Type()) {
           case TRIANGLE:
-            elem[iElem] = new CTriangle(Index[geometry->elem[jElem]->GetNode(0)],
-                                        Index[geometry->elem[jElem]->GetNode(1)],
-                                        Index[geometry->elem[jElem]->GetNode(2)], 2);
+            elem[iElem] = new CTriangle(Index[iPeriodic][geometry->elem[jElem]->GetNode(0)],
+                                        Index[iPeriodic][geometry->elem[jElem]->GetNode(1)],
+                                        Index[iPeriodic][geometry->elem[jElem]->GetNode(2)], 2);
             iElem++; nelem_triangle++;
             break;
             
           case QUADRILATERAL:
-            elem[iElem] = new CQuadrilateral(Index[geometry->elem[jElem]->GetNode(0)],
-                                         Index[geometry->elem[jElem]->GetNode(1)],
-                                         Index[geometry->elem[jElem]->GetNode(2)],
-                                         Index[geometry->elem[jElem]->GetNode(3)], 2);
+            elem[iElem] = new CQuadrilateral(Index[iPeriodic][geometry->elem[jElem]->GetNode(0)],
+                                         Index[iPeriodic][geometry->elem[jElem]->GetNode(1)],
+                                         Index[iPeriodic][geometry->elem[jElem]->GetNode(2)],
+                                         Index[iPeriodic][geometry->elem[jElem]->GetNode(3)], 2);
+						
+						cout << "Element = " << iElem << "Points = " << Index[iPeriodic][geometry->elem[jElem]->GetNode(0)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(1)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(2)] << " " << Index[iPeriodic][geometry->elem[jElem]->GetNode(3)] << endl;
             iElem++; nelem_quad++;
             break;
             
           case TETRAHEDRON:
-            elem[iElem] = new CTetrahedron(Index[geometry->elem[jElem]->GetNode(0)],
-                                           Index[geometry->elem[jElem]->GetNode(1)],
-                                           Index[geometry->elem[jElem]->GetNode(2)],
-                                           Index[geometry->elem[jElem]->GetNode(3)]);
+            elem[iElem] = new CTetrahedron(Index[iPeriodic][geometry->elem[jElem]->GetNode(0)],
+                                           Index[iPeriodic][geometry->elem[jElem]->GetNode(1)],
+                                           Index[iPeriodic][geometry->elem[jElem]->GetNode(2)],
+                                           Index[iPeriodic][geometry->elem[jElem]->GetNode(3)]);
             iElem++; nelem_tetra++;
             break;
             
           case HEXAHEDRON:
-            elem[iElem] = new CHexahedron(Index[geometry->elem[jElem]->GetNode(0)],
-                                          Index[geometry->elem[jElem]->GetNode(1)],
-                                          Index[geometry->elem[jElem]->GetNode(2)],
-                                          Index[geometry->elem[jElem]->GetNode(3)],
-                                          Index[geometry->elem[jElem]->GetNode(4)],
-                                          Index[geometry->elem[jElem]->GetNode(5)],
-                                          Index[geometry->elem[jElem]->GetNode(6)],
-                                          Index[geometry->elem[jElem]->GetNode(7)]);
+            elem[iElem] = new CHexahedron(Index[iPeriodic][geometry->elem[jElem]->GetNode(0)],
+                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(1)],
+                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(2)],
+                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(3)],
+                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(4)],
+                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(5)],
+                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(6)],
+                                          Index[iPeriodic][geometry->elem[jElem]->GetNode(7)]);
             iElem++; nelem_hexa++;
             break;
             
           case PRISM:
-            elem[iElem] = new CPrism(Index[geometry->elem[jElem]->GetNode(0)],
-                                     Index[geometry->elem[jElem]->GetNode(1)],
-                                     Index[geometry->elem[jElem]->GetNode(2)],
-                                     Index[geometry->elem[jElem]->GetNode(3)],
-                                     Index[geometry->elem[jElem]->GetNode(4)],
-                                     Index[geometry->elem[jElem]->GetNode(5)]);
+            elem[iElem] = new CPrism(Index[iPeriodic][geometry->elem[jElem]->GetNode(0)],
+                                     Index[iPeriodic][geometry->elem[jElem]->GetNode(1)],
+                                     Index[iPeriodic][geometry->elem[jElem]->GetNode(2)],
+                                     Index[iPeriodic][geometry->elem[jElem]->GetNode(3)],
+                                     Index[iPeriodic][geometry->elem[jElem]->GetNode(4)],
+                                     Index[iPeriodic][geometry->elem[jElem]->GetNode(5)]);
             iElem++; nelem_prism++;
             break;
             
           case PYRAMID:
-            elem[iElem] = new CPyramid(Index[geometry->elem[jElem]->GetNode(0)],
-                                       Index[geometry->elem[jElem]->GetNode(1)],
-                                       Index[geometry->elem[jElem]->GetNode(2)],
-                                       Index[geometry->elem[jElem]->GetNode(3)],
-                                       Index[geometry->elem[jElem]->GetNode(4)]);
+            elem[iElem] = new CPyramid(Index[iPeriodic][geometry->elem[jElem]->GetNode(0)],
+                                       Index[iPeriodic][geometry->elem[jElem]->GetNode(1)],
+                                       Index[iPeriodic][geometry->elem[jElem]->GetNode(2)],
+                                       Index[iPeriodic][geometry->elem[jElem]->GetNode(3)],
+                                       Index[iPeriodic][geometry->elem[jElem]->GetNode(4)]);
             iElem++; nelem_pyramid++;
             break;
             
