@@ -73,7 +73,7 @@ int main() {
   paramsSST[5] = 0.0828;
   paramsSST[6] = 0.09;
   paramsSST[7] = 1.0;
-  paramsSST[8] = 0.55555555555555;
+  paramsSST[8] = 0.555555555555555;
   paramsSST[9] = 0.44;
 
   // Data to feed to source term calc
