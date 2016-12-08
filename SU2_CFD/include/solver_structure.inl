@@ -1559,11 +1559,11 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CEulerSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return SlidingState[val_marker][val_vertex][val_state][donor_index]; }
 
-inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) {  }
+inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index) { return 0; }
 
 inline int CEulerSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return SlidingStateNodes[val_marker][val_vertex]; }
 
-inline int CSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){}
+inline int CSolver::GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex){ return 0; }
 
 inline void CEulerSolver::SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value){ SlidingStateNodes[val_marker][val_vertex] = value; }
 

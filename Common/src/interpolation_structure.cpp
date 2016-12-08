@@ -307,7 +307,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 #ifdef HAVE_MPI
 
   int rank = MASTER_NODE;
-  int *Buffer_Recv_mark=NULL, iRank;
+  int *Buffer_Recv_mark = NULL, iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -466,7 +466,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   delete[] Buffer_Receive_nVertex_Donor;
 
   #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL ) 
     delete [] Buffer_Recv_mark;
   #endif
 }
@@ -530,7 +530,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
 #ifdef HAVE_MPI
 
-  int *Buffer_Recv_mark=NULL, iRank;
+  int *Buffer_Recv_mark = NULL, iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -877,7 +877,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
   delete [] projected_point;
 
   #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
     delete [] Buffer_Recv_mark;
   #endif
 }
@@ -1111,7 +1111,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   int nProcessor = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  int *Buffer_Recv_mark=NULL, iRank;
+  int *Buffer_Recv_mark = NULL, iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -1355,7 +1355,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   }
 
   #ifdef HAVE_MPI
-  if (rank == MASTER_NODE) 
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL) 
     delete [] Buffer_Recv_mark;
   #endif
 }
@@ -1386,9 +1386,10 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     bool check;
     
     unsigned short iDim, nDim;
+    unsigned long vPoint;
     
     int ii, jj, iEdgeVisited, EgdeIndex, nEdgeVisited, iNodeVisited, rank, nProcessor;
-    int nAlreadyVisited, nToVisit, StartVisited, vPoint;
+    int nAlreadyVisited, nToVisit, StartVisited, nMarkerTarget, nMarkerDonor, target_StartIndex;
     int *alreadyVisitedDonor, *ToVisit, *tmpVect;
     
     su2double dTMP;
@@ -1397,23 +1398,22 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     
     /* --- Geometrical variables --- */
 
-    su2double *Coord_i, *Coord_j, dist, mindist, maxdist, *Normal;
-    su2double Area, Area_old, tmp_Area, target_area;
+    su2double *Coord_i, *Coord_j, dist, mindist, *Normal;
+    su2double Area, Area_old, tmp_Area;
     su2double LineIntersectionLength, *Direction, length;
         
         
     /* --- Markers Variables --- */
     
-    unsigned short iMarkerInt, nMarkerInt, nMarkerDonor, nMarkerTarget; 
+    unsigned short iMarkerInt, nMarkerInt; 
     
-    unsigned long jVertex, iVertex, iVertexTarget, iVertexDonor,  nVertexDonor , nVertexTarget;
+    unsigned long jVertex, iVertex, nVertexDonor , nVertexTarget;
     
-    int NearestNode;
     int markDonor, markTarget, Target_check, Donor_check;
     
     /* --- Target variables --- */
     
-    int target_StartIndex, target_forward_point, target_backward_point, target_iPoint, target_OldiPoint;
+    int target_forward_point, target_backward_point, target_iPoint;
     int nEdges_target, nNode_target;
     
     su2double *target_iMidEdge_point, *target_jMidEdge_point;
@@ -1437,7 +1437,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
 #ifdef HAVE_MPI
 
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark = NULL, iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -2103,6 +2103,11 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     delete [] donor_jMidEdge_point;
     
     delete [] Direction;
+    
+  #ifdef HAVE_MPI
+  if (rank == MASTER_NODE && Buffer_Recv_mark != NULL ) 
+    delete [] Buffer_Recv_mark;
+  #endif
     
 }
 
