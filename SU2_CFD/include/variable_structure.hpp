@@ -1737,6 +1737,29 @@ public:
 	 */
 	virtual su2double GetCrossDiff(void) { return 0.0; };
 
+	/*! swh
+	 * \brief Set the turbulence scales of zeta-f KE.
+	 * \param[in] val_viscosity - Value of the vicosity.
+	 * \param[in] val_density - Value of the density.
+	 * \param[in] val_dist - Value of the distance to the wall (not necessary).
+	 * \param[in] val_kine - Value of TKE.
+	 * \param[in] val_epsi - Value of dissipation.
+	 * \param[in] val_zeta - Value of v^2/tke.
+	 * \param[in] val_f - Value of f redistribution.
+	 * \param[in] StrainMag - strain magnitude.
+	 */
+    virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+
+	/*! swh
+	 * \brief Get model timescale for ke  model.
+	 */
+	virtual su2double GetTm(void);
+
+	/*! swh
+	 * \brief Get model lengthscale for ke  model.
+	 */
+	virtual su2double GetLm(void);
+
 	/*!
 	 * \brief Get the value of the eddy viscosity.
 	 * \return the value of the eddy viscosity.
@@ -3665,6 +3688,69 @@ public:
 	 */
 	su2double GetCrossDiff(void);
 };
+
+
+
+/*! swh 
+ * \class CTurbKEVariable
+ * \brief Main class for defining the variables of the turbulence model.
+ * \ingroup Turbulence_Model
+ * \author S. Haering
+ * \version 4.3.x "Cardinal"
+ */
+
+class CTurbKEVariable : public CTurbVariable {
+protected:
+        su2double sigma_e, sigma_k, sigma_z, C_e1o, C_e2, C1, C_2p, C_T, C_L, C_eta;
+	su2double Tm,		/*!< \brief T_m k-eps. */
+	Lm,		        /*!< \brief L_m k-eps */
+        Re_T;
+
+  
+public:
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTurbKEVariable(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+	 * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_f, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+			su2double *constants, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CTurbKEVariable(void);
+
+	/*!
+	 * \brief Set the turbulence scales of the zeta-f KE model.
+	 * \param[in] val_viscosity - Value of the vicosity.
+	 * \param[in] val_dist - Value of the distance to the wall.
+	 * \param[in] val_density - Value of the density.
+	 */
+  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+
+	/*!
+	 * \brief Get the first blending function.
+	 */
+	su2double GetTm(void);
+
+	/*!
+	 * \brief Get the second blending function.
+	 */
+	su2double GetLm(void);
+
+};
+
 
 
 /*! 

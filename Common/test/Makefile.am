@@ -1,8 +1,8 @@
 ################################################################################
 #
 # \file Makefile.am
-# \brief Global makefile for the SU2 project
-# \author M. Colonno, T. Economon, F. Palacios
+# \brief Makefile for SU2_CFD tests
+# \author T. A. Oliver
 # \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -33,44 +33,22 @@
 #
 ################################################################################
 
-AUTOMAKE_OPTIONS = subdir-objects
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
+check_PROGRAMS  =
+check_PROGRAMS += unit_test_config
 
-# build third-party optional dependencies first
-SUBDIRS = externals
+# Eventually these will likely be required
+AM_CPPFLAGS = -I$(top_srcdir)/Common/include
+#AM_LDFLAGS = 
+#LIBS = 
+LDADD = $(top_builddir)/Common/lib/libSU2.a
 
-SUBDIRS += Common/lib
-SUBDIRS += Common/test
+# Test sources
+unit_test_config_SOURCES = unit_test_config.cpp
 
-if BUILD_PY
-SUBDIRS += SU2_PY
-endif
 
-if BUILD_CFD
-SUBDIRS +=SU2_CFD/obj
-SUBDIRS +=SU2_CFD/test
-endif
+# Tests to be run
+TESTS  =
+TESTS += unit_test_config
 
-if BUILD_DOT
-SUBDIRS +=SU2_DOT/obj
-endif
-
-if BUILD_MSH
-SUBDIRS +=SU2_MSH/obj
-endif
-
-if BUILD_DEF
-SUBDIRS +=SU2_DEF/obj
-endif
-
-if BUILD_SOL
-SUBDIRS +=SU2_SOL/obj
-endif
-
-if BUILD_GEO
-SUBDIRS +=SU2_GEO/obj
-endif
-
-if BUILD_PY_WRAPPER
-SUBDIRS += SU2_PY/pySU2
-endif
+# Any of above we expect to fail?
+#XFAIL_TESTS =

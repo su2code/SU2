@@ -111,6 +111,29 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
 }
 
+CConfig::CConfig() {
+
+  /*--- Initialize pointers to Null---*/
+  SetPointersNull();
+
+  /*--- Reading config options  ---*/
+  SetConfig_Options(0, 1);
+
+  /*--- Set all options to default values */
+  map<string, bool>::iterator iter;
+  for (iter = all_options.begin(); iter != all_options.end(); ++iter) {
+    option_map[iter->first]->SetDefault();
+  }
+
+  // Just to avoid error in SetPostprocessing below
+  SetKind_Solver(NAVIER_STOKES);
+
+  /*--- Configuration file postprocessing ---*/
+  SetPostprocessing(1, 0, 1);
+
+}
+
+
 void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Out_1D=NULL;       Marker_All_Out_1D=NULL;
   Marker_CfgFile_GeoEval=NULL;      Marker_All_GeoEval=NULL;
@@ -3162,9 +3185,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:     cout << "Spalart Allmaras" << endl; break;
+          case SA:     cout << "Spalart Allmaras"          << endl; break;
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
-          case SST:    cout << "Menter's SST"     << endl; break;
+          case SST:    cout << "Menter's SST"              << endl; break;
+          case KE:     cout << "Zeta-f KE"                 << endl; break;
         }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;

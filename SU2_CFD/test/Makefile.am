@@ -1,8 +1,8 @@
 ################################################################################
 #
 # \file Makefile.am
-# \brief Global makefile for the SU2 project
-# \author M. Colonno, T. Economon, F. Palacios
+# \brief Makefile for SU2_CFD tests
+# \author T. A. Oliver
 # \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -33,44 +33,34 @@
 #
 ################################################################################
 
-AUTOMAKE_OPTIONS = subdir-objects
-ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
+check_PROGRAMS  =
+check_PROGRAMS += noop
+check_PROGRAMS += CSourcePieceWise_TurbSST_unit
 
-# build third-party optional dependencies first
-SUBDIRS = externals
+# Eventually these will likely be required
+AM_CPPFLAGS =
+AM_CPPFLAGS += -I$(top_srcdir)/Common/include
+AM_CPPFLAGS += -I$(top_srcdir)/SU2_CFD/include
+AM_CPPFLAGS += @su2_externals_INCLUDES@
 
-SUBDIRS += Common/lib
-SUBDIRS += Common/test
+#AM_LDFLAGS = 
+#LIBS = 
 
-if BUILD_PY
-SUBDIRS += SU2_PY
-endif
+LDADD  =
+LDADD += $(top_builddir)/Common/lib/libSU2.a
+LDADD += $(top_builddir)/SU2_CFD/obj/libSU2Core.a
+LDADD += @su2_externals_LIBS@
 
-if BUILD_CFD
-SUBDIRS +=SU2_CFD/obj
-SUBDIRS +=SU2_CFD/test
-endif
+# Test sources
+noop_SOURCES = noop.cpp
+CSourcePieceWise_TurbSST_unit_SOURCES = CSourcePieceWise_TurbSST_unit.cpp
 
-if BUILD_DOT
-SUBDIRS +=SU2_DOT/obj
-endif
 
-if BUILD_MSH
-SUBDIRS +=SU2_MSH/obj
-endif
+# Tests to be run
+TESTS  =
+TESTS += noop
+TESTS += CSourcePieceWise_TurbSST_unit
 
-if BUILD_DEF
-SUBDIRS +=SU2_DEF/obj
-endif
 
-if BUILD_SOL
-SUBDIRS +=SU2_SOL/obj
-endif
-
-if BUILD_GEO
-SUBDIRS +=SU2_GEO/obj
-endif
-
-if BUILD_PY_WRAPPER
-SUBDIRS += SU2_PY/pySU2
-endif
+# Any of above we expect to fail?
+#XFAIL_TESTS =
