@@ -2804,7 +2804,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
       (config->GetDesign_Variable(0) == FFD_CAMBER) ||
       (config->GetDesign_Variable(0) == FFD_THICKNESS)) {
-    
+
     /*--- Definition of the FFD deformation class ---*/
     
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
@@ -2938,6 +2938,16 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           }
         }
         
+      }
+
+
+
+      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+        switch ( config->GetDesign_Variable(iDV) ) {
+          case SCALE :  SetScale(geometry, config, iDV, false); break;
+          case TRANSLATION :  SetTranslation(geometry, config, iDV, false); break;
+          case ROTATION :     SetRotation(geometry, config, iDV, false); break;
+        }
       }
     }
     
@@ -4212,60 +4222,82 @@ void CSurfaceMovement::SetFFDTwistAngle(CGeometry *geometry, CConfig *config, CF
 		
     /*--- xyz-coordinate of the line's direction vector. ---*/
     
-		su2double u = config->GetParamDV(iDV, 4)-config->GetParamDV(iDV, 1);
-		su2double v = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
-		su2double w = config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3);
+//		su2double u = config->GetParamDV(iDV, 4)-config->GetParamDV(iDV, 1);
+//		su2double v = config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2);
+//		su2double w = config->GetParamDV(iDV, 6)-config->GetParamDV(iDV, 3);
+
+    su2double theta = config->GetDV_Value(iDV);
+    cout<<a<<", "<<b<<", "<<c<<", "<<theta<<endl;
+    for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
+      for (jOrder = 0; jOrder < FFDBox->GetmOrder(); jOrder++)
+        for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
+          su2double *coord = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
+          index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
+
+//          movement[0] = coord[0] + theta*a;
+//          movement[1] = coord[1] + theta*b;
+//          movement[2] = coord[2] + theta*c;
+          movement[0] = theta*a;
+          movement[1] = theta*b;
+          movement[2] = theta*c;
+
+          FFDBox->SetControlPoints(index, movement);
+
+        }
+
+
+
 		
 		/*--- The angle of rotation. ---*/
     
-		su2double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+//		su2double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
 		
-		/*--- An intermediate value used in computations. ---*/
+//		/*--- An intermediate value used in computations. ---*/
     
-		su2double u2=u*u; su2double v2=v*v; su2double w2=w*w;     
-		su2double l2 = u2 + v2 + w2; su2double l = sqrt(l2);
-		su2double cosT; su2double sinT;  
+//		su2double u2=u*u; su2double v2=v*v; su2double w2=w*w;
+//		su2double l2 = u2 + v2 + w2; su2double l = sqrt(l2);
+//		su2double cosT; su2double sinT;
 		
-		/*--- Change the value of the control point if move is true ---*/
+//		/*--- Change the value of the control point if move is true ---*/
     
-		for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
-			for (jOrder = 0; jOrder < FFDBox->GetmOrder(); jOrder++)
-				for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
-					index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
-					su2double *coord = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
-					x = coord[0]; y = coord[1]; z = coord[2];
+//		for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++)
+//			for (jOrder = 0; jOrder < FFDBox->GetmOrder(); jOrder++)
+//				for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
+//					index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
+//					su2double *coord = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
+//					x = coord[0]; y = coord[1]; z = coord[2];
 					
-					su2double factor = 0.0; 
-					if ( y < config->GetParamDV(iDV, 2) )
-						factor = 0.0;
-					if (( y >= config->GetParamDV(iDV, 2)) && ( y <= config->GetParamDV(iDV, 5)) )
-						factor = (y-config->GetParamDV(iDV, 2)) / (config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2));
-					if ( y > config->GetParamDV(iDV, 5) )
-						factor = 1.0;
+//					su2double factor = 0.0;
+//					if ( y < config->GetParamDV(iDV, 2) )
+//						factor = 0.0;
+//					if (( y >= config->GetParamDV(iDV, 2)) && ( y <= config->GetParamDV(iDV, 5)) )
+//						factor = (y-config->GetParamDV(iDV, 2)) / (config->GetParamDV(iDV, 5)-config->GetParamDV(iDV, 2));
+//					if ( y > config->GetParamDV(iDV, 5) )
+//						factor = 1.0;
 					
-					cosT = cos(theta*factor); 
-					sinT = sin(theta*factor);  
+//					cosT = cos(theta*factor);
+//					sinT = sin(theta*factor);
 					
-					movement[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
-					+ (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
-					+ l*(-c*v + b*w - w*y + v*z)*sinT;
-					movement[0] = movement[0]/l2 - x;
+//					movement[0] = a*(v2 + w2) + u*(-b*v - c*w + u*x + v*y + w*z)
+//					+ (-a*(v2 + w2) + u*(b*v + c*w - v*y - w*z) + (v2 + w2)*x)*cosT
+//					+ l*(-c*v + b*w - w*y + v*z)*sinT;
+//					movement[0] = movement[0]/l2 - x;
 					
-					movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z) 
-					+ (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
-					+ l*(c*u - a*w + w*x - u*z)*sinT;
-					movement[1] = movement[1]/l2 - y;
+//					movement[1] = b*(u2 + w2) + v*(-a*u - c*w + u*x + v*y + w*z)
+//					+ (-b*(u2 + w2) + v*(a*u + c*w - u*x - w*z) + (u2 + w2)*y)*cosT
+//					+ l*(c*u - a*w + w*x - u*z)*sinT;
+//					movement[1] = movement[1]/l2 - y;
 					
-					movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z) 
-					+ (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
-					+ l*(-b*u + a*v - v*x + u*y)*sinT;
-					movement[2] = movement[2]/l2 - z;
+//					movement[2] = c*(u2 + v2) + w*(-a*u - b*v + u*x + v*y + w*z)
+//					+ (-c*(u2 + v2) + w*(a*u + b*v - u*x - v*y) + (u2 + v2)*z)*cosT
+//					+ l*(-b*u + a*v - v*x + u*y)*sinT;
+//					movement[2] = movement[2]/l2 - z;
 					
-					FFDBox->SetControlPoints(index, movement);
+//					FFDBox->SetControlPoints(index, movement);
           
-				}
+//				}
 		
-	}
+  }
 	
 }
 

@@ -370,9 +370,10 @@ for (iZone = 0; iZone < nZone; iZone++) {
 					//Extracting flow data on the FWH surface as well as static pressure at the observer locations (for validation only)
 					 FWH_container[ZONE_0]->SetAeroacoustic_Analysis(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0],CFD_pressure_file);
 
-					if (rank == MASTER_NODE)
+					if (rank == MASTER_NODE  && config_container[ZONE_0]->GetKind_ObjFunc() != NOISE  ){  // && config_container[ZONE_0]->GetKind_ObjFunc() == NOISE
 						cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
 					output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
+					  }
 				}
 
 				iExtIter++;
