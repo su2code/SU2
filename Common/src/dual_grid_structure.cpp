@@ -378,9 +378,9 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
-	
+    
   unsigned short iDim;
-	
+    
   /*--- Pointers initialization ---*/
   Coord_CG = NULL;
   Normal   = NULL;
@@ -497,7 +497,7 @@ void CEdge::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_Fa
   Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0] );
 
   Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];		
+  Normal[1] += Dim_Normal[1];       
   Normal[2] += Dim_Normal[2];
 
   AD::SetPreaccOut(Normal, nDim);
@@ -607,7 +607,7 @@ void CVertex::SetNodes_Coord(su2double *val_coord_Edge_CG, su2double *val_coord_
   Dim_Normal[2] =  0.5 * ( vec_a[0] * vec_b[1] - vec_a[1] * vec_b[0]);
 
   Normal[0] += Dim_Normal[0]; 
-  Normal[1] += Dim_Normal[1];	
+  Normal[1] += Dim_Normal[1];   
   Normal[2] += Dim_Normal[2];
 
   AD::SetPreaccOut(Normal, nDim);
@@ -644,16 +644,13 @@ void CVertex::AddNormal(su2double *val_face_normal) {
 }
 
 void CVertex::Allocate_DonorInfo(void){
-  if( Donor_Points != NULL )
-	delete [] Donor_Points;
+  
+  if( Donor_Points != NULL )  delete [] Donor_Points;
+  if( Donor_Proc   != NULL )  delete [] Donor_Proc;
+  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;  
+  
   Donor_Points = new unsigned long[nDonor_Points];
-  
-  if( Donor_Proc != NULL )
-	delete [] Donor_Proc;
-  Donor_Proc = new unsigned long[nDonor_Points];
-  
-  if( Donor_Coeff != NULL )
-	delete [] Donor_Coeff;
-  Donor_Coeff = new su2double[nDonor_Points];
+  Donor_Proc   = new unsigned long[nDonor_Points];
+  Donor_Coeff  = new su2double[nDonor_Points];
 }
 
