@@ -1222,7 +1222,7 @@ void FWHSolver::Write_Sensitivities(CSolver *solver, CConfig *config, CGeometry 
       if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(iExtIter));
       if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
       strcat (cstr, buffer);
-      cout<<cstr<<endl;
+//      cout<<cstr<<endl;
       CAA_AdjointFile.precision(15);
       CAA_AdjointFile.open(cstr, ios::out);
 

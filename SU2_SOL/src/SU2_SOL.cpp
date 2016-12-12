@@ -510,7 +510,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
                 for (int iPanel=0; iPanel<FWH_container[ZONE_0]->nPanel; iPanel++){
                   for (int i =0; i< FWH_container[ZONE_0]->nDim+3; i++){
                          FWH_container[ZONE_0]-> dJdU[i][iPanel][iSample]=SU2_TYPE::GetDerivative(extracted_derivative);
-                         cout<<"dJdU= "<< FWH_container[ZONE_0]-> dJdU[i][iPanel][iSample]<<endl;
+//                         cout<<"dJdU= "<< FWH_container[ZONE_0]-> dJdU[i][iPanel][iSample]<<endl;
                     }
                }
              }

@@ -1956,15 +1956,15 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
     integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
                                                                           IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
-    if(integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) {
-      break;
-    }
 
     /*--- Write the convergence history (only screen output) ---*/
 
     if(dual_time && (IntIter != nIntIter-1))
       output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
+    if(integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) {
+      break;
+    }
   }
 
 
