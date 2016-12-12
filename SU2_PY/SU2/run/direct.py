@@ -89,8 +89,10 @@ def direct ( config ):
     konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
+
+    konfig['RESTART_SOL'] = "YES"
     su2merge(konfig)
-    
+
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
     plot_extension   = su2io.get_extension(plot_format)
@@ -103,7 +105,12 @@ def direct ( config ):
     # get history and objectives
     history      = su2io.read_history( history_filename )
     aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
-    
+
+    if config.get('OBJECTIVE_FUNCTION',"") == 'NOISE':
+      noise_file = open('ppaSU2')
+      noise = noise_file.readline().split(",")[1]
+      aerodynamics['NOISE'] = float(noise)
+
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
                     

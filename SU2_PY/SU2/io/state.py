@@ -264,6 +264,9 @@ class State(ordered_bunch):
         # pressure inverse design
         if 'INV_DESIGN_CP' in special_cases:
           register_file('TARGET_CP',targetcp_name)
+
+        if config['OBJECTIVE_FUNCTION']== "NOISE":
+          register_file('NOISE', 'Observer_Locations.dat')
             
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:

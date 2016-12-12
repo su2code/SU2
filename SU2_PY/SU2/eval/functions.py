@@ -233,6 +233,9 @@ def aerodynamics( config, state=None ):
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
 
+    if config['OBJECTIVE_FUNCTION'] == 'NOISE':
+        pull.append( 'Observer_Locations.dat')
+
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     
@@ -555,7 +558,7 @@ def update_mesh(config,state=None):
     # ----------------------------------------------------
     
     # redundancy check
-    deform_set  = config['DV_KIND'] == config['DEFINITION_DV']['KIND']
+    deform_set  = config.get('DV_KIND',"") == config['DEFINITION_DV']['KIND']
     deform_todo = not config['DV_VALUE_NEW'] == config['DV_VALUE_OLD']
     if deform_set and deform_todo:
     

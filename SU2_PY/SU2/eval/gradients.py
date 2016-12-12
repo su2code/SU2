@@ -133,7 +133,7 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION ):
+        if ('CUSTOM' in config.get('DV_KIND', "") and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION ):
             import downstream_function
             chaingrad = downstream_function.downstream_gradient(config,state)
             n_dv = len(grads[func_name_string])
@@ -272,6 +272,9 @@ def adjoint( func_name, config, state=None ):
     # files: target heat flux coefficient
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         pull.append(files['TARGET_HEATFLUX'])
+
+    if config['OBJECTIVE_FUNCTION'] == "NOISE":
+        pull.append("Observer_Locations.dat")
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:

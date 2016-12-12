@@ -259,7 +259,8 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
-                  "COMBO"]
+                  "COMBO"                   ,
+                  "NOISE"]
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -477,7 +478,8 @@ def get_adjointSuffix(objective_function=None):
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
                  "FREE_SURFACE"            : "fs"        ,
-                 "COMBO"                   : "combo"}
+                 "COMBO"                   : "combo"     ,
+                 "NOISE"                   : "no"        }
     
     # if none or false, return map
     if not objective_function:
@@ -904,8 +906,11 @@ def expand_part(name,config):
 def expand_time(name,config):
     if 'UNSTEADY_SIMULATION' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
+        if (config.SOLUTION_ADJ_FILENAME.split(".")[0] in name) or (config.RESTART_ADJ_FILENAME.split(".")[0] in name):
+          n_time = config['ITER_AVERAGE_OBJ']
         name_pat = add_suffix(name,'%05d')
         names = [name_pat%i for i in range(n_time)]
+        print names
     else:
         names = [name]
     return names
