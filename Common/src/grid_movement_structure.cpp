@@ -415,7 +415,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   su2double *coord, dist2, dist;
   unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall;
+  unsigned long iPoint, iVertex, nVertex_DefWall;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -438,24 +438,24 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   /*--- Compute the total number of nodes on deforming boundaries ---*/
   
-  nVertex_SolidWall = 0;
+  nVertex_DefWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
       if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      nVertex_SolidWall += geometry->GetnVertex(iMarker);
+      nVertex_DefWall += geometry->GetnVertex(iMarker);
   
   /*--- Allocate an array to hold boundary node coordinates ---*/
   
   su2double **Coord_bound;
-  Coord_bound = new su2double* [nVertex_SolidWall];
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
+  Coord_bound = new su2double* [nVertex_DefWall];
+  for (iVertex = 0; iVertex < nVertex_DefWall; iVertex++)
     Coord_bound[iVertex] = new su2double [nDim];
   
   /*--- Retrieve and store the coordinates of the deforming boundary nodes ---*/
   
-  nVertex_SolidWall = 0;
+  nVertex_DefWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
@@ -464,8 +464,8 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
-          Coord_bound[nVertex_SolidWall][iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
+          Coord_bound[nVertex_DefWall][iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        nVertex_DefWall++;
       }
   }
   
@@ -476,7 +476,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     coord = geometry->node[iPoint]->GetCoord();
     dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
+    for (iVertex = 0; iVertex < nVertex_DefWall; iVertex++) {
       dist2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         dist2 += (coord[iDim]-Coord_bound[iVertex][iDim]) *(coord[iDim]-Coord_bound[iVertex][iDim]);
@@ -498,7 +498,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   /*--- Deallocate the vector of boundary coordinates. ---*/
   
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
+  for (iVertex = 0; iVertex < nVertex_DefWall; iVertex++)
     delete[] Coord_bound[iVertex];
   delete[] Coord_bound;
   
@@ -511,7 +511,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
-  unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
+  unsigned long nLocalVertex_DefWall = 0, nGlobalVertex_DefWall = 0, MaxLocalVertex_DefWall = 0;
   unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
   unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
   
@@ -522,32 +522,32 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      nLocalVertex_NS += geometry->GetnVertex(iMarker);
+      nLocalVertex_DefWall += geometry->GetnVertex(iMarker);
   
   /*--- Communicate to all processors the total number of deforming boundary
    nodes, the maximum number of deforming boundary nodes on any single
    partition, and the number of deforming nodes on each partition. ---*/
   
-  Buffer_Send_nVertex[0] = nLocalVertex_NS;
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  Buffer_Send_nVertex[0] = nLocalVertex_DefWall;
+  SU2_MPI::Allreduce(&nLocalVertex_DefWall, &nGlobalVertex_DefWall,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalVertex_DefWall, &MaxLocalVertex_DefWall, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
   
   /*--- Create and initialize to zero some buffers to hold the coordinates
    of the boundary nodes that are communicated from each partition (all-to-all). ---*/
   
-  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_NS*nDim];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_NS*nDim];
-  unsigned long nBuffer = MaxLocalVertex_NS*nDim;
+  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_DefWall*nDim];
+  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_DefWall*nDim];
+  unsigned long nBuffer = MaxLocalVertex_DefWall*nDim;
   
-  for (iVertex = 0; iVertex < MaxLocalVertex_NS; iVertex++)
+  for (iVertex = 0; iVertex < MaxLocalVertex_DefWall; iVertex++)
     for (iDim = 0; iDim < nDim; iDim++)
       Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
   
   /*--- Retrieve and store the coordinates of the deforming boundary nodes on
    the local partition and broadcast them to all partitions. ---*/
   
-  nVertex_SolidWall = 0;
+  nVertex_DefWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
@@ -556,8 +556,8 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
+          Buffer_Send_Coord[nVertex_DefWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
+        nVertex_DefWall++;
       }
 
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -573,8 +573,8 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
         dist2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim])*
-          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
+          dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_DefWall+iVertex)*nDim+iDim])*
+          (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_DefWall+iVertex)*nDim+iDim]);
         
         if (dist2 < dist) dist = dist2;
       }
@@ -1732,6 +1732,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+         (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -3110,8 +3111,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE) ||
-           (config->GetDesign_Variable(0) == HICKS_HENNE)  ||
-           (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK) ) {
+           (config->GetDesign_Variable(0) == HICKS_HENNE) ||
+           (config->GetDesign_Variable(0) == SURFACE_BUMP) ||
+           (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK)) {
     
     /*--- Apply rotation, displacement and stretching design variables (this
      should be done before the bump function design variables) ---*/
@@ -3132,6 +3134,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       }
     }
     
+    /*--- Apply the design variables to the control point position ---*/
+
+    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+      switch ( config->GetDesign_Variable(iDV) ) {
+        case SURFACE_BUMP :  SetSurface_Bump(geometry, config, iDV, false); break;
+      }
+    }
+
     /*--- Apply the angle of attack design variable ---*/
     
     for (iDV = 0; iDV < config->GetnDV(); iDV++) {
@@ -5124,11 +5134,11 @@ void CSurfaceMovement::SetAngleOfAttack(CGeometry *boundary, CConfig *config, un
 void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
 	unsigned short iMarker;
-	su2double VarCoord[3] = {0.0,0.0,0.0}, VarCoord_[3] = {0.0,0.0,0.0}, *Coord_, *Normal_, ek, fk, BumpSize = 1.0,
-  BumpLoc = 0.0, Coord[3] = {0.0,0.0,0.0}, Normal[3] = {0.0,0.0,0.0},
+	su2double VarCoord[3] = {0.0,0.0,0.0}, VarCoord_[3] = {0.0,0.0,0.0}, *Coord_, *Normal_, ek, fk,
+			Coord[3] = {0.0,0.0,0.0}, Normal[3] = {0.0,0.0,0.0},
   xCoord, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   
-	bool upper = true, double_surface = false;
+	bool upper = true;
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
   
@@ -5224,8 +5234,8 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	su2double xk = config->GetParamDV(iDV, 1);
 	const su2double t2 = 3.0;
   
-	if (config->GetParamDV(iDV, 0) == NO) { upper = false; double_surface = true; }
-	if (config->GetParamDV(iDV, 0) == YES) { upper = true; double_surface = true; }
+	if (config->GetParamDV(iDV, 0) == NO) { upper = false; }
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true; }
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -5246,40 +5256,21 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
         Coord[0] = Coord_[0]*ValCos - Coord_[1]*ValSin;
         Coord[0] = max(0.0, Coord[0]); // Coord x should be always positive
         Coord[1] = Coord_[1]*ValCos + Coord_[0]*ValSin;
-        
+
         Normal[0] = Normal_[0]*ValCos - Normal_[1]*ValSin;
         Normal[1] = Normal_[1]*ValCos + Normal_[0]*ValSin;
 
         /*--- Bump computation ---*/
-        
-				if (double_surface) {
-          ek = log10(0.5)/log10(xk);
-          if (Coord[0] > 10*EPS)
-            fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ), t2);
-          else
-            fk = 0.0;
 
-					/*--- Upper and lower surface ---*/
-          
-					if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
-					if ((!upper) && (Normal[1] < 0)) { VarCoord[1] = -Ampl*fk; }
+        ek = log10(0.5)/log10(xk);
+        if (Coord[0] > 10*EPS) fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ), t2);
+        else fk = 0.0;
 
-				}
-				else {
-					xCoord = Coord[0] - BumpLoc;
-          ek = log10(0.5)/log10((xk+EPS)/BumpSize);
-          if (Coord[0] > 10*EPS)
-            fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize, ek)), t2);
-          else
-            fk = 0.0;
+        /*--- Upper and lower surface ---*/
 
-					/*--- Only one surface ---*/
-          
-					if ((xCoord <= 0.0) || (xCoord >= BumpSize)) VarCoord[1] =  0.0;
-          else VarCoord[1] =  Ampl*fk;
+        if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
+        if ((!upper) && (Normal[1] < 0)) { VarCoord[1] = -Ampl*fk; }
 
-          
-				}
 			}
       
       /*--- Apply the transformation to the coordinate variation ---*/
@@ -5295,6 +5286,60 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 		}
 	}
   
+}
+
+void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+	unsigned long iVertex;
+	unsigned short iMarker;
+	su2double VarCoord[3] = {0.0,0.0,0.0}, ek, fk, *Coord, *Normal, xCoord;
+
+	bool upper = true, double_surface = false;
+
+	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
+
+	if ((iDV == 0) || (ResetDef == true)) {
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+			}
+	}
+
+	/*--- Perform multiple airfoil deformation ---*/
+
+	su2double Ampl = config->GetDV_Value(iDV);
+	su2double x_start = config->GetParamDV(iDV, 0);
+	su2double x_end = config->GetParamDV(iDV, 1);
+	su2double BumpSize = x_end - x_start;
+	su2double BumpLoc = x_start;
+	su2double xk = config->GetParamDV(iDV, 2);
+	const su2double t2 = 3.0;
+
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+
+			if (config->GetMarker_All_DV(iMarker) == YES) {
+
+				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
+				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
+
+				xCoord = (Coord[0] - BumpLoc);
+				ek = log10(0.5)/log10((xk-BumpLoc+EPS)/BumpSize);
+				if (xCoord > 0.0) fk = pow( sin( PI_NUMBER * pow((xCoord+EPS)/BumpSize, ek)), t2);
+				else fk = 0.0;
+
+				if ((xCoord <= 0.0) || (xCoord >= BumpSize)) VarCoord[1] =  0.0;
+				else { VarCoord[1] =  Ampl*fk; }
+
+			}
+
+			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord);
+
+		}
+	}
+
 }
 
 void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {

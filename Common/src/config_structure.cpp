@@ -1445,12 +1445,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
    - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
+   - SURFACE_BUMP ( x_start, x_end, x_Loc )
    - CST ( Lower Surface (0)/Upper Surface (1), Kulfan parameter number, Total number of Kulfan parameters for surface )
-   - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
-   - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
    - NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
    - PARABOLIC ( Center, Thickness )
-   - DISPLACEMENT ( x_Disp, y_Disp, z_Disp )
+   - TRANSLATION ( x_Disp, y_Disp, z_Disp )
    - ROTATION ( x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - OBSTACLE ( Center, Bump size )
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
@@ -2074,15 +2073,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Nonphys_Points   = 0;
   Nonphys_Reconstr = 0;
   
-  /*--- Don't do any deformation if there is no Design variable information ---*/
-  
-  if (Design_Variable == NULL) {
-    Design_Variable = new unsigned short [1];
-    nDV = 1; Design_Variable[0] = NONE;
-  }
-  
   /*--- Apply a bound to the deformation if there is any design variable ---*/
-  else {
+  
+  if (Design_Variable != NULL) {
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
       if (DV_Value != NULL)
         DV_Value[iDV][0] = max(min(DV_Value[iDV][0], DVBound_Upper), DVBound_Lower);
@@ -3946,6 +3939,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
           case FFD_TWIST_2D:          cout << "FFD 2D (twist) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+          case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
           case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
 	        case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
           case TRANSLATION:           cout << "Translation design variable."; break;
@@ -3992,6 +3986,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if ((Design_Variable[iDV] ==  TRANSLATION) ||
             (Design_Variable[iDV] ==  NACA_4DIGITS) ||
             (Design_Variable[iDV] ==  CST) ||
+            (Design_Variable[iDV] ==  SURFACE_BUMP) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
             (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
