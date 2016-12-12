@@ -1154,19 +1154,20 @@ enum ENUM_PARAM {
   FFD_TWIST = 8,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
   FFD_THICKNESS = 9,		     /*!< \brief Free form deformation for 3D design (thickness change). */
   FFD_DIHEDRAL_ANGLE = 10,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
-  FFD_ROTATION = 12,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
-  FFD_CONTROL_POINT_2D = 13, /*!< \brief Free form deformation for 2D design (change a control point). */
-  FFD_CAMBER_2D = 14,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 15,		 /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_TWIST_2D = 16,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_CONTROL_SURFACE = 17,	 /*!< \brief Free form deformation for 3D design (control surface). */
-  HICKS_HENNE = 18,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
-  PARABOLIC = 19,		         /*!< \brief Parabolic airfoil definition as design variables. */
-  NACA_4DIGITS = 20,	       /*!< \brief The four digits NACA airfoil family as design variables. */
-  AIRFOIL = 21,		           /*!< \brief Airfoil definition as design variables. */
-  SURFACE_FILE = 22,		     /*!< Nodal coordinates set using a surface file. */
-  CUSTOM = 23,               /*!< 'CUSTOM' for use in external python analysis. */
-  CST = 24,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  FFD_ROTATION = 11,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
+  FFD_CONTROL_POINT_2D = 12, /*!< \brief Free form deformation for 2D design (change a control point). */
+  FFD_CAMBER_2D = 13,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_THICKNESS_2D = 14,		 /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_TWIST_2D = 15,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_CONTROL_SURFACE = 16,	 /*!< \brief Free form deformation for 3D design (control surface). */
+  HICKS_HENNE = 17,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
+  PARABOLIC = 18,		         /*!< \brief Parabolic airfoil definition as design variables. */
+  NACA_4DIGITS = 19,	       /*!< \brief The four digits NACA airfoil family as design variables. */
+  AIRFOIL = 20,		           /*!< \brief Airfoil definition as design variables. */
+  CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
+  SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
+  CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
   NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
@@ -1179,6 +1180,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
+("SURFACE_BUMP", SURFACE_BUMP)
 ("ANGLE_OF_ATTACK", ANGLE_OF_ATTACK)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("TRANSLATION", TRANSLATION)
@@ -2129,6 +2131,7 @@ public:
         case FFD_THICKNESS_2D:     nParamDV = 2; break;
         case FFD_TWIST_2D:         nParamDV = 3; break;
         case HICKS_HENNE:          nParamDV = 2; break;
+        case SURFACE_BUMP:         nParamDV = 3; break;
         case CST:                  nParamDV = 3; break;
         case ANGLE_OF_ATTACK:      nParamDV = 1; break;
         case SCALE:                nParamDV = 0; break;

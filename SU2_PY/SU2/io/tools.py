@@ -537,10 +537,9 @@ def get_dvMap():
     """ get dictionary that maps design variable 
         kind id number to name """
     dv_map = { 1   : "HICKS_HENNE"           ,
-               2   : "COSINE_BUMP"           ,
-               3   : "SPHERICAL"             ,
+               2   : "SURFACE_BUMP"          ,
                4   : "NACA_4DIGITS"          ,
-               5   : "DISPLACEMENT"          ,
+               5   : "TRANSLATION"          ,
                6   : "ROTATION"              ,
                7   : "FFD_CONTROL_POINT"     ,
                8   : "FFD_DIHEDRAL_ANGLE"    ,
@@ -548,7 +547,6 @@ def get_dvMap():
                10  : "FFD_ROTATION"          ,
                11  : "FFD_CAMBER"            ,
                12  : "FFD_THICKNESS"         ,
-               14  : "FOURIER"               ,
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
@@ -657,19 +655,19 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "HICKS_HENNE"        :
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r', %s, %s')
+    elif kindID == "SURFACE_BUMP"        :
+        header.append(r',"Loc_Start","Loc_End","Loc_Max"')
+        write_format.append(r', %s, %s, %s')
     elif kindID == "CST"        :
         header.append(r',"Up/Down","Kulfan number", "Total Kulfan numbers"')
         write_format.append(r', %s, %s', '%s')
-    elif kindID == "GAUSS_BUMP"       :
-        header.append(r',"Up/Down","Loc_Max","Size_Bump"')
-        write_format.append(r', %s, %s, %s')
     elif kindID == "FAIRING"       :
         header.append(r',"ControlPoint_Index","Theta_Disp","R_Disp"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "NACA_4DIGITS"       :
         header.append(r',"1st_digit","2nd_digit","3rd&4th_digits"')
         write_format.append(r', %s, %s, %s')
-    elif kindID == "DISPLACEMENT"       : 
+    elif kindID == "TRANSLATION"       : 
         header.append(r',"x_Disp","y_Disp","z_Disp"')
         write_format.append(r', %s, %s, %s')
     elif kindID == "ROTATION"           : 

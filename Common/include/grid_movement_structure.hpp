@@ -1161,6 +1161,15 @@ public:
 	 */
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
+	/*!
+	 * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetSurface_Bump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
    * \param[in] boundary - Geometry of the boundary.

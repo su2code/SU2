@@ -382,6 +382,12 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       surface_movement->SetHicksHenne(geometry, config, iDV, true);
     }
     
+    /*--- Surface bump design variable ---*/
+
+    else if (config->GetDesign_Variable(iDV) == SURFACE_BUMP) {
+      surface_movement->SetSurface_Bump(geometry, config, iDV, true);
+    }
+
     /*--- Kulfan (CST) design variable ---*/
     
     else if (config->GetDesign_Variable(iDV) == CST) {
