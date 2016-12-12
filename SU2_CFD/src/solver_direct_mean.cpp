@@ -13763,7 +13763,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
-  su2double *tmp_residual = new su2double[nPrimVar];
+  su2double *tmp_residual = new su2double[nVar];
   
   su2double coeff;
   su2double P_static, rho_static;
@@ -13779,7 +13779,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
         nDonorVertex = GetnSlidingStates(iMarker, iVertex);
 
-        for (iVar = 0; iVar < nPrimVar; iVar++)
+        for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = 0.0;
 
         for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
@@ -13823,7 +13823,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
 
-          for (iVar = 0; iVar < nPrimVar; iVar++)
+          for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] += coeff*tmp_residual[iVar];
         }
 
