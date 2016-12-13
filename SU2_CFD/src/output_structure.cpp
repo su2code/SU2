@@ -2000,6 +2000,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   nVar_Consv = nVar_First + nVar_Second + nVar_Third;
   nVar_Total = nVar_Consv;
   
+  if ((Kind_Solver == DISC_ADJ_EULER)         ||
+      (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == DISC_ADJ_RANS)) {
+    iVar_Sens    = nVar_Total; nVar_Total += 1;
+    iVar_SensDim = nVar_Total; nVar_Total += nDim;
+  }
+
   if (!config->GetLow_MemoryOutput()) {
     
     /*--- Add the limiters ---*/
@@ -2081,13 +2088,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_FEA_Stress  = nVar_Total; nVar_Total += 3;
       if (geometry->GetnDim() == 3) {iVar_FEA_Stress_3D = nVar_Total; nVar_Total += 3;}
       iVar_FEA_Extra = nVar_Total; nVar_Total += 1;
-    }
-    
-    if ((Kind_Solver == DISC_ADJ_EULER)         ||
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
-      iVar_Sens    = nVar_Total; nVar_Total += 1;
-      iVar_SensDim = nVar_Total; nVar_Total += nDim;
     }
     
     if (config->GetExtraOutput()) {
@@ -2333,7 +2333,66 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
   }
-  
+
+  if ((Kind_Solver == DISC_ADJ_EULER)    ||
+      (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == DISC_ADJ_RANS)) {
+    /*--- Loop over this partition to collect the current variable ---*/
+
+    jPoint = 0;
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+      /*--- Check for halos & write only if requested ---*/
+
+      if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+        /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+
+        Buffer_Send_Var[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(0);
+        Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(1);
+        if (nDim == 3)
+          Buffer_Send_Vol[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(2);
+        jPoint++;
+      }
+    }
+
+    /*--- Gather the data on the master node. ---*/
+
+#ifdef HAVE_MPI
+    SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    if (nDim == 3)
+      SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+    for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+    if (nDim == 3)
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
+
+    /*--- The master node unpacks and sorts this variable by global index ---*/
+
+    if (rank == MASTER_NODE) {
+      jPoint = 0; iVar = iVar_SensDim;
+      for (iProcessor = 0; iProcessor < size; iProcessor++) {
+        for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+          /*--- Get global index, then loop over each variable and store ---*/
+
+          iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+          Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+          Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+          if (nDim == 3)
+            Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+          jPoint++;
+        }
+
+        /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+        jPoint = (iProcessor+1)*nBuffer_Scalar;
+      }
+    }
+  }
   if (!config->GetLow_MemoryOutput()) {
     
     /*--- Additional communication routine for the grid velocity. Note that
@@ -2971,66 +3030,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
             if (!config->GetDiscrete_Adjoint())
               Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-            jPoint++;
-          }
-          
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-          
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-    }
-    
-    if ((Kind_Solver == DISC_ADJ_EULER)    ||
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
-      /*--- Loop over this partition to collect the current variable ---*/
-      
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (!Local_Halo[iPoint] || Wrt_Halo) {
-          
-          /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
-          
-          Buffer_Send_Var[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(0);
-          Buffer_Send_Res[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(1);
-          if (nDim == 3)
-            Buffer_Send_Vol[jPoint] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(2);
-          jPoint++;
-        }
-      }
-      
-      /*--- Gather the data on the master node. ---*/
-      
-#ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-      if (nDim == 3)
-        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
-      if (nDim == 3)
-        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
-#endif
-      
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-      
-      if (rank == MASTER_NODE) {
-        jPoint = 0; iVar = iVar_SensDim;
-        for (iProcessor = 0; iProcessor < size; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-            
-            /*--- Get global index, then loop over each variable and store ---*/
-            
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-            if (nDim == 3)
-              Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
             jPoint++;
           }
           
@@ -9814,88 +9813,89 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   unsigned short iZone;
 
-  CSolver **solver = new CSolver*[val_nZone];
+  if (!config[ZONE_0]->GetLow_MemoryOutput()){
+    CSolver **solver = new CSolver*[val_nZone];
 
-  for (iZone = 0; iZone < val_nZone; iZone++) {
+    for (iZone = 0; iZone < val_nZone; iZone++) {
 
 
-    nPoint = geometry[iZone]->GetnPoint();
-    nDim   = geometry[iZone]->GetnDim();
-    nMarker = config[iZone]->GetnMarker_All();
-    nVar = nDim + 1;
+      nPoint = geometry[iZone]->GetnPoint();
+      nDim   = geometry[iZone]->GetnDim();
+      nMarker = config[iZone]->GetnMarker_All();
+      nVar = nDim + 1;
 
-    /*--- We create a baseline solver to easily merge the sensitivity information ---*/
+      /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 
-    vector<string> fieldnames;
-    fieldnames.push_back("\"Point\",");
-    fieldnames.push_back("\"x\",");
-    fieldnames.push_back("\"y\",");
-    if (nDim == 3) {
-      fieldnames.push_back("\"z\",");
-    }
-    fieldnames.push_back("\"Sensitivity_x\",");
-    fieldnames.push_back("\"Sensitivity_y\",");
-    if (nDim == 3) {
-      fieldnames.push_back("\"Sensitivity_z\",");
-    }
-    fieldnames.push_back("\"Sensitivity\"");
-
-    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
-
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        solver[iZone]->node[iPoint]->SetSolution(iDim, geometry[iZone]->node[iPoint]->GetCoord(iDim));
+      vector<string> fieldnames;
+      fieldnames.push_back("\"Point\",");
+      fieldnames.push_back("\"x\",");
+      fieldnames.push_back("\"y\",");
+      if (nDim == 3) {
+        fieldnames.push_back("\"z\",");
       }
-      for (iVar = 0; iVar < nDim; iVar++) {
-        solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
+      fieldnames.push_back("\"Sensitivity_x\",");
+      fieldnames.push_back("\"Sensitivity_y\",");
+      if (nDim == 3) {
+        fieldnames.push_back("\"Sensitivity_z\",");
       }
-    }
+      fieldnames.push_back("\"Sensitivity\"");
 
-    /*--- Compute the sensitivity in normal direction ---*/
+      solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
 
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          solver[iZone]->node[iPoint]->SetSolution(iDim, geometry[iZone]->node[iPoint]->GetCoord(iDim));
+        }
+        for (iVar = 0; iVar < nDim; iVar++) {
+          solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
+        }
+      }
 
-      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
+      /*--- Compute the sensitivity in normal direction ---*/
 
-        nVertex = geometry[iZone]->GetnVertex(iMarker);
+      for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-        for (iVertex = 0; iVertex < nVertex; iVertex++) {
-          iPoint = geometry[iZone]->vertex[iMarker][iVertex]->GetNode();
-          Normal = geometry[iZone]->vertex[iMarker][iVertex]->GetNormal();
-          Prod = 0.0;
-          Area = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
+        if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+           (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+           (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
 
-            /*--- Retrieve the gradient calculated with discrete adjoint method ---*/
+          nVertex = geometry[iZone]->GetnVertex(iMarker);
 
-            SensDim = geometry[iZone]->GetSensitivity(iPoint, iDim);
+          for (iVertex = 0; iVertex < nVertex; iVertex++) {
+            iPoint = geometry[iZone]->vertex[iMarker][iVertex]->GetNode();
+            Normal = geometry[iZone]->vertex[iMarker][iVertex]->GetNormal();
+            Prod = 0.0;
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
 
-            /*--- Calculate scalar product for projection onto the normal vector ---*/
+              /*--- Retrieve the gradient calculated with discrete adjoint method ---*/
 
-            Prod += Normal[iDim]*SensDim;
+              SensDim = geometry[iZone]->GetSensitivity(iPoint, iDim);
 
-            Area += Normal[iDim]*Normal[iDim];
+              /*--- Calculate scalar product for projection onto the normal vector ---*/
+
+              Prod += Normal[iDim]*SensDim;
+
+              Area += Normal[iDim]*Normal[iDim];
+            }
+
+            Area = sqrt(Area);
+
+            /*--- Projection of the gradient onto the normal vector of the surface ---*/
+
+            Sens = Prod/Area;
+
+            solver[iZone]->node[iPoint]->SetSolution(2*nDim, Sens);
+
           }
-
-          Area = sqrt(Area);
-
-          /*--- Projection of the gradient onto the normal vector of the surface ---*/
-
-          Sens = Prod/Area;
-
-          solver[iZone]->node[iPoint]->SetSolution(2*nDim, Sens);
-
         }
       }
     }
+
+    /*--- Merge the information and write the output files ---*/
+
+    SetBaselineResult_Files(solver,geometry, config, 0, val_nZone);
   }
-
-  /*--- Merge the information and write the output files ---*/
-
-  SetBaselineResult_Files(solver,geometry, config, 0, val_nZone);
-
 }
 
 
