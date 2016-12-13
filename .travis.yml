@@ -13,7 +13,7 @@ notifications:
   
 branches:
     only:
-        - fix_#341ustpostprocessing
+        - fix_#341_ustpostprocessing
 
 env:
     global:
