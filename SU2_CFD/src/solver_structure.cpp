@@ -2335,7 +2335,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- The first line is the header ---*/
 
   getline (solution_file, text_line);
-//  for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ){
+
   while (getline (solution_file, text_line) && iPoint_Global < geometry[iZone]->GetnPointDomain()) {
   	istringstream point_line(text_line);
 
