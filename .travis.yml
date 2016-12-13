@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - a.rubino@tudelft.nl
   
 branches:
     only:
-        - develop
+        - fix_#341ustpostprocessing
 
 env:
     global:

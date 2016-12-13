@@ -2329,38 +2329,38 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   /*--- Read all lines in the restart file ---*/
-  
+
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  
+
   /*--- The first line is the header ---*/
-  
+
   getline (solution_file, text_line);
-  
-  while (getline (solution_file, text_line)) {
-    istringstream point_line(text_line);
-    
-    /*--- Retrieve local index. If this node from the restart file lives
+//  for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ){
+  while (getline (solution_file, text_line) && iPoint_Global < geometry[iZone]->GetnPointDomain()) {
+  	istringstream point_line(text_line);
+
+  	/*--- Retrieve local index. If this node from the restart file lives
      on a different processor, the value of iPoint_Local will be -1, as
      initialized above. Otherwise, the local index for this node on the
      current processor will be returned and used to instantiate the vars. ---*/
-    
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
-      
-      /*--- The PointID is not stored --*/
-      
-      point_line >> index;
-      
-      /*--- Store the solution (starting with node coordinates) --*/
-      
-      for (iField = 0; iField < nVar; iField++)
-        point_line >> Solution[iField];
-      
-      node[iPoint_Local]->SetSolution(Solution);
-      
-      
-    }
-    iPoint_Global++;
+
+  	iPoint_Local = Global2Local[iPoint_Global];
+  	if (iPoint_Local >= 0) {
+
+  		/*--- The PointID is not stored --*/
+
+  		point_line >> index;
+
+  		/*--- Store the solution (starting with node coordinates) --*/
+
+  		for (iField = 0; iField < nVar; iField++)
+  			point_line >> Solution[iField];
+
+  		node[iPoint_Local]->SetSolution(Solution);
+
+
+  	}
+  	iPoint_Global++;
   }
   
   /*--- Close the restart file ---*/
