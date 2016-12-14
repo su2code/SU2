@@ -9022,66 +9022,85 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, PositiveZArea;
+  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea;
+  su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
+
+  bool axisymmetric = config->GetAxisymmetric();
+
   int rank = MASTER_NODE;
-  
-#ifndef HAVE_MPI
-  
-  PositiveZArea = 0.0;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          Normal = vertex[iMarker][iVertex]->GetNormal();
-          if (Normal[nDim-1] < 0) PositiveZArea -= Normal[nDim-1];
-        }
-      }
-  }
-  
-#else
-  
-  su2double TotalPositiveZArea;
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  PositiveZArea = 0.0;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          Normal = vertex[iMarker][iVertex]->GetNormal();
-          if (Normal[nDim-1] < 0) PositiveZArea -= Normal[nDim-1];
-        }
-      }
-  }
-  SU2_MPI::Reduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  if (rank == MASTER_NODE) PositiveZArea = TotalPositiveZArea;
-  SU2_MPI::Bcast(&PositiveZArea, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  
 #endif
   
-  if (config->GetRefAreaCoeff() == 0.0)
-    config->SetRefAreaCoeff(PositiveZArea);
+  PositiveXArea = 0.0;
+  PositiveYArea = 0.0;
+  PositiveZArea = 0.0;
+  WettedArea = 0.0;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Boundary = config->GetMarker_All_KindBC(iMarker);
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
+    if (((Boundary == EULER_WALL)              ||
+         (Boundary == HEAT_FLUX)               ||
+         (Boundary == ISOTHERMAL)              ||
+         (Boundary == LOAD_BOUNDARY)           ||
+         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+
+        if (node[iPoint]->GetDomain()) {
+          Normal = vertex[iMarker][iVertex]->GetNormal();
+
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*node[iPoint]->GetCoord(1);
+          else AxiFactor = 1.0;
+
+          if (nDim == 2) WettedArea += AxiFactor * sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1]);
+          if (nDim == 3) WettedArea += sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
+
+          if (Normal[0] < 0) PositiveXArea -= Normal[0];
+          if (Normal[1] < 0) PositiveYArea -= Normal[1];
+          if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+
+        }
+      }
+  }
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  TotalPositiveXArea = PositiveXArea;
+  TotalPositiveYArea = PositiveYArea;
+  TotalPositiveZArea = PositiveZArea;
+  TotalWettedArea    = WettedArea;
+#endif
+    
+  if (config->GetRefAreaCoeff() == 0.0) {
+  	if (nDim == 3) config->SetRefAreaCoeff(PositiveZArea);
+  	else config->SetRefAreaCoeff(PositiveYArea);
+  }
   
   if (rank == MASTER_NODE) {
-    if (nDim == 2) cout << "Area projection in the y-plane = "<< PositiveZArea << "." << endl;
-    else cout << "Area projection in the z-plane = "<< PositiveZArea << "." << endl;
+
+  	cout << "Wetted area = "<< TotalWettedArea;
+    if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+
+    cout << "Area projection in the x-plane = "<< TotalPositiveXArea;
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2."; else cout <<" ft^2."; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m."; else cout <<" ft."; }
+
+    cout << " y-plane = "<< TotalPositiveYArea;
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2."; else cout <<" ft^2."; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+
+    if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
+    if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+
   }
   
 }
