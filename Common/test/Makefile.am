@@ -35,6 +35,7 @@
 
 check_PROGRAMS  =
 check_PROGRAMS += unit_test_config
+check_PROGRAMS += resolution_tensor_test
 
 # Eventually these will likely be required
 AM_CPPFLAGS = -I$(top_srcdir)/Common/include
@@ -42,13 +43,18 @@ AM_CPPFLAGS = -I$(top_srcdir)/Common/include
 #LIBS = 
 LDADD = $(top_builddir)/Common/lib/libSU2.a
 
+# always link to built dependencies from ./externals
+AM_CPPFLAGS += @su2_externals_INCLUDES@
+LDADD += @su2_externals_LIBS@
+
 # Test sources
 unit_test_config_SOURCES = unit_test_config.cpp
-
+resolution_tensor_test_SOURCES = resolution_tensor_test.cpp
 
 # Tests to be run
 TESTS  =
 TESTS += unit_test_config
+TESTS += resolution_tensor_test
 
 # Any of above we expect to fail?
 #XFAIL_TESTS =
