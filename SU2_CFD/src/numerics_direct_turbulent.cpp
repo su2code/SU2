@@ -1233,8 +1233,8 @@ void CUpwSca_TurbKE::ComputeResidual(su2double *val_residual, su2double **val_Ja
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+3);
   AD::SetPreaccIn(V_j, nDim+3);
-  AD::SetPreaccIn(TurbVar_i,2);
-  AD::SetPreaccIn(TurbVar_j,2);
+  AD::SetPreaccIn(TurbVar_i,nVar);
+  AD::SetPreaccIn(TurbVar_j,nVar);
   AD::SetPreaccIn(Normal, nDim);
 
   if (incompressible) {
@@ -1368,7 +1368,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
   diff_i_zeta = Laminar_Viscosity_i + sigma_zeta_i*Eddy_Viscosity_i;
   diff_j_zeta = Laminar_Viscosity_j + sigma_zeta_j*Eddy_Viscosity_j;
   
-  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+  diff_kine = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
   diff_f = Lm_i*Lm_i; //here
@@ -1527,7 +1527,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
   diff_i_zeta = Laminar_Viscosity_i + sigma_zeta_i*Eddy_Viscosity_i;
   diff_j_zeta = Laminar_Viscosity_j + sigma_zeta_j*Eddy_Viscosity_j;
   
-  diff_kine  = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
+  diff_kine = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
   diff_f = Lm_i*Lm_i; //here
