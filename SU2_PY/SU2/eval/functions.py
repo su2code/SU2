@@ -115,7 +115,18 @@ def function( func_name, config, state=None ):
         func_out = 0.0
         for func in func_name:
             sign = su2io.get_objectiveSign(func)
-            func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
+            # Evaluate Objective Function
+            # scaling and sign
+            if objectives[func]['CTYPE']=='NONE':
+                func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
+            else:
+                value = state['FUNCTIONS'][func]
+                valuec = float(objectives[func]['CVAL'])                   
+                if (objectives[this_obj]['CTYPE']=='=' or \
+                    (objectives[this_obj]['CTYPE']=='>' and value < valuec) or \
+                    (objectives[this_obj]['CTYPE']=='<' and value > valuec )):
+                    func +=objectives[func]['SCALE']*(valuec - value)**2.0
+                
         state['FUNCTIONS']['COMBO'] = func_out
     else:
         func_out = state['FUNCTIONS'][func_name]
