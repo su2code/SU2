@@ -857,6 +857,8 @@ inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrd
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
+inline unsigned short CConfig::GetKind_ADER_Predictor(void) { return Kind_ADER_Predictor; }
+
 inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_TimeIntScheme_Wave; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }

@@ -10453,7 +10453,8 @@ private:
 
   /*!
    * \brief Virtual function, which computes the spatial residual of the ADER-DG
-            predictor step for the given volume element and solution.
+            predictor step for the given volume element and solution using an
+            aliased discretization.
    * \param[in]  config  - Definition of the particular problem.
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
@@ -10462,11 +10463,29 @@ private:
                            function.
    * \param[out] work    - Work array.
    */
-  virtual void ADER_DG_PredictorResidual(CConfig           *config,
-                                         CVolumeElementFEM *elem,
-                                         const su2double   *sol,
-                                         su2double         *res,
-                                         su2double         *work);
+  virtual void ADER_DG_AliasedPredictorResidual(CConfig           *config,
+                                                CVolumeElementFEM *elem,
+                                                const su2double   *sol,
+                                                su2double         *res,
+                                                su2double         *work);
+
+  /*!
+   * \brief Virtual function, which computes the spatial residual of the ADER-DG
+            predictor step for the given volume element and solution using a
+            non-aliased discretization.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elem    - Volume element for which the spatial residual of the
+                           predictor step must be computed.
+   * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[out] res     - Residual of the spatial DOFs to be computed by this
+                           function.
+   * \param[out] work    - Work array.
+   */
+  virtual void ADER_DG_NonAliasedPredictorResidual(CConfig           *config,
+                                                   CVolumeElementFEM *elem,
+                                                   const su2double   *sol,
+                                                   su2double         *res,
+                                                   su2double         *work);
 
   /*!
    * \brief Function, which sets up the persistent communication of the flow
@@ -10799,7 +10818,8 @@ private:
 
   /*!
    * \brief Function, which computes the spatial residual of the ADER-DG
-            predictor step for the given volume element and solution.
+            predictor step for the given volume element and solution using an
+            aliased discretization.
    * \param[in]  config  - Definition of the particular problem.
    * \param[in]  elem    - Volume element for which the spatial residual of the
                            predictor step must be computed.
@@ -10808,11 +10828,29 @@ private:
                            function.
    * \param[out] work    - Work array.
    */
-  void ADER_DG_PredictorResidual(CConfig           *config,
-                                 CVolumeElementFEM *elem, 
-                                 const su2double   *sol,
-                                 su2double         *res,
-                                 su2double         *work);
+  void ADER_DG_AliasedPredictorResidual(CConfig           *config,
+                                        CVolumeElementFEM *elem, 
+                                        const su2double   *sol,
+                                        su2double         *res,
+                                        su2double         *work);
+
+  /*!
+   * \brief Function, which computes the spatial residual of the ADER-DG
+            predictor step for the given volume element and solution using a
+            non-aliased discretization.
+   * \param[in]  config  - Definition of the particular problem.
+   * \param[in]  elem    - Volume element for which the spatial residual of the
+                           predictor step must be computed.
+   * \param[in]  sol     - Solution for which the residual must be computed.
+   * \param[out] res     - Residual of the spatial DOFs to be computed by this
+                           function.
+   * \param[out] work    - Work array.
+   */
+  void ADER_DG_NonAliasedPredictorResidual(CConfig           *config,
+                                           CVolumeElementFEM *elem,
+                                           const su2double   *sol,
+                                           su2double         *res,
+                                           su2double         *work);
 
   /*!
    * \brief Function to compute the penalty terms in the integration

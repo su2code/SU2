@@ -186,11 +186,14 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
 
     /* ADER-DG scheme. Determine the size needed for the predictor step
-       and make sure that sizeVecTmp is big enough. */
+       and make sure that sizeVecTmp is big enough. Note that sizePredictorADER
+       is based on an aliased discretization, for which the memory requirements
+       are more than for a non-aliased discretization for the predictor. */
     const unsigned short nTimeDOFs       = config->GetnTimeDOFsADER_DG();
     const unsigned int sizePredictorADER = 4*nVar*nDOFsMax*nTimeDOFs
                                          + 2*nVar*nDOFsMax
-                                         + (nDim+1)*nVar*nIntegrationMax;
+                                         + nDim*nVar*nDOFsMax
+                                         + nDim*nDim*nVar*nIntegrationMax;
 
     sizeVecTmp = max(sizeVecTmp, sizePredictorADER);
   }
@@ -1752,12 +1755,12 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
      assumed to be the direction in which the solution does not change.
      First set the parameters, which define this test case. */
 
-  const su2double MachVortex  = 0.5;     // Mach number of the undisturbed flow.
-  const su2double x0Vortex    = 0.0;     // Initial x-coordinate of the vortex center.
-  const su2double y0Vortex    = 0.0;     // Initial y-coordinate of the vortex center.
-  const su2double RVortex     = 0.1;     // Radius of the vortex.
-  const su2double epsVortex   = 1.0;     // Strength of the vortex.
-  const su2double thetaVortex = 0.0;     // Advection angle (in degrees) of the vortex.
+  const su2double MachVortex  =  0.5;     // Mach number of the undisturbed flow.
+  const su2double x0Vortex    = -0.5;     // Initial x-coordinate of the vortex center.
+  const su2double y0Vortex    =  0.0;     // Initial y-coordinate of the vortex center.
+  const su2double RVortex     =  0.1;     // Radius of the vortex.
+  const su2double epsVortex   =  1.0;     // Strength of the vortex.
+  const su2double thetaVortex =  0.0;     // Advection angle (in degrees) of the vortex.
 
   /* Compute the free stream velocities in x- and y-direction. */
   const su2double VelInf = MachVortex*sqrt(Gamma);
@@ -2140,6 +2143,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
   const unsigned short nTimeDOFs              = config->GetnTimeDOFsADER_DG();
   const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
   const su2double     *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
+  const bool          useAliasedPredictor     = config->GetKind_ADER_Predictor() == ADER_ALIASED_PREDICTOR;
 
   /*----------------------------------------------------------------------*/
   /*--- Determine the reference values for the conservative variables. ---*/
@@ -2272,10 +2276,15 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
 
         /*--------------------------------------------------------------------*/
         /*--- Compute the spatial residual of the predictor step for the   ---*/
-        /*--- current time integration point.                              ---*/
+        /*--- current time integration point. A distinction is             ---*/
+        /*--- made between an aliased and a non-aliased evaluation of the  ---*/
+        /*--- predictor residual.                                          ---*/
         /*--------------------------------------------------------------------*/
 
-        ADER_DG_PredictorResidual(config, &volElem[l], solInt, resInt, work);
+        if( useAliasedPredictor )
+          ADER_DG_AliasedPredictorResidual(config, &volElem[l], solInt, resInt, work);
+        else
+          ADER_DG_NonAliasedPredictorResidual(config, &volElem[l], solInt, resInt, work);
 
         /*--------------------------------------------------------------------*/
         /*--- Update the total residual with the residual of the current   ---*/
@@ -2339,14 +2348,140 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short 
   }
 }
 
-void CFEM_DG_EulerSolver::ADER_DG_PredictorResidual(CConfig           *config,
-                                                    CVolumeElementFEM *elem,
-                                                    const su2double   *sol,
-                                                    su2double         *res,
-                                                    su2double         *work) {
+void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual(CConfig           *config,
+                                                           CVolumeElementFEM *elem,
+                                                           const su2double   *sol,
+                                                           su2double         *res,
+                                                           su2double         *work) {
+
+  /*--- Get the necessary information from the standard element. ---*/
+  const unsigned short ind                = elem->indStandardElement;
+  const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
+  const unsigned short nDOFs              = elem->nDOFsSol;
+  const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+  const su2double *matDerBasisInt         = matBasisInt + nDOFs*nInt;
+  const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+  const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  /* Set the pointers for fluxesDOF, gradFluxesInt and divFlux. Note that the
+     same array can be used for the first and last array, because divFlux is
+     needed after fluxesDOF. */
+  su2double *fluxesDOF     = work;
+  su2double *gradFluxesInt = fluxesDOF + nDOFs*nVar*nDim;
+  su2double *divFlux       = work;
+
+  /* Determine the offset between the r-derivatives and s-derivatives, which is
+     also the offset between s- and t-derivatives, of the fluxes. */
+  const unsigned short offDeriv = nVar*nInt*nDim;
+
+  /* Store the number of metric points per integration point, which depends
+     on the number of dimensions. */
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+
+  /* Initialize the residuals to zero. */
+  for(unsigned short i=0; i<(nVar*nDOFs); ++i) res[i] = 0.0;
+
+  /*-- Compute the Cartesian fluxes in the DOFs. ---*/
+  for(unsigned short i=0; i<nDOFs; ++i) {
+
+    /* Set the pointers to the location where the solution of this DOF is
+       stored and the location where the Cartesian fluxes are stored. */
+    const su2double *solDOF = sol       + i*nVar;
+    su2double       *fluxes = fluxesDOF + i*nVar*nDim;
+
+    /*--- Compute the velocities and pressure in this DOF. ---*/
+    const su2double DensityInv = 1.0/solDOF[0];
+    su2double vel[3], Velocity2 = 0.0;
+    for(unsigned short j=0; j<nDim; ++j) {
+      vel[j]     = solDOF[j+1]*DensityInv;
+      Velocity2 += vel[j]*vel[j];
+    }
+
+    const su2double TotalEnergy  = solDOF[nDim+1]*DensityInv;
+    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+
+    FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+    const su2double Pressure = FluidModel->GetPressure();
+
+    /* Loop over the number of dimensions for the number of fluxes. */
+    unsigned short ll = 0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+
+      /* Mass flux for the current direction. */
+      fluxes[ll++] = solDOF[iDim+1];
+
+      /* Momentum fluxes for the current direction. */
+      for(unsigned short jDim=0; jDim<nDim; ++jDim)
+        fluxes[ll+jDim] = solDOF[iDim+1]*vel[jDim];
+      fluxes[ll+iDim]  += Pressure;
+
+      ll += nDim;
+
+      /* Energy flux for the current direction. */
+      fluxes[ll++] = (solDOF[nDim+1] + Pressure)*vel[iDim];
+    }
+  }
+
+  /* Compute the derivatives of the Cartesian fluxes w.r.t. the parametric
+     coordinates in the integration points. */
+  DenseMatrixProduct(nInt*nDim, nVar*nDim, nDOFs, matDerBasisInt, fluxesDOF,
+                     gradFluxesInt);
+
+  /*--- Loop over the integration points to compute the divergence of the inviscid
+        fluxes in these integration points, multiplied by the integration weight. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the location where the data of the derivatives of the
+       fluxes of this integration point starts. */
+    const su2double *gradFluxes = gradFluxesInt + nVar*nDim*i;
+
+    /* Easier storage of the metric terms in this integration point. The +1
+       is present, because the first element of the metric terms is the
+       Jacobian in the integration point. Also set the point where the divergence
+       of the flux terms is stored for the current integration point. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint + 1;
+    su2double       *divFluxInt  = divFlux + nVar*i;
+
+    /* Initialize the divergence to zero. */
+    for(unsigned short j=0; j<nVar; ++j) divFluxInt[j] = 0.0;
+
+    /* Loop over the nDim parametric coordinates. */
+    unsigned short ll = 0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+
+      /* Set the pointer to derivatives of this parametric coordinate. */
+      const su2double *derFluxes = gradFluxes + iDim*offDeriv;
+
+      /* Loop over the number of Cartesian dimensions. */
+      for(unsigned short jDim=0; jDim<nDim; ++jDim, ++ll) {
+
+        /* Set the pointer to the derivatives of the Cartesian flux in
+           the jDim direction. */
+        const su2double *derFlux = derFluxes + jDim*nVar;
+
+        /* Update the divergence for all equations. */
+        for(unsigned short j=0; j<nVar; ++j)
+          divFluxInt[j] += derFlux[j]*metricTerms[ll];
+      }
+    }
+
+    /* Multiply the divergence with the integration weight. */
+    for(unsigned short j=0; j<nVar; ++j) divFluxInt[j] *= weights[i];
+  }
+
+  /* Compute the residual in the DOFs, which is the matrix product of
+     basisFunctionsIntTrans and divFlux. */
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
+}
+
+void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *config,
+                                                              CVolumeElementFEM *elem,
+                                                              const su2double   *sol,
+                                                              su2double         *res,
+                                                              su2double         *work) {
 
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
-     can be used form both help arrays. */
+     can be used for both help arrays. */
   su2double *solAndGradInt = work;
   su2double *divFlux       = work;
 
@@ -4623,13 +4758,23 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CFEM_DG_NSSolver::ADER_DG_PredictorResidual(CConfig           *config,
-                                                 CVolumeElementFEM *elem,
-                                                 const su2double   *sol,
-                                                 su2double         *res,
-                                                 su2double         *work) {
+void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *config,
+                                                        CVolumeElementFEM *elem,
+                                                        const su2double   *sol,
+                                                        su2double         *res,
+                                                        su2double         *work) {
 
-  cout << "CFEM_DG_NSSolver::ADER_DG_PredictorResidual: Not implemented yet" << endl;
+  cout << "CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual: Not implemented yet" << endl;
+  exit(1);
+}
+
+void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *config,
+                                                           CVolumeElementFEM *elem,
+                                                           const su2double   *sol,
+                                                           su2double         *res,
+                                                           su2double         *work) {
+
+  cout << "CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual: Not implemented yet" << endl;
   exit(1);
 }
 

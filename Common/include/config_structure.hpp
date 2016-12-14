@@ -418,6 +418,7 @@ private:
 	Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
 	Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_FEM_Flow,	/*!< \brief Time integration for the flow equations. */
+  Kind_ADER_Predictor,          /*!< \brief Predictor step of the ADER-DG time integration scheme. */
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
 	Kind_TimeIntScheme_AdjLevelSet,	/*!< \brief Time integration for the adjoint level set model. */
@@ -3391,6 +3392,13 @@ public:
 	 * \return Kind of integration scheme for the flow equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Flow(void);
+
+  /*!
+   * \brief Get the kind of scheme (aliased or non-aliased) to be used in the
+   *        predictor step of ADER-DG.
+   * \return Kind of scheme used in the predictor step of ADER-DG.
+   */
+  unsigned short GetKind_ADER_Predictor(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)

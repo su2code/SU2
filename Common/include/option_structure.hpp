@@ -700,6 +700,17 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 ("ADER_DG", ADER_DG);
 
 /*!
+ * \brief type of predictor for the ADER-DG time integration scheme.
+ */
+enum ENUM_ADER_PREDICTOR {
+  ADER_ALIASED_PREDICTOR     = 1, /*!< \brief Aliased predictor, easiest to do. */
+  ADER_NON_ALIASED_PREDICTOR = 2  /*!< \brief Non-aliased predictor. Consistent, but more difficult. */
+};
+static const map<string, ENUM_ADER_PREDICTOR> Ader_Predictor_Map = CCreateMap<string, ENUM_ADER_PREDICTOR>
+("ADER_ALIASED_PREDICTOR", ADER_ALIASED_PREDICTOR)
+("ADER_NON_ALIASED_PREDICTOR", ADER_NON_ALIASED_PREDICTOR);
+
+/*!
  * \brief type of time integration schemes
  */
 enum ENUM_TIME_INT_FEA {

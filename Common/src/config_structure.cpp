@@ -919,6 +919,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FEM_FLOW", Kind_TimeIntScheme_FEM_Flow, Time_Int_Map, RUNGE_KUTTA_EXPLICIT);
+  /* DESCRIPTION: ADER-DG predictor step */
+  addEnumOption("ADER_PREDICTOR", Kind_ADER_Predictor, Ader_Predictor_Map, ADER_ALIASED_PREDICTOR);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -4496,6 +4498,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
         case ADER_DG:
           cout << "ADER-DG, possibly with local time stepping, for the flow equations." << endl;
+          switch( Kind_ADER_Predictor ) {
+            case ADER_ALIASED_PREDICTOR:
+              cout << "An aliased approach is used in the predictor step. " << endl;
+              break;
+            case ADER_NON_ALIASED_PREDICTOR:
+              cout << "A non-aliased approach is used in the predictor step. " << endl;
+              break;
+          }
           cout << "Number of time DOFs ADER-DG predictor step: " << nTimeDOFsADER_DG << endl;
           cout << "Location of time DOFs ADER-DG on the interval [-1,1]: ";
           for (unsigned short iDOF=0; iDOF<nTimeDOFsADER_DG; iDOF++) {
