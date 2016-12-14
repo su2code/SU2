@@ -2242,14 +2242,14 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 }
 
 void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Restart the solution from file information ---*/
-  
+
   string filename;
   unsigned long iPoint, index;
   string UnstExt, text_line, AdjExt;
@@ -2262,72 +2262,72 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short nZone = geometry[iZone]->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  
+
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
-	filename = config->GetSolution_FEMFileName();
+    filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
   }
-  
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
-  
+
 
   if (nZone > 1 )
-	filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  
+
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
-	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
   /*--- Open the restart file ---*/
-  
+
   solution_file.open(filename.data(), ios::in);
-  
+
   /*--- In case there is no file ---*/
-  
+
   if (solution_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "There is no SU2 restart file!!" << endl;
     exit(EXIT_FAILURE);
   }
-  
+
   /*--- Output the file name to the console. ---*/
-  
+
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename
     << "." << endl;
-  
+
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
-  
+
   nVar = config->fields.size() - 1;
   su2double *Solution = new su2double[nVar];
-  
+
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
-  
+
   long *Global2Local = NULL;
-  Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
-  
+  Global2Local = new long[geometry[iZone]->GetGlobal_nPoint()];
+
   /*--- First, set all indices to a negative value by default ---*/
-  
-  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
+
+  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPoint(); iPoint++) {
     Global2Local[iPoint] = -1;
   }
-  
+
   /*--- Now fill array with the transform values only for local points ---*/
-  
-  for (iPoint = 0; iPoint < geometry[iZone]->GetnPointDomain(); iPoint++) {
+
+  for (iPoint = 0; iPoint < geometry[iZone]->GetnPoint(); iPoint++) {
     Global2Local[geometry[iZone]->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
-  
+
   /*--- Read all lines in the restart file ---*/
 
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
@@ -2336,35 +2336,35 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   getline (solution_file, text_line);
 
-  while (getline (solution_file, text_line) && iPoint_Global < geometry[iZone]->GetnPointDomain()) {
-  	istringstream point_line(text_line);
+  while (getline (solution_file, text_line) && iPoint_Global < geometry[iZone]->GetnPoint()) {
+    istringstream point_line(text_line);
 
-  	/*--- Retrieve local index. If this node from the restart file lives
+    /*--- Retrieve local index. If this node from the restart file lives
      on a different processor, the value of iPoint_Local will be -1, as
      initialized above. Otherwise, the local index for this node on the
      current processor will be returned and used to instantiate the vars. ---*/
 
-  	iPoint_Local = Global2Local[iPoint_Global];
-  	if (iPoint_Local >= 0) {
+    iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local >= 0) {
 
-  		/*--- The PointID is not stored --*/
+      /*--- The PointID is not stored --*/
 
-  		point_line >> index;
+      point_line >> index;
 
-  		/*--- Store the solution (starting with node coordinates) --*/
+      /*--- Store the solution (starting with node coordinates) --*/
 
-  		for (iField = 0; iField < nVar; iField++)
-  			point_line >> Solution[iField];
+      for (iField = 0; iField < nVar; iField++)
+        point_line >> Solution[iField];
 
-  		node[iPoint_Local]->SetSolution(Solution);
+      node[iPoint_Local]->SetSolution(Solution);
 
 
-  	}
-  	iPoint_Global++;
+    }
+    iPoint_Global++;
   }
-  
+
   /*--- Close the restart file ---*/
-  
+
   solution_file.close();
   
   /*--- Free memory needed for the transformation ---*/
@@ -2398,21 +2398,21 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
-	filename = config->GetSolution_FEMFileName();
+    filename = config->GetSolution_FEMFileName();
   } else {
-	filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FlowFileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-	filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
-	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
   /*--- Open the restart file ---*/
