@@ -45,7 +45,6 @@ import FSI	# imports FSI python tools
 
 
 # imports the CFD (SU2) module for FSI computation
-#import SU2Solver
 import WrapSU2
 
 # -------------------------------------------------------------------
