@@ -2941,34 +2941,31 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
 
     unsigned short FinestMesh = config_container[ZONE_0]->GetFinestMesh();
 
-	/*--- Check the kind of fluid problem ---*/
-	bool compressible       = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
-	bool incompressible     = (config_container[ZONE_0]->GetKind_Regime() == INCOMPRESSIBLE);
-	bool viscous_flow       = ((config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
+    /*--- Check the kind of fluid problem ---*/
+    bool compressible       = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+    bool incompressible     = (config_container[ZONE_0]->GetKind_Regime() == INCOMPRESSIBLE);
+    bool viscous_flow       = ((config_container[ZONE_0]->GetKind_Solver() == NAVIER_STOKES) ||
 							   (config_container[ZONE_0]->GetKind_Solver() == RANS) );
 
     /*--- Parameters for the calculations ---*/
-	// Pn: Pressure
-	// Pinf: Pressure_infinite
-	// div_vel: Velocity divergence
-	// Dij: Dirac delta
-	su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
-	su2double Viscosity = 0.0;
-	su2double Grad_Vel[3][3] = { {0.0, 0.0, 0.0} ,
-							{0.0, 0.0, 0.0} ,
-							{0.0, 0.0, 0.0} } ;
-	su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
-							{0.0, 0.0, 0.0} ,
-							{0.0, 0.0, 0.0} } ;
+    // Pn: Pressure
+    // Pinf: Pressure_infinite
+    // div_vel: Velocity divergence
+    // Dij: Dirac delta
+    su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
+    su2double Viscosity = 0.0;
+    su2double Grad_Vel[3][3] = { {0.0, 0.0, 0.0} ,
+                                 {0.0, 0.0, 0.0} ,
+                                 {0.0, 0.0, 0.0} } ;
+    su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
+                            {0.0, 0.0, 0.0} ,
+                            {0.0, 0.0, 0.0} } ;
 
-	su2double Pinf = solver_container[ZONE_0][FinestMesh][FLOW_SOL]->GetPressure_Inf();
+    su2double Pinf = solver_container[ZONE_0][FinestMesh][FLOW_SOL]->GetPressure_Inf();
 
     iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
-    //GlobalIndex = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetGlobalIndex();
 
     /*--- It necessary to distinguish the halo nodes from the others, since they introduice non physical forces. ---*/
-    //if(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain()) partFluidSurfaceLoads[iVertex][0] = GlobalIndex;
-    //else partFluidSurfaceLoads[iVertex][0] = -1.0;
     if(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain()) {
     /*--- Get the normal at the vertex: this normal goes inside the fluid domain. ---*/
     Normal = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
@@ -3004,7 +3001,6 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
 
    /*--- Calculate the inviscid (pressure) part of tn in the fluid nodes (force units) ---*/
    for (iDim = 0; iDim < nDim; iDim++) {
-     //partFluidSurfaceLoads[iVertex][iDim+1] = -(Pn-Pinf)*Normal[iDim];   //NB : norm(Normal) = Area
      APINodalForce[iDim] = -(Pn-Pinf)*Normal[iDim];     //NB : norm(Normal) = Area
    }
 
@@ -3019,7 +3015,6 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
        for (jDim = 0 ; jDim < nDim; jDim++) {
          Dij = 0.0; if (iDim == jDim) Dij = 1.0;
          Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*Dij;
-         //partFluidSurfaceLoads[iVertex][iDim+1] += Tau[iDim][jDim]*Normal[jDim];
          APINodalForce[iDim] += Tau[iDim][jDim]*Normal[jDim];
        }
      }
