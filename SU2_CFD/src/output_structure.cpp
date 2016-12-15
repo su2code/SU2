@@ -8942,7 +8942,7 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolver *FlowSolver) {
 
 	unsigned short iMarker, iDim, iMarker_Analyze;
-	unsigned long iPoint, iVertex, Global_Index;
+	unsigned long iPoint, iVertex;
 	su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Area = 0.0, *Vector, TotalArea = 0.0;
 	su2double xCoord_CG = 0.0, yCoord_CG = 0.0, zCoord_CG = 0.0, TipRadius, HubRadius, Distance = 0.0, Distance_Mirror = 0.0;
 	su2double *r, MinDistance, xCoord_ = 0.0, yCoord_ = 0.0, zCoord_ = 0;
@@ -9465,7 +9465,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 				/*--- Current index position and global index ---*/
 
 				Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-				Global_Index = Buffer_Recv_GlobalIndex[Total_Index];
 
 				/*--- Retrieve the merged data for this node ---*/
 
@@ -9500,7 +9499,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 				/*--- Current index position and global index ---*/
 
 				Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-				Global_Index = Buffer_Recv_GlobalIndex[Total_Index];
 
 				/*--- Retrieve the merged data for this node ---*/
 
@@ -9584,7 +9582,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 						/*--- Current index position and global index ---*/
 
 						Total_Index = iProcessor*MaxLocalVertex_Surface+iVertex;
-						Global_Index = Buffer_Recv_GlobalIndex[Total_Index];
 
 						/*--- Retrieve the merged data for this node ---*/
 

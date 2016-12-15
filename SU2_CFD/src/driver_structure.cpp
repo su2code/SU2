@@ -378,8 +378,6 @@ CDriver::CDriver(char* confFile,
 
 void CDriver::Postprocessing() {
 
-  unsigned short jZone;
-
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
@@ -2190,7 +2188,7 @@ void CDriver::Iteration_Preprocessing() {
 
 void CDriver::Interface_Preprocessing() {
 
-  int rank = MASTER_NODE, nProcessor = 1;
+  int rank = MASTER_NODE;
   unsigned short donorZone, targetZone;
   unsigned short nVar, nVarTransfer;
 
@@ -2203,7 +2201,7 @@ void CDriver::Interface_Preprocessing() {
   int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
 
   #ifdef HAVE_MPI
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank, nProcessor=1;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
