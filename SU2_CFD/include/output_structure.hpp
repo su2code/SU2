@@ -215,6 +215,7 @@ public:
   
   /*!
 	 * \brief Writes one dimensional output.
+	 * \author H. Kline
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
