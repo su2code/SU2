@@ -51,10 +51,10 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   Donor_Variable     = new su2double[val_nVar];
   
   if( config->GetFSI_Simulation() )
-	Target_Variable = new su2double[val_nVar];
+    Target_Variable = new su2double[val_nVar];
   else
-	Target_Variable = new su2double[val_nVar+1];
-	
+    Target_Variable = new su2double[val_nVar+1];
+    
   nVar = val_nVar;
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -103,7 +103,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
-  
+
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
 #endif
@@ -412,7 +412,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       Buffer_Recv_TargetIndices[iVariable] = Buffer_Send_TargetIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check =0;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -730,7 +730,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check=0;
 
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -818,7 +818,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   int *Buffer_Recv_mark = NULL, iRank;
-  
+
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[size];
 #endif
@@ -1057,7 +1057,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check=0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
 
@@ -1078,16 +1078,16 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
           Point_Target_Check = -1;
           
           if(!fsi){
-				target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints);
-				target_solution->SetSlidingStateStructure(Marker_Target, iVertex);
-				target_solution->SetnSlidingStates(Marker_Target, iVertex, 0);
-		  }
-		  else{
-				/*--- As we will be adding data, we need to set the variable to 0 ---*/
-				for (iVar = 0; iVar < nVar; iVar++) 
-					Target_Variable[iVar] = 0.0;
-		  }
-		  
+                target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints);
+                target_solution->SetSlidingStateStructure(Marker_Target, iVertex);
+                target_solution->SetnSlidingStates(Marker_Target, iVertex, 0);
+          }
+          else{
+                /*--- As we will be adding data, we need to set the variable to 0 ---*/
+                for (iVar = 0; iVar < nVar; iVar++) 
+                    Target_Variable[iVar] = 0.0;
+          }
+          
           /*--- For the number of donor points ---*/
           for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++) {
             
@@ -1104,23 +1104,23 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
 
             if (Point_Target_Check < 0 && fsi) {
-				for (iVar = 0; iVar < nVar; iVar++)
-					Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
-				cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-				exit(EXIT_FAILURE);
+                for (iVar = 0; iVar < nVar; iVar++)
+                    Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+                cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
+                exit(EXIT_FAILURE);
             }
-			else{
-				for (iVar = 0; iVar < nVar; iVar++)
-					Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
-					
-				Target_Variable[nVar] = donorCoeff;
-				
-				SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);	
-			}
+            else{
+                for (iVar = 0; iVar < nVar; iVar++)
+                    Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
+                    
+                Target_Variable[nVar] = donorCoeff;
+                
+                SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);  
+            }
           }
 
           if (Point_Target_Check >= 0 && fsi)
-			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
         }
         
       }
@@ -1362,7 +1362,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
       Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check = 0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
