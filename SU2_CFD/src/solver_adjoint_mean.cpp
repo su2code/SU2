@@ -1,7 +1,7 @@
 /*!
  * \file solution_adjoint_mean.cpp
- * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
- * \author F. Palacios, T. Economon
+ * \brief Main subroutines for solving adjoint problems (Euler, Navier-Stokes, etc.).
+ * \author F. Palacios, T. Economon, H. Kline
  * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -5915,8 +5915,7 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
 
 void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet,
-  UnitNormal[3], Area;
+  su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet;
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, GlobalIndex_inlet, GlobalIndex;
   
@@ -5944,14 +5943,6 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
       
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-      
       /*--- Allocate the value at the inlet ---*/
       
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
@@ -5968,7 +5959,15 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
       }
       
 #ifdef CHECK
+      su2double UnitNormal[3], Area=0.0;
       
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+
       /*--- Subsonic flow is assumed, note that there is no non-dimensionalization. ---*/
       
       P_Fan = V_domain[nDim+1] ;
@@ -6048,7 +6047,7 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
 
 void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned long iVertex, iPoint, Point_Normal, GlobalIndex_inlet, GlobalIndex;
+  unsigned long iVertex, iPoint, GlobalIndex_inlet, GlobalIndex;
   su2double *Normal, *V_domain, *V_outlet, *Psi_domain, *Psi_outlet;
   unsigned short iVar, iDim;
   
@@ -6078,10 +6077,6 @@ void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_co
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
       
-      /*--- Index of the closest interior node ---*/
-      
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
       /*--- Allocate the value at the outlet ---*/
       
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
@@ -6098,6 +6093,10 @@ void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_co
       }
       
 #ifdef CHECK
+      unsigned long Point_Normal;
+      /*--- Index of the closest interior node ---*/
+
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
       /*--- Adjoint flow solution at the outlet (this should be improved using characteristics bc) ---*/
       
