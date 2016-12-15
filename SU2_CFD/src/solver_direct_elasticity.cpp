@@ -116,7 +116,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  su2double E = config->GetElasticyMod();
+  su2double E = config->GetElasticyMod(0);
 
   nElement      = geometry->GetnElem();
   nDim          = geometry->GetnDim();
@@ -524,7 +524,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     /*---- Initialize the number of design variables ---*/
     switch (config->GetDV_FEA()) {
       case YOUNG_MODULUS:
-        DV_Val[0] = config->GetElasticyMod();
+        DV_Val[0] = config->GetElasticyMod(0);
         break;
       case ELECTRIC_FIELD:
         unsigned short nEField_Read;

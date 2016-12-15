@@ -67,7 +67,7 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
-  su2double E = config->GetElasticyMod();
+  su2double E = config->GetElasticyMod(0);
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -329,9 +329,9 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
   /*---- Initialize the number of design variables ---*/
   switch (config->GetDV_FEA()) {
   case YOUNG_MODULUS:
-    DV_Val[0] = config->GetElasticyMod();
-    DV_Val_Max[0] = 1.0E5 * config->GetElasticyMod();
-    DV_Val_Min[0] = 1.0E-5 * config->GetElasticyMod();
+    DV_Val[0] = config->GetElasticyMod(0);
+    DV_Val_Max[0] = 1.0E5 * config->GetElasticyMod(0);
+    DV_Val_Min[0] = 1.0E-5 * config->GetElasticyMod(0);
     break;
   case ELECTRIC_FIELD:
     unsigned short nEField_Read;
@@ -2366,12 +2366,12 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
   if (KindDirect_Solver == RUNTIME_FEA_SYS) {
 
     bool pseudo_static = config->GetPseudoStatic();
+    // TODO: Adapt here for a number of properties
+    E           = config->GetElasticyMod(0);
+    Nu          = config->GetPoissonRatio(0);
 
-    E           = config->GetElasticyMod();
-    Nu          = config->GetPoissonRatio();
-
-    Rho         = config->GetMaterialDensity();     // For inertial effects
-    Rho_DL      = config->GetMaterialDensity();     // For dead loads
+    Rho         = config->GetMaterialDensity(0);     // For inertial effects
+    Rho_DL      = config->GetMaterialDensity(0);     // For dead loads
     if (pseudo_static) Rho = 0.0;                   // Pseudo-static: no inertial effects considered
 
     /*--- Read the values of the electric field ---*/

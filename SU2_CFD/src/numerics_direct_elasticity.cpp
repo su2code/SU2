@@ -40,20 +40,33 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 	bool pseudo_static = config->GetPseudoStatic();
 
+	unsigned short iVar;  // TODO: This needs to be changed; however, the config option is only limited to short...
+
   // Initialize values
   E = 0.0;  Nu = 0.0;     Rho_s = 0.0; Rho_s_DL = 0.0;
   Mu = 0.0; Lambda = 0.0; Kappa = 0.0;
 
 	/*--- Initialize vector structures for multiple material definition ---*/
-	E_i         = new su2double[1];
-	Nu_i        = new su2double[1];
-	Rho_s_i     = new su2double[1];
-	Rho_s_DL_i  = new su2double[1];
+  /*--- TODO: This needs to be changed, to adapt for cases in which the numbers in the config are not the same ---*/
+	E_i         = new su2double[config->GetnElasticityMod()];
+	for (iVar = 0; iVar < config->GetnElasticityMod(); iVar++)
+	  E_i[iVar]        = config->GetElasticyMod(iVar);
 
-	E_i[0]        = config->GetElasticyMod();
-	Nu_i[0]       = config->GetPoissonRatio();
-	Rho_s_i[0]    = config->GetMaterialDensity();       // For inertial effects
-	Rho_s_DL_i[0] = config->GetMaterialDensity();    // For dead loads
+	Nu_i        = new su2double[config->GetnPoissonRatio()];
+  for (iVar = 0; iVar < config->GetnPoissonRatio(); iVar++)
+    Nu_i[iVar]        = config->GetPoissonRatio(iVar);
+
+	Rho_s_i     = new su2double[config->GetnMaterialDensity()];     // For inertial effects
+  Rho_s_DL_i  = new su2double[config->GetnMaterialDensity()];     // For dead loads
+  for (iVar = 0; iVar < config->GetnMaterialDensity(); iVar++){
+    Rho_s_DL_i[iVar]        = config->GetMaterialDensity(iVar);
+    if (pseudo_static) Rho_s_i[iVar] = 0.0;
+    else               Rho_s_i[iVar] = config->GetMaterialDensity(iVar);
+  }
+
+//	Nu_i[0]       = config->GetPoissonRatio(0);
+//	Rho_s_i[0]    = config->GetMaterialDensity(0);       // For inertial effects
+//	Rho_s_DL_i[0] = config->GetMaterialDensity(0);    // For dead loads
 
 	if (config->GetDirectDiff() == D_YOUNG)   SU2_TYPE::SetDerivative(E_i[0],1.0);
 	if (config->GetDirectDiff() == D_POISSON) SU2_TYPE::SetDerivative(Nu_i[0],1.0);
@@ -76,8 +89,6 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
 
 	plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
-
-	unsigned short iVar;
 
 	KAux_ab = new su2double* [nDim];
 	for (iVar = 0; iVar < nDim; iVar++) {
@@ -267,17 +278,16 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
 void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) {
 
-
-//  cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
-
-  E   = E_i[0];
-  Nu  = Nu_i[0];
-  Rho_s = Rho_s_i[0];
-  Rho_s_DL = Rho_s_DL_i[0];
+  E   = E_i[element->Get_iProp()];
+  Nu  = Nu_i[element->Get_iProp()];
+  Rho_s = Rho_s_i[element->Get_iProp()];
+  Rho_s_DL = Rho_s_DL_i[element->Get_iProp()];
 
   Mu     = E / (2.0*(1.0 + Nu));
   Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
   Kappa  = Lambda + (2/3)*Mu;
+
+//  cout << "YOUNG: " << E << " and Mu " << Mu << endl;
 
 }
 

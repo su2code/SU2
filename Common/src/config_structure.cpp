@@ -347,6 +347,8 @@ void CConfig::SetPointersNull(void) {
   Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
   Periodic_Translate        = NULL;
 
+  ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
+
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Disp_Dir = NULL;            Disp_Dir_Value = NULL;          Disp_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
@@ -1530,11 +1532,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("FEA_FILENAME", FEA_FileName, string("element_properties.dat"));
 
   /* DESCRIPTION: Modulus of elasticity */
-  addDoubleOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
+  //addDoubleOption("ELASTICITY_MODULUS", ElasticyMod, 2E11);
+  addDoubleListOption("ELASTICITY_MODULUS", nElasticityMod, ElasticityMod);
   /* DESCRIPTION: Poisson ratio */
-  addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
+  //addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
+  addDoubleListOption("POISSON_RATIO", nPoissonRatio, PoissonRatio);
   /* DESCRIPTION: Material density */
-  addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  //addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  addDoubleListOption("MATERIAL_DENSITY", nMaterialDensity, MaterialDensity);
 
   /*  DESCRIPTION: Include DE effects
   *  Options: NO, YES \ingroup Config */
@@ -3023,6 +3028,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nIntCoeffs == 0) {
 	nIntCoeffs = 2;
 	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
+  }
+
+  if (nElasticityMod == 0) {
+  nElasticityMod = 1;
+  ElasticityMod = new su2double[1]; ElasticityMod[0] = 2E11;
+  }
+
+  if (nPoissonRatio == 0) {
+  nPoissonRatio = 1;
+  PoissonRatio = new su2double[1]; PoissonRatio[0] = 0.30;
+  }
+
+  if (nMaterialDensity == 0) {
+  nMaterialDensity = 1;
+  MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
   }
 
   if (nElectric_Field == 0) {

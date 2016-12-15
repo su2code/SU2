@@ -307,7 +307,7 @@ inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
 
 inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivity; }
 
-inline su2double CConfig::GetElasticyMod(void) { return ElasticyMod; }
+inline su2double CConfig::GetElasticyMod(unsigned short id_val) { return ElasticityMod[id_val]; }
 
 inline bool CConfig::GetDE_Effects(void) { return DE_Effects; }
 
@@ -335,9 +335,15 @@ inline unsigned short CConfig::GetRefGeom_FileFormat(void) { return RefGeom_File
 
 inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasForm; }
 
-inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
+inline su2double CConfig::GetPoissonRatio(unsigned short id_val) { return PoissonRatio[id_val]; }
 
-inline su2double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
+inline su2double CConfig::GetMaterialDensity(unsigned short id_val) { return MaterialDensity[id_val]; }
+
+inline unsigned short CConfig::GetnElasticityMod(void) { return nElasticityMod; }
+
+inline unsigned short CConfig::GetnPoissonRatio(void) { return nPoissonRatio; }
+
+inline unsigned short CConfig::GetnMaterialDensity(void) { return nMaterialDensity; }
 
 inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Material_Compress; }
 
