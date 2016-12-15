@@ -226,6 +226,14 @@ def pyopt_snopt2(project,x0=None,xb=None,its=100,accu=1e-10,maxstep=1e-3,partial
     # scale accuracy
     eps = 1.0e-04
 
+    # scale accuracy
+    obj = project.config['OPT_OBJECTIVE']
+    obj_scale = []
+    for this_obj in obj.keys():
+        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
+ 
+
+
     # optimizer summary
     sys.stdout.write('SNOPT parameters:\n')
     sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
