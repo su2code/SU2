@@ -5708,11 +5708,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             elem_line >> vnodes_triangle[2];
             
             if (actuator_disk) {
-              for (unsigned short i = 0; i<N_POINTS_TRIANGLE; i++) {
+              for (short i = 0; i<N_POINTS_TRIANGLE; i++) {
                 if (ActDisk_Bool[vnodes_triangle[i]]) {
                   
                   Xcg = 0.0; Counter = 0;
-                  for (unsigned short j = 0; j<N_POINTS_TRIANGLE; j++) {
+                  for (short j = 0; j<N_POINTS_TRIANGLE; j++) {
                     if (vnodes_triangle[j] < Global_nPoint-ActDiskNewPoints) {
                       Xcg += CoordXVolumePoint[VolumePoint_Inv[vnodes_triangle[j]]];
                       Counter++;
@@ -5801,7 +5801,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+            for (short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
               
               local_index = vnodes_quad[i]-starting_node[rank];
               
@@ -5866,7 +5866,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+            for (short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
               
               local_index = vnodes_tetra[i]-starting_node[rank];
               
@@ -5881,7 +5881,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                for (short j=0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
 #endif
@@ -5932,7 +5932,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+            for (short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
               
               local_index = vnodes_hexa[i]-starting_node[rank];
               
@@ -6001,7 +6001,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (unsigned short i = 0; i < N_POINTS_PRISM; i++) {
+            for (short i = 0; i < N_POINTS_PRISM; i++) {
               
               local_index = vnodes_prism[i]-starting_node[rank];
               
@@ -6069,7 +6069,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (unsigned short i = 0; i < N_POINTS_PYRAMID; i++) {
+            for (short i = 0; i < N_POINTS_PYRAMID; i++) {
               
               local_index = vnodes_pyramid[i]-starting_node[rank];
               
@@ -8012,13 +8012,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case TRIANGLE:
               
-              for ( unsigned short j = 0; j < N_POINTS_TRIANGLE; j++ ) {
+              for (short j = 0; j < N_POINTS_TRIANGLE; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TRIANGLE+1][i];
-              for (unsigned short ii=0; ii<N_POINTS_TRIANGLE; ii++) {
+              for (short ii=0; ii<N_POINTS_TRIANGLE; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
+                  for (short j=0; j<N_POINTS_TRIANGLE; j++) {
                     if (ii!=j) {
                       adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
@@ -8032,12 +8032,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case QUADRILATERAL:
               
-              for ( unsigned short j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
+              for (short j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_QUADRILATERAL+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
+              for (short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
@@ -8055,13 +8055,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case TETRAHEDRON:
               
-              for ( unsigned short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
+              for (short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TETRAHEDRON+1][i];
-              for (unsigned short ii=0; ii<N_POINTS_TETRAHEDRON; ii++) {
+              for (short ii=0; ii<N_POINTS_TETRAHEDRON; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                  for (short j=0; j<N_POINTS_TETRAHEDRON; j++) {
                     if (ii!=j) {
                       adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
@@ -8075,12 +8075,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case HEXAHEDRON:
               
-              for ( unsigned short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
+              for (short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_HEXAHEDRON+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
+              for (short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
@@ -8104,12 +8104,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case PRISM:
               
-              for ( unsigned short j = 0; j < N_POINTS_PRISM; j++ ) {
+              for (short j = 0; j < N_POINTS_PRISM; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PRISM+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_PRISM; ii++) {
+              for (short ii=0; ii<N_POINTS_PRISM; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
@@ -8133,12 +8133,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case PYRAMID:
               
-              for ( unsigned short j = 0; j < N_POINTS_PYRAMID; j++ ) {
+              for (short j = 0; j < N_POINTS_PYRAMID; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PYRAMID+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_PYRAMID; ii++) {
+              for (short ii=0; ii<N_POINTS_PYRAMID; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
                   /*--- Build adjacency assuming the VTK connectivity ---*/
