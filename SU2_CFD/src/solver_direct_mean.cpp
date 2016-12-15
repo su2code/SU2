@@ -5800,21 +5800,13 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Mnt, MyAllBound_CL_Mnt, MyAllBound_CSF_Mnt,
-  MyAllBound_CEff_Mnt,
 MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   MyAllBound_CFx_Mnt, MyAllBound_CFy_Mnt, MyAllBound_CFz_Mnt, MyAllBound_CT_Mnt,
   MyAllBound_CQ_Mnt,
   *MySurface_CL_Mnt = NULL, *MySurface_CD_Mnt = NULL, *MySurface_CSF_Mnt = NULL,
   *MySurface_CEff_Mnt = NULL, *MySurface_CFx_Mnt = NULL, *MySurface_CFy_Mnt = NULL,
   *MySurface_CFz_Mnt = NULL,
-<<<<<<< HEAD
   *MySurface_CMx_Mnt = NULL, *MySurface_CMy_Mnt = NULL,  *MySurface_CMz_Mnt = NULL;
-||||||| merged common ancestors
-  *MySurface_CMx_Mnt = NULL, *MySurface_CMy_Mnt = NULL,  *MySurface_CMz_Mnt = NULL,
-  *MySurface_CoPx_Mnt = NULL, *MySurface_CoPy_Mnt = NULL,  *MySurface_CoPz_Mnt = NULL;
-=======
-    *MySurface_CMx_Mnt = NULL, *MySurface_CMy_Mnt = NULL,  *MySurface_CMz_Mnt = NULL;
->>>>>>> github/develop
 #endif
   
   su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
@@ -6028,7 +6020,6 @@ MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   MyAllBound_CD_Mnt        = AllBound_CD_Mnt;        AllBound_CD_Mnt = 0.0;
   MyAllBound_CL_Mnt        = AllBound_CL_Mnt;        AllBound_CL_Mnt = 0.0;
   MyAllBound_CSF_Mnt   = AllBound_CSF_Mnt;   AllBound_CSF_Mnt = 0.0;
-  AllBound_CEff_Mnt = 0.0;
   MyAllBound_CMx_Mnt          = AllBound_CMx_Mnt;          AllBound_CMx_Mnt = 0.0;
   MyAllBound_CMy_Mnt          = AllBound_CMy_Mnt;          AllBound_CMy_Mnt = 0.0;
   MyAllBound_CMz_Mnt          = AllBound_CMz_Mnt;          AllBound_CMz_Mnt = 0.0;
@@ -6037,7 +6028,6 @@ MyAllBound_CMx_Mnt, MyAllBound_CMy_Mnt, MyAllBound_CMz_Mnt,
   MyAllBound_CFz_Mnt          = AllBound_CFz_Mnt;          AllBound_CFz_Mnt = 0.0;
   MyAllBound_CT_Mnt           = AllBound_CT_Mnt;           AllBound_CT_Mnt = 0.0;
   MyAllBound_CQ_Mnt           = AllBound_CQ_Mnt;           AllBound_CQ_Mnt = 0.0;
-  AllBound_CMerit_Mnt = 0.0;
   
   SU2_MPI::Allreduce(&MyAllBound_CD_Mnt, &AllBound_CD_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_CL_Mnt, &AllBound_CL_Mnt, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -7919,7 +7909,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         for (iAngle = 1; iAngle < nAngle; iAngle++) {
           if (PT_Sector[iAngle] <= PT_Sector_Min) PT_Sector_Min = PT_Sector[iAngle];
         }
-                
+
         /*--- Set the value of the distortion, it only works for one surface ---*/
         
         Mach_Inf           = config->GetMach();
@@ -8312,7 +8302,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   su2double  *V_inlet = NULL, *V_outlet = NULL, Pressure, Temperature, Velocity[3], Vn,
   Velocity2, Density, Area, SoundSpeed, TotalPressure, Vel_Infty2, RamDrag,
   TotalTemperature, VelocityJet,
-  Vel_Infty, MassFlow_Inlet, MaxPressure, MinPressure, MFR, InfVel2;
+  Vel_Infty, MaxPressure, MinPressure, MFR, InfVel2;
   unsigned short iMarker_Inlet, iMarker_Outlet, nMarker_Inlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
   su2double DeltaPress = 0.0, DeltaTemp = 0.0, TotalPressRatio = 0.0, TotalTempRatio = 0.0, StaticPressRatio = 0.0, StaticTempRatio = 0.0,
@@ -8409,7 +8399,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             
             Temperature     = V_inlet[0];
             Pressure                = V_inlet[nDim+1];
-            Pressure_Infty  = GetPressure_Inf();
             
             Density                         = V_inlet[nDim+2];
             SoundSpeed  = sqrt(Gamma*Pressure/Density);
@@ -8480,7 +8469,6 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             
             Temperature         = V_outlet[0];
             Pressure                    = V_outlet[nDim+1];
-            Pressure_Infty  = GetPressure_Inf();
             
             Density                         = V_outlet[nDim+2];
             SoundSpeed  = sqrt(Gamma*Pressure/Density);
@@ -9011,8 +8999,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           su2double Factor = (0.5*RefDensity*RefAreaCoeff*RefVel2);
           su2double Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
           su2double DmT = GetTotal_CD() * Factor;
-          su2double DmTVector[3] = {0.0, 0.0, 0.0};
           
+          /*
           su2double ModDmT = 0.0;
           if (nDim == 2) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
                                        GetTotal_CFy()*GetTotal_CFy());
@@ -9020,11 +9008,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           if (nDim == 3) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
                                        GetTotal_CFy()*GetTotal_CFy() +
                                        GetTotal_CFz()*GetTotal_CFz());
-          
-          DmTVector[0] = GetTotal_CFx()/ModDmT;
-          DmTVector[1] = GetTotal_CFy()/ModDmT;
-          if (nDim == 3)  DmTVector[2] = GetTotal_CFz()/ModDmT;
-          
+          */
           su2double SolidSurf_Drag = DmT - Force;
           su2double SolidSurf_CD = SolidSurf_Drag / Factor;
           
@@ -13026,44 +13010,40 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   
-  su2double Density, sq_vel, StaticEnergy;
-  
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
   
   su2double P_static, rho_static;
-  
-  int rank = MASTER_NODE, irank = 1;
-  
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-      if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
-          if (geometry->node[iPoint]->GetDomain()) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
 
           for (iVar = 0; iVar < nPrimVar; iVar++) {
             PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
             PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
           }
-          
+
           /*--- Set primitive variables ---*/
 
           numerics->SetPrimitive( PrimVar_i, PrimVar_j );
-          
+
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ){
             Secondary_i = node[iPoint]->GetSecondary();
 
             P_static   = PrimVar_j[nDim+1];
             rho_static = PrimVar_j[nDim+2];           
             FluidModel->SetTDState_Prho(P_static, rho_static);
-            
+
             Secondary_j[0] = FluidModel->GetdPdrho_e();
             Secondary_j[1] = FluidModel->GetdPde_rho();  
-                   
+
             numerics->SetSecondary(Secondary_i, Secondary_j);
           }
 
@@ -13345,7 +13325,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
                     }
                     Pressure   = V_domain[nDim+1];
                     SoundSpeed = sqrt(Gamma*Pressure/Density);
-                    Mach_Inlet  = min(sqrt(Velocity2)/SoundSpeed, 1.0);
 
                     Entropy = Pressure*pow(1.0/Density, Gamma);
                     Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
@@ -15488,7 +15467,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker, iDim, iVertex;
+  unsigned short iMarker, iDim;
   
   if (CD_Visc != NULL)          delete [] CD_Visc;
   if (CL_Visc != NULL)          delete [] CL_Visc;
