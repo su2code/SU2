@@ -1392,6 +1392,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   su2double dTMP;
   su2double *Coeff_Vect, *tmp_Coeff_Vect;             
+  int *storeProc, *tmp_storeProc;
 
 
   /* --- Geometrical variables --- */
@@ -1454,10 +1455,12 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   Donor_Vect = NULL;
   Coeff_Vect = NULL;
+  storeProc  = NULL;
 
   tmp_Donor_Vect = NULL;
   tmp_Coeff_Vect = NULL;
-
+  tmp_storeProc  = NULL;
+  
   Normal = new su2double[nDim];
 
   target_iMidEdge_point = new su2double[nDim];
@@ -1787,34 +1790,45 @@ getchar();
 
           tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
           tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-  
+          tmp_storeProc  = new           int[ nDonorPoints ];
+ 
           for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
             tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
             tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+            tmp_storeProc[iDonor]  = storeProc[iDonor];
           }
 
           if (Donor_Vect != NULL)
             delete [] Donor_Vect;
-
+  
           if (Coeff_Vect != NULL)
             delete [] Coeff_Vect;
+            
+          if (storeProc  != NULL)
+            delete [] storeProc;
 
           Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
           Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-
+          storeProc  = new           int[ nDonorPoints + 1 ];
+          
           for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
             Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
             Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+            storeProc[iDonor]  = tmp_storeProc[iDonor];
           }
 
-          Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;                   
           Donor_Vect[ nDonorPoints ] = donor_iPoint;
+          Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
+          storeProc[  nDonorPoints ] = (int)Buffer_Receive_FaceProc[ Buffer_Receive_FaceIndex[donor_iPoint] ];
 
           if (tmp_Donor_Vect != NULL)
             delete [] tmp_Donor_Vect;
-  
+
           if (tmp_Coeff_Vect != NULL)
             delete [] tmp_Coeff_Vect;
+          
+          if (tmp_storeProc  != NULL)
+            delete [] tmp_storeProc;
 
           donor_OldiPoint = donor_iPoint;
           donor_iPoint = donor_forward_point;
@@ -1854,10 +1868,12 @@ getchar();
 
           tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
           tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
+          tmp_storeProc  = new           int[ nDonorPoints ];
  
           for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
             tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
             tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+            tmp_storeProc[iDonor]  = storeProc[iDonor];
           }
 
           if (Donor_Vect != NULL)
@@ -1865,23 +1881,32 @@ getchar();
   
           if (Coeff_Vect != NULL)
             delete [] Coeff_Vect;
+            
+          if (storeProc  != NULL)
+            delete [] storeProc;
 
           Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
           Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-
+          storeProc  = new           int[ nDonorPoints + 1 ];
+          
           for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
             Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
             Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+            storeProc[iDonor]  = tmp_storeProc[iDonor];
           }
 
           Donor_Vect[ nDonorPoints ] = donor_iPoint;
           Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
+          storeProc[  nDonorPoints ] = (int)Buffer_Receive_FaceProc[ Buffer_Receive_FaceIndex[donor_iPoint] ];
 
           if (tmp_Donor_Vect != NULL)
             delete [] tmp_Donor_Vect;
 
           if (tmp_Coeff_Vect != NULL)
             delete [] tmp_Coeff_Vect;
+          
+          if (tmp_storeProc  != NULL)
+            delete [] tmp_storeProc;
 
           donor_OldiPoint = donor_iPoint;
           donor_iPoint = donor_forward_point;
@@ -1898,7 +1923,7 @@ getchar();
         for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
           target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
           target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Buffer_Receive_GlobalPoint[ Donor_Vect[iDonor] ]);
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
         }
       }
     }
