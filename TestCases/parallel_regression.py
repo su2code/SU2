@@ -89,6 +89,17 @@ def main():
     oneram6.tol       = 0.00001
     test_list.append(oneram6)
 
+    # Fixed CL NACA0012
+    fixedCL_naca0012           = TestCase('fixedcl_naca0012')
+    fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+    fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
+    fixedCL_naca0012.test_iter = 500
+    fixedCL_naca0012.test_vals = [-6.574770, -1.191178, 0.299959, 0.019387] #last 4 columns
+    fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
+    fixedCL_naca0012.timeout   = 1600
+    fixedCL_naca0012.tol       = 0.00001
+    test_list.append(fixedCL_naca0012)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -202,7 +213,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.380312, -8.129519, 0.000043, 0.070031] #last 4 columns
+    propeller.test_vals = [-3.380312, -8.129519, 0.000043, 0.056159] #last 4 columns
     propeller.su2_exec  = "parallel_computation.py -f"
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
@@ -232,7 +243,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.783712, -15.192812, 0.300920, 0.536870] #last 4 columns
+    contadj_naca0012.test_vals = [-9.783712, -15.192812, 0.300920, 0.019552] #last 4 columns
     contadj_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_naca0012.timeout   = 1600
     contadj_naca0012.tol       = 0.00001
@@ -243,23 +254,33 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-12.131587, -12.703243, 0.685900, 0.140920] #last 4 columns
+    contadj_oneram6.test_vals = [-12.131587, -12.703243, 0.685900, 0.007594] #last 4 columns
     contadj_oneram6.su2_exec  = "parallel_computation.py -f"
     contadj_oneram6.timeout   = 1600
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
-
 
     # Inviscid WEDGE: generalized adjoint and custom DV
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10  
-    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000004] #last 4 columns
+    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000000] #last 4 columns
     contadj_wedge.su2_exec  = "parallel_computation.py -f"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
     test_list.append(contadj_wedge)
+
+    # Inviscid fixed CL NACA0012
+    contadj_fixed_CL_naca0012           = TestCase('contadj_fixedcl_naca0012')
+    contadj_fixed_CL_naca0012.cfg_dir   = "fixed_cl/naca0012"
+    contadj_fixed_CL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
+    contadj_fixed_CL_naca0012.test_iter = 500
+    contadj_fixed_CL_naca0012.test_vals = [-2.921695, -8.474107, 0.250530, 0.000003] #last 4 columns
+    contadj_fixed_CL_naca0012.su2_exec  = "parallel_computation.py -f"
+    contadj_fixed_CL_naca0012.timeout   = 1600
+    contadj_fixed_CL_naca0012.tol       = 0.00001
+    test_list.append(contadj_fixed_CL_naca0012)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -270,7 +291,7 @@ def main():
     contadj_ns_cylinder.cfg_dir   = "cont_adj_navierstokes/cylinder"
     contadj_ns_cylinder.cfg_file  = "lam_cylinder.cfg"
     contadj_ns_cylinder.test_iter = 100
-    contadj_ns_cylinder.test_vals = [-3.659040, -9.117773, 2.056700, 4.497000] #last 4 columns
+    contadj_ns_cylinder.test_vals = [-3.659040, -9.117773, 2.056700, -0.000000] #last 4 columns
     contadj_ns_cylinder.su2_exec  = "parallel_computation.py -f"
     contadj_ns_cylinder.timeout   = 1600
     contadj_ns_cylinder.tol       = 0.00001
@@ -281,7 +302,7 @@ def main():
     contadj_ns_naca0012_sub.cfg_dir   = "cont_adj_navierstokes/naca0012_sub"
     contadj_ns_naca0012_sub.cfg_file  = "lam_NACA0012.cfg"
     contadj_ns_naca0012_sub.test_iter = 100
-    contadj_ns_naca0012_sub.test_vals = [-2.744551, -8.216469, 0.518810, 0.229160] #last 4 columns
+    contadj_ns_naca0012_sub.test_vals = [-2.744551, -8.216469, 0.518810, 0.001210] #last 4 columns
     contadj_ns_naca0012_sub.su2_exec  = "parallel_computation.py -f"
     contadj_ns_naca0012_sub.timeout   = 1600
     contadj_ns_naca0012_sub.tol       = 0.00001
@@ -292,7 +313,7 @@ def main():
     contadj_ns_naca0012_trans.cfg_dir   = "cont_adj_navierstokes/naca0012_trans"
     contadj_ns_naca0012_trans.cfg_file  = "lam_NACA0012.cfg"
     contadj_ns_naca0012_trans.test_iter = 100
-    contadj_ns_naca0012_trans.test_vals = [-1.041539, -6.578524, 1.772300, 0.620880] #last 4 columns
+    contadj_ns_naca0012_trans.test_vals = [-1.041539, -6.578524, 1.772300, 0.012494] #last 4 columns
     contadj_ns_naca0012_trans.su2_exec  = "parallel_computation.py -f"
     contadj_ns_naca0012_trans.timeout   = 1600
     contadj_ns_naca0012_trans.tol       = 0.00001
@@ -307,7 +328,7 @@ def main():
     contadj_rans_naca0012.cfg_dir   = "cont_adj_rans/naca0012"
     contadj_rans_naca0012.cfg_file  = "turb_nasa.cfg"
     contadj_rans_naca0012.test_iter = 100
-    contadj_rans_naca0012.test_vals = [-0.814757, -5.726517, 19.169000, -2.994100] #last 4 columns
+    contadj_rans_naca0012.test_vals = [-0.814757, -5.726517, 19.169000, -0.000000] #last 4 columns
     contadj_rans_naca0012.su2_exec  = "parallel_computation.py -f"
     contadj_rans_naca0012.timeout   = 1600
     contadj_rans_naca0012.tol       = 0.00001
@@ -318,7 +339,7 @@ def main():
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
     contadj_rans_rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
     contadj_rans_rae2822.test_iter = 100
-    contadj_rans_rae2822.test_vals = [-5.380929, -10.886092, -0.212470, 0.269390] #last 4 columns
+    contadj_rans_rae2822.test_vals = [-5.380929, -10.886092, -0.212470, 0.005448] #last 4 columns
     contadj_rans_rae2822.su2_exec  = "parallel_computation.py -f"
     contadj_rans_rae2822.timeout   = 1600
     contadj_rans_rae2822.tol       = 0.00001
@@ -358,15 +379,16 @@ def main():
     ### Harmonic Balance               ###                                                                                  
     ######################################                                                                                    
 
-    harmonic_balance           = TestCase('harmonic_balance')
-    harmonic_balance.cfg_dir   = "harmonic_balance"
-    harmonic_balance.cfg_file  = "HB.cfg"
-    harmonic_balance.test_iter = 25
-    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
-    harmonic_balance.su2_exec  = "parallel_computation.py -f"
-    harmonic_balance.timeout   = 1600
-    harmonic_balance.tol       = 0.00001
-    test_list.append(harmonic_balance)
+    # Description of the regression test 
+#    harmonic_balance           = TestCase('harmonic_balance')
+#    harmonic_balance.cfg_dir   = "harmonic_balance"
+#    harmonic_balance.cfg_file  = "HB.cfg"
+#    harmonic_balance.test_iter = 25
+#    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+#    harmonic_balance.su2_exec  = "parallel_computation.py -f"
+#    harmonic_balance.timeout   = 1600
+#    harmonic_balance.tol       = 0.00001
+#    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###
@@ -500,7 +522,7 @@ def main():
     channel_3D.unsteady  = True
     test_list.append(channel_3D)
 
-    # Pipe
+#    # Pipe
 #    pipe           = TestCase('pipe')
 #    pipe.cfg_dir   = "sliding_interface/pipe"
 #    pipe.cfg_file  = "pipe_NN.cfg"

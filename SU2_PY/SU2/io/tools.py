@@ -543,9 +543,9 @@ def get_dvMap():
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
                19  : "CUSTOM"                ,
-	       20  : "CST"                   ,
-               101 : "MACH_NUMBER"           ,
-               102 : "AOA"                    }
+               20  : "CST"                   ,
+               101 : "ANGLE_OF_ATTACK"       ,
+               102 : "FFD_ANGLE_OF_ATTACK"                    }
     
     return dv_map
 
@@ -677,9 +677,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     elif kindID == "FFD_THICKNESS"      : 
         header.append(r',"FFD_Box_ID","xIndex","yIndex"')
         write_format.append(r', %s, %s, %s')
-    elif kindID == "MACH_NUMBER"        : pass
-    elif kindID == "AOA"                : pass
-    elif kindID == "CUSTOM"             : pass
+    elif kindID == "ANGLE_OF_ATTACK"      : pass
+    elif kindID == "FFD_ANGLE_OF_ATTACK"  : pass
+    elif kindID == "CUSTOM"               : pass
     
     # otherwise...
     else: raise Exception('Unrecognized Design Variable Kind') 

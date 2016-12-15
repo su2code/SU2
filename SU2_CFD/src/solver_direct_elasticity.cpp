@@ -262,7 +262,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
@@ -285,7 +288,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
         node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
         iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
     /*--- Detect a wrong solution file ---*/
@@ -297,7 +300,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -1069,7 +1071,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
 #else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
   if (rbuf_NotMatching != 0) {
     if (rank == MASTER_NODE) {
       cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;

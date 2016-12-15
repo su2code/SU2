@@ -162,7 +162,7 @@ CDriver::CDriver(char* confFile,
      the calculation of force coefficient (non-dimensionalization). ---*/
 
     geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
-
+      
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
 
     for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
@@ -377,8 +377,6 @@ CDriver::CDriver(char* confFile,
 }
 
 void CDriver::Postprocessing() {
-
-  unsigned short jZone;
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -2196,7 +2194,7 @@ void CDriver::Interface_Preprocessing() {
   int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
 
   #ifdef HAVE_MPI
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -3520,6 +3518,11 @@ void CHBDriver::ResetConvergence() {
 
 void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
 	unsigned short iVar, jZone, iMGlevel;
 	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
 	unsigned long iPoint;
@@ -3643,6 +3646,8 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
 void CHBDriver::ComputeHB_Operator(){
 
+#ifdef CHECK_AD
+  
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i, j, k, iZone;
 
@@ -3811,7 +3816,9 @@ void CHBDriver::ComputeHB_Operator(){
 		delete [] Temp;
 		delete [] Dcpx;
 		delete [] Omega_HB;
-
+  
+#endif
+  
 }
 
 
