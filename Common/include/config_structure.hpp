@@ -718,10 +718,10 @@ private:
 	Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
-	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
-	PoissonRatio,						/*!< \brief Poisson's ratio. */
-	MaterialDensity,								/*!< \brief Material density. */
-	DE_Modulus,							/*!< \brief Dielectric elastomer modulus. */
+//	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
+//	PoissonRatio,						/*!< \brief Poisson's ratio. */
+//	MaterialDensity,								/*!< \brief Material density. */
+	su2double DE_Modulus,							/*!< \brief Dielectric elastomer modulus. */
 	DE_Rate;							  /*!< \brief Dielectric elastomer maximum rate of change. */
 	bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
   bool DE_Predicted;            /*!< Application of DE effects to FE analysis */
@@ -823,6 +823,12 @@ private:
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
   su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
+  unsigned short nElasticityMod,  /*!< \brief Number of different values for the elasticity modulus. */
+  nPoissonRatio,                    /*!< \brief Number of different values for the Poisson ratio modulus. */
+  nMaterialDensity;                 /*!< \brief Number of different values for the Material density. */
+  su2double *ElasticityMod,         /*!< \brief Value of the elasticity moduli. */
+  *PoissonRatio,                    /*!< \brief Value of the Poisson ratios. */
+  *MaterialDensity;                 /*!< \brief Value of the Material densities. */
   unsigned short nElectric_Field,	/*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;				/*!< \brief Dimensionality of the problem. */
   unsigned short nElectric_Field_Max, /*!< \brief Number of different values for the max electric field in the membrane. */
@@ -1784,7 +1790,7 @@ public:
 	 * \brief Get the Young's modulus of elasticity.
 	 * \return Value of the Young's modulus of elasticity.
 	 */
-	su2double GetElasticyMod(void);
+	su2double GetElasticyMod(unsigned short id_val);
 
 	/*!
 	  * \brief Decide whether to apply DE effects to the model.
@@ -1904,13 +1910,13 @@ public:
 	 * \brief Get the Poisson's ratio.
 	 * \return Value of the Poisson's ratio.
 	 */
-	su2double GetPoissonRatio(void);
+	su2double GetPoissonRatio(unsigned short id_val);
 
 	/*!
 	 * \brief Get the Material Density.
 	 * \return Value of the Material Density.
 	 */
-	su2double GetMaterialDensity(void);
+	su2double GetMaterialDensity(unsigned short id_val);
 
     /*!
 	 * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
@@ -6934,6 +6940,24 @@ public:
 	 * \return Number of integration coefficients.
 	 */
 	unsigned short GetnIntCoeffs(void);
+
+  /*!
+   * \brief Get the number of different values for the elasticity modulus.
+   * \return Number of different values for the elasticity modulus.
+   */
+  unsigned short GetnElasticityMod(void);
+
+  /*!
+   * \brief Get the number of different values for the Poisson ratio.
+   * \return Number of different values for the Poisson ratio.
+   */
+  unsigned short GetnPoissonRatio(void);
+
+  /*!
+   * \brief Get the number of different values for the Material density.
+   * \return Number of different values for the Material density.
+   */
+  unsigned short GetnMaterialDensity(void);
 
 	/*!
 	 * \brief Get the integration coefficients for the Generalized Alpha - Newmark integration integration scheme.
