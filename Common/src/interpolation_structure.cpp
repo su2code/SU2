@@ -1371,67 +1371,66 @@ CSlidingmesh::~CSlidingmesh(){}
 
 void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     
-    /* --- This routine sets the transfer coefficient for sliding mesh approach --- */
-    /*
-     * The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces 
-     * for finite-volume discritization of conservaation laws" 2015, Comp. Fluids, 120, pp 126-139
-     */
+  /* --- This routine sets the transfer coefficient for sliding mesh approach --- */
+  /*
+   * The algorithm is based on Rinaldi et al. "Flux-conserving treatment of non-conformal interfaces 
+   * for finite-volume discritization of conservaation laws" 2015, Comp. Fluids, 120, pp 126-139
+   */
 
-/*  0 - Variable declaration - */
+  /*  0 - Variable declaration - */
 
-    /* --- General variables --- */
-    
-    bool check;
-    
-    unsigned short iDim, nDim;
-    unsigned long vPoint;
-    
-    int ii, jj, iEdgeVisited, EgdeIndex, nEdgeVisited, iNodeVisited, rank, nProcessor, iProcessor;
-    int nAlreadyVisited, nToVisit, StartVisited, nMarkerTarget, nMarkerDonor, target_StartIndex;
-    int *alreadyVisitedDonor, *ToVisit, *tmpVect;
-    
-    su2double dTMP;
-    su2double *Coeff_Vect, *tmp_Coeff_Vect;             
-    
-    
-    /* --- Geometrical variables --- */
+  /* --- General variables --- */
 
-    su2double *Coord_i, *Coord_j, dist, mindist, *Normal;
-    su2double Area, Area_old, tmp_Area;
-    su2double LineIntersectionLength, *Direction, length;
-        
-        
-    /* --- Markers Variables --- */
-    
-    unsigned short iMarkerInt, nMarkerInt; 
-    
-    unsigned long jVertex, iVertex, nVertexDonor , nVertexTarget, Global_Point_Donor;
-    
-    int markDonor, markTarget, Target_check, Donor_check;
-    
-    /* --- Target variables --- */
-    
-    int target_forward_point, target_backward_point, target_iPoint;
-    int nEdges_target, nNode_target;
-    
-    su2double *target_iMidEdge_point, *target_jMidEdge_point;
-    su2double **target_element;
+  bool check;
 
-    
-    /* --- Donor variables --- */
-    
-    int donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint; 
-    int nEdges_donor,  nNode_donor; 
+  unsigned short iDim, nDim;
+  unsigned long vPoint;
 
-    unsigned long nDonorPoints, iDonor;
-    unsigned long *Donor_Vect, *tmp_Donor_Vect;
-        
+  int ii, jj, iEdgeVisited, EgdeIndex, nEdgeVisited, iNodeVisited, rank, nProcessor, iProcessor;
+  int nAlreadyVisited, nToVisit, StartVisited, nMarkerTarget, nMarkerDonor, target_StartIndex;
+  int *alreadyVisitedDonor, *ToVisit, *tmpVect;
+
+  su2double dTMP;
+  su2double *Coeff_Vect, *tmp_Coeff_Vect;             
+
+
+  /* --- Geometrical variables --- */
+
+  su2double *Coord_i, *Coord_j, dist, mindist, *Normal;
+  su2double Area, Area_old, tmp_Area;
+  su2double LineIntersectionLength, *Direction, length;
+
+
+  /* --- Markers Variables --- */
+
+  unsigned short iMarkerInt, nMarkerInt; 
+
+  unsigned long jVertex, iVertex, nVertexDonor , nVertexTarget, Global_Point_Donor;
+
+  int markDonor, markTarget, Target_check, Donor_check;
+
+  /* --- Target variables --- */
+
+  int target_forward_point, target_backward_point, target_iPoint;
+  int nEdges_target, nNode_target;
+
+  su2double *target_iMidEdge_point, *target_jMidEdge_point;
+  su2double **target_element;
+
+
+  /* --- Donor variables --- */
+
+  int donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint; 
+  int nEdges_donor,  nNode_donor; 
+
+  unsigned long nDonorPoints, iDonor;
+  unsigned long *Donor_Vect, *tmp_Donor_Vect;
+
+  su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
+  su2double **donor_element;
     
-    su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
-    su2double **donor_element;
     
-    
-/*  1 - Variable pre-processing - */
+  /*  1 - Variable pre-processing - */
 
 #ifdef HAVE_MPI
 
@@ -1449,62 +1448,62 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
 #endif
 
-    nDim = donor_geometry->GetnDim();
+  nDim = donor_geometry->GetnDim();
 
-    /*--- Setting up auxiliary vectors ---*/
-    
-    Donor_Vect = NULL;
-    Coeff_Vect = NULL;
-    
-    tmp_Donor_Vect = NULL;
-    tmp_Coeff_Vect = NULL;
-    
-    Normal = new su2double[nDim];
-    
-    target_iMidEdge_point = new su2double[nDim];
-    target_jMidEdge_point = new su2double[nDim];
-    
-    donor_iMidEdge_point = new su2double[nDim];
-    donor_jMidEdge_point = new su2double[nDim];
-    
-    Direction = new su2double[nDim];
-    
-    
-/* 2 - Find boundary tag between touching grids */
+  /*--- Setting up auxiliary vectors ---*/
 
-    /*--- Number of markers on the FSI interface ---*/
-    nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_FSIinterface() ) / 2;
+  Donor_Vect = NULL;
+  Coeff_Vect = NULL;
 
-    /*--- For the number of markers on the interface... ---*/
-    for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
+  tmp_Donor_Vect = NULL;
+  tmp_Coeff_Vect = NULL;
+
+  Normal = new su2double[nDim];
+
+  target_iMidEdge_point = new su2double[nDim];
+  target_jMidEdge_point = new su2double[nDim];
+
+  donor_iMidEdge_point = new su2double[nDim];
+  donor_jMidEdge_point = new su2double[nDim];
+
+  Direction = new su2double[nDim];
+    
+    
+  /* 2 - Find boundary tag between touching grids */
+
+  /*--- Number of markers on the FSI interface ---*/
+  nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_FSIinterface() ) / 2;
+
+  /*--- For the number of markers on the interface... ---*/
+  for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
 
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
     markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
-      
+
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
-    
+#ifdef HAVE_MPI
+
     Donor_check  = -1;
     Target_check = -1;
-        
+
     /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
-    
+
     SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
+
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
         if( Buffer_Recv_mark[iRank] != -1 ){
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }
-    
+
     SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
-    
+
+
     SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-    
+
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
         if( Buffer_Recv_mark[iRank] != -1 ){
@@ -1513,12 +1512,12 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
         }
 
     SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-        
-    #else
+
+#else
     Donor_check  = markDonor;
     Target_check = markTarget;  
-    #endif
-    
+#endif
+
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(Target_check == -1 || Donor_check == -1)
       continue;
@@ -1527,141 +1526,135 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
       nVertexDonor  = donor_geometry->GetnVertex( markDonor );
     else
       nVertexDonor  = 0;
-    
+
     if(markTarget != -1)
       nVertexTarget = target_geometry->GetnVertex( markTarget );
     else
       nVertexTarget  = 0;
 
-
-/*
-3 - For each target node find the closest donor node
-* - From them retrieve their vertex boundary face
-* - Build a local donor supermesh until the area of the initial boundary face is covered
-*/
+    /*
+    3 - For each target node find the closest donor node
+    * - From them retrieve their vertex boundary face
+    * - Build a local donor supermesh until the area of the initial boundary face is covered
+    */
         
-  /*--- Setting up parallel data structures ---*/
-  
+    /*--- Setting up parallel data structures ---*/
 
-  Buffer_Send_nFace_Donor      = new unsigned long [1];
-  Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
+    Buffer_Send_nFace_Donor      = new unsigned long [1];
+    Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
 
-  Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
-  Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
+    Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
+    Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
 
-  Buffer_Send_nVertex_Donor    = new unsigned long [ 1 ];
-  Buffer_Receive_nVertex_Donor = new unsigned long [ nProcessor ];
+    Buffer_Send_nVertex_Donor    = new unsigned long [ 1 ];
+    Buffer_Receive_nVertex_Donor = new unsigned long [ nProcessor ];
 
-  /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor ---*/
+    /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor ---*/
 
-  Determine_ArraySize(true, markDonor, markTarget, nVertexDonor, nDim);
+    Determine_ArraySize(true, markDonor, markTarget, nVertexDonor, nDim);
 
-  Buffer_Send_Coord       = new     su2double[ MaxLocalVertex_Donor * nDim ];
-  Buffer_Send_Normal      = new     su2double[ MaxLocalVertex_Donor * nDim ];
-  Buffer_Send_GlobalPoint = new unsigned long[ MaxLocalVertex_Donor        ];
+    Buffer_Send_Coord       = new     su2double[ MaxLocalVertex_Donor * nDim ];
+    Buffer_Send_Normal      = new     su2double[ MaxLocalVertex_Donor * nDim ];
+    Buffer_Send_GlobalPoint = new unsigned long[ MaxLocalVertex_Donor        ];
 
-  Buffer_Receive_Coord       = new     su2double[ nProcessor * MaxLocalVertex_Donor * nDim ];
-  Buffer_Receive_Normal      = new     su2double[ nProcessor * MaxLocalVertex_Donor * nDim ];
-  Buffer_Receive_GlobalPoint = new unsigned long[ nProcessor * MaxLocalVertex_Donor        ];
+    Buffer_Receive_Coord       = new     su2double[ nProcessor * MaxLocalVertex_Donor * nDim ];
+    Buffer_Receive_Normal      = new     su2double[ nProcessor * MaxLocalVertex_Donor * nDim ];
+    Buffer_Receive_GlobalPoint = new unsigned long[ nProcessor * MaxLocalVertex_Donor        ];
 
-  /*--- Collect coordinates, global points, and normal vectors ---*/
+    /*--- Collect coordinates, global points, and normal vectors ---*/
 
-  Collect_VertexInfo(true, markDonor, markTarget, nVertexDonor, nDim);
-  
-  
-  // Next vectors are to be deleted
+    Collect_VertexInfo(true, markDonor, markTarget, nVertexDonor, nDim);
   
   
-  Buffer_Send_FaceIndex    = new unsigned long[MaxFace_Donor];
-  Buffer_Send_FaceNodes    = new unsigned long[MaxFaceNodes_Donor];
-  Buffer_Send_FaceProc     = new unsigned long[MaxFaceNodes_Donor];
+    // Next vectors are to be deleted
+  
+    Buffer_Send_FaceIndex    = new unsigned long[MaxFace_Donor];
+    Buffer_Send_FaceNodes    = new unsigned long[MaxFaceNodes_Donor];
+    Buffer_Send_FaceProc     = new unsigned long[MaxFaceNodes_Donor];
 
-  Buffer_Receive_FaceIndex = new unsigned long[MaxFace_Donor*nProcessor];
-  Buffer_Receive_FaceNodes = new unsigned long[MaxFaceNodes_Donor*nProcessor];
-  Buffer_Receive_FaceProc  = new unsigned long[MaxFaceNodes_Donor*nProcessor];
+    Buffer_Receive_FaceIndex = new unsigned long[MaxFace_Donor*nProcessor];
+    Buffer_Receive_FaceNodes = new unsigned long[MaxFaceNodes_Donor*nProcessor];
+    Buffer_Receive_FaceProc  = new unsigned long[MaxFaceNodes_Donor*nProcessor];
 
 unsigned long nLocalFace_Donor = 0, nLocalFaceNodes_Donor=0, faceindex, jGlobalPoint, dPoint, inode, iFace, nFaces, temp_donor, nElem, jElem;
 unsigned long iVertexDonor, iPointDonor, iGlobalPoint;
 bool face_on_marker;
 unsigned int nNodes, nEdges, jEdge, EdgeIndex, jPoint;
 
-  for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++)
-    Buffer_Send_FaceIndex[iVertex] = 0;
+    for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++)
+      Buffer_Send_FaceIndex[iVertex] = 0;
 
-  for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++){
-    Buffer_Send_FaceNodes[iVertex] = 0;
-    Buffer_Send_FaceProc[iVertex]  = 0;
-  }
+    for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++){
+      Buffer_Send_FaceNodes[iVertex] = 0;
+      Buffer_Send_FaceProc[iVertex]  = 0;
+    }
 
-  Buffer_Send_FaceIndex[0] = rank * MaxFaceNodes_Donor;
+    Buffer_Send_FaceIndex[0] = rank * MaxFaceNodes_Donor;
 
-  for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
-    iPointDonor = donor_geometry->vertex[markDonor][iVertexDonor]->GetNode();
+    for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
+      iPointDonor = donor_geometry->vertex[markDonor][iVertexDonor]->GetNode();
 
-    if (donor_geometry->node[iPointDonor]->GetDomain()) {
+      if (donor_geometry->node[iPointDonor]->GetDomain()) {
         
-      iGlobalPoint = donor_geometry->node[iPointDonor]->GetGlobalIndex();
+        iGlobalPoint = donor_geometry->node[iPointDonor]->GetGlobalIndex();
       
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+          for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
     
-          if (iGlobalPoint == Buffer_Receive_GlobalPoint[ MaxLocalVertex_Donor*iProcessor+jVertex ]){
-            iGlobalPoint = MaxLocalVertex_Donor*iProcessor+jVertex;
-            break;
+            if (iGlobalPoint == Buffer_Receive_GlobalPoint[ MaxLocalVertex_Donor*iProcessor+jVertex ]){
+              iGlobalPoint = MaxLocalVertex_Donor*iProcessor+jVertex;
+              break;
+            }
           }
         }
-      }
       
 
-      nEdges = donor_geometry->node[iPointDonor]->GetnPoint();
+        nEdges = donor_geometry->node[iPointDonor]->GetnPoint();
       
-      nNodes = 0;
+        nNodes = 0;
 
-      //donor_StartIndex = nLocalFaceNodes_Donor;
-
-      for (jEdge = 0; jEdge < nEdges; jEdge++) {
+        //donor_StartIndex = nLocalFaceNodes_Donor;
+ 
+        for (jEdge = 0; jEdge < nEdges; jEdge++) {
           
 
-          /*-- Determine whether this face/edge is on the marker --*/
+            /*-- Determine whether this face/edge is on the marker --*/
 
-          EdgeIndex = donor_geometry->node[iPointDonor]->GetEdge(jEdge);
+            EdgeIndex = donor_geometry->node[iPointDonor]->GetEdge(jEdge);
           
-          if( iPointDonor == donor_geometry->edge[EdgeIndex]->GetNode(0) )
-            dPoint = donor_geometry->edge[EdgeIndex]->GetNode(1);
-          else
-            dPoint = donor_geometry->edge[EdgeIndex]->GetNode(0);
+            if( iPointDonor == donor_geometry->edge[EdgeIndex]->GetNode(0) )
+              dPoint = donor_geometry->edge[EdgeIndex]->GetNode(1);
+            else
+              dPoint = donor_geometry->edge[EdgeIndex]->GetNode(0);
 
-          if ( donor_geometry->node[dPoint]->GetVertex(markDonor) != -1){
+            if ( donor_geometry->node[dPoint]->GetVertex(markDonor) != -1){
+                        
+                // Match node on the face to the correct global index
+                jGlobalPoint = donor_geometry->node[dPoint]->GetGlobalIndex();
               
-            
-              // Match node on the face to the correct global index
-              jGlobalPoint = donor_geometry->node[dPoint]->GetGlobalIndex();
+                Buffer_Send_FaceNodes[ nLocalFaceNodes_Donor ] = nLocalFaceNodes_Donor;
               
-              Buffer_Send_FaceNodes[ nLocalFaceNodes_Donor ] = nLocalFaceNodes_Donor;
-              
-              for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-                for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
+                for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+                  for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
                     
-                  if (jGlobalPoint == Buffer_Receive_GlobalPoint[ MaxLocalVertex_Donor*iProcessor+jVertex ]) {
+                    if (jGlobalPoint == Buffer_Receive_GlobalPoint[ MaxLocalVertex_Donor*iProcessor+jVertex ]) {
                       
-                    Buffer_Send_FaceNodes[ nLocalFaceNodes_Donor ] = MaxLocalVertex_Donor*iProcessor+jVertex;
-                    Buffer_Send_FaceProc[  nLocalFaceNodes_Donor ] = iProcessor;
+                      Buffer_Send_FaceNodes[ nLocalFaceNodes_Donor ] = MaxLocalVertex_Donor*iProcessor+jVertex;
+                      Buffer_Send_FaceProc[  nLocalFaceNodes_Donor ] = iProcessor;
+                    }
                   }
                 }
-              }
-              nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
+                nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
             
-            /* Store the indices */
-            nNodes++;
-            nLocalFace_Donor++; // Increment number of faces / processor
-            
-          }
-      }
+              /* Store the indices */
+              nNodes++;
+              nLocalFace_Donor++; // Increment number of faces / processor        
+            }
+        }
       
-      //for(int i = 0; i < nNodes; i++)
         Buffer_Send_FaceIndex[iGlobalPoint+1] = Buffer_Send_FaceIndex[iGlobalPoint] + nNodes;
+      }
     }
-  }
 
     //Buffer_Send_FaceIndex[nLocalFace_Donor+1] = MaxFaceNodes_Donor*rank+nLocalFaceNodes_Donor;
 #ifdef HAVE_MPI
@@ -1705,545 +1698,515 @@ for (int j = 0; j < nVertexDonor; j++){
 getchar();
 */
 
-  if(nDim == 2){
-  /*--- Starts with supermesh reconstruction ---*/
+    if(nDim == 2){
+      /*--- Starts with supermesh reconstruction ---*/
 
-    target_StartIndex = target_geometry->vertex[markTarget][0]->GetNode();
+      target_StartIndex = target_geometry->vertex[markTarget][0]->GetNode();
 
-    for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+      for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
 
-      nDonorPoints = 0;
+        nDonorPoints = 0;
 
-      /*--- Stores coordinates of the target node ---*/
+        /*--- Stores coordinates of the target node ---*/
 
-      target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
+        target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-      Coord_i = target_geometry->node[target_iPoint]->GetCoord();
+        Coord_i = target_geometry->node[target_iPoint]->GetCoord();
 
-      /*--- Brute force to find the closest donor_node ---*/
+        /*--- Brute force to find the closest donor_node ---*/
 
-      mindist = 1E6;
+        mindist = 1E6;
 
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-        for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+          for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
         
-          donor_iPoint = iProcessor * MaxLocalVertex_Donor + jVertex;
-          Coord_j = &Buffer_Receive_Coord[ donor_iPoint * nDim ];
+            donor_iPoint = iProcessor * MaxLocalVertex_Donor + jVertex;
+            Coord_j = &Buffer_Receive_Coord[ donor_iPoint * nDim ];
 
-          dist = PointsDistance(Coord_i, Coord_j);
+            dist = PointsDistance(Coord_i, Coord_j);
 
-          if (dist < mindist) {
-            mindist = dist;  
-            donor_StartIndex = donor_iPoint;
+            if (dist < mindist) {
+              mindist = dist;  
+              donor_StartIndex = donor_iPoint;
+            }
+
+            if (dist == 0.0){
+              donor_StartIndex = donor_iPoint;
+              break;
+            }    
+          }
+        }
+                
+        /*--- Contruct information regarding the target cell ---*/
+
+        donor_iPoint    = donor_StartIndex;
+        donor_OldiPoint = donor_iPoint;
+
+        target_forward_point  = FindNextNode_2D(target_geometry,                    -1, target_iPoint, markTarget);
+        target_backward_point = FindNextNode_2D(target_geometry,  target_forward_point, target_iPoint, markTarget);
+
+        dTMP = 0;
+        for(iDim = 0; iDim < nDim; iDim++){
+          target_iMidEdge_point[iDim] = ( target_geometry->node[target_forward_point ]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+          target_jMidEdge_point[iDim] = ( target_geometry->node[target_backward_point]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+
+          Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
+          dTMP += Direction[iDim] * Direction[iDim];
+        }
+  
+        dTMP = sqrt(dTMP);
+        for(iDim = 0; iDim < nDim; iDim++)
+          Direction[iDim] /= dTMP;
+
+        length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
+
+        check = false;
+
+        /*--- Proceeds along the forward direction (depending on which connected boundary node is found first) ---*/
+                
+        while( !check ){
+  
+          /*--- Proceeds until the value of the intersection area is null ---*/
+ 
+          donor_forward_point  = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_OldiPoint);
+          donor_backward_point = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_forward_point);
+
+          for(iDim = 0; iDim < nDim; iDim++){
+            donor_iMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_forward_point  * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+            donor_jMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_backward_point * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
           }
 
-          if (dist == 0.0){
-            donor_StartIndex = donor_iPoint;
-            break;
-          }    
-        }
-      }
-                
-      /*--- Contruct information regarding the target cell ---*/
+          LineIntersectionLength = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
-      donor_iPoint    = donor_StartIndex;
-      donor_OldiPoint = donor_iPoint;
+          if ( LineIntersectionLength == 0.0 ){
+            check = true;
+            continue;
+          }
 
-      target_forward_point  = FindNextNode_2D(target_geometry,                    -1, target_iPoint, markTarget);
-      target_backward_point = FindNextNode_2D(target_geometry,  target_forward_point, target_iPoint, markTarget);
+          /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
 
-      dTMP = 0;
-      for(iDim = 0; iDim < nDim; iDim++){
-        target_iMidEdge_point[iDim] = ( target_geometry->node[target_forward_point ]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
-        target_jMidEdge_point[iDim] = ( target_geometry->node[target_backward_point]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
-
-        Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
-        dTMP += Direction[iDim] * Direction[iDim];
-      }
+          tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
+          tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
   
-      dTMP = sqrt(dTMP);
-      for(iDim = 0; iDim < nDim; iDim++)
-        Direction[iDim] /= dTMP;
+          for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+            tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
+            tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+          }
 
-      length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
+          if (Donor_Vect != NULL)
+            delete [] Donor_Vect;
 
-      check = false;
+          if (Coeff_Vect != NULL)
+            delete [] Coeff_Vect;
 
+          Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+          Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
 
-      /*--- Proceeds along the forward direction (depending on which connected boundary node is found first) ---*/
-                
-      while( !check ){
+          for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+            Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
+            Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+          }
+
+          Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;                   
+          Donor_Vect[ nDonorPoints ] = donor_iPoint;
+
+          if (tmp_Donor_Vect != NULL)
+            delete [] tmp_Donor_Vect;
   
-        /*--- Proceeds until the value of the intersection area is null ---*/
- 
-        donor_forward_point  = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_OldiPoint);
-        donor_backward_point = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_forward_point);
+          if (tmp_Coeff_Vect != NULL)
+            delete [] tmp_Coeff_Vect;
 
-        for(iDim = 0; iDim < nDim; iDim++){
-          donor_iMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_forward_point  * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-          donor_jMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_backward_point * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+          donor_OldiPoint = donor_iPoint;
+          donor_iPoint = donor_forward_point;
+
+          nDonorPoints++;
         }
-
-        LineIntersectionLength = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
-
-        if ( LineIntersectionLength == 0.0 ){
-          check = true;
-          continue;
-        }
-
-        /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
-
-        tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-        tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-  
-        for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-          tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
-          tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
-        }
-
-        if (Donor_Vect != NULL)
-          delete [] Donor_Vect;
-
-        if (Coeff_Vect != NULL)
-         delete [] Coeff_Vect;
-
-        Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-        Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-
-        for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-          Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-          Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-        }
-
-        Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;                   
-        Donor_Vect[ nDonorPoints ] = donor_iPoint;
-
-        if (tmp_Donor_Vect != NULL)
-          delete [] tmp_Donor_Vect;
-  
-        if (tmp_Coeff_Vect != NULL)
-          delete [] tmp_Coeff_Vect;
-
-        donor_OldiPoint = donor_iPoint;
-        donor_iPoint = donor_forward_point;
-
-        nDonorPoints++;
-      }
            
-      donor_iPoint    = donor_StartIndex;
-      donor_OldiPoint = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_iPoint);                
-      donor_iPoint    = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_OldiPoint);
+        donor_iPoint    = donor_StartIndex;
+        donor_OldiPoint = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_iPoint);                
+        donor_iPoint    = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_OldiPoint);
 
-      donor_OldiPoint = donor_StartIndex;
+        donor_OldiPoint = donor_StartIndex;
 
-      check = false;
+        check = false;
 
-      /*--- Proceeds along the backward direction (depending on which connected boundary node is found first) ---*/
+        /*--- Proceeds along the backward direction (depending on which connected boundary node is found first) ---*/
 
-      while( !check ){
+        while( !check ){
 
-        /*--- Proceeds until the value of the intersection length is null ---*/
-        donor_forward_point  = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_OldiPoint);
-        donor_backward_point = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_forward_point);                        
+          /*--- Proceeds until the value of the intersection length is null ---*/
+          donor_forward_point  = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_OldiPoint);
+          donor_backward_point = AFindNextNode_2D(&Buffer_Receive_FaceNodes[ Buffer_Receive_FaceIndex[donor_iPoint] ],  donor_forward_point);                        
 
-        for(iDim = 0; iDim < nDim; iDim++){
-          donor_iMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_forward_point  * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-          donor_jMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_backward_point * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-        }       
+          for(iDim = 0; iDim < nDim; iDim++){
+            donor_iMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_forward_point  * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+            donor_jMidEdge_point[iDim] = ( Buffer_Receive_Coord[ donor_backward_point * nDim + iDim] + Buffer_Receive_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+          }       
 
-        LineIntersectionLength = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+          LineIntersectionLength = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
-        if ( LineIntersectionLength == 0.0 ){
-          check = true;
-          continue;
-        }
+          if ( LineIntersectionLength == 0.0 ){
+            check = true;
+            continue;
+          }
 
-        /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+          /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
 
-        tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-        tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-
-        for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-          tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
-          tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
-        }
-
-        if (Donor_Vect != NULL)
-          delete [] Donor_Vect;
-  
-        if (Coeff_Vect != NULL)
-          delete [] Coeff_Vect;
-
-        Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-        Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-
-        for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-          Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-          Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-        }
-
-        Donor_Vect[ nDonorPoints ] = donor_iPoint;
-        Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
-
-        if (tmp_Donor_Vect != NULL)
-          delete [] tmp_Donor_Vect;
-
-        if (tmp_Coeff_Vect != NULL)
-          delete [] tmp_Coeff_Vect;
-
-
-        donor_OldiPoint = donor_iPoint;
-        donor_iPoint = donor_forward_point;
-  
-        nDonorPoints++;
-      }
-                
-      /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
-
-      target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
-
-      target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+          tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
+          tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
  
-      for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
-        target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
-        target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Buffer_Receive_GlobalPoint[ Donor_Vect[iDonor] ]);
-        target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+          for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+            tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
+            tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+          }
+
+          if (Donor_Vect != NULL)
+            delete [] Donor_Vect;
+  
+          if (Coeff_Vect != NULL)
+            delete [] Coeff_Vect;
+
+          Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+          Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+
+          for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+            Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
+            Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+          }
+
+          Donor_Vect[ nDonorPoints ] = donor_iPoint;
+          Coeff_Vect[ nDonorPoints ] = LineIntersectionLength / length;
+
+          if (tmp_Donor_Vect != NULL)
+            delete [] tmp_Donor_Vect;
+
+          if (tmp_Coeff_Vect != NULL)
+            delete [] tmp_Coeff_Vect;
+
+          donor_OldiPoint = donor_iPoint;
+          donor_iPoint = donor_forward_point;
+  
+          nDonorPoints++;
+        }
+                
+        /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
+
+        target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
+
+        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+   
+        for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
+          target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Buffer_Receive_GlobalPoint[ Donor_Vect[iDonor] ]);
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+        }
       }
     }
-  }
-        else{ 
-            /* --- 3D geometry, creates a superficial super-mesh --- */
-            
-            for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
-                
-                nDonorPoints = 0;
-                
-                /*--- Stores coordinates of the target node ---*/
-                
-                target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
-                
-                Coord_i = target_geometry->node[target_iPoint]->GetCoord();
-                
-                target_geometry->vertex[markTarget][iVertex]->GetNormal(Normal);
-                
-                /*--- The value of Area computed here includes also portion of boundary belonging to different marker ---*/
-                Area = 0.0;
-                for (iDim = 0; iDim < nDim; iDim++) 
-                    Area += Normal[iDim]*Normal[iDim];
-                Area = sqrt(Area);
+    else{ 
+      /* --- 3D geometry, creates a superficial super-mesh --- */
 
-                for (iDim = 0; iDim < nDim; iDim++)
-                    Normal[iDim] /= Area;
+      for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+  
+        nDonorPoints = 0;
 
-                for (iDim = 0; iDim < nDim; iDim++)
-                    Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
-                    
-                /*--- Build local surface dual mesh for target element ---*/
-                
-                nEdges_target = target_geometry->node[target_iPoint]->GetnPoint();
-                
-                nNode_target = nEdges_target*2 + 1;
+        /*--- Stores coordinates of the target node ---*/
 
-                target_element = new su2double*[nNode_target];
-                for (ii = 0; ii < nNode_target; ii++)
-                    target_element[ii] = new su2double[nDim];
-                    
-                    
-                nNode_target = Build_3D_surface_element(target_geometry, target_iPoint, markTarget, target_element);
+        target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
+        Coord_i = target_geometry->node[target_iPoint]->GetCoord();
 
-      /*--- Brute force to find the closest donor_node ---*/
+        target_geometry->vertex[markTarget][iVertex]->GetNormal(Normal);
+ 
+        /*--- The value of Area computed here includes also portion of boundary belonging to different marker ---*/
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) 
+          Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
+ 
+        for (iDim = 0; iDim < nDim; iDim++)
+          Normal[iDim] /= Area;
 
-      mindist = 1E6;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
 
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-        for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+        /*--- Build local surface dual mesh for target element ---*/
+
+        nEdges_target = target_geometry->node[target_iPoint]->GetnPoint();
+
+        nNode_target = nEdges_target*2 + 1;
+
+        target_element = new su2double*[nNode_target];
+        for (ii = 0; ii < nNode_target; ii++)
+          target_element[ii] = new su2double[nDim];
+
+        nNode_target = Build_3D_surface_element(target_geometry, target_iPoint, markTarget, target_element);
+
+        /*--- Brute force to find the closest donor_node ---*/
+
+        mindist = 1E6;
+
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+          for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
         
-          donor_iPoint = iProcessor * MaxLocalVertex_Donor + jVertex;
-          Coord_j = &Buffer_Receive_Coord[ donor_iPoint * nDim ];
+            donor_iPoint = iProcessor * MaxLocalVertex_Donor + jVertex;
+            Coord_j = &Buffer_Receive_Coord[ donor_iPoint * nDim ];
 
-          dist = PointsDistance(Coord_i, Coord_j);
+            dist = PointsDistance(Coord_i, Coord_j);
 
-          if (dist < mindist) {
-            mindist = dist;  
-            donor_StartIndex = donor_iPoint;
+            if (dist < mindist) {
+              mindist = dist;  
+              donor_StartIndex = donor_iPoint;
+            }
+
+            if (dist == 0.0){
+              donor_StartIndex = donor_iPoint;
+              break;
+            }    
           }
-
-          if (dist == 0.0){
-            donor_StartIndex = donor_iPoint;
-            break;
-          }    
         }
-      }
                 
-                donor_iPoint = donor_StartIndex;
-                
+        donor_iPoint = donor_StartIndex;
+
+        nEdges_donor = Buffer_Receive_FaceIndex[donor_iPoint+1] - Buffer_Receive_FaceIndex[donor_iPoint];
+        //donor_geometry->node[donor_iPoint]->GetnPoint();
+
+        donor_element = new su2double*[ nEdges_donor*2 + 2 ];
+        for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
+        donor_element[ii] = new su2double[nDim];                
+
+        nNode_donor = ABuild_3D_surface_element(Buffer_Receive_FaceNodes, Buffer_Receive_FaceIndex, Buffer_Receive_Coord, donor_iPoint, donor_element);
+
+        Area = 0;
+        for (ii = 1; ii < nNode_target-1; ii++){
+          for (jj = 1; jj < nNode_donor-1; jj++){
+            Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
+            //cout << Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal) << endl;
+          }
+        }
+
+        for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
+          delete [] donor_element[ii];
+        delete [] donor_element;
+
+        nDonorPoints = 1;
+
+        /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+
+        Coeff_Vect = new     su2double[ nDonorPoints ];
+        Donor_Vect = new unsigned long[ nDonorPoints ];
+
+        Coeff_Vect[0] = Area;
+        Donor_Vect[0] = donor_iPoint;
+
+        //cout << "Area zero " << scientific << Area << "  " << target_area << "  " << Area - target_area << "  " << Area/target_area << endl;getchar();
+
+        alreadyVisitedDonor = new int[1];
+
+        alreadyVisitedDonor[0] = donor_iPoint;
+        nAlreadyVisited = 1;
+        StartVisited = 0;
+
+        Area_old = -1;
+                    
+        while( Area > Area_old ){ 
+
+          /* 
+           * - Starting from the closest donor_point, it expands the supermesh by a countour search pattern.
+           * - The closest donor element becomes the core, at each iteration a new layer of elements around the core is taken into account
+           */
+
+          Area_old = Area;
+
+          ToVisit = NULL;
+          nToVisit = 0;
+
+          for( iNodeVisited = StartVisited; iNodeVisited < nAlreadyVisited; iNodeVisited++ ){
+
+            vPoint = alreadyVisitedDonor[ iNodeVisited ];
+ 
+            for (iEdgeVisited = Buffer_Receive_FaceIndex[vPoint]; iEdgeVisited < Buffer_Receive_FaceIndex[vPoint+1]; iEdgeVisited++){
+
+              donor_iPoint = Buffer_Receive_FaceNodes[iEdgeVisited];
+
+              /*--- Check if the node to visit is already listed in the data structure to avoid double visits ---*/
+
+              check = 0;
+
+              for( jj = 0; jj < nAlreadyVisited; jj++ ){
+                if( donor_iPoint == alreadyVisitedDonor[jj] ){
+                  check = 1; 
+                  break;
+                }
+              }
+
+              if( check == 0 && ToVisit != NULL){
+                for( jj = 0; jj < nToVisit; jj++ )
+                  if( donor_iPoint == ToVisit[jj] ){
+                    check = 1; 
+                    break;
+                  }       
+              }
+
+              if( check == 0 ){ 
+                /*--- If the node was not already visited, visit it and list it into data structure ---*/
+
+                tmpVect = new int[ nToVisit ];
+
+                for( jj = 0; jj < nToVisit; jj++ )
+                  tmpVect[jj] = ToVisit[jj];
+
+                if( ToVisit != NULL )
+                  delete [] ToVisit;
+
+                ToVisit = new int[nToVisit + 1];
+
+                for( jj = 0; jj < nToVisit; jj++ )
+                  ToVisit[jj] = tmpVect[jj];
+
+                delete [] tmpVect;              
+
+                ToVisit[nToVisit] = donor_iPoint;
+
+                nToVisit++; 
+
+                /*--- Find the value of the intersection area between the current donor element and the target element --- */
+
                 nEdges_donor = Buffer_Receive_FaceIndex[donor_iPoint+1] - Buffer_Receive_FaceIndex[donor_iPoint];
                 //donor_geometry->node[donor_iPoint]->GetnPoint();
-                
-                donor_element = new su2double*[ nEdges_donor*2 + 2 ];
+
+                donor_element = new su2double*[ nEdges_donor*2 + 2 ];   
                 for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
-                  donor_element[ii] = new su2double[nDim];                
-                    
+                  donor_element[ii] = new su2double[nDim];             
+
                 nNode_donor = ABuild_3D_surface_element(Buffer_Receive_FaceNodes, Buffer_Receive_FaceIndex, Buffer_Receive_Coord, donor_iPoint, donor_element);
 
-                Area = 0;
-                for (ii = 1; ii < nNode_target-1; ii++){
-                    for (jj = 1; jj < nNode_donor-1; jj++){
-                        Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
-                        //cout << Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal) << endl;
-                    }
-                }
+                tmp_Area = 0;
+                for (ii = 1; ii < nNode_target-1; ii++)
+                  for (jj = 1; jj < nNode_donor-1; jj++)
+                    tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
 
                 for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
-                    delete [] donor_element[ii];
+                  delete [] donor_element[ii];
                 delete [] donor_element;
-                
-                nDonorPoints = 1;
-                
+ 
                 /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
-                        
-                Coeff_Vect = new     su2double[ nDonorPoints ];
-                Donor_Vect = new unsigned long[ nDonorPoints ];
-                
-                Coeff_Vect[0] = Area;
-                Donor_Vect[0] = donor_iPoint;
-                
-                //cout << "Area zero " << scientific << Area << "  " << target_area << "  " << Area - target_area << "  " << Area/target_area << endl;getchar();
-                
-                //if( Area/target_area < 1 ){
-                    
-                    alreadyVisitedDonor = new int[1];
-                    
-                    alreadyVisitedDonor[0] = donor_iPoint;
-                    nAlreadyVisited = 1;
-                    StartVisited = 0;
-                    
-                    Area_old = -1;
-                    
-                    while( Area > Area_old ){ 
-                        
-                        /* 
-                         * - Starting from the closest donor_point, it expands the supermesh by a countour search pattern.
-                         * - The closest donor element becomes the core, at each iteration a new layer of elements around the core is taken into account
-                        */
-                        
-                        Area_old = Area;
-                        
-                        ToVisit = NULL;
-                        nToVisit = 0;
-                        
-                        for( iNodeVisited = StartVisited; iNodeVisited < nAlreadyVisited; iNodeVisited++ ){
-                        
-                            vPoint = alreadyVisitedDonor[ iNodeVisited ];
 
-                            //nEdgeVisited = nNeighbor[vPoint+1] - nNeighbor[vPoint];
-                            //donor_geometry->node[ vPoint ]->GetnPoint();
-                        
-                            for (iEdgeVisited = Buffer_Receive_FaceIndex[vPoint]; iEdgeVisited < Buffer_Receive_FaceIndex[vPoint+1]; iEdgeVisited++){
-/*
-                                EgdeIndex = donor_geometry->node[ vPoint ]->GetEdge( iEdgeVisited );
-                                    
-                                if( vPoint == donor_geometry->edge[ EgdeIndex ]->GetNode(0) )
-                                    donor_iPoint = donor_geometry->edge[ EgdeIndex ]->GetNode(1);
-                                else
-                                    donor_iPoint = donor_geometry->edge[ EgdeIndex ]->GetNode(0);
-*/
+                tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
+                tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
 
-                                donor_iPoint = Buffer_Receive_FaceNodes[iEdgeVisited];
-                                
-                                //if ( donor_geometry->node[donor_iPoint]->GetVertex(markDonor) != -1 ){
-                                        
-                                    /*--- Check if the node to visit is already listed in the data structure to avoid double visits ---*/
-                                    
-                                    check = 0;
-                                    
-                                    for( jj = 0; jj < nAlreadyVisited; jj++ ){
-                                        if( donor_iPoint == alreadyVisitedDonor[jj] ){
-                                                check = 1; break;
-                                        }
-                                    }
-                                    
-                                    if( check == 0 && ToVisit != NULL){
-                                        for( jj = 0; jj < nToVisit; jj++ )
-                                            if( donor_iPoint == ToVisit[jj] ){
-                                                    check = 1; break;
-                                            }       
-                                    }
-                                    
-                                    if( check == 0 ){ 
-                                        /*--- If the node was not already visited, visit it and list it into data structure ---*/
-                                        
-                                        tmpVect = new int[ nToVisit ];
-                                        
-                                        for( jj = 0; jj < nToVisit; jj++ )
-                                            tmpVect[jj] = ToVisit[jj];
-                                            
-                                        if( ToVisit != NULL )
-                                            delete [] ToVisit;
-                                            
-                                        ToVisit = new int[nToVisit + 1];
-                                        
-                                        for( jj = 0; jj < nToVisit; jj++ )
-                                            ToVisit[jj] = tmpVect[jj];
-                                                        
-                                        delete [] tmpVect;              
-                                        
-                                        ToVisit[nToVisit] = donor_iPoint;
-                                        
-                                        nToVisit++; 
-                                        
-                                        /*--- Find the value of the intersection area between the current donor element and the target element --- */
-
-                                        nEdges_donor = Buffer_Receive_FaceIndex[donor_iPoint+1] - Buffer_Receive_FaceIndex[donor_iPoint];
-                                        //donor_geometry->node[donor_iPoint]->GetnPoint();
-                                        
-                                        donor_element = new su2double*[ nEdges_donor*2 + 2 ];   
-                                        for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
-                                            donor_element[ii] = new su2double[nDim];             
-
-                                        nNode_donor = ABuild_3D_surface_element(Buffer_Receive_FaceNodes, Buffer_Receive_FaceIndex, Buffer_Receive_Coord, donor_iPoint, donor_element);
-
-                                        tmp_Area = 0;
-                                        for (ii = 1; ii < nNode_target-1; ii++)
-                                            for (jj = 1; jj < nNode_donor-1; jj++)
-                                                tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
-
-                                        for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
-                                            delete [] donor_element[ii];
-                                        delete [] donor_element;
-                                        
-                                        /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
-                    
-                                        tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-                                        tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-                                        
-                                        for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-                                            tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
-                                            tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
-                                        }
-                                        
-                                        if (Donor_Vect != NULL)
-                                            delete [] Donor_Vect;
-                                            
-                                        if (Coeff_Vect != NULL)
-                                            delete [] Coeff_Vect;
-                                        
-                                        Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-                                        Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-                                        
-                                        for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-                                            Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-                                            Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-                                        }
-
-                                        Coeff_Vect[ nDonorPoints ] = tmp_Area;                  
-                                        Donor_Vect[ nDonorPoints ] = donor_iPoint;
-
-                                        if (tmp_Donor_Vect != NULL)
-                                            delete [] tmp_Donor_Vect;
-                                
-                                        if (tmp_Coeff_Vect != NULL)
-                                            delete [] tmp_Coeff_Vect;
-                                            
-                                        nDonorPoints++;
-                                        
-                                        Area += tmp_Area;
-                    
-                                    }
-                                    
-                                //}
-                             
-                             
-                             
-                                    
-                            }   
-                        }
-                        
-                        /*--- Update auxiliary data structure ---*/
-                        
-                        StartVisited = nAlreadyVisited;
-                        
-                        tmpVect = new int[ nAlreadyVisited ];
-                                        
-                        for( jj = 0; jj < nAlreadyVisited; jj++ )
-                            tmpVect[jj] = alreadyVisitedDonor[jj];
-                            
-                        if( alreadyVisitedDonor != NULL )
-                            delete [] alreadyVisitedDonor;
-                            
-                        alreadyVisitedDonor = new int[ nAlreadyVisited + nToVisit ];
-                        
-                        for( jj = 0; jj < nAlreadyVisited; jj++ )
-                            alreadyVisitedDonor[jj] = tmpVect[jj];
-                            
-                        for( jj = 0; jj < nToVisit; jj++ )
-                            alreadyVisitedDonor[ nAlreadyVisited + jj ] = ToVisit[jj];
-                                        
-                        delete [] tmpVect;              
-
-                        nAlreadyVisited += nToVisit;    
-                        
-                        delete [] ToVisit;  
-                    }
-                
-                    delete [] alreadyVisitedDonor;
-                    
-                // }
-
-                /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
-
-                target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
-                
-                target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
-
-                for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
-                    target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
-                    target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Buffer_Receive_GlobalPoint[ Donor_Vect[iDonor] ] );
-                    target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
-
-                    //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;               
+                for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+                  tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
+                  tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
                 }
 
-                
                 if (Donor_Vect != NULL)
-                    delete [] Donor_Vect;
-                    
+                  delete [] Donor_Vect;
+
                 if (Coeff_Vect != NULL)
-                    delete [] Coeff_Vect;               
-                                        
-                for (ii = 0; ii < nEdges_target*2 + 1; ii++)
-                            delete [] target_element[ii];
-                delete [] target_element;
-            }
+                  delete [] Coeff_Vect;
+
+                Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+                Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+
+                for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+                  Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
+                  Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+                }
+
+                Coeff_Vect[ nDonorPoints ] = tmp_Area;                  
+                Donor_Vect[ nDonorPoints ] = donor_iPoint;
+
+                if (tmp_Donor_Vect != NULL)
+                  delete [] tmp_Donor_Vect;
+
+                if (tmp_Coeff_Vect != NULL)
+                  delete [] tmp_Coeff_Vect;
+
+                nDonorPoints++;
+   
+                Area += tmp_Area;
+              }
+            }   
+          }
+
+          /*--- Update auxiliary data structure ---*/
+ 
+          StartVisited = nAlreadyVisited;
+
+          tmpVect = new int[ nAlreadyVisited ];
+
+          for( jj = 0; jj < nAlreadyVisited; jj++ )
+            tmpVect[jj] = alreadyVisitedDonor[jj];
+
+          if( alreadyVisitedDonor != NULL )
+            delete [] alreadyVisitedDonor;
+
+          alreadyVisitedDonor = new int[ nAlreadyVisited + nToVisit ];
+
+          for( jj = 0; jj < nAlreadyVisited; jj++ )
+            alreadyVisitedDonor[jj] = tmpVect[jj];
+
+          for( jj = 0; jj < nToVisit; jj++ )
+           alreadyVisitedDonor[ nAlreadyVisited + jj ] = ToVisit[jj];
+ 
+          delete [] tmpVect;              
+
+          nAlreadyVisited += nToVisit;    
+
+          delete [] ToVisit;  
         }
-        
-        
-        
-        delete [] Buffer_Send_Coord;
-        delete [] Buffer_Send_GlobalPoint;
 
-        delete [] Buffer_Receive_Coord;
-        delete [] Buffer_Receive_GlobalPoint;
+        delete [] alreadyVisitedDonor;
 
-        delete [] Buffer_Send_nVertex_Donor;
-        delete [] Buffer_Receive_nVertex_Donor;
+        /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
+
+        target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
+
+        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+
+        for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
+          target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Buffer_Receive_GlobalPoint[ Donor_Vect[iDonor] ] );
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+          //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;               
+        }
+
+        if (Donor_Vect != NULL)
+          delete [] Donor_Vect;
+
+        if (Coeff_Vect != NULL)
+          delete [] Coeff_Vect;               
+
+        for (ii = 0; ii < nEdges_target*2 + 1; ii++)
+          delete [] target_element[ii];
+        delete [] target_element;
+      }
     }
 
-    delete [] Normal;
-    
-    delete [] target_iMidEdge_point;
-    delete [] target_jMidEdge_point;
-    
-    delete [] donor_iMidEdge_point;
-    delete [] donor_jMidEdge_point;
-    
-    delete [] Direction;
-    
-  #ifdef HAVE_MPI
+    delete [] Buffer_Send_Coord;
+    delete [] Buffer_Send_GlobalPoint;
+
+    delete [] Buffer_Receive_Coord;
+    delete [] Buffer_Receive_GlobalPoint;
+
+    delete [] Buffer_Send_nVertex_Donor;
+    delete [] Buffer_Receive_nVertex_Donor;
+  }
+
+  delete [] Normal;
+
+  delete [] target_iMidEdge_point;
+  delete [] target_jMidEdge_point;
+
+  delete [] donor_iMidEdge_point;
+  delete [] donor_jMidEdge_point;
+
+  delete [] Direction;
+
+#ifdef HAVE_MPI
   if (rank == MASTER_NODE && Buffer_Recv_mark != NULL ) 
     delete [] Buffer_Recv_mark;
-  #endif
+#endif
     
 }
 
