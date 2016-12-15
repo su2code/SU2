@@ -492,7 +492,8 @@ enum ENUM_GRIDMOVEMENT {
   ELASTICITY = 9,    /*!< \brief Linear Elasticity. */
   AEROELASTIC_RIGID_MOTION = 10, /*!< \brief Simulation with rotation and aeroelastic motion. */
   STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
-  GUST = 12 /*!< \brief Simulation on a static mesh with a gust. */
+  GUST = 12, /*!< \brief Simulation on a static mesh with a gust. */
+  MOVING_HTP = 13    /*!< \brief Simulation with moving HTP (rotation). */
 
 };
 
@@ -507,6 +508,7 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("ROTATING_FRAME", ROTATING_FRAME)
 ("ELASTICITY", ELASTICITY)
 ("MOVING_WALL", MOVING_WALL)
+("MOVING_HTP", MOVING_HTP)
 ("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
 ("STEADY_TRANSLATION", STEADY_TRANSLATION)
 ("GUST", GUST);
@@ -1158,17 +1160,24 @@ enum ENUM_PARAM {
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
   SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
   CUSTOM = 19,                /*!< 'CUSTOM' for use in external python analysis. */
-  CST = 20                /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  CST = 20,                /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  NO_DEFORMATION = 21,		       /*!< \brief No Deformation. */
+  HTP_INCIDENCE = 22,			         /*!< \brief Incidence of the HTP. */
+  ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
+  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
+("FFD_ANGLE_OF_ATTACK", FFD_ANGLE_OF_ATTACK)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
+("ANGLE_OF_ATTACK", ANGLE_OF_ATTACK)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("TRANSLATION", TRANSLATION)
 ("ROTATION", ROTATION)
+("HTP_INCIDENCE", HTP_INCIDENCE)
 ("SCALE", SCALE)
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
@@ -1180,7 +1189,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
-("CUSTOM",CUSTOM)
+("CUSTOM", CUSTOM)
+("NO_DEFORMATION", NO_DEFORMATION)
 ("CST", CST);
 
 /*!
@@ -2047,27 +2057,31 @@ public:
     unsigned int i = 0;
     for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
-        case FFD_SETTING: nParamDV = 0; break;
+        case NO_DEFORMATION:       nParamDV = 0; break;
+        case FFD_SETTING:          nParamDV = 0; break;
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
-        case FFD_CAMBER_2D: nParamDV = 2; break;
-        case FFD_THICKNESS_2D: nParamDV = 2; break;
-        case HICKS_HENNE: nParamDV = 2; break;
-	case CST: nParamDV = 3; break;
-        case SCALE: nParamDV = 0; break;
-        case TRANSLATION: nParamDV = 3; break;
-        case ROTATION: nParamDV = 6; break;
-        case NACA_4DIGITS: nParamDV = 3; break;
-        case PARABOLIC: nParamDV = 2; break;
-        case AIRFOIL: nParamDV = 2; break;
-        case FFD_CONTROL_POINT: nParamDV = 7; break;
-        case FFD_DIHEDRAL_ANGLE: nParamDV = 7; break;
-        case FFD_TWIST_ANGLE: nParamDV = 7; break;
-        case FFD_ROTATION: nParamDV = 7; break;
-        case FFD_CONTROL_SURFACE: nParamDV = 7; break;
-        case FFD_CAMBER: nParamDV = 3; break;
-        case FFD_THICKNESS: nParamDV = 3; break;
-        case SURFACE_FILE: nParamDV = 0; break;
-        case CUSTOM: nParamDV = 1; break;
+        case FFD_CAMBER_2D:        nParamDV = 2; break;
+        case FFD_THICKNESS_2D:     nParamDV = 2; break;
+        case HICKS_HENNE:          nParamDV = 2; break;
+        case CST:                  nParamDV = 3; break;
+        case ANGLE_OF_ATTACK:      nParamDV = 1; break;
+        case SCALE:                nParamDV = 0; break;
+        case TRANSLATION:          nParamDV = 3; break;
+        case ROTATION:             nParamDV = 6; break;
+        case HTP_INCIDENCE:        nParamDV = 2; break;
+        case NACA_4DIGITS:         nParamDV = 3; break;
+        case PARABOLIC:            nParamDV = 2; break;
+        case AIRFOIL:              nParamDV = 2; break;
+        case FFD_CONTROL_POINT:    nParamDV = 7; break;
+        case FFD_DIHEDRAL_ANGLE:   nParamDV = 7; break;
+        case FFD_TWIST_ANGLE:      nParamDV = 7; break;
+        case FFD_ROTATION:         nParamDV = 7; break;
+        case FFD_CONTROL_SURFACE:  nParamDV = 7; break;
+        case FFD_CAMBER:           nParamDV = 3; break;
+        case FFD_THICKNESS:        nParamDV = 3; break;
+        case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
+        case SURFACE_FILE:         nParamDV = 0; break;
+        case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2081,7 +2095,9 @@ public:
         ss << option_value[i] << " ";
 
         if ((iParamDV == 0) &&
-            ((this->design_variable[iDV] == FFD_SETTING) ||
+            ((this->design_variable[iDV] == NO_DEFORMATION) ||
+             (this->design_variable[iDV] == FFD_SETTING) ||
+             (this->design_variable[iDV] == FFD_ANGLE_OF_ATTACK)||
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
              (this->design_variable[iDV] == FFD_CAMBER_2D) ||
              (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
