@@ -87,9 +87,9 @@ protected:
 
 
 public:
-  CGeometry*** Geometry; 		/*! \brief Vector which stores n zones of geometry. */
-  CGeometry* donor_geometry; 	/*! \brief Vector which stores the donor geometry. */
-  CGeometry* target_geometry; 	/*! \brief Vector which stores the target geometry. */
+  CGeometry*** Geometry;        /*! \brief Vector which stores n zones of geometry. */
+  CGeometry* donor_geometry;    /*! \brief Vector which stores the donor geometry. */
+  CGeometry* target_geometry;   /*! \brief Vector which stores the target geometry. */
 
   /*!
    * \brief Constructor of the class.
@@ -293,6 +293,16 @@ public:
   int Build_3D_surface_element(CGeometry *geometry, unsigned long centralNode, unsigned long markID, su2double** element);
   
   /*!
+   * \brief For 3-Dimensional grids, build the dual surface element
+   * \param[in] geometry - geometry where the node cell belongs
+   * \param[in] centralNode - label of the vertex around which the dual surface element is built
+   * \param[in] markID   - node centered cell index
+   * \param[in] element  - double array where element node coordinates will be stored
+   * \param[in] output   - number of nodes in the element
+   */  
+  int ABuild_3D_surface_element(unsigned long *map, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
+  
+  /*!
    * \brief compute distance between 2 points
    * \param[in] point_i
    * \param[in] point_i
@@ -308,6 +318,15 @@ public:
    * \param[in] Direction - along which segments are projected
    */
   su2double Compute_Intersection_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
+  
+  /*!
+   * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
+   * \param[in] geometry - geometry where the node cell belongs
+   * \param[in] PreviousVertex - label of the previous vertex so that the direction is specified
+   * \param[in] VertexID - node centered cell index
+   * \param[in] markID   - node centered cell index
+   */
+  int AFindNextNode_2D(unsigned long *map, int PreviousNode);
   
   /*!
    * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
