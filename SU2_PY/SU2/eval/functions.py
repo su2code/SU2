@@ -120,12 +120,12 @@ def function( func_name, config, state=None ):
             if objectives[func]['CTYPE']=='NONE':
                 func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
             else:
-                value = state['FUNCTIONS'][func]
+                value = float(state['FUNCTIONS'][func])
                 valuec = float(objectives[func]['CVAL'])                   
-                if (objectives[this_obj]['CTYPE']=='=' or \
-                    (objectives[this_obj]['CTYPE']=='>' and value < valuec) or \
-                    (objectives[this_obj]['CTYPE']=='<' and value > valuec )):
-                    func +=objectives[func]['SCALE']*(valuec - value)**2.0
+                if (objectives[func]['CTYPE']=='=' or \
+                    (objectives[func]['CTYPE']=='>' and value < valuec) or \
+                    (objectives[func]['CTYPE']=='<' and value > valuec )):
+                    func_out +=objectives[func]['SCALE']*(valuec - value)**2.0
                 
         state['FUNCTIONS']['COMBO'] = func_out
     else:
