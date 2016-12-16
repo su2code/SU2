@@ -14123,7 +14123,7 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
         center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
         angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
         trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
-        
+				
         /*--- Store center - trans as it is constant and will be added on.
          Note the subtraction, as this is the inverse translation. ---*/
         translation[0] = center[0] - trans[0];
@@ -14270,6 +14270,7 @@ void CPeriodicGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config
       for (iIndex = 0; iIndex < geometry->PeriodicPoint[iPeriodic][0].size(); iIndex++) {
         bound[iMarkerSend][iVertex] = new CVertexMPI(geometry->PeriodicPoint[iPeriodic][0][iIndex], nDim);
         bound[iMarkerSend][iVertex]->SetRotation_Type(iPeriodic);
+				cout << "Point = " << geometry->PeriodicPoint[iPeriodic][0][iIndex] << " Rotation = " << iPeriodic << endl;
         iVertex++;
       }
   
@@ -14312,7 +14313,8 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     NewSort[iPoint] = iPoint;
   }
-  
+	
+  /*---
   unsigned long Index = OldnPoint-1;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
@@ -14327,7 +14329,8 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       }
     }
   }
-  
+	---*/
+	
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
   output_file << "NELEM= " << nElem << endl;
@@ -14371,12 +14374,12 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
           output_file << NewSort[newBoundPer[iMarker][iElem_Bound]->GetNode(iNodes)] << endl;
         }
       }
-      
     }
     
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
       output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
       output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
+			output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       
@@ -14407,7 +14410,8 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       if (iPeriodic == config->GetMarker_All_PerBound(iMarker)) break;
     
     /*--- Retrieve the supplied periodic information. ---*/
-    center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
+		cout << "Marker = " << iMarker <<" iPer = " << iPeriodic << " Tag Bound = " << config->GetMarker_All_TagBound(iMarker) << endl;
+		center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
     angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
     transl = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
     
