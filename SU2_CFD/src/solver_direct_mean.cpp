@@ -15091,6 +15091,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   /*--- Read all lines in the restart file ---*/
   
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
   
   /*--- The first line is the header ---*/
   
@@ -15158,7 +15159,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       }
       
     }
-    iPoint_Global++;
+    iPoint_Global_Local++;
   }
   
   /*--- Close the restart file ---*/
