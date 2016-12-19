@@ -326,7 +326,16 @@ public:
    * \param[in] VertexID - node centered cell index
    * \param[in] markID   - node centered cell index
    */
-  int AFindNextNode_2D(unsigned long *map, int PreviousNode);
+  int AFindNextNode_2D(unsigned long *map, unsigned long PreviousNode);
+  
+  /*!
+   * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
+   * \param[in] geometry - geometry where the node cell belongs
+   * \param[in] PreviousVertex - label of the previous vertex so that the direction is specified
+   * \param[in] VertexID - node centered cell index
+   * \param[in] markID   - node centered cell index
+   */
+  int BFindNextNode_2D(unsigned long *map, unsigned long PreviousNode);
   
   /*!
    * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction

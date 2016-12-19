@@ -2336,7 +2336,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   getline (solution_file, text_line);
   
-  while (getline (solution_file, text_line)) {
+  while (getline (solution_file, text_line) && iPoint_Global < geometry[iZone]->GetnPointDomain() ) {
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
