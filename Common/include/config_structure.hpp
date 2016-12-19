@@ -628,7 +628,8 @@ private:
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
+	bool Wrt_FlipFlop_Restart,	/*!< \brief Uses two restart files and switches between them when writting restarts. */
+	Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -2534,7 +2535,13 @@ public:
 	 */
 	bool GetWrt_Vol_Sol(void);
   
-  /*!
+	/*!
+	 * \brief Get information about writting two restart files alternating to preserve the restart information
+	 * \return <code>TRUE</code> means two restart files will be written and will alternate each time that needs to be written
+	 */
+	bool GetWrt_FlipFlop_Restart(void);
+	
+	/*!
 	 * \brief Get information about writing a volume solution file.
 	 * \return <code>TRUE</code> means that a volume solution file will be written.
 	 */
@@ -2587,7 +2594,7 @@ public:
    * \return <code>TRUE</code> means that the average stagnation pressure will be output for specified markers.
    */
   bool GetWrt_1D_Output(void);
-
+	
 	/*!
 	 * \brief Get the alpha (convective) coefficients for the Runge-Kutta integration scheme.
 	 * \param[in] val_step - Index of the step.

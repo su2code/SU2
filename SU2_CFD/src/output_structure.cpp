@@ -3670,6 +3670,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   ofstream restart_file;
   string filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+	bool flipflop = config->GetWrt_FlipFlop_Restart();
+	
 
   /*--- Retrieve filename from config ---*/
   
@@ -3694,7 +3696,22 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   } else if ((fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
-  
+	
+	/*--- Restart file Flip Flop option selected to write files alternating ---*/
+	if (flipflop){
+		unsigned short lastindex = filename.find_last_of(".");
+		unsigned long restNum = iExtIter/config->GetWrt_Sol_Freq();
+		bool lastRestart = (iExtIter % config->GetWrt_Sol_Freq()) == 0;
+		
+		if ((restNum % 2 != 0 && !lastRestart) || (restNum % 2 == 0 && lastRestart)) {
+			filename =filename.substr(0, lastindex).append("_flop.dat");
+			cout << "Restart filename flop." << endl;
+		} else if ((restNum % 2 == 0 && !lastRestart) || (restNum % 2 != 0 && lastRestart)) {
+			filename =filename.substr(0, lastindex).append("_flip.dat");
+			cout << "Restart filename flip." << endl;
+		}
+	}
+	
   /*--- Open the restart file and write the solution. ---*/
   
   restart_file.open(filename.c_str(), ios::out);

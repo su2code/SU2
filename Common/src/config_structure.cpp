@@ -1227,6 +1227,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
+	/*!\brief WRT_FLIPFLOP_RESTART
+	 *  \n DESCRIPTION: Uses two restart files and switches between them when writting restarts   \ingroup Config*/
+	addBoolOption("WRT_FLIPFLOP_RESTART", Wrt_FlipFlop_Restart, false);
   /*!\brief WRT_SOL_FREQ_DUALTIME
    *  \n DESCRIPTION: Writing solution file frequency for dual time  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ_DUALTIME", Wrt_Sol_Freq_DualTime, 1);
