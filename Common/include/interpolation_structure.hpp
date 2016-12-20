@@ -300,7 +300,7 @@ public:
    * \param[in] element  - double array where element node coordinates will be stored
    * \param[in] output   - number of nodes in the element
    */  
-  int ABuild_3D_surface_element(unsigned long *map, unsigned long nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
+  int ABuild_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
   
   /*!
    * \brief compute distance between 2 points
