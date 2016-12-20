@@ -2331,7 +2331,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read all lines in the restart file ---*/
 
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
 
   /*--- The first line is the header ---*/
 
@@ -2362,7 +2361,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       
       node[iPoint_Local]->SetSolution(Solution);
       
-      iPoint_Global_Local++;
     }
     
   }
