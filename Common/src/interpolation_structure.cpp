@@ -1392,7 +1392,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   su2double dTMP;
   su2double *Coeff_Vect, *tmp_Coeff_Vect;             
-  int *storeProc, *tmp_storeProc;
+  unsigned long *storeProc, *tmp_storeProc;
 
 
   /* --- Geometrical variables --- */
@@ -1720,7 +1720,7 @@ unsigned long *target_segment;
     nGlobalVertex_Donor = nVertexDonor;
     nGlobalLinkedNodes  = nLocalLinkedNodes;
 #endif 
-
+//cout << rank << "  " << nLocalLinkedNodes << "  " << nGlobalLinkedNodes << endl;
     DonorPoint_Coord  = new su2double    [ nGlobalVertex_Donor * nDim ];//
     Donor_GlobalPoint = new unsigned long[ nGlobalVertex_Donor        ];//
     Donor_proc        = new unsigned long[ nGlobalVertex_Donor        ];//
@@ -1935,7 +1935,7 @@ unsigned long *target_segment;
 
             tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
             tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-            tmp_storeProc  = new           int[ nDonorPoints ];
+            tmp_storeProc  = new unsigned long[ nDonorPoints ];
  
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
@@ -1954,7 +1954,7 @@ unsigned long *target_segment;
 
             Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
             Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-            storeProc  = new           int[ nDonorPoints + 1 ];
+            storeProc  = new unsigned long[ nDonorPoints + 1 ];
           
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
@@ -2013,7 +2013,7 @@ unsigned long *target_segment;
 
             tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
             tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-            tmp_storeProc  = new           int[ nDonorPoints ];
+            tmp_storeProc  = new unsigned long[ nDonorPoints ];
  
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
@@ -2032,7 +2032,7 @@ unsigned long *target_segment;
 
             Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
             Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-            storeProc  = new           int[ nDonorPoints + 1 ];
+            storeProc  = new unsigned long[ nDonorPoints + 1 ];
           
             for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
               Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
@@ -2108,18 +2108,20 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
           count  = 0;
           nEdges_target = target_geometry->node[target_iPoint]->GetnPoint();
 
-          nNode_target = nEdges_target*2 + 1;
+          nNode_target = 2*(nEdges_target + 1);
 
           target_segment = new unsigned long[nNode_target];
           
           target_element = new su2double*[nNode_target];
           for (ii = 0; ii < nNode_target; ii++)
             target_element[ii] = new su2double[nDim];
+          
+ unsigned long dummy[2];         
+ dummy[1] = 0;
 
-/*
           for (jEdge = 0; jEdge < nEdges; jEdge++) {
 
-            /-- Determine whether this face/edge is on the marker --/
+            /*-- Determine whether this face/edge is on the marker --*/
 
             EdgeIndex = target_geometry->node[target_iPoint]->GetEdge(jEdge);
 
@@ -2138,12 +2140,16 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
               }
             }
           }
-
- */
         
+       dummy[0] = count;
+        
+        
+        
+        
+
         
           
-//nNode_target = ABuild_3D_surface_element(target_segment, count, TargetPoint_Coord, target_iPoint, target_element); 
+//ABuild_3D_surface_element(target_segment, Buffer_Receive_FaceIndex, Buffer_Receive_Coord, donor_iPoint, donor_element)
 
         nNode_target = Build_3D_surface_element(target_geometry, target_iPoint, markTarget, target_element);
 
@@ -2170,14 +2176,15 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
                 
         donor_iPoint = donor_StartIndex;
 
-        nEdges_donor = Buffer_Receive_FaceIndex[donor_iPoint+1] - Buffer_Receive_FaceIndex[donor_iPoint];
+        nEdges_donor = Buffer_Receive_nLinkedNodes[donor_iPoint]; //cout << "a " << nEdges_donor << endl;
+        
         //donor_geometry->node[donor_iPoint]->GetnPoint();
 
-        donor_element = new su2double*[ nEdges_donor*2 + 2 ];
-        for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
+        donor_element = new su2double*[ 2*nEdges_donor + 2 ];
+        for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
         donor_element[ii] = new su2double[nDim];                
 
-        nNode_donor = ABuild_3D_surface_element(Buffer_Receive_FaceNodes, Buffer_Receive_FaceIndex, Buffer_Receive_Coord, donor_iPoint, donor_element);
+        nNode_donor = ABuild_3D_surface_element(Buffer_Receive_LinkedNodes, Buffer_Receive_StartLinkedNodes, Buffer_Receive_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
 
         Area = 0;
         for (ii = 1; ii < nNode_target-1; ii++){
@@ -2187,7 +2194,7 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
           }
         }
 
-        for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
+        for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
           delete [] donor_element[ii];
         delete [] donor_element;
 
@@ -2197,10 +2204,12 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
 
         Coeff_Vect = new     su2double[ nDonorPoints ];
         Donor_Vect = new unsigned long[ nDonorPoints ];
+        storeProc  = new unsigned long[ nDonorPoints ];
 
         Coeff_Vect[0] = Area;
         Donor_Vect[0] = donor_iPoint;
-
+        storeProc[0]  = Donor_proc[donor_iPoint];
+        
         //cout << "Area zero " << scientific << Area << "  " << target_area << "  " << Area - target_area << "  " << Area/target_area << endl;getchar();
 
         alreadyVisitedDonor = new int[1];
@@ -2227,9 +2236,9 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
 
             vPoint = alreadyVisitedDonor[ iNodeVisited ];
  
-            for (iEdgeVisited = Buffer_Receive_FaceIndex[vPoint]; iEdgeVisited < Buffer_Receive_FaceIndex[vPoint+1]; iEdgeVisited++){
+            for (iEdgeVisited = 0; iEdgeVisited < Buffer_Receive_nLinkedNodes[vPoint]; iEdgeVisited++){
 
-              donor_iPoint = Buffer_Receive_FaceNodes[iEdgeVisited];
+              donor_iPoint = Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[vPoint] + iEdgeVisited];
 
               /*--- Check if the node to visit is already listed in the data structure to avoid double visits ---*/
 
@@ -2274,21 +2283,21 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
 
                 /*--- Find the value of the intersection area between the current donor element and the target element --- */
 
-                nEdges_donor = Buffer_Receive_FaceIndex[donor_iPoint+1] - Buffer_Receive_FaceIndex[donor_iPoint];
+                nEdges_donor = Buffer_Receive_nLinkedNodes[donor_iPoint];
                 //donor_geometry->node[donor_iPoint]->GetnPoint();
 
-                donor_element = new su2double*[ nEdges_donor*2 + 2 ];   
-                for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
+                donor_element = new su2double*[ 2*nEdges_donor + 2 ];   
+                for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
                   donor_element[ii] = new su2double[nDim];             
 
-                nNode_donor = ABuild_3D_surface_element(Buffer_Receive_FaceNodes, Buffer_Receive_FaceIndex, Buffer_Receive_Coord, donor_iPoint, donor_element);
+                nNode_donor = ABuild_3D_surface_element(Buffer_Receive_LinkedNodes, Buffer_Receive_StartLinkedNodes, Buffer_Receive_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element);
 
                 tmp_Area = 0;
                 for (ii = 1; ii < nNode_target-1; ii++)
                   for (jj = 1; jj < nNode_donor-1; jj++)
                     tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
 
-                for (ii = 0; ii < nEdges_donor*2 + 2; ii++)
+                for (ii = 0; ii < 2*nEdges_donor + 2; ii++)
                   delete [] donor_element[ii];
                 delete [] donor_element;
  
@@ -2296,35 +2305,46 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
 
                 tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
                 tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-
+                tmp_storeProc  = new unsigned long[ nDonorPoints ];
+ 
                 for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
                   tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
                   tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+                  tmp_storeProc[iDonor]  = storeProc[iDonor];
                 }
 
                 if (Donor_Vect != NULL)
                   delete [] Donor_Vect;
-
+  
                 if (Coeff_Vect != NULL)
                   delete [] Coeff_Vect;
+            
+                if (storeProc  != NULL)
+                  delete [] storeProc;
 
                 Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
                 Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-
+                storeProc  = new unsigned long[ nDonorPoints + 1 ];
+          
                 for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
                   Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
                   Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+                  storeProc[iDonor]  = tmp_storeProc[iDonor];
                 }
 
                 Coeff_Vect[ nDonorPoints ] = tmp_Area;                  
                 Donor_Vect[ nDonorPoints ] = donor_iPoint;
+                storeProc[  nDonorPoints ] = Donor_proc[donor_iPoint];
 
                 if (tmp_Donor_Vect != NULL)
                   delete [] tmp_Donor_Vect;
-
+  
                 if (tmp_Coeff_Vect != NULL)
                   delete [] tmp_Coeff_Vect;
-
+          
+                if (tmp_storeProc  != NULL)
+                  delete [] tmp_storeProc;
+  
                 nDonorPoints++;
    
                 Area += tmp_Area;
@@ -2369,8 +2389,8 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
 
         for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
           target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Buffer_Receive_GlobalPoint[ Donor_Vect[iDonor] ] );
-          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ] );
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
           //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;               
         }
 
@@ -2380,7 +2400,7 @@ if (target_geometry->node[target_iPoint]->GetDomain()){
         if (Coeff_Vect != NULL)
           delete [] Coeff_Vect;               
 
-        for (ii = 0; ii < nEdges_target*2 + 1; ii++)
+        for (ii = 0; ii < 2*nEdges_target + 2; ii++)
           delete [] target_element[ii];
         delete [] target_element;
       }
@@ -2437,11 +2457,11 @@ su2double CSlidingmesh::PointsDistance(su2double *point_i, su2double *point_j){
     return sqrt(m);
 }
 
-int CSlidingmesh::ABuild_3D_surface_element(unsigned long *map, unsigned long nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){
+int CSlidingmesh::ABuild_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){
     
     /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface element around the node and store it into "element" ---*/
     /*--- Returns the number of points included in the element ---*/
-    
+    //(Buffer_Receive_LinkedNodes, Buffer_Receive_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element)
     int iNode, jNode, kNode, iElementNode, iEdgeIndex, iPoint, jPoint, StartIndex, count;
     
     unsigned short nDim = 3, iDim, nTmp;
@@ -2455,9 +2475,9 @@ int CSlidingmesh::ABuild_3D_surface_element(unsigned long *map, unsigned long nN
     for (iDim = 0; iDim < nDim; iDim++)
       element[0][iDim] = coord[centralNode * nDim + iDim];
     
-    nOuterNodes = nNeighbor;
+    nOuterNodes = nNeighbor[centralNode];
     
-    OuterNodes = &map[0];
+    OuterNodes = &map[ startIndex[centralNode] ];
   
   
   
@@ -2514,17 +2534,18 @@ getchar();
 
     count = 0;
     iPoint = OuterNodes[ iNode ];
-    ptr = &map[ nNeighbor[iPoint] ];
-    nTmp =  nNeighbor[iPoint+1] - nNeighbor[iPoint];
+    ptr = &map[ startIndex[iPoint] ];
+    nTmp = nNeighbor[iPoint];
 
     for ( jNode = 0; jNode < nTmp; jNode++ ){
 
-      jPoint = ptr[jNode];
+      jPoint = ptr[jNode]; //cout << iPoint << "  " << jPoint << endl;
 
       for( kNode = 0; kNode < nOuterNodes; kNode++ ){
-        if ( jPoint == OuterNodes[ kNode ] ){
+        if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
           OuterNodesNeighbour[ iNode ][count] = kNode;
           count++;
+          break;
         }
       }
     }
@@ -2540,8 +2561,8 @@ getchar();
     NextNode = OuterNodesNeighbour[ CurrentNode ][0];
 
     iElementNode = 1;
-/*    
-    cout << "central" << centralNode << "  " << NextNode << endl;
+/*
+    cout << "central" << centralNode << "  " << CurrentNode << "  " << NextNode << endl;
     for( iNode = 0; iNode < nOuterNodes; iNode++ ){
         
         cout << OuterNodes[ iNode ] << "  " ;
@@ -2550,12 +2571,12 @@ getchar();
     
     for( iNode = 0; iNode < nOuterNodes; iNode++ ){
         
-        cout <<  OuterNodes[ OuterNodesNeighbour[ iNode ][0] ] << "  " << OuterNodes[ OuterNodesNeighbour[ iNode ][1] ] << endl;
+        cout <<  OuterNodesNeighbour[ iNode ][0]  << "  " <<  OuterNodesNeighbour[ iNode ][1]  << endl;
         
     }
-*/    
-//    getchar();
-
+    
+    getchar();
+*/
     while( NextNode != -1 ){
         
         for (iDim = 0; iDim < nDim; iDim++)
@@ -2564,11 +2585,11 @@ getchar();
         iElementNode++;
     
         for (iDim = 0; iDim < nDim; iDim++) 
-            element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] + coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
+          element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] + coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
         
         iElementNode++;
         
-        if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode ){
+        if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
             CurrentNode = NextNode; 
             NextNode = OuterNodesNeighbour[ NextNode ][1];  
         }
@@ -2576,7 +2597,7 @@ getchar();
             CurrentNode = NextNode; 
             NextNode = OuterNodesNeighbour[ NextNode ][0];  
         }
-        
+        //cout << NextNode << endl;
         if (CurrentNode == StartIndex)
             break;
     }
