@@ -48,12 +48,13 @@ using namespace std;
 /*!
  * \class CPrimalGrid
  * \brief Class to define the numerical primal grid.
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 4.3.0 "Cardinal"
  */
 class CPrimalGrid {
 protected:
 	unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
+  unsigned long GlobalIndex;    /*!< \brief The global index of an element. */
 	long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
 	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
@@ -151,6 +152,18 @@ public:
 	 * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	bool GetDivide(void);
+  
+  /*!
+   * \brief Get the element global index in a parallel computation.
+   * \return Global index of the element in a parallel computation.
+   */
+  unsigned long GetGlobalIndex(void);
+  
+  /*!
+   * \brief Set the global index for an element in a parallel computation.
+   * \return Global index of an element in a parallel computation.
+   */
+  void SetGlobalIndex(unsigned long val_globalindex);
 	
 	/*!
 	 * \brief A virtual member.
@@ -231,7 +244,6 @@ public:
 	 * \return Global index of the node.
 	 */
 	virtual unsigned long GetNode(unsigned short val_node) = 0;
-  
   
   /*!
 	 * \brief A pure virtual member.
