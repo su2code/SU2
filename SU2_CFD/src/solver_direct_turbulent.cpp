@@ -809,20 +809,14 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
         
-        for (iVar = 0; iVar < 2; iVar++) {  // tke and epsi
+        for (iVar = 0; iVar < 3; iVar++) {  // tke. epsi, zeta
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = ( Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*Volume_nP1 / TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Residual[iVar] = ( 3.0*Density_nP1*U_time_nP1[iVar] - 4.0*Density_n*U_time_n[iVar]
                               +1.0*Density_nM1*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
-        for (iVar = 2; iVar < 3; iVar++) { // zeta, no density
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Residual[iVar] = ( U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
-                              +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
-        }
+
         for (iVar = 3; iVar < nVar; iVar++) { // f, no unsteady term
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = 0.0;
@@ -902,10 +896,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node i for the KE model ---*/
       if (config->GetKind_Turb_Model() == KE) {
         Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-        for (iVar = 0; iVar < 2; iVar++)
+        for (iVar = 0; iVar < 3; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-        for (iVar = 2; iVar < 3; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
         for (iVar = 3; iVar < nVar; iVar++)
           Residual[iVar] = 0.0;
       } 
@@ -928,10 +920,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node j for the KE model ---*/
       if (config->GetKind_Turb_Model() == KE) {
         Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
-        for (iVar = 0; iVar < 2; iVar++)
+        for (iVar = 0; iVar < 3; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-        for (iVar = 2; iVar < 3; iVar++)
-          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
         for (iVar = 3; iVar < nVar; iVar++)
           Residual[iVar] = 0.0;
       } 
@@ -944,7 +934,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
     }
     
-    /*---	Loop over the boundary edges ---*/
+    /*--- Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -979,17 +969,13 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
             Residual[iVar] = U_time_n[iVar]*Residual_GCL;
         }
 
-        /*--- Multiply by density at node i for the KE model ---*/
+        /*--- Multiply by density at node i for the KE model (convective vel) ---*/
         if (config->GetKind_Turb_Model() == KE) {
           Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
 
-          // k and epsi
-          for (iVar = 0; iVar < 2; iVar++)
+          // k, epsi and zeta
+          for (iVar = 0; iVar < 3; iVar++)
             Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
-
-          // zeta
-          for (iVar = 2; iVar < 3; iVar++)
-            Residual[iVar] = U_time_n[iVar]*Residual_GCL;
 
           // f
           for (iVar = 3; iVar < nVar; iVar++)
@@ -1053,22 +1039,13 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
         
-        // k and epsi
+        // k, epsi, and zeta
         for (iVar = 0; iVar < 2; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(Volume_nP1/TimeStep);
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Residual[iVar] = (Density_nP1*U_time_nP1[iVar] - Density_n*U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
             + (Density_nM1*U_time_nM1[iVar] - Density_n*U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
-        }
-
-        // zeta 
-        for (iVar = 2; iVar < 3; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
-            + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
 
         // f (no unsteady term)
@@ -1096,13 +1073,31 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       LinSysRes.AddBlock(iPoint, Residual);
       if (implicit) {
+
+        if (config->GetKind_Turb_Model() == KE) {
+        for (iVar = 0; iVar < nVar-1; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+            Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
+
+          // f only
+          Jacobian_i[3][3] = 0.0;
+
+	}
+	}
+
+        else {
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) Jacobian_i[iVar][jVar] = 0.0;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Jacobian_i[iVar][iVar] = (3.0*Volume_nP1)/(2.0*TimeStep);
+	}
         }
+
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
@@ -3852,10 +3847,10 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
       // swh: needs a modification here... 
       Solution[0] = 0.0;
-      Solution[1] = 2.0*laminar_viscosity*wall_k/(distance*distance); //60.0*laminar_viscosity/(density*beta_1*distance*distance);
+      Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance); //60.0*laminar_viscosity/(density*beta_1*distance*distance);
       Solution[2] = 0.0;
       //Solution[3] = 0.0;
-      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(distance*distance);
+      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);
@@ -3915,10 +3910,10 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 
       // wall boundary conditions (https://turbmodels.larc.nasa.gov/k-e-zeta-f.html)
       Solution[0] = 0.0;
-      Solution[1] = 2.0*laminar_viscosity*wall_k/(distance*distance);
+      Solution[1] = 2.0*laminar_viscosity*wall_k/(density*distance*distance);
       Solution[2] = 0.0;
       //Solution[3] = 0.0;
-      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(distance*distance);
+      Solution[3] = -2.0*laminar_viscosity*wall_zeta/(density*distance*distance);
       
       /*--- Set the solution values and zero the residual ---*/
       node[iPoint]->SetSolution_Old(Solution);

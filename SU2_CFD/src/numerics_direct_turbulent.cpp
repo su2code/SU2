@@ -1413,7 +1413,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
 
     Jacobian_i[2][0] = 0.0;
     Jacobian_i[2][1] = 0.0;
-    Jacobian_i[2][2] = -diff_zeta*proj_vector_ij;
+    Jacobian_i[2][2] = -diff_zeta*proj_vector_ij/Density_i;
     Jacobian_i[2][3] = 0.0;
     
     Jacobian_i[3][0] = 0.0;
@@ -1434,7 +1434,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
 
     Jacobian_j[2][0] = 0.0;
     Jacobian_j[2][1] = 0.0;
-    Jacobian_j[2][2] = diff_zeta*proj_vector_ij;
+    Jacobian_j[2][2] = diff_zeta*proj_vector_ij/Density_j;
     Jacobian_j[2][3] = 0.0;
     
     Jacobian_j[3][0] = 0.0;
@@ -1576,7 +1576,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
 
     Jacobian_i[2][0] = 0.0;
     Jacobian_i[2][1] = 0.0;
-    Jacobian_i[2][2] = -diff_zeta*proj_vector_ij;
+    Jacobian_i[2][2] = -diff_zeta*proj_vector_ij/Density_i;
     Jacobian_i[2][3] = 0.0;
     
     Jacobian_i[3][0] = 0.0;
@@ -1597,7 +1597,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
 
     Jacobian_j[2][0] = 0.0;
     Jacobian_j[2][1] = 0.0;
-    Jacobian_j[2][2] = diff_zeta*proj_vector_ij;
+    Jacobian_j[2][2] = diff_zeta*proj_vector_ij/Density_j;
     Jacobian_j[2][3] = 0.0;
     
     Jacobian_j[3][0] = 0.0;
@@ -1712,16 +1712,16 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
       diverg += PrimVar_Grad_i[iDim+1][iDim];
 
     //SST: pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-    pk = Eddy_Viscosity_i*sqrt(2.0)*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+    pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg; //*sqrt(2.0) already included
     pk = max(pk,0.0);
     
     pe = C_e1o*(1.0+0.012/TurbVar_i[2])*pk * 1.0/Tm_i;
     pe = max(pe,0.0);
 
-    pz = TurbVar_i[3];
+    pz = Density_i*TurbVar_i[3];
     pz = max(pz,0.0);
 
-    pf = 1.0/Tm_i * (C_1+C_2p*pk/TurbVar_i[2]) * (2.0/3.0-TurbVar_i[3]);
+    pf = (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[2])) * (2.0/3.0-TurbVar_i[3])/Tm_i;
     pf = max(pf,0.0);
     
     val_residual[0] += pk*Volume;
@@ -1733,7 +1733,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_residual[0] -= Density_i*TurbVar_i[1]*Volume;
     val_residual[1] -= C_e2*Density_i*TurbVar_i[1]/Tm_i*Volume;
     val_residual[2] -= TurbVar_i[2]/TurbVar_i[0]*pk*Volume;
-    val_residual[3] -= (1.0/Tm_i*(2.0/3.0-TurbVar_i[2]) + TurbVar_i[3])*Volume;
+    val_residual[3] -= TurbVar_i[3]*Volume;
         
     /*--- Implicit part ---*/
     //SST: val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = 0.0;
@@ -1755,15 +1755,15 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[1][2] = 0.0;
     val_Jacobian_i[1][3] = 0.0;
 
-    val_Jacobian_i[2][0] = TurbVar_i[2]/(TurbVar_i[0]*TurbVar_i[0])*pk*Volume;
+    val_Jacobian_i[2][0] = TurbVar_i[2]/(Density_i*TurbVar_i[0]*TurbVar_i[0])*pk*Volume;
     val_Jacobian_i[2][1] = 0.0;
-    val_Jacobian_i[2][2] = -pk/TurbVar_i[0]*Volume;
+    val_Jacobian_i[2][2] = -pk/(TurbVar_i[0]*Density_i)*Volume; // no density in this term
     val_Jacobian_i[2][3] = 0.0;
 
     val_Jacobian_i[3][0] = 0.0;
     val_Jacobian_i[3][1] = 0.0;
-    val_Jacobian_i[3][2] = 1.0/Tm_i*Volume;
-    val_Jacobian_i[3][3] = -Volume;
+    val_Jacobian_i[3][2] = 0.0;      //1.0/Tm_i*Volume;
+    val_Jacobian_i[3][3] = -Volume;  // *1.0/Density_i; don't think density should be included in the Jacobian as we are solving for f, not rho*f
   
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
