@@ -402,38 +402,52 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
 
 //  TEMPORARY FOR TEST ONLY! TRANSLATION
-    su2double Coord_i_min, Coord_i_max, Coord_j_min, Coord_j_max, *Coord_j_global;
+    su2double CoordLocal_i_min, CoordLocal_i_max, CoordLocal_j_min, CoordLocal_j_max, *CoordLocal_j;
     unsigned long Point_Donor;
     unsigned short pDir = 1;
-    Coord_i_min = HUGE;  Coord_i_max = -HUGE;
-    Coord_j_min = HUGE;  Coord_j_max = -HUGE;
+    CoordLocal_i_min = HUGE;  CoordLocal_i_max = -HUGE;
+    CoordLocal_j_min = HUGE;  CoordLocal_j_max = -HUGE;
 
     for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
-    	/*--- Compute the min ---*/
     	Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
     	Coord_i = target_geometry->node[Point_Target]->GetCoord();
 
     	if (target_geometry->node[Point_Target]->GetDomain()) {
-    		if (Coord_i[pDir] < Coord_i_min)
-    			Coord_i_min = Coord_i[pDir];
+    		if (Coord_i[pDir] < CoordLocal_i_min)
+    			CoordLocal_i_min = Coord_i[pDir];
     	}
-    	if (Coord_i[pDir] > Coord_i_max)
-    		Coord_i_max = Coord_i[pDir];
+    	if (Coord_i[pDir] > CoordLocal_i_max)
+    		CoordLocal_i_max = Coord_i[pDir];
 
     }
-
 
     for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
     	Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-    	Coord_j_global = donor_geometry->node[Point_Donor]->GetCoord();
+    	CoordLocal_j = donor_geometry->node[Point_Donor]->GetCoord();
 
     	if (donor_geometry->node[Point_Donor]->GetDomain()) {
-    		if (Coord_j_global[pDir] < Coord_j_min)
-    			Coord_j_min = Coord_j_global[pDir];
+    		if (CoordLocal_j[pDir] < CoordLocal_j_min)
+    			CoordLocal_j_min = CoordLocal_j[pDir];
     	}
-    	if (Coord_j_global[pDir] > Coord_j_max)
-    		Coord_j_max = Coord_j_global[pDir];
+    	if (CoordLocal_j[pDir] > CoordLocal_j_max)
+    		CoordLocal_j_max = CoordLocal_j[pDir];
     }
+
+    su2double CoordGlobal_i_min, CoordGlobal_i_max, CoordGlobal_j_min, CoordGlobal_j_max;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&CoordLocal_i_min, &CoordGlobal_i_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&CoordLocal_i_max, &CoordGlobal_i_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&CoordLocal_j_min, &CoordGlobal_j_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&CoordLocal_j_max, &CoordGlobal_j_max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+  CoordGlobal_i_min = CoordLocal_i_min;  CoordGlobal_i_max = CoordLocal_i_max;
+  CoordGlobal_j_min = CoordLocal_j_min;  CoordGlobal_j_max = CoordLocal_j_max;
+#endif
+//cout << CoordLocal_i_max - CoordLocal_i_min   << " --> I LOCAL  "  << endl;
+//cout << CoordGlobal_i_max - CoordGlobal_i_min << " --> I GLOBAL "  << endl;
+//cout << CoordLocal_j_max - CoordLocal_j_min   << " --> J LOCAL  "  << endl;
+//cout << CoordGlobal_j_max - CoordGlobal_j_min << " --> J GLOBAL "  << endl;
 
     /*--- Compute the closest point to a Near-Field boundary point ---*/
     maxdist = 0.0;
@@ -467,10 +481,10 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
         		dist_t = 0.0;
         		for (iDim = 0; iDim < nDim; iDim++) {
         			Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-        			if ( iDim == pDir && Coord_i[iDim] > Coord_j_max   ){
+        			if ( iDim == pDir && Coord_i[iDim] > CoordGlobal_j_max   ){
         				dist += pow(Coord_j[iDim] - (Coord_i[iDim] - 0.105),2.0);
         			}
-        			else if ( iDim == pDir && Coord_i[iDim] <=  Coord_j_min  ){
+        			else if ( iDim == pDir && Coord_i[iDim] <=  CoordGlobal_j_min  ){
         				dist += pow(Coord_j[iDim] - (Coord_i[iDim] + 0.105),2.0);
         			}
         			else
