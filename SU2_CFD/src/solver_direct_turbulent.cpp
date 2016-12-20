@@ -874,7 +874,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     /*---	Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY ||
+      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
           config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
