@@ -3699,6 +3699,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   ofstream restart_file;
   string filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
   /*--- Retrieve filename from config ---*/
   
@@ -3890,7 +3892,10 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
   restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
   if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-  restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+  if (dual_time)
+    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+  else
+    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
   
   restart_file.close();
   
@@ -4209,6 +4214,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned long iIntIter = config[val_iZone]->GetIntIter();
     unsigned long iExtIter = config[val_iZone]->GetExtIter();
     unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
+    if (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
+        config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+      ExtIter_OffSet = 0;
 
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
      may have to adjust them to be larger if adding more entries. ---*/
@@ -9900,16 +9908,16 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 
     vector<string> fieldnames;
-    fieldnames.push_back("\"Point\",");
-    fieldnames.push_back("\"x\",");
-    fieldnames.push_back("\"y\",");
+    fieldnames.push_back("\"Point\"");
+    fieldnames.push_back("\"x\"");
+    fieldnames.push_back("\"y\"");
     if (nDim == 3) {
       fieldnames.push_back("\"z\",");
     }
-    fieldnames.push_back("\"Sensitivity_x\",");
-    fieldnames.push_back("\"Sensitivity_y\",");
+    fieldnames.push_back("\"Sensitivity_x\"");
+    fieldnames.push_back("\"Sensitivity_y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"Sensitivity_z\",");
+      fieldnames.push_back("\"Sensitivity_z\"");
     }
     fieldnames.push_back("\"Sensitivity\"");
 
@@ -9967,7 +9975,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   /*--- Merge the information and write the output files ---*/
 
-  SetBaselineResult_Files(solver,geometry, config, 0, val_nZone);
+  SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
 
 }
 
