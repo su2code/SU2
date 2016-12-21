@@ -1310,7 +1310,7 @@ CEulerSolver::~CEulerSolver(void) {
       delete [] ActDisk_DeltaT[iMarker];
     delete [] ActDisk_DeltaT;
   }
-  
+
   if (nVertex != NULL)  delete [] nVertex;
 
   if (HeatFlux != NULL) {
@@ -16461,6 +16461,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 CNSSolver::~CNSSolver(void) {
   unsigned short iMarker, iDim;
+  unsigned long iVertex;
   
   if (CD_Visc != NULL)          delete [] CD_Visc;
   if (CL_Visc != NULL)          delete [] CL_Visc;
@@ -16493,6 +16494,9 @@ CNSSolver::~CNSSolver(void) {
   if (Surface_HF_Visc != NULL)      delete [] Surface_HF_Visc;
   if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
   
+  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
+
+  
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -16503,6 +16507,27 @@ CNSSolver::~CNSSolver(void) {
     delete [] CSkinFriction;
   }
   
+  if (Inlet_Ttotal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] Inlet_Ttotal[iMarker];
+    delete [] Inlet_Ttotal;
+  }
+  
+  if (Inlet_Ptotal != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] Inlet_Ptotal[iMarker];
+    delete [] Inlet_Ptotal;
+  }
+  
+  if (Inlet_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+        delete [] Inlet_FlowDir[iMarker][iVertex];
+      delete [] Inlet_FlowDir[iMarker];
+    }
+    delete [] Inlet_FlowDir;
+  }
+
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
