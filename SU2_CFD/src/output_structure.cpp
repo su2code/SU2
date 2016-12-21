@@ -10093,9 +10093,13 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
     /*--- Flags identifying the types of files to be written. ---*/
+    /*--- For now, we are disabling the parallel writers for Tecplot
+          ASCII until we have parallel versions of all file formats
+          available. SU2_SOL will remain intact for writing files
+          until this capability is completed. ---*/
     
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+    bool Wrt_Vol = false;
+    bool Wrt_Srf = false;
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
     
     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
@@ -10233,6 +10237,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   int *Local_Halo = NULL;
   
+  stringstream varname;
+  
   /*--- Set the non-dimensionalization for coefficients. ---*/
   
   if (grid_movement) {
@@ -10285,27 +10291,39 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
    conservative variables, so these follow next. ---*/
   
   nVar_Par += nVar_Consv_Par;
-  if (incompressible) {
-    Variable_Names.push_back("Pressure");
-    Variable_Names.push_back("X-Momentum");
-    Variable_Names.push_back("Y-Momentum");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-  } else {
-    Variable_Names.push_back("Density");
-    Variable_Names.push_back("X-Momentum");
-    Variable_Names.push_back("Y-Momentum");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-    Variable_Names.push_back("Energy");
+  
+  /*--- For now, leave the names as "Conservative_", etc., in order
+   to avoid confusion with the serial version, which still prints these
+   names. Names can be set alternatively by using the commented code
+   below. ---*/
+  
+  for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+    varname << "Conservative_" << iVar+1;
+    Variable_Names.push_back(varname.str());
+    varname.str("");
   }
-  if (SecondIndex != NONE) {
-    if (config->GetKind_Turb_Model() == SST) {
-      Variable_Names.push_back("TKE");
-      Variable_Names.push_back("Omega");
-    } else {
-      /*--- S-A variants ---*/
-      Variable_Names.push_back("Nu_Tilde");
-    }
-  }
+  
+//  if (incompressible) {
+//    Variable_Names.push_back("Pressure");
+//    Variable_Names.push_back("X-Momentum");
+//    Variable_Names.push_back("Y-Momentum");
+//    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+//  } else {
+//    Variable_Names.push_back("Density");
+//    Variable_Names.push_back("X-Momentum");
+//    Variable_Names.push_back("Y-Momentum");
+//    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+//    Variable_Names.push_back("Energy");
+//  }
+//  if (SecondIndex != NONE) {
+//    if (config->GetKind_Turb_Model() == SST) {
+//      Variable_Names.push_back("TKE");
+//      Variable_Names.push_back("Omega");
+//    } else {
+//      /*--- S-A variants ---*/
+//      Variable_Names.push_back("Nu_Tilde");
+//    }
+//  }
   
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -10316,55 +10334,66 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      if (incompressible) {
-        Variable_Names.push_back("Limiter_Pressure");
-        Variable_Names.push_back("Limiter_X-Momentum");
-        Variable_Names.push_back("Limiter_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-      } else {
-        Variable_Names.push_back("Limiter_Density");
-        Variable_Names.push_back("Limiter_X-Momentum");
-        Variable_Names.push_back("Limiter_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-        Variable_Names.push_back("Limiter_Energy");
+      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+        varname << "Limiter_" << iVar+1;
+        Variable_Names.push_back(varname.str());
+        varname.str("");
       }
-      if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
-          Variable_Names.push_back("Limiter_TKE");
-          Variable_Names.push_back("Limiter_Omega");
-        } else {
-          /*--- S-A variants ---*/
-          Variable_Names.push_back("Limiter_Nu_Tilde");
-        }
-      }
+      
+//      if (incompressible) {
+//        Variable_Names.push_back("Limiter_Pressure");
+//        Variable_Names.push_back("Limiter_X-Momentum");
+//        Variable_Names.push_back("Limiter_Y-Momentum");
+//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+//      } else {
+//        Variable_Names.push_back("Limiter_Density");
+//        Variable_Names.push_back("Limiter_X-Momentum");
+//        Variable_Names.push_back("Limiter_Y-Momentum");
+//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+//        Variable_Names.push_back("Limiter_Energy");
+//      }
+//      if (SecondIndex != NONE) {
+//        if (config->GetKind_Turb_Model() == SST) {
+//          Variable_Names.push_back("Limiter_TKE");
+//          Variable_Names.push_back("Limiter_Omega");
+//        } else {
+//          /*--- S-A variants ---*/
+//          Variable_Names.push_back("Limiter_Nu_Tilde");
+//        }
+//      }
     }
     
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      if (incompressible) {
-        Variable_Names.push_back("Residual_Pressure");
-        Variable_Names.push_back("Residual_X-Momentum");
-        Variable_Names.push_back("Residual_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-      } else {
-        Variable_Names.push_back("Residual_Density");
-        Variable_Names.push_back("Residual_X-Momentum");
-        Variable_Names.push_back("Residual_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-        Variable_Names.push_back("Residual_Energy");
+      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+        varname << "Residual_" << iVar+1;
+        Variable_Names.push_back(varname.str());
+        varname.str("");
       }
-      if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
-          Variable_Names.push_back("Residual_TKE");
-          Variable_Names.push_back("Residual_Omega");
-        } else {
-          /*--- S-A variants ---*/
-          Variable_Names.push_back("Residual_Nu_Tilde");
-        }
-        
-      }
+      
+//      if (incompressible) {
+//        Variable_Names.push_back("Residual_Pressure");
+//        Variable_Names.push_back("Residual_X-Momentum");
+//        Variable_Names.push_back("Residual_Y-Momentum");
+//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+//      } else {
+//        Variable_Names.push_back("Residual_Density");
+//        Variable_Names.push_back("Residual_X-Momentum");
+//        Variable_Names.push_back("Residual_Y-Momentum");
+//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+//        Variable_Names.push_back("Residual_Energy");
+//      }
+//      if (SecondIndex != NONE) {
+//        if (config->GetKind_Turb_Model() == SST) {
+//          Variable_Names.push_back("Residual_TKE");
+//          Variable_Names.push_back("Residual_Omega");
+//        } else {
+//          /*--- S-A variants ---*/
+//          Variable_Names.push_back("Residual_Nu_Tilde");
+//        }
+//      }
     }
     
     /*--- Add the grid velocity. ---*/
@@ -10695,11 +10724,13 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double *Grid_Vel = NULL;
   su2double *Normal, Area;
   
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+//  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
   int *Local_Halo;
+  
+  stringstream varname;
   
   /*--- Use a switch statement to decide how many solver containers we have
    in this zone for output. ---*/
@@ -10737,28 +10768,40 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
    conservative variables, so these follow next. ---*/
   
   nVar_Par += nVar_Consv_Par;
-  if (incompressible) {
-    Variable_Names.push_back("Adjoint_Pressure");
-    Variable_Names.push_back("Adjoint_X-Momentum");
-    Variable_Names.push_back("Adjoint_Y-Momentum");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Momentum");
-  } else {
-    Variable_Names.push_back("Adjoint_Density");
-    Variable_Names.push_back("Adjoint_X-Momentum");
-    Variable_Names.push_back("Adjoint_Y-Momentum");
-    if (geometry->GetnDim() == 3)
-      Variable_Names.push_back("Adjoint_Z-Momentum");
-    Variable_Names.push_back("Adjoint_Energy");
+  
+  /*--- For now, leave the names as "Conservative_", etc., in order
+   to avoid confusion with the serial version, which still prints these
+   names. Names can be set alternatively by using the commented code
+   below. ---*/
+  
+  for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+    varname << "Conservative_" << iVar+1;
+    Variable_Names.push_back(varname.str());
+    varname.str("");
   }
-  if (SecondIndex != NONE) {
-    if (config->GetKind_Turb_Model() == SST) {
-      Variable_Names.push_back("Adjoint_TKE");
-      Variable_Names.push_back("Adjoint_Omega");
-    } else {
-      /*--- S-A variants ---*/
-      Variable_Names.push_back("Adjoint_Nu_Tilde");
-    }
-  }
+  
+//  if (incompressible) {
+//    Variable_Names.push_back("Adjoint_Pressure");
+//    Variable_Names.push_back("Adjoint_X-Momentum");
+//    Variable_Names.push_back("Adjoint_Y-Momentum");
+//    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Momentum");
+//  } else {
+//    Variable_Names.push_back("Adjoint_Density");
+//    Variable_Names.push_back("Adjoint_X-Momentum");
+//    Variable_Names.push_back("Adjoint_Y-Momentum");
+//    if (geometry->GetnDim() == 3)
+//      Variable_Names.push_back("Adjoint_Z-Momentum");
+//    Variable_Names.push_back("Adjoint_Energy");
+//  }
+//  if (SecondIndex != NONE) {
+//    if (config->GetKind_Turb_Model() == SST) {
+//      Variable_Names.push_back("Adjoint_TKE");
+//      Variable_Names.push_back("Adjoint_Omega");
+//    } else {
+//      /*--- S-A variants ---*/
+//      Variable_Names.push_back("Adjoint_Nu_Tilde");
+//    }
+//  }
   
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -10769,57 +10812,70 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      if (incompressible) {
-        Variable_Names.push_back("Limiter_Adjoint_Pressure");
-        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
-        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
-      } else {
-        Variable_Names.push_back("Limiter_Adjoint_Density");
-        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
-        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
-        if (geometry->GetnDim() == 3)
-          Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
-        Variable_Names.push_back("Limiter_Adjoint_Energy");
+      
+      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+        varname << "Limiter_" << iVar+1;
+        Variable_Names.push_back(varname.str());
+        varname.str("");
       }
-      if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
-          Variable_Names.push_back("Limiter_Adjoint_TKE");
-          Variable_Names.push_back("Limiter_Adjoint_Omega");
-        } else {
-          /*--- S-A variants ---*/
-          Variable_Names.push_back("Limiter_Adjoint_Nu_Tilde");
-        }
-      }
+      
+//      if (incompressible) {
+//        Variable_Names.push_back("Limiter_Adjoint_Pressure");
+//        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
+//        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
+//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+//      } else {
+//        Variable_Names.push_back("Limiter_Adjoint_Density");
+//        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
+//        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
+//        if (geometry->GetnDim() == 3)
+//          Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+//        Variable_Names.push_back("Limiter_Adjoint_Energy");
+//      }
+//      if (SecondIndex != NONE) {
+//        if (config->GetKind_Turb_Model() == SST) {
+//          Variable_Names.push_back("Limiter_Adjoint_TKE");
+//          Variable_Names.push_back("Limiter_Adjoint_Omega");
+//        } else {
+//          /*--- S-A variants ---*/
+//          Variable_Names.push_back("Limiter_Adjoint_Nu_Tilde");
+//        }
+//      }
     }
     
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      if (incompressible) {
-        Variable_Names.push_back("Residual_Adjoint_Pressure");
-        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
-        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
-      } else {
-        Variable_Names.push_back("Residual_Adjoint_Density");
-        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
-        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
-        if (geometry->GetnDim() == 3)
-          Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
-        Variable_Names.push_back("Residual_Adjoint_Energy");
+      
+      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+        varname << "Residual_" << iVar+1;
+        Variable_Names.push_back(varname.str());
+        varname.str("");
       }
-      if (SecondIndex != NONE) {
-        if (config->GetKind_Turb_Model() == SST) {
-          Variable_Names.push_back("Residual_Adjoint_TKE");
-          Variable_Names.push_back("Residual_Adjoint_Omega");
-        } else {
-          /*--- S-A variants ---*/
-          Variable_Names.push_back("Residual_Adjoint_Nu_Tilde");
-        }
-        
-      }
+      
+//      if (incompressible) {
+//        Variable_Names.push_back("Residual_Adjoint_Pressure");
+//        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
+//        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
+//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+//      } else {
+//        Variable_Names.push_back("Residual_Adjoint_Density");
+//        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
+//        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
+//        if (geometry->GetnDim() == 3)
+//          Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+//        Variable_Names.push_back("Residual_Adjoint_Energy");
+//      }
+//      if (SecondIndex != NONE) {
+//        if (config->GetKind_Turb_Model() == SST) {
+//          Variable_Names.push_back("Residual_Adjoint_TKE");
+//          Variable_Names.push_back("Residual_Adjoint_Omega");
+//        } else {
+//          /*--- S-A variants ---*/
+//          Variable_Names.push_back("Residual_Adjoint_Nu_Tilde");
+//        }
+//      }
     }
     
     /*--- Add the grid velocity. ---*/
@@ -11089,6 +11145,8 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
   
   int *Local_Halo;
   
+  stringstream varname;
+  
   /*--- Use a switch statement to decide how many solver containers we have
    in this zone for output. ---*/
   
@@ -11121,10 +11179,22 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
    conservative variables, so these follow next. ---*/
   
   nVar_Par += nVar_Consv_Par;
-  Variable_Names.push_back("Displacement_1");
-  Variable_Names.push_back("Displacement_2");
-  if (geometry->GetnDim() == 3)
-    Variable_Names.push_back("Displacement_3");
+  
+  /*--- For now, leave the names as "Conservative_", etc., in order
+   to avoid confusion with the serial version, which still prints these
+   names. Names can be set alternatively by using the commented code
+   below. ---*/
+  
+  for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+    varname << "Conservative_" << iVar+1;
+    Variable_Names.push_back(varname.str());
+    varname.str("");
+  }
+  
+//  Variable_Names.push_back("Displacement_1");
+//  Variable_Names.push_back("Displacement_2");
+//  if (geometry->GetnDim() == 3)
+//    Variable_Names.push_back("Displacement_3");
   
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -11135,20 +11205,32 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Limiter_Displacement_1");
-      Variable_Names.push_back("Limiter_Displacement_2");
-      if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Limiter_Displacement_3");
+      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+        varname << "Limiter_" << iVar+1;
+        Variable_Names.push_back(varname.str());
+        varname.str("");
+      }
+      
+//      Variable_Names.push_back("Limiter_Displacement_1");
+//      Variable_Names.push_back("Limiter_Displacement_2");
+//      if (geometry->GetnDim() == 3)
+//        Variable_Names.push_back("Limiter_Displacement_3");
     }
     
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Residual_Displacement_1");
-      Variable_Names.push_back("Residual_Displacement_2");
-      if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Residual_Displacement_3");
+      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
+        varname << "Residual_" << iVar+1;
+        Variable_Names.push_back(varname.str());
+        varname.str("");
+      }
+      
+//      Variable_Names.push_back("Residual_Displacement_1");
+//      Variable_Names.push_back("Residual_Displacement_2");
+//      if (geometry->GetnDim() == 3)
+//        Variable_Names.push_back("Residual_Displacement_3");
     }
     
     /*--- If the analysis is dynamic... ---*/
@@ -11402,7 +11484,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
   for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
     varname << "Conservative_" << iVar+1;
     Variable_Names.push_back(varname.str());
-    varname.clear();
+    varname.str("");
   }
   
   /*--- If requested, register the residuals for all of the
@@ -11417,7 +11499,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
       for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
         varname << "Residual_" << iVar+1;
         Variable_Names.push_back(varname.str());
-        varname.clear();
+        varname.str("");
       }
     }
     
@@ -14596,7 +14678,11 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
   unsigned short nZone = geometry->GetnZone();
   unsigned short iVar;
   unsigned long iPoint, iExtIter = config->GetExtIter();
-  bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool adjoint   = (config->GetContinuous_Adjoint() ||
+                    config->GetDiscrete_Adjoint());
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   ofstream restart_file;
   string filename;
   
@@ -14690,6 +14776,20 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
     
+  }
+  
+  /*--- Write the general header and flow conditions (master rank alone) ----*/
+  
+  if (rank == MASTER_NODE) {
+    restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+    restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    if (dual_time)
+      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+    else
+      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
   }
   
   /*--- All processors close the file. ---*/
