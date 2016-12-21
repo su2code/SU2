@@ -9880,16 +9880,16 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     /*--- We create a baseline solver to easily merge the sensitivity information ---*/
 
     vector<string> fieldnames;
-    fieldnames.push_back("\"Point\",");
-    fieldnames.push_back("\"x\",");
-    fieldnames.push_back("\"y\",");
+    fieldnames.push_back("\"Point\"");
+    fieldnames.push_back("\"x\"");
+    fieldnames.push_back("\"y\"");
     if (nDim == 3) {
       fieldnames.push_back("\"z\",");
     }
-    fieldnames.push_back("\"Sensitivity_x\",");
-    fieldnames.push_back("\"Sensitivity_y\",");
+    fieldnames.push_back("\"Sensitivity_x\"");
+    fieldnames.push_back("\"Sensitivity_y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"Sensitivity_z\",");
+      fieldnames.push_back("\"Sensitivity_z\"");
     }
     fieldnames.push_back("\"Sensitivity\"");
 
@@ -9947,7 +9947,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   /*--- Merge the information and write the output files ---*/
 
-  SetBaselineResult_Files(solver,geometry, config, 0, val_nZone);
+  SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
 
 }
 
