@@ -1878,14 +1878,21 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
   long iPoint_Local;
-  unsigned short iField, iVar;
+  unsigned short iField, iVar, iDim;
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-
+  bool grid_movement  = config->GetGrid_Movement();
+  bool steady_restart = config->GetSteadyRestart();
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double dull_val;
+  
+  su2double *Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
 
   /*--- Define geometry constants in the solver structure ---*/
   
@@ -2004,6 +2011,37 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
       
       node[iPoint_Local] = new CBaselineVariable(Solution, nVar, config);
       iPoint_Global_Local++;
+      
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
+      
+      if (grid_movement) {
+        
+        /*--- First, remove any variables for the turbulence model that
+         appear in the restart file before the grid velocities. ---*/
+        
+        if (turb_model == SA || turb_model == SA_NEG) {
+          point_line >> dull_val;
+        } else if (turb_model == SST) {
+          point_line >> dull_val >> dull_val;
+        }
+        
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+        
+        su2double GridVel[3] = {0.0,0.0,0.0};
+        if (!steady_restart) {
+          if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
+          else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+        
+      }
     }
 
   }
@@ -2053,6 +2091,19 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry, config);
+  
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+  
+  if (grid_movement) {
+    
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    
+    geometry->Set_MPI_Coord(config);
+    geometry->Set_MPI_GridVel(config);
+    
+  }
+  
+  delete [] Coord;
   
 }
 
@@ -2254,13 +2305,21 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned long iPoint, index;
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
-  unsigned short iField;
+  unsigned short iField, iDim;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[iZone]->GetnZone();
-
+  bool grid_movement  = config->GetGrid_Movement();
+  bool steady_restart = config->GetSteadyRestart();
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double dull_val;
+  
+  su2double *Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+  
   /*--- Retrieve filename from config ---*/
 
   if (adjoint) {
@@ -2331,7 +2390,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read all lines in the restart file ---*/
 
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
 
   /*--- The first line is the header ---*/
 
@@ -2361,8 +2419,37 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         point_line >> Solution[iField];
       
       node[iPoint_Local]->SetSolution(Solution);
+     
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
       
-      iPoint_Global_Local++;
+      if (grid_movement) {
+        
+        /*--- First, remove any variables for the turbulence model that
+         appear in the restart file before the grid velocities. ---*/
+        
+        if (turb_model == SA || turb_model == SA_NEG) {
+          point_line >> dull_val;
+        } else if (turb_model == SST) {
+          point_line >> dull_val >> dull_val;
+        }
+        
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+        
+        su2double GridVel[3] = {0.0,0.0,0.0};
+        if (!steady_restart) {
+          if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
+          else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[iZone]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[iZone]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+        
+      }
     }
     
   }
@@ -2375,6 +2462,23 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   delete [] Global2Local;
   delete [] Solution;
+  
+  /*--- MPI solution ---*/
+  
+  Set_MPI_Solution(geometry[iZone], config);
+  
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+  
+  if (grid_movement) {
+    
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    
+    geometry[iZone]->Set_MPI_Coord(config);
+    geometry[iZone]->Set_MPI_GridVel(config);
+
+  }
+  
+  delete [] Coord;
   
 }
 
