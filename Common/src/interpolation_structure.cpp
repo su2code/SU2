@@ -1647,8 +1647,8 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     SU2_MPI::Allreduce(&nLocalVertex_Target, &nGlobalVertex_Target, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nLocalLinkedNodes  , &nGlobalLinkedNodes  , 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
-    nGlobalVertex_Target = nVertexTarget;ù
-    nGlobalLinkedNodes  = nLocalLinkedNodes;
+    nGlobalVertex_Target = nLocalVertex_Target;
+    nGlobalLinkedNodes   = nLocalLinkedNodes;
 #endif 
   
     TargetPoint_Coord  = new su2double    [ nGlobalVertex_Target * nDim ];//
@@ -1727,16 +1727,36 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     SU2_MPI::Bcast(Target_LinkedNodes,      nGlobalLinkedNodes  , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
     
 #else
-    for (iVertexTarget = 0; iVertexTarget < nDim*nLocalVertex_Target; iVertexTarget++)
+    for (iVertexTarget = 0; iVertexTarget < nDim * nGlobalVertex_Target; iVertexTarget++)
       TargetPoint_Coord[iVertexTarget] = Buffer_Send_Target_Coord[iVertexTarget];
-      
-    for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++)
-      Target_GlobalPoint[iVertexTarget] = Buffer_Send_Target_GlobalPoint[iVertexTarget];
-      
-      ///////to complete
+/*      
+    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
+      Target_LinkedNodes[iVertexTarget] = Buffer_Send_LinkedNodes[iVertexTarget];
+*/      
+    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
+      Target_GlobalPoint[iVertexTarget]      = Buffer_Send_Target_GlobalPoint[iVertexTarget];
+      Target_nLinkedNodes[iVertexTarget]     = Buffer_Send_nLinkedNodes[iVertexTarget];
+      Target_StartLinkedNodes[iVertexTarget] = Buffer_Send_StartLinkedNodes[iVertexTarget];
+    }
+    
+    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++){
+      iTmp = Buffer_Send_LinkedNodes[iVertexTarget];
+      for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++){
+        if( Target_GlobalPoint[jVertexTarget] == iTmp ){
+          Target_LinkedNodes[iVertexTarget] = jVertexTarget;
+          break;
+        }
+      }
+    }
+/*    
+    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
+      for (jVertexTarget = 0; jVertexTarget < Target_nLinkedNodes[iVertexTarget]; jVertexTarget++){
+        cout << Target_nLinkedNodes[iVertexTarget] << "  " << Target_StartLinkedNodes[iVertexTarget] << "  "; 
+        cout << Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] + jVertexTarget] << endl;
+      }
+      */
 #endif 
   
-    
     if( Buffer_Send_LinkedNodes        != NULL) {delete [] Buffer_Send_LinkedNodes;        Buffer_Send_LinkedNodes        = NULL;}
     if( Buffer_Send_Target_Coord       != NULL) {delete [] Buffer_Send_Target_Coord;       Buffer_Send_Target_Coord       = NULL;} 
     if( Buffer_Send_nLinkedNodes       != NULL) {delete [] Buffer_Send_nLinkedNodes;       Buffer_Send_nLinkedNodes       = NULL;}
@@ -1748,8 +1768,6 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     Buffer_Receive_nVertex_Donor = new unsigned long [ nProcessor ];//
 
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor ---*/
-
-    //Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim); // This can be changed
 
     Buffer_Send_Donor_Coord       = new su2double     [ nVertexDonor * nDim ]; // 
     Buffer_Send_Donor_GlobalPoint = new unsigned long [ nVertexDonor ];//
@@ -1834,7 +1852,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     SU2_MPI::Allreduce(&nLocalVertex_Donor, &nGlobalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nLocalLinkedNodes,  &nGlobalLinkedNodes,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
-    nGlobalVertex_Donor = nVertexDonor;
+    nGlobalVertex_Donor = nLocalVertex_Donor;
     nGlobalLinkedNodes  = nLocalLinkedNodes;
 #endif 
 
@@ -1854,11 +1872,11 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
         DonorPoint_Coord[iVertexDonor]  = Buffer_Send_Donor_Coord[iVertexDonor];
  
       for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
-        Donor_GlobalPoint[iVertexDonor] = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
-        Donor_proc[iVertexDonor] = MASTER_NODE;
-        Buffer_Receive_nLinkedNodes[iVertexDonor] = Buffer_Send_nLinkedNodes[iVertexDonor];
+        Donor_GlobalPoint[iVertexDonor]               = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
+        Donor_proc[iVertexDonor]                      = MASTER_NODE;
+        Buffer_Receive_nLinkedNodes[iVertexDonor]     = Buffer_Send_nLinkedNodes[iVertexDonor];
         Buffer_Receive_StartLinkedNodes[iVertexDonor] = Buffer_Send_StartLinkedNodes[iVertexDonor];
-       }
+      }
       
       for (iVertexDonor = 0; iVertexDonor < nLocalLinkedNodes; iVertexDonor++)
         Buffer_Receive_LinkedNodes[iVertexDonor] = Buffer_Send_LinkedNodes[iVertexDonor];
@@ -1899,37 +1917,55 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
       }
     }
     else{
-      SU2_MPI::Send(&nLocalLinkedNodes, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_LinkedNodes, nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
+      SU2_MPI::Send( &nLocalLinkedNodes, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD );
+      SU2_MPI::Send( Buffer_Send_LinkedNodes, nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
     
     
-      SU2_MPI::Send(&nLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_Donor_Coord, nDim*nLocalVertex_Donor, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD);
+      SU2_MPI::Send( &nLocalVertex_Donor, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD );
+      SU2_MPI::Send( Buffer_Send_Donor_Coord, nDim*nLocalVertex_Donor, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD );
       
-      SU2_MPI::Send(Buffer_Send_Donor_GlobalPoint, nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_nLinkedNodes,      nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
-      SU2_MPI::Send(Buffer_Send_StartLinkedNodes,  nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
+      SU2_MPI::Send( Buffer_Send_Donor_GlobalPoint, nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
+      SU2_MPI::Send( Buffer_Send_nLinkedNodes,      nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
+      SU2_MPI::Send( Buffer_Send_StartLinkedNodes,  nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
     }
   
-    SU2_MPI::Bcast(DonorPoint_Coord , nGlobalVertex_Donor * nDim, MPI_DOUBLE       , 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Donor_GlobalPoint, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Donor_proc       , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+    SU2_MPI::Bcast( DonorPoint_Coord , nGlobalVertex_Donor * nDim, MPI_DOUBLE       , 0, MPI_COMM_WORLD );
+    SU2_MPI::Bcast( Donor_GlobalPoint, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    SU2_MPI::Bcast( Donor_proc       , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
   
-    SU2_MPI::Bcast(Buffer_Receive_nLinkedNodes    , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Buffer_Receive_StartLinkedNodes, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Buffer_Receive_LinkedNodes,      nGlobalLinkedNodes        , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+    SU2_MPI::Bcast( Buffer_Receive_nLinkedNodes    , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    SU2_MPI::Bcast( Buffer_Receive_StartLinkedNodes, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    SU2_MPI::Bcast( Buffer_Receive_LinkedNodes,      nGlobalLinkedNodes        , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
 #else
-    for (iVertexDonor = 0; iVertexDonor < nDim*nLocalVertex_Donor; iVertexDonor++)
+    for (iVertexDonor = 0; iVertexDonor < nDim * nGlobalVertex_Donor; iVertexDonor++)
       DonorPoint_Coord[iVertexDonor] = Buffer_Send_Donor_Coord[iVertexDonor];
-      
-    for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
-      Donor_GlobalPoint[iVertexDonor] = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
-      Donor_proc[ tmp_index + iVertexDonor ] = MASTER_NODE;
+    //cout << Buffer_Send_StartLinkedNodes[0] << endl;
+    for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
+      Donor_GlobalPoint[iVertexDonor]                = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
+      Donor_proc[ iVertexDonor ]                     = MASTER_NODE;
+      Buffer_Receive_nLinkedNodes[iVertexTarget]     = Buffer_Send_nLinkedNodes[iVertexTarget];
+      Buffer_Receive_StartLinkedNodes[iVertexTarget] = Buffer_Send_StartLinkedNodes[iVertexTarget];
+      //cout << Buffer_Send_StartLinkedNodes[iVertexTarget] << endl;
     }
-    
-    for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++)
-      Buffer_Receive_LinkedNodes[iVertexDonor] = Buffer_Send_LinkedNodes[iVertexDonor];
- ////////////// to complete
+    //cout << Buffer_Send_StartLinkedNodes[0] << endl;
+    for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++){
+      iTmp = Buffer_Receive_LinkedNodes[iVertexDonor];
+      for (jVertexDonor = 0; jVertexDonor < nGlobalVertex_Donor; jVertexDonor++){
+        if( Donor_GlobalPoint[jVertexDonor] == iTmp ){
+          Buffer_Receive_LinkedNodes[iVertexDonor] = jVertexDonor;
+          break;
+        }
+      }
+    }
+    //cout << Buffer_Send_StartLinkedNodes[0] << endl;
+    /*
+    for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++){
+      cout << Buffer_Receive_nLinkedNodes[iVertexDonor] << "  " << Buffer_Receive_StartLinkedNodes[iVertexDonor] << "  "; 
+      for (jVertexDonor = 0; jVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]; jVertexDonor++){
+        cout << Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertexDonor] + jVertexDonor] << endl;
+      }
+    }
+    * */
 #endif 
 
     if( Buffer_Send_LinkedNodes       != NULL) {delete [] Buffer_Send_LinkedNodes;       Buffer_Send_LinkedNodes       = NULL;}
@@ -2842,7 +2878,6 @@ su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, s
   // Compute all edge intersections
 
   for( j = 0; j < 3; j++){
-
     for( i = 0; i < 3; i++){
 
       det = (TriangleP[j][0] - TriangleP[j+1][0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (TriangleP[j][1] - TriangleP[j+1][1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
