@@ -2515,189 +2515,183 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 
 su2double CSlidingmesh::PointsDistance(su2double *point_i, su2double *point_j){
 
-    /*--- Compute distance between 2 points ---*/
-    
-    unsigned short iDim, nDim = donor_geometry->GetnDim();
-    su2double m;
-    
-    m = 0 ;
-    for(iDim = 0; iDim < nDim; iDim++)
-        m += (point_j[iDim] - point_i[iDim])*(point_j[iDim] - point_i[iDim]);
-    
-    return sqrt(m);
+  /*--- Compute distance between 2 points ---*/
+
+  unsigned short iDim, nDim = donor_geometry->GetnDim();
+  su2double m;
+
+  m = 0 ;
+  for(iDim = 0; iDim < nDim; iDim++)
+    m += (point_j[iDim] - point_i[iDim])*(point_j[iDim] - point_i[iDim]);
+
+  return sqrt(m);
 }
 
 int CSlidingmesh::Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element){
     
-    /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface element around the node and store it into "element" ---*/
-    /*--- Returns the number of points included in the element ---*/
-    //(Buffer_Receive_LinkedNodes, Buffer_Receive_nLinkedNodes, DonorPoint_Coord, donor_iPoint, donor_element)
-    int iNode, jNode, kNode, iElementNode, iEdgeIndex, iPoint, jPoint, StartIndex, count;
-    
-    unsigned short nDim = 3, iDim, nTmp;
-    
-    int nOuterNodes, nElementNode, CurrentNode, NextNode, **OuterNodesNeighbour;
-    unsigned long *OuterNodes, *ptr;
-        
-    /* --- Store central node as element first point --- */
-    
-    for (iDim = 0; iDim < nDim; iDim++)
-      element[0][iDim] = coord[centralNode * nDim + iDim];
-    
-    nOuterNodes = nNeighbor[centralNode];
-    
-    OuterNodes = &map[ startIndex[centralNode] ];
+  /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface element around the node and store it into "element" ---*/
+  /*--- Returns the number of points included in the element ---*/
   
-    /* --- Allocate auxiliary structure, vectors are longer than needed but this avoid further re-allocations due to length variation --- */
-    
-    OuterNodesNeighbour = new int*[nOuterNodes];
-    for ( iNode = 0; iNode < nOuterNodes; iNode++ )
-        OuterNodesNeighbour[ iNode ] = new int[2];
-    
-    /* --- Finds which and how many nodes belong to the specified marker, initialize some variables --- */
-    
-    for ( iNode = 0; iNode < nOuterNodes; iNode++ ){
+  int iNode, jNode, kNode, iElementNode, iEdgeIndex, iPoint, jPoint, StartIndex, count;
 
-        OuterNodesNeighbour[ iNode ][0] = -1;
-        OuterNodesNeighbour[ iNode ][1] = -1;
-    }
+  unsigned short nDim = 3, iDim, nTmp;
+
+  int nOuterNodes, nElementNode, CurrentNode, NextNode, **OuterNodesNeighbour;
+  unsigned long *OuterNodes, *ptr;
+
+  /* --- Store central node as element first point --- */
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    element[0][iDim] = coord[centralNode * nDim + iDim];
+
+  nOuterNodes = nNeighbor[centralNode];
+
+  OuterNodes = &map[ startIndex[centralNode] ];
+
+  /* --- Allocate auxiliary structure, vectors are longer than needed but this avoid further re-allocations due to length variation --- */
+
+  OuterNodesNeighbour = new int*[nOuterNodes];
+  for ( iNode = 0; iNode < nOuterNodes; iNode++ )
+    OuterNodesNeighbour[ iNode ] = new int[2];
+
+  /* --- Finds which and how many nodes belong to the specified marker, initialize some variables --- */
+
+  for ( iNode = 0; iNode < nOuterNodes; iNode++ ){
+
+    OuterNodesNeighbour[ iNode ][0] = -1;
+    OuterNodesNeighbour[ iNode ][1] = -1;
+  }
     
   /* --- For each outer node, the program finds the two neighbouring outer nodes --- */
 
   StartIndex = 0;
   for( iNode = 0; iNode < nOuterNodes; iNode++ ){
 
-    count = 0;
-    iPoint = OuterNodes[ iNode ];
-    ptr = &map[ startIndex[iPoint] ];
-    nTmp = nNeighbor[iPoint];
+  count = 0;
+  iPoint = OuterNodes[ iNode ];
+  ptr = &map[ startIndex[iPoint] ];
+  nTmp = nNeighbor[iPoint];
 
-    for ( jNode = 0; jNode < nTmp; jNode++ ){
-
-      jPoint = ptr[jNode];
-
-      for( kNode = 0; kNode < nOuterNodes; kNode++ ){
-        if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
-          OuterNodesNeighbour[ iNode ][count] = kNode;
-          count++;
-          break;
-        }
+  for ( jNode = 0; jNode < nTmp; jNode++ ){
+    jPoint = ptr[jNode];
+    for( kNode = 0; kNode < nOuterNodes; kNode++ ){
+      if ( jPoint == OuterNodes[ kNode ] && jPoint != centralNode){
+        OuterNodesNeighbour[ iNode ][count] = kNode;
+        count++;
+        break;
       }
     }
-    
-    // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
-    if( count == 1 ) 
-      StartIndex = iNode;
   }
-    
-    /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
-    
-    CurrentNode = StartIndex;
-    
-    NextNode = OuterNodesNeighbour[ CurrentNode ][0];
 
-    iElementNode = 1;
+  // If the central node belongs to two different markers, ie at corners, makes this outer node the starting point for reconstructing the element
+  if( count == 1 ) 
+    StartIndex = iNode;
+  }
 
-    while( NextNode != -1 ){
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim ])/2;
-            
-        iElementNode++;
-    
-        for (iDim = 0; iDim < nDim; iDim++) 
-          element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] + coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
-        
-        iElementNode++;
-        
-        if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
-            CurrentNode = NextNode; 
-            NextNode = OuterNodesNeighbour[ NextNode ][1];  
-        }
-        else{
-            CurrentNode = NextNode; 
-            NextNode = OuterNodesNeighbour[ NextNode ][0];  
-        }
-        
-        if (CurrentNode == StartIndex)
-            break;
-    }
-    
-    if( CurrentNode == StartIndex ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
+  /* --- Build element, starts from one outer node and loops along the external edges until the element is reconstructed --- */
 
-        for (iDim = 0; iDim < nDim; iDim++)
-            element[ iElementNode ][iDim] = element[1][iDim];
-        iElementNode++;
+  CurrentNode = StartIndex;
+  NextNode    = OuterNodesNeighbour[ CurrentNode ][0];
+  iElementNode = 1;
+
+  while( NextNode != -1 ){
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim ])/2;
+
+    iElementNode++;
+
+    for (iDim = 0; iDim < nDim; iDim++) 
+      element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] + coord[ OuterNodes[ NextNode ] * nDim + iDim] )/3;
+
+    iElementNode++;
+
+    if( OuterNodesNeighbour[ NextNode ][0] == CurrentNode){
+      CurrentNode = NextNode; 
+      NextNode = OuterNodesNeighbour[ NextNode ][1];  
     }
     else{
-        for (iDim = 0; iDim < nDim; iDim++)
-            element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] )/2;
-        iElementNode++;
+      CurrentNode = NextNode; 
+      NextNode = OuterNodesNeighbour[ NextNode ][0];  
     }
 
-    for ( iNode = 0; iNode < nOuterNodes; iNode++ )
-        delete [] OuterNodesNeighbour[ iNode ];
-    delete [] OuterNodesNeighbour;
-    
-    return iElementNode;
+    if (CurrentNode == StartIndex)
+      break;
+    }
+
+    if( CurrentNode == StartIndex ){ // This is a closed element, so add again element 1 to the end of the structure, useful later
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      element[ iElementNode ][iDim] = element[1][iDim];
+    iElementNode++;
+  }
+  else{
+    for (iDim = 0; iDim < nDim; iDim++)
+    element[ iElementNode ][iDim] = ( element[0][iDim] + coord[ OuterNodes[ CurrentNode ] * nDim + iDim] )/2;
+    iElementNode++;
+  }
+
+  for ( iNode = 0; iNode < nOuterNodes; iNode++ )
+    delete [] OuterNodesNeighbour[ iNode ];
+  delete [] OuterNodesNeighbour;
+
+  return iElementNode;
 }
 
 su2double CSlidingmesh::Compute_Intersection_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
     
-    /*--- Given 2 segments, each defined by 2 points, it projects them along a given direction and it computes the length of the segment resulting from their intersection ---*/
-    /*--- The algorithm works both for 2D and 3D problems ---*/
-    
-    unsigned short iDim;
-    unsigned short nDim = donor_geometry->GetnDim();
-    
-    su2double Intersection;
-    
-    su2double dotA2, dotB1, dotB2, MaxArea;
-    
-    dotA2 = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        dotA2 += ( A2[iDim] - A1[iDim] ) * Direction[iDim];
+  /*--- Given 2 segments, each defined by 2 points, it projects them along a given direction and it computes the length of the segment resulting from their intersection ---*/
+  /*--- The algorithm works both for 2D and 3D problems ---*/
 
-    if( dotA2 >= 0 ){
-        dotB1 = 0;
-        dotB2 = 0;
-        for(iDim = 0; iDim < nDim; iDim++){
-            dotB1 += ( B1[iDim] - A1[iDim] ) * Direction[iDim];
-            dotB2 += ( B2[iDim] - A1[iDim] ) * Direction[iDim];
-        }
+  unsigned short iDim;
+  unsigned short nDim = donor_geometry->GetnDim();
+
+  su2double Intersection;
+  su2double dotA2, dotB1, dotB2, MaxArea;
+
+  dotA2 = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dotA2 += ( A2[iDim] - A1[iDim] ) * Direction[iDim];
+
+  if( dotA2 >= 0 ){
+    dotB1 = 0;
+    dotB2 = 0;
+    for(iDim = 0; iDim < nDim; iDim++){
+      dotB1 += ( B1[iDim] - A1[iDim] ) * Direction[iDim];
+      dotB2 += ( B2[iDim] - A1[iDim] ) * Direction[iDim];
     }
-    else{
-        dotA2 *= -1;
-        
-        dotB1 = 0;
-        dotB2 = 0;
-        for(iDim = 0; iDim < nDim; iDim++){
-            dotB1 -= ( B1[iDim] - A1[iDim] ) * Direction[iDim];
-            dotB2 -= ( B2[iDim] - A1[iDim] ) * Direction[iDim];
-        }
+  }
+  else{
+    dotA2 *= -1;
+
+    dotB1 = 0;
+    dotB2 = 0;
+    for(iDim = 0; iDim < nDim; iDim++){
+      dotB1 -= ( B1[iDim] - A1[iDim] ) * Direction[iDim];
+      dotB2 -= ( B2[iDim] - A1[iDim] ) * Direction[iDim];
     }
-    
-    
-    if( dotB1 >= 0 && dotB1 <= dotA2 ){
-        if ( dotB2 < 0 )
-            return fabs( dotB1 );
-        if ( dotB2 > dotA2 )
-            return fabs( dotA2 - dotB1 );
-            
-        return fabs( dotB1 - dotB2 );
-    }
-    
-    if( dotB2 >= 0 && dotB2 <= dotA2 ){
-        if ( dotB1 < 0 )
-            return fabs(dotB2);
-        if ( dotB1 > dotA2 )
-            return fabs( dotA2 - dotB2 );
-    }
-    
-    if( ( dotB1 <= 0 && dotA2 <= dotB2 ) || ( dotB2 <= 0 && dotA2 <= dotB1 ) )
-        return fabs( dotA2 );
-        
-    return 0.0;
+  }
+
+  if( dotB1 >= 0 && dotB1 <= dotA2 ){
+    if ( dotB2 < 0 )
+      return fabs( dotB1 );
+    if ( dotB2 > dotA2 )
+      return fabs( dotA2 - dotB1 );
+
+    return fabs( dotB1 - dotB2 );
+  }
+
+  if( dotB2 >= 0 && dotB2 <= dotA2 ){
+    if ( dotB1 < 0 )
+      return fabs(dotB2);
+    if ( dotB1 > dotA2 )
+      return fabs( dotA2 - dotB2 );
+  }
+
+  if( ( dotB1 <= 0 && dotA2 <= dotB2 ) || ( dotB2 <= 0 && dotA2 <= dotB1 ) )
+    return fabs( dotA2 );
+
+  return 0.0;
 }
 
 int CSlidingmesh::FindNextNode_2D(unsigned long *map, unsigned long PreviousNode){
@@ -2713,375 +2707,365 @@ int CSlidingmesh::FindNextNode_2D(unsigned long *map, unsigned long PreviousNode
 
 su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
     
-    /* --- This routine is ONLY for 3D grids --- */
-    /* --- Projects triangle points onto a plane, specified by its normal "Direction", and calls the ComputeIntersectionArea routine --- */
-    
-    unsigned short iDim;
-    unsigned short nDim = 3;
-    
-    su2double I[3], J[3], K[3];
-    su2double a1[3], a2[3], a3[3];
-    su2double b1[3], b2[3], b3[3];
-    su2double m1, m2;
-    su2double dot;
-    
-    /* --- Reference frame is determined by: x = A1A2 y = x ^ ( -Direction ) --- */
-    
-    for(iDim = 0; iDim < 3; iDim++){
-        a1[iDim] = 0;
-        a2[iDim] = 0;
-        a3[iDim] = 0;
-        
-        b1[iDim] = 0;
-        b2[iDim] = 0;
-        b3[iDim] = 0;
-    }
-    
-    
-    m1 = 0;
-    for(iDim = 0; iDim < nDim; iDim++){
-        K[iDim] = Direction[iDim];
+  /* --- This routine is ONLY for 3D grids --- */
+  /* --- Projects triangle points onto a plane, specified by its normal "Direction", and calls the ComputeIntersectionArea routine --- */
 
-        m1 += K[iDim] * K[iDim];
-    }
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        K[iDim] /= sqrt(m1);
-        
-    m2 = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        m2 += (A2[iDim] - A1[iDim]) * K[iDim];
+  unsigned short iDim;
+  unsigned short nDim = 3;
 
-    m1 = 0;
-    for(iDim = 0; iDim < nDim; iDim++){
-        
-        I[iDim] = (A2[iDim] - A1[iDim]) - m2 * K[iDim];
-        
-        m1 += I[iDim] * I[iDim];
-    }
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        I[iDim] /= sqrt(m1);
+  su2double I[3], J[3], K[3];
+  su2double a1[3], a2[3], a3[3];
+  su2double b1[3], b2[3], b3[3];
+  su2double m1, m2;
+  su2double dot;
 
-    
-    // Cross product to find Y
-    J[0] =   K[1]*I[2] - K[2]*I[1];
-    J[1] = -(K[0]*I[2] - K[2]*I[0]);
-    J[2] =   K[0]*I[1] - K[1]*I[0];
-    
-    /* --- Project all points on the plane specified by Direction and change their reference frame taking A1 as origin --- */
-    
-    for(iDim = 0; iDim < nDim; iDim++){
-        a2[0] += (A2[iDim] - A1[iDim]) * I[iDim];
-        a2[1] += (A2[iDim] - A1[iDim]) * J[iDim];
-        a2[2] += (A2[iDim] - A1[iDim]) * K[iDim];
-        
-        a3[0] += (A3[iDim] - A1[iDim]) * I[iDim];
-        a3[1] += (A3[iDim] - A1[iDim]) * J[iDim];
-        a3[2] += (A3[iDim] - A1[iDim]) * K[iDim];
-        
-        b1[0] += (B1[iDim] - A1[iDim]) * I[iDim];
-        b1[1] += (B1[iDim] - A1[iDim]) * J[iDim];
-        b1[2] += (B1[iDim] - A1[iDim]) * K[iDim];
-        
-        b2[0] += (B2[iDim] - A1[iDim]) * I[iDim];
-        b2[1] += (B2[iDim] - A1[iDim]) * J[iDim];
-        b2[2] += (B2[iDim] - A1[iDim]) * K[iDim];
-        
-        b3[0] += (B3[iDim] - A1[iDim]) * I[iDim];
-        b3[1] += (B3[iDim] - A1[iDim]) * J[iDim];
-        b3[2] += (B3[iDim] - A1[iDim]) * K[iDim];       
-    }
+  /* --- Reference frame is determined by: x = A1A2 y = x ^ ( -Direction ) --- */
 
-    /* --- Compute intersection area --- */
-    
-    return ComputeIntersectionArea( a1, a2, a3, b1, b2, b3 );
+  for(iDim = 0; iDim < 3; iDim++){
+    a1[iDim] = 0;
+    a2[iDim] = 0;
+    a3[iDim] = 0;
+
+    b1[iDim] = 0;
+    b2[iDim] = 0;
+    b3[iDim] = 0;
+  }
+
+  m1 = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    K[iDim] = Direction[iDim];
+
+    m1 += K[iDim] * K[iDim];
+  }
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    K[iDim] /= sqrt(m1);
+
+  m2 = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    m2 += (A2[iDim] - A1[iDim]) * K[iDim];
+
+  m1 = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    I[iDim] = (A2[iDim] - A1[iDim]) - m2 * K[iDim];
+    m1 += I[iDim] * I[iDim];
+  }
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    I[iDim] /= sqrt(m1);
+
+  // Cross product to find Y
+  J[0] =   K[1]*I[2] - K[2]*I[1];
+  J[1] = -(K[0]*I[2] - K[2]*I[0]);
+  J[2] =   K[0]*I[1] - K[1]*I[0];
+
+  /* --- Project all points on the plane specified by Direction and change their reference frame taking A1 as origin --- */
+
+  for(iDim = 0; iDim < nDim; iDim++){
+    a2[0] += (A2[iDim] - A1[iDim]) * I[iDim];
+    a2[1] += (A2[iDim] - A1[iDim]) * J[iDim];
+    a2[2] += (A2[iDim] - A1[iDim]) * K[iDim];
+
+    a3[0] += (A3[iDim] - A1[iDim]) * I[iDim];
+    a3[1] += (A3[iDim] - A1[iDim]) * J[iDim];
+    a3[2] += (A3[iDim] - A1[iDim]) * K[iDim];
+
+    b1[0] += (B1[iDim] - A1[iDim]) * I[iDim];
+    b1[1] += (B1[iDim] - A1[iDim]) * J[iDim];
+    b1[2] += (B1[iDim] - A1[iDim]) * K[iDim];
+
+    b2[0] += (B2[iDim] - A1[iDim]) * I[iDim];
+    b2[1] += (B2[iDim] - A1[iDim]) * J[iDim];
+    b2[2] += (B2[iDim] - A1[iDim]) * K[iDim];
+
+    b3[0] += (B3[iDim] - A1[iDim]) * I[iDim];
+    b3[1] += (B3[iDim] - A1[iDim]) * J[iDim];
+    b3[2] += (B3[iDim] - A1[iDim]) * K[iDim];       
+  }
+
+  /* --- Compute intersection area --- */
+
+  return ComputeIntersectionArea( a1, a2, a3, b1, b2, b3 );
 }
 
 su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 ){
     
-    /* --- This routines computes the area of the polygonal element generated by the superimposition of 2 planar triangle --- */
-    /* --- The 2 triangle must lie on the same plane --- */
-    
-    unsigned short iDim, iPoints, nPoints, i, j, k;
-    unsigned short nDim, IntersectionCounter, min_theta_index;
+  /* --- This routines computes the area of the polygonal element generated by the superimposition of 2 planar triangle --- */
+  /* --- The 2 triangle must lie on the same plane --- */
 
-    su2double points[16][2], IntersectionPoint[2], theta[6];
-    su2double TriangleP[4][2], TriangleQ[4][2];
-    su2double Area, det, dot1, dot2, dtmp, min_theta;
-    
-    nDim  = 2;
+  unsigned short iDim, iPoints, nPoints, i, j, k;
+  unsigned short nDim, IntersectionCounter, min_theta_index;
 
-    nPoints = 0;
-    
-    for(iDim = 0; iDim < nDim; iDim++){
-        TriangleP[0][iDim] = 0;
-        TriangleP[1][iDim] = P2[iDim] - P1[iDim];
-        TriangleP[2][iDim] = P3[iDim] - P1[iDim];
-        TriangleP[3][iDim] = 0;
-        
-        TriangleQ[0][iDim] = Q1[iDim] - P1[iDim];
-        TriangleQ[1][iDim] = Q2[iDim] - P1[iDim];
-        TriangleQ[2][iDim] = Q3[iDim] - P1[iDim];
-        TriangleQ[3][iDim] = Q1[iDim] - P1[iDim];
+  su2double points[16][2], IntersectionPoint[2], theta[6];
+  su2double TriangleP[4][2], TriangleQ[4][2];
+  su2double Area, det, dot1, dot2, dtmp, min_theta;
+
+  nDim    = 2;
+  nPoints = 0;
+
+  for(iDim = 0; iDim < nDim; iDim++){
+    TriangleP[0][iDim] = 0;
+    TriangleP[1][iDim] = P2[iDim] - P1[iDim];
+    TriangleP[2][iDim] = P3[iDim] - P1[iDim];
+    TriangleP[3][iDim] = 0;
+
+    TriangleQ[0][iDim] = Q1[iDim] - P1[iDim];
+    TriangleQ[1][iDim] = Q2[iDim] - P1[iDim];
+    TriangleQ[2][iDim] = Q3[iDim] - P1[iDim];
+    TriangleQ[3][iDim] = Q1[iDim] - P1[iDim];
+  }
+
+
+  for( j = 0; j < 3; j++){
+    if( CheckPointInsideTriangle(TriangleP[j], TriangleQ[0], TriangleQ[1], TriangleQ[2]) ){
+
+      // Then P1 is also inside triangle Q, so store it
+      for(iDim = 0; iDim < nDim; iDim++)
+        points[nPoints][iDim] = TriangleP[j][iDim];
+
+      nPoints++;      
     }
-    
-    
-    for( j = 0; j < 3; j++){
-        if( CheckPointInsideTriangle(TriangleP[j], TriangleQ[0], TriangleQ[1], TriangleQ[2]) ){
+  }
 
-            // Then P1 is also inside triangle Q, so store it
-            for(iDim = 0; iDim < nDim; iDim++)
-                points[nPoints][iDim] = TriangleP[j][iDim];
+  for( j = 0; j < 3; j++){    
+    if( CheckPointInsideTriangle(TriangleQ[j], TriangleP[0], TriangleP[1], TriangleP[2]) ){
 
-            nPoints++;      
+      // Then Q1 is also inside triangle P, so store it
+      for(iDim = 0; iDim < nDim; iDim++)
+        points[nPoints][iDim] = TriangleQ[j][iDim];
+
+      nPoints++;      
+    }
+  }
+
+
+  // Compute all edge intersections
+
+  for( j = 0; j < 3; j++){
+
+    for( i = 0; i < 3; i++){
+
+      det = (TriangleP[j][0] - TriangleP[j+1][0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (TriangleP[j][1] - TriangleP[j+1][1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
+
+      if ( det != 0.0 ){
+        ComputeLineIntersectionPoint( TriangleP[j], TriangleP[j+1], TriangleQ[i], TriangleQ[i+1], IntersectionPoint );
+
+        dot1 = 0;
+        dot2 = 0;
+        for(iDim = 0; iDim < nDim; iDim++){
+          dot1 += ( TriangleP[j][iDim] - IntersectionPoint[iDim] ) * ( TriangleP[j+1][iDim] - IntersectionPoint[iDim] );
+          dot2 += ( TriangleQ[i][iDim] - IntersectionPoint[iDim] ) * ( TriangleQ[i+1][iDim] - IntersectionPoint[iDim] );
         }
-    }
-    
-    for( j = 0; j < 3; j++){    
-        if( CheckPointInsideTriangle(TriangleQ[j], TriangleP[0], TriangleP[1], TriangleP[2]) ){
 
-            // Then Q1 is also inside triangle P, so store it
-            for(iDim = 0; iDim < nDim; iDim++)
-                points[nPoints][iDim] = TriangleQ[j][iDim];
+       if( dot1 <= 0 && dot2 <= 0 ){ // It found one intersection
 
-            nPoints++;      
+         // Store temporarily the intersection point
+
+         for(iDim = 0; iDim < nDim; iDim++)
+           points[nPoints][iDim] = IntersectionPoint[iDim];
+
+         nPoints++;
+       }   
+     }
+   }
+ }
+
+  // Remove double points, if any
+
+  for( i = 0; i < nPoints; i++){
+    for( j = i+1; j < nPoints; j++){
+      if(points[j][0] == points[i][0] && points[j][1] == points[i][1]){
+        for( k = j; k < nPoints-1; k++){
+          points[k][0] = points[k+1][0];
+          points[k][1] = points[k+1][1];
         }
+        nPoints--;
+        j--;
+      }
     }
-        
-        
-    // Compute all edge intersections
+  }       
 
-    for( j = 0; j < 3; j++){
+  // Re-order nodes   
 
-        for( i = 0; i < 3; i++){
-    
-                det = (TriangleP[j][0] - TriangleP[j+1][0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (TriangleP[j][1] - TriangleP[j+1][1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
-                
-                if ( det != 0.0 ){
-                    ComputeLineIntersectionPoint( TriangleP[j], TriangleP[j+1], TriangleQ[i], TriangleQ[i+1], IntersectionPoint );
-                    
-                    dot1 = 0;
-                    dot2 = 0;
-                    for(iDim = 0; iDim < nDim; iDim++){
-                            dot1 += ( TriangleP[j][iDim] - IntersectionPoint[iDim] ) * ( TriangleP[j+1][iDim] - IntersectionPoint[iDim] );
-                            dot2 += ( TriangleQ[i][iDim] - IntersectionPoint[iDim] ) * ( TriangleQ[i+1][iDim] - IntersectionPoint[iDim] );
-                    }
-                    
-                    if( dot1 <= 0 && dot2 <= 0 ){ // It found one intersection
-
-                        // Store temporarily the intersection point
-
-                        for(iDim = 0; iDim < nDim; iDim++)
-                            points[nPoints][iDim] = IntersectionPoint[iDim];
-                            
-                        nPoints++;
-                    }   
-                }
-            
-        }
-    }
-        
-    // Remove double points, if any
-
-    for( i = 0; i < nPoints; i++){
-            for( j = i+1; j < nPoints; j++){
-                if(points[j][0] == points[i][0] && points[j][1] == points[i][1]){
-                        for( k = j; k < nPoints-1; k++){
-                            points[k][0] = points[k+1][0];
-                            points[k][1] = points[k+1][1];
-                        }
-                        nPoints--;
-                        j--;
-                }
-            }
-    }       
-    
-    // Re-order nodes   
-
-    for( i = 1; i < nPoints; i++){ // Change again reference frame
-        
-        for(iDim = 0; iDim < nDim; iDim++)
-            points[i][iDim] -= points[0][iDim]; 
-        
-        // Compute polar azimuth for each node but the first
-        
-        theta[i] = atan2(points[i][1], points[i][0]);
-
-    }
-    
+  for( i = 1; i < nPoints; i++){ // Change again reference frame
     for(iDim = 0; iDim < nDim; iDim++)
-            points[0][iDim] = 0;
-    
-    for( i = 1; i < nPoints; i++){
-        
-        min_theta = theta[i];
-        min_theta_index = 0;
-        
-        for( j = i + 1; j < nPoints; j++){ 
-            
-            if( theta[j] < min_theta ){
-                min_theta = theta[j];
-                min_theta_index = j;
-            }
-        }
-        
-        if( min_theta_index != 0 ){
-            dtmp = theta[i];
-            theta[i] = theta[min_theta_index];
-            theta[min_theta_index] = dtmp;
-            
-            dtmp = points[i][0];
-            points[i][0] = points[min_theta_index][0];
-            points[min_theta_index][0] = dtmp;
-            
-            dtmp = points[i][1];
-            points[i][1] = points[min_theta_index][1];
-            points[min_theta_index][1] = dtmp;
-        }
+      points[i][iDim] -= points[0][iDim]; 
+
+    // Compute polar azimuth for each node but the first
+    theta[i] = atan2(points[i][1], points[i][0]);
+  }
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    points[0][iDim] = 0;
+
+  for( i = 1; i < nPoints; i++){
+
+    min_theta = theta[i];
+    min_theta_index = 0;
+
+    for( j = i + 1; j < nPoints; j++){ 
+
+      if( theta[j] < min_theta ){
+        min_theta = theta[j];
+        min_theta_index = j;
+      }
     }
-    
-    // compute area using cross product rule, points position are referred to the 2-dimensional, local, reference frame centered in points[0]
-    
-    Area = 0;
-    
-    if (nPoints > 2){
-        for( i = 1; i < nPoints-1; i++ ){
-            
-            // Ax*By
-            Area += ( points[i][0] - points[0][0] ) * ( points[i+1][1] - points[0][1] );
-            
-            // Ay*Bx
-            Area -= ( points[i][1] - points[0][1] ) * ( points[i+1][0] - points[0][0] );        
-        }
+
+    if( min_theta_index != 0 ){
+      dtmp = theta[i];
+      theta[i] = theta[min_theta_index];
+      theta[min_theta_index] = dtmp;
+
+      dtmp = points[i][0];
+      points[i][0] = points[min_theta_index][0];
+      points[min_theta_index][0] = dtmp;
+
+      dtmp = points[i][1];
+      points[i][1] = points[min_theta_index][1];
+      points[min_theta_index][1] = dtmp;
     }
+  }
     
-    return fabs(Area)/2;
+  // compute area using cross product rule, points position are referred to the 2-dimensional, local, reference frame centered in points[0]
+
+  Area = 0;
+
+  if (nPoints > 2){
+    for( i = 1; i < nPoints-1; i++ ){
+
+      // Ax*By
+      Area += ( points[i][0] - points[0][0] ) * ( points[i+1][1] - points[0][1] );
+
+      // Ay*Bx
+      Area -= ( points[i][1] - points[0][1] ) * ( points[i+1][0] - points[0][0] );        
+    }
+  }
+
+  return fabs(Area)/2;
 }
 
 void CSlidingmesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint ){
     
-    /* --- Uses determinant rule to compute the intersection point between 2 straight lines--- */
-    
-    unsigned short iDim, iPoints, nPoints;
-    unsigned short nDim = donor_geometry->GetnDim();
-    
-    su2double det;
-    
-    det = (A1[0] - A2[0]) * (B1[1] - B2[1]) - (A1[1] - A2[1]) * (B1[0] - B2[0]);
-    
-    if ( det != 0.0 ){ // else there is no intersection point
-        IntersectionPoint[0] = ( ( A1[0]*A2[1] - A1[1]*A2[0] ) * ( B1[0] - B2[0] ) - ( B1[0]*B2[1] - B1[1]*B2[0] ) * ( A1[0] - A2[0] ) ) / det;
-        IntersectionPoint[1] = ( ( A1[0]*A2[1] - A1[1]*A2[0] ) * ( B1[1] - B2[1] ) - ( B1[0]*B2[1] - B1[1]*B2[0] ) * ( A1[1] - A2[1] ) ) / det;
-    }
-    
-    return;
+  /* --- Uses determinant rule to compute the intersection point between 2 straight lines--- */
+
+  unsigned short iDim, iPoints, nPoints;
+  unsigned short nDim = donor_geometry->GetnDim();
+
+  su2double det;
+
+  det = (A1[0] - A2[0]) * (B1[1] - B2[1]) - (A1[1] - A2[1]) * (B1[0] - B2[0]);
+ 
+  if ( det != 0.0 ){ // else there is no intersection point
+    IntersectionPoint[0] = ( ( A1[0]*A2[1] - A1[1]*A2[0] ) * ( B1[0] - B2[0] ) - ( B1[0]*B2[1] - B1[1]*B2[0] ) * ( A1[0] - A2[0] ) ) / det;
+    IntersectionPoint[1] = ( ( A1[0]*A2[1] - A1[1]*A2[0] ) * ( B1[1] - B2[1] ) - ( B1[0]*B2[1] - B1[1]*B2[0] ) * ( A1[1] - A2[1] ) ) / det;
+  }
+
+  return;
 }
 
 bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3){
 
-    /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
-    
-    unsigned short iDim;
-    unsigned short nDim;
-    unsigned short check;
-    
-    su2double vect1[2], vect2[2], r[2];
-    su2double dot;
-    
-    check = 0;
-    nDim  = 2;
-    
-    /* --- Check first edge --- */
-    
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++){
-        vect1[iDim] = T3[iDim] - T1[iDim];
-        vect2[iDim] = T2[iDim] - T1[iDim];
-        
-        r[iDim] = Point[iDim] - T1[iDim];
-        
-        dot += vect2[iDim] * vect2[iDim];
-    }
-    dot = sqrt(dot);
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        vect2[iDim] /= dot;
-        
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        dot += vect1[iDim] * vect2[iDim];
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);
-        
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        dot += vect1[iDim] * r[iDim];
-        
-    if (dot >= 0)
-        check++;
+  /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
 
-    /* --- Check second edge --- */
-        
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++){
-        vect1[iDim] = T1[iDim] - T2[iDim];
-        vect2[iDim] = T3[iDim] - T2[iDim];
-        
-        r[iDim] = Point[iDim] - T2[iDim];
-        
-        dot += vect2[iDim] * vect2[iDim];
-    }
-    dot = sqrt(dot);
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        vect2[iDim] /= dot;
-        
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        dot += vect1[iDim] * vect2[iDim];
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        vect1[iDim] = T1[iDim] - (T2[iDim] + dot * vect2[iDim]);
-        
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        dot += vect1[iDim] * r[iDim];
-        
-    if (dot >= 0)
-        check++;
+  unsigned short iDim;
+  unsigned short nDim;
+  unsigned short check;
 
-    /* --- Check third edge --- */
-    
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++){
-        vect1[iDim] = T2[iDim] - T3[iDim];
-        vect2[iDim] = T1[iDim] - T3[iDim];
-        
-        r[iDim] = Point[iDim] - T3[iDim];
-        
-        dot += vect2[iDim] * vect2[iDim];
-    }
-    dot = sqrt(dot);
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        vect2[iDim] /= dot;
-        
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        dot += vect1[iDim] * vect2[iDim];
-    
-    for(iDim = 0; iDim < nDim; iDim++)
-        vect1[iDim] = T2[iDim] - (T3[iDim] + dot * vect2[iDim]);
-        
-    dot = 0;
-    for(iDim = 0; iDim < nDim; iDim++)
-        dot += vect1[iDim] * r[iDim];
-        
-    if (dot >= 0)
-        check++;
+  su2double vect1[2], vect2[2], r[2];
+  su2double dot;
 
-    return (check == 3);
-        
+  check = 0;
+  nDim  = 2;
+
+  /* --- Check first edge --- */
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    vect1[iDim] = T3[iDim] - T1[iDim];
+    vect2[iDim] = T2[iDim] - T1[iDim];
+
+    r[iDim] = Point[iDim] - T1[iDim];
+
+    dot += vect2[iDim] * vect2[iDim];
+  }
+  dot = sqrt(dot);
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect2[iDim] /= dot;
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * vect2[iDim];
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * r[iDim];
+
+  if (dot >= 0)
+    check++;
+
+  /* --- Check second edge --- */
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    vect1[iDim] = T1[iDim] - T2[iDim];
+    vect2[iDim] = T3[iDim] - T2[iDim];
+
+    r[iDim] = Point[iDim] - T2[iDim];
+
+    dot += vect2[iDim] * vect2[iDim];
+  }
+  dot = sqrt(dot);
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect2[iDim] /= dot;
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * vect2[iDim];
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect1[iDim] = T1[iDim] - (T2[iDim] + dot * vect2[iDim]);
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * r[iDim];
+
+  if (dot >= 0)
+    check++;
+
+  /* --- Check third edge --- */
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++){
+    vect1[iDim] = T2[iDim] - T3[iDim];
+    vect2[iDim] = T1[iDim] - T3[iDim];
+
+    r[iDim] = Point[iDim] - T3[iDim];
+
+    dot += vect2[iDim] * vect2[iDim];
+  }
+  dot = sqrt(dot);
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect2[iDim] /= dot;
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * vect2[iDim];
+
+  for(iDim = 0; iDim < nDim; iDim++)
+    vect1[iDim] = T2[iDim] - (T3[iDim] + dot * vect2[iDim]);
+
+  dot = 0;
+  for(iDim = 0; iDim < nDim; iDim++)
+    dot += vect1[iDim] * r[iDim];
+
+  if (dot >= 0)
+    check++;
+
+  return (check == 3);     
 }
