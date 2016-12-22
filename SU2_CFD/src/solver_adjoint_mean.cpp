@@ -4038,7 +4038,7 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
   unsigned long ExtIter       = config->GetExtIter();
   bool Update_AoA             = false;
-  su2double dCL_dAlpha   = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
+  su2double dCL_dAlpha        = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -6339,7 +6339,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
   bool fixed_cl       = config->GetFixed_CL_Mode();
-  bool eval_dcd_dcx       = config->GetEval_dCD_dCX();
+  bool eval_dcd_dcx   = config->GetEval_dCD_dCX();
 
   /*--- Update the objective function coefficient to guarantee zero gradient. ---*/
   
