@@ -284,23 +284,14 @@ public:
   
   /*!
    * \brief For 3-Dimensional grids, build the dual surface element
-   * \param[in] geometry - geometry where the node cell belongs
+   * \param[in] map         - array containing the index of the boundary points connected to the node
+   * \param[in] startIndex  - for each vertex specifies the corresponding index in the global array containing the indexes of all its neighbouring vertexes 
+   * \param[in] nNeighbour  - for each vertex specifies the number of its neighbouring vertexes (on the boundary)
+   * \param[in] coord       - array containing the coordinates of all the boundary vertexes
    * \param[in] centralNode - label of the vertex around which the dual surface element is built
-   * \param[in] markID   - node centered cell index
    * \param[in] element  - double array where element node coordinates will be stored
-   * \param[in] output   - number of nodes in the element
    */  
-  int Build_3D_surface_element(CGeometry *geometry, unsigned long centralNode, unsigned long markID, su2double** element);
-  
-  /*!
-   * \brief For 3-Dimensional grids, build the dual surface element
-   * \param[in] geometry - geometry where the node cell belongs
-   * \param[in] centralNode - label of the vertex around which the dual surface element is built
-   * \param[in] markID   - node centered cell index
-   * \param[in] element  - double array where element node coordinates will be stored
-   * \param[in] output   - number of nodes in the element
-   */  
-  int ABuild_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
+  int Build_3D_surface_element(unsigned long *map, unsigned long *startIndex, unsigned long* nNeighbor, su2double *coord, unsigned long centralNode, su2double** element);
   
   /*!
    * \brief compute distance between 2 points
@@ -321,30 +312,10 @@ public:
   
   /*!
    * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
-   * \param[in] geometry - geometry where the node cell belongs
-   * \param[in] PreviousVertex - label of the previous vertex so that the direction is specified
-   * \param[in] VertexID - node centered cell index
-   * \param[in] markID   - node centered cell index
+   * \param[in] map - array containing the index of the boundary points connected to the node
+   * \param[in] PreviousNode - label of the previous point so that the the function return the other one
    */
-  int AFindNextNode_2D(unsigned long *map, unsigned long PreviousNode);
-  
-  /*!
-   * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
-   * \param[in] geometry - geometry where the node cell belongs
-   * \param[in] PreviousVertex - label of the previous vertex so that the direction is specified
-   * \param[in] VertexID - node centered cell index
-   * \param[in] markID   - node centered cell index
-   */
-  int BFindNextNode_2D(unsigned long *map, unsigned long PreviousNode);
-  
-  /*!
-   * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
-   * \param[in] geometry - geometry where the node cell belongs
-   * \param[in] PreviousVertex - label of the previous vertex so that the direction is specified
-   * \param[in] VertexID - node centered cell index
-   * \param[in] markID   - node centered cell index
-   */
-  int FindNextNode_2D(CGeometry *geometry, int PreviousNode, unsigned long NodeID, unsigned long markID);
+  int FindNextNode_2D(unsigned long *map, unsigned long PreviousNode);
   
   /*!
    * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
