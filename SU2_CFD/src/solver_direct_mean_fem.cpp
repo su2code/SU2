@@ -166,10 +166,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   if( config->GetViscous() ) {
 
     /* Viscous simulation. */
-    unsigned short sizeFluxes = nIntegrationMax*nDim;
-    sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+    unsigned int sizeFluxes = nIntegrationMax*nDim;
+    sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-    const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+    const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
     sizeVecTmp = 2*nIntegrationMax*(1 + nVar) + sizeFluxes + sizeGradSolInt
                + max(nIntegrationMax,nDOFsMax)*nVar;
@@ -4986,10 +4986,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
   su2double tick = 0.0;
   su2double tick2 = 0.0;
   
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL       = VecTmpMemory.data();
   su2double *solIntR       = solIntL       + nIntegrationMax*nVar;
@@ -5595,10 +5595,10 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
 void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -5669,10 +5669,10 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -5838,10 +5838,10 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -5953,10 +5953,10 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double H_Total      = (Gamma*Gas_Constant/Gamma_Minus_One)*T_Total;
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -6098,10 +6098,10 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   P_Exit = P_Exit/config->GetPressure_Ref();
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -6215,10 +6215,10 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
   const su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -6317,10 +6317,10 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   const su2double StaticEnergy = Cv*TWall;
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -6409,10 +6409,10 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
 #endif
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
