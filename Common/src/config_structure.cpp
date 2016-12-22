@@ -4195,7 +4195,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
     }
 
-    if ((Kind_Regime == INCOMPRESSIBLE)) {
+    if (Kind_Regime == INCOMPRESSIBLE) {
       cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
     }
 

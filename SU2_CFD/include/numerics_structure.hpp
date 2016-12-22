@@ -4338,7 +4338,7 @@ public:
  */
 class CSourceGravity : public CNumerics {
   su2double Froude;
-  bool compressible, incompressible, freesurface;
+  bool compressible, incompressible;
   
 public:
   

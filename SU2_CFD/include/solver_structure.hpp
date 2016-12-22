@@ -6084,8 +6084,6 @@ protected:
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
 
-  
-  
 public:
   
   /*!
@@ -6437,6 +6435,7 @@ public:
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config);
+  using CSolver::BC_Interface_Boundary;
   
   /*!
    * \brief Impose the near-field boundary condition using the residual.
@@ -6448,7 +6447,8 @@ public:
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config);
-
+  using CSolver::BC_NearField_Boundary;
+  
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8781,6 +8781,10 @@ protected:
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
   
+  unsigned long AoA_Counter;
+  su2double ACoeff, ACoeff_inc, ACoeff_old;
+  bool Update_ACoeff;
+  
 public:
   
   /*!
@@ -9003,6 +9007,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Update the AoA and freestream velocity at the farfield.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
+                       CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -9517,19 +9532,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetDissipation_Switch(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Update the AoA and freestream velocity at the farfield.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - current mesh level for the multigrid.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
-                       CConfig *config, unsigned short iMesh, bool Output);
 
-    /*!
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -9557,6 +9561,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  using CSolver::BC_Interface_Boundary;
   
   /*!
    * \brief Impose via the residual the near-field adjoint boundary condition.
@@ -9567,6 +9572,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  using CSolver::BC_NearField_Boundary;
   
   /*!
    * \brief Impose via the residual the adjoint symmetry boundary condition.

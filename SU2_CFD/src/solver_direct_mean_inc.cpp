@@ -1802,7 +1802,6 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   
   Gas_ConstantND = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
   
-  
   ModVel_FreeStreamND = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) ModVel_FreeStreamND += Velocity_FreeStreamND[iDim]*Velocity_FreeStreamND[iDim];
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
@@ -4300,7 +4299,7 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
   unsigned long ExtIter       = config->GetExtIter();
   su2double Beta              = config->GetAoS()*PI_NUMBER/180.0;
-  su2double dCl_dAlpha        = config->GetdCl_dAlpha()*180.0/PI_NUMBER;
+  su2double dCl_dAlpha        = config->GetdCL_dAlpha()*180.0/PI_NUMBER;
   bool Update_AoA             = false;
   
   int rank = MASTER_NODE;

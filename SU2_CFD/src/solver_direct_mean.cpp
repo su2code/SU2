@@ -4188,18 +4188,21 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar, iDim;
   su2double Area_Children, Area_Parent,
-  *Solution_Fine, *Solution, X0[3], X1[3], X2[3], X1_X0[3], X2_X0[3], X2_X1[3], CP[3], Distance, DotCheck, Radius;
+  *Solution_Fine, *Solution;
+  su2double X0[3] = {0.0,0.0,0.0}, X1[3] = {0.0,0.0,0.0}, X2[3] = {0.0,0.0,0.0},
+  X1_X0[3] = {0.0,0.0,0.0}, X2_X0[3] = {0.0,0.0,0.0}, X2_X1[3] = {0.0,0.0,0.0},
+  CP[3] = {0.0,0.0,0.0}, Distance, DotCheck, Radius;
   
   unsigned short nDim = geometry[MESH_0]->GetnDim();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
-    bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
-
   
+
   /*--- Set subsonic initial condition for engine intakes ---*/
   
   if (SubsonicEngine) {
@@ -4213,11 +4216,11 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       T_ref = 0.0, S = 0.0, Mu_ref = 0.0, *Coord, *SubsonicEngine_Cyl, *SubsonicEngine_Values;
       
       SubsonicEngine_Values = config->GetSubsonicEngine_Values();
-      su2double Mach_Cyl                = SubsonicEngine_Values[0];
-      su2double Alpha_Cyl                = SubsonicEngine_Values[1];
-      su2double Beta_Cyl                = SubsonicEngine_Values[2];
-      su2double Pressure_Cyl        = SubsonicEngine_Values[3];
-      su2double Temperature_Cyl  = SubsonicEngine_Values[4];
+      su2double Mach_Cyl        = SubsonicEngine_Values[0];
+      su2double Alpha_Cyl       = SubsonicEngine_Values[1];
+      su2double Beta_Cyl        = SubsonicEngine_Values[2];
+      su2double Pressure_Cyl    = SubsonicEngine_Values[3];
+      su2double Temperature_Cyl = SubsonicEngine_Values[4];
       
       su2double Alpha = Alpha_Cyl*PI_NUMBER/180.0;
       su2double Beta  = Beta_Cyl*PI_NUMBER/180.0;
