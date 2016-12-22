@@ -461,6 +461,7 @@ void CConfig::SetPointersNull(void) {
   ExtIter    = 0;
   IntIter    = 0;
   nIntCoeffs = 0;
+  FSIIter    = 0;
   
   AoA_Offset = 0;
   AoS_Offset = 0;
