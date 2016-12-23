@@ -782,16 +782,16 @@ def main():
     ######################################
 
     # Pitch-plunge NACA 0012 (external FSI coupling)
-    coupled_FSI            = TestCase('coupled_FSI')
-    coupled_FSI.cfg_dir    = "coupled_fsi/2d_aeroelasticity"
-    coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
-    coupled_FSI.test_iter  = 1
-    coupled_FSI.su2_exec   = "mpirun -np 2 fsi_computation.py --parallel"
-    coupled_FSI.timeout    = 1600
-    coupled_FSI.reference_file = "StructHistory.dat.ref_parallel"
-    coupled_FSI.test_file  = "StructHistory.dat"
-    pass_list.append(coupled_FSI.run_filediff())
-    test_list.append(coupled_FSI)
+    #coupled_FSI            = TestCase('coupled_FSI')
+    #coupled_FSI.cfg_dir    = "coupled_fsi/2d_aeroelasticity"
+    #coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
+    #coupled_FSI.test_iter  = 1
+    #coupled_FSI.su2_exec   = "mpirun -np 2 fsi_computation.py --parallel"
+    #coupled_FSI.timeout    = 1600
+    #coupled_FSI.reference_file = "StructHistory.dat.ref_parallel"
+    #coupled_FSI.test_file  = "StructHistory.dat"
+    #pass_list.append(coupled_FSI.run_filediff())
+    #test_list.append(coupled_FSI)
 
 
     # Tests summary
