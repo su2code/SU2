@@ -894,7 +894,7 @@ def main():
     pywrapper_fsi2d.cfg_file  = "configFSI_2D.cfg"
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.777916, -1.139835] #last 4 columns
-    pywrapper_fsi2d.su2_exec  = "pyWrap_SU2_CFD.py --nZone 2 --fsi -f"
+    pywrapper_fsi2d.su2_exec  = "pyWrap_SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
