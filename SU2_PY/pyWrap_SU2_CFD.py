@@ -95,7 +95,7 @@ def main():
   try:
     if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
       SU2Driver = WrapSU2.CGeneralDriver(options.filename, options.nZone, options.nDim, comm);
-    elif options.options.harmonic_balance:
+    elif options.harmonic_balance:
       SU2Driver = WrapSU2.CHBDriver(options.filename, options.nZone, options.nDim, comm);
     elif (options.nZone == 2) and (options.fsi):
       SU2Driver = WrapSU2.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
