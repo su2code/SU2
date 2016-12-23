@@ -4006,13 +4006,15 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
   
   unsigned short iDim, iVar, jVar;
   su2double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  
+  bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   
   /*--- Retrieve the angular velocity vector from config. ---*/
   
-  Omega[0]  = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-  Omega[1]  = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-  Omega[2]  = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  Omega[0] = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
+  Omega[1] = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
+  Omega[2] = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
   
   /*--- Get the momentum vector at the current node. ---*/
   
@@ -4025,13 +4027,13 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
     val_residual[0] = 0.0;
     val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
     val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    val_residual[3] = 0.0;
+    if (compressible) val_residual[3] = 0.0;
   } else {
     val_residual[0] = 0.0;
     val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
     val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
     val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
-    val_residual[4] = 0.0;
+    if (compressible) val_residual[4] = 0.0;
   }
   
   /*--- Calculate the source term Jacobian ---*/
@@ -4069,8 +4071,8 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   su2double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
   unsigned short iDim;
   
-  bool implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool implicit       = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
   if (Coord_i[1] > 0.0) yinv = 1.0/Coord_i[1];
@@ -4096,7 +4098,6 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
     val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/DensityInc_i;
     val_residual[2] = yinv*Volume*U_i[2]*U_i[2]/DensityInc_i;
   }
-  
   
   if (implicit) {
     Jacobian_i[0][0] = 0;
