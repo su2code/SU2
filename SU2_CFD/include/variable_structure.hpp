@@ -3050,7 +3050,6 @@ public:
 class CIncEulerVariable : public CVariable {
 protected:
   su2double Velocity2;			/*!< \brief Square of the velocity vector. */
-  su2double *TS_Source;		/*!< \brief Time spectral source term. */
   su2double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
   su2double *WindGust;           /*! < \brief Wind gust value */
   su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
@@ -3247,21 +3246,7 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   void SetVelocity_Old(su2double *val_velocity);
-  
-  /*!
-   * \brief Set the time spectral source term.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
-   */
-  void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
-  
-  /*!
-   * \brief Get the time spectral source term.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the time spectral source term for the index <i>val_var</i>.
-   */
-  su2double GetTimeSpectral_Source(unsigned short val_var);
-  
+
   /*!
    * \brief Get the value of the wind gust
    * \return Value of the wind gust
@@ -3935,7 +3920,6 @@ protected:
   su2double *ForceProj_Vector;	/*!< \brief Vector d. */
   su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
   su2double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
-  su2double *TS_Source;		/*!< \brief Time spectral source term. */
   bool incompressible;
 public:
   

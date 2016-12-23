@@ -2057,6 +2057,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Wrt_Dynamic = false;
   }
 
+  /*--- Check for unsupported features. ---*/
+
+  if ((Kind_Regime == INCOMPRESSIBLE) && (Unsteady_Simulation == HARMONIC_BALANCE)){
+    cout << "Harmonic Balance not yet implemented for the incompressible solver." << endl;
+    exit(EXIT_FAILURE);
+  }
   
   /*--- Check for Fluid model consistency ---*/
 
