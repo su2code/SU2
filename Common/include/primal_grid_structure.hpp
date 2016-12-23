@@ -65,6 +65,7 @@ protected:
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
   su2double Volume;    /*!< \brief Volume of the element. */
+  su2double **Mij;
 
 public:
 	
@@ -152,6 +153,10 @@ public:
 	 */
 	bool GetDivide(void);
 	
+	void SetResolutionTensor(void);
+
+	vector<vector<su2double> > GetResolutionTensor(void);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_domainelement Index of the domain element which has a face shared by this boundary element.

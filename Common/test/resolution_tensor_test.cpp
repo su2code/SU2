@@ -42,21 +42,35 @@
 #include "config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 
-double dot_prod(double v[3], double w[3]) {
-  double output = v[0]*w[0] + v[1]*w[1] + v[2]*w[2];
+class TestGeometry : public CPhysicalGeometry {
+ protected:
+ public:
+  TestGeometry() {
+    nElem = 4;
+    for (int iElem=0; iElem<nElem; iElem++) {
+      elem[iElem] = new CQuadrilateral(0,0,0,0,2);
+    }
+  }
+  void SetResolutionTensor(void) {
+  };
+};
+
+inline su2double dot_prod(su2double v[3], su2double w[3]) {
+  su2double output = v[0]*w[0] + v[1]*w[1] + v[2]*w[2];
 }
 
-void ReduceVectors(double (&vecs_in)[6][3], double (&vecs_out)[3][3]) {
+void ReduceVectors(su2double (&vecs_in)[6][3], su2double (&vecs_out)[3][3]) {
   // Use the first vector
   for (int i = 0; i<3; ++i) vecs_out[0][i] = vecs_in[0][i];
 
   // Find the vectors that are the closest to being orthogonal
-  double norm_0 = 0.0;
+  // FIXME: The second vector must be close to orthogonal with the third
+  su2double norm_0 = 0.0;
   norm_0 = dot_prod(vecs_in[0], vecs_in[0]);
-  double min_dp = norm_0;
-  double second_dp = norm_0;
+  su2double min_dp = norm_0;
+  su2double second_dp = norm_0;
   int min_dp_index, second_dp_index;
-  double dot_product;
+  su2double dot_product;
   for (int i = 1; i<6; ++i) {
     dot_product = dot_prod(vecs_in[0], vecs_in[i]);
     if (std::abs(dot_product) < min_dp) {
@@ -69,14 +83,14 @@ void ReduceVectors(double (&vecs_in)[6][3], double (&vecs_out)[3][3]) {
   }
 
   // Construct the second vector
-  double factor0 = min_dp/norm_0;
+  su2double factor0 = min_dp/norm_0;
   std::cout << factor0 << std::endl;
   for (int i=0; i<3; ++i) vecs_out[1][i] = vecs_in[min_dp_index][i] - factor0*vecs_in[0][i];
-  double norm_1 = dot_prod(vecs_out[1], vecs_out[1]);
+  su2double norm_1 = dot_prod(vecs_out[1], vecs_out[1]);
 
   // Construct the third vector
   factor0 = second_dp/norm_0;
-  double factor1 = dot_prod(vecs_in[second_dp_index], vecs_out[1])/norm_1;
+  su2double factor1 = dot_prod(vecs_in[second_dp_index], vecs_out[1])/norm_1;
   for (int i = 0; i < 3; ++i) {
     vecs_out[2][i] = vecs_in[second_dp_index][i];
     vecs_out[2][i] -= factor0*vecs_out[0][i];
@@ -102,65 +116,28 @@ int main() {
   //---------------------------------------------------------------------------
   // Test
   //---------------------------------------------------------------------------
+  int nDim = 2;
+  CQuadrilateral* elem = new CQuadrilateral(1,1,1,1,nDim);
 
-  double vecs_in[6][3] = {{ 1, 1, -1},
-      { 1,  0,  2},
-      { 2, -2,  3},
-      { 1, -1, -1},
-      { 1,  0, -2},
-      {-2,  -2, 3}};
-
-
-  double vecs_out[3][3] = {{0, 0, 0}, {0,0,0}, {0,0,0}};
-
-  ReduceVectors(vecs_in, vecs_out);
-
-  const double eps = std::numeric_limits<double>::epsilon();
+  const su2double eps = std::numeric_limits<su2double>::epsilon();
   su2double tol = 10*eps;
 
-  // Check that the return vectors are nonzero.
-  su2double sum;
-  for (int i=0; i<3; ++i) {
-    sum = vecs_out[i][0] + vecs_out[i][1] + vecs_out[i][2];
-    if (not(std::abs(sum) > tol))  {
-      std::cout << "ERROR: Calculation of vectors for resolution tensor failed." << std::endl;
-      std::cout << "Norm of computed vector #" << i+1 << " was less than "
-          << eps << std::endl;
-      std::cout << "Vector: [" << vecs_out[i][0] << " , "
-          << vecs_out[i][1] << " , " << vecs_out[i][2] << "]" << std::endl;
-      return_flag = 1;
-      break;
+  // FIXME: The quadirlateral object does not yet have face CGs
+  elem->SetResolutionTensor();
+  vector<vector<su2double> > Mij = elem->GetResolutionTensor();
+
+  // Check that the resolution tensor is nonzero
+  su2double sum = 0.0;
+  for (int i=0; i<nDim; ++i) {
+    for (int j=0; j<nDim; ++j) {
+      sum += std::abs(Mij[i][j]);
     }
   }
-
-  // Check that the return values are orthogonal.
-  su2double dot_product;
-  for (int i=1; i<3; ++i) {
-    dot_product = dot_prod(vecs_out[0], vecs_out[i]);
-    if (std::abs(dot_product) > eps) {
-      std::cout << "ERROR: Calculation of vectors for resolution tensor failed." << std::endl;
-      std::cout << "Computed vector were non-orthogonal." << std::endl;
-      std::cout << "Vec 1:  [" << vecs_out[0][0] << " , " << vecs_out[0][1] << " , "
-          << vecs_out[0][2] << "]" << std::endl;
-      std::cout << "Vec 2: [" << vecs_out[1][0] << " , " << vecs_out[1][1] << " , "
-          << vecs_out[1][2] << "]" << std::endl;
-      std::cout << "Vec 3: [" << vecs_out[2][0] << " , " << vecs_out[2][1] << " , "
-          << vecs_out[2][2] << "]" << std::endl;
-      return_flag = 1;
-      break;
-    }
-  }
-
-  // Check that the first vector points in the same direction as the original
-  dot_product = dot_prod(vecs_out[0], vecs_in[0]);
-  double norm = dot_prod(vecs_in[0], vecs_in[0]);
-  if (std::abs(dot_product - norm) > eps) {
-    std::cout << "ERROR: Calculation of vectors for resolution tensor failed." << std::endl;
-    std::cout << "First vector (the reference vector) changed directions." << std::endl;
-    std::cout << "In:  [" << vecs_in[0][0] << " , " << vecs_in[0][1] << " , "
-        << vecs_in[0][2] << "]" << std::endl;
-    std::cout << "Out: [" << vecs_out[0][0] << " , " << vecs_out[0][1] << " , "
-        << vecs_out[0][2] << "]" << std::endl;
+  if (sum < eps) {
+    std::cout << "ERROR: The resolution tensor for a quadrilateral was not correct."
+        << std::endl;
+    std::cout << "The sum was within machine precision of zero." << std::endl;
+    std::cout << "Sum: " << sum << std::endl;
     return_flag = 1;
   }
 

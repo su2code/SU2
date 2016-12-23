@@ -116,6 +116,84 @@ CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrim
 	
 }
 
+inline su2double dot_prod(su2double v[], su2double w[], unsigned short nDim) {
+  su2double output = 0;
+  for (unsigned short i = 0; i<nDim; ++i) output += v[i]*w[i];
+  return output;
+}
+
+vector<vector<su2double> > CPrimalGrid::GetResolutionTensor(void) {
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (int i=0; i<nDim; ++i) {
+    for (int j=0; j<nDim; ++j) {
+      output[i][j] = Mij[i][j];
+    }
+  }
+  return output;
+}
+
+void CPrimalGrid::SetResolutionTensor(void) {
+  unsigned short iDim, iNode, iFace, iVec;
+  unsigned short nFaces;
+
+  Mij = new su2double* [nDim];
+  for (int i = 0; i < nDim; ++i)
+    Mij[i] = new su2double [nDim];
+
+  nFaces = GetnFaces();
+
+  if (nDim>1) {
+    // Construct vectors from each face to the cell center
+    su2double vecs[nFaces][nDim];
+    su2double mags[nFaces];
+    for (iFace = 0; iFace < nFaces;  iFace++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        vecs[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
+      }
+      mags[iFace] = std::sqrt(dot_prod(vecs[iFace], vecs[iFace], nDim));
+    }
+
+    unsigned short iFaceRef = 0;
+    su2double normalized_dp[nFaces];
+    su2double max_dp, min_dp;
+    unsigned short iFaceOpposite, iFaceOrthogonal;
+    su2double eigvectors[nDim][nDim];
+    for (iVec = 0; iVec < nDim; iVec++) {
+      // Find the opposite face to the reference face
+      max_dp = 0.0;
+      min_dp = 1.0;
+      for (iFace = 0; iFace < nFaces; iFace++) {
+        if (iFace == iFaceRef) continue;
+        normalized_dp[iFace] = dot_prod(vecs[iFaceRef], vecs[iFace], nDim)/
+            (mags[iFaceRef]*mags[iFace]);
+        // The opposite vector will have a dot product magnitude close to 1
+        if (std::abs(normalized_dp[iFace]) > max_dp) {
+          iFaceOpposite = iFace;
+          max_dp = std::abs(normalized_dp[iFace]);
+        }
+        // An othogonal vector will have a dot product equal to zero
+        if (std::abs(normalized_dp[iFace]) < min_dp) {
+          iFaceOrthogonal = iFace;
+          min_dp = std::abs(normalized_dp[iFace]);
+        }
+      }
+
+      // Create a vector from the reference to the opposite face
+      for (iDim = 0; iDim < nDim; iDim++) {
+        eigvectors[iVec][iDim] = Coord_FaceElems_CG[iFaceRef][iDim] -
+            Coord_FaceElems_CG[iFaceOpposite][iDim];
+      }
+
+      // Set the reference face to a nearly orthogonal face for the next loop
+      iFaceRef = iFaceOrthogonal;
+    }
+  } else {
+    // A Resolution tensor is simply [[1]] if there are no directions
+    Mij[0][0] = 1.0;
+  }
+
+}
+
 CVertexMPI::~CVertexMPI() {
   unsigned short iFaces;
   
