@@ -839,10 +839,6 @@ inline su2double **CIncEulerVariable::GetGradient_Primitive(void) { return Gradi
 
 inline su2double *CIncEulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
 
-inline void CIncEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
-
-inline su2double CIncEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
-
 inline void CIncEulerVariable::SetWindGust( su2double* val_WindGust) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     WindGust[iDim] = val_WindGust[iDim];}
@@ -880,10 +876,6 @@ inline void CAdjIncEulerVariable::SetObjFuncSource(su2double *val_ObjFuncSource)
 inline void CAdjIncEulerVariable::SetIntBoundary_Jump(su2double *val_IntBoundary_Jump) { for (unsigned short iVar = 0; iVar < nVar; iVar++) IntBoundary_Jump[iVar] = val_IntBoundary_Jump[iVar]; }
 
 inline void CAdjIncEulerVariable::SetPhi_Old(su2double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
-
-inline void CAdjIncEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
-
-inline su2double CAdjIncEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
 
 inline su2double *CAdjIncNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
