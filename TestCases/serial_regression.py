@@ -274,6 +274,21 @@ def main():
     fem_ns_cylinder.tol       = 0.00001
     test_list.append(fem_ns_cylinder)
 
+    #########################
+    ###    Transition     ###
+    #########################
+
+    # Schubauer-Klebanoff Natural Transition
+    schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
+    schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
+    schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
+    schubauer_klebanoff_transition.test_iter    = 250
+    schubauer_klebanoff_transition.test_vals    = [-9.474452, -15.630834, 0.000520, 0.001062] #last 4 columns
+    schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
+    schubauer_klebanoff_transition.timeout      = 1600
+    schubauer_klebanoff_transition.tol          = 0.00001
+    test_list.append(schubauer_klebanoff_transition)
+
     #####################################
     ### Cont. adj. compressible Euler ###
     #####################################

@@ -933,6 +933,247 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool su
   
 }
 
+void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+  
+  unsigned short iVar, nDim = geometry->GetnDim();
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  
+  unsigned long iPoint, iElem, iNode;
+  unsigned long iExtIter = config->GetExtIter();
+  
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+  
+  int iProcessor;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  char cstr[200], buffer[50];
+  string filename;
+  ofstream Tecplot_File;
+
+  /*--- Write file name with extension ---*/
+  
+  if (surf_sol) {
+    if (adjoint) filename = config->GetSurfAdjCoeff_FileName();
+    else filename = config->GetSurfFlowCoeff_FileName();
+  }
+  else {
+    if (adjoint)
+      filename = config->GetAdj_FileName();
+    else filename = config->GetFlow_FileName();
+  }
+  
+  if (Kind_Solver == FEM_ELASTICITY) {
+    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
+    else filename = config->GetStructure_FileName().c_str();
+  }
+  
+  if (Kind_Solver == WAVE_EQUATION) {
+    if (surf_sol) filename = config->GetSurfWave_FileName().c_str();
+    else filename = config->GetWave_FileName().c_str();
+  }
+  
+  if (Kind_Solver == HEAT_EQUATION) {
+    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+    else filename = config->GetHeat_FileName().c_str();
+  }
+  
+  if (Kind_Solver == POISSON_EQUATION) {
+    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
+    else filename = config->GetStructure_FileName().c_str();
+  }
+  
+  if (config->GetKind_SU2() == SU2_DOT) {
+    if (surf_sol) filename = config->GetSurfSens_FileName();
+    else filename = config->GetVolSens_FileName();
+  }
+  
+  strcpy (cstr, filename.c_str());
+  
+  /*--- Special cases where a number needs to be appended to the file name. ---*/
+  
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
+       Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
+       Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
+      (val_nZone > 1) ) {
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
+    strcat(cstr, buffer);
+  }
+  
+  if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady() && config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
+    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(iExtIter));
+    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(iExtIter));
+    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
+  }
+  else { SPRINTF (buffer, ".dat"); }
+  
+  strcat(cstr, buffer);
+  
+  /*--- Open Tecplot ASCII file and write the header. ---*/
+  
+  if (rank == MASTER_NODE) {
+    Tecplot_File.open(cstr, ios::out);
+    Tecplot_File.precision(6);
+    if (surf_sol) Tecplot_File << "TITLE = \"Visualization of the surface solution\"" << endl;
+    else Tecplot_File << "TITLE = \"Visualization of the volumetric solution\"" << endl;
+    
+    Tecplot_File << "VARIABLES = ";
+    for (iVar = 0; iVar < Variable_Names.size()-1; iVar++) {
+      Tecplot_File << "\"" << Variable_Names[iVar] << "\",";
+    }
+    Tecplot_File << "\"" << Variable_Names[Variable_Names.size()-1] << "\"" << endl;
+    
+    /*--- Write the header ---*/
+    
+    Tecplot_File << "ZONE ";
+    
+    if (nDim == 2) {
+      if (surf_sol) Tecplot_File << "NODES= "<< nGlobal_Surf_Poin <<", ELEMENTS= "<< nSurf_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FELINESEG"<< endl;
+      else Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+    } else {
+      if (surf_sol) Tecplot_File << "NODES= "<< nGlobal_Surf_Poin <<", ELEMENTS= "<< nSurf_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEQUADRILATERAL"<< endl;
+      else Tecplot_File << "NODES= "<< nGlobal_Poin_Par <<", ELEMENTS= "<< nGlobal_Elem_Par <<", DATAPACKING=POINT, ZONETYPE=FEBRICK"<< endl;
+    }
+
+    Tecplot_File.close();
+    
+  }
+  
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
+  /*--- Each processor opens the file. ---*/
+  
+  Tecplot_File.open(cstr, ios::out | ios::app);
+  
+  /*--- Write surface and volumetric solution data. ---*/
+  
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      
+        /*--- Write the node data from this proc ---*/
+        
+        if (surf_sol) {
+            for (iPoint = 0; iPoint < nSurf_Poin_Par; iPoint++) {
+        for (iVar = 0; iVar < nVar_Par; iVar++)
+          Tecplot_File << scientific << Parallel_Surf_Data[iVar][iPoint] << "\t";
+        Tecplot_File << endl;
+            
+          }
+        } else {
+          
+           for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
+          for (iVar = 0; iVar < nVar_Par; iVar++)
+            Tecplot_File << scientific << Parallel_Data[iVar][iPoint] << "\t";
+          Tecplot_File << endl;
+        }
+      }
+    }
+    Tecplot_File.flush();
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  }
+  
+  /*--- Write connectivity data. ---*/
+  
+  for (iProcessor = 0; iProcessor < size; iProcessor++) {
+    if (rank == iProcessor) {
+      
+      if (surf_sol) {
+        
+        for (iElem = 0; iElem < nParallel_Line; iElem++) {
+          iNode = iElem*N_POINTS_LINE;
+          Tecplot_File << Conn_Line_Par[iNode+0] << "\t";
+          Tecplot_File << Conn_Line_Par[iNode+1] << "\n";
+        }
+        
+        for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
+          iNode = iElem*N_POINTS_TRIANGLE;
+          Tecplot_File << Conn_BoundTria_Par[iNode+0] << "\t";
+          Tecplot_File << Conn_BoundTria_Par[iNode+1] << "\t";
+          Tecplot_File << Conn_BoundTria_Par[iNode+2] << "\t";
+          Tecplot_File << Conn_BoundTria_Par[iNode+2] << "\n";
+        }
+        
+        for (iElem = 0; iElem < nParallel_BoundQuad; iElem++) {
+          iNode = iElem*N_POINTS_QUADRILATERAL;
+          Tecplot_File << Conn_BoundQuad_Par[iNode+0] << "\t";
+          Tecplot_File << Conn_BoundQuad_Par[iNode+1] << "\t";
+          Tecplot_File << Conn_BoundQuad_Par[iNode+2] << "\t";
+          Tecplot_File << Conn_BoundQuad_Par[iNode+3] << "\n";
+        }
+        
+      } else {
+        
+      for (iElem = 0; iElem < nParallel_Tria; iElem++) {
+        iNode = iElem*N_POINTS_TRIANGLE;
+        Tecplot_File << Conn_Tria_Par[iNode+0] << "\t";
+        Tecplot_File << Conn_Tria_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Tria_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Tria_Par[iNode+2] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Quad; iElem++) {
+        iNode = iElem*N_POINTS_QUADRILATERAL;
+        Tecplot_File << Conn_Quad_Par[iNode+0] << "\t";
+        Tecplot_File << Conn_Quad_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Quad_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Quad_Par[iNode+3] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
+        iNode = iElem*N_POINTS_TETRAHEDRON;
+        Tecplot_File << Conn_Tetr_Par[iNode+0] << "\t" << Conn_Tetr_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Tetr_Par[iNode+2] << "\t" << Conn_Tetr_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\t";
+        Tecplot_File << Conn_Tetr_Par[iNode+3] << "\t" << Conn_Tetr_Par[iNode+3] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
+        iNode = iElem*N_POINTS_HEXAHEDRON;
+        Tecplot_File << Conn_Hexa_Par[iNode+0] << "\t" << Conn_Hexa_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Hexa_Par[iNode+2] << "\t" << Conn_Hexa_Par[iNode+3] << "\t";
+        Tecplot_File << Conn_Hexa_Par[iNode+4] << "\t" << Conn_Hexa_Par[iNode+5] << "\t";
+        Tecplot_File << Conn_Hexa_Par[iNode+6] << "\t" << Conn_Hexa_Par[iNode+7] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Pris; iElem++) {
+        iNode = iElem*N_POINTS_PRISM;
+        Tecplot_File << Conn_Pris_Par[iNode+0] << "\t" << Conn_Pris_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Pris_Par[iNode+1] << "\t" << Conn_Pris_Par[iNode+2] << "\t";
+        Tecplot_File << Conn_Pris_Par[iNode+3] << "\t" << Conn_Pris_Par[iNode+4] << "\t";
+        Tecplot_File << Conn_Pris_Par[iNode+4] << "\t" << Conn_Pris_Par[iNode+5] << "\n";
+      }
+      
+      for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
+        iNode = iElem*N_POINTS_PYRAMID;
+        Tecplot_File << Conn_Pyra_Par[iNode+0] << "\t" << Conn_Pyra_Par[iNode+1] << "\t";
+        Tecplot_File << Conn_Pyra_Par[iNode+2] << "\t" << Conn_Pyra_Par[iNode+3] << "\t";
+        Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\t";
+        Tecplot_File << Conn_Pyra_Par[iNode+4] << "\t" << Conn_Pyra_Par[iNode+4] << "\n";
+      }
+      }
+      
+    }
+    Tecplot_File.flush();
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  }
+  
+  Tecplot_File.close();
+  
+}
+
 void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
   
 #ifdef HAVE_TECIO
@@ -971,7 +1212,10 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
     
     file.str(string());
     buffer = config->GetFlow_FileName();
-
+    if (config->GetKind_SU2() == SU2_DOT) {
+      buffer = config->GetVolSens_FileName();
+    }
+    
     file << buffer << ".mesh.plt";
     FileType = GRID;
     
@@ -1036,6 +1280,25 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
+          
+        } else if (config->GetKind_SU2() == SU2_DOT) {
+          
+          passivedouble* PassiveData = new passivedouble[NPts];
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          
+          if (geometry->GetnDim() == 3) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+          
+          delete [] PassiveData;
+          
         } else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
@@ -1048,6 +1311,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
         first_zone = false;
       }
       
+          
       err = TECNOD112(Conn_Tria);
       if (err) cout << "Error writing connectivity to Tecplot file" << endl;
       
@@ -1095,7 +1359,26 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        } else {
+          
+        } else if (config->GetKind_SU2() == SU2_DOT) {
+          
+          passivedouble* PassiveData = new passivedouble[NPts];
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          
+          if (geometry->GetnDim() == 3) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+          
+          delete [] PassiveData;
+          
+        }  else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1154,7 +1437,26 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        } else {
+          
+        } else if (config->GetKind_SU2() == SU2_DOT) {
+          
+          passivedouble* PassiveData = new passivedouble[NPts];
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          
+          if (geometry->GetnDim() == 3) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+          
+          delete [] PassiveData;
+          
+        }  else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1213,7 +1515,26 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        } else {
+          
+        } else if (config->GetKind_SU2() == SU2_DOT) {
+          
+          passivedouble* PassiveData = new passivedouble[NPts];
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          
+          if (geometry->GetnDim() == 3) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+          
+          delete [] PassiveData;
+          
+        }  else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1273,7 +1594,26 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        } else {
+          
+        } else if (config->GetKind_SU2() == SU2_DOT) {
+          
+          passivedouble* PassiveData = new passivedouble[NPts];
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          
+          if (geometry->GetnDim() == 3) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+          
+          delete [] PassiveData;
+          
+        }  else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1349,7 +1689,26 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
             err = TECDAT112(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
-        } else {
+          
+        } else if (config->GetKind_SU2() == SU2_DOT) {
+          
+          passivedouble* PassiveData = new passivedouble[NPts];
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          
+          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
+          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          
+          if (geometry->GetnDim() == 3) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            ShareFromZone[2] = 1;
+          }
+          
+          delete [] PassiveData;
+          
+        }  else {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
           err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
@@ -1429,6 +1788,9 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
   file.str(string());
   buffer = config->GetFlow_FileName();
+  if (config->GetKind_SU2() == SU2_DOT) {
+    buffer = config->GetVolSens_FileName();
+  }
 
   file << buffer;
   
@@ -1442,7 +1804,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   file << ".sol.plt";
   FileType = SOLUTION;
   variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     if (Wrt_Unsteady && GridMovement) nVar_Total = NVar;
     else nVar_Total = NVar+dims;
   }
@@ -1508,6 +1870,26 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
+      } else if (config->GetKind_SU2() == SU2_DOT) {
+        
+        passivedouble* PassiveData = new passivedouble[NPts];
+        
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+      
+        delete [] PassiveData;
+        
       } else {
 
         if (Wrt_Unsteady && GridMovement) {
@@ -1579,6 +1961,26 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
+      } else if (config->GetKind_SU2() == SU2_DOT) {
+        
+        passivedouble* PassiveData = new passivedouble[NPts];
+        
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        
+        delete [] PassiveData;
+        
       } else {
         if (Wrt_Unsteady && GridMovement) {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
@@ -1648,6 +2050,26 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
+      } else if (config->GetKind_SU2() == SU2_DOT) {
+        
+        passivedouble* PassiveData = new passivedouble[NPts];
+        
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        
+        delete [] PassiveData;
+        
       } else {
         if (Wrt_Unsteady && GridMovement) {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
@@ -1717,6 +2139,26 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
+      } else if (config->GetKind_SU2() == SU2_DOT) {
+        
+        passivedouble* PassiveData = new passivedouble[NPts];
+        
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        
+        delete [] PassiveData;
+        
       } else {
         if (Wrt_Unsteady && GridMovement) {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
@@ -1786,6 +2228,26 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
+      } else if (config->GetKind_SU2() == SU2_DOT) {
+        
+        passivedouble* PassiveData = new passivedouble[NPts];
+        
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        
+        delete [] PassiveData;
+        
       } else {
         if (Wrt_Unsteady && GridMovement) {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
@@ -1855,6 +2317,26 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
+      } else if (config->GetKind_SU2() == SU2_DOT) {
+        
+        passivedouble* PassiveData = new passivedouble[NPts];
+        
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        
+        delete [] PassiveData;
+        
       } else {
         if (Wrt_Unsteady && GridMovement) {
           err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
@@ -1907,6 +2389,9 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     
     file.str(string());
     buffer = config->GetSurfFlowCoeff_FileName();
+    if (config->GetKind_SU2() == SU2_DOT) {
+      buffer = config->GetSurfSens_FileName();
+    }
     
     file << buffer << ".mesh.plt";
     FileType = GRID;
@@ -1952,18 +2437,18 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     
     /*--- Collect surface coordinates into one array as well ---*/
     /*--- Note the -1 in the Coords/Data array in order to undo the 1-based indexing ---*/
-    su2double **Surf_Coords = new su2double*[dims];
+    passivedouble **Surf_Coords = new passivedouble*[dims];
     for (iDim = 0; iDim < dims; iDim++)
-      Surf_Coords[iDim] = new su2double[nSurf_Poin];
+      Surf_Coords[iDim] = new passivedouble[nSurf_Poin];
     
     unsigned long iSurf_Poin = 0;
     for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
       if (SurfacePoint[iPoint]) {
         for (iDim = 0; iDim < dims; iDim++) {
-          if (config->GetKind_SU2() == SU2_SOL)
-            Surf_Coords[iDim][iSurf_Poin] = Data[iDim][iPoint-1];
+          if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT))
+            Surf_Coords[iDim][iSurf_Poin] = SU2_TYPE::GetValue(Data[iDim][iPoint-1]);
           else
-            Surf_Coords[iDim][iSurf_Poin] = Coords[iDim][iPoint-1];
+            Surf_Coords[iDim][iSurf_Poin] = SU2_TYPE::GetValue(Coords[iDim][iPoint-1]);
         }
         iSurf_Poin++;
       }
@@ -2206,6 +2691,9 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   file.str(string());
   buffer = config->GetSurfFlowCoeff_FileName();
+  if (config->GetKind_SU2() == SU2_DOT) {
+    buffer = config->GetSurfSens_FileName();
+  }
   
   file << buffer;
   
@@ -2219,7 +2707,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   file << ".sol.plt";
   FileType = SOLUTION;
   variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     if (Wrt_Unsteady && GridMovement) nVar_Total = NVar;
     else nVar_Total = NVar+dims;
   }
@@ -2262,20 +2750,20 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   /*--- Collect surface coordinates into one array as well ---*/
   /*--- Note the -1 in the Coords/Data array in order to undo the 1-based indexing ---*/
-  su2double **Surf_Coords = NULL;
+  passivedouble **Surf_Coords = NULL;
   if (Wrt_Unsteady && GridMovement) {
-    Surf_Coords = new su2double*[dims];
+    Surf_Coords = new passivedouble*[dims];
     for (iDim = 0; iDim < dims; iDim++)
-    Surf_Coords[iDim] = new su2double[nSurf_Poin];
+    Surf_Coords[iDim] = new passivedouble[nSurf_Poin];
     
     iSurf_Poin = 0;
     for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
       if (SurfacePoint[iPoint]) {
         for (iDim = 0; iDim < dims; iDim++) {
-          if (config->GetKind_SU2() == SU2_SOL)
-          Surf_Coords[iDim][iSurf_Poin] = Data[iDim][iPoint-1];
+          if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT))
+            Surf_Coords[iDim][iSurf_Poin] = SU2_TYPE::GetValue(Data[iDim][iPoint-1]);
           else
-          Surf_Coords[iDim][iSurf_Poin] = Coords[iDim][iPoint-1];
+            Surf_Coords[iDim][iSurf_Poin] = SU2_TYPE::GetValue(Coords[iDim][iPoint-1]);
         }
         iSurf_Poin++;
       }
@@ -2284,21 +2772,21 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   /*--- Collect surface data into one array for the surface as well ---*/
   /*--- Note the -1 in the Coords/Data array in order to undo the 1-based indexing ---*/
-  su2double **Surf_Data = new su2double*[nVar_Total];
+  passivedouble **Surf_Data = new passivedouble*[nVar_Total];
   for (iVar = 0; iVar < nVar_Total; iVar++)
-  Surf_Data[iVar] = new su2double[nSurf_Poin];
+  Surf_Data[iVar] = new passivedouble[nSurf_Poin];
   
   iSurf_Poin = 0;
   for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
     if (SurfacePoint[iPoint]) {
       for (iVar = 0; iVar < nVar_Total; iVar++) {
-        if (config->GetKind_SU2() == SU2_SOL) {
+        if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
           if (Wrt_Unsteady && GridMovement)
-          Surf_Data[iVar][iSurf_Poin] = Data[iVar][iPoint-1];
+            Surf_Data[iVar][iSurf_Poin] = SU2_TYPE::GetValue(Data[iVar][iPoint-1]);
           else
-          Surf_Data[iVar][iSurf_Poin] = Data[iVar][iPoint-1];
+          Surf_Data[iVar][iSurf_Poin] = SU2_TYPE::GetValue(Data[iVar][iPoint-1]);
         } else
-        Surf_Data[iVar][iSurf_Poin] = Data[iVar][iPoint-1];
+        Surf_Data[iVar][iSurf_Poin] = SU2_TYPE::GetValue(Data[iVar][iPoint-1]);
       }
       iSurf_Poin++;
     }
@@ -2364,7 +2852,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     if (first_zone) {
       
       i = 0;
-      if (config->GetKind_SU2() == SU2_SOL) {
+      if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
             err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
@@ -2424,7 +2912,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     if (first_zone) {
       
       i = 0;
-      if (config->GetKind_SU2() == SU2_SOL) {
+      if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
             err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
@@ -2484,7 +2972,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     if (first_zone) {
       
       i = 0;
-      if (config->GetKind_SU2() == SU2_SOL) {
+      if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
             err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
@@ -2547,7 +3035,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
   
   /*--- Write the list of the fields in the restart file.
    Without including the PointID---*/
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class.
