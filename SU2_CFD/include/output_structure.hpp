@@ -89,6 +89,39 @@ class COutput {
 	int *Conn_Hexa;
 	int *Conn_Pris;
 	int *Conn_Pyra;
+  
+  
+  unsigned long nGlobal_Poin_Par;   // Global number of nodes with halos
+  unsigned long nGlobal_Elem_Par;  // Global number of elems without halos
+  unsigned long nGlobal_Surf_Poin;
+  unsigned long nSurf_Elem_Par;
+  unsigned long nSurf_Poin_Par;
+  unsigned long nParallel_Poin;
+  unsigned long nParallel_Line,
+  nParallel_BoundTria,
+  nParallel_BoundQuad,
+  nParallel_Tria,
+  nParallel_Quad,
+  nParallel_Tetr,
+  nParallel_Hexa,
+  nParallel_Pris,
+  nParallel_Pyra;
+  int *Conn_Line_Par;
+  int *Conn_BoundTria_Par;
+  int *Conn_BoundQuad_Par;
+  int *Conn_Tria_Par;	// triangle 1 = Conn_Tria[0], Conn_Tria[1], Conn_Tria[3]
+  int *Conn_Quad_Par;
+  int *Conn_Tetr_Par;
+  int *Conn_Hexa_Par;
+  int *Conn_Pris_Par;
+  int *Conn_Pyra_Par;
+  
+  unsigned short nVar_Par;
+  su2double **Local_Data;
+  su2double **Parallel_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  su2double **Parallel_Surf_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
+  vector<string> Variable_Names;
+  
 	su2double **Data;
 	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
 	bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
@@ -121,7 +154,7 @@ public:
 	 */
 	void SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, 
 											 unsigned long iExtIter, unsigned short val_nZone);
-	
+  
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations with the FEM solver.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -266,7 +299,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void MergeCoordinates(CConfig *config, CGeometry *geometry);
-  
+
   /*!
    * \brief Merge the node coordinates from all processors for the FEM solver.
    * \param[in] config - Definition of the particular problem.
@@ -342,6 +375,14 @@ public:
 	void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
+   * \brief Write a native SU2 restart file (ASCII) in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
 	 * \brief Write the x, y, & z coordinates to a CGNS output file.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -406,6 +447,16 @@ public:
    */
   void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
 
+  /*!
+   * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+   */
+  void SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
    * \param[in] config - Definition of the particular problem.
@@ -582,4 +633,111 @@ public:
    */
   void HarmonicBalanceOutput(CSolver ****solver_container, CConfig **config, unsigned short val_nZone, unsigned short val_iZone);
 
+  /*!
+   * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetResult_Files_Parallel(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
+                                unsigned long iExtIter, unsigned short val_nZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for generic problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_nZone - iZone index.
+   */
+  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
+   * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+   * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+   * \brief Sort the output data for each grid node into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SortOutputData(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Sort the surface output data for each grid node into a linear partitioning across all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol);
+  
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateData_Parallel(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing output data in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
+  
 };
