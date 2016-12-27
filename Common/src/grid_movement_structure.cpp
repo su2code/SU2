@@ -2801,6 +2801,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       (config->GetDesign_Variable(0) == FFD_DIHEDRAL_ANGLE) ||
       (config->GetDesign_Variable(0) == FFD_TWIST_ANGLE) ||
       (config->GetDesign_Variable(0) == FFD_ROTATION) ||
+      (config->GetDesign_Variable(0) == FFD_ROTATION_TRANS) ||
       (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
       (config->GetDesign_Variable(0) == FFD_CAMBER) ||
       (config->GetDesign_Variable(0) == FFD_THICKNESS) ||
@@ -2898,6 +2899,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
                 case FFD_CONTROL_POINT :    SetFFDCPChange(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_TWIST_ANGLE :      SetFFDTwist(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_ROTATION :         SetFFDRotation(geometry, config, FFDBox[iFFDBox], iDV, false); break;
+                case FFD_ROTATION_TRANS :   SetFFDRotationTrans(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_CONTROL_SURFACE :  SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, false); break;
@@ -4258,7 +4260,6 @@ void CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
 	
 }
 
-
 void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
 																			unsigned short iDV, bool ResetDef) {
 	unsigned short iOrder, jOrder, kOrder;
@@ -4325,6 +4326,126 @@ void CSurfaceMovement::SetFFDRotation(CGeometry *geometry, CConfig *config, CFre
 				}
 	}
 	
+}
+
+void CSurfaceMovement::SetFFDRotationTrans(CGeometry *geometry,
+                                           CConfig *config,
+                                           CFreeFormDefBox *FFDBox,
+                                           unsigned short iDV,
+                                           bool ResetDef) {
+  
+  unsigned short iOrder, jOrder, kOrder;
+  su2double movement[3] = {0.0,0.0,0.0};
+  su2double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+  su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
+  su2double cosPhi, sinPhi, cosPsi, sinPsi;
+  su2double Center[3] = {0.0,0.0,0.0};
+  su2double DeltaX[3] = {0.0,0.0,0.0};
+  su2double Omega[3] = {0.0,0.0,0.0};
+  su2double r[3] = {0.0,0.0,0.0}, rotCoord[3] = {0.0,0.0,0.0};
+  unsigned short index[3], iDim, nDim = geometry->GetnDim();
+  string design_FFDBox;
+  
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box). Note that for this DV
+   we are always resetting to the baseline and then performing
+   delta changes the angle and the translation. ---*/
+  
+  FFDBox->SetOriginalControlPoints();
+  
+  design_FFDBox = config->GetFFDTag(iDV);
+  
+  if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
+    
+    /*--- Get the center of rotation. ---*/
+    
+    Center[0] = config->GetParamDV(iDV, 1);
+    Center[1] = config->GetParamDV(iDV, 2);
+    Center[2] = config->GetParamDV(iDV, 3);
+    
+    /*--- The delta transformations and delta rotation angles (degrees). ---*/
+    
+    DeltaX[0] = config->GetDV_Value(iDV,0);
+    DeltaX[1] = config->GetDV_Value(iDV,1);
+    DeltaX[2] = config->GetDV_Value(iDV,2);
+    
+    Omega[0]  = config->GetDV_Value(iDV,3)*PI_NUMBER/180.0;
+    Omega[1]  = config->GetDV_Value(iDV,4)*PI_NUMBER/180.0;
+    Omega[2]  = config->GetDV_Value(iDV,5)*PI_NUMBER/180.0;
+    
+    /*--- Compute delta change in the angle about the x, y, & z axes. ---*/
+    
+    dtheta = Omega[0];
+    dphi   = Omega[1];
+    dpsi   = Omega[2];
+    
+    /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+    
+    cosTheta = cos(dtheta);  cosPhi = cos(dphi);  cosPsi = cos(dpsi);
+    sinTheta = sin(dtheta);  sinPhi = sin(dphi);  sinPsi = sin(dpsi);
+    
+    /*--- Compute the rotation matrix. Note that the implicit
+     ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+    
+    rotMatrix[0][0] = cosPhi*cosPsi;
+    rotMatrix[1][0] = cosPhi*sinPsi;
+    rotMatrix[2][0] = -sinPhi;
+    
+    rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+    rotMatrix[2][1] = sinTheta*cosPhi;
+    
+    rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+    rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+    rotMatrix[2][2] = cosTheta*cosPhi;
+    
+    /*--- Change the value of the control point if move is true ---*/
+    
+    for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++) {
+      for (jOrder = 0; jOrder < FFDBox->GetmOrder(); jOrder++) {
+        for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
+          
+          /*--- Get the index vals and the coordinate for this FFD point. ---*/
+          
+          index[0] = iOrder; index[1] = jOrder; index[2] = kOrder;
+          su2double *coord = FFDBox->GetCoordControlPoints(iOrder, jOrder, kOrder);
+          
+          /*--- Calculate non-dim. position from rotation center ---*/
+          
+          r[0] = (coord[0]-Center[0]);
+          r[1] = (coord[1]-Center[1]);
+          if (nDim == 3) r[2] = (coord[2]-Center[2]);
+          
+          /*--- Compute transformed point coordinates ---*/
+          
+          rotCoord[0] = rotMatrix[0][0]*r[0]
+          + rotMatrix[0][1]*r[1]
+          + rotMatrix[0][2]*r[2] + Center[0];
+          
+          rotCoord[1] = rotMatrix[1][0]*r[0]
+          + rotMatrix[1][1]*r[1]
+          + rotMatrix[1][2]*r[2] + Center[1];
+          
+          rotCoord[2] = rotMatrix[2][0]*r[0]
+          + rotMatrix[2][1]*r[1]
+          + rotMatrix[2][2]*r[2] + Center[2];
+          
+          /*--- Calculate delta change in the x, y, & z directions ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            movement[iDim] = (rotCoord[iDim]-coord[iDim]) + DeltaX[iDim];
+          if (nDim == 2) movement[nDim] = 0.0;
+          
+          /*--- Set the change in the control point location. ---*/
+          
+          FFDBox->SetControlPoints(index, movement);
+          
+        }
+      }
+    }
+    
+  }
+  
 }
 
 void CSurfaceMovement::SetFFDControl_Surface(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
