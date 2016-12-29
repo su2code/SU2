@@ -1296,6 +1296,7 @@ CEulerSolver::~CEulerSolver(void) {
         if (SlidingStateNodes[iMarker] != NULL)
             delete [] SlidingStateNodes[iMarker];  
     }
+    delete [] SlidingStateNodes;
   }
   
   if (DonorPrimVar != NULL) {
@@ -13804,6 +13805,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Free locally allocated memory ---*/
 
+  delete [] tmp_residual;
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;

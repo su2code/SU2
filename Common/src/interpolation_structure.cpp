@@ -1485,6 +1485,9 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
   
   Buffer_Receive_StartLinkedNodes = NULL;
   
+  Buffer_Send_Target_Coord = NULL;
+  Buffer_Send_Target_GlobalPoint = NULL;
+  
   Normal = new su2double[nDim];//
 
   target_iMidEdge_point = new su2double[nDim];// sono solo per il 2D?
@@ -1565,8 +1568,9 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     * - Build a local donor supermesh until the area of the initial boundary face is covered
     */
 
-    Buffer_Send_Target_Coord       = new su2double     [ nVertexTarget * nDim ];  //
+    Buffer_Send_Target_Coord       = new su2double     [ nVertexTarget * nDim ];//
     Buffer_Send_Target_GlobalPoint = new unsigned long [ nVertexTarget ];//
+    
     Buffer_Send_nLinkedNodes       = new unsigned long [ nVertexTarget ];//
     Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertexTarget ];//
     Aux_Send_Map                   = new unsigned long*[ nVertexTarget ];//
@@ -1610,7 +1614,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 
         nLocalLinkedNodes += nNodes;
 
-        Aux_Send_Map[nLocalVertex_Target] = new unsigned long[ nNodes ];
+        Aux_Send_Map[nLocalVertex_Target] = new unsigned long[ nNodes ];//
         nNodes = 0;
 
         for (jEdge = 0; jEdge < nEdges; jEdge++){    
@@ -1639,9 +1643,13 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
         Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertexTarget][jEdge];
         nLocalLinkedNodes++;
       }
-      delete [] Aux_Send_Map[iVertexTarget];
     }
-    delete [] Aux_Send_Map;
+    
+   for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++){
+      if( Aux_Send_Map[iVertexTarget] != NULL )
+        delete [] Aux_Send_Map[iVertexTarget];
+    }
+    delete [] Aux_Send_Map; Aux_Send_Map = NULL;
 
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nLocalVertex_Target, &nGlobalVertex_Target, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1729,10 +1737,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 #else
     for (iVertexTarget = 0; iVertexTarget < nDim * nGlobalVertex_Target; iVertexTarget++)
       TargetPoint_Coord[iVertexTarget] = Buffer_Send_Target_Coord[iVertexTarget];
-/*      
-    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
-      Target_LinkedNodes[iVertexTarget] = Buffer_Send_LinkedNodes[iVertexTarget];
-*/      
+     
     for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
       Target_GlobalPoint[iVertexTarget]      = Buffer_Send_Target_GlobalPoint[iVertexTarget];
       Target_nLinkedNodes[iVertexTarget]     = Buffer_Send_nLinkedNodes[iVertexTarget];
@@ -1748,29 +1753,20 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
         }
       }
     }
-/*    
-    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
-      for (jVertexTarget = 0; jVertexTarget < Target_nLinkedNodes[iVertexTarget]; jVertexTarget++){
-        cout << Target_nLinkedNodes[iVertexTarget] << "  " << Target_StartLinkedNodes[iVertexTarget] << "  "; 
-        cout << Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] + jVertexTarget] << endl;
-      }
-      */
 #endif 
   
-    if( Buffer_Send_LinkedNodes        != NULL) {delete [] Buffer_Send_LinkedNodes;        Buffer_Send_LinkedNodes        = NULL;}
     if( Buffer_Send_Target_Coord       != NULL) {delete [] Buffer_Send_Target_Coord;       Buffer_Send_Target_Coord       = NULL;} 
-    if( Buffer_Send_nLinkedNodes       != NULL) {delete [] Buffer_Send_nLinkedNodes;       Buffer_Send_nLinkedNodes       = NULL;}
-    if( Buffer_Send_StartLinkedNodes   != NULL) {delete [] Buffer_Send_StartLinkedNodes;   Buffer_Send_StartLinkedNodes   = NULL;}
     if( Buffer_Send_Target_GlobalPoint != NULL) {delete [] Buffer_Send_Target_GlobalPoint; Buffer_Send_Target_GlobalPoint = NULL;}
     
+    if( Buffer_Send_LinkedNodes        != NULL) {delete [] Buffer_Send_LinkedNodes;        Buffer_Send_LinkedNodes        = NULL;}
+    if( Buffer_Send_nLinkedNodes       != NULL) {delete [] Buffer_Send_nLinkedNodes;       Buffer_Send_nLinkedNodes       = NULL;}
+    if( Buffer_Send_StartLinkedNodes   != NULL) {delete [] Buffer_Send_StartLinkedNodes;   Buffer_Send_StartLinkedNodes   = NULL;}
     
-    Buffer_Send_nVertex_Donor    = new unsigned long [ 1 ];//
-    Buffer_Receive_nVertex_Donor = new unsigned long [ nProcessor ];//
-
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor ---*/
 
-    Buffer_Send_Donor_Coord       = new su2double     [ nVertexDonor * nDim ]; // 
+    Buffer_Send_Donor_Coord       = new su2double     [ nVertexDonor * nDim ];//
     Buffer_Send_Donor_GlobalPoint = new unsigned long [ nVertexDonor ];//
+    
     Buffer_Send_nLinkedNodes      = new unsigned long [ nVertexDonor ];//
     Buffer_Send_StartLinkedNodes  = new unsigned long [ nVertexDonor ];//
     Aux_Send_Map                  = new unsigned long*[ nVertexDonor ];//
@@ -1814,7 +1810,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 
         nLocalLinkedNodes += nNodes;
 
-        Aux_Send_Map[nLocalVertex_Donor] = new unsigned long[ nNodes ];
+        Aux_Send_Map[nLocalVertex_Donor] = new unsigned long[ nNodes ];//
         nNodes = 0;
 
         for (jEdge = 0; jEdge < nEdges; jEdge++){    
@@ -1844,10 +1840,15 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
         Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertexDonor][jEdge];
         nLocalLinkedNodes++;
       }
-      delete [] Aux_Send_Map[iVertexDonor];
     }
-    delete [] Aux_Send_Map;
-
+    
+    if(Aux_Send_Map != NULL){
+      for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++){
+        if( Aux_Send_Map[iVertexDonor] != NULL )
+          delete [] Aux_Send_Map[iVertexDonor];
+      }
+      delete [] Aux_Send_Map; Aux_Send_Map = NULL;
+    }
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nLocalVertex_Donor, &nGlobalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nLocalLinkedNodes,  &nGlobalLinkedNodes,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1939,17 +1940,16 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 #else
     for (iVertexDonor = 0; iVertexDonor < nDim * nGlobalVertex_Donor; iVertexDonor++)
       DonorPoint_Coord[iVertexDonor] = Buffer_Send_Donor_Coord[iVertexDonor];
-    //cout << Buffer_Send_StartLinkedNodes[0] << endl;
+
     for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
       Donor_GlobalPoint[iVertexDonor]                = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
       Donor_proc[ iVertexDonor ]                     = MASTER_NODE;
-      Buffer_Receive_nLinkedNodes[iVertexTarget]     = Buffer_Send_nLinkedNodes[iVertexTarget];
-      Buffer_Receive_StartLinkedNodes[iVertexTarget] = Buffer_Send_StartLinkedNodes[iVertexTarget];
-      //cout << Buffer_Send_StartLinkedNodes[iVertexTarget] << endl;
+      Buffer_Receive_nLinkedNodes[iVertexDonor]     = Buffer_Send_nLinkedNodes[iVertexDonor];
+      Buffer_Receive_StartLinkedNodes[iVertexDonor] = Buffer_Send_StartLinkedNodes[iVertexDonor];
     }
-    //cout << Buffer_Send_StartLinkedNodes[0] << endl;
+
     for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++){
-      iTmp = Buffer_Receive_LinkedNodes[iVertexDonor];
+      iTmp = Buffer_Send_LinkedNodes[iVertexDonor];
       for (jVertexDonor = 0; jVertexDonor < nGlobalVertex_Donor; jVertexDonor++){
         if( Donor_GlobalPoint[jVertexDonor] == iTmp ){
           Buffer_Receive_LinkedNodes[iVertexDonor] = jVertexDonor;
@@ -1957,15 +1957,6 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
         }
       }
     }
-    //cout << Buffer_Send_StartLinkedNodes[0] << endl;
-    /*
-    for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++){
-      cout << Buffer_Receive_nLinkedNodes[iVertexDonor] << "  " << Buffer_Receive_StartLinkedNodes[iVertexDonor] << "  "; 
-      for (jVertexDonor = 0; jVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]; jVertexDonor++){
-        cout << Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertexDonor] + jVertexDonor] << endl;
-      }
-    }
-    * */
 #endif 
 
     if( Buffer_Send_LinkedNodes       != NULL) {delete [] Buffer_Send_LinkedNodes;       Buffer_Send_LinkedNodes       = NULL;}
@@ -2265,8 +2256,6 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
           nEdges_target = Target_nLinkedNodes[target_iPoint];
 
           nNode_target = 2*(nEdges_target + 1);
-
-          target_segment = new unsigned long[nNode_target];
           
           target_element = new su2double*[nNode_target];
           for (ii = 0; ii < nNode_target; ii++)
@@ -2431,9 +2420,9 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
                     tmp_storeProc[iDonor]  = storeProc[iDonor];
                   }
 
-                  if (Donor_Vect != NULL) delete [] Donor_Vect;
-                  if (Coeff_Vect != NULL) delete [] Coeff_Vect;
-                  if (storeProc  != NULL) delete [] storeProc;
+                  if (Donor_Vect != NULL) {delete [] Donor_Vect; Donor_Vect = NULL;}
+                  if (Coeff_Vect != NULL) {delete [] Coeff_Vect; Coeff_Vect = NULL;}
+                  if (storeProc  != NULL) {delete [] storeProc;  storeProc  = NULL;}
 
                   Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
                   Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
@@ -2504,13 +2493,15 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
           for (ii = 0; ii < 2*nEdges_target + 2; ii++)
             delete [] target_element[ii];
           delete [] target_element;
+          
+          if (Donor_Vect != NULL) {delete [] Donor_Vect; Donor_Vect = NULL;}
+          if (Coeff_Vect != NULL) {delete [] Coeff_Vect; Coeff_Vect = NULL;}
+          if (storeProc  != NULL) {delete [] storeProc;  storeProc  = NULL;}
         }
       }
     }
 
-    delete [] Buffer_Send_nVertex_Donor;
-    delete [] Buffer_Receive_nVertex_Donor;
-    
+
     delete [] TargetPoint_Coord;
     delete [] Target_GlobalPoint;
     
@@ -2522,9 +2513,9 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     delete [] Target_LinkedNodes;
     delete [] Target_StartLinkedNodes;
 
-    delete [] Buffer_Receive_nLinkedNodes;      Buffer_Receive_nLinkedNodes     = NULL;
-    delete [] Buffer_Receive_StartLinkedNodes;  Buffer_Receive_StartLinkedNodes = NULL;
-    delete [] Buffer_Receive_LinkedNodes;       Buffer_Receive_LinkedNodes      = NULL;
+    delete [] Buffer_Receive_nLinkedNodes;      
+    delete [] Buffer_Receive_StartLinkedNodes;  
+    delete [] Buffer_Receive_LinkedNodes;       
     
   }
 

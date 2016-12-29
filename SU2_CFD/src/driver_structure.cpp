@@ -380,6 +380,8 @@ void CDriver::Postprocessing() {
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  int jZone;
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -440,7 +442,10 @@ void CDriver::Postprocessing() {
   if (interpolator_container != NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (interpolator_container[iZone] != NULL){
-            delete interpolator_container[iZone];
+        for (jZone = 0; jZone < nZone; jZone++)
+          if (interpolator_container[iZone][jZone] != NULL)
+            delete interpolator_container[iZone][jZone];
+        delete interpolator_container[iZone];
       }
     }
     delete [] interpolator_container;
@@ -450,6 +455,9 @@ void CDriver::Postprocessing() {
   if (transfer_container != NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
         if (transfer_container[iZone] != NULL)
+          for (jZone = 0; jZone < nZone; jZone++)
+            if(transfer_container[iZone][jZone] != NULL)
+              delete transfer_container[iZone][jZone];
           delete transfer_container[iZone];
     }
     delete [] transfer_container;
