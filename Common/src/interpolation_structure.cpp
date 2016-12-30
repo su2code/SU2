@@ -1382,18 +1382,25 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   /* --- General variables --- */
 
   bool check;
-
+  int rank, nProcessor;
+  
   unsigned short iDim, nDim;
-  unsigned long vPoint;
+  
+  unsigned long ii, jj, iTmp, tmp_index, tmp_index_2, iTmp2;
+  unsigned long vPoint, nEdges, jEdge, EdgeIndex, dPoint, nNodes,  count;
+  unsigned long nGlobalLinkedNodes, nLocalLinkedNodes;
+  unsigned long iEdgeVisited, nEdgeVisited, iNodeVisited;
+  unsigned long nAlreadyVisited, nToVisit, StartVisited;
+  
+  unsigned long *alreadyVisitedDonor, *ToVisit, *tmpVect;
+  unsigned long *storeProc, *tmp_storeProc;
 
-  int ii, jj, iEdgeVisited, EgdeIndex, nEdgeVisited, iNodeVisited, rank, nProcessor, iProcessor;
-  int nAlreadyVisited, nToVisit, StartVisited, nMarkerTarget, nMarkerDonor, target_StartIndex;
-  int *alreadyVisitedDonor, *ToVisit, *tmpVect;
+  unsigned long *Buffer_Send_nLinkedNodes, *Buffer_Send_LinkedNodes, *Buffer_Send_StartLinkedNodes, **Aux_Send_Map;
+  unsigned long *Buffer_Receive_nLinkedNodes, *Buffer_Receive_LinkedNodes, *Buffer_Receive_StartLinkedNodes;
 
   su2double dTMP;
   su2double *Coeff_Vect, *tmp_Coeff_Vect;             
-  unsigned long *storeProc, *tmp_storeProc;
-
+  
 
   /* --- Geometrical variables --- */
 
@@ -1406,46 +1413,34 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   unsigned short iMarkerInt, nMarkerInt; 
 
-  unsigned long jVertex, iVertex, nVertexDonor , nVertexTarget, Global_Point_Donor;
+  unsigned long jVertex, iVertex, nVertexDonor , nVertexTarget;
 
   int markDonor, markTarget, Target_check, Donor_check;
 
   /* --- Target variables --- */
 
-  int target_forward_point, target_backward_point, target_iPoint;
-  int nEdges_target, nNode_target;
+  unsigned long target_iPoint, jVertexTarget;
+  unsigned long nGlobalVertex_Target, nLocalVertex_Target, iVertexTarget, iPointTarget;
+  unsigned long nEdges_target, nNode_target;
 
-  su2double *target_iMidEdge_point, *target_jMidEdge_point;
-  su2double **target_element;
+  unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNodes, *target_segment;
+  unsigned long *Buffer_Send_Target_GlobalPoint, *Target_GlobalPoint;  
+  
+  su2double *TargetPoint_Coord, *target_iMidEdge_point, *target_jMidEdge_point, **target_element, *Buffer_Send_Target_Coord;
 
 
   /* --- Donor variables --- */
 
-  int donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint; 
-  int nEdges_donor,  nNode_donor; 
+  unsigned long donor_StartIndex, donor_forward_point, donor_backward_point, donor_iPoint, donor_OldiPoint; 
+  unsigned long nEdges_donor, nNode_donor, nGlobalVertex_Donor, nLocalVertex_Donor, iVertexDonor, jVertexDonor, iPointDonor; 
 
   unsigned long nDonorPoints, iDonor;
   unsigned long *Donor_Vect, *tmp_Donor_Vect;
+  unsigned long *Buffer_Send_Donor_GlobalPoint, *Donor_GlobalPoint, *Donor_proc;
 
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
-  su2double **donor_element;
+  su2double **donor_element, *DonorPoint_Coord, *Buffer_Send_Donor_Coord;
   
-  
-unsigned long nGlobalVertex_Donor, nLocalVertex_Donor, iVertexDonor, jVertexDonor, iPointDonor, nGlobalLinkedNodes, nLocalLinkedNodes;
-unsigned long *Buffer_Send_Donor_GlobalPoint, *Donor_GlobalPoint, *Donor_proc, *Buffer_Send_nLinkedNodes, **Aux_Send_Map;
-unsigned long nEdges, jEdge, EdgeIndex, dPoint, nNodes, *Buffer_Send_LinkedNodes, *Buffer_Send_StartLinkedNodes, count;
-unsigned long iTmp, tmp_index;
-su2double *DonorPoint_Coord, *Buffer_Send_Donor_Coord;    
-    
-unsigned long nGlobalVertex_Target, nLocalVertex_Target, iVertexTarget, iPointTarget, iGlobalPoint;
-unsigned long *Buffer_Send_Target_GlobalPoint, *Target_GlobalPoint;
-unsigned long *Buffer_Receive_nLinkedNodes, *Buffer_Receive_LinkedNodes, *Buffer_Receive_StartLinkedNodes;
-su2double *TargetPoint_Coord, *Buffer_Send_Target_Coord;
-unsigned long tmp_index_2, iTmp2;
-unsigned long *target_segment;
-
-unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNodes, jVertexTarget;
-    
     
   /*  1 - Variable pre-processing - */
 
@@ -1485,18 +1480,11 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
   
   Buffer_Receive_StartLinkedNodes = NULL;
   
-  Buffer_Send_Target_Coord = NULL;
+  Buffer_Send_Target_Coord       = NULL;
   Buffer_Send_Target_GlobalPoint = NULL;
   
-  Normal = new su2double[nDim];//
-
-  target_iMidEdge_point = new su2double[nDim];// sono solo per il 2D?
-  target_jMidEdge_point = new su2double[nDim];//
-
-  donor_iMidEdge_point = new su2double[nDim];//
-  donor_jMidEdge_point = new su2double[nDim];//
-
-  Direction = new su2double[nDim];//
+  Normal    = new su2double[nDim];
+  Direction = new su2double[nDim];
     
     
   /* 2 - Find boundary tag between touching grids */
@@ -1568,12 +1556,12 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     * - Build a local donor supermesh until the area of the initial boundary face is covered
     */
 
-    Buffer_Send_Target_Coord       = new su2double     [ nVertexTarget * nDim ];//
-    Buffer_Send_Target_GlobalPoint = new unsigned long [ nVertexTarget ];//
+    Buffer_Send_Target_Coord       = new su2double     [ nVertexTarget * nDim ];
+    Buffer_Send_Target_GlobalPoint = new unsigned long [ nVertexTarget ];
     
-    Buffer_Send_nLinkedNodes       = new unsigned long [ nVertexTarget ];//
-    Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertexTarget ];//
-    Aux_Send_Map                   = new unsigned long*[ nVertexTarget ];//
+    Buffer_Send_nLinkedNodes       = new unsigned long [ nVertexTarget ];
+    Buffer_Send_StartLinkedNodes   = new unsigned long [ nVertexTarget ];
+    Aux_Send_Map                   = new unsigned long*[ nVertexTarget ];
         
     /*--- Copy coordinates and point to the auxiliar vector --*/
   
@@ -1614,7 +1602,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 
         nLocalLinkedNodes += nNodes;
 
-        Aux_Send_Map[nLocalVertex_Target] = new unsigned long[ nNodes ];//
+        Aux_Send_Map[nLocalVertex_Target] = new unsigned long[ nNodes ];
         nNodes = 0;
 
         for (jEdge = 0; jEdge < nEdges; jEdge++){    
@@ -1634,7 +1622,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
       }
     }
     
-    Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];//
+    Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
 
     nLocalLinkedNodes = 0;
 
@@ -1659,12 +1647,12 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     nGlobalLinkedNodes   = nLocalLinkedNodes;
 #endif 
   
-    TargetPoint_Coord  = new su2double    [ nGlobalVertex_Target * nDim ];//
-    Target_GlobalPoint = new unsigned long[ nGlobalVertex_Target        ];//
+    TargetPoint_Coord  = new su2double    [ nGlobalVertex_Target * nDim ];
+    Target_GlobalPoint = new unsigned long[ nGlobalVertex_Target        ];
     
-    Target_nLinkedNodes     = new unsigned long[ nGlobalVertex_Target ];//
-    Target_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes   ];//
-    Target_StartLinkedNodes = new unsigned long[ nGlobalVertex_Target ];//
+    Target_nLinkedNodes     = new unsigned long[ nGlobalVertex_Target ];
+    Target_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes   ];
+    Target_StartLinkedNodes = new unsigned long[ nGlobalVertex_Target ];
 
 #ifdef HAVE_MPI
     if (rank == MASTER_NODE){
@@ -1764,12 +1752,12 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor ---*/
 
-    Buffer_Send_Donor_Coord       = new su2double     [ nVertexDonor * nDim ];//
-    Buffer_Send_Donor_GlobalPoint = new unsigned long [ nVertexDonor ];//
+    Buffer_Send_Donor_Coord       = new su2double     [ nVertexDonor * nDim ];
+    Buffer_Send_Donor_GlobalPoint = new unsigned long [ nVertexDonor ];
     
-    Buffer_Send_nLinkedNodes      = new unsigned long [ nVertexDonor ];//
-    Buffer_Send_StartLinkedNodes  = new unsigned long [ nVertexDonor ];//
-    Aux_Send_Map                  = new unsigned long*[ nVertexDonor ];//
+    Buffer_Send_nLinkedNodes      = new unsigned long [ nVertexDonor ];
+    Buffer_Send_StartLinkedNodes  = new unsigned long [ nVertexDonor ];
+    Aux_Send_Map                  = new unsigned long*[ nVertexDonor ];
     
     /*--- Copy coordinates and point to the auxiliar vector --*/
   
@@ -1810,7 +1798,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 
         nLocalLinkedNodes += nNodes;
 
-        Aux_Send_Map[nLocalVertex_Donor] = new unsigned long[ nNodes ];//
+        Aux_Send_Map[nLocalVertex_Donor] = new unsigned long[ nNodes ];
         nNodes = 0;
 
         for (jEdge = 0; jEdge < nEdges; jEdge++){    
@@ -1831,7 +1819,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
       }
     }
 
-    Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];//
+    Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
 
     nLocalLinkedNodes = 0;
 
@@ -1857,14 +1845,14 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
     nGlobalLinkedNodes  = nLocalLinkedNodes;
 #endif 
 
-    DonorPoint_Coord  = new su2double    [ nGlobalVertex_Donor * nDim ];//
-    Donor_GlobalPoint = new unsigned long[ nGlobalVertex_Donor        ];//
-    Donor_proc        = new unsigned long[ nGlobalVertex_Donor        ];//
+    DonorPoint_Coord  = new su2double    [ nGlobalVertex_Donor * nDim ];
+    Donor_GlobalPoint = new unsigned long[ nGlobalVertex_Donor        ];
+    Donor_proc        = new unsigned long[ nGlobalVertex_Donor        ];
 
 
-    Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex_Donor ];//
-    Buffer_Receive_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes  ];//
-    Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex_Donor ];//
+    Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex_Donor ];
+    Buffer_Receive_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes  ];
+    Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex_Donor ];
 
 #ifdef HAVE_MPI
     if (rank == MASTER_NODE){
@@ -1967,6 +1955,13 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
 
 
     if(nDim == 2){
+		
+	  target_iMidEdge_point = new su2double[nDim];
+      target_jMidEdge_point = new su2double[nDim];
+
+      donor_iMidEdge_point = new su2double[nDim];
+      donor_jMidEdge_point = new su2double[nDim];
+		
       /*--- Starts with supermesh reconstruction ---*/
 
       target_segment = new unsigned long[2];
@@ -1986,6 +1981,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
           /*--- Brute force to find the closest donor_node ---*/
 
           mindist = 1E6;
+          donor_StartIndex = 0;
  
           for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
         
@@ -2065,7 +2061,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
               donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
             }
 
-            LineIntersectionLength = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
             if ( LineIntersectionLength == 0.0 ){
               check = true;
@@ -2143,7 +2139,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
               donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
             }       
 
-            LineIntersectionLength = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
             if ( LineIntersectionLength == 0.0 ){
               check = true;
@@ -2213,7 +2209,14 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
           }
         }
       }    
+      
       delete [] target_segment;
+      
+      delete [] target_iMidEdge_point;
+      delete [] target_jMidEdge_point;
+
+      delete [] donor_iMidEdge_point;
+      delete [] donor_jMidEdge_point;
     }
     else{ 
       /* --- 3D geometry, creates a superficial super-mesh --- */
@@ -2266,6 +2269,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
           /*--- Brute force to find the closest donor_node ---*/
 
           mindist = 1E6;
+          donor_StartIndex = 0;
  
           for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
         
@@ -2318,7 +2322,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
           Donor_Vect[0] = donor_iPoint;
           storeProc[0]  = Donor_proc[donor_iPoint];
 
-          alreadyVisitedDonor = new int[1];
+          alreadyVisitedDonor = new unsigned long[1];
 
           alreadyVisitedDonor[0] = donor_iPoint;
           nAlreadyVisited = 1;
@@ -2370,7 +2374,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
                 if( check == 0 ){ 
                   /*--- If the node was not already visited, visit it and list it into data structure ---*/
   
-                  tmpVect = new int[ nToVisit ];
+                  tmpVect = new unsigned long[ nToVisit ];
 
                   for( jj = 0; jj < nToVisit; jj++ )
                     tmpVect[jj] = ToVisit[jj];
@@ -2378,7 +2382,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
                   if( ToVisit != NULL )
                     delete [] ToVisit;
 
-                  ToVisit = new int[nToVisit + 1];
+                  ToVisit = new unsigned long[nToVisit + 1];
 
                   for( jj = 0; jj < nToVisit; jj++ )
                     ToVisit[jj] = tmpVect[jj];
@@ -2453,7 +2457,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
  
             StartVisited = nAlreadyVisited;
 
-            tmpVect = new int[ nAlreadyVisited ];
+            tmpVect = new unsigned long[ nAlreadyVisited ];
 
             for( jj = 0; jj < nAlreadyVisited; jj++ )
               tmpVect[jj] = alreadyVisitedDonor[jj];
@@ -2461,7 +2465,7 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
             if( alreadyVisitedDonor != NULL )
               delete [] alreadyVisitedDonor;
 
-            alreadyVisitedDonor = new int[ nAlreadyVisited + nToVisit ];
+            alreadyVisitedDonor = new unsigned long[ nAlreadyVisited + nToVisit ];
 
             for( jj = 0; jj < nAlreadyVisited; jj++ )
               alreadyVisitedDonor[jj] = tmpVect[jj];
@@ -2520,13 +2524,6 @@ unsigned long *Target_nLinkedNodes, *Target_LinkedNodes, *Target_StartLinkedNode
   }
 
   delete [] Normal;
-
-  delete [] target_iMidEdge_point;
-  delete [] target_jMidEdge_point;
-
-  delete [] donor_iMidEdge_point;
-  delete [] donor_jMidEdge_point;
-
   delete [] Direction;
   
   if (Donor_Vect != NULL) delete [] Donor_Vect;
@@ -2559,11 +2556,11 @@ int CSlidingmesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
   /*--- Given a node "centralNode", this routines reconstruct the vertex centered surface element around the node and store it into "element" ---*/
   /*--- Returns the number of points included in the element ---*/
   
-  int iNode, jNode, kNode, iElementNode, iEdgeIndex, iPoint, jPoint, StartIndex, count;
+  unsigned long iNode, jNode, kNode, iElementNode, iPoint, jPoint, nOuterNodes;
 
   unsigned short nDim = 3, iDim, nTmp;
 
-  int nOuterNodes, nElementNode, CurrentNode, NextNode, **OuterNodesNeighbour;
+  int NextNode, **OuterNodesNeighbour, CurrentNode, StartIndex, count;
   unsigned long *OuterNodes, *ptr;
 
   /* --- Store central node as element first point --- */
@@ -2584,7 +2581,6 @@ int CSlidingmesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
   /* --- Finds which and how many nodes belong to the specified marker, initialize some variables --- */
 
   for ( iNode = 0; iNode < nOuterNodes; iNode++ ){
-
     OuterNodesNeighbour[ iNode ][0] = -1;
     OuterNodesNeighbour[ iNode ][1] = -1;
   }
@@ -2665,16 +2661,15 @@ int CSlidingmesh::Build_3D_surface_element(unsigned long *map, unsigned long *st
   return iElementNode;
 }
 
-su2double CSlidingmesh::Compute_Intersection_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
+su2double CSlidingmesh::ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
     
   /*--- Given 2 segments, each defined by 2 points, it projects them along a given direction and it computes the length of the segment resulting from their intersection ---*/
-  /*--- The algorithm works both for 2D and 3D problems ---*/
+  /*--- The algorithm works for both 2D and 3D problems ---*/
 
   unsigned short iDim;
   unsigned short nDim = donor_geometry->GetnDim();
 
-  su2double Intersection;
-  su2double dotA2, dotB1, dotB2, MaxArea;
+  su2double dotA2, dotB1, dotB2;
 
   dotA2 = 0;
   for(iDim = 0; iDim < nDim; iDim++)
@@ -2744,7 +2739,6 @@ su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* 
   su2double a1[3], a2[3], a3[3];
   su2double b1[3], b2[3], b3[3];
   su2double m1, m2;
-  su2double dot;
 
   /* --- Reference frame is determined by: x = A1A2 y = x ^ ( -Direction ) --- */
 
@@ -2820,8 +2814,8 @@ su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, s
   /* --- This routines computes the area of the polygonal element generated by the superimposition of 2 planar triangle --- */
   /* --- The 2 triangle must lie on the same plane --- */
 
-  unsigned short iDim, iPoints, nPoints, i, j, k;
-  unsigned short nDim, IntersectionCounter, min_theta_index;
+  unsigned short iDim, nPoints, i, j, k;
+  unsigned short nDim, min_theta_index;
 
   su2double points[16][2], IntersectionPoint[2], theta[6];
   su2double TriangleP[4][2], TriangleQ[4][2];
@@ -2972,10 +2966,9 @@ su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, s
 
 void CSlidingmesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint ){
     
-  /* --- Uses determinant rule to compute the intersection point between 2 straight lines--- */
-
-  unsigned short iDim, iPoints, nPoints;
-  unsigned short nDim = donor_geometry->GetnDim();
+  /* --- Uses determinant rule to compute the intersection point between 2 straight segments --- */
+  /* This works only for lines on a 2D plane, A1, A2 and B1, B2 are respectively the head and the tail points of each segment, 
+   * since they're on a 2D plane they are defined by a 2-elements array containing their coordinates */
 
   su2double det;
 
@@ -2993,9 +2986,7 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 
   /* --- Check whether a point "Point" lies inside or outside a triangle defined by 3 points "T1", "T2", "T3" --- */
 
-  unsigned short iDim;
-  unsigned short nDim;
-  unsigned short check;
+  unsigned short iDim, nDim, check;
 
   su2double vect1[2], vect2[2], r[2];
   su2double dot;
