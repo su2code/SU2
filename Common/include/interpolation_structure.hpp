@@ -308,7 +308,7 @@ public:
    * \param[in] B2 - second point of segment B
    * \param[in] Direction - along which segments are projected
    */
-  su2double Compute_Intersection_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
+  su2double ComputeLineIntersectionLength(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
   
   /*!
    * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
