@@ -9118,8 +9118,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 #endif
     
   if (config->GetRefAreaCoeff() == 0.0) {
-  	if (nDim == 3) config->SetRefAreaCoeff(PositiveZArea);
-  	else config->SetRefAreaCoeff(PositiveYArea);
+  	if (nDim == 3) config->SetRefAreaCoeff(TotalPositiveZArea);
+  	else config->SetRefAreaCoeff(TotalPositiveYArea);
   }
   
   if (rank == MASTER_NODE) {
@@ -9129,11 +9129,11 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
     cout << "Area projection in the x-plane = "<< TotalPositiveXArea;
-    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2."; else cout <<" ft^2."; }
-    else { if (config->GetSystemMeasurements() == SI) cout <<" m."; else cout <<" ft."; }
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,"; }
 
     cout << " y-plane = "<< TotalPositiveYArea;
-    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2."; else cout <<" ft^2."; }
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
 
     if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
