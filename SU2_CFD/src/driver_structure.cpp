@@ -1,7 +1,7 @@
 /*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
- * \author T. Economon, H. Kline, R. Sanchez
+ * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
  * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -416,156 +416,135 @@ CDriver::CDriver(char* confFile, unsigned short val_nZone,
 
 void CDriver::Postprocessing() {
 
-	unsigned short jZone;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 
-	int rank = MASTER_NODE;
-	int size = SINGLE_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
-	/*--- Output some information to the console. ---*/
+    /*--- Output some information to the console. ---*/
 
-	if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE) {
 
-		/*--- Print out the number of non-physical points and reconstructions ---*/
+    /*--- Print out the number of non-physical points and reconstructions ---*/
 
-		if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
-			cout << "Warning: there are "
-					<< config_container[ZONE_0]->GetNonphysical_Points()
-					<< " non-physical points in the solution." << endl;
-		if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
-			cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr()
-					<< " reconstructed states for upwinding are non-physical." << endl;
+    if (config_container[ZONE_0]->GetNonphysical_Points() > 0)
+      cout << "Warning: there are " << config_container[ZONE_0]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+    if (config_container[ZONE_0]->GetNonphysical_Reconstr() > 0)
+      cout << "Warning: " << config_container[ZONE_0]->GetNonphysical_Reconstr() << " reconstructed states for upwinding are non-physical." << endl;
 
-		/*--- Close the convergence history file. ---*/
+    /*--- Close the convergence history file. ---*/
 
-		ConvHist_file.close();
-		cout << "History file, closed." << endl;
-	}
+    ConvHist_file.close();
+    cout << "History file, closed." << endl;
+  }
 
-	if (rank == MASTER_NODE)
-		cout << endl
-				<< "------------------------- Solver Postprocessing -------------------------"
-				<< endl;
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
-				geometry_container[iZone], config_container[iZone]);
-		delete[] numerics_container[iZone];
-	}
-	delete[] numerics_container;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CNumerics container." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+     Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
+     geometry_container[iZone], config_container[iZone]);
+    delete [] numerics_container[iZone];
+  }
+  delete [] numerics_container;
+  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Integration_Postprocessing(integration_container[iZone],
+                               geometry_container[iZone],
+                               config_container[iZone]);
+    delete [] integration_container[iZone];
+  }
+  delete [] integration_container;
+  if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Solver_Postprocessing(solver_container[iZone],
+                          geometry_container[iZone],
+                          config_container[iZone]);
+    delete [] solver_container[iZone];
+  }
+  delete [] solver_container;
+  if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete iteration_container[iZone];
+  }
+  delete [] iteration_container;
+  if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
+  
+  if (interpolator_container != NULL){
+    for (iZone = 0; iZone < nZone; iZone++) {
+	  if (interpolator_container[iZone] != NULL){
+            delete interpolator_container[iZone];
+      }
+    }
+    delete [] interpolator_container;
+    if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
+  }
+  
+  if (transfer_container != NULL){
+    for (iZone = 0; iZone < nZone; iZone++) {
+        if (transfer_container[iZone] != NULL)
+          delete transfer_container[iZone];
+    }
+    delete [] transfer_container;
+    if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
+  }
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		Integration_Postprocessing(integration_container[iZone],
-				geometry_container[iZone], config_container[iZone]);
-		delete[] integration_container[iZone];
-	}
-	delete[] integration_container;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CIntegration container." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (geometry_container[iZone] != NULL) {
+      for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
+        if (geometry_container[iZone][iMGlevel] != NULL) delete geometry_container[iZone][iMGlevel];
+      }
+      delete [] geometry_container[iZone];
+    }
+  }
+  delete [] geometry_container;
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],
-				config_container[iZone]);
-		delete[] solver_container[iZone];
-	}
-	delete[] solver_container;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CSolver container." << endl;
+  /*--- Free-form deformation class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete FFDBox[iZone];
+  }
+  delete [] FFDBox;
+  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		delete iteration_container[iZone];
-	}
-	delete[] iteration_container;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CIteration container." << endl;
+  /*--- Grid movement and surface movement class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete surface_movement[iZone];
+  }
+  delete [] surface_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
 
-	if (interpolator_container != NULL) {
-		for (iZone = 0; iZone < nZone; iZone++) {
-			if (interpolator_container[iZone] != NULL) {
-				delete interpolator_container[iZone];
-			}
-		}
-		delete[] interpolator_container;
-		if (rank == MASTER_NODE)
-			cout << "Deleted CInterpolator container." << endl;
-	}
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete grid_movement[iZone];
+  }
+  delete [] grid_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
-	if (transfer_container != NULL) {
-		for (iZone = 0; iZone < nZone; iZone++) {
-			if (transfer_container[iZone] != NULL)
-				delete transfer_container[iZone];
-		}
-		delete[] transfer_container;
-		if (rank == MASTER_NODE)
-			cout << "Deleted CTransfer container." << endl;
-	}
+  if (config_container!= NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		if (geometry_container[iZone] != NULL) {
-			for (unsigned short iMGlevel = 1;
-					iMGlevel < config_container[iZone]->GetnMGLevels() + 1; iMGlevel++) {
-				if (geometry_container[iZone][iMGlevel] != NULL)
-					delete geometry_container[iZone][iMGlevel];
-			}
-			delete[] geometry_container[iZone];
-		}
-	}
-	delete[] geometry_container;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CGeometry container." << endl;
+  /*--- Deallocate output container ---*/
+  if (output!= NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
-	/*--- Free-form deformation class deallocation ---*/
-	for (iZone = 0; iZone < nZone; iZone++) {
-		delete FFDBox[iZone];
-	}
-	delete[] FFDBox;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CFreeFormDefBox class." << endl;
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
-	/*--- Grid movement and surface movement class deallocation ---*/
-	for (iZone = 0; iZone < nZone; iZone++) {
-		delete surface_movement[iZone];
-	}
-	delete[] surface_movement;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CSurfaceMovement class." << endl;
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		delete grid_movement[iZone];
-	}
-	delete[] grid_movement;
-	if (rank == MASTER_NODE)
-		cout << "Deleted CVolumetricMovement class." << endl;
-
-	if (config_container != NULL) {
-		for (iZone = 0; iZone < nZone; iZone++) {
-			if (config_container[iZone] != NULL) {
-				delete config_container[iZone];
-			}
-		}
-		delete[] config_container;
-	}
-	if (rank == MASTER_NODE)
-		cout << "Deleted CConfig container." << endl;
-
-	/*--- Deallocate output container ---*/
-	if (output != NULL)
-		delete output;
-	if (rank == MASTER_NODE)
-		cout << "Deleted COutput class." << endl;
-
-	if (rank == MASTER_NODE)
-		cout
-				<< "-------------------------------------------------------------------------"
-				<< endl;
-
-	/*--- Synchronization point after a single solver iteration. Compute the
-	 wall clock time required. ---*/
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
 
 #ifndef HAVE_MPI
 	StopTime = su2double(clock()) / su2double(CLOCKS_PER_SEC);
@@ -1481,23 +1460,14 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
 	/*--- Number of variables for direct problem ---*/
 
-	if (euler)
-		nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
-	if (ns)
-		nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
-	if (turbulent)
-		nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-	if (transition)
-		nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
-	if (poisson)
-		nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
-
-	if (wave)
-		nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
-	if (fem)
-		nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
-	if (heat)
-		nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
+	if (euler)      nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+	if (ns)         nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+	if (turbulent)  nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
+	if (transition) nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
+	if (poisson)    nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
+	if (wave)       nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
+	if (fem)        nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
+	if (heat)       nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
 
 	/*--- Number of variables for adjoint problem ---*/
 
@@ -2883,7 +2853,7 @@ void CDriver::Iteration_Preprocessing() {
 
 void CDriver::Interface_Preprocessing() {
 
-	int rank = MASTER_NODE, nProcessor = 1;
+  int rank = MASTER_NODE;
 	unsigned short donorZone, targetZone;
 	unsigned short nVar, nVarTransfer;
 
@@ -2896,7 +2866,7 @@ void CDriver::Interface_Preprocessing() {
 	int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
 
 #ifdef HAVE_MPI
-	int *Buffer_Recv_mark, iRank;
+	int *Buffer_Recv_mark = NULL, iRank, nProcessor = 1;;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -3288,198 +3258,156 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 #else
 	StopTime = MPI_Wtime();
 #endif
-
-	UsedTime = (StopTime - StartTime);
-
-	/*--- Check if there is any change in the runtime parameters ---*/
-
-	CConfig *runtime = NULL;
-	strcpy(runtime_file_name, "runtime.dat");
-	runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
-	runtime->SetExtIter(ExtIter);
-	delete runtime;
-
-	/*--- Update the convergence history file (serial and parallel computations). ---*/
-
-	if (!fsi) {
-		output->SetConvHistory_Body(&ConvHist_file, geometry_container,
-				solver_container, config_container, integration_container, false,
-				UsedTime, ZONE_0);
-
-	}
-
-	/*--- Evaluate the new CFL number (adaptive). ---*/
-
-	if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-		output->SetCFL_Number(solver_container, config_container, ZONE_0);
-	}
-
-	/*--- Check whether the current simulation has reached the specified
-	 convergence criteria, and set StopCalc to true, if so. ---*/
-
-	switch (config_container[ZONE_0]->GetKind_Solver()) {
-	case EULER:
-	case NAVIER_STOKES:
-	case RANS:
-		StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence();
-		break;
-	case WAVE_EQUATION:
-		StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence();
-		break;
-	case HEAT_EQUATION:
-		StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence();
-		break;
-	case FEM_ELASTICITY:
-		StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence();
-		break;
-	case ADJ_EULER:
-	case ADJ_NAVIER_STOKES:
-	case ADJ_RANS:
-	case DISC_ADJ_EULER:
-	case DISC_ADJ_NAVIER_STOKES:
-	case DISC_ADJ_RANS:
-		StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence();
-		break;
-	}
-
-	return StopCalc;
-
+  
+  UsedTime = (StopTime - StartTime);
+  
+  
+  /*--- Check if there is any change in the runtime parameters ---*/
+  
+  CConfig *runtime = NULL;
+  strcpy(runtime_file_name, "runtime.dat");
+  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+  runtime->SetExtIter(ExtIter);
+  delete runtime;
+  
+  /*--- Update the convergence history file (serial and parallel computations). ---*/
+  
+  if (!fsi) {
+    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+                                config_container, integration_container, false, UsedTime, ZONE_0);
+    
+  }
+  
+  
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  
+  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+    output->SetCFL_Number(solver_container, config_container, ZONE_0);
+  }
+  
+  /*--- Check whether the current simulation has reached the specified
+   convergence criteria, and set StopCalc to true, if so. ---*/
+  
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+    case WAVE_EQUATION:
+      StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
+    case HEAT_EQUATION:
+      StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
+    case FEM_ELASTICITY:
+      StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+  }
+  
+  return StopCalc;
+  
 }
 
+
 void CDriver::Output(unsigned long ExtIter) {
-
-	int rank = MASTER_NODE;
-
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
+  
+  /*--- Solution output. Determine whether a solution needs to be written
+   after the current iteration, and if so, execute the output file writing
+   routines. ---*/
+  
+  if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
+      
+      ||
+      
+      ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
+       !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+         (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
+         (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
+      
+      ||
+      
+      (StopCalc)
+      
+      ||
+      
+      (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+      
+      ||
+      
+      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
+       ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                           ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+      
+      ||
+      
+      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
+       ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+      
+      ||
+      
+      (((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+        ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+    
+    /*--- Low-fidelity simulations (using a coarser multigrid level
+     approximation to the solution) require an interpolation back to the
+     finest grid. ---*/
+    
+    if (config_container[ZONE_0]->GetLowFidelitySim()) {
+      integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
+      integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
+      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
+    }
+    
+    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+    
+    /*--- For specific applications, evaluate and plot the surface. ---*/
+    
+    if (config_container[ZONE_0]->GetnMarker_Analyze() != 0) {
+      
+      output->WriteSurface_Analysis(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0],
+                                    solver_container[ZONE_0][MESH_0][FLOW_SOL]);
+    }
+    
+    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
+    
+    if (config_container[ZONE_0]->GetEquivArea() == YES) {
+      
+      output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    }
+    
+    /*--- Execute the routine for writing restart, volume solution,
+     surface solution, and surface comma-separated value files. ---*/
+    
+    if (size == SINGLE_NODE)
+      output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
+    else
+      output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
+    
+    /*--- Output a file with the forces breakdown. ---*/
+    
+    output->SetForces_Breakdown(geometry_container, solver_container,
+                                config_container, integration_container, ZONE_0);
+    
+    /*--- Compute the forces at different sections. ---*/
+    
+    if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
+      output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                               geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+    }
+    
+    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+    
+  }
 
-	/*--- Solution output. Determine whether a solution needs to be written
-	 after the current iteration, and if so, execute the output file writing
-	 routines. ---*/
-
-	if ((ExtIter + 1 >= config_container[ZONE_0]->GetnExtIter())
-
-			||
-
-			((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)
-					&& (ExtIter != 0)
-					&& !((config_container[ZONE_0]->GetUnsteady_Simulation()
-							== DT_STEPPING_1ST)
-							|| (config_container[ZONE_0]->GetUnsteady_Simulation()
-									== DT_STEPPING_2ND)
-							|| (config_container[ZONE_0]->GetUnsteady_Simulation()
-									== TIME_STEPPING)))
-
-			||
-
-			(StopCalc)
-
-			||
-
-			(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-					|| (config_container[ZONE_0]->GetUnsteady_Simulation()
-							== TIME_STEPPING))
-					&& ((ExtIter == 0)
-							|| (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime()
-									== 0)))
-
-			||
-
-			((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-					&& (!fsi)
-					&& ((ExtIter == 0)
-							|| ((ExtIter
-									% config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)
-									|| ((ExtIter - 1)
-											% config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime()
-											== 0))))
-
-			||
-
-			((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-					&& (fsi)
-					&& ((ExtIter == 0)
-							|| ((ExtIter
-									% config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
-
-			||
-
-			(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC)
-					&& ((ExtIter == 0)
-							|| (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime()
-									== 0))))) {
-
-		/*--- Low-fidelity simulations (using a coarser multigrid level
-		 approximation to the solution) require an interpolation back to the
-		 finest grid. ---*/
-
-		if (config_container[ZONE_0]->GetLowFidelitySim()) {
-			integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(
-					RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL],
-					solver_container[ZONE_0][MESH_1][FLOW_SOL],
-					geometry_container[ZONE_0][MESH_0],
-					geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-			integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS,
-					solver_container[ZONE_0][MESH_0][FLOW_SOL],
-					geometry_container[ZONE_0][MESH_0], 3, 1.25,
-					config_container[ZONE_0]);
-			solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(
-					RUNTIME_FLOW_SYS)]->Set_MPI_Solution(
-					geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-			solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(
-					RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0],
-					solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0,
-					RUNTIME_FLOW_SYS, true);
-		}
-
-		if (rank == MASTER_NODE)
-			cout << endl
-					<< "-------------------------- File Output Summary --------------------------";
-
-		/*--- For specific applications, evaluate and plot the surface. ---*/
-
-		if (config_container[ZONE_0]->GetnMarker_Analyze() != 0) {
-
-			output->WriteSurface_Analysis(config_container[ZONE_0],
-					geometry_container[ZONE_0][MESH_0],
-					solver_container[ZONE_0][MESH_0][FLOW_SOL]);
-		}
-
-		/*--- For specific applications, evaluate and plot the equivalent area. ---*/
-
-		if (config_container[ZONE_0]->GetEquivArea() == YES) {
-
-			output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-					geometry_container[ZONE_0][MESH_0], config_container[ZONE_0],
-					ExtIter);
-		}
-
-		/*--- Execute the routine for writing restart, volume solution,
-		 surface solution, and surface comma-separated value files. ---*/
-
-		output->SetResult_Files(solver_container, geometry_container,
-				config_container, ExtIter, nZone);
-
-		/*--- Output a file with the forces breakdown. ---*/
-
-		output->SetForces_Breakdown(geometry_container, solver_container,
-				config_container, integration_container, ZONE_0);
-
-		/*--- Compute the forces at different sections. ---*/
-
-		if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
-			output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-					geometry_container[ZONE_0][MESH_0], config_container[ZONE_0],
-					ExtIter);
-		}
-
-		if (rank == MASTER_NODE)
-			cout
-					<< "-------------------------------------------------------------------------"
-					<< endl << endl;
-
-	}
 }
 
 CDriver::~CDriver(void) {

@@ -5136,7 +5136,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 	unsigned short iMarker;
 	su2double VarCoord[3] = {0.0,0.0,0.0}, VarCoord_[3] = {0.0,0.0,0.0}, *Coord_, *Normal_, ek, fk,
 			Coord[3] = {0.0,0.0,0.0}, Normal[3] = {0.0,0.0,0.0},
-  xCoord, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
+  TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
   
 	bool upper = true;
 
@@ -5292,8 +5292,6 @@ void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, uns
 	unsigned long iVertex;
 	unsigned short iMarker;
 	su2double VarCoord[3] = {0.0,0.0,0.0}, ek, fk, *Coord, *Normal, xCoord;
-
-	bool upper = true, double_surface = false;
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 

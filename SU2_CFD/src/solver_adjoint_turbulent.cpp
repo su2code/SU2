@@ -113,9 +113,9 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		for (iDim = 0; iDim < nDim; iDim++)
 			Smatrix[iDim] = new su2double [nDim];
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new su2double* [nVar+1];
+		Cvector = new su2double* [nVar+1];
 		for (iVar = 0; iVar < nVar+1; iVar++)
-			cvector[iVar] = new su2double [nDim];
+			Cvector[iVar] = new su2double [nDim];
 	}
 	
 	/*--- Far-Field values and initizalization ---*/

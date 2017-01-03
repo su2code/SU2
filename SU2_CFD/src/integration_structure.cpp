@@ -62,11 +62,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Compute inviscid residuals ---*/
   
   switch (config->GetKind_ConvNumScheme()) {
@@ -323,11 +318,6 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 	unsigned short KindSolver = config->GetKind_Solver();
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Perform the time integration ---*/
 
   /*--- Fluid time integration schemes ---*/
