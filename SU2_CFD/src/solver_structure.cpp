@@ -36,37 +36,38 @@
 CSolver::CSolver(void) {
   
   /*--- Array initialization ---*/
+  
   OutputHeadingNames = NULL;
-  Residual_RMS = NULL;
-  Residual_Max = NULL;
-  Residual = NULL;
-  Residual_i = NULL;
-  Residual_j = NULL;
-  Point_Max = NULL;
-  Point_Max_Coord = NULL;
-  Solution = NULL;
-  Solution_i = NULL;
-  Solution_j = NULL;
-  Vector = NULL;
-  Vector_i = NULL;
-  Vector_j = NULL;
-  Res_Conv = NULL;
-  Res_Visc = NULL;
-  Res_Sour = NULL;
-  Res_Conv_i = NULL;
-  Res_Visc_i = NULL;
-  Res_Conv_j = NULL;
-  Res_Visc_j = NULL;
-  Jacobian_i = NULL;
-  Jacobian_j = NULL;
-  Jacobian_ii = NULL;
-  Jacobian_ij = NULL;
-  Jacobian_ji = NULL;
-  Jacobian_jj = NULL;
-  Smatrix = NULL;
-  cvector = NULL;
-  node = NULL;
-  nOutputVariables = 0;
+  Residual_RMS       = NULL;
+  Residual_Max       = NULL;
+  Residual           = NULL;
+  Residual_i         = NULL;
+  Residual_j         = NULL;
+  Point_Max          = NULL;
+  Point_Max_Coord    = NULL;
+  Solution           = NULL;
+  Solution_i         = NULL;
+  Solution_j         = NULL;
+  Vector             = NULL;
+  Vector_i           = NULL;
+  Vector_j           = NULL;
+  Res_Conv           = NULL;
+  Res_Visc           = NULL;
+  Res_Sour           = NULL;
+  Res_Conv_i         = NULL;
+  Res_Visc_i         = NULL;
+  Res_Conv_j         = NULL;
+  Res_Visc_j         = NULL;
+  Jacobian_i         = NULL;
+  Jacobian_j         = NULL;
+  Jacobian_ii        = NULL;
+  Jacobian_ij        = NULL;
+  Jacobian_ji        = NULL;
+  Jacobian_jj        = NULL;
+  Smatrix            = NULL;
+  Cvector            = NULL;
+  node               = NULL;
+  nOutputVariables   = 0;
   
 }
 
@@ -74,7 +75,8 @@ CSolver::~CSolver(void) {
 
   unsigned short iVar, iDim;
   unsigned long iPoint;
-  /* Public variables, may be accessible outside */
+  
+  /*--- Public variables, may be accessible outside ---*/
 
   if ( OutputHeadingNames != NULL) {
     delete [] OutputHeadingNames;
@@ -87,7 +89,7 @@ CSolver::~CSolver(void) {
     delete [] node;
   }
 
-  /* Private */
+  /*--- Private ---*/
 
   if (Residual_RMS != NULL) delete [] Residual_RMS;
   if (Residual_Max != NULL) delete [] Residual_Max;
@@ -159,10 +161,10 @@ CSolver::~CSolver(void) {
     delete [] Smatrix;
   }
 
-  if (cvector != NULL) {
+  if (Cvector != NULL) {
     for (iVar = 0; iVar < nVarGrad; iVar++)
-      delete [] cvector[iVar];
-    delete [] cvector;
+      delete [] Cvector[iVar];
+    delete [] Cvector;
   }
 
 }
@@ -268,37 +270,39 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 
 void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
   
-  unsigned short nDim = geometry->GetnDim();
-  unsigned short nVar = GetnVar();
+  unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
+  unsigned long iVertex, iEdge;
   su2double ProjGridVel, *Normal;
   
-  //	Loop interior edges
-  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Loop interior edges ---*/
+   
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
     const unsigned long jPoint = geometry->edge[iEdge]->GetNode(1);
     
-    // Solution at each edge point
+    /*--- Solution at each edge point ---*/
+    
     su2double *Solution_i = node[iPoint]->GetSolution();
     su2double *Solution_j = node[jPoint]->GetSolution();
     
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = 0.5* (Solution_i[iVar] + Solution_j[iVar]);
     
-    // Grid Velocity at each edge point
+    /*--- Grid Velocity at each edge point ---*/
+    
     su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
     su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (iDim = 0; iDim < nDim; iDim++)
       Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
     
     Normal = geometry->edge[iEdge]->GetNormal();
-    //			dS = geometry->edge[iEdge]->GetArea_or_Length();
     
     ProjGridVel = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (iDim = 0; iDim < nDim; iDim++)
       ProjGridVel += Vector[iDim]*Normal[iDim];
     
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nVar; iVar++)
       Residual[iVar] = ProjGridVel*Solution[iVar];
     
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -306,37 +310,40 @@ void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
     
   }
   
-  //	Loop boundary edges
-  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  /*--- Loop boundary edges ---*/
+  
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-    for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
       
-      // Solution at each edge point
+      /*--- Solution at each edge point ---*/
+      
       su2double *Solution = node[Point]->GetSolution();
       
-      // Grid Velocity at each edge point
+      /*--- Grid Velocity at each edge point ---*/
+      
       su2double *GridVel = geometry->node[Point]->GetGridVel();
       
-      // Summed normal components
+      /*--- Summed normal components ---*/
+      
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      //			dS = geometry->vertex[iMarker][iVertex]->GetArea_or_Length();
       
       ProjGridVel = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++)
         ProjGridVel -= GridVel[iDim]*Normal[iDim];
       
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = ProjGridVel*Solution[iVar];
       
       LinSysRes.AddBlock(Point, Residual);
     }
   }
+  
 }
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
-  //	Internal variables
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
   unsigned short nDim = geometry->GetnDim(), iDim, iMarker;
   
@@ -346,7 +353,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->SetAuxVarGradientZero();		// Set Gradient to Zero
   
-  //	Loop interior edges
+  /*--- Loop interior edges ---*/
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
@@ -363,7 +371,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  //	Loop boundary edges
+  /*--- Loop boundary edges ---*/
+  
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -383,6 +392,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
       Grad_Val = Gradient[iDim]/(DualArea+EPS);
       node[iPoint]->SetAuxVarGradient(iDim, Grad_Val);
     }
+   
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -394,9 +404,10 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   r23_b, r33, z11, z12, z13, z22, z23, z33, detR2, product;
   bool singular = false;
   
-  su2double *cvector = new su2double [nDim];
+  su2double *Cvector = new su2double [nDim];
   
   /*--- Loop over points of the grid ---*/
+  
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     Coord_i = geometry->node[iPoint]->GetCoord();
@@ -404,7 +415,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Inizialization of variables ---*/
     for (iDim = 0; iDim < nDim; iDim++)
-      cvector[iDim] = 0.0;
+      Cvector[iDim] = 0.0;
     
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
@@ -434,7 +445,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
         /*--- Entries of c:= transpose(A)*b ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/(weight);
+          Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/(weight);
       }
       
     }
@@ -495,13 +506,13 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
     for (iDim = 0; iDim < nDim; iDim++) {
       product = 0.0;
       for (jDim = 0; jDim < nDim; jDim++)
-        product += Smatrix[iDim][jDim]*cvector[jDim];
+        product += Smatrix[iDim][jDim]*Cvector[jDim];
       if (geometry->node[iPoint]->GetDomain())
         node[iPoint]->SetAuxVarGradient(iDim, product);
     }
   }
   
-  delete [] cvector;
+  delete [] Cvector;
   
 }
 
@@ -575,9 +586,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   z22, z23, z33, product;
   bool singular = false;
   
-  su2double **cvector = new su2double* [nVar];
+  su2double **Cvector = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   
   /*--- Loop over points of the grid ---*/
   
@@ -598,7 +609,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     for (iVar = 0; iVar < nVar; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
-        cvector[iVar][iDim] = 0.0;
+        Cvector[iVar][iDim] = 0.0;
     
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
@@ -631,7 +642,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         
         for (iVar = 0; iVar < nVar; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
-            cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight;
+            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight;
       }
       
     }
@@ -692,7 +703,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
-          product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
         node[iPoint]->SetGradient(iVar, iDim, product);
       }
     }
@@ -702,8 +713,8 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   /*--- Deallocate memory ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
-    delete [] cvector[iVar];
-  delete [] cvector;
+    delete [] Cvector[iVar];
+  delete [] Cvector;
   
   /*--- Gradient MPI ---*/
   
@@ -717,12 +728,12 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
   su2double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
   r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight, detR2, z11, z12, z13,
   z22, z23, z33, product;
-  su2double **cvector;
+  su2double **Cvector;
   
   /*--- Note that all nVar entries in this routine have been changed to nDim ---*/
-  cvector = new su2double* [nDim];
+  Cvector = new su2double* [nDim];
   for (iVar = 0; iVar < nDim; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   
   /*--- Loop over points of the grid ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -733,7 +744,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
     /*--- Inizialization of variables ---*/
     for (iVar = 0; iVar < nDim; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
-        cvector[iVar][iDim] = 0.0;
+        Cvector[iVar][iDim] = 0.0;
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
     
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -759,7 +770,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
       /*--- Entries of c:= transpose(A)*b ---*/
       for (iVar = 0; iVar < nDim; iVar++)
         for (iDim = 0; iDim < nDim; iDim++)
-          cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
+          Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
     }
     
     /*--- Entries of upper triangular matrix R ---*/
@@ -802,7 +813,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
-          product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
         geometry->node[iPoint]->SetGridVel_Grad(iVar, iDim, product);
       }
     }
@@ -810,8 +821,8 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
   
   /*--- Deallocate memory ---*/
   for (iVar = 0; iVar < nDim; iVar++)
-    delete [] cvector[iVar];
-  delete [] cvector;
+    delete [] Cvector[iVar];
+  delete [] Cvector;
   
   /*--- Gradient MPI ---*/
   // TO DO!!!
@@ -825,10 +836,10 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint, jPoint, iVertex;
   su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j;
-  su2double **Smatrix, *cvector;
+  su2double **Smatrix, *Cvector;
   
   Smatrix = new su2double* [nDim];
-  cvector = new su2double [nDim];
+  Cvector = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
   
@@ -850,7 +861,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
             
             /*--- Inizialization of variables ---*/
             for (iDim = 0; iDim < nDim; iDim++)
-              cvector[iDim] = 0.0;
+              Cvector[iDim] = 0.0;
             su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
             
             for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -875,7 +886,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
               
               /*--- Entries of c:= transpose(A)*b ---*/
               for (iDim = 0; iDim < nDim; iDim++)
-                cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
+                Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
             }
             
             /*--- Entries of upper triangular matrix R ---*/
@@ -919,7 +930,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
             for (iDim = 0; iDim < nDim; iDim++) {
               product = 0.0;
               for (jDim = 0; jDim < nDim; jDim++)
-                product += Smatrix[iDim][jDim]*cvector[jDim];
+                product += Smatrix[iDim][jDim]*Cvector[jDim];
               node[iPoint]->SetAuxVarGradient(iDim, product);
             }
           }
@@ -933,7 +944,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
   /*--- Memory deallocation ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     delete [] Smatrix[iDim];
-  delete [] cvector;
+  delete [] Cvector;
   delete [] Smatrix;
 }
 
@@ -1880,14 +1891,21 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
   long iPoint_Local;
-  unsigned short iField, iVar;
+  unsigned short iField, iVar, iDim;
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-
+  bool grid_movement  = config->GetGrid_Movement();
+  bool steady_restart = config->GetSteadyRestart();
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double dull_val;
+  
+  su2double *Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
 
   /*--- Define geometry constants in the solver structure ---*/
   
@@ -2007,6 +2025,37 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
       
       node[iPoint_Local] = new CBaselineVariable(Solution, nVar, config);
       iPoint_Global_Local++;
+      
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
+      
+      if (grid_movement) {
+        
+        /*--- First, remove any variables for the turbulence model that
+         appear in the restart file before the grid velocities. ---*/
+        
+        if (turb_model == SA || turb_model == SA_NEG) {
+          point_line >> dull_val;
+        } else if (turb_model == SST) {
+          point_line >> dull_val >> dull_val;
+        }
+        
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+        
+        su2double GridVel[3] = {0.0,0.0,0.0};
+        if (!steady_restart) {
+          if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
+          else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+        
+      }
     }
 
   }
@@ -2056,6 +2105,19 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry, config);
+  
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+  
+  if (grid_movement) {
+    
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    
+    geometry->Set_MPI_Coord(config);
+    geometry->Set_MPI_GridVel(config);
+    
+  }
+  
+  delete [] Coord;
   
 }
 
@@ -2245,111 +2307,119 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 }
 
 void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Restart the solution from file information ---*/
-  
+
   string filename;
   unsigned long iPoint, index;
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
-  unsigned short iField;
+  unsigned short iField, iDim;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[iZone]->GetnZone();
-
-  /*--- Retrieve filename from config ---*/
+  bool grid_movement  = config->GetGrid_Movement();
+  bool steady_restart = config->GetSteadyRestart();
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double dull_val;
   
+  su2double *Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+  
+  /*--- Retrieve filename from config ---*/
+
   if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
-	filename = config->GetSolution_FEMFileName();
+    filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
   }
-  
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
-  
+
 
   if (nZone > 1 )
-	filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  
+
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
-	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
   /*--- Open the restart file ---*/
-  
+
   solution_file.open(filename.data(), ios::in);
-  
+
   /*--- In case there is no file ---*/
-  
+
   if (solution_file.fail()) {
     if (rank == MASTER_NODE)
       cout << "There is no SU2 restart file!!" << endl;
     exit(EXIT_FAILURE);
   }
-  
+
   /*--- Output the file name to the console. ---*/
-  
+
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename
     << "." << endl;
-  
+
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
-  
+
   nVar = config->fields.size() - 1;
   su2double *Solution = new su2double[nVar];
-  
+
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
-  
+
   long *Global2Local = NULL;
   Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
-  
+
   /*--- First, set all indices to a negative value by default ---*/
-  
+
   for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
     Global2Local[iPoint] = -1;
   }
-  
+
   /*--- Now fill array with the transform values only for local points ---*/
-  
+
   for (iPoint = 0; iPoint < geometry[iZone]->GetnPointDomain(); iPoint++) {
     Global2Local[geometry[iZone]->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
-  
+
   /*--- Read all lines in the restart file ---*/
-  
+
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  
+
   /*--- The first line is the header ---*/
-  
+
   getline (solution_file, text_line);
-  
+
   for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
+    
     getline (solution_file, text_line);
-      
+    
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on a different processor, the value of iPoint_Local will be -1, as
      initialized above. Otherwise, the local index for this node on the
      current processor will be returned and used to instantiate the vars. ---*/
-    
+
     iPoint_Local = Global2Local[iPoint_Global];
     if (iPoint_Local >= 0) {
       
@@ -2363,20 +2433,66 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         point_line >> Solution[iField];
       
       node[iPoint_Local]->SetSolution(Solution);
+     
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
       
-      
+      if (grid_movement) {
+        
+        /*--- First, remove any variables for the turbulence model that
+         appear in the restart file before the grid velocities. ---*/
+        
+        if (turb_model == SA || turb_model == SA_NEG) {
+          point_line >> dull_val;
+        } else if (turb_model == SST) {
+          point_line >> dull_val >> dull_val;
+        }
+        
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+        
+        su2double GridVel[3] = {0.0,0.0,0.0};
+        if (!steady_restart) {
+          if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
+          else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[iZone]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[iZone]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+        
+      }
     }
-
+    
   }
-  
+
   /*--- Close the restart file ---*/
-  
+
   solution_file.close();
   
   /*--- Free memory needed for the transformation ---*/
   
   delete [] Global2Local;
   delete [] Solution;
+  
+  /*--- MPI solution ---*/
+  
+  Set_MPI_Solution(geometry[iZone], config);
+  
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+  
+  if (grid_movement) {
+    
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    
+    geometry[iZone]->Set_MPI_Coord(config);
+    geometry[iZone]->Set_MPI_GridVel(config);
+
+  }
+  
+  delete [] Coord;
   
 }
 
@@ -2404,21 +2520,21 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
-	filename = config->GetSolution_FEMFileName();
+    filename = config->GetSolution_FEMFileName();
   } else {
-	filename = config->GetSolution_FlowFileName();
+    filename = config->GetSolution_FlowFileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-	filename = config->GetMultizone_FileName(filename, iZone);
+    filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() != HARMONIC_BALANCE) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
-	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
   /*--- Open the restart file ---*/

@@ -297,14 +297,14 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   unsigned short iDim, nDim, iMarkerInt, nMarkerInt, iDonor;    
 
   unsigned long nVertexDonor, nVertexTarget, Point_Target, jVertex, iVertexTarget;
-  unsigned long Global_Point_Donor, pGlobalPoint;
+  unsigned long Global_Point_Donor, pGlobalPoint=0;
 
   su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
 
   int rank = MASTER_NODE;
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -526,7 +526,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
 #ifdef HAVE_MPI
 
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -1108,7 +1108,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   int nProcessor = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
   
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);

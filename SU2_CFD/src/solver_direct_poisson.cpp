@@ -108,9 +108,9 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	for (iDim = 0; iDim < nDim; iDim++)
 		Smatrix[iDim] = new su2double [nDim];
   
-	cvector = new su2double* [nVar]; // c vector := transpose(WA)*(Wb)
+	Cvector = new su2double* [nVar]; // c vector := transpose(WA)*(Wb)
 	for (iVar = 0; iVar < nVar; iVar++)
-		cvector[iVar] = new su2double [nDim];
+		Cvector[iVar] = new su2double [nDim];
   
 	/*--- Always instantiate and initialize the variable to a zero value. ---*/
   
