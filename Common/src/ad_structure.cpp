@@ -100,16 +100,14 @@ namespace AD {
        * Note that the output variables need a new index since we did a reset of the tape section. ---*/
 
       for (iVarOut = 0; iVarOut < nVarOut; iVarOut++) {
-        index_out = su2double::GradientData();
-        if (nNonzero[iVarOut] != 0) {
-          globalTape.store(index_out, nNonzero[iVarOut]);
+        if (nNonzero[iVarOut] != 0){
+          globalTape.store(0.0, localOutputValues[iVarOut]->getGradientData(), nNonzero[iVarOut]);
           for (iVarIn = 0; iVarIn < nVarIn; iVarIn++) {
             index_in =  localInputValues[iVarIn];
            globalTape.pushJacobi(local_jacobi[iVarOut*nVarIn+iVarIn],
                local_jacobi[iVarOut*nVarIn+iVarIn], local_jacobi[iVarOut*nVarIn+iVarIn], index_in);
           }
         }
-        localOutputValues[iVarOut]->getGradientData() = index_out;
       }
 
       /*--- Clear local vectors and reset indicator ---*/
