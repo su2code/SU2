@@ -26,10 +26,28 @@ env:
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
           TEST_SCRIPT=parallel_regression.py
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+        - addons:
+          apt:
+               sources:
+                 - ubuntu-toolchain-r-test
+               packages:
+                 - g++-4.7
+          export CXX=g++-4.7
+          export CC=gcc-4.7
+          export MPICH_CXX=$CXX
+          CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
           TEST_SCRIPT=serial_regression_AD.py
-        # Parallel build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+        # Parallel build and test for AD:
+        - addons:
+            apt:
+               sources:
+                 - ubuntu-toolchain-r-test
+               packages:
+                 - g++-4.7
+          export CXX=g++-4.7
+          export CC=gcc-4.7
+          export MPICH_CXX=$CXX
+          CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
           TEST_SCRIPT=parallel_regression_AD.py
 
 
