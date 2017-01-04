@@ -794,7 +794,7 @@ def main():
     sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def.cfg_file  = "def_spherical.cfg"
     sphere_ffd_def.test_iter = 50
-    sphere_ffd_def.test_vals = [3.02333e-10] #residual
+    sphere_ffd_def.test_vals = [2.0062e-10] #residual
     sphere_ffd_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     sphere_ffd_def.timeout   = 1600
     sphere_ffd_def.tol       = 1e-16

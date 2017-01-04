@@ -785,7 +785,7 @@ def main():
     cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
     cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
     cylinder_ffd_def.test_iter = 50
-    cylinder_ffd_def.test_vals = [1.80219e-10] #residual
+    cylinder_ffd_def.test_vals = [1.30556e-10] #residual
     cylinder_ffd_def.su2_exec  = "SU2_DEF"
     cylinder_ffd_def.timeout   = 1600
     cylinder_ffd_def.tol       = 1e-16
@@ -798,7 +798,7 @@ def main():
     sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
     sphere_ffd_def.cfg_file  = "def_spherical.cfg"
     sphere_ffd_def.test_iter = 50
-    sphere_ffd_def.test_vals = [3.00419e-10] #residual
+    sphere_ffd_def.test_vals = [1.09326e-10] #residual
     sphere_ffd_def.su2_exec  = "SU2_DEF"
     sphere_ffd_def.timeout   = 1600
     sphere_ffd_def.tol       = 1e-16
