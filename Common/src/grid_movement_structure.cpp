@@ -8205,17 +8205,15 @@ void CFreeFormDefBox::SetSphe2Cart_ControlPoints(CConfig *config) {
     for (jDegree = 0; jDegree <= mDegree; jDegree++) {
       for (iDegree = 0; iDegree <= lDegree; iDegree++) {
         
-        
-      	 PolarCoord[0] = Coord_Control_Points[iDegree][jDegree][kDegree][0];
-      	 PolarCoord[1] = Coord_Control_Points[iDegree][jDegree][kDegree][1];
-      	 PolarCoord[2] = Coord_Control_Points[iDegree][jDegree][kDegree][2];
-        
+      	PolarCoord[0] = Coord_Control_Points[iDegree][jDegree][kDegree][0];
+      	PolarCoord[1] = Coord_Control_Points[iDegree][jDegree][kDegree][1];
+      	PolarCoord[2] = Coord_Control_Points[iDegree][jDegree][kDegree][2];
         
         Xbar = PolarCoord[0] * cos(PolarCoord[2]);
         Ybar = PolarCoord[0] * cos(PolarCoord[1]) * sin(PolarCoord[2]);
         Zbar = PolarCoord[0] * sin(PolarCoord[1]) * sin(PolarCoord[2]);
         
-        PolarCoord[0] =  Xbar +X_0;  PolarCoord[1] = Ybar +Y_0; PolarCoord[2] = Zbar +Z_0;
+        PolarCoord[0] = Xbar + X_0;  PolarCoord[1] = Ybar + Y_0; PolarCoord[2] = Zbar + Z_0;
         
         Coord_Control_Points[iDegree][jDegree][kDegree][0] = PolarCoord[0];
         Coord_Control_Points[iDegree][jDegree][kDegree][1] = PolarCoord[1];
