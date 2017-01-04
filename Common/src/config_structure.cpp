@@ -1455,7 +1455,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
     
   /* DESCRIPTION:  Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
-    
+
+  /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
+  addBoolOption("SA_QCR", QCR, false);
   
   /* END_CONFIG_OPTIONS */
 

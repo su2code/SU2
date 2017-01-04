@@ -14041,6 +14041,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
+  bool QCR                  = config->GetQCR();
   
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -14150,6 +14151,34 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
           }
+        }
+        
+        /*--- If necessary evaluate the QCR contribution to Tau ---*/
+        
+        if (QCR){
+            su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+            unsigned short kDim;
+            
+            /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+            
+            den_aux = 0.0;
+            for (iDim = 0 ; iDim < nDim; iDim++)
+                for (jDim = 0 ; jDim < nDim; jDim++)
+                    den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
+            den_aux = sqrt(max(den_aux,1E-10));
+            
+            /*--- Adding the QCR contribution ---*/
+            
+            for (iDim = 0 ; iDim < nDim; iDim++){
+                for (jDim = 0 ; jDim < nDim; jDim++){
+                    for (kDim = 0 ; kDim < nDim; kDim++){
+                        O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim])/ den_aux;
+                        O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim])/ den_aux;
+                        Tau[iDim][jDim] -= c_cr1 * (O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim]);
+                    }
+                }
+            }
+        
         }
         
         /*--- Project Tau in each surface element ---*/
