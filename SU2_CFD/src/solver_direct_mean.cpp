@@ -5896,10 +5896,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
     
     /*-- Get limiter parameters from the configuration file ---*/
 
-    dave = config->GetRefElemLength();
     LimK = config->GetLimiterCoeff();
-    eps1 = LimK*dave;
-    eps2 = eps1*eps1*eps1;
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
         
@@ -6353,6 +6350,12 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   Beta 		    = max(Beta_min, min(local_Mach, Beta_max));
   Beta2 		    = Beta*Beta;
   
+  /*--- Weiss and Smith Preconditioning---*/
+  Mach_infty2 = pow(config->GetMach(),2.0);
+  Mach_lim2 = pow(0.00001,2.0);
+  aux = max(pow(local_Mach,2.0),Mach_lim2);
+  parameter = min(1.0, max(aux,3.0*Mach_infty2));
+  
   U_i = node[iPoint]->GetSolution();
   
   rho = U_i[0];
@@ -6382,7 +6385,7 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   
   for (iVar = 0; iVar < nVar; iVar ++ ) {
     for (jVar = 0; jVar < nVar; jVar ++ ) {
-      LowMach_Precontioner[iVar][jVar] = (1.0/(Beta2+EPS) - 1.0) * (Gamma-1.0)/(soundspeed*soundspeed)*LowMach_Precontioner[iVar][jVar];
+      LowMach_Precontioner[iVar][jVar] = (parameter - 1.0) * ((Gamma-1.0)/(soundspeed*soundspeed))*LowMach_Precontioner[iVar][jVar];
       if (iVar == jVar)
         LowMach_Precontioner[iVar][iVar] += 1.0;
     }
