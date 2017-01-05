@@ -35,6 +35,7 @@
 #pragma once
 
 #include <iostream>
+#include <complex>
 #include <cstdio>
 
 /*--- Depending on the datatype defined during the configuration, include the correct datatype
