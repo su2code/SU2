@@ -1,7 +1,7 @@
 /*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
- * \author F. Palacios, T. Economon, B. Tracey
+ * \author F. Palacios, T. Economon, B. Tracey, H. Kline
  * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -2064,7 +2064,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   else { FSI_Problem = false; }
 
-  if (ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
+  if ((rank==MASTER_NODE) && ContinuousAdjoint && (Ref_NonDim == DIMENSIONAL) && (Kind_SU2 == SU2_CFD)) {
     cout << "WARNING: The adjoint solver should use a non-dimensional flow solution." << endl;
   }
   
@@ -3373,19 +3373,17 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  Engine_Power = new su2double[nMarker_EngineInflow];
-  Engine_Mach = new su2double[nMarker_EngineInflow];
-  Engine_Force = new su2double[nMarker_EngineInflow];
-  Engine_Power = new su2double[nMarker_EngineInflow];
-  Engine_NetThrust = new su2double[nMarker_EngineInflow];
+  Engine_Power       = new su2double[nMarker_EngineInflow];
+  Engine_Mach        = new su2double[nMarker_EngineInflow];
+  Engine_Force       = new su2double[nMarker_EngineInflow];
+  Engine_NetThrust   = new su2double[nMarker_EngineInflow];
   Engine_GrossThrust = new su2double[nMarker_EngineInflow];
-  Engine_Area = new su2double[nMarker_EngineInflow];
+  Engine_Area        = new su2double[nMarker_EngineInflow];
   
   for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
     Engine_Power[iMarker_EngineInflow] = 0.0;
     Engine_Mach[iMarker_EngineInflow] = 0.0;
     Engine_Force[iMarker_EngineInflow] = 0.0;
-    Engine_Power[iMarker_EngineInflow] = 0.0;
     Engine_NetThrust[iMarker_EngineInflow] = 0.0;
     Engine_GrossThrust[iMarker_EngineInflow] = 0.0;
     Engine_Area[iMarker_EngineInflow] = 0.0;

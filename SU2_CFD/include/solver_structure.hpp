@@ -77,7 +77,7 @@ protected:
   nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
-  nVarGrad,                 /*!< \brief Number of variables for deallocating the LS cvector. */
+  nVarGrad,                 /*!< \brief Number of variables for deallocating the LS Cvector. */
   nDim;                          /*!< \brief Number of dimensions of the problem. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;   /*!< \brief Number of points of the computational grid. */
@@ -111,7 +111,7 @@ protected:
   **Jacobian_jj;        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   
   su2double **Smatrix,  /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  **cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
+  **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
   
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
   

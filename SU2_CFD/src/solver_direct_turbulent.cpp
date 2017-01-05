@@ -1233,9 +1233,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       
       /*--- c vector := transpose(WA)*(Wb) ---*/
       
-      cvector = new su2double* [nVar];
+      Cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new su2double [nDim];
+        Cvector[iVar] = new su2double [nDim];
     }
     
   }
@@ -1255,13 +1255,19 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
   
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
-  
+
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  }
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
+  }
 
   /*--- Factor_nu_ActDisk ---*/
   Factor_nu_ActDisk = config->GetNuFactor_Engine();
@@ -2712,9 +2718,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Initialize value for model constants ---*/
