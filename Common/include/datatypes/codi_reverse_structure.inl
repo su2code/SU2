@@ -56,3 +56,34 @@ template<class A> struct Impl_getValue<codi::Expression<double, A> > {
     return value.getValue();
   }
 };
+
+/*--- If we compile under OSX we have to overload some of the operators for
+ *   complex numbers to avoid the use of the standard operators
+ *  (they use a lot of functions that are only defined for doubles) ---*/
+
+#ifdef __APPLE__
+#include <complex>
+
+su2double abs(std::complex<su2double> x){
+  return sqrt(x.real()*x.real() + x.imag()*x.imag());
+}
+
+std::complex<su2double> operator/(std::complex<su2double>& x, std::complex<su2double>& y){
+
+  su2double d    = (y.real()*y.real() - y.imag()*y.imag());
+  su2double real = (x.real()*y.real() + x.imag()*y.imag())/d;
+  su2double imag = (x.imag()*y.real() - x.real()*y.imag())/d;
+
+  return std::complex<su2double>(real, imag);
+
+}
+
+std::complex<su2double> operator*(std::complex<su2double>& x, std::complex<su2double>& y){
+
+  su2double real = (x.real()*y.real() - x.imag()*y.imag());
+  su2double imag = (x.imag()*y.real() + x.real()*y.imag());
+
+  return std::complex<su2double>(real, imag);
+
+}
+#endif
