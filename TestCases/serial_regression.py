@@ -233,6 +233,21 @@ def main():
     inc_turb_naca0012.tol       = 0.00001
     test_list.append(inc_turb_naca0012)
 
+    #########################
+    ###    Transition     ###
+    #########################
+
+    # Schubauer-Klebanoff Natural Transition
+    schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
+    schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
+    schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
+    schubauer_klebanoff_transition.test_iter    = 250
+    schubauer_klebanoff_transition.test_vals    = [-9.474452, -15.630834, 0.000520, 0.001062] #last 4 columns
+    schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
+    schubauer_klebanoff_transition.timeout      = 1600
+    schubauer_klebanoff_transition.tol          = 0.00001
+    test_list.append(schubauer_klebanoff_transition)
+
     #####################################
     ### Cont. adj. compressible Euler ###
     #####################################
@@ -765,6 +780,31 @@ def main():
     pass_list.append(brick_hex_rans_def.run_def())
     test_list.append(brick_hex_rans_def)
 
+    # Cylindrical FFD test
+    cylinder_ffd_def           = TestCase('cylinder_ffd_def')
+    cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
+    cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
+    cylinder_ffd_def.test_iter = 50
+    cylinder_ffd_def.test_vals = [1.30556e-10] #residual
+    cylinder_ffd_def.su2_exec  = "SU2_DEF"
+    cylinder_ffd_def.timeout   = 1600
+    cylinder_ffd_def.tol       = 1e-16
+
+    pass_list.append(cylinder_ffd_def.run_def())
+    test_list.append(cylinder_ffd_def)
+
+    # Spherical FFD test
+    sphere_ffd_def           = TestCase('sphere_ffd_def')
+    sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def.cfg_file  = "def_spherical.cfg"
+    sphere_ffd_def.test_iter = 50
+    sphere_ffd_def.test_vals = [1.09326e-10] #residual
+    sphere_ffd_def.su2_exec  = "SU2_DEF"
+    sphere_ffd_def.timeout   = 1600
+    sphere_ffd_def.tol       = 1e-16
+
+    pass_list.append(sphere_ffd_def.run_def())
+    test_list.append(sphere_ffd_def)
 
     ######################################
     ### RUN PYTHON TESTS               ###

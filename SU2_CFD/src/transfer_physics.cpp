@@ -373,7 +373,6 @@ void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
 					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  su2double *Solution;
   unsigned short iVar;
 
   /*--- Retrieve solution and set it as the donor variable ---*/
