@@ -367,7 +367,9 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
       if (rank == root)
         std::cout << "Reduce operation not implemented for this kind of operation" <<
                   std::endl;
+      MPI_Barrier(comm);
       MPI_Abort(comm,1);
+      MPI_Finalize();
     }
   }
 }

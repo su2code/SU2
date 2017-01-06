@@ -985,6 +985,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
   /*--- Restart the solution from file information ---*/
+  
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double dull_val, Area_Children, Area_Parent, *Solution_Fine;
@@ -1003,10 +1004,12 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 #endif
 
   /*--- Modify file name for an unsteady restart ---*/
+  
   if (dual_time|| time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
   /*--- Open the restart file, throw an error if this fails. ---*/
+  
   restart_file.open(restart_filename.data(), ios::in);
   if (restart_file.fail()) {
     if (rank == MASTER_NODE)
@@ -1016,22 +1019,28 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
+  
   long *Global2Local = NULL;
   Global2Local = new long[geometry[MESH_0]->GetGlobal_nPointDomain()];
+  
   /*--- First, set all indices to a negative value by default ---*/
+  
   for (iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint++) {
     Global2Local[iPoint] = -1;
   }
 
   /*--- Now fill array with the transform values only for local points ---*/
+  
   for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
     Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
 
   /*--- Read all lines in the restart file ---*/
+  
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
   /*--- Skip flow variables ---*/
+  
   unsigned short skipVars = 0;
 
   if (compressible) {
@@ -1048,15 +1057,20 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- The first line is the header ---*/
+  
   getline (restart_file, text_line);
 
-  while (getline (restart_file, text_line)) {
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (restart_file, text_line);
+    
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on a different processor, the value of iPoint_Local will be -1, as
      initialized above. Otherwise, the local index for this node on the
      current processor will be returned and used to instantiate the vars. ---*/
+    
     iPoint_Local = Global2Local[iPoint_Global];
     if (iPoint_Local >= 0) {
       point_line >> index;
@@ -1065,20 +1079,24 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       node[iPoint_Local]->SetSolution(Solution);
 
     }
-    iPoint_Global++;
+
   }
 
   /*--- Close the restart file ---*/
+  
   restart_file.close();
 
   /*--- Free memory needed for the transformation ---*/
+  
   delete [] Global2Local;
 
   /*--- MPI solution and compute the eddy viscosity ---*/
+  
   solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+  
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -1215,9 +1233,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       
       /*--- c vector := transpose(WA)*(Wb) ---*/
       
-      cvector = new su2double* [nVar];
+      Cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new su2double [nDim];
+        Cvector[iVar] = new su2double [nDim];
     }
     
   }
@@ -1237,16 +1255,22 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Viscosity_Inf = config->GetViscosity_FreeStreamND();
   
   /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
-  
+
   Factor_nu_Inf = config->GetNuFactor_FreeStream();
   nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Inf  = 0.005*Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+  }
 
   /*--- Factor_nu_Engine ---*/
   Factor_nu_Engine = config->GetNuFactor_Engine();
   nu_tilde_Engine  = Factor_nu_Engine*Viscosity_Inf/Density_Inf;
+  if (config->GetKind_Trans_Model() == BC) {
+    nu_tilde_Engine  = 0.005*Factor_nu_Engine*Viscosity_Inf/Density_Inf;
+  }
 
   /*--- Factor_nu_ActDisk ---*/
-  Factor_nu_ActDisk = config->GetNuFactor_ActDisk();
+  Factor_nu_ActDisk = config->GetNuFactor_Engine();
   nu_tilde_ActDisk  = Factor_nu_ActDisk*Viscosity_Inf/Density_Inf;
 
   /*--- Eddy viscosity at infinity ---*/
@@ -1317,18 +1341,26 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
+    
+    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
     
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
+      
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
        Otherwise, the local index for this node on the current processor
        will be returned and used to instantiate the vars. ---*/
+      
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
         if (compressible) {
@@ -1365,8 +1397,32 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         
         /*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
         node[iPoint_Local] = new CTurbSAVariable(Solution[0], muT, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
+    }
+    
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
@@ -2662,9 +2718,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Initialize value for model constants ---*/
@@ -2759,14 +2815,19 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
     
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-    
+    long iPoint_Local; unsigned long iPoint_Global = 0; string text_line; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
     getline (restart_file, text_line);
     
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
+      
       
       /*--- Retrieve local index. If this node from the restart file lives
        on a different processor, the value of iPoint_Local will be -1.
@@ -2790,10 +2851,34 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
         
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
         node[iPoint_Local] = new CTurbSSTVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/

@@ -73,14 +73,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       break;
   }
   
-  
   /*--- Compute viscous residuals ---*/
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
+
   
   /*--- Compute source term residuals ---*/
-  
+
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
@@ -88,7 +88,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
   
-  
+  /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
+
+  solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
+
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -169,7 +172,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 		break;
     }
   }
-  
+
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -190,7 +193,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
-  
+
 }
 
 
@@ -350,7 +353,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 		  break;
 	  }
 	}
-  
+
 }
 
 void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
@@ -551,7 +554,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #ifndef HAVE_MPI
       exit(EXIT_DIVERGENCE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #endif
     }
     

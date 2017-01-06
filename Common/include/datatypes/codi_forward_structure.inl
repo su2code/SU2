@@ -35,13 +35,13 @@
 namespace SU2_TYPE{
   inline void SetValue(su2double& data, const double &val) {data.setValue(val);}
 
-  inline double GetValue(const su2double& data) {return data.getValue();}
+  inline double GetValue(const su2double& data) { return data.getValue();}
 
   inline void SetSecondary(su2double& data, const double &val) {data.setGradient(val);}
 
-  inline double GetSecondary(const su2double& data) {return data.getGradient();}
+  inline double GetSecondary(const su2double& data) { return data.getGradient();}
 
-  inline double GetDerivative(const su2double& data) {return data.getGradient();}
+  inline double GetDerivative(const su2double& data) { return data.getGradient();}
 
   inline void SetDerivative(su2double& data, const double &val) {data.setGradient(val);}
 }

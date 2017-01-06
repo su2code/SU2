@@ -506,6 +506,7 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
   
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
+  transition = (config->GetKind_Trans_Model() == BC);
   
   /*--- Spalart-Allmaras closure constants ---*/
   
@@ -526,7 +527,7 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
 CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) { }
 
 void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+	
 //  AD::StartPreacc();
 //  AD::SetPreaccIn(V_i, nDim+6);
 //  AD::SetPreaccIn(Vorticity_i, nDim);
@@ -534,6 +535,10 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 //  AD::SetPreaccIn(TurbVar_i[0]);
 //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
+
+//  BC Transition Model variables
+  su2double vmag, rey, re_theta, re_theta_t, re_v;
+  su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, gamma_BC, term1, term2, term_exponential;
 
   if (incompressible) {
     Density_i = V_i[nDim+1];
@@ -549,6 +554,18 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
   Destruction     = 0.0;
   CrossProduction = 0.0;
   val_Jacobian_i[0][0] = 0.0;
+  
+  gamma_BC = 0.0;
+  vmag = 0.0;
+  tu   = config->GetTurbulenceIntensity_FreeStream();
+  rey  = config->GetReynolds();
+
+  if (nDim==2) {
+    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]);
+  }
+  else if (nDim==3) {
+    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]+V_i[3]*V_i[3]);
+  }
   
   /*--- Evaluate Omega ---*/
   
@@ -576,14 +593,36 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
-    
-    /*--- Production term ---*/;
 
 //    Original SA model
 //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
     
-    Production = cb1*Shat*TurbVar_i[0]*Volume;
+    if (transition) {
 
+//    BC model constants	  
+      chi_1 = 0.002;
+      chi_2 = 5.0;
+
+      nu_t = (TurbVar_i[0]*fv1); //S-A variable
+      nu_cr = chi_2/rey;
+      nu_BC = (nu_t)/(vmag*dist_i);
+
+      re_v   = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
+      re_theta = re_v/2.193;
+      re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
+      //re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
+
+      term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
+      term2 = sqrt(max(nu_BC-nu_cr,0.)/(nu_cr));
+      term_exponential = (term1 + term2);
+      gamma_BC = 1.0 - exp(-term_exponential);
+
+      Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+    }
+    else {
+      Production = cb1*Shat*TurbVar_i[0]*Volume;
+    }
+	  
     /*--- Destruction term ---*/
     
     r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
@@ -613,7 +652,13 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
-    val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+	  
+    if (transition) {
+        val_Jacobian_i[0][0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    }
+    else {
+        val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    }
     
     /*--- Implicit part, destruction term ---*/
     

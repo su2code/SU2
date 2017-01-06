@@ -722,7 +722,8 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   char buffer[50];
   string UnstExt, text_line;
   ifstream restart_file;
-  
+  unsigned short iZone = config->GetiZone();
+
   /*--- For the unsteady adjoint, we integrate backwards through
    physical time, so load in the direct solution files in reverse. ---*/  
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
@@ -763,12 +764,48 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     exit(EXIT_FAILURE);
   }
   
-  /*--- Read the restart file ---*/
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-    getline(restart_file, text_line);
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  
+  long *Global2Local = NULL;
+  Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
+  
+  /*--- First, set all indices to a negative value by default ---*/
+  
+  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
+    Global2Local[iPoint] = -1;
+  }
+  
+  /*--- Now fill array with the transform values only for local points ---*/
+  
+  for (iPoint = 0; iPoint < geometry[iZone]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[iZone]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+  
+  /*--- Read all lines in the restart file ---*/
+  
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  
+  /*--- The first line is the header ---*/
+  
+  getline (restart_file, text_line);
+  
+  for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (restart_file, text_line);
+    
     istringstream point_line(text_line);
-    point_line >> index >> Solution[0] >> Solution[1];
-    node[iPoint]->SetSolution_Direct(Solution);
+    
+    /*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1, as
+     initialized above. Otherwise, the local index for this node on the
+     current processor will be returned and used to instantiate the vars. ---*/
+    
+    iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local >= 0) {
+      point_line >> index >> Solution[0] >> Solution[1];
+      node[iPoint]->SetSolution_Direct(Solution);
+    }
   }
   
   /*--- Close the restart file ---*/

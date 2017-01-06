@@ -426,8 +426,8 @@ def stability( func_name, config, state=None, step=1e-2 ):
 #  Finite Difference Gradients
 # ----------------------------------------------------------------------
 
-def findiff( config, state=None, step=1e-4 ):
-    """ vals = SU2.eval.findiff(config,state=None,step=1e-4)
+def findiff( config, state=None ):
+    """ vals = SU2.eval.findiff(config,state=None)
 
         Evaluates the aerodynamics gradients using 
         finite differencing with:
@@ -448,8 +448,6 @@ def findiff( config, state=None, step=1e-4 ):
         Inputs:
             config - an SU2 config
             state  - optional, an SU2 state
-            step   - finite difference step size, as a float or
-                     list of floats of length n_DV
 
         Outputs:
             A Bunch() with keys of objective function names
@@ -470,6 +468,9 @@ def findiff( config, state=None, step=1e-4 ):
         log_findiff = 'log_FinDiff.out'
     else:
         log_findiff = None
+
+    # evaluate step
+    step = 0.001 * float(config.REF_LENGTH_MOMENT)
 
     # ----------------------------------------------------
     #  Redundancy Check

@@ -67,6 +67,9 @@ using namespace std;
 
 class CConfig {
 private:
+
+	int rank;
+	
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
@@ -94,17 +97,20 @@ private:
   *DensityLimits,
   *TemperatureLimits; /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;  /*!< \brief actuator disk double surface  */
+  bool Engine_HalfModel;  /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
   su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
+  su2double FFD_Scale;  	/*!< \brief Tolerance in the point inversion problem. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+  Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -128,11 +134,18 @@ private:
 	Damp_Correc_Prolong; /*!< \brief Damping factor for the correction prolongation. */
 	su2double Position_Plane; /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
 	su2double WeightCd; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCL; /*!< \brief Weight of the drag coefficient. */
+  su2double dCD_dCM; /*!< \brief Weight of the drag coefficient. */
+  su2double CL_Target; /*!< \brief Weight of the drag coefficient. */
+  su2double CM_Target; /*!< \brief Weight of the drag coefficient. */
+  su2double *HTP_Min_XCoord, *HTP_Min_YCoord; /*!< \brief Identification of the HTP. */
 	unsigned short Unsteady_Simulation;	/*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
 	unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
+  su2double DVBound_Upper;		/*!< \brief Previous value of the design variable. */
+  su2double DVBound_Lower;		/*!< \brief Previous value of the design variable. */
 	su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -174,6 +187,7 @@ private:
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
+	nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
@@ -212,6 +226,7 @@ private:
 	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+	*Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_ActDiskInlet,
   *Marker_ActDiskOutlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
@@ -337,6 +352,7 @@ private:
 	short *Marker_All_PerBound;	/*!< \brief Global index for periodic bc using the grid information. */
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
+  unsigned long ExtIter_OffSet;			/*!< \brief External iteration number offset. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long FSIIter;			/*!< \brief Current Fluid Structure Interaction sub-iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
@@ -371,9 +387,11 @@ private:
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
+  unsigned short nFFD_Fix_IDir, nFFD_Fix_JDir, nFFD_Fix_KDir;                 /*!< \brief Number of planes fixed in the FFD. */
 	unsigned short nMG_PreSmooth,                 /*!< \brief Number of MG pre-smooth parameters found in config file. */
 	nMG_PostSmooth,                             /*!< \brief Number of MG post-smooth parameters found in config file. */
 	nMG_CorrecSmooth;                           /*!< \brief Number of MG correct-smooth parameters found in config file. */
+  short *FFD_Fix_IDir, *FFD_Fix_JDir, *FFD_Fix_KDir;	/*!< \brief Exact sections. */
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
@@ -386,6 +404,8 @@ private:
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
+  Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
+	Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
 	Kind_Linear_Solver_FSI_Struc,	 /*!< \brief Numerical solver for the structural part in FSI problems. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
@@ -468,6 +488,7 @@ private:
   nVolSections;               /*!< \brief Number of sections. */
 	su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
 	su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
 	Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
 	Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
@@ -483,27 +504,37 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
-  unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
+  unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
+  bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
 	su2double Mach;		/*!< \brief Mach number. */
 	su2double Reynolds;	/*!< \brief Reynolds number. */
 	su2double Froude;	/*!< \brief Froude number. */
 	su2double Length_Reynolds;	/*!< \brief Reynolds length (dimensional). */
-	su2double AoA,			/*!< \brief Angle of attack (just external flow). */
-	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
+  su2double AoA,			/*!< \brief Angle of attack (just external flow). */
+  iH, AoS, AoA_Offset, AoS_Offset, AoA_Sens;		/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   bool Fixed_CM_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Eval_dCD_dCX;			/*!< \brief Activate fixed CL mode (external flow only). */
+  bool Discard_InFiles; /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double dCl_dAlpha;			/*!< \brief Lift curve slope for fixed CL mode (1/deg, external flow only). */
+  su2double Target_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Total_CM;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double Total_CD;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
+  su2double dCL_dAlpha;        /*!< \brief value of dCl/dAlpha. */
+  su2double dCM_diH;        /*!< \brief value of dCM/dHi. */
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Iter_Fixed_CM;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Iter_Fixed_NetThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_Alpha;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
+  unsigned long Update_iH;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   unsigned long Update_BCThrust;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   su2double dNetThrust_dBCThrust;        /*!< \brief value of dCl/dAlpha. */
   bool Update_BCThrust_Bool;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
+  bool Update_HTPIncidence;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -573,6 +604,7 @@ private:
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
   *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
   *CFL,
+  *HTP_Axis,      /*!< \brief Location of the HTP axis. */
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
 	nRefOriginMoment_Y,           /*!< \brief Number of Y-coordinate moment computation origins. */
@@ -648,7 +680,6 @@ private:
 	Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
 	NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_Engine,  /*!< \brief Ratio of turbulent to laminar viscosity at the engine. */
-  NuFactor_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   SecondaryFlow_ActDisk,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Initial_BCThrust,  /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,     /*!< \brief Total pressure of the fluid. */
@@ -792,7 +823,7 @@ private:
   unsigned short DirectDiff;  /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;       /*!< \brief AD-based discrete adjoint mode. */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
-  *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
+  *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
@@ -802,6 +833,8 @@ private:
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
+  *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -921,6 +954,7 @@ private:
   //  for (int i = 0; i < size; i++) {
   //    def[i] = default_value[i];
   //  }
+    
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
@@ -931,6 +965,13 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addShortListOption(const string name, unsigned short & size, short * & option_field) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionShortList(name, size, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1323,28 +1364,22 @@ public:
   bool GetCFL_Adapt(void);
   
   /*!
+   * \brief Get the values of the CFL adapation.
+   * \return Value of CFL adapation
+   */
+  su2double GetHTP_Axis(unsigned short val_index);
+
+  /*!
 	 * \brief Get the value of the limits for the sections.
 	 * \return Value of the limits for the sections.
 	 */
 	su2double GetSection_Location(unsigned short val_var);
-
-	/*!
-	 * \brief Get the array that maps chemical consituents to each chemical reaction.
-	 * \return Memory location of the triple pointer to the 3-D reaction map array.
-	 */
-	int ***GetReaction_Map(void);
-
-	/*!
-	 * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
-	 * \return Memory location of the triple pointer to the 3-D collision integral array.
-	 */
-	su2double ***GetCollisionIntegral00(void);
-
-	/*!
-	 * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
-	 * \return Memory location of the triple pointer to the 3-D collision integral array.
-	 */
-	su2double ***GetCollisionIntegral11(void);
+  
+  /*!
+   * \brief Get the value of the limits for the sections.
+   * \return Value of the limits for the sections.
+   */
+  su2double GetFFD_Axis(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the bulk modulus.
@@ -1636,12 +1671,6 @@ public:
    * \return Non-dimensionalized engine intensity.
    */
   su2double GetNuFactor_Engine(void);
-
-  /*!
-   * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
-   * \return Non-dimensionalized actuator disk intensity.
-   */
-  su2double GetNuFactor_ActDisk(void);
   
   /*!
    * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
@@ -2081,12 +2110,50 @@ public:
 	 * \return Value of the angle of attack.
 	 */
 	su2double GetAoA(void);
+  
+  /*!
+   * \brief Get the off set angle of attack of the body. The solution and the geometry 
+   *        file are able to modifity the angle of attack in the config file
+   * \return Value of the off set angle of attack.
+   */
+  su2double GetAoA_Offset(void);
+  
+  /*!
+   * \brief Get the off set sideslip angle of the body. The solution and the geometry
+   *        file are able to modifity the angle of attack in the config file
+   * \return Value of the off set sideslip angle.
+   */
+  su2double GetAoS_Offset(void);
+  
+  /*!
+   * \brief Get the functional sensitivity with respect to changes in the angle of attack.
+   * \return Value of the angle of attack.
+   */
+  su2double GetAoA_Sens(void);
 
 	/*!
 	 * \brief Set the angle of attack.
 	 * \param[in] val_AoA - Value of the angle of attack.
 	 */
 	void SetAoA(su2double val_AoA);
+  
+  /*!
+   * \brief Set the off set angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetAoA_Offset(su2double val_AoA_offset);
+  
+  /*!
+   * \brief Set the off set sideslip angle.
+   * \param[in] val_AoA - Value of the off set sideslip angle.
+   */
+  void SetAoS_Offset(su2double val_AoS_offset);
+  
+  /*!
+   * \brief Set the angle of attack.
+   * \param[in] val_AoA - Value of the angle of attack.
+   */
+  void SetAoA_Sens(su2double val_AoA_sens);
 
   /*!
 	 * \brief Set the angle of attack.
@@ -2226,6 +2293,12 @@ public:
    * \return Continuity level at the surface intersection.
    */
   unsigned short GetFFD_Continuity(void);
+  
+  /*!
+   * \brief Get the required continuity level at the surface intersection with the FFD
+   * \return Continuity level at the surface intersection.
+   */
+  unsigned short GetFFD_CoordSystem(void);
 
   /*!
    * \brief Get the kind of FFD Blending function.
@@ -2280,6 +2353,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
+	
+	/*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_Fluid_InterfaceBound(void);
 
   /*!
 	 * \brief Get the total number of boundary markers.
@@ -2397,6 +2476,12 @@ public:
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void SetExtIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Set the current external iteration number.
+   * \param[in] val_iter - Current external iteration number.
+   */
+  void SetExtIter_OffSet(unsigned long val_iter);
 
 	/*!
 	 * \brief Set the current FSI iteration number.
@@ -2415,6 +2500,12 @@ public:
 	 * \return Current external iteration.
 	 */
 	unsigned long GetExtIter(void);
+  
+  /*!
+   * \brief Get the current internal iteration number.
+   * \return Current external iteration.
+   */
+  unsigned long GetExtIter_OffSet(void);
 
 	/*!
 	 * \brief Get the current FSI iteration number.
@@ -2808,6 +2899,48 @@ public:
 	 * \return Number of implicit smoothing iterations.
 	 */
 	unsigned short GetMG_CorrecSmooth(unsigned short val_mesh);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  short GetFFD_Fix_IDir(unsigned short val_index);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  short GetFFD_Fix_JDir(unsigned short val_index);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  short GetFFD_Fix_KDir(unsigned short val_index);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  unsigned short GetnFFD_Fix_IDir(void);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  unsigned short GetnFFD_Fix_JDir(void);
+  
+  /*!
+   * \brief Get the number of pre-smoothings in a multigrid strategy.
+   * \param[in] val_mesh - Index of the grid.
+   * \return Number of smoothing iterations.
+   */
+  unsigned short GetnFFD_Fix_KDir(void);
 
 	/*!
 	 * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -2968,7 +3101,13 @@ public:
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
-  unsigned short GetDeform_Linear_Solver(void);
+  unsigned short GetKind_Deform_Linear_Solver(void);
+
+	/*!
+	 * \brief Set the kind of preconditioner for the implicit solver.
+	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
+	 */
+	void SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec);
 
 	/*!
 	 * \brief Get the kind of preconditioner for the implicit solver.
@@ -3047,6 +3186,12 @@ public:
    * \return Numerical preconditioner for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_DiscAdj_Linear_Prec(void);
+
+  /*!
+   * \brief Get the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Deform_Linear_Solver_Prec(void);
 
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
@@ -3130,6 +3275,12 @@ public:
 	 * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
 	 */
 	bool GetVisualize_Deformation(void);
+  
+  /*!
+   * \brief Creates a teot file to visualize the deformation made by the MDC software.
+   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+   */
+  bool GetFFD_Symmetry_Plane(void);
 
 	/*!
 	 * \brief Get the kind of SU2 software component.
@@ -4270,6 +4421,12 @@ public:
   bool GetActDisk_DoubleSurface(void);
   
   /*!
+   * \brief Only halg of the engine is in the compputational grid.
+   * \return <code>TRUE</code> if the engine is complete; otherwise <code>FALSE</code>.
+   */
+  bool GetEngine_HalfModel(void);
+
+  /*!
    * \brief Actuator disk defined with a double surface.
    * \return <code>TRUE</code> if the elements must be divided; otherwise <code>FALSE</code>.
    */
@@ -4700,6 +4857,12 @@ public:
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_PerBound(string val_marker);
+	
+	/*!
+	 * \brief  Get the name of the marker <i>val_marker</i>.
+	 * \return The interface which owns that marker <i>val_marker</i>.
+	 */
+	int GetMarker_FSIinterface(string val_marker);
 
 	/*!
 	 * \brief Determines if problem is adjoint
@@ -4809,7 +4972,55 @@ public:
 	 * \return Azimuthal line to fix due to a misalignments of the nearfield.
 	 */
 	su2double GetFixAzimuthalLine(void);
-
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCD_dCM(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetCM_Target(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetdCD_dCL(void);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCD_dCL(su2double val_dcd_dcl);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCL_dAlpha(su2double val_dcl_dalpha);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCM_diH(su2double val_dcm_dhi);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  void SetdCD_dCM(su2double val_dcd_dcm);
+  
+  /*!
+   * \brief Value of the weight of the CD, CL, CM optimization.
+   * \return Value of the weight of the CD, CL, CM optimization.
+   */
+  su2double GetCL_Target(void);
+  
 	/*!
 	 * \brief Set the global parameters of each simulation for each runtime system.
 	 * \param[in] val_solver - Solver of the simulation.
@@ -6289,6 +6500,11 @@ public:
 	 * \brief Value of the location ath which the gust begins.
 	 */
 	su2double GetFFD_Tol(void);
+  
+  /*!
+   * \brief Value of the location ath which the gust begins.
+   */
+  su2double GetFFD_Scale(void);
 
   /*!
 	 * \brief Get the node number of the CV to visualize.
@@ -6301,6 +6517,24 @@ public:
 	 * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
 	 */
 	bool GetFixed_CL_Mode(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetFixed_CM_Mode(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetEval_dCD_dCX(void);
+  
+  /*!
+   * \brief Get information about whether to use fixed CL mode.
+   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
+   */
+  bool GetDiscard_InFiles(void);
 
   /*!
 	 * \brief Get the value specified for the target CL.
@@ -6312,8 +6546,20 @@ public:
 	 * \brief Get the value for the lift curve slope for fixed CL mode.
 	 * \return Lift curve slope for fixed CL mode.
 	 */
-	su2double GetdCl_dAlpha(void);
+	su2double GetdCL_dAlpha(void);
   
+  /*!
+   * \brief Get the value of iterations to re-evaluate the angle of attack.
+   * \return Number of iterations.
+   */
+  unsigned long GetUpdate_Alpha(void);
+
+  /*!
+   * \brief Get the value of the damping coefficient for fixed CL mode.
+   * \return Damping coefficient for fixed CL mode.
+   */
+  su2double GetdCM_diH(void);
+
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
    * \return Number of iterations.
