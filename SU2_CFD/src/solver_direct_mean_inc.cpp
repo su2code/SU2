@@ -6823,9 +6823,9 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   su2double Viscosity = 0.0, div_vel, *Normal, MomentDist[3] = {0.0, 0.0, 0.0}, WallDist[3] = {0.0, 0.0, 0.0},
   *Coord, *Coord_Normal, Area, WallShearStress, TauNormal, factor, RefTemp, RefVel2,
-  RefDensity, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+  RefDensity, Density = 0.0, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
-  Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0,
+  Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, MaxNorm = 8.0,
   Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
@@ -6842,7 +6842,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double *Origin         = config->GetRefOriginMoment(0);
   bool grid_movement        = config->GetGrid_Movement();
-  su2double Prandtl_Lam     = config->GetPrandtl_Lam();
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -6976,18 +6975,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         FrictionVel = sqrt(fabs(WallShearStress)/Density);
         YPlus[iMarker][iVertex] = WallDistMod*FrictionVel/(Viscosity/Density);
-
-        /*--- Compute total and maximum heat flux on the wall ---*/
-
-        GradTemperature = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          GradTemperature -= Grad_Temp[iDim]*UnitNormal[iDim];
-
-        Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-        thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
-        HF[iMarker] += HeatFlux[iMarker][iVertex]*Area;
-        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
 
         /*--- Note that y+, and heat are computed at the
          halo cells (for visualization purposes), but not the forces ---*/
