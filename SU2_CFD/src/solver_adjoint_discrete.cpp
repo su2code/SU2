@@ -172,7 +172,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     }
 
     /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;\
+    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
     /*--- Skip coordinates ---*/
     unsigned short skipVars = nDim;
@@ -188,9 +189,13 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     }
 
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
-
-    while (getline (restart_file, text_line)) {
+    
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
 
       /*--- Retrieve local index. If this node from the restart file lives
@@ -203,8 +208,31 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
         for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
         for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
         node[iPoint_Local] = new CDiscAdjVariable(Solution, nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+      
+    }
+
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
 
     /*--- Instantiate the variable class with an arbitrary solution
@@ -387,13 +415,24 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 #endif
 
   /*--- Here we can add new (scalar) objective functions ---*/
-  if (config->GetnObj()==1){
-    switch (config->GetKind_ObjFunc()){
+  if (config->GetnObj()==1) {
+    switch (config->GetKind_ObjFunc()) {
     case DRAG_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CD();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
       break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
+      break;
+    case AERO_DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_AeroCD();
+      break;
+    case RADIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
+      break;
+    case CIRCUMFERENTIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
       break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
@@ -422,19 +461,6 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
       break;
-    case NET_THRUST_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_NetCThrust();
-      break;
-    case IDC_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_IDC();
-      break;
-    case PROPULSIVE_EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_Prop_Eff();
-      break;
-    case CUSTOM_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_Custom();
-      break;
-
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()

@@ -1,6 +1,6 @@
 /*!
  * \file SU2_CFD.cpp
- * \brief Main file of the Computational Fluid Dynamics code
+ * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
  * \version 4.3.0 "Cardinal"
  *
@@ -75,11 +75,16 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  if (nZone == SINGLE_ZONE) {
+  if ( (config->GetKind_Solver() == FEM_ELASTICITY || config->GetKind_Solver() == POISSON_EQUATION || config->GetKind_Solver() == WAVE_EQUATION || config->GetKind_Solver() == HEAT_EQUATION) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
-
-    driver = new CSingleZoneDriver(config_file_name, nZone, nDim);
+    
+    if(nZone > 1 ) {
+      cout << "The required solver doesn't support multizone simulations" << endl; 
+      exit(EXIT_FAILURE);
+    }
+    
+    driver = new CGeneralDriver(config_file_name, nZone, nDim);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
@@ -96,11 +101,9 @@ int main(int argc, char *argv[]) {
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
-     or a specialized driver class for a particular multi-physics problem. ---*/
+    or a specialized driver class for a particular multi-physics problem. ---*/
 
-    driver = new CMultiZoneDriver(config_file_name, nZone, nDim);
-
-    /*--- Future multi-zone drivers instatiated here. ---*/
+    driver = new CFluidDriver(config_file_name, nZone, nDim);
 
   }
 
