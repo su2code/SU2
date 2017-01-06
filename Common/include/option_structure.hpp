@@ -959,7 +959,9 @@ enum ENUM_OBJECTIVE {
   IDC_COEFFICIENT = 32, 	           /*!< \brief IDC coefficient objective function definition. */
   PROPULSIVE_EFFICIENCY = 33, 	       /*!< \brief Mass flow ratio coefficient. */
   NET_THRUST_COEFFICIENT = 34, 	     /*!< \brief Mass flow ratio coefficient. */
-  CUSTOM_COEFFICIENT = 35 	           /*!< \brief Custom coefficient objective function definition. */
+  CUSTOM_COEFFICIENT = 35, 	           /*!< \brief Custom coefficient objective function definition. */
+  AREA = 36,                    /*!< \brief Area of a surface. */
+  VOLUME = 37                   /*!< \brief Volume of a body. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -997,7 +999,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("IDC_COEFFICIENT", IDC_COEFFICIENT)
 ("PROPULSIVE_EFFICIENCY", PROPULSIVE_EFFICIENCY)
 ("NET_THRUST_COEFFICIENT", NET_THRUST_COEFFICIENT)
-("CUSTOM_COEFFICIENT", CUSTOM_COEFFICIENT);
+("CUSTOM_COEFFICIENT", CUSTOM_COEFFICIENT)
+("AREA", AREA)
+("VOLUME", VOLUME);
 
 /*!
  * \brief types of residual criteria equations
