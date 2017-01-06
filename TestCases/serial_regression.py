@@ -393,16 +393,16 @@ def main():
     ### Harmonic Balance               ###
     ######################################
     
-#    # Description of the regression test
-#    harmonic_balance           = TestCase('harmonic_balance')
-#    harmonic_balance.cfg_dir   = "harmonic_balance"
-#    harmonic_balance.cfg_file  = "HB.cfg"
-#    harmonic_balance.test_iter = 25
-#    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
-#    harmonic_balance.su2_exec  = "SU2_CFD"
-#    harmonic_balance.timeout   = 1600
-#    harmonic_balance.tol       = 0.00001
-#    test_list.append(harmonic_balance)
+    # Description of the regression test
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "SU2_CFD"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###
