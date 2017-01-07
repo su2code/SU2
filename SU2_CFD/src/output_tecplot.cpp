@@ -165,10 +165,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         }
       }
       
-      if (config->GetKind_Regime() == FREESURFACE) {
-        Tecplot_File << ",\"Density\"";
-      }
-      
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
         Tecplot_File << ",\"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
       }
@@ -3096,11 +3092,6 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
       } else {
         variables << "Grid_Velx Grid_Vely Grid_Velz "; *NVar += 3;
       }
-    }
-    
-    if (config->GetKind_Regime() == FREESURFACE) {
-      variables << "Density ";
-      *NVar += 1;
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
