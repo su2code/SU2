@@ -498,7 +498,11 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SurfAdj_file << "SENS_AOA=" << AdjSolver->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
 
   if (geometry->GetnDim() == 2) {
-    SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
+    if (config ->GetKind_Regime() == COMPRESSIBLE)
+      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
+    else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
+      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"x_coord\",\"y_coord\"";
+
     if (config->GetDiscrete_Adjoint()) {
       SurfAdj_file << ",\"x_Sens\",\"y_Sens\"";
     }
@@ -519,9 +523,12 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             xCoord *= 12.0;
             yCoord *= 12.0;
           }
-          
-          SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
-          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord;
+          if (config ->GetKind_Regime() == COMPRESSIBLE)
+            SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+                         << Solution[1] << ", " << Solution[2] << ", " << Solution[3] <<", " << xCoord <<", "<< yCoord;
+          else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
+              SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+                           << Solution[1] << ", " << Solution[2] <<", " << xCoord <<", "<< yCoord;
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1);
           }
@@ -531,7 +538,11 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   }
   
   if (geometry->GetnDim() == 3) {
-    SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"";
+    if (config ->GetKind_Regime() == COMPRESSIBLE)
+      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"";
+    else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
+      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"x_coord\",\"y_coord\",\"z_coord\"";
+
     if (config->GetDiscrete_Adjoint()) {
       SurfAdj_file << ",\"x_Sens\",\"y_Sens\",\"z_Sens\"";
     }
@@ -554,9 +565,12 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
             yCoord *= 12.0;
             zCoord *= 12.0;
           }
-          
-          SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
-          << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord;
+          if (config ->GetKind_Regime() == COMPRESSIBLE)
+            SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+                         << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << Solution[4] << ", "<< xCoord <<", "<< yCoord <<", "<< zCoord;
+          else if (config ->GetKind_Regime() == INCOMPRESSIBLE)
+            SurfAdj_file << scientific << Global_Index << ", " << AdjSolver->GetCSensitivity(iMarker, iVertex) << ", " << Solution[0] << ", "
+                         << Solution[1] << ", " << Solution[2] << ", " << Solution[3] << ", " << xCoord <<", "<< yCoord <<", "<< zCoord;
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << AdjSolver->node[iPoint]->GetSensitivity(0) << ", " << AdjSolver->node[iPoint]->GetSensitivity(1)
             << ", " << AdjSolver->node[iPoint]->GetSensitivity(2);
@@ -607,8 +621,11 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   su2double *Buffer_Send_Phi_x= new su2double[MaxLocalVertex_Surface];
   su2double *Buffer_Send_Phi_y= new su2double[MaxLocalVertex_Surface];
   su2double *Buffer_Send_Phi_z= new su2double[MaxLocalVertex_Surface];
-  su2double *Buffer_Send_PsiE= new su2double[MaxLocalVertex_Surface];
-  
+  su2double *Buffer_Send_PsiE = NULL;
+
+  if (config ->GetKind_Regime() == COMPRESSIBLE)
+    Buffer_Send_PsiE =  new su2double[MaxLocalVertex_Surface];
+
   su2double *Buffer_Send_Sens_x = NULL, *Buffer_Send_Sens_y = NULL, *Buffer_Send_Sens_z = NULL;
   
   if (config->GetDiscrete_Adjoint()) {
@@ -636,11 +653,11 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           Buffer_Send_PsiRho[nVertex_Surface] = Solution[0];
           Buffer_Send_Phi_x[nVertex_Surface] = Solution[1];
           Buffer_Send_Phi_y[nVertex_Surface] = Solution[2];
-          if (nDim == 2) Buffer_Send_PsiE[nVertex_Surface] = Solution[3];
+          if ((nDim == 2) && (config->GetKind_Regime() == COMPRESSIBLE)) Buffer_Send_PsiE[nVertex_Surface] = Solution[3];
           if (nDim == 3) {
             Buffer_Send_Coord_z[nVertex_Surface] = Coord[2];
             Buffer_Send_Phi_z[nVertex_Surface] = Solution[3];
-            Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
+            if(config->GetKind_Regime() == COMPRESSIBLE) Buffer_Send_PsiE[nVertex_Surface] = Solution[4];
           }
           if (config->GetDiscrete_Adjoint()) {
             Buffer_Send_Sens_x[nVertex_Surface] = AdjSolver->node[iPoint]->GetSensitivity(0);
@@ -677,7 +694,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     Buffer_Receive_Phi_x = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Receive_Phi_y = new su2double [nProcessor*MaxLocalVertex_Surface];
     if (nDim == 3) Buffer_Receive_Phi_z = new su2double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Receive_PsiE = new su2double [nProcessor*MaxLocalVertex_Surface];
+    if  (config->GetKind_Regime() == COMPRESSIBLE)
+      Buffer_Receive_PsiE = new su2double [nProcessor*MaxLocalVertex_Surface];
     if (config->GetDiscrete_Adjoint()) {
       Buffer_Receive_Sens_x = new su2double[nProcessor*MaxLocalVertex_Surface];
       Buffer_Receive_Sens_y = new su2double[nProcessor*MaxLocalVertex_Surface];
@@ -699,7 +717,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   SU2_MPI::Gather(Buffer_Send_Phi_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_Phi_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (nDim == 3) SU2_MPI::Gather(Buffer_Send_Phi_z, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Phi_z, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  SU2_MPI::Gather(Buffer_Send_PsiE, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_PsiE, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  if (config->GetKind_Regime() == COMPRESSIBLE)
+      SU2_MPI::Gather(Buffer_Send_PsiE, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_PsiE, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (config->GetDiscrete_Adjoint()) {
     SU2_MPI::Gather(Buffer_Send_Sens_x, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_x, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_Sens_y, nBuffer_Scalar, MPI_DOUBLE, Buffer_Receive_Sens_y, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -739,8 +758,11 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- Write the 2D surface flow coefficient file ---*/
     if (geometry->GetnDim() == 2) {
-      
-      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
+      if (config->GetKind_Regime() == COMPRESSIBLE)
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"PsiE\",\"x_coord\",\"y_coord\"";
+      else if (config->GetKind_Regime() == INCOMPRESSIBLE)
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"x_coord\",\"y_coord\"";
+
       if (config->GetDiscrete_Adjoint()) {
         SurfAdj_file << ",\" x_Sens\",\"y_Sens\"";
       }
@@ -751,12 +773,19 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           
           position = iProcessor*MaxLocalVertex_Surface+iVertex;
           GlobalPoint = Buffer_Receive_GlobalPoint[position];
-          
-          SurfAdj_file << scientific << GlobalPoint <<
-          ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
-          ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] <<
-          ", " << Buffer_Receive_PsiE[position] << ", " << Buffer_Receive_Coord_x[position] <<
-          ", "<< Buffer_Receive_Coord_y[position];
+
+          if (config->GetKind_Regime() == COMPRESSIBLE)
+            SurfAdj_file << scientific << GlobalPoint <<
+                            ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
+                            ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] <<
+                            ", " << Buffer_Receive_PsiE[position] << ", " << Buffer_Receive_Coord_x[position] <<
+                            ", "<< Buffer_Receive_Coord_y[position];
+          else if (config->GetKind_Regime() == INCOMPRESSIBLE)
+            SurfAdj_file << scientific << GlobalPoint <<
+                            ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
+                            ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] <<
+                            ", " << Buffer_Receive_Coord_x[position] <<
+                            ", "<< Buffer_Receive_Coord_y[position];
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position];
           }
@@ -766,8 +795,11 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     
     /*--- Write the 3D surface flow coefficient file ---*/
     if (geometry->GetnDim() == 3) {
-      
-      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"";
+      if (config->GetKind_Regime() == COMPRESSIBLE)
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"";
+      else if (config->GetKind_Regime() == INCOMPRESSIBLE)
+        SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"x_coord\",\"y_coord\",\"z_coord\"";
+
       if (config->GetDiscrete_Adjoint()) {
         SurfAdj_file << ",\"x_Sens\",\"y_Sens\",\"z_Sens\"";
       }
@@ -778,11 +810,19 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
           position = iProcessor*MaxLocalVertex_Surface+iVertex;
           GlobalPoint = Buffer_Receive_GlobalPoint[position];
           
-          SurfAdj_file << scientific << GlobalPoint <<
-          ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
-          ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] << ", " << Buffer_Receive_Phi_z[position] <<
-          ", " << Buffer_Receive_PsiE[position] <<", "<< Buffer_Receive_Coord_x[position] <<
-          ", "<< Buffer_Receive_Coord_y[position] <<", "<< Buffer_Receive_Coord_z[position];
+          if (config->GetKind_Regime() == COMPRESSIBLE)
+            SurfAdj_file << scientific << GlobalPoint <<
+                            ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
+                            ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] << ", " << Buffer_Receive_Phi_z[position] <<
+                            ", " << Buffer_Receive_PsiE[position] <<", "<< Buffer_Receive_Coord_x[position] <<
+                            ", "<< Buffer_Receive_Coord_y[position] <<", "<< Buffer_Receive_Coord_z[position];
+          else if (config->GetKind_Regime() == INCOMPRESSIBLE)
+            SurfAdj_file << scientific << GlobalPoint <<
+                            ", " << Buffer_Receive_Sensitivity[position] << ", " << Buffer_Receive_PsiRho[position] <<
+                            ", " << Buffer_Receive_Phi_x[position] << ", " << Buffer_Receive_Phi_y[position] << ", " << Buffer_Receive_Phi_z[position] <<
+                            ", "<< Buffer_Receive_Coord_x[position] <<
+                            ", "<< Buffer_Receive_Coord_y[position] <<", "<< Buffer_Receive_Coord_z[position];
+
           if (config->GetDiscrete_Adjoint()) {
             SurfAdj_file << ", " << Buffer_Receive_Sens_x[position] << ", " << Buffer_Receive_Sens_y[position] << ", " << Buffer_Receive_Sens_z[position];
           }
@@ -802,7 +842,8 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     delete [] Buffer_Receive_Phi_x;
     delete [] Buffer_Receive_Phi_y;
     if (nDim == 3) delete [] Buffer_Receive_Phi_z;
-    delete [] Buffer_Receive_PsiE;
+    if (config->GetKind_Regime() == COMPRESSIBLE)
+      delete [] Buffer_Receive_PsiE;
     delete [] Buffer_Receive_GlobalPoint;
     if (config->GetDiscrete_Adjoint()) {
       delete [] Buffer_Receive_Sens_x;
@@ -1947,7 +1988,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar = 0, jVar = 0, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
-  unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
+  unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Lam = 0, iVar_MachMean = 0,
   iVar_ViscCoeffs = 0, iVar_HeatCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
   iVar_FEA_Extra = 0, iVar_SensDim = 0;
@@ -1975,7 +2016,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   bool grid_movement  = (config->GetGrid_Movement());
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool transition     = (config->GetKind_Trans_Model() == LM);
   bool flow           = (( config->GetKind_Solver() == EULER             ) ||
                          ( config->GetKind_Solver() == NAVIER_STOKES     ) ||
@@ -2049,12 +2089,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_GridVel = nVar_Total;
       if (geometry->GetnDim() == 2) nVar_Total += 2;
       else if (geometry->GetnDim() == 3) nVar_Total += 3;
-    }
-    
-    /*--- Add density to the restart file ---*/
-    
-    if ((config->GetKind_Regime() == FREESURFACE)) {
-      iVar_Density = nVar_Total; nVar_Total += 1;
     }
     
     /*--- Add Pressure, Temperature, Cp, Mach to the restart file ---*/
@@ -2436,54 +2470,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
-    /*--- Communicate the Density in Free-surface problems ---*/
-    
-    if (config->GetKind_Regime() == FREESURFACE) {
-      
-      /*--- Loop over this partition to collect the current variable ---*/
-      
-      jPoint = 0;
-      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (!Local_Halo[iPoint] || Wrt_Halo) {
-          
-          /*--- Load buffers with the pressure and mach variables. ---*/
-          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc();
-          jPoint++;
-        }
-      }
-      
-      /*--- Gather the data on the master node. ---*/
-      
-#ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#else
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-#endif
-      
-      /*--- The master node unpacks and sorts this variable by global index ---*/
-      
-      if (rank == MASTER_NODE) {
-        jPoint = 0; iVar = iVar_Density;
-        for (iProcessor = 0; iProcessor < size; iProcessor++) {
-          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-            
-            /*--- Get global index, then loop over each variable and store ---*/
-            
-            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-            jPoint++;
-          }
-          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-          
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
-        }
-      }
-      
-    }
-    
     /*--- Communicate Pressure, Cp, and Mach ---*/
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
@@ -2503,17 +2489,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
-          
-          if (compressible) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure();
+
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure();
+          if (compressible){
             Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature();
-            Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
+          } else{
+            Buffer_Send_Res[jPoint] =  0.0;
           }
-          if (incompressible || freesurface) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc();
-            Buffer_Send_Res[jPoint] = 0.0;
-            Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff;
-          }
+          Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
+
           jPoint++;
         }
       }
@@ -2572,9 +2556,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
             solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
           }
-          if (incompressible || freesurface) {
+          if (incompressible) {
             Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
-            sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
+            sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref()));
           }
           jPoint++;
         }
@@ -2624,12 +2608,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
           /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
           
-          if (compressible) {
-            Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          }
-          if (incompressible || freesurface) {
-            Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
-          }
+          Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+
           jPoint++;
         }
       }
@@ -2781,7 +2761,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
             Buffer_Send_Res[jPoint] = Aux_Heat[iPoint];
             Buffer_Send_Vol[jPoint] = Aux_yPlus[iPoint];
           }
-          if (incompressible || freesurface) {
+          if (incompressible) {
             Buffer_Send_Res[jPoint] = Aux_Heat[iPoint];
             Buffer_Send_Vol[jPoint] = Aux_yPlus[iPoint];
           }
@@ -2841,12 +2821,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
           /*--- Load buffers with the pressure and mach variables. ---*/
           
-          if (compressible) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-          }
-          if (incompressible || freesurface) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc();
-          }
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+
           jPoint++;
         }
       }
@@ -3773,12 +3749,6 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       }
     }
     
-    /*--- Solver specific output variables ---*/
-    
-    if (config->GetKind_Regime() == FREESURFACE) {
-      restart_file << "\t\"Density\"";
-    }
-    
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if (config->GetOutput_FileFormat() == PARAVIEW) {
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
@@ -3982,7 +3952,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool frozen_turb = config->GetFrozen_Visc();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
@@ -4034,7 +4003,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
-  char free_surface_coeff[]= ",\"CFreeSurface\"";
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
   char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
@@ -4074,8 +4042,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
   char adj_turb_resid[]= ",\"Res_AdjTurb[0]\"";
-  char levelset_resid[]= ",\"Res_LevelSet\"";
-  char adj_levelset_resid[]= ",\"Res_AdjLevelSet\"";
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
@@ -4114,10 +4080,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_flow_coeff;
       if (output_comboObj) ConvHist_file[0] << combo_obj;
       ConvHist_file[0] << end;
-      if (freesurface) {
-        ConvHist_file[0] << begin << flow_coeff << free_surface_coeff;
-        ConvHist_file[0] << flow_resid << levelset_resid << end;
-      }
       
       break;
       
@@ -4126,9 +4088,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       ConvHist_file[0] << begin << adj_coeff << adj_flow_resid;
       if ((turbulent) && (!frozen_turb)) ConvHist_file[0] << adj_turb_resid;
       ConvHist_file[0] << end;
-      if (freesurface) {
-        ConvHist_file[0] << begin << adj_coeff << adj_flow_resid << adj_levelset_resid << end;
-      }
       break;
       
     case WAVE_EQUATION:
@@ -4222,7 +4181,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
      may have to adjust them to be larger if adding more entries. ---*/
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
-    adj_turb_resid[1000], levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000],
+    adj_turb_resid[1000], wave_coeff[1000],
     heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
     fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
 
@@ -4236,7 +4195,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
     bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
-    bool freesurface = (config[val_iZone]->GetKind_Regime() == FREESURFACE);
     
     bool rotating_frame = config[val_iZone]->GetRotating_Frame();
     bool aeroelastic = config[val_iZone]->GetAeroelastic_Simulation();
@@ -4278,7 +4236,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
-    Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
+    Total_CT = 0.0, Total_CQ = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0,
@@ -4314,11 +4272,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
     *residual_turbulent    = NULL,
-    *residual_transition   = NULL,
-    *residual_levelset     = NULL;
+    *residual_transition   = NULL;
     su2double *residual_adjflow      = NULL,
-    *residual_adjturbulent = NULL,
-    *residual_adjlevelset  = NULL;
+    *residual_adjturbulent = NULL;
     su2double *residual_wave         = NULL;
     su2double *residual_fea          = NULL;
     su2double *residual_fem		   = NULL;
@@ -4339,9 +4295,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     *Surface_CMz        = NULL;
     
     /*--- Initialize number of variables ---*/
-    unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0,
+    unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0,
-    nVar_AdjFlow = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0,
+    nVar_AdjFlow = 0, nVar_AdjTurb = 0,
     nVar_FEM = 0;
     
     /*--- Direct problem variables ---*/
@@ -4356,8 +4312,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (transition) nVar_Trans = 2;
     if (wave) nVar_Wave = 2;
     if (heat) nVar_Heat = 1;
-    if (freesurface) nVar_LevelSet = 1;
-    
+
     if (fem) {
       if (linear_analysis) nVar_FEM = nDim;
       if (nonlinear_analysis) nVar_FEM = 3;
@@ -4372,20 +4327,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
-    if (freesurface) nVar_AdjLevelSet = 1;
     
     /*--- Allocate memory for the residual ---*/
     residual_flow       = new su2double[nVar_Flow];
     residual_turbulent  = new su2double[nVar_Turb];
     residual_transition = new su2double[nVar_Trans];
-    residual_levelset   = new su2double[nVar_LevelSet];
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
     residual_fem 		= new su2double[nVar_FEM];
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
-    residual_adjlevelset  = new su2double[nVar_AdjLevelSet];
     
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4454,9 +4406,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           D_Total_CFz         = SU2_TYPE::GetDerivative(Total_CFz);
         }
         
-        if (freesurface) {
-          Total_CFreeSurface = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFreeSurface();
-        }
         
         if (thermal) {
           Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
@@ -4579,12 +4528,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             residual_transition[iVar] = solver_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
         }
         
-        /*--- Free Surface residual ---*/
-        
-        if (freesurface) {
-          for (iVar = 0; iVar < nVar_LevelSet; iVar++)
-            residual_levelset[iVar] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nDim+1);
-        }
         
         /*--- FEA residual ---*/
         //        if (fluid_structure) {
@@ -4621,13 +4564,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               for (iVar = 0; iVar < nVar_AdjTurb; iVar++)
                 residual_adjturbulent[iVar] = solver_container[val_iZone][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
             }
-          }
-          
-          /*--- Adjoint level set residuals ---*/
-          
-          if (freesurface) {
-            for (iVar = 0; iVar < nVar_AdjLevelSet; iVar++)
-              residual_adjlevelset[iVar] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(nDim+1);
           }
           
         }
@@ -4767,11 +4703,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (rotating_frame)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
-            
-            if (freesurface) {
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
-                       Total_CFz, Total_CEff, Total_CFreeSurface);
-            }
+
             //            if (fluid_structure)
             //              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz,
             //                       Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CFEA);
@@ -4826,11 +4758,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Flow residual ---*/
             if (nDim == 2) {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-              if (incompressible || freesurface) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
+              if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), dummy, dummy);
             }
             else {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-              if (incompressible || freesurface) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+              if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
             }
             
             /*--- Turbulent residual ---*/
@@ -4853,11 +4785,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (transition) {
               SPRINTF (trans_resid, ", %12.10f, %12.10f", log10(residual_transition[0]), log10(residual_transition[1]));
             }
-            
-            /*--- Free surface residual ---*/
-            if (freesurface) {
-              SPRINTF (levelset_resid, ", %12.10f", log10 (residual_levelset[0]));
-            }
 
             /*--- Combo objective ---*/
             if (output_comboObj) {
@@ -4869,7 +4796,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             //              if (nDim == 2) SPRINTF (levelset_resid, ", %12.10f, %12.10f, 0.0", log10 (residual_fea[0]), log10 (residual_fea[1]));
             //              else SPRINTF (levelset_resid, ", %12.10f, %12.10f, %12.10f", log10 (residual_fea[0]), log10 (residual_fea[1]), log10 (residual_fea[2]));
             //            }
-            
+
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
@@ -4879,20 +4806,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               /*--- Adjoint flow residuals ---*/
               if (nDim == 2) {
                 if (compressible) SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
-                if (incompressible || freesurface) SPRINTF (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, 0.0, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]) );
+                if (incompressible) SPRINTF (adj_flow_resid, ", %12.10f, %12.10f, %12.10f, 0.0, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]) );
               }
               else {
                 if (compressible) SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]), log10 (residual_adjflow[4]) );
-                if (incompressible || freesurface) SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
+                if (incompressible) SPRINTF (adj_flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, 0.0", log10 (residual_adjflow[0]), log10 (residual_adjflow[1]), log10 (residual_adjflow[2]), log10 (residual_adjflow[3]) );
               }
               
               /*--- Adjoint turbulent residuals ---*/
               if (turbulent)
                 if (!config[val_iZone]->GetFrozen_Visc())
                   SPRINTF (adj_turb_resid, ", %12.10f", log10 (residual_adjturbulent[0]));
-              
-              /*--- Adjoint free surface residuals ---*/
-              if (freesurface) SPRINTF (adj_levelset_resid, ", %12.10f", log10 (residual_adjlevelset[0]));
+
             }
             
             break;
@@ -5159,7 +5084,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             //            if (!fluid_structure) {
             if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
-            else if (freesurface) cout << "   Res[Press]" << "     Res[Dist]" << "   CLift(Total)" << "     CLevelSet" << endl;
             else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
             else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
@@ -5211,7 +5135,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << " ExtIter";
-            if (incompressible || freesurface) cout << "   Res[Press]";
+            if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
             
             switch (config[val_iZone]->GetKind_Turb_Model()) {
@@ -5293,16 +5217,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
             
-            if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
+            if (incompressible) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
             if (disc_adj) {
               cout << "    Sens_Press" << "      Sens_AoA" << endl;
             } else {
               cout << "      Sens_Geo" << "      Sens_AoA" << endl;
-            }
-            if (freesurface) {
-              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
-                cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5330,24 +5250,20 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
             else cout << endl << " IntIter" << "  ExtIter";
             
-            if (incompressible || freesurface) cout << "     Res[Psi_Press]";
+            if (incompressible) cout << "     Res[Psi_Press]";
             else cout << "     Res[Psi_Rho]";
             
             if (!config[val_iZone]->GetFrozen_Visc()) {
               cout << "      Res[Psi_nu]";
             }
             else {
-              if (incompressible || freesurface) cout << "   Res[Psi_Velx]";
+              if (incompressible) cout << "   Res[Psi_Velx]";
               else cout << "     Res[Psi_E]";
             }
             if (disc_adj) {
               cout << "    Sens_Press" << "      Sens_AoA" << endl;
             } else {
               cout << "      Sens_Geo" << "      Sens_AoA" << endl;
-                          }
-            if (freesurface) {
-              cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
-                cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5387,7 +5303,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (!DualTime_Iteration) {
             if (compressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
             if (incompressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (freesurface) ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
             //            if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -5410,7 +5325,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else { cout.width(14); cout << log10(residual_flow[4]); }
             }
             if (incompressible) { cout.width(14); cout << log10(residual_flow[1]); }
-            if (freesurface) { cout.width(14); cout << log10(residual_levelset[0]); }
           }
           //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
           
@@ -5424,7 +5338,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
-          else if (freesurface) { cout.width(15); cout << Total_CL; cout.width(15); cout << Total_CFreeSurface; }
           else if (turbo) {
             cout.setf(ios::scientific, ios::floatfield);
             switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
@@ -5471,7 +5384,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
           
-          if (incompressible || freesurface) cout.width(13);
+          if (incompressible) cout.width(13);
           else  cout.width(14);
           cout << log10(residual_flow[0]);
           //          else  cout.width(14),
@@ -5524,22 +5437,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           cout << endl;
 	  }
-          
-          if (freesurface) {
-            if (!DualTime_Iteration) {
-              ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
-              ConvHist_file[0].flush();
-            }
-            
-            cout.precision(6);
-            cout.setf(ios::fixed, ios::floatfield);
-            cout.width(13); cout << log10(residual_flow[0]);
-            cout.width(14); cout << log10(residual_levelset[0]);
-            cout.width(15); cout << Total_CL;
-            cout.width(14); cout << Total_CFreeSurface;
-            
-            cout << endl;
-          }
           
           break;
           
@@ -5611,7 +5508,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.width(15); cout << log10(residual_adjflow[0]);
             cout.width(15); cout << log10(residual_adjflow[nDim+1]);
           }
-          if (incompressible || freesurface) {
+          if (incompressible) {
             cout.width(17); cout << log10(residual_adjflow[0]);
             cout.width(16); cout << log10(residual_adjflow[1]);
           }
@@ -5628,26 +5525,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.width(14); cout << Total_Sens_AoA;
             }
           cout << endl;
-          cout.unsetf(ios_base::floatfield);
-          
-          if (freesurface) {
-            if (!DualTime_Iteration) {
-              ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid << end;
-              ConvHist_file[0].flush();
-            }
-            
-            cout.precision(6);
-            cout.setf(ios::fixed, ios::floatfield);
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjlevelset[0]);
-            cout.precision(3);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(12); cout << Total_Sens_Geo;
-              cout.width(12); cout << Total_Sens_AoA;
-            cout.unsetf(ios_base::floatfield);
-            cout << endl;
-          }
-          
+          cout.unsetf(ios_base::floatfield);          
+
           break;
           
         case ADJ_RANS : case DISC_ADJ_RANS:
@@ -5671,7 +5550,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
               else { cout.width(15); cout << log10(residual_adjflow[4]); }
             }
-            if (incompressible || freesurface) {
+            if (incompressible) {
               cout.width(15); cout << log10(residual_adjflow[1]);
             }
           }
@@ -5688,26 +5567,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
-          if (freesurface) {
-            if (!DualTime_Iteration) {
-              ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid;
-              ConvHist_file[0] << end;
-              ConvHist_file[0].flush();
-            }
-            
-            cout.precision(6);
-            cout.setf(ios::fixed, ios::floatfield);
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjlevelset[0]);
-            
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(12); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_AoA;
-            cout << endl;
-            cout.unsetf(ios_base::floatfield);
-          }
-          
           break;
           
       }
@@ -5719,7 +5578,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     delete [] residual_flow;
     delete [] residual_turbulent;
     delete [] residual_transition;
-    delete [] residual_levelset;
     delete [] residual_wave;
     delete [] residual_fea;
     delete [] residual_fem;
@@ -5727,7 +5585,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     delete [] residual_adjflow;
     delete [] residual_adjturbulent;
-    delete [] residual_adjlevelset;
     
     delete [] Surface_CL;
     delete [] Surface_CD;
@@ -5847,7 +5704,6 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
   int rank = MASTER_NODE;
   bool compressible       = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible     = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface        = (config[val_iZone]->GetKind_Regime() == FREESURFACE);
   bool unsteady           = (config[val_iZone]->GetUnsteady_Simulation() != NO);
   bool viscous            = config[val_iZone]->GetViscous();
   bool grid_movement      = config[val_iZone]->GetGrid_Movement();
@@ -6232,7 +6088,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     if (grid_movement) Breakdown_file << "Force coefficients computed using MACH_MOTION." << "\n";
     else Breakdown_file << "Force coefficients computed using free-stream values." << "\n";
     
-    if (incompressible || freesurface) {
+    if (incompressible) {
       Breakdown_file << "Viscous and Inviscid flow: rho_ref, and vel_ref" << "\n";
       Breakdown_file << "are based on the free-stream values, p_ref = rho_ref*vel_ref^2." << "\n";
       Breakdown_file << "The free-stream value of the pressure is 0." << "\n";
@@ -6333,7 +6189,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       }
     }
     
-    if (incompressible || freesurface) {
+    if (incompressible) {
       Breakdown_file << "Bulk modulus: " << config[val_iZone]->GetBulk_Modulus();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
@@ -6435,7 +6291,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " ft^2/s^2." << "\n";
     }
     
-    if (incompressible || freesurface) {
+    if (incompressible) {
       Breakdown_file << "Reference length: " << config[val_iZone]->GetLength_Ref();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " m." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " in." << "\n";
@@ -6445,9 +6301,11 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
       Breakdown_file << "Reference viscosity: " << config[val_iZone]->GetViscosity_Ref();
       if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " N.s/m^2." << "\n";
       else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf.s/ft^2." << "\n";
-      Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetConductivity_Ref();
-      if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << "\n";
-      else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
+      if (compressible){
+        Breakdown_file << "Reference conductivity: " << config[val_iZone]->GetConductivity_Ref();
+        if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " W/m^2.K." << "\n";
+        else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " lbf/ft.s.R." << "\n";
+      }
     }
     
     
@@ -7711,9 +7569,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
   su2double TotalArea=0.0;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
   
@@ -7742,8 +7598,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
           
-          if (compressible)                    Pressure = solver_container->node[iPoint]->GetPressure();
-          if (incompressible || freesurface)   Pressure = solver_container->node[iPoint]->GetPressureInc();
+          Pressure = solver_container->node[iPoint]->GetPressure();
           
           /*-- Find velocity normal to the marked surface/opening --*/
           
@@ -7837,9 +7692,6 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   unsigned short iDim;
   
   bool grid_movement = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   Plane_P0 = new su2double [3];
   Plane_Normal = new su2double [3];
@@ -7879,12 +7731,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
     /*--- Copy the pressure to an auxiliar structure ---*/
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      if (compressible) {
-        CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
-      }
-      if (incompressible || freesurface) {
-        CPressure[iPoint] = (solver_container->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff;
-      }
+      CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
     }
     
     nSection = config->GetnSections();
@@ -9138,10 +8985,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		su2double *Buffer_Send_Area = NULL, *Buffer_Recv_Area = NULL;
 		Buffer_Send_Area = new su2double [MaxLocalVertex_Surface];
 
-		unsigned long *Buffer_Send_GlobalIndex = NULL;
-		unsigned long *Buffer_Recv_GlobalIndex = NULL;
-		Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
-
 		/*--- Prepare the receive buffers on the master node only. ---*/
 
 		if (rank == MASTER_NODE) {
@@ -9183,7 +9026,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 				Buffer_Recv_dVel_z_dz = new su2double [nProcessor*MaxLocalVertex_Surface];
 			}
 			Buffer_Recv_Area = new su2double [nProcessor*MaxLocalVertex_Surface];
-			Buffer_Recv_GlobalIndex = new unsigned long [nProcessor*MaxLocalVertex_Surface];
 		}
 
 		/*--- Loop over all vertices in this partition and load the
@@ -9340,8 +9182,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 
 						}
 
-						Buffer_Send_GlobalIndex[nVertex_Surface] = geometry->node[iPoint]->GetGlobalIndex();
-
 						nVertex_Surface++;
 
 					}
@@ -9401,7 +9241,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		}
 
 		SU2_MPI::Gather(Buffer_Send_Area, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Area, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
 #else
 
@@ -9453,7 +9292,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		}
 
 		Buffer_Recv_Area[iVertex] = Buffer_Send_Area[iVertex];
-		Buffer_Recv_GlobalIndex[iVertex] = Buffer_Send_GlobalIndex[iVertex];
 	}
 
 #endif
@@ -9814,8 +9652,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 
 		delete [] Buffer_Recv_Area;
 
-		delete [] Buffer_Recv_GlobalIndex;
-
 		delete [] Buffer_Recv_nVertex;
 
 		delete[] r;
@@ -9876,8 +9712,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
 		delete [] Buffer_Send_dVel_z_dz;
 	}
 	delete [] Buffer_Send_Area;
-
-	delete [] Buffer_Send_GlobalIndex;
 
 	}
 
@@ -10231,7 +10065,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
@@ -10407,12 +10240,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
     }
     
-    /*--- Add the freesurface density. ---*/
-    
-    if ((config->GetKind_Regime() == FREESURFACE)) {
-      nVar_Par += 1;
-      Variable_Names.push_back("Density_FreeSurface");
-    }
     
     /*--- Add Pressure, Temperature, Cp, Mach. ---*/
     
@@ -10621,12 +10448,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           }
         }
         
-        /*--- Load data for the freesurface density. ---*/
-        
-        if (config->GetKind_Regime() == FREESURFACE) {
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc(); iVar++;
-        }
-        
         /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
         
         if (compressible) {
@@ -10636,23 +10457,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
           solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         }
-        if (incompressible || freesurface) {
+        if (incompressible) {
           Local_Data[jPoint][iVar] = 0.0; iVar++;
-          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff; iVar++;
+          Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff; iVar++;
           Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
-          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref())); iVar++;
+          sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref())); iVar++;
         }
         
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           
           /*--- Load data for the laminar viscosity. ---*/
           
-          if (compressible) {
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); iVar++;
-          }
-          if (incompressible || freesurface) {
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc(); iVar++;
-          }
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); iVar++;
           
           /*--- Load data for the skin friction, heat flux, and y-plus. ---*/
           
@@ -10670,12 +10486,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         /*--- Load data for the Eddy viscosity for RANS. ---*/
         
         if (Kind_Solver == RANS) {
-          if (compressible) {
-            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
-          }
-          if (incompressible || freesurface) {
-            Local_Data[jPoint][iVar]  = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); iVar++;
-          }
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
         
         /*--- Load data for the distance to the nearest sharp edge. ---*/
