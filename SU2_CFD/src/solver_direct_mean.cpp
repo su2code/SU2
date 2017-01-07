@@ -5898,8 +5898,6 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
     dave = config->GetRefElemLength();
     LimK = config->GetLimiterCoeff();
-    eps1 = LimK*dave;
-    eps2 = eps1*eps1*eps1;
 
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
         
@@ -5990,7 +5988,10 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
             else dp = node[iPoint]->GetSolution_Min(iVar);
             
             limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-            limiter = max(limiter, f_Mach_i);
+            
+            /*--- Prevent the limiter to be greater than one ---*/
+            
+            limiter = min(max(limiter, f_Mach_i), 1.0);
             
             if (limiter < node[iPoint]->GetLimiter_Primitive(iVar)){
                 node[iPoint]->SetLimiter_Primitive(iVar, limiter);
@@ -6011,7 +6012,10 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
             else dp = node[jPoint]->GetSolution_Min(iVar);
             
             limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-            limiter = max(limiter, f_Mach_j);
+            
+            /*--- Prevent the limiter to be greater than one ---*/
+            
+            limiter = min(max(limiter, f_Mach_j),1.0);
             
             if (limiter < node[jPoint]->GetLimiter_Primitive(iVar)){
                 node[jPoint]->SetLimiter_Primitive(iVar, limiter);
