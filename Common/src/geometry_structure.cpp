@@ -5198,28 +5198,28 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             case TRIANGLE:
               elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
               InElem = false;
-              for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                 if (ActDisk_Bool[vnodes_triangle[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                   VolumePoint.push_back(vnodes_triangle[i]); } }
               break;
             case QUADRILATERAL:
               elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                 if (ActDisk_Bool[vnodes_quad[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                   VolumePoint.push_back(vnodes_quad[i]); } }
               break;
             case TETRAHEDRON:
               elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_tetra[i]]) { InElem = true; break; }              }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_tetra[i]); } }
               break;
             case HEXAHEDRON:
@@ -5227,30 +5227,30 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
               elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
               InElem = false;
-              for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_hexa[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_hexa[i]); } }
               break;
             case PRISM:
               elem_line >> vnodes_prism[0]; elem_line >> vnodes_prism[1]; elem_line >> vnodes_prism[2];
               elem_line >> vnodes_prism[3]; elem_line >> vnodes_prism[4]; elem_line >> vnodes_prism[5];
               InElem = false;
-              for (i = 0; i < N_POINTS_PRISM; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                 if (ActDisk_Bool[vnodes_prism[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PRISM; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                   VolumePoint.push_back(vnodes_prism[i]); } }
               break;
             case PYRAMID:
               elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
               elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
               InElem = false;
-              for (i = 0; i < N_POINTS_PYRAMID; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                 if (ActDisk_Bool[vnodes_pyramid[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PYRAMID; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                   VolumePoint.push_back(vnodes_pyramid[i]); } }
               break;
           }
@@ -12900,7 +12900,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   string filename = config->GetSolution_AdjFileName();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
@@ -12926,7 +12925,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   if (wrt_residuals) { skipMult = 2; }
   if (incompressible) { skipVar += skipMult*(nDim+1); }
-  if (freesurface)    { skipVar += skipMult*(nDim+2); }
   if (compressible)   { skipVar += skipMult*(nDim+2); }
   if (sst)            { skipVar += skipMult*2;}
   if (sa)             { skipVar += skipMult*1;}
@@ -12938,11 +12936,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
-  long *Global2Local = new long[Global_nPointDomain];
   
-  /*--- First, set all indices to a negative value by default ---*/
-  for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -12987,12 +12983,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   	istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-             on a different processor, the value of iPoint_Local will be -1.
-             Otherwise, the local index for this node on the current processor
-             will be returned and used to instantiate the vars. ---*/
-    iPoint_Local = Global2Local[iPoint_Global];
-
-    if (iPoint_Local >= 0) {
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
+      
       point_line >> index;
       for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -13015,8 +13012,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   restart_file.close();
 
-
-  delete [] Global2Local;
 }
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {

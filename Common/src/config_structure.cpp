@@ -463,6 +463,7 @@ void CConfig::SetPointersNull(void) {
   ExtIter    = 0;
   IntIter    = 0;
   nIntCoeffs = 0;
+  FSIIter    = 0;
   
   AoA_Offset = 0;
   AoS_Offset = 0;
@@ -901,8 +902,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_ADJLEVELSET", Kind_TimeIntScheme_AdjLevelSet, Time_Int_Map, EULER_IMPLICIT);
-  /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
@@ -1080,16 +1079,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
-
-  /*!\brief SPATIAL_ORDER_ADJLEVELSET
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: 2ND_ORDER \ingroup Config*/
-  addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
-  /*!\brief SLOPE_LIMITER_ADJLEVELTSET
-   *  \n DESCRIPTION: Slope limiter\n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
-  addEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, VENKATAKRISHNAN);
-  /*!\brief CONV_NUM_METHOD_ADJLEVELSET
-   *  \n DESCRIPTION: Convective numerical method for the adjoint levelset problem. \ingroup Config*/
-  addConvectOption("CONV_NUM_METHOD_ADJLEVELSET", Kind_ConvNumScheme_AdjLevelSet, Kind_Centered_AdjLevelSet, Kind_Upwind_AdjLevelSet);
 
   /* DESCRIPTION: Viscous limiter mean flow equations */
   addBoolOption("VISCOUS_LIMITER_FLOW", Viscous_Limiter_Flow, false);
@@ -1410,26 +1399,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_ea_lim);
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
-
-	/*!\par CONFIG_CATEGORY: Free surface simulation \ingroup Config*/
-	/*--- Options related to free surface simulation ---*/
-
-	/* DESCRIPTION: Ratio of density for two phase problems */
-  addDoubleOption("RATIO_DENSITY", RatioDensity, 0.1);
-	/* DESCRIPTION: Ratio of viscosity for two phase problems */
-  addDoubleOption("RATIO_VISCOSITY", RatioViscosity, 0.1);
-	/* DESCRIPTION: Location of the freesurface (y or z coordinate) */
-  addDoubleOption("FREESURFACE_ZERO", FreeSurface_Zero, 0.0);
-	/* DESCRIPTION: Free surface depth surface (x or y coordinate) */
-  addDoubleOption("FREESURFACE_DEPTH", FreeSurface_Depth, 1.0);
-	/* DESCRIPTION: Thickness of the interface in a free surface problem */
-  addDoubleOption("FREESURFACE_THICKNESS", FreeSurface_Thickness, 0.1);
-	/* DESCRIPTION: Free surface damping coefficient */
-  addDoubleOption("FREESURFACE_DAMPING_COEFF", FreeSurface_Damping_Coeff, 0.0);
-	/* DESCRIPTION: Free surface damping length (times the baseline wave) */
-  addDoubleOption("FREESURFACE_DAMPING_LENGTH", FreeSurface_Damping_Length, 1.0);
-	/* DESCRIPTION: Location of the free surface outlet surface (x or y coordinate) */
-  addDoubleOption("FREESURFACE_OUTLET", FreeSurface_Outlet, 0.0);
 
 	// these options share nDV as their size in the option references; not a good idea
 	/*!\par CONFIG_CATEGORY: Grid deformation \ingroup Config*/
@@ -2082,13 +2051,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- Identification of free-surface problem, this problems are always 
-   unsteady and incompressible. ---*/
-  
-  if (Kind_Regime == FREESURFACE) {
-    if (Unsteady_Simulation != DT_STEPPING_2ND) Unsteady_Simulation = DT_STEPPING_1ST;
-  }
-  
   if (Kind_Solver == POISSON_EQUATION) {
     Unsteady_Simulation = STEADY;
   }
@@ -2111,8 +2073,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == HARMONIC_BALANCE  ||
-      Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
+      Unsteady_Simulation == HARMONIC_BALANCE)
+ { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
   if (Kind_Solver == FEM_ELASTICITY) {
@@ -2124,6 +2086,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Wrt_Dynamic = false;
   }
 
+  /*--- Check for unsupported features. ---*/
+
+  if ((Kind_Regime == INCOMPRESSIBLE) && (Unsteady_Simulation == HARMONIC_BALANCE)){
+    cout << "Harmonic Balance not yet implemented for the incompressible solver." << endl;
+    exit(EXIT_FAILURE);
+  }
   
   /*--- Check for Fluid model consistency ---*/
 
@@ -2769,9 +2737,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_Solver == NAVIER_STOKES) &&
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
-  
-  if (Kind_Regime == FREESURFACE) GravityForce = true;
-  
+    
   Kappa_1st_Flow = Kappa_Flow[0];
   Kappa_2nd_Flow = Kappa_Flow[1];
   Kappa_4th_Flow = Kappa_Flow[2];
@@ -3670,29 +3636,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case EULER: case DISC_ADJ_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
-        if (Kind_Regime == FREESURFACE) {
-          cout << "Incompressible Euler equations with FreeSurface." << endl;
-          cout << "Free surface flow equation. Density ratio: " << RatioDensity << "." << endl;
-          cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
-        }
         break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
-        if (Kind_Regime == FREESURFACE) {
-          cout << "Incompressible Laminar Navier-Stokes' equations with FreeSurface." << endl;
-          cout << "Free surface flow equation. Density ratio: " << RatioDensity <<". Viscosity ratio: "<< RatioViscosity << "." << endl;
-          cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
-        }
         break;
       case RANS: case DISC_ADJ_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
-        if (Kind_Regime == FREESURFACE) {
-          cout << "Incompressible RANS equations with FreeSurface." << endl;
-          cout << "Free surface flow equation. Density ratio: " << RatioDensity <<". Viscosity ratio: "<< RatioViscosity << "." << endl;
-          cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
-        }
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
           case SA:     cout << "Spalart Allmaras" << endl; break;
@@ -4087,7 +4038,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
         case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
         case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
-        case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
         case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
         case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
         case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
@@ -4288,7 +4238,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
     }
 
-    if ((Kind_Regime == INCOMPRESSIBLE) || (Kind_Regime == FREESURFACE)) {
+    if (Kind_Regime == INCOMPRESSIBLE) {
       cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
     }
 
@@ -5612,7 +5562,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case TOTAL_HEATFLUX:          AdjExt = "_totheat";  break;
       case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
-      case FREE_SURFACE:            AdjExt = "_fs";       break;
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
