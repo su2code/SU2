@@ -102,7 +102,7 @@ private:
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
-  su2double FFD_Scale;  	/*!< \brief Tolerance in the point inversion problem. */
+  su2double FFD_Scale;  	/*!< \brief Scale factor between the design variable value and the control point movement. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
@@ -1324,8 +1324,8 @@ public:
   su2double GetSection_Location(unsigned short val_var);
   
   /*!
-   * \brief Get the value of the limits for the sections.
-   * \return Value of the limits for the sections.
+   * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
+   * \return Coordinate of the Axis.
    */
   su2double GetFFD_Axis(unsigned short val_var);
   
@@ -2177,32 +2177,32 @@ public:
   su2double GetParamDV(unsigned short val_dv, unsigned short val_param);
   
   /*!
-   * \brief Get a parameter of the particular design variable.
-   * \param[in] val_ffd - Number of the ffd that we want to read.
+   * \brief Get the coordinates of the FFD corner points.
+   * \param[in] val_ffd - Index of the FFD box.
    * \param[in] val_coord - Index of the coordinate that we want to read.
-   * \return FFD parameter.
+   * \return Value of the coordinate.
    */
-  su2double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord);
+  su2double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_index);
   
   /*!
-   * \brief Get a parameter of the particular design variable.
-   * \param[in] val_ffd - Number of the ffd that we want to read.
-   * \param[in] val_coord - Index of the coordinate that we want to read.
-   * \return FFD parameter.
+   * \brief Get the degree of the FFD corner points.
+   * \param[in] val_ffd - Index of the FFD box.
+   * \param[in] val_degree - Index (I,J,K) to obtain the degree.
+   * \return Value of the degree in a particular direction.
    */
-  unsigned short GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_degree);
+  unsigned short GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_index);
   
   /*!
    * \brief Get the FFD Tag of a particular design variable.
    * \param[in] val_dv - Number of the design variable that we want to read.
-   * \return Design variable parameter.
+   * \return Name of the FFD box.
    */
   string GetFFDTag(unsigned short val_dv);
   
   /*!
-   * \brief Get the FFD Tag of a particular design variable.
-   * \param[in] val_dv - Number of the design variable that we want to read.
-   * \return Design variable parameter.
+   * \brief Get the FFD Tag of a particular FFD box.
+   * \param[in] val_ffd - Number of the FFD box that we want to read.
+   * \return Name of the FFD box.
    */
   string GetTagFFDBox(unsigned short val_ffd);
   
@@ -2219,8 +2219,8 @@ public:
   unsigned short GetnDV_Value(unsigned short iDV);
   
   /*!
-   * \brief Get the number of design variables.
-   * \return Number of the design variables.
+   * \brief Get the number of FFD boxes.
+   * \return Number of FFD boxes.
    */
   unsigned short GetnFFDBox(void);
   
@@ -2231,8 +2231,8 @@ public:
   unsigned short GetFFD_Continuity(void);
   
   /*!
-   * \brief Get the required continuity level at the surface intersection with the FFD
-   * \return Continuity level at the surface intersection.
+   * \brief Get the coordinate system that we are going to use to define the FFD
+   * \return Coordinate system (cartesian, spherical, etc).
    */
   unsigned short GetFFD_CoordSystem(void);
   
@@ -2781,7 +2781,6 @@ public:
    */
   unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
   
-  
   /*!
    * \brief Get the number of FSI interface markers <i>val_marker</i>.
    * \param[in] void.
@@ -2825,44 +2824,41 @@ public:
   unsigned short GetMG_CorrecSmooth(unsigned short val_mesh);
   
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief plane of the FFD (I axis) that should be fixed.
+   * \param[in] val_index - Index of the arrray with all the planes in the I direction that should be fixed.
+   * \return Index of the plane that is going to be freeze.
    */
   short GetFFD_Fix_IDir(unsigned short val_index);
   
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief plane of the FFD (J axis) that should be fixed.
+   * \param[in] val_index - Index of the arrray with all the planes in the J direction that should be fixed.
+   * \return Index of the plane that is going to be freeze.
    */
   short GetFFD_Fix_JDir(unsigned short val_index);
   
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief plane of the FFD (K axis) that should be fixed.
+   * \param[in] val_index - Index of the arrray with all the planes in the K direction that should be fixed.
+   * \return Index of the plane that is going to be freeze.
    */
   short GetFFD_Fix_KDir(unsigned short val_index);
   
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief Get the number of planes to fix in the I direction.
+   * \return Number of planes to fix in the I direction.
    */
   unsigned short GetnFFD_Fix_IDir(void);
   
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief Get the number of planes to fix in the J direction.
+   * \return Number of planes to fix in the J direction.
    */
   unsigned short GetnFFD_Fix_JDir(void);
   
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief Get the number of planes to fix in the K direction.
+   * \return Number of planes to fix in the K direction.
    */
   unsigned short GetnFFD_Fix_KDir(void);
   
@@ -2872,7 +2868,6 @@ public:
    * \return Governing equation that we are solving.
    */
   unsigned short GetKind_Solver(void);
-  
   
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -3201,8 +3196,8 @@ public:
   bool GetVisualize_Deformation(void);
   
   /*!
-   * \brief Creates a teot file to visualize the deformation made by the MDC software.
-   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+   * \brief Define the FFD box with a symetry plane.
+   * \return <code>TRUE</code> if there is a symmetry plane in the FFD; otherwise <code>FALSE</code>.
    */
   bool GetFFD_Symmetry_Plane(void);
   
@@ -6367,17 +6362,20 @@ public:
   su2double GetGust_Begin_Loc(void);
   
   /*!
-   * \brief Value of the time at which to begin the gust.
+   * \brief Get the number of iterations to evaluate the parametric coordinates.
+   * \return Number of iterations to evaluate the parametric coordinates.
    */
   unsigned short GetnFFD_Iter(void);
   
   /*!
-   * \brief Value of the location ath which the gust begins.
+   * \brief Get the tolerance of the point inversion algorithm.
+   * \return Tolerance of the point inversion algorithm.
    */
   su2double GetFFD_Tol(void);
   
   /*!
-   * \brief Value of the location ath which the gust begins.
+   * \brief Get the scale factor between the input design variable and the final movement of the control point.
+   * \return Scale factor between the input design variable and the final movement of the control point.
    */
   su2double GetFFD_Scale(void);
   
