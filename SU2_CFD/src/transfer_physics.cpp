@@ -143,25 +143,12 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
   // Retrieve the values of pressure and viscosity
-  if (incompressible) {
 
-    Pn = flow_solution->node[Point_Flow]->GetPressureInc();
+  Pn = flow_solution->node[Point_Flow]->GetPressure();
 
-    if (viscous_flow) {
-
-      Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-      Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
-
-    }
-  }
-  else if (compressible) {
-
-    Pn = flow_solution->node[Point_Flow]->GetPressure();
-
-    if (viscous_flow) {
-      Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-      Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
-    }
+  if (viscous_flow) {
+    Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
+    Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
   }
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
