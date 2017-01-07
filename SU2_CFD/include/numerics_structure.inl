@@ -275,16 +275,6 @@ inline void CNumerics::SetTransVarGradient(su2double **val_transvar_grad_i, su2d
 	TransVar_Grad_j = val_transvar_grad_j;
 }
 
-inline void CNumerics::SetLevelSetVar(su2double *val_levelsetvar_i, su2double *val_levelsetvar_j) {
-	LevelSetVar_i = val_levelsetvar_i;
-	LevelSetVar_j = val_levelsetvar_j;
-}
-
-inline void CNumerics::SetLevelSetVarGradient(su2double **val_levelsetvar_grad_i, su2double **val_levelsetvar_grad_j) {
-	LevelSetVar_Grad_i = val_levelsetvar_grad_i;
-	LevelSetVar_Grad_j = val_levelsetvar_grad_j;
-}
-
 inline void CNumerics::SetPrimVarGradient(su2double **val_primvar_grad_i, su2double **val_primvar_grad_j) {
 	PrimVar_Grad_i = val_primvar_grad_i;
 	PrimVar_Grad_j = val_primvar_grad_j;
@@ -357,7 +347,7 @@ inline void CNumerics::SetPressure(su2double val_pressure_i, su2double val_press
 	Pressure_j = val_pressure_j;
 }
 
-inline void CNumerics::SetDensityInc(su2double val_densityinc_i, su2double val_densityinc_j) {
+inline void CNumerics::SetDensity(su2double val_densityinc_i, su2double val_densityinc_j) {
 	DensityInc_i = val_densityinc_i;
 	DensityInc_j = val_densityinc_j;
 }

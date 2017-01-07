@@ -94,7 +94,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-6.574770, -1.191178, 0.299959, 0.019387] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.930145,-0.546310,0.300089,0.019393] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
@@ -218,6 +218,21 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
+
+    #############################
+    ### Incompressible Euler  ###
+    #############################
+
+    # NACA0012 Hydrofoil
+    inc_euler_naca0012           = TestCase('inc_euler_naca0012')
+    inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
+    inc_euler_naca0012.test_iter = 20
+    inc_euler_naca0012.test_vals = [-3.544713,-3.135163,0.968231,0.010161] #last 4 columns
+    inc_euler_naca0012.su2_exec  = "parallel_computation.py -f"
+    inc_euler_naca0012.timeout   = 1600
+    inc_euler_naca0012.tol       = 0.00001
+    test_list.append(inc_euler_naca0012)
 
     ############################
     ### Incompressible RANS  ###

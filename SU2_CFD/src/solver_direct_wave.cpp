@@ -767,14 +767,8 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
   
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  
-  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
-    Global2Local[iPoint] = -1;
-  }
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   
@@ -797,12 +791,13 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
+     on the current processor, we will load and instantiate the vars. ---*/
     
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
+      
       point_line >> index >> Solution[0] >> Solution[1];
       node[iPoint]->SetSolution_Direct(Solution);
     }
