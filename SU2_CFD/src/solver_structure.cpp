@@ -1654,13 +1654,11 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 	/*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
 
-	long *Global2Local_n = new long[geometry->GetGlobal_nPointDomain()];
+  map<unsigned long,unsigned long> Global2Local_n;
+  map<unsigned long,unsigned long>::const_iterator MI;
 
 	/*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
 	iPoint_Global_Local = 0, iPoint_Global = 0;
-
-	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-		Global2Local_n[iPoint] = -1;
 
 	/*--- Now fill array with the transform values only for local points ---*/
 
@@ -1678,18 +1676,13 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     
     istringstream point_line(text_line);
 
-		/*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-
-		iPoint_Local = Global2Local_n[iPoint_Global];
-
-		/*--- Load the solution for this node. Note that the first entry
-       on the restart file line is the global index, followed by the
-       node coordinates, and then the conservative variables. ---*/
-
-		if (iPoint_Local >= 0) {
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local_n.find(iPoint_Global);
+    if (MI != Global2Local_n.end()) {
+      
+      iPoint_Local = Global2Local_n[iPoint_Global];
 
 			if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
 			if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
@@ -1729,10 +1722,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 	restart_file_n.close();
 
-	/*--- Free memory needed for the transformation ---*/
-
-	delete [] Global2Local_n;
-
 	/*-------------------------------------------------------------------------------------------*/
 	/*-------------------------------------------------------------------------------------------*/
 
@@ -1759,13 +1748,11 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 		/*--- In case this is a parallel simulation, we need to perform the
          Global2Local index transformation first. ---*/
 
-		long *Global2Local_n1 = new long[geometry->GetGlobal_nPointDomain()];
+    map<unsigned long,unsigned long> Global2Local_n1;
+    map<unsigned long,unsigned long>::const_iterator MI;
 
 		/*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
 		iPoint_Global_Local = 0, iPoint_Global = 0;
-
-		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-			Global2Local_n1[iPoint] = -1;
 
 		/*--- Now fill array with the transform values only for local points ---*/
 
@@ -1783,18 +1770,13 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       
       istringstream point_line(text_line);
 
-			/*--- Retrieve local index. If this node from the restart file lives
-           on a different processor, the value of iPoint_Local will be -1.
-           Otherwise, the local index for this node on the current processor
-           will be returned and used to instantiate the vars. ---*/
-
-			iPoint_Local = Global2Local_n1[iPoint_Global];
-
-			/*--- Load the solution for this node. Note that the first entry
-           on the restart file line is the global index, followed by the
-           node coordinates, and then the conservative variables. ---*/
-
-			if (iPoint_Local >= 0) {
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+      
+      MI = Global2Local_n1.find(iPoint_Global);
+      if (MI != Global2Local_n1.end()) {
+        
+        iPoint_Local = Global2Local_n1[iPoint_Global];
 
 				if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
 				if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
@@ -1834,10 +1816,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 		/*--- Close the restart file ---*/
 
 		restart_file_n1.close();
-
-		/*--- Free memory needed for the transformation ---*/
-
-		delete [] Global2Local_n1;
 
 	}
 
@@ -1971,18 +1949,13 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
   
-  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-  
   
   /*--- Identify the number of fields (and names) in the restart file ---*/
   
@@ -2009,12 +1982,12 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1.
-     Otherwise, the local index for this node on the current processor
-     will be returned and used to instantiate the vars. ---*/
+     on the current processor, we will load and instantiate the vars. ---*/
     
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
       
       /*--- The PointID is not stored --*/
       point_line >> index;
@@ -2099,7 +2072,6 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Free memory needed for the transformation ---*/
   
-  delete [] Global2Local;
   delete [] Solution;
   
   /*--- MPI solution ---*/
@@ -2386,14 +2358,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
-
-  /*--- First, set all indices to a negative value by default ---*/
-
-  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
-    Global2Local[iPoint] = -1;
-  }
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
 
   /*--- Now fill array with the transform values only for local points ---*/
 
@@ -2416,12 +2382,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
-
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
       
       /*--- The PointID is not stored --*/
       
@@ -2474,7 +2440,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- Free memory needed for the transformation ---*/
   
-  delete [] Global2Local;
   delete [] Solution;
   
   /*--- MPI solution ---*/
@@ -2560,13 +2525,10 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-    Global2Local[iPoint] = -1;
-  }
 
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
+  
   /*--- Now fill array with the transform values only for local points ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
@@ -2587,11 +2549,12 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
 
       /*--- The PointID is not stored --*/
       point_line >> index;
@@ -2611,7 +2574,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   solution_file.close();
 
   /*--- Free memory needed for the transformation ---*/
-  delete [] Global2Local;
+
   delete [] Solution;
 
 }
