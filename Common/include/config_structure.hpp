@@ -151,12 +151,6 @@ private:
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
-	su2double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
-	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
-	FreeSurface_Thickness,  /*!< \brief Thickness of the interfase for a free surface problem. */
-	FreeSurface_Outlet,  /*!< \brief Outlet of the interfase for a free surface problem. */
-	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
-	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for  harmonic balance. */
 	su2double HarmonicBalance_Period;		/*!< \brief Period of oscillation to be used with harmonic balance computations. */
@@ -407,14 +401,12 @@ private:
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
-	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
 	Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
 	Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
 	Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
 	Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
-	Kind_TimeIntScheme_AdjLevelSet,	/*!< \brief Time integration for the adjoint level set model. */
 	Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
 	Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
@@ -427,18 +419,15 @@ private:
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
 	Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
 	Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
-	Kind_ConvNumScheme_AdjLevelSet,	/*!< \brief Centered or upwind scheme for the adjoint level set equation. */
-	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
+  Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
-	Kind_Centered_AdjLevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
 	Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
 	Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
 	Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
-	Kind_Upwind_AdjLevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
@@ -451,8 +440,7 @@ private:
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
@@ -654,8 +642,6 @@ private:
 	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
 	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
 	Mu_SND,   /*!< \brief reference S for Sutherland model.  */
-	FreeSurface_Zero,	/*!< \brief Coordinate of the level set zero. */
-	FreeSurface_Depth,	/*!< \brief Coordinate of the level set zero. */
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
 	Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
 	ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
@@ -1276,42 +1262,6 @@ public:
 	 */
 	unsigned short GetAxis_Orientation(void);
 
-	/*!
-	 * \brief Get the ratio of density for a free surface problem.
-	 * \return Ratio of density for a free surface problem.
-	 */
-	su2double GetRatioDensity(void);
-
-	/*!
-	 * \brief Get the ratio of viscosity for a free surface problem.
-	 * \return Ratio of viscosity for a free surface problem.
-	 */
-	su2double GetRatioViscosity(void);
-
-	/*!
-	 * \brief Get the thickness of the interfase for a free surface problem.
-	 * \return Thickness of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Thickness(void);
-
-	/*!
-	 * \brief Get the damping of the free surface for a free surface problem.
-	 * \return Damping of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Damping_Coeff(void);
-
-	/*!
-	 * \brief Get the damping of the free surface for a free surface problem.
-	 * \return Damping of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Damping_Length(void);
-
-	/*!
-	 * \brief Get the outlet position of the free surface for a free surface problem.
-	 * \return Outlet position of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Outlet(void);
-
   /*!
 	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
@@ -1383,18 +1333,6 @@ public:
 	 * \return Value of the artificial compresibility factor.
 	 */
 	su2double GetArtComp_Factor(void);
-
-	/*!
-	 * \brief Get the Level set zero for free surface .
-	 * \return Value of the level set zero coordinate
-	 */
-	su2double GetFreeSurface_Zero(void);
-
-	/*!
-	 * \brief Get the Level set zero for free surface .
-	 * \return Value of the level set zero coordinate
-	 */
-	su2double GetFreeSurface_Depth(void);
 
 	/*!
 	 * \brief Get the value of specific gas constant.
@@ -1878,7 +1816,7 @@ public:
 	 */
 	su2double GetReynolds(void);
 
-	/*!
+  /*!
 	 * \brief Get the Froude number for free surface problems.
 	 * \return Value of the Froude number.
 	 */
@@ -3307,15 +3245,6 @@ public:
 	 *       linearized) that is being solved.
 	 * \return Kind of upwind scheme for the convective terms.
 	 */
-	unsigned short GetSpatialOrder_AdjLevelSet(void);
-
-  /*!
-	 * \brief Get the order of the spatial integration.
-	 * \note This is the information that the code will use, the method will
-	 *       change in runtime depending of the specific equation (direct, adjoint,
-	 *       linearized) that is being solved.
-	 * \return Kind of upwind scheme for the convective terms.
-	 */
 	unsigned short GetSpatialOrder_AdjFlow(void);
 
 	/*!
@@ -3408,29 +3337,12 @@ public:
 	unsigned short GetKind_ConvNumScheme_Template(void);
 
 	/*!
-	 * \brief Get the kind of convective numerical scheme for the adjoint level set
-	 *        equations (centered or upwind).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of convective numerical scheme for the level set equation.
-	 */
-	unsigned short GetKind_ConvNumScheme_AdjLevelSet(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the flow equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
 	 * \return Kind of center convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Centered_Flow(void);
-
-	/*!
-	 * \brief Get the kind of center convective numerical scheme for the adjoint level set equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of center convective numerical scheme for the level set equations.
-	 */
-	unsigned short GetKind_Centered_AdjLevelSet(void);
 
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the plasma equations.
@@ -3449,14 +3361,6 @@ public:
 	unsigned short GetKind_Upwind_Flow(void);
 
 	/*!
-	 * \brief Get the kind of upwind convective numerical scheme for the adjoint level set equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of upwind convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Upwind_AdjLevelSet(void);
-
-	/*!
 	 * \brief Get the method for limiting the spatial gradients.
 	 * \return Method for limiting the spatial gradients.
 	 */
@@ -3473,12 +3377,6 @@ public:
 	 * \return Method for limiting the spatial gradients solving the turbulent equation.
 	 */
 	unsigned short GetKind_SlopeLimit_Turb(void);
-
-	/*!
-	 * \brief Get the method for limiting the spatial gradients.
-	 * \return Method for limiting the spatial gradients solving the level set equation.
-	 */
-	unsigned short GetKind_SlopeLimit_AdjLevelSet(void);
 
 	/*!
 	 * \brief Get the method for limiting the spatial gradients.
@@ -3571,15 +3469,6 @@ public:
 	 * \return Kind of integration scheme for the turbulence equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Turb(void);
-
-	/*!
-	 * \brief Get the kind of integration scheme (implicit)
-	 *        for the level set equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of integration scheme for the level set equations.
-	 */
-	unsigned short GetKind_TimeIntScheme_AdjLevelSet(void);
 
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the turbulence

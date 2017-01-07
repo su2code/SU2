@@ -197,7 +197,6 @@ def get_headerMap():
                  "CFz"             : "FORCE_Z"                 ,
                  "CL/CD"           : "EFFICIENCY"              ,
                  "CEff"            : "EFFICIENCY"              ,
-                 "CFreeSurface"    : "FREE_SURFACE"            ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
@@ -607,9 +606,6 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r'%4d, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         
         for key in special_cases: 
-            if key == "FREE_SURFACE"   : 
-                header.append(r',"Grad_CFreeSurface"')
-                write_format.append(", %.10f ")
             if key == "ROTATING_FRAME" : 
                 header.append(r',"Grad_CMerit","Grad_CT","Grad_CQ"')
                 write_format.append(", %.10f, %.10f, %.10f")
@@ -732,9 +728,6 @@ def get_optFileFormat(plot_format,special_cases=None):
         
     # special cases
     for key in special_cases: 
-        if key == "FREE_SURFACE" :
-            header_list.extend(["CFreeSurface"])
-            write_format.append(r', %.10f ')
         if key == "ROTATING_FRAME" : 
             header_list.extend(["CMerit","CT","CQ"])
             write_format.append(r', %.10f, %.10f, %.10f')
