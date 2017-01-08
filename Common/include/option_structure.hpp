@@ -300,13 +300,10 @@ static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string
 enum ENUM_REGIME {
   COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
-  FREESURFACE = 2			/*!< \brief Definition of freesurface solver (incompressible). */
 };
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
 ("COMPRESSIBLE", COMPRESSIBLE)
-("INCOMPRESSIBLE", INCOMPRESSIBLE)
-("FREESURFACE", FREESURFACE);
-
+("INCOMPRESSIBLE", INCOMPRESSIBLE);
 /*!
  * \brief different non-dimensional modes
  */
@@ -944,7 +941,6 @@ enum ENUM_OBJECTIVE {
   THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
   TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
-  FREE_SURFACE = 20,				    /*!< \brief Free Surface objective function definition. */
   MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
   MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
   MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
@@ -981,7 +977,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
-("FREE_SURFACE", FREE_SURFACE)
 ("MAX_THICKNESS", MAX_THICKNESS)
 ("MIN_THICKNESS", MIN_THICKNESS)
 ("MAX_THICK_SEC1", MAX_THICK_SEC1)
