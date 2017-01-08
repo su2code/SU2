@@ -1254,7 +1254,6 @@ void CUpwSca_TurbKE::ComputeResidual(su2double *val_residual, su2double **val_Ja
       q_ij += 0.5*(Velocity_i[iDim]+Velocity_j[iDim])*Normal[iDim];
     }
   }
-  // for f: if TurbVar==4, Vel=0
   else {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1];
@@ -1721,7 +1720,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     pz = Density_i*TurbVar_i[3];
     pz = max(pz,0.0);
 
-    pf = (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[2])) * (2.0/3.0-TurbVar_i[3])/Tm_i;
+    pf = (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (2.0/3.0-TurbVar_i[2])/Tm_i;
     pf = max(pf,0.0);
     
     val_residual[0] += pk*Volume;

@@ -3557,7 +3557,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
   VelMag = sqrt(VelMag);
-  
+  //cout<<"Intensity: "<<Intensity<<"\n";
   kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
   epsi_Inf = rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio); // not sure here... rhoInf*kine_Inf/(muLamInf*viscRatio);
   zeta_Inf = 2.0/3.0;
@@ -3755,7 +3755,8 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     Re_t = rho*(kine*kine)/(mu*epsi);
     muT = constants[0]*rho*zeta*kine*Tm;
     node[iPoint]->SetmuT(muT);
-    
+    //cout<<"muT: "<<muT<<"\n";
+    //cout<<"Tm: "<<Tm<<"\n";
   }
   
 }
