@@ -3512,7 +3512,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   */
 
   /* Zeta f */
-  constants[0]  = 0.0845; //C_mu
+  constants[0]  = 0.22;   //C_mu
   constants[1]  = 1.0;    //sigma_k
   constants[2]  = 1.3;    //sigma_e
   constants[3]  = 1.2;    //sigma_z
@@ -3539,14 +3539,15 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   // zeta
   lowerlimit[2] = 1.0e-8;
   upperlimit[2] = 2.0/3.0;
+  //upperlimit[2] = 1.0e10;
   
   // f
-  lowerlimit[3] = 1.0e-8;
+  lowerlimit[3] = 1.0e-12;
   upperlimit[3] = 1.0e8;
 
 
   /*--- Flow infinity initialization stuff ---*/
-  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf;  
+  su2double rhoInf, *VelInf, muLamInf, Intensity, viscRatio, muT_Inf, Tm_Inf, Lm_Inf;  
   rhoInf    = config->GetDensity_FreeStreamND();
   VelInf    = config->GetVelocity_FreeStreamND();
   muLamInf  = config->GetViscosity_FreeStreamND();
@@ -3561,15 +3562,18 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
   epsi_Inf = rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio); // not sure here... rhoInf*kine_Inf/(muLamInf*viscRatio);
   zeta_Inf = 2.0/3.0;
+  //zeta_Inf = 2.0/3.0*rhoInf;
   f_Inf = 1.0e-12;
-  
+  Tm_Inf = kine_Inf/epsi_Inf;
+  Lm_Inf = pow(kine_Inf,1.5)/epsi_Inf;  
+
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   muT_Inf = constants[0] * rhoInf*zeta_Inf*(kine_Inf*kine_Inf)/epsi_Inf;
   
   /*--- Restart the solution from file information ---*/
   if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CTurbKEVariable(kine_Inf, epsi_Inf, zeta_Inf, f_Inf, muT_Inf, nDim, nVar, constants, config);
+      node[iPoint] = new CTurbKEVariable(kine_Inf, epsi_Inf, zeta_Inf, f_Inf, muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
   }
   else {
     
@@ -3646,7 +3650,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
         }
         
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
-        node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, nDim, nVar, constants, config);
+        node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
       }
       iPoint_Global++;
     }
@@ -3656,7 +3660,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
      because a send/recv is performed immediately in the solver. ---*/
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       //      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
-      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, nDim, nVar, constants, config);
+      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
     }
     
     /*--- Close the restart file ---*/
@@ -3905,7 +3909,7 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
         laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
       }
       
-      beta_1 = constants[4];
+      //beta_1 = constants[4];
       wall_k = node[iPoint]->GetSolution(0);
       wall_zeta = node[iPoint]->GetSolution(2);
 

@@ -1197,7 +1197,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
     /*--- Implicit part ---*/
     
-    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;		val_Jacobian_i[0][1] = 0.0;
+    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume; //swh 0.0;
     val_Jacobian_i[1][0] = 0.0;                               val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
   
@@ -1371,6 +1371,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
   diff_f = Lm_i*Lm_i; //here
+  //diff_f = 1.0;
   
   /*--- Compute vector going from iPoint to jPoint ---*/
   dist_ij_2 = 0; proj_vector_ij = 0;
@@ -1530,6 +1531,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
   diff_f = Lm_i*Lm_i; //here
+  //diff_f = 1.0;
   
   /*--- Compute vector going from iPoint to jPoint ---*/
   dist_ij_2 = 0.0; proj_vector_ij = 0.0;
@@ -1721,6 +1723,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     pz = max(pz,0.0);
 
     pf = (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (2.0/3.0-TurbVar_i[2])/Tm_i;
+    //pf = pf/(Lm_i*Lm_i);
     pf = max(pf,0.0);
     
     val_residual[0] += pk*Volume;
@@ -1733,6 +1736,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_residual[1] -= C_e2*Density_i*TurbVar_i[1]/Tm_i*Volume;
     val_residual[2] -= TurbVar_i[2]/TurbVar_i[0]*pk*Volume;
     val_residual[3] -= TurbVar_i[3]*Volume;
+    //val_residual[3] -= TurbVar_i[3]/(Lm_i*Lm_i)*Volume;
         
     /*--- Implicit part ---*/
     //SST: val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = 0.0;
@@ -1744,26 +1748,58 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[1][1] = -2.0*C_e2*F2_i*TurbVar_i[1]/TurbVar_i[0]*Volume -
                             2.0*Laminar_Viscosity_i/(Density_i*Density_i*dist_i*dist_i) * exp(-YPlus/2.0) * Volume;*/
 
-    val_Jacobian_i[0][0] = 0.0;
-    val_Jacobian_i[0][1] = -Volume;
-    val_Jacobian_i[0][2] = 0.0;
-    val_Jacobian_i[0][3] = 0.0;
 
-    val_Jacobian_i[1][0] = 0.0;
-    val_Jacobian_i[1][1] = -C_e2/Tm_i * Volume;
-    val_Jacobian_i[1][2] = 0.0;
-    val_Jacobian_i[1][3] = 0.0;
 
-    val_Jacobian_i[2][0] = TurbVar_i[2]/(Density_i*TurbVar_i[0]*TurbVar_i[0])*pk*Volume;
-    val_Jacobian_i[2][1] = 0.0;
-    val_Jacobian_i[2][2] = -pk/(TurbVar_i[0]*Density_i)*Volume; // no density in this term
-    val_Jacobian_i[2][3] = 0.0;
+    // production portion
+    val_Jacobian_i[0][0] += 0.0;
+    val_Jacobian_i[0][1] += 0.0;
+    val_Jacobian_i[0][2] += 0.0;
+    val_Jacobian_i[0][3] += 0.0;
 
-    val_Jacobian_i[3][0] = 0.0;
-    val_Jacobian_i[3][1] = 0.0;
-    val_Jacobian_i[3][2] = 0.0;      //1.0/Tm_i*Volume;
-    val_Jacobian_i[3][3] = -Volume;  // *1.0/Density_i; don't think density should be included in the Jacobian as we are solving for f, not rho*f
-  
+    val_Jacobian_i[1][0] += 0.0;
+    val_Jacobian_i[1][1] += 0.0;
+    val_Jacobian_i[1][2] += 0.0;
+    val_Jacobian_i[1][3] += 0.0;
+
+    val_Jacobian_i[2][0] += 0.0;
+    val_Jacobian_i[2][1] += 0.0;
+    val_Jacobian_i[2][2] += Volume;
+    val_Jacobian_i[2][3] += 0.0;
+
+    /* no division by density in f ???
+    val_Jacobian_i[3][0] += 0.0;
+    val_Jacobian_i[3][1] += -C_2p*pk/pow(Density_i*TurbVar_i[1],2.0) * (2.0/3.0-TurbVar_i[2])/Tm_i;
+    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Density_i)/Tm_i;
+    val_Jacobian_i[3][3] += 0.0;
+    */
+
+    val_Jacobian_i[3][0] += 0.0;
+    val_Jacobian_i[3][1] += -C_2p*pk/(Density_i*TurbVar_i[1]*TurbVar_i[1]) * (2.0/3.0-TurbVar_i[2])/Tm_i;// * 1.0/(Lm_i*Lm_i);
+    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Tm_i);// * 1.0/(Lm_i*Lm_i);
+    val_Jacobian_i[3][3] += 0.0;
+
+    // destruction portion
+    val_Jacobian_i[0][0] -= 0.0;
+    val_Jacobian_i[0][1] -= Volume;
+    val_Jacobian_i[0][2] -= 0.0;
+    val_Jacobian_i[0][3] -= 0.0;
+
+    val_Jacobian_i[1][0] -= 0.0;
+    val_Jacobian_i[1][1] -= C_e2/Tm_i * Volume;
+    val_Jacobian_i[1][2] -= 0.0;
+    val_Jacobian_i[1][3] -= 0.0;
+
+    val_Jacobian_i[2][0] -= -TurbVar_i[2]/(Density_i*TurbVar_i[0]*TurbVar_i[0])*pk*Volume;
+    val_Jacobian_i[2][1] -= 0.0;
+    val_Jacobian_i[2][2] -= pk/(TurbVar_i[0]*Density_i)*Volume; // no density in this term
+    val_Jacobian_i[2][3] -= 0.0;
+
+    val_Jacobian_i[3][0] -= 0.0;
+    val_Jacobian_i[3][1] -= 0.0;
+    val_Jacobian_i[3][2] -= 0.0;
+    val_Jacobian_i[3][3] -= Volume;// * 1.0/(Lm_i*Lm_i);  // *1.0/Density_i; don't think density should be included in the Jacobian as we are solving for f, not rho*f
+
+
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
 
