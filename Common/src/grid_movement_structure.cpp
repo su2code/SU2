@@ -7202,7 +7202,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         }
 
         getline (mesh_file, text_line);
-        text_line.erase(0,10);
+        text_line.erase(0,14);
         if (text_line == "BSPLINE_UNIFORM"){
           Blending = BSPLINE_UNIFORM;
         }
@@ -7210,15 +7210,17 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           Blending = BEZIER;
         }
 
-        getline (mesh_file, text_line);
-        text_line.erase (0,17); SplineOrder[0] = atoi(text_line.c_str());
-        getline (mesh_file, text_line);
-        text_line.erase (0,17); SplineOrder[1] = atoi(text_line.c_str());
-        if (nDim == 3){
+        if (Blending == BSPLINE_UNIFORM) {
           getline (mesh_file, text_line);
-          text_line.erase (0,17); SplineOrder[2] = atoi(text_line.c_str());
-        } else {
-          SplineOrder[2] = 2;
+          text_line.erase (0,17); SplineOrder[0] = atoi(text_line.c_str());
+          getline (mesh_file, text_line);
+          text_line.erase (0,17); SplineOrder[1] = atoi(text_line.c_str());
+          if (nDim == 3){
+            getline (mesh_file, text_line);
+            text_line.erase (0,17); SplineOrder[2] = atoi(text_line.c_str());
+          } else {
+            SplineOrder[2] = 2;
+          }
         }
         if (rank == MASTER_NODE){
           if (Blending == BSPLINE_UNIFORM){
@@ -7409,7 +7411,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 
   
   unsigned short nDim = geometry->GetnDim(), iDim;
-  unsigned short SplineOrder[3];
+  unsigned short SplineOrder[3]={2,2,2};
 
   for (iDim = 0; iDim < 3; iDim++){
     SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
@@ -7814,14 +7816,14 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
       output_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
       if (nDim == 3) output_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
       if (config->GetFFD_Blending() == BSPLINE_UNIFORM) {
-        output_file << "BLENDING= BSPLINE_UNIFORM" << endl;
+        output_file << "FFD_BLENDING= BSPLINE_UNIFORM" << endl;
+        output_file << "BSPLINE_ORDER_I= " << FFDBox[iFFDBox]->BlendingFunction[0]->GetOrder() << endl;
+        output_file << "BSPLINE_ORDER_J= " << FFDBox[iFFDBox]->BlendingFunction[1]->GetOrder() << endl;
+        if (nDim == 3) output_file << "BSPLINE_ORDER_K= " << FFDBox[iFFDBox]->BlendingFunction[2]->GetOrder() << endl;
       }
       if (config->GetFFD_Blending() == BEZIER) {
-        output_file << "BLENDING= BEZIER" << endl;
+        output_file << "FFD_BLENDING= BEZIER" << endl;
       }
-      output_file << "BSPLINE_ORDER_I= " << FFDBox[iFFDBox]->BlendingFunction[0]->GetOrder() << endl;
-      output_file << "BSPLINE_ORDER_J= " << FFDBox[iFFDBox]->BlendingFunction[1]->GetOrder() << endl;
-      if (nDim == 3) output_file << "BSPLINE_ORDER_K= " << FFDBox[iFFDBox]->BlendingFunction[2]->GetOrder() << endl;
 
       output_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
       for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
@@ -8684,9 +8686,10 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
     /* --- Splines are not defined outside of [0,1]. So if the parametric coords are outside of
      *  [0,1] the step was too big and we have to use a smaller relaxation factor. ---*/
 
-    if (((ParamCoord[0] < 0.0) || (ParamCoord[0] > 1.0)) ||
-        ((ParamCoord[1] < 0.0) || (ParamCoord[1] > 1.0)) ||
-        ((ParamCoord[2] < 0.0) || (ParamCoord[2] > 1.0))) {
+    if ((config->GetFFD_Blending() == BSPLINE_UNIFORM)     &&
+        (((ParamCoord[0] < 0.0) || (ParamCoord[0] > 1.0))  ||
+         ((ParamCoord[1] < 0.0) || (ParamCoord[1] > 1.0))  ||
+         ((ParamCoord[2] < 0.0) || (ParamCoord[2] > 1.0)))) {
 
       for (iDim = 0; iDim < nDim; iDim++){
         ParamCoord[iDim] = ParamCoordGuess[iDim];
