@@ -243,7 +243,7 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
 
 	unsigned short iDim;
 	su2double C_mu, C_T, C_L;
-        su2double Tm, Lm, nu;
+        su2double Tm, Lm, nu, temp;
   
         /*--- Molecular kinematic viscosity ---*/
         nu = val_viscosity/val_density;
@@ -255,11 +255,11 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
         C_eta = 85.0;
 
         /*--- Model length scale ---*/
-	Lm = min(pow(val_kine,1.5)/val_epsi, sqrt(val_kine)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
-        Lm = C_L * max(Lm,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
+	temp = min(pow(val_kine,1.5)/val_epsi, sqrt(val_kine)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+        Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
 
         /*--- Model time scale ---*/
-        Tm = min(val_kine/val_epsi,0.6/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
-        Tm = max(Tm,C_T*sqrt(nu/val_epsi));
+        temp = min(val_kine/val_epsi,0.6/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+        Tm = max(temp,C_T*sqrt(nu/val_epsi));
   
 }
