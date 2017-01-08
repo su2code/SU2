@@ -5297,7 +5297,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
 	unsigned short iMarker;
-	su2double VarCoord[3] = {0.0,0.0,0.0}, ek, fk, *Coord, *Normal, xCoord;
+  su2double VarCoord[3] = {0.0,0.0,0.0}, ek, fk, *Coord, xCoord;
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
@@ -5327,7 +5327,6 @@ void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, uns
 			if (config->GetMarker_All_DV(iMarker) == YES) {
 
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
-				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
 
 				xCoord = (Coord[0] - BumpLoc);
 				ek = log10(0.5)/log10((xk-BumpLoc+EPS)/BumpSize);
