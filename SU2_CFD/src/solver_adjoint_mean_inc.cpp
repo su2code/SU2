@@ -190,9 +190,9 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-      cvector[iVar] = new su2double [nDim];
+      Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Sensitivity definition and coefficient in all the markers ---*/
@@ -3883,9 +3883,9 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-      cvector[iVar] = new su2double [nDim];
+      Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Sensitivity definition and coefficient on all markers ---*/

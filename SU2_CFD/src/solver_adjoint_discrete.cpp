@@ -413,15 +413,24 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 #endif
 
   /*--- Here we can add new (scalar) objective functions ---*/
-  if (config->GetnObj()==1){
-    switch (config->GetKind_ObjFunc()){
-      case DRAG_COEFFICIENT:
-        ObjFunc_Value = direct_solver->GetTotal_CD();
-        if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-        if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
-        break;
+  if (config->GetnObj()==1) {
+    switch (config->GetKind_ObjFunc()) {
+    case DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CD();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
+      break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
+      break;
+    case AERO_DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_AeroCD();
+      break;
+    case RADIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
+      break;
+    case CIRCUMFERENTIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
       break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
@@ -450,19 +459,6 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
       break;
-    case NET_THRUST_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_NetCThrust();
-      break;
-    case IDC_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_IDC();
-      break;
-    case PROPULSIVE_EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_Prop_Eff();
-      break;
-    case CUSTOM_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_Custom();
-      break;
-
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()

@@ -938,6 +938,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   string filename, fieldname;
   
 	/*--- Write file name with extension ---*/
+  
   if (surf_sol) {
     if (adjoint)
       filename = config->GetSurfAdjCoeff_FileName();
@@ -950,14 +951,14 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     else
       filename = config->GetFlow_FileName();
   }
-  if (config->GetKind_SU2()==SU2_DEF) {
+  if (config->GetKind_SU2() == SU2_DEF) {
     if (new_file) {
       if (surf_sol) filename = "surface_grid";
       else filename = "volumetric_grid";
     }
     else {
-      if (surf_sol) filename = "surface_deformed_grid";
-      else filename = "volumetric_deformed_grid";
+      if (surf_sol) filename = "surface_grid_def";
+      else filename = "volumetric_grid_def";
     }
   }
   

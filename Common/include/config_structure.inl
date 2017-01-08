@@ -335,6 +335,8 @@ inline su2double CConfig::GetGamma(void) { return Gamma; }
 
 inline su2double CConfig::GetSection_Location(unsigned short val_var) { return Section_Location[val_var]; }
 
+inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
+
 inline su2double CConfig::GetBulk_Modulus(void) { return Bulk_Modulus; }
 
 inline su2double CConfig::GetArtComp_Factor(void) { return ArtComp_Factor; }
@@ -586,9 +588,9 @@ inline su2double CConfig::GetMax_DeltaTime(void) {	return Max_DeltaTime; }
 
 inline su2double CConfig::GetParamDV(unsigned short val_dv, unsigned short val_param) {	return ParamDV[val_dv][val_param]; }
 
-inline su2double CConfig::GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord) {	return CoordFFDBox[val_ffd][val_coord]; }
+inline su2double CConfig::GetCoordFFDBox(unsigned short val_ffd, unsigned short val_index) {	return CoordFFDBox[val_ffd][val_index]; }
 
-inline unsigned short CConfig::GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_degree) {	return DegreeFFDBox[val_ffd][val_degree]; }
+inline unsigned short CConfig::GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_index) {	return DegreeFFDBox[val_ffd][val_index]; }
 
 inline string CConfig::GetFFDTag(unsigned short val_dv) {	return FFDTag[val_dv]; }
 
@@ -602,9 +604,23 @@ inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
 
 inline unsigned short CConfig::GetFFD_Continuity(void) { return FFD_Continuity; }
 
+inline unsigned short CConfig::GetFFD_CoordSystem(void) { return FFD_CoordSystem; }
+
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
+
+inline unsigned short CConfig::GetnFFD_Fix_IDir(void) { return nFFD_Fix_IDir; }
+
+inline unsigned short CConfig::GetnFFD_Fix_JDir(void) { return nFFD_Fix_JDir; }
+
+inline unsigned short CConfig::GetnFFD_Fix_KDir(void) { return nFFD_Fix_KDir; }
+
+inline short CConfig::GetFFD_Fix_IDir(unsigned short val_index) { return FFD_Fix_IDir[val_index]; }
+
+inline short CConfig::GetFFD_Fix_JDir(unsigned short val_index) { return FFD_Fix_JDir[val_index]; }
+
+inline short CConfig::GetFFD_Fix_KDir(unsigned short val_index) { return FFD_Fix_KDir[val_index]; }
 
 inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {	
 	if (nMG_PreSmooth == 0) return 1;
@@ -751,7 +767,9 @@ inline unsigned short CConfig::GetKind_Gradient_Method(void) { return Kind_Gradi
 
 inline unsigned short CConfig::GetKind_Linear_Solver(void) { return Kind_Linear_Solver; }
 
-inline unsigned short CConfig::GetDeform_Linear_Solver(void) { return Deform_Linear_Solver; }
+inline unsigned short CConfig::GetKind_Deform_Linear_Solver(void) { return Kind_Deform_Linear_Solver; }
+
+inline void CConfig::SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec) { Kind_Deform_Linear_Solver_Prec = val_kind_prec; }
 
 inline unsigned short CConfig::GetKind_Linear_Solver_Prec(void) { return Kind_Linear_Solver_Prec; }
 
@@ -778,6 +796,8 @@ inline unsigned short CConfig::GetKind_AdjTurb_Linear_Prec(void) { return Kind_A
 inline unsigned short CConfig::GetKind_DiscAdj_Linear_Solver(void) { return Kind_DiscAdj_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_DiscAdj_Linear_Prec(void) { return Kind_DiscAdj_Linear_Prec; }
+
+inline unsigned short CConfig::GetKind_Deform_Linear_Solver_Prec(void) { return Kind_Deform_Linear_Solver_Prec; }
 
 inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
 
@@ -806,6 +826,8 @@ inline su2double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRa
 inline unsigned short CConfig::GetDeform_Stiffness_Type(void) { return Deform_Stiffness_Type; }
 
 inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
+
+inline bool CConfig::GetFFD_Symmetry_Plane(void) { return FFD_Symmetry_Plane; }
 
 inline unsigned short CConfig::GetKind_Adaptation(void) { return Kind_Adaptation; }
 
@@ -1331,6 +1353,8 @@ inline su2double CConfig::GetGust_Begin_Loc(void) { return Gust_Begin_Loc; }
 inline unsigned short CConfig::GetnFFD_Iter(void) { return nFFD_Iter; }
 
 inline su2double CConfig::GetFFD_Tol(void) { return FFD_Tol; }
+
+inline su2double CConfig::GetFFD_Scale(void) {return FFD_Scale; }
 
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
