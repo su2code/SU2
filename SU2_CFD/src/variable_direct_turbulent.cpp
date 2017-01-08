@@ -205,7 +205,7 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
 // swh
 CTurbKEVariable::CTurbKEVariable(void) : CTurbVariable() { }
 
-CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar,
                                  su2double *constants, CConfig *config)
 : CTurbVariable(val_nDim, val_nvar, config) {
 
@@ -217,8 +217,8 @@ CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2doub
 	Solution[1] = val_epsi;	Solution_Old[1] = val_epsi;
 	Solution[2] = val_zeta; Solution_Old[2] = val_zeta;
 	Solution[3] = val_f;	Solution_Old[3] = val_f;
-	Tm  = val_kine/val_epsi;
-	Lm  = pow(val_kine,1.5)/val_epsi;
+	Tm  = val_Tm; //val_kine/val_epsi;
+	Lm  = val_Lm; //pow(val_kine,1.5)/val_epsi;
   
 	/*--- Initialization of eddy viscosity ---*/  
 	muT = val_muT;
@@ -254,12 +254,12 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
         C_L = 0.36;
         C_eta = 85.0;
 
-        /*--- Model length scale ---*/
-	temp = min(pow(val_kine,1.5)/val_epsi, sqrt(val_kine)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
-        Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
-
         /*--- Model time scale ---*/
         temp = min(val_kine/val_epsi,0.6/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
         Tm = max(temp,C_T*sqrt(nu/val_epsi));
+
+        /*--- Model length scale ---*/
+	temp = min(pow(val_kine,1.5)/val_epsi, sqrt(val_kine)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+        Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
   
 }
