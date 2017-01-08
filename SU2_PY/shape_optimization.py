@@ -50,7 +50,9 @@ def main():
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
     parser.add_option("-g", "--gradient", dest="gradient", default="CONTINUOUS_ADJOINT",
-                      help="Method for computing the GRADIENT (CONTINUOUS_ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
+                      help="Method for computing the GRADIENT (CONTINUOUS_ADJOINT, DISCRETE_ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
+    parser.add_option("-o", "--optimization", dest="optimization", default="SLSQP",
+                      help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)", metavar="OPTIMIZATION")
     parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
     
@@ -94,19 +96,21 @@ def main():
     sys.stdout.write('| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
 
-    shape_optimization( options.filename    ,
-                        options.projectname ,
-                        options.partitions  ,
-                        options.gradient    ,
-                        options.quiet        )
+    shape_optimization( options.filename     ,
+                        options.projectname  ,
+                        options.partitions   ,
+                        options.gradient     ,
+                        options.optimization ,
+                        options.quiet         )
     
 #: main()
 
-def shape_optimization( filename                , 
-                        projectname = ''        ,
-                        partitions  = 0         , 
+def shape_optimization( filename                           ,
+                        projectname = ''                   ,
+                        partitions  = 0                    ,
                         gradient    = 'CONTINUOUS_ADJOINT' ,
-                        quiet       = False      ):
+                        optimization = 'SLSQP'             ,
+                        quiet       = False                 ):
   
     # Config
     config = SU2.io.Config(filename)
@@ -137,8 +141,16 @@ def shape_optimization( filename                ,
         project = SU2.opt.Project(config,state)
     
     # Optimize
-    SU2.opt.SLSQP(project,x0,xb,its,accu)
-    
+    if optimization == 'SLSQP':
+      SU2.opt.SLSQP(project,x0,xb,its,accu)
+    if optimization == 'CG':
+      SU2.opt.CG(project,x0,xb,its,accu)
+    if optimization == 'BFGS':
+      SU2.opt.BFGS(project,x0,xb,its,accu)
+    if optimization == 'POWELL':
+      SU2.opt.POWELL(project,x0,xb,its,accu)
+
+
     # rename project file
     if projectname:
         shutil.move('project.pkl',projectname)
