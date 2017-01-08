@@ -353,12 +353,12 @@ CTransfer_SlidingInterface::~CTransfer_SlidingInterface(void) {
 
 void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
 		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
-													   CConfig *donor_config, CConfig *target_config){
+													   CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor){
+					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned short iVar;
 
@@ -370,7 +370,7 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
 													CConfig *target_config, unsigned long Marker_Target,
-													unsigned long Vertex_Target, unsigned long Point_Target){
+													unsigned long Vertex_Target, unsigned long Point_Target) {
 
   unsigned short iVar;
   /*--- Set the Sliding solution with the value of the Target Variable ---*/

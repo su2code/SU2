@@ -77,7 +77,7 @@ protected:
   nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
-  nVarGrad,                 /*!< \brief Number of variables for deallocating the LS cvector. */
+  nVarGrad,                 /*!< \brief Number of variables for deallocating the LS Cvector. */
   nDim;                          /*!< \brief Number of dimensions of the problem. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;   /*!< \brief Number of points of the computational grid. */
@@ -111,7 +111,7 @@ protected:
   **Jacobian_jj;        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   
   su2double **Smatrix,  /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  **cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
+  **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
   
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
   
@@ -2220,6 +2220,24 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the Aero drag (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_AeroCD(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the fan face distortion.
+   */
+  virtual su2double GetTotal_RadialDistortion(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the fan face distortion.
+   */
+  virtual su2double GetTotal_CircumferentialDistortion(void);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the difference of the presure and the target pressure.
    */
   virtual su2double GetTotal_CpDiff(void);
@@ -2255,6 +2273,24 @@ public:
    */
   virtual void SetTotal_CEquivArea(su2double val_cequivarea);
   
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_aerocd - Value of the aero drag.
+   */
+  virtual void SetTotal_AeroCD(su2double val_aerocd);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_distortion - Value of the fan face distortion.
+   */
+  virtual void SetTotal_RadialDistortion(su2double val_distortion);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_distortion - Value of the fan face distortion.
+   */
+  virtual void SetTotal_CircumferentialDistortion(su2double val_distortion);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_pressure - Value of the difference between pressure and the target pressure.
@@ -3750,6 +3786,9 @@ protected:
   Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_AeroCD,			/*!< \brief Total aero drag coefficient for all the boundaries. */
+  Total_RadialDistortion,			/*!< \brief Total fan face radial distortion for all the boundaries. */
+  Total_CircumferentialDistortion,			/*!< \brief Total fan face circumferential distortion for all the boundaries. */
   Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
@@ -5120,6 +5159,24 @@ public:
   su2double GetTotal_CEquivArea(void);
   
   /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional aero CD.
+   * \return Value of the Aero CD coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_AeroCD(void);
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
+   * \return Value of the fan face distortion (inviscid + viscous contribution).
+   */
+  su2double GetTotal_RadialDistortion(void);
+
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional fan face distortion.
+   * \return Value of the fan face distortion (inviscid + viscous contribution).
+   */
+  su2double GetTotal_CircumferentialDistortion(void);
+
+  /*!
    * \brief Provide the total (inviscid + viscous) non dimensional Equivalent Area coefficient.
    * \return Value of the Equivalent Area coefficient (inviscid + viscous contribution).
    */
@@ -5149,6 +5206,24 @@ public:
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
    */
   void SetTotal_CEquivArea(su2double val_cequivarea);
+  
+  /*!
+   * \brief Set the value of the Aero drag.
+   * \param[in] val_cequivarea - Value of the aero drag.
+   */
+  void SetTotal_AeroCD(su2double val_aerocd);
+  
+  /*!
+   * \brief Set the value of the fan face distortion.
+   * \param[in] val_cequivarea - Value of the fan face distortion.
+   */
+  void SetTotal_RadialDistortion(su2double val_distortion);
+
+  /*!
+   * \brief Set the value of the fan face distortion.
+   * \param[in] val_cequivarea - Value of the fan face distortion.
+   */
+  void SetTotal_CircumferentialDistortion(su2double val_distortion);
   
   /*!
    * \brief Set the value of the Equivalent Area coefficient.
