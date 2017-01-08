@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-## \file set_ffd_design_var.py.py
+## \file set_ffd_design_var.py
 #  \brief Python script for automatically generating a list of FFD variables.
 #  \author T. Economon, F. Palacios
 #  \version 4.3.0 "Cardinal"
-#
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
