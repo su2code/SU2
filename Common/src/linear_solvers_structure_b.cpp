@@ -38,6 +38,7 @@
 
 #ifdef CODI_REVERSE_TYPE
 void CSysSolve_b::Solve_b(AD::CheckpointHandler* data) {
+  
   /*--- Extract data from the checkpoint handler ---*/
 
   su2double::GradientData *LinSysRes_Indices;

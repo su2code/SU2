@@ -137,6 +137,7 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -424,7 +425,8 @@ void CConfig::SetPointersNull(void) {
   /*--- Initialize some default arrays to NULL. ---*/
   
   default_vel_inf       = NULL;
-  default_eng_box       = NULL;
+  default_ffd_axis      = NULL;
+  default_eng_cyl       = NULL;
   default_eng_val       = NULL;
   default_cfl_adapt     = NULL;
   default_ad_coeff_flow = NULL;
@@ -490,7 +492,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- Allocate some default arrays needed for lists of doubles. ---*/
   
   default_vel_inf       = new su2double[3];
-  default_eng_box       = new su2double[6];
+  default_ffd_axis      = new su2double[3];
+  default_eng_cyl       = new su2double[7];
   default_eng_val       = new su2double[5];
   default_cfl_adapt     = new su2double[4];
   default_ad_coeff_flow = new su2double[3];
@@ -807,17 +810,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
-  /* DESCRIPTION: Limits for the pressure (Min, Max) */
-  default_distortion[0] =  0.0; default_distortion[1] =  1E6;
+  /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
+  default_distortion[0] =  5.0; default_distortion[1] =  15.0;
   addDoubleArrayOption("DISTORTION_RACK", 2, DistortionRack, default_distortion);
   /* DESCRIPTION: Values of the box to impose a subsonic nacellle (mach, Pressure, Temperature) */
   default_eng_val[0]=0.0; default_eng_val[1]=0.0; default_eng_val[2]=0.0;
   default_eng_val[3]=0.0;  default_eng_val[4]=0.0;
   addDoubleArrayOption("SUBSONIC_ENGINE_VALUES", 5, SubsonicEngine_Values, default_eng_val);
-  /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  default_eng_box[0] = -1E15; default_eng_box[1] = -1E15; default_eng_box[2] = -1E15;
-  default_eng_box[3] =  1E15; default_eng_box[4] =  1E15; default_eng_box[5] =  1E15;
-  addDoubleArrayOption("SUBSONIC_ENGINE_CYL", 7, SubsonicEngine_Cyl, default_eng_box);
+  /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle cylinder (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax, Radius) */
+  default_eng_cyl[0] = 0.0; default_eng_cyl[1] = 0.0; default_eng_cyl[2] = 0.0;
+  default_eng_cyl[3] =  1E15; default_eng_cyl[4] =  1E15; default_eng_cyl[5] =  1E15; default_eng_cyl[6] =  1E15;
+  addDoubleArrayOption("SUBSONIC_ENGINE_CYL", 7, SubsonicEngine_Cyl, default_eng_cyl);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
@@ -842,6 +845,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.95);
   /*!\brief ENGINE_INFLOW_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Engine_Inflow_Map \endlink \n Default: FAN_FACE_MACH \ingroup Config*/
   addEnumOption("ENGINE_INFLOW_TYPE", Kind_Engine_Inflow, Engine_Inflow_Map, FAN_FACE_MACH);
+  /* DESCRIPTION: Evaluate a problem with engines */
+  addBoolOption("ENGINE", Engine, false);
 
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
@@ -1353,6 +1358,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Solve the aeroelastic equations every given number of internal iterations. */
   addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
   
+  /*!\par CONFIG_CATEGORY: Optimization Problem*/
+  
+  /* DESCRIPTION: Setup for design variables (upper bound) */
+  addDoubleOption("OPT_BOUND_UPPER", DVBound_Upper, 1E6);
+  /* DESCRIPTION: Setup for design variables (lower bound) */
+  addDoubleOption("OPT_BOUND_LOWER", DVBound_Lower, -1E6);
+
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
 
@@ -1402,17 +1414,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CAMBER_2D ( FFDBox ID, i_Ind )
    - FFD_THICKNESS_2D ( FFDBox ID, i_Ind )
    - HICKS_HENNE ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc )
+   - SURFACE_BUMP ( x_start, x_end, x_Loc )
    - CST ( Lower Surface (0)/Upper Surface (1), Kulfan parameter number, Total number of Kulfan parameters for surface )
-   - COSINE_BUMP ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), x_Loc, Thickness )
-   - FOURIER ( Lower Surface (0)/Upper Surface (1)/Only one Surface (2), index, cos(0)/sin(1) )
    - NACA_4DIGITS ( 1st digit, 2nd digit, 3rd and 4th digit )
    - PARABOLIC ( Center, Thickness )
-   - DISPLACEMENT ( x_Disp, y_Disp, z_Disp )
+   - TRANSLATION ( x_Disp, y_Disp, z_Disp )
    - ROTATION ( x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - OBSTACLE ( Center, Bump size )
    - SPHERICAL ( ControlPoint_Index, Theta_Disp, R_Disp )
    - FFD_CONTROL_POINT ( FFDBox ID, i_Ind, j_Ind, k_Ind, x_Disp, y_Disp, z_Disp )
-   - FFD_DIHEDRAL_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_TWIST_ANGLE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_ROTATION ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
    - FFD_CONTROL_SURFACE ( FFDBox ID, x_Orig, y_Orig, z_Orig, x_End, y_End, z_End )
@@ -1446,7 +1456,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
   addDoubleOption("DEFORM_POISSONS_RATIO", Deform_PoissonRatio, 0.3);
   /*  DESCRIPTION: Linear solver for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
-  addEnumOption("DEFORM_LINEAR_SOLVER", Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
+  addEnumOption("DEFORM_LINEAR_SOLVER", Kind_Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
+  addEnumOption("DEFORM_LINEAR_SOLVER_PREC", Kind_Deform_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/
@@ -1620,12 +1632,34 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*--- options related to the FFD problem ---*/
   /*!\par CONFIG_CATEGORY:FFD point inversion \ingroup Config*/
+  
+  /* DESCRIPTION: Fix I plane */
+  addShortListOption("FFD_FIX_I", nFFD_Fix_IDir, FFD_Fix_IDir);
+  
+  /* DESCRIPTION: Fix J plane */
+  addShortListOption("FFD_FIX_J", nFFD_Fix_JDir, FFD_Fix_JDir);
+  
+  /* DESCRIPTION: Fix K plane */
+  addShortListOption("FFD_FIX_K", nFFD_Fix_KDir, FFD_Fix_KDir);
+  
+  /* DESCRIPTION: FFD symmetry plane (j=0) */
+  addBoolOption("FFD_SYMMETRY_PLANE", FFD_Symmetry_Plane, false);
+
+  /* DESCRIPTION: Define different coordinates systems for the FFD */
+  addEnumOption("FFD_COORD_SYSTEM", FFD_CoordSystem, CoordSystem_Map, CARTESIAN);
+
+  /* DESCRIPTION: Axis information for the spherical and cylindrical coord system */
+  default_ffd_axis[0] = 0.0; default_ffd_axis[1] = 0.0; default_ffd_axis[2] =0.0;
+  addDoubleArrayOption("FFD_AXIS", 3, FFD_Axis, default_ffd_axis);
 
   /* DESCRIPTION: Number of total iterations in the FFD point inversion */
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
   /* DESCRIPTION: Free surface damping coefficient */
 	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
+  
+  /* DESCRIPTION: Free surface damping coefficient */
+  addDoubleOption("FFD_SCALE", FFD_Scale, 1.0);
 
   /* DESCRIPTION: Definition of the FFD boxes */
   addFFDDefOption("FFD_DEFINITION", nFFDBox, CoordFFDBox, TagFFDBox);
@@ -1635,7 +1669,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Surface continuity at the intersection with the FFD */
   addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
-
 
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
@@ -1663,12 +1696,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Requested accuracy */
   addPythonOption("OPT_ACCURACY");
-  
-  /* DESCRIPTION: Setup for design variables (upper bound) */
-  addPythonOption("OPT_BOUND_UPPER");
-  
-  /* DESCRIPTION: Setup for design variables (lower bound) */
-  addPythonOption("OPT_BOUND_LOWER");
   
   /*!\brief OPT_COMBINE_OBJECTIVE
    *  \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
@@ -1934,11 +1961,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
 
-  if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL){
+  if (Weight_ObjFunc == NULL and Kind_ObjFunc == NULL) {
     Kind_ObjFunc = new unsigned short[1];
-    Kind_ObjFunc[0]=DRAG_COEFFICIENT;
+    Kind_ObjFunc[0] = DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
-    Weight_ObjFunc[0]=1.0;
+    Weight_ObjFunc[0] = 1.0;
     nObj=1;
     nObjW=1;
   }
@@ -1952,7 +1979,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
-      Weight_ObjFunc[iObj]=1.0;
+      Weight_ObjFunc[iObj] = 1.0;
   }
   /*--- Ignore weights if only one objective provided ---*/
   
@@ -2015,12 +2042,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Nonphys_Points   = 0;
   Nonphys_Reconstr = 0;
   
-  /*--- Don't do any deformation if there is no Design variable information ---*/
+  /*--- Apply a bound to the deformation if there is any design variable ---*/
   
-//  if (Design_Variable == NULL) {
-//    Design_Variable = new unsigned short [1];
-//    nDV = 1; Design_Variable[0] = NONE;
-//  }
+  if (Design_Variable != NULL) {
+    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+      if (DV_Value != NULL)
+        DV_Value[iDV][0] = max(min(DV_Value[iDV][0], DVBound_Upper), DVBound_Lower);
+    }
+  }
   
   if (Kind_Solver == POISSON_EQUATION) {
     Unsteady_Simulation = STEADY;
@@ -2909,7 +2938,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
     
     RefLengthMoment = RefLengthMoment/12.0;
-    if (val_nDim == 2) RefAreaCoeff = RefAreaCoeff/12.0;
+    if ((val_nDim == 2) && (!Axisymmetric)) RefAreaCoeff = RefAreaCoeff/12.0;
     else RefAreaCoeff = RefAreaCoeff/144.0;
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
@@ -3857,7 +3886,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CONTROL_POINT_2D:  cout << "FFD 2D (control point) <-> "; break;
           case FFD_CAMBER_2D:         cout << "FFD 2D (camber) <-> "; break;
           case FFD_THICKNESS_2D:      cout << "FFD 2D (thickness) <-> "; break;
+          case FFD_TWIST_2D:          cout << "FFD 2D (twist) <-> "; break;
           case HICKS_HENNE:           cout << "Hicks Henne <-> " ; break;
+          case SURFACE_BUMP:          cout << "Surface bump <-> " ; break;
           case ANGLE_OF_ATTACK:       cout << "Angle of attack <-> " ; break;
 	        case CST:           	      cout << "Kulfan parameter number (CST) <-> " ; break;
           case TRANSLATION:           cout << "Translation design variable."; break;
@@ -3866,10 +3897,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case PARABOLIC:             cout << "Parabolic <-> "; break;
           case AIRFOIL:               cout << "Airfoil <-> "; break;
           case ROTATION:              cout << "Rotation <-> "; break;
-          case HTP_INCIDENCE:         cout << "HTP incidence <-> "; break;
           case FFD_CONTROL_POINT:     cout << "FFD (control point) <-> "; break;
-          case FFD_DIHEDRAL_ANGLE:    cout << "FFD (dihedral angle) <-> "; break;
-          case FFD_TWIST_ANGLE:       cout << "FFD (twist angle) <-> "; break;
+          case FFD_NACELLE:           cout << "FFD (nacelle) <-> "; break;
+          case FFD_GULL:              cout << "FFD (gull) <-> "; break;
+          case FFD_TWIST:             cout << "FFD (twist) <-> "; break;
           case FFD_ROTATION:          cout << "FFD (rotation) <-> "; break;
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
@@ -3899,21 +3930,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] == HICKS_HENNE) ||
             (Design_Variable[iDV] == PARABOLIC) ||
             (Design_Variable[iDV] == AIRFOIL) ||
-            (Design_Variable[iDV] == HTP_INCIDENCE) ||
+            (Design_Variable[iDV] == FFD_GULL) ||
             (Design_Variable[iDV] == FFD_ANGLE_OF_ATTACK) ) nParamDV = 2;
         if ((Design_Variable[iDV] ==  TRANSLATION) ||
             (Design_Variable[iDV] ==  NACA_4DIGITS) ||
-	    (Design_Variable[iDV] ==  CST) ||
+            (Design_Variable[iDV] ==  CST) ||
+            (Design_Variable[iDV] ==  SURFACE_BUMP) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
+            (Design_Variable[iDV] ==  FFD_TWIST_2D) ||
             (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
-            (Design_Variable[iDV] ==  FFD_DIHEDRAL_ANGLE) ||
-            (Design_Variable[iDV] ==  FFD_TWIST_ANGLE) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
         if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
+        if (Design_Variable[iDV] == FFD_TWIST) nParamDV = 8;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -3926,9 +3958,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) ||
                (Design_Variable[iDV] == FFD_CAMBER_2D) ||
                (Design_Variable[iDV] == FFD_THICKNESS_2D) ||
+               (Design_Variable[iDV] == FFD_TWIST_2D) ||
                (Design_Variable[iDV] == FFD_CONTROL_POINT) ||
-               (Design_Variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
-               (Design_Variable[iDV] == FFD_TWIST_ANGLE) ||
+               (Design_Variable[iDV] == FFD_NACELLE) ||
+               (Design_Variable[iDV] == FFD_GULL) ||
+               (Design_Variable[iDV] == FFD_TWIST) ||
                (Design_Variable[iDV] == FFD_ROTATION) ||
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
@@ -3976,7 +4010,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( ContinuousAdjoint )) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {
@@ -4008,6 +4042,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
         case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
         case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+        case AERO_DRAG_COEFFICIENT:   cout << "Aero CD objective function." << endl; break;
+        case RADIAL_DISTORTION:       cout << "Radial distortion objective function." << endl; break;
+        case CIRCUMFERENTIAL_DISTORTION:   cout << "Circumferential distortion objective function." << endl; break;
+
       }
 		}
 		else {
@@ -5418,7 +5456,8 @@ CConfig::~CConfig(void) {
   /*--- Delete some arrays needed just for initializing options. ---*/
   
   if (default_vel_inf       != NULL) delete [] default_vel_inf;
-  if (default_eng_box       != NULL) delete [] default_eng_box;
+  if (default_ffd_axis      != NULL) delete [] default_ffd_axis;
+  if (default_eng_cyl       != NULL) delete [] default_eng_cyl;
   if (default_eng_val       != NULL) delete [] default_eng_val;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
   if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
@@ -5525,8 +5564,11 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
-      case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
-      case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
+      case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
+      case OUTFLOW_GENERALIZED:     AdjExt = "_chn";      break;
+      case AERO_DRAG_COEFFICIENT:   AdjExt = "_acd";       break;
+      case RADIAL_DISTORTION:           AdjExt = "_rdis";      break;
+      case CIRCUMFERENTIAL_DISTORTION:  AdjExt = "_cdis";      break;
       }
     }
     else{
