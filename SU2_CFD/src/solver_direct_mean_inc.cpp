@@ -70,7 +70,7 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   jPoint_UndLapl = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
-  Smatrix = NULL; cvector = NULL;
+  Smatrix = NULL; Cvector = NULL;
  
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
   
@@ -144,7 +144,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   jPoint_UndLapl = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
-  Smatrix = NULL; cvector = NULL;
+  Smatrix = NULL; Cvector = NULL;
 
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
 
@@ -284,9 +284,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
     
-    cvector = new su2double* [nPrimVarGrad];
+    Cvector = new su2double* [nPrimVarGrad];
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      cvector[iVar] = new su2double [nDim];
+      Cvector[iVar] = new su2double [nDim];
     
   }
 
@@ -4001,7 +4001,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
     
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
-        cvector[iVar][iDim] = 0.0;
+        Cvector[iVar][iDim] = 0.0;
     
     r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
@@ -4042,7 +4042,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
         
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
-            cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
         
       }
       
@@ -4103,7 +4103,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       for (iDim = 0; iDim < nDim; iDim++) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++) {
-          product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
         }
         
         node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
@@ -5955,9 +5955,9 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
     
-    cvector = new su2double* [nPrimVarGrad];
+    Cvector = new su2double* [nPrimVarGrad];
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      cvector[iVar] = new su2double [nDim];
+      Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/

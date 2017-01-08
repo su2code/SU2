@@ -1217,9 +1217,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       
       /*--- c vector := transpose(WA)*(Wb) ---*/
       
-      cvector = new su2double* [nVar];
+      Cvector = new su2double* [nVar];
       for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new su2double [nDim];
+        Cvector[iVar] = new su2double [nDim];
     }
     
   }
@@ -2679,9 +2679,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Initialize value for model constants ---*/

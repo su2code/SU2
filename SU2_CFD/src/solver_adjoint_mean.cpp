@@ -212,9 +212,9 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-      cvector[iVar] = new su2double [nDim];
+      Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Sensitivity definition and coefficient in all the markers ---*/
@@ -472,7 +472,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Area_Monitored = myArea_Monitored;
 #endif
 
-  if (config->GetnObj()>1 and iMesh==MESH_0) {
+  if (config->GetnObj() > 1 and iMesh==MESH_0) {
     if (grid_movement) {
       Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
       RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
@@ -2338,6 +2338,21 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               ForceProj_Vector[0] += -Weight_ObjFunc*invCQ;
               ForceProj_Vector[1] += -Weight_ObjFunc*CTRCQ2*(z - z_origin);
               ForceProj_Vector[2] +=  Weight_ObjFunc*CTRCQ2*(y - y_origin);
+            }
+            break;
+          case AERO_DRAG_COEFFICIENT :
+            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
+              exit(EXIT_FAILURE);
+            }
+            break;
+          case RADIAL_DISTORTION :
+            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
+              exit(EXIT_FAILURE);
+            }
+            break;
+          case CIRCUMFERENTIAL_DISTORTION :
+            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
+              exit(EXIT_FAILURE);
             }
             break;
           default :
@@ -6026,9 +6041,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     for (iDim = 0; iDim < nDim; iDim++)
       Smatrix[iDim] = new su2double [nDim];
     /*--- c vector := transpose(WA)*(Wb) ---*/
-    cvector = new su2double* [nVar];
+    Cvector = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
-      cvector[iVar] = new su2double [nDim];
+      Cvector[iVar] = new su2double [nDim];
   }
   
   /*--- Sensitivity definition and coefficient on all markers ---*/
@@ -6261,7 +6276,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
    Area_Monitored = myArea_Monitored;
  #endif
 
-   if (config->GetnObj()>1 and iMesh == MESH_0) {
+   if (config->GetnObj() > 1 and iMesh == MESH_0) {
      if (grid_movement) {
        Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
        RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
