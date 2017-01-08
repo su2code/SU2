@@ -7459,10 +7459,9 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   PT_Sector_Min, PT_Mean, Mach_Mean, q_Mean, UpVector[3], radians, RotatedVector[3],
 //  RefDensity, RefVel, Factor,
   DC60, IDR, IDC, IDC_Mach;
-  su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf, Gas_Constant;
+  su2double Pressure, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
 //  su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0
 //  su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
-  su2double SignFlip = 1.0;
   
   unsigned short iMarker_Analyze;
   int rank, iProcessor, nProcessor;
@@ -7610,13 +7609,11 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
               if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
               
               Pressure     = node[iPoint]->GetPressure();
-              Temperature  = node[iPoint]->GetTemperature();
               Density      = node[iPoint]->GetDensity();
               SoundSpeed   = node[iPoint]->GetSoundSpeed();
               Velocity2    = node[iPoint]->GetVelocity2();
               Mach         = sqrt(Velocity2)/SoundSpeed;
               Gamma        = config->GetGamma();
-              Gas_Constant = config->GetGas_ConstantND();
               Mach_Inf     = config->GetMach();
               Pressure_Inf = config->GetPressure_FreeStreamND();
               
@@ -7891,9 +7888,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 Distance = dx*dx + dy*dy;
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
-                
-                SignFlip = 1.0;
-                
+                                
                 if (Engine_HalfModel) {
                   
                   yCoord = -yCoord;
@@ -7907,7 +7902,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                   Distance_Mirror = sqrt(Distance_Mirror);
                   
                   if (Distance_Mirror < Distance) {
-                    SignFlip = -1.0;
                     Distance = Distance_Mirror;
                     dx = dx_; dy = dy_;
                     if (nDim == 3) dz = dz_;
@@ -8071,9 +8065,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 Distance = dx*dx + dy*dy;
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
-                
-                SignFlip = 1.0;
-                
+                                
                 if (Engine_HalfModel) {
                   
                   yCoord = -yCoord;
@@ -8087,7 +8079,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                   Distance_Mirror = sqrt(Distance_Mirror);
                   
                   if (Distance_Mirror < Distance) {
-                    SignFlip = -1.0;
                     Distance = Distance_Mirror;
                     dx = dx_; dy = dy_;
                     if (nDim == 3) dz = dz_;
@@ -8193,9 +8184,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 Distance = dx*dx + dy*dy;
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
-                
-                SignFlip = 1.0;
-                
+                                
                 if (Engine_HalfModel) {
                   
                   yCoord = -yCoord;
@@ -8209,7 +8198,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                   Distance_Mirror = sqrt(Distance_Mirror);
                   
                   if (Distance_Mirror < Distance) {
-                    SignFlip = -1.0;
                     Distance = Distance_Mirror;
                     dx = dx_; dy = dy_;
                     if (nDim == 3) dz = dz_;

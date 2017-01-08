@@ -38,7 +38,7 @@ CFluidModel::CFluidModel(void) {
 
   /*--- Attributes initialization ---*/
 
-	StaticEnergy = 0.0;
+  StaticEnergy = 0.0;
 	Entropy = 0.0;
 	Density = 0.0;
 	Pressure = 0.0;
