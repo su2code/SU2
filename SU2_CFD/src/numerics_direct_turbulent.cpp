@@ -1713,7 +1713,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
       diverg += PrimVar_Grad_i[iDim+1][iDim];
 
     //SST: pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-    pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg; //*sqrt(2.0) already included
+    //    pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg; //*sqrt(2.0) already included
+    pk = Eddy_Viscosity_i*(StrainMag_i*StrainMag_i - 2.0/3.0*diverg*diverg) - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
+    //pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i; //testing...
     pk = max(pk,0.0);
     
     pe = C_e1o*(1.0+0.012/TurbVar_i[2])*pk * 1.0/Tm_i;
@@ -1749,7 +1751,6 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
                             2.0*Laminar_Viscosity_i/(Density_i*Density_i*dist_i*dist_i) * exp(-YPlus/2.0) * Volume;*/
 
 
-
     // production portion
     val_Jacobian_i[0][0] += 0.0;
     val_Jacobian_i[0][1] += 0.0;
@@ -1768,14 +1769,14 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
 
     /* no division by density in f ???
     val_Jacobian_i[3][0] += 0.0;
-    val_Jacobian_i[3][1] += -C_2p*pk/pow(Density_i*TurbVar_i[1],2.0) * (2.0/3.0-TurbVar_i[2])/Tm_i;
-    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Density_i)/Tm_i;
+    val_Jacobian_i[3][1] += -C_2p*pk/pow(Density_i*TurbVar_i[1],2.0) * (2.0/3.0-TurbVar_i[2])/Tm_i * Volume;
+    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Density_i)/Tm_i * Volume;
     val_Jacobian_i[3][3] += 0.0;
     */
 
     val_Jacobian_i[3][0] += 0.0;
-    val_Jacobian_i[3][1] += -C_2p*pk/(Density_i*TurbVar_i[1]*TurbVar_i[1]) * (2.0/3.0-TurbVar_i[2])/Tm_i;// * 1.0/(Lm_i*Lm_i);
-    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Tm_i);// * 1.0/(Lm_i*Lm_i);
+    val_Jacobian_i[3][1] += -C_2p*pk/(Density_i*TurbVar_i[1]*TurbVar_i[1]) * (2.0/3.0-TurbVar_i[2])/Tm_i * Volume;// * 1.0/(Lm_i*Lm_i);
+    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Tm_i) * Volume;// * 1.0/(Lm_i*Lm_i);
     val_Jacobian_i[3][3] += 0.0;
 
     // destruction portion
