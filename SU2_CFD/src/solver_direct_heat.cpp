@@ -52,6 +52,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   int rank = MASTER_NODE;
 
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+  unsigned short turbulent = config->GetKind_Turb_Model();
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -149,19 +150,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
     }
 
   }
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-
-  //CharacPrimVar = new su2double** [nMarker];
-  //for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  //  CharacPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-  //  for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-  //    CharacPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
-  //    for (iVar = 0; iVar < nPrimVar; iVar++) {
-  //      CharacPrimVar[iMarker][iVertex][iVar] = 0.0;
-  //    }
-  //  }
-  //}
-
 
   /*--- Non-dimensionalization of heat equation */
   config->SetTemperature_Ref(config->GetTemperature_FreeStream());
@@ -249,9 +237,25 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
 
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-
+        if (flow) {
+          if (nDim == 2) {
+            if(turbulent == SA)
+              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+            else if(turbulent = SST)
+              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+            else
+              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+          }
+          else
+            if(turbulent == SA)
+              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+            else if(turbulent = SST)
+              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+            else
+              point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+        }
+        else
+          point_line >> index >> Solution[0];
 
         /*--- Instantiate the solution at this node, note that the eddy viscosity should be recomputed ---*/
         node[iPoint_Local] = new CHeatVariable(Solution[0], nDim, nVar, config);
@@ -440,7 +444,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
         dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
 
-        if(flow)
+        if(false)
           eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
         else
           eddy_viscosity = 0.0;
@@ -555,7 +559,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Turbulent viscosity  ---*/
 
-          if(flow)
+          if(false)
             visc_numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(), solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity());
           else
             visc_numerics->SetEddyViscosity(0.0, 0.0);
@@ -591,7 +595,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           dTdn = -(node[Point_Normal]->GetSolution(0) - Twall)/dist_ij;
 
-          if(flow)
+          if(false)
             eddy_viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
           else
             eddy_viscosity = 0.0;
@@ -729,8 +733,6 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   unsigned short iVar;
   unsigned long iPoint, total_index;
   su2double Delta, Vol;
-
-  //cout << "Norm of right hand side: " << LinSysRes.norm() << endl;
 
   /*--- Set maximum residual to zero ---*/
 
