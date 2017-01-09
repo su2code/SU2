@@ -800,6 +800,10 @@ private:
                                                       stored such that the volume residual can be computed in one matrix multiplication. */
   vector<su2double> matDerBasisSolDOFs;   /*!< \brief Matrix of the derivatives of the Lagrangian basis functions in the solution
                                                       DOFs. Needed to compute the metric terms in the solution DOFs. */
+  vector<su2double> matDerBasisOwnDOFs;   /*!< \brief Matrix of the derivatives of the Lagrangian basis functions in the owned
+                                                      DOFs. This differs from matDerBasisSolDOFs when the grid DOFs and the
+                                                      solution DOFs do not coincide. This data is needed for the computation
+                                                      of the derivatives of the metric terms. */
 
   vector<unsigned short> connFace0; /*!< \brief Local connectivity of face 0 of the element. The numbering of the DOFs is
                                                 such that the element is to the left of the face. */
@@ -907,6 +911,12 @@ public:
   * \return  The pointer to matDerBasisIntTrans;
   */
   const su2double *GetDerMatBasisFunctionsIntTrans(void) const;
+
+  /*!
+  * \brief Function, which makes available the matrix storage of the derivative of the basis functions in the own DOFs.
+  * \return  The pointer to matDerBasisOwnDOFs.
+  */
+  const su2double *GetMatDerBasisFunctionsOwnDOFs(void) const;
 
   /*!
   * \brief Function, which makes available the matrix storage of the derivative of the basis functions in the solution DOFs.
@@ -1078,6 +1088,19 @@ private:
   */
   void Copy(const FEMStandardElementClass &other);
 
+  /*!
+  * \brief Function, which creates the matrix containing the derivatives of the
+           basis functions in the given location of the parametric coordinates.
+  * \param[in]  rLoc         - r-locations of the given points.
+  * \param[in]  sLoc         - s-locations of the given points.
+  * \param[in]  tLoc         - t-locations of the given points, if relevant.
+  * \param[out] matDerBasis  - Matrix to store the derivatives of the basis
+                               functions.
+  */
+  void CreateMatrixDerivativesBasisFunctions(const vector<su2double> &rLoc,
+                                             const vector<su2double> &sLoc,
+                                             const vector<su2double> &tLoc,
+                                                   vector<su2double> &matDerBasis);
   /*!
   * \brief Function, which creates all the data for a line element.
   */

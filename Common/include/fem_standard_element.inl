@@ -65,6 +65,8 @@ inline const su2double* FEMStandardElementClass::GetMatBasisFunctionsIntegration
 
 inline const su2double* FEMStandardElementClass::GetDerMatBasisFunctionsIntTrans(void) const {return matDerBasisIntTrans.data();}
 
+inline const su2double* FEMStandardElementClass::GetMatDerBasisFunctionsOwnDOFs(void) const {return matDerBasisOwnDOFs.data();}
+
 inline const su2double* FEMStandardElementClass::GetMatDerBasisFunctionsSolDOFs(void) const {return matDerBasisSolDOFs.data();}
 
 inline unsigned short* FEMStandardElementClass::GetConnFace0(void){return connFace0.data();}

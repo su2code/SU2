@@ -165,6 +165,11 @@ public:
                                                         integration points of this element. */
   vector<su2double> metricTermsSolDOFs;     /*!< \brief Vector of the metric terms in the
                                                         solution DOFs of this element. */
+  vector<su2double> metricTerms2ndDer;      /*!< \brief Vector of the metric terms needed for the
+                                                        computation of the 2nd derivatives in the
+                                                        integration points. Only determined when
+                                                        needed (ADER-DG with non-aliased predictor
+                                                        for the Navier-Stokes equations). */
   vector<su2double> massMatrix;             /*!< \brief Mass matrix for this element. */
   vector<su2double> invMassMatrix;          /*!< \brief Inverse mass matrix for this element. */
   vector<su2double> lumpedMassMatrix;       /*!< \brief Lumped mass matrix for this element. */
@@ -1090,6 +1095,20 @@ private:
   */
   void TimeCoefficientsPredictorADER_DG(CConfig           *config,
                                         vector<su2double> &timeCoefAder);
+
+  /*!
+  * \brief Function, which computes the volume metric terms for the given
+           entities from the gradients of the coordinates.
+  * \param[in]  nEntities    - Number of entities for which the metric terms
+                               must be computed.
+  * \param[in]  gradCoor     - The gradients of the coordinates (w.r.t. the
+                               parametric coordinates) from which the metric
+                               terms must be computed.
+  * \param[out] metricTerms  - Vector in which the metric terms must be stored.
+  */
+  void VolumeMetricTermsFromCoorGradients(const unsigned short nEntities,
+                                          const su2double      *gradCoor,
+                                          vector<su2double>    &metricTerms);
 };
 
 #include "fem_geometry_structure.inl"

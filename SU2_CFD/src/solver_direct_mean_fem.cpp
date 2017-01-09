@@ -185,15 +185,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
 
-    /* ADER-DG scheme. Determine the size needed for the predictor step
-       and make sure that sizeVecTmp is big enough. Note that sizePredictorADER
-       is based on an aliased discretization, for which the memory requirements
-       are more than for a non-aliased discretization for the predictor. */
-    const unsigned short nTimeDOFs       = config->GetnTimeDOFsADER_DG();
-    const unsigned int sizePredictorADER = 4*nVar*nDOFsMax*nTimeDOFs
-                                         + 2*nVar*nDOFsMax
-                                         + nDim*nVar*nDOFsMax
-                                         + nDim*nDim*nVar*nIntegrationMax;
+    /*--- ADER-DG scheme. Determine the size needed for the predictor step
+          and make sure that sizeVecTmp is big enough. This size depends
+          whether an aliased or a non-aliased predictor step is used. Note
+          that the size estimates are for viscous computations. ---*/
+    const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
+
+    unsigned int sizePredictorADER = 4*nVar*nDOFsMax*nTimeDOFs
+                                   +   nVar*nDOFsMax;
+
+    if(config->GetKind_ADER_Predictor() == ADER_ALIASED_PREDICTOR) 
+      sizePredictorADER += nDim*nVar*nDOFsMax + nDim*nDim*nVar*nIntegrationMax;
+    else
+      sizePredictorADER += (nDim+1)*nVar*max(nIntegrationMax, nDOFsMax)
+                         + nDim*nDim*nVar*max(nIntegrationMax,nDOFsMax);
 
     sizeVecTmp = max(sizeVecTmp, sizePredictorADER);
   }
@@ -2498,9 +2503,6 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
-
-  /* Initialize the residuals to zero. */
-  for(unsigned short i=0; i<(nVar*nDOFs); ++i) res[i] = 0.0;
 
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
      in the integration points. */
@@ -4835,7 +4837,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
       }
     }
 
-    /*--- Compute the velocities and static energy in this integration point. ---*/
+    /*--- Compute the velocities and static energy in this DOF. ---*/
     const su2double DensityInv = 1.0/solDOF[0];
     su2double vel[3], Velocity2 = 0.0;
     for(unsigned short j=0; j<nDim; ++j) {
@@ -4966,6 +4968,67 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
                                                            const su2double   *sol,
                                                            su2double         *res,
                                                            su2double         *work) {
+
+  /* Constant factor present in the heat flux vector. */
+  const su2double factHeatFlux = Gamma/Prandtl_Lam;
+
+  /*--- Get the necessary information from the standard element. ---*/
+  const unsigned short ind                = elem->indStandardElement;
+  const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
+  const unsigned short nDOFs              = elem->nDOFsSol;
+  const su2double *matBasisInt            = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+  const su2double *matDerBasisInt         = matBasisInt + nDOFs*nInt;
+  const su2double *matDerBasisSolDOFs     = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
+  const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+  const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  /* Set the pointers for solAndGradInt and divFlux to work. The same array
+     can be used for both help arrays. */
+  su2double *solAndGradInt = work;
+  su2double *divFlux       = work;
+  su2double *secDerSolInt  = solAndGradInt + nVar*(nDim+1)*nInt;
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Interpolate the conserved solution variables to the        ---*/
+  /*---         integration points and also determine the first and second ---*/
+  /*---         derivatives of these variables in the integration points.  ---*/
+  /*---         All derivatives are w.r.t. the parametric coordinates.     ---*/
+  /*--------------------------------------------------------------------------*/ 
+
+  /*--- The computation of the second derivatives happens in two stages. First
+        the first derivatives in the DOFs are determined and these are then
+        differentiated again to obtain the second derivatives in the integration
+        points. Note that secDerSolInt and solAndGradInt are used for temporary
+        storage of the first derivatives in the DOFs. ---*/
+  su2double *gradSolDOFs = secDerSolInt;
+  DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
+
+  /* Store the gradients in true row major order for each DOF. */
+  su2double *firstDerSolDOFs = solAndGradInt;
+  unsigned short ll = 0;
+  for(unsigned short i=0; i<nDOFs; ++i) {
+
+    for(unsigned short j=0; j<nDim; ++j) {
+      const su2double *gradSolDOF = gradSolDOFs + nVar*(i + j*nDOFs);
+
+      for(unsigned short k=0; k<nVar; ++k, ++ll)
+        firstDerSolDOFs[ll] = gradSolDOF[k];
+    }
+  }
+
+  /* Compute the second derivatives w.r.t. the parametric coordinates
+     in the integration points. */
+  DenseMatrixProduct(nInt*nDim, nVar*nDim, nDOFs, matDerBasisInt,
+                     firstDerSolDOFs, secDerSolInt);
+
+  /* Compute the solution and the derivatives w.r.t. the parametric coordinates
+     in the integration points. */
+  DenseMatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, sol, solAndGradInt);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Determine from the solution and gradients the divergence   ---*/
+  /*---         of the fluxes in the integration points.                   ---*/
+  /*--------------------------------------------------------------------------*/
 
   cout << "CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual: Not implemented yet" << endl;
   exit(1);
