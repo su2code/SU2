@@ -1595,12 +1595,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
            Delta=max(Delta,sqrt(aux_delta));
            
            }
-//
-//          if (nDim==2)
-//              Delta = pow(geometry -> node[iPoint]->GetVolume(),1.0/2.0);
-//          else
-//              Delta = pow(geometry -> node[iPoint]->GetVolume(),1.0/3.0);
-          
+
           dist_wall = geometry->node[iPoint]->GetWall_Distance();
           
           distDES = Const_DES * Delta;
@@ -1895,7 +1890,80 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           /*--- Set distance to the surface with DDES distance ---*/
           numerics->SetDistance(distDES_tilde, 0.0);
       }
-      
+      else if (config->GetKind_HybridRANSLES()==SA_IDDES){
+          su2double *Coord_i, *Coord_j, aux_delta;
+          unsigned short nNeigh, iNeigh;
+          unsigned long NumNeigh;
+          
+          Coord_i = geometry->node[iPoint]->GetCoord();
+          nNeigh = geometry->node[iPoint]->GetnPoint();
+          
+          Delta=0.;
+          
+          for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
+              NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
+              Coord_j = geometry->node[NumNeigh]->GetCoord();
+              
+              aux_delta=0.;
+              for (iDim=0;iDim<nDim;++iDim)
+                  aux_delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
+              
+              Delta=max(Delta,sqrt(aux_delta));
+              
+          }
+          
+          dist_wall = geometry->node[iPoint]->GetWall_Distance();
+          
+          distDES = Const_DES * Delta;
+          PrimVar_Grad=solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+          
+          uijuij=0.0;
+          
+          for(iDim=0;iDim<nDim;++iDim){
+              for(jDim=0;jDim<nDim;++jDim){
+                  uijuij+= PrimVar_Grad[1+iDim][jDim]*PrimVar_Grad[1+iDim][jDim];}}
+          
+          uijuij=sqrt(fabs(uijuij));
+          uijuij=max(uijuij,1e-10);
+          
+          if (compressible){
+              rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+              mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+          }
+          if (incompressible) {
+              rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+              mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+          }
+          
+          nu=mu/rho;
+          
+          eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+          nut=eddy_visc/rho;
+          k2=pow(0.41,2.0);
+          r_d= (nut)/(uijuij*k2*pow(dist_wall, 2.0));
+          f_d= 1.0-tanh(pow(8.0*r_d,3.0));
+          
+          /*--- Low Reynolds number correction tem ---*/
+          nu_hat = node[iPoint]->GetSolution();
+          Ji   = nu_hat[0]/nu;
+          Ji_2 = Ji * Ji;
+          Ji_3 = Ji*Ji*Ji;
+          fv1  = Ji_3/(Ji_3+cv1_3);
+          fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+          ft2 = ct3*exp(-ct4*Ji_2);
+          cw1 = cb1/k2+(1.0+cb2)/sigma;
+          
+          psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
+          psi_2 = min(100.0,psi_2);
+          
+          //distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES*sqrt(psi_2)));
+          distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES));
+          
+          /*--- Set distance to the surface with DDES distance ---*/
+          //fd_print[iPoint]=f_d;
+          numerics->SetDistance(distDES_tilde, 0.0);
+          
+      }
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
