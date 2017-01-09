@@ -143,25 +143,12 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
   // Retrieve the values of pressure and viscosity
-  if (incompressible) {
 
-    Pn = flow_solution->node[Point_Flow]->GetPressureInc();
+  Pn = flow_solution->node[Point_Flow]->GetPressure();
 
-    if (viscous_flow) {
-
-      Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-      Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
-
-    }
-  }
-  else if (compressible) {
-
-    Pn = flow_solution->node[Point_Flow]->GetPressure();
-
-    if (viscous_flow) {
-      Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-      Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
-    }
+  if (viscous_flow) {
+    Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
+    Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
   }
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
@@ -366,12 +353,12 @@ CTransfer_SlidingInterface::~CTransfer_SlidingInterface(void) {
 
 void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
 		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
-													   CConfig *donor_config, CConfig *target_config){
+													   CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor){
+					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   unsigned short iVar;
 
@@ -383,7 +370,7 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
 													CConfig *target_config, unsigned long Marker_Target,
-													unsigned long Vertex_Target, unsigned long Point_Target){
+													unsigned long Vertex_Target, unsigned long Point_Target) {
 
   unsigned short iVar, iDonorVertex;
   /*--- Set the Sliding solution with the value of the Target Variable ---*/

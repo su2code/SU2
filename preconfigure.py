@@ -282,7 +282,7 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = 'a78ba3f4fd0fc8c7fb1fd7edb663b86a96e99c2a'
+    sha_version_codi = '2ec7cccf3ccd4b052f9d4ef95d6dc69244484f13'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
     sha_version_ampi = '31b2267c3a55a391a37d830369f2e0dba09008d1'
     github_repo_ampi = 'https://github.com/michel2323/AdjointMPI'

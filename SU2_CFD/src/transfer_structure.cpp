@@ -174,9 +174,9 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -187,9 +187,9 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -203,7 +203,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
@@ -565,9 +565,9 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -578,9 +578,9 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -594,14 +594,14 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonorOwned = 0;
     nLocalVertexDonor      = 0;
 
-    if( Marker_Donor != -1 ){
+    if( Marker_Donor != -1 ) {
       nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
 
       for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
@@ -892,9 +892,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -905,9 +905,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -921,14 +921,14 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 
     nLocalVertexDonorOwned = 0;
     nLocalVertexDonor      = 0;
     
-    if( Marker_Donor != -1 ){
+    if( Marker_Donor != -1 ) {
         nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
     
         for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
@@ -1247,9 +1247,9 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }       
@@ -1260,9 +1260,9 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
     SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
-      for (iRank = 0; iRank < nProcessor; iRank++){
-        if( Buffer_Recv_mark[iRank] != -1 ){
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }   
@@ -1276,7 +1276,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     Target_check = Marker_Target;   
     #endif
 
-    if(Target_check == -1 || Donor_check == -1){
+    if(Target_check == -1 || Donor_check == -1) {
       continue;
     }
 

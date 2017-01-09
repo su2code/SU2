@@ -48,9 +48,6 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 																		 unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -92,43 +89,24 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 	}
   
   /*--- Allocate and initialize solution ---*/
-	if (compressible) {
-		Solution[0] = val_psirho; 	Solution_Old[0] = val_psirho;
-		Solution[nVar-1] = val_psie; Solution_Old[nVar-1] = val_psie;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Solution[iDim+1] = val_phi[iDim];
-			Solution_Old[iDim+1] = val_phi[iDim];
-		}
-	}
-	if (incompressible || freesurface) {
-		Solution[0] = 0.0; 	Solution_Old[0] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Solution[iDim+1] = 0.0;
-			Solution_Old[iDim+1] = 0.0;
-		}
-	}
+  Solution[0] = val_psirho; 	Solution_Old[0] = val_psirho;
+  Solution[nVar-1] = val_psie; Solution_Old[nVar-1] = val_psie;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Solution[iDim+1] = val_phi[iDim];
+    Solution_Old[iDim+1] = val_phi[iDim];
+  }
 
-  
   /*--- Allocate and initialize solution for dual time strategy ---*/
 	if (dual_time) {
-    if (compressible) {
-			Solution_time_n[0] = val_psirho;
-			Solution_time_n1[0] = val_psirho;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Solution_time_n[iDim+1] = val_phi[iDim];
-				Solution_time_n1[iDim+1] = val_phi[iDim];
-			}
-			Solution_time_n[nVar-1] = val_psie;
-			Solution_time_n1[nVar-1] = val_psie;
-		}
-    if (incompressible || freesurface) {
-			Solution_time_n[0] = 0.0;
-			Solution_time_n1[0] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Solution_time_n[iDim+1] = 0.0;
-				Solution_time_n1[iDim+1] = 0.0;
-			}
-		}
+    Solution_time_n[0] = val_psirho;
+    Solution_time_n1[0] = val_psirho;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution_time_n[iDim+1] = val_phi[iDim];
+      Solution_time_n1[iDim+1] = val_phi[iDim];
+    }
+    Solution_time_n[nVar-1] = val_psie;
+    Solution_time_n1[nVar-1] = val_psie;
+
 
 	}
   
@@ -248,7 +226,7 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config) {
 	unsigned short iVar;
   bool check_dens = false, RightVol = true;
   
@@ -266,59 +244,6 @@ bool CAdjEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bo
       Solution[iVar] = Solution_Old[iVar];
     
     RightVol = false;
-    
-  }
-  
-  return RightVol;
-  
-}
-
-bool CAdjEulerVariable::SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
-  unsigned short iVar;
-  bool check_press = false, RightVol = true;
-  
-  su2double adj_limit = config->GetAdjointLimit();
-  
-  check_press = (fabs(Solution[0]) > adj_limit);
-  
-  /*--- Check that the adjoint solution is bounded ---*/
-  
-  if (check_press) {
-
-    /*--- Copy the old solution ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
-    
-    RightVol = false;
-    
-  }
-  
-  return RightVol;
-  
-}
-
-bool CAdjEulerVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config) {
-  unsigned short iVar;
-  bool check_press = false, RightVol = true;
-  
-  su2double adj_limit = config->GetAdjointLimit();
-  su2double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
-  
-  if (SharpEdge_Distance < dist_limit) {
-    
-    check_press = (fabs(Solution[0]) > adj_limit); // Check adjoint pressure
-    
-    /*--- Check that the solution has a physical meaning ---*/
-    if (check_press) {
-      
-      /*--- Copy the old solution ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = Solution_Old[iVar];
-      
-      RightVol = false;
-      
-    }
     
   }
   
