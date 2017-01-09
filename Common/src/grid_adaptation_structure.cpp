@@ -260,7 +260,7 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-	if (config->GetnObj()>1) {
+	if (config->GetnObj() > 1) {
 	  SPRINTF (buffer, "_combo.dat");
 	}
 	else {
@@ -3532,7 +3532,7 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-  if (config->GetnObj()>1) {
+  if (config->GetnObj() > 1) {
     SPRINTF (buffer, "_combo.dat");
   }
   else {
