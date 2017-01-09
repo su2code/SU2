@@ -4708,8 +4708,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
      for explicit time integration schemes the inverse of the mass matrix is
      much more convenient. Furthermore, for ADER-DG both the mass matrix
      and its inverse is needed. Note that for the DG_FEM the mass matrix is
-     local to the elements. */
+     local to the elements. Finally, when the non-aliased predictor is used
+     for ADER-DG for the Navier-Stokes equations, the derivatives of the
+     metric terms are needed for the computation of the 2nd derivatives. */
   bool FullMassMatrix, FullInverseMassMatrix, LumpedMassMatrix;
+  bool DerMetricTerms = false;
   if(config->GetUnsteady_Simulation() == STEADY ||
      config->GetUnsteady_Simulation() == ROTATIONAL_FRAME) {
     FullMassMatrix   = FullInverseMassMatrix = false;
@@ -4728,6 +4731,12 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
       FullMassMatrix   = FullInverseMassMatrix = true;
       LumpedMassMatrix = false;
+
+      unsigned short solver = config->GetKind_Solver();
+      if(solver == FEM_NAVIER_STOKES || solver == FEM_RANS || solver == FEM_LES) {
+        if(config->GetKind_ADER_Predictor() == ADER_NON_ALIASED_PREDICTOR)
+          DerMetricTerms = true;
+      }
     }
     else {
       FullMassMatrix        = LumpedMassMatrix = false;
@@ -4765,7 +4774,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
        correspond to the interpolation data to the integration points
        and are not needed. Hence this part is skipped. */
     const su2double *matBasisInt    = standardElementsGrid[ind].GetMatBasisFunctionsIntegration();
-    const su2double *matDerBasisInt = &matBasisInt[nDOFsGrid*nInt];
+    const su2double *matDerBasisInt = matBasisInt + nDOFsGrid*nInt;
 
     /* Also get the pointer to the matrix storage of the derivatives of the
        basis functions in the sol DOFs. */
@@ -4789,104 +4798,13 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
                                  volElem[i].nodeIDsGrid.data(),
                                  vecResultDOFsSol);
 
-    /*--- Convert the dxdr, dydr, etc. to the required metric terms.
-          Make a distinction between 2D and 3D. ---*/
-    switch( nDim ) {
-      case 2: {
+    /* Convert the values of dxdr, dydr, etc. to the required metric terms
+       for both the integration points and the solution DOFs. */
+    VolumeMetricTermsFromCoorGradients(nInt, vecResultInt,
+                                       volElem[i].metricTerms);
 
-        /* 2D computation. Store the offset between the r and s derivatives. */
-        unsigned short off = 2*nInt;
-
-        /* Loop over the integration points and store the metric terms. */
-        unsigned short ii = 0;
-        for(unsigned short j=0; j<nInt; ++j) {
-          const unsigned short jx = 2*j; const unsigned short jy = jx+1;
-          su2double dxdr = vecResultInt[jx],     dydr = vecResultInt[jy];
-          su2double dxds = vecResultInt[jx+off], dyds = vecResultInt[jy+off];
-
-          volElem[i].metricTerms[ii++] =  dxdr*dyds - dxds*dydr; // J
-          volElem[i].metricTerms[ii++] =  dyds;   // J drdx
-          volElem[i].metricTerms[ii++] = -dxds;   // J drdy
-          volElem[i].metricTerms[ii++] = -dydr;   // J dsdx
-          volElem[i].metricTerms[ii++] =  dxdr;   // J dsdy
-        }
-
-        /* Loop over the solution DOFs and store the metric terms. */
-        off = 2*nDOFsSol;
-        ii = 0;
-        for(unsigned short j=0; j<nDOFsSol; ++j) {
-          const unsigned short jx = 2*j; const unsigned short jy = jx+1;
-          su2double dxdr = vecResultDOFsSol[jx],     dydr = vecResultDOFsSol[jy];
-          su2double dxds = vecResultDOFsSol[jx+off], dyds = vecResultDOFsSol[jy+off];
-
-          volElem[i].metricTermsSolDOFs[ii++] =  dxdr*dyds - dxds*dydr; // J
-          volElem[i].metricTermsSolDOFs[ii++] =  dyds;   // J drdx
-          volElem[i].metricTermsSolDOFs[ii++] = -dxds;   // J drdy
-          volElem[i].metricTermsSolDOFs[ii++] = -dydr;   // J dsdx
-          volElem[i].metricTermsSolDOFs[ii++] =  dxdr;   // J dsdy
-        }
-
-        break;
-      }
-
-      case 3: {
-        /* 3D computation. Store the offset between the r and s and r and t derivatives. */
-        unsigned short offS = 3*nInt, offT = 6*nInt;
-
-        /* Loop over the integration points and store the metric terms. */
-        unsigned short ii = 0;
-        for(unsigned short j=0; j<nInt; ++j) {
-          const unsigned short jx = 3*j; const unsigned short jy = jx+1, jz = jx+2;
-          su2double dxdr = vecResultInt[jx],      dydr = vecResultInt[jy],      dzdr = vecResultInt[jz];
-          su2double dxds = vecResultInt[jx+offS], dyds = vecResultInt[jy+offS], dzds = vecResultInt[jz+offS];
-          su2double dxdt = vecResultInt[jx+offT], dydt = vecResultInt[jy+offT], dzdt = vecResultInt[jz+offT];
-
-          volElem[i].metricTerms[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
-                                       - dxds*(dydr*dzdt - dzdr*dydt)
-                                       + dxdt*(dydr*dzds - dzdr*dyds); // J
-
-          volElem[i].metricTerms[ii++] = dyds*dzdt - dzds*dydt;  // J drdx
-          volElem[i].metricTerms[ii++] = dzds*dxdt - dxds*dzdt;  // J drdy
-          volElem[i].metricTerms[ii++] = dxds*dydt - dyds*dxdt;  // J drdz
-
-          volElem[i].metricTerms[ii++] = dzdr*dydt - dydr*dzdt;  // J dsdx
-          volElem[i].metricTerms[ii++] = dxdr*dzdt - dzdr*dxdt;  // J dsdy
-          volElem[i].metricTerms[ii++] = dydr*dxdt - dxdr*dydt;  // J dsdz
-
-          volElem[i].metricTerms[ii++] = dydr*dzds - dzdr*dyds;  // J dtdx
-          volElem[i].metricTerms[ii++] = dzdr*dxds - dxdr*dzds;  // J dtdy
-          volElem[i].metricTerms[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
-        }
-
-        /* Loop over the solution DOFs and store the metric terms. */
-        offS = 3*nDOFsSol; offT = 6*nDOFsSol;
-        ii = 0;
-        for(unsigned short j=0; j<nDOFsSol; ++j) {
-          const unsigned short jx = 3*j; const unsigned short jy = jx+1, jz = jx+2;
-          su2double dxdr = vecResultDOFsSol[jx],      dydr = vecResultDOFsSol[jy],      dzdr = vecResultDOFsSol[jz];
-          su2double dxds = vecResultDOFsSol[jx+offS], dyds = vecResultDOFsSol[jy+offS], dzds = vecResultDOFsSol[jz+offS];
-          su2double dxdt = vecResultDOFsSol[jx+offT], dydt = vecResultDOFsSol[jy+offT], dzdt = vecResultDOFsSol[jz+offT];
-
-          volElem[i].metricTermsSolDOFs[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
-                                              - dxds*(dydr*dzdt - dzdr*dydt)
-                                              + dxdt*(dydr*dzds - dzdr*dyds); // J
-
-          volElem[i].metricTermsSolDOFs[ii++] = dyds*dzdt - dzds*dydt;  // J drdx
-          volElem[i].metricTermsSolDOFs[ii++] = dzds*dxdt - dxds*dzdt;  // J drdy
-          volElem[i].metricTermsSolDOFs[ii++] = dxds*dydt - dyds*dxdt;  // J drdz
-
-          volElem[i].metricTermsSolDOFs[ii++] = dzdr*dydt - dydr*dzdt;  // J dsdx
-          volElem[i].metricTermsSolDOFs[ii++] = dxdr*dzdt - dzdr*dxdt;  // J dsdy
-          volElem[i].metricTermsSolDOFs[ii++] = dydr*dxdt - dxdr*dydt;  // J dsdz
-
-          volElem[i].metricTermsSolDOFs[ii++] = dydr*dzds - dzdr*dyds;  // J dtdx
-          volElem[i].metricTermsSolDOFs[ii++] = dzdr*dxds - dxdr*dzds;  // J dtdy
-          volElem[i].metricTermsSolDOFs[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
-        }
-
-        break;
-      }
-    }
+    VolumeMetricTermsFromCoorGradients(nDOFsSol, vecResultDOFsSol,
+                                       volElem[i].metricTermsSolDOFs);
 
     /* Check for negative Jacobians in the integrations points and at the
        location of the solution DOFs. */
@@ -4907,6 +4825,73 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Determine the derivatives of the metric terms in the       ---*/
+  /*---         integration points, if needed.                             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  if( DerMetricTerms ) {
+
+    /* Loop over the owned volume elements. */
+    for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+      /* Easier storage of the index of the corresponding standard element
+         and determine the number of integration points as well as the number
+         of DOFs for the grid. */
+      const unsigned short ind       = volElem[i].indStandardElement;
+      const unsigned short nInt      = standardElementsGrid[ind].GetNIntegration();
+      const unsigned short nDOFsGrid = volElem[i].nDOFsGrid;
+
+      /* Get the pointer to the matrix storage of the basis functions
+         and its derivatives. The first nDOFsGrid*nInt entries of this matrix
+         correspond to the interpolation data to the integration points
+         and are not needed. Hence this part is skipped. */
+      const su2double *matBasisInt    = standardElementsGrid[ind].GetMatBasisFunctionsIntegration();
+      const su2double *matDerBasisInt = matBasisInt + nDOFsGrid*nInt;
+
+      /* Also get the pointer to the matrix storage of the derivatives of the
+         basis functions in the owned DOFs, i.e. the grid DOFs. */
+      const su2double *matDerBasisGridDOFs = standardElementsGrid[ind].GetMatDerBasisFunctionsOwnDOFs();
+
+      /* Compute the gradient of the coordinates w.r.t. the parametric
+         coordinates for this element in the solution DOFs. */
+      vector<su2double> helpVecResultGridDOFs(nDOFsGrid*nDim*nDim);
+      su2double *vecResultGridDOFs = helpVecResultGridDOFs.data();
+
+      ComputeGradientsCoorWRTParam(nDOFsGrid, nDOFsGrid, matDerBasisGridDOFs,
+                                   volElem[i].nodeIDsGrid.data(),
+                                   vecResultGridDOFs);
+
+      /* Convert the values of dxdr, dydr, etc. to the required metric terms
+         in the grid DOFs. */
+      vector<su2double> metricGridDOFs(nDOFsGrid*nMetricPerPoint);
+      VolumeMetricTermsFromCoorGradients(nDOFsGrid, vecResultGridDOFs,
+                                         metricGridDOFs);
+
+      /*--- The metric terms currently stored in metricGridDOFs are scaled
+            with the Jacobian and also the Jacobian is part of the metric
+            terms. For the derivatives of the metric terms, the Jacobian
+            is not needed, but the original unscaled terms are needed.
+            This is done in the loop below. ---*/
+      for(unsigned short j=0; j<nDOFsGrid; ++j) {
+        su2double *metOld = metricGridDOFs.data() + j*nMetricPerPoint;
+        su2double *metNew = metricGridDOFs.data() + j*(nMetricPerPoint-1);
+
+        const su2double JacInv = 1.0/metOld[0];
+        for(unsigned short k=1; k<nMetricPerPoint; ++k)
+          metNew[k-1] = JacInv*metOld[k];
+      }
+
+      /* Compute the derivatives of the metric terms w.r.t. the
+         parametric coordinates. First allocate the memory. */
+      volElem[i].metricTerms2ndDer.resize(nDim*nInt*(nMetricPerPoint-1));
+
+      DenseMatrixProduct(nDim*nInt, nMetricPerPoint-1, nDOFsGrid,
+                         matDerBasisInt, metricGridDOFs.data(),
+                         volElem[i].metricTerms2ndDer.data());
     }
   }
 
@@ -5345,5 +5330,69 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
     val = 1.0/val;
     for(unsigned short i=0; i<nTimeDOFs; ++i)
       timeInterpolDOFToIntegrationADER_DG[jj+i] *= val;
+  }
+}
+
+void CMeshFEM_DG::VolumeMetricTermsFromCoorGradients(
+                                       const unsigned short nEntities,
+                                       const su2double      *gradCoor,
+                                       vector<su2double>    &metricTerms) {
+
+  /*--- Convert the dxdr, dydr, etc., stored in coorGradients, to the
+        required metric terms. Make a distinction between 2D and 3D. ---*/
+  switch( nDim ) {
+    case 2: {
+
+      /* 2D computation. Store the offset between the r and s derivatives. */
+      const unsigned short off = 2*nEntities;
+
+      /* Loop over the entities and store the metric terms. */
+      unsigned short ii = 0;
+      for(unsigned short j=0; j<nEntities; ++j) {
+        const unsigned short jx = 2*j; const unsigned short jy = jx+1;
+        const su2double dxdr = gradCoor[jx],     dydr = gradCoor[jy];
+        const su2double dxds = gradCoor[jx+off], dyds = gradCoor[jy+off];
+
+        metricTerms[ii++] =  dxdr*dyds - dxds*dydr; // J
+        metricTerms[ii++] =  dyds;   // J drdx
+        metricTerms[ii++] = -dxds;   // J drdy
+        metricTerms[ii++] = -dydr;   // J dsdx
+        metricTerms[ii++] =  dxdr;   // J dsdy
+      }
+
+      break;
+    }
+
+    case 3: {
+      /* 3D computation. Store the offset between the r and s and r and t derivatives. */
+      unsigned short offS = 3*nEntities, offT = 6*nEntities;
+
+      /* Loop over the entities and store the metric terms. */
+      unsigned short ii = 0;
+      for(unsigned short j=0; j<nEntities; ++j) {
+        const unsigned short jx = 3*j; const unsigned short jy = jx+1, jz = jx+2;
+        const su2double dxdr = gradCoor[jx],      dydr = gradCoor[jy],      dzdr = gradCoor[jz];
+        const su2double dxds = gradCoor[jx+offS], dyds = gradCoor[jy+offS], dzds = gradCoor[jz+offS];
+        const su2double dxdt = gradCoor[jx+offT], dydt = gradCoor[jy+offT], dzdt = gradCoor[jz+offT];
+
+        metricTerms[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
+                          - dxds*(dydr*dzdt - dzdr*dydt)
+                          + dxdt*(dydr*dzds - dzdr*dyds); // J
+
+        metricTerms[ii++] = dyds*dzdt - dzds*dydt;  // J drdx
+        metricTerms[ii++] = dzds*dxdt - dxds*dzdt;  // J drdy
+        metricTerms[ii++] = dxds*dydt - dyds*dxdt;  // J drdz
+
+        metricTerms[ii++] = dzdr*dydt - dydr*dzdt;  // J dsdx
+        metricTerms[ii++] = dxdr*dzdt - dzdr*dxdt;  // J dsdy
+        metricTerms[ii++] = dydr*dxdt - dxdr*dydt;  // J dsdz
+
+        metricTerms[ii++] = dydr*dzds - dzdr*dyds;  // J dtdx
+        metricTerms[ii++] = dzdr*dxds - dxdr*dzds;  // J dtdy
+        metricTerms[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
+      }
+
+      break;
+    }
   }
 }
