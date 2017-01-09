@@ -7202,13 +7202,23 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         }
 
         getline (mesh_file, text_line);
-        text_line.erase(0,14);
-        if (text_line == "BSPLINE_UNIFORM"){
-          Blending = BSPLINE_UNIFORM;
+        if (text_line.substr(0,12) != "FFD_BLENDING"){
+          if (rank == MASTER_NODE) {
+            cout << endl << "Deprecated FFD information found in mesh file." << endl;
+            cout << "FFD information generated with SU2 version <= 4.3 is incompatible with the current version." << endl;
+            cout << "Run SU2_DEF again with DV_KIND= FFD_SETTING." << endl;
+          }
+          exit(EXIT_FAILURE);
         }
+        text_line.erase(0,14);
         if (text_line == "BEZIER"){
           Blending = BEZIER;
         }
+        if (text_line == "BSPLINE_UNIFORM"){
+          Blending = BSPLINE_UNIFORM;
+        }
+
+
 
         if (Blending == BSPLINE_UNIFORM) {
           getline (mesh_file, text_line);
