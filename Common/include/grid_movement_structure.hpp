@@ -179,7 +179,6 @@ public:
    */
   su2double GetDerivative(short val_i, su2double val_t, short val_order_der);
 
-
   /*!
    * \brief Set the order and number of control points.
    * \param[in] val_order - The new order of the function.
@@ -191,7 +190,7 @@ public:
 
 /*!
  * \class CBezierBlending
- * \brief Class that defines the blending using Bernteinpolynomials (Bezier Curves).
+ * \brief Class that defines the blending using Bernsteinpolynomials (Bezier Curves).
  * \author F. Palacios, T. Albring
  * \version 4.3.0 "Cardinal"
  */
@@ -200,7 +199,6 @@ class CBezierBlending : public CFreeFormBlending{
 private:
 
   vector<su2double> binomial; /*!< \brief Temporary vector for the Bernstein evaluation. */
-
 
   /*!
    * \brief Returns the value of the i-th Bernstein polynomial of order n.
