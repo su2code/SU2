@@ -5177,7 +5177,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               case SA:	   cout << "       Res[nu]"; break;
               case SA_NEG: cout << "       Res[nu]"; break;
               case SST:	   cout << "     Res[kine]" << "     Res[omega]"; break;
-              case KE:	   cout << "      Res[kine]" << "      Res[epsi]" << "       Res[zeta]" << "       Res[f]   "; break;
+              case KE:	   cout << "      Res[kine]" << "      Res[epsi]" << "       Res[zeta]" << "       Res[f]    "; break;
             }
             
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
