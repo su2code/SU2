@@ -2804,7 +2804,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
       (config->GetDesign_Variable(0) == FFD_CAMBER) ||
       (config->GetDesign_Variable(0) == FFD_THICKNESS) ||
-      (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)) {
+      (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)||
+      (config->GetDesign_Variable(0) == FFD_PLANE)) {
     
     /*--- Definition of the FFD deformation class ---*/
     
@@ -2902,6 +2903,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
                 case FFD_CAMBER :           SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_THICKNESS :        SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, false); break;
                 case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
+                case FFD_PLANE :            SetFFDPlane(geometry, config, FFDBox[iFFDBox], iDV, false); break;
               }
             }
             
@@ -4131,6 +4133,53 @@ void CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 		
 	}
 	
+}
+
+void CSurfaceMovement::SetFFDPlane(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox,
+    unsigned short iDV, bool ResetDef) {
+  su2double Ampl, movement[3] = {0.0,0.0,0.0};
+  unsigned short index[3], iIndex,jIndex, kIndex, pIndex;
+  unsigned short lOrder, mOrder, iOrder,jOrder;
+  string design_FFDBox;
+
+  /*--- Set control points to its original value (even if the
+   design variable is not in this box) ---*/
+
+  if (ResetDef == true) FFDBox->SetOriginalControlPoints();
+
+  design_FFDBox = config->GetFFDTag(iDV);
+  Ampl = config->GetDV_Value(iDV);
+  pIndex =  SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+  kIndex =  SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+  index[pIndex] = kIndex;
+  movement[pIndex] = Ampl;
+
+  if (pIndex==1) { // x plane movement (l constant)
+    lOrder = FFDBox->GetmOrder();
+    mOrder = FFDBox->GetnOrder();
+    iIndex = 1; jIndex = 2;
+  }
+  else if(pIndex==2){ // y plane movement (m constant)
+    lOrder = FFDBox->GetnOrder();
+    mOrder = FFDBox->GetlOrder();
+    iIndex = 2; jIndex = 0;
+  }
+  else{ // z plane movement (n constant)
+    lOrder = FFDBox->GetlOrder();
+    mOrder = FFDBox->GetmOrder();
+    iIndex = 0; jIndex = 1;
+  }
+
+  if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
+
+    for (iOrder = 0; iOrder < lOrder; iOrder++)
+        for (jOrder = 0; jOrder < mOrder; jOrder++){
+            index[iIndex] = iOrder;
+            index[jIndex] = jOrder;
+            FFDBox->SetControlPoints(index, movement);
+        }
+  }
+
 }
 
 void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,

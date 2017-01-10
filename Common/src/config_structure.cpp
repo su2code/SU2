@@ -3928,6 +3928,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
           case FFD_ANGLE_OF_ATTACK:   cout << "FFD (angle of attack) <-> "; break;
           case CUSTOM:                cout << "Custom DV <-> "; break;
+          case FFD_PLANE:             cout << "FFD (plane) <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -3952,7 +3953,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] == PARABOLIC) ||
             (Design_Variable[iDV] == AIRFOIL) ||
             (Design_Variable[iDV] == HTP_INCIDENCE) ||
-            (Design_Variable[iDV] == FFD_ANGLE_OF_ATTACK) ) nParamDV = 2;
+            (Design_Variable[iDV] == FFD_ANGLE_OF_ATTACK) ||
+            (Design_Variable[iDV] == FFD_PLANE)   ) nParamDV = 2;
         if ((Design_Variable[iDV] ==  TRANSLATION) ||
             (Design_Variable[iDV] ==  NACA_4DIGITS) ||
 	    (Design_Variable[iDV] ==  CST) ||
@@ -3984,7 +3986,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_ROTATION) ||
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
-               (Design_Variable[iDV] == FFD_THICKNESS))) cout << FFDTag[iDV];
+               (Design_Variable[iDV] == FFD_THICKNESS) ||
+               (Design_Variable[iDV] == FFD_PLANE)) cout << FFDTag[iDV];
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
