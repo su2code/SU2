@@ -13977,7 +13977,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
         for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 
@@ -14031,7 +14031,7 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
 
     /*--- Number of markers on the FSI interface ---*/
 
-    nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+    nMarkerFSI     = (flow_config->GetMarker_n_ZoneInterface())/2;
     nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
     nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
 
@@ -14057,8 +14057,8 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
         /*--- On the structural side ---*/
 
         for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++) {
-            /*--- If the tag GetMarker_All_FSIinterface(iMarkerFEA) equals the index we are looping at ---*/
-            if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ) {
+            /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFEA) equals the index we are looping at ---*/
+            if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ) {
                 /*--- We have identified the local index of the FEA marker ---*/
                 /*--- Store the number of local points that belong to markFEA on each processor ---*/
                 /*--- This includes the halo nodes ---*/
@@ -14078,8 +14078,8 @@ void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMo
         /*--- On the fluid side ---*/
 
         for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++) {
-            /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-            if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ) {
+            /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+            if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ) {
                 /*--- We have identified the local index of the Flow marker ---*/
                 /*--- Store the number of local points that belong to markFlow on each processor ---*/
                 /*--- This includes the halo nodes ---*/
@@ -14346,7 +14346,7 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
 
     for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
 
-      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
 
         for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
 

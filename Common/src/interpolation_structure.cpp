@@ -269,8 +269,8 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-    /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
-    if (config->GetMarker_All_FSIinterface(iMarker) == val_marker_interface ) {
+    /*--- If the tag GetMarker_All_ZoneInterface(iMarker) equals the index we are looping at ---*/
+    if (config->GetMarker_All_ZoneInterface(iMarker) == val_marker_interface ) {
 
       /*--- We have identified the identifier for the interface marker ---*/
       return iMarker;
@@ -323,7 +323,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
   /*--- Initialize variables --- */
   
-  nMarkerInt = (int) ( config[donorZone]->GetMarker_n_FSIinterface() / 2 );
+  nMarkerInt = (int) ( config[donorZone]->GetMarker_n_ZoneInterface() / 2 );
   
   nDim = donor_geometry->GetnDim();
 
@@ -542,7 +542,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
 #endif
 
-  nMarkerInt = (config[donorZone]->GetMarker_n_FSIinterface())/2;
+  nMarkerInt = (config[donorZone]->GetMarker_n_ZoneInterface())/2;
 
   /*--- For the number of markers on the interface... ---*/
   for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
@@ -1127,7 +1127,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   su2double coeff;
 
   /*--- Number of markers on the interface ---*/
-  nMarkerInt = (config[targetZone]->GetMarker_n_FSIinterface())/2;
+  nMarkerInt = (config[targetZone]->GetMarker_n_ZoneInterface())/2;
 
   /*--- For the number of markers on the interface... ---*/
   for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
@@ -1490,7 +1490,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   /* 2 - Find boundary tag between touching grids */
 
   /*--- Number of markers on the FSI interface ---*/
-  nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_FSIinterface() ) / 2;
+  nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_ZoneInterface() ) / 2;
 
   /*--- For the number of markers on the interface... ---*/
   for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
