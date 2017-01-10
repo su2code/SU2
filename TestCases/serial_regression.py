@@ -580,7 +580,7 @@ def main():
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D.cfg_file  = "channel_2D_SL.cfg"
+    channel_2D.cfg_file  = "channel_2D_SM.cfg"
     channel_2D.test_iter = 4
     channel_2D.test_vals = [-1.498300, 4.541411, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "SU2_CFD"
@@ -592,7 +592,7 @@ def main():
     # Channel_3D
     channel_3D           = TestCase('channel_3D')
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
-    channel_3D.cfg_file  = "channel_3D_SL.cfg"
+    channel_3D.cfg_file  = "channel_3D_SM.cfg"
     channel_3D.test_iter = 1
     channel_3D.test_vals = [-1.899948, 4.032874, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "SU2_CFD"
