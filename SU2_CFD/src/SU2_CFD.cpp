@@ -38,6 +38,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
+  unsigned short nTimeInstances, nGeomZones;
   char config_file_name[MAX_STRING_SIZE];
   bool fsi;
   
@@ -69,6 +70,7 @@ int main(int argc, char *argv[]) {
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+
   fsi = config->GetFSI_Simulation();
 
   /*--- First, given the basic information about the number of zones and the
@@ -86,11 +88,22 @@ int main(int argc, char *argv[]) {
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim);
 
-  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && nZone == 1) {
+
+    nTimeInstances = config->GetnTimeInstances();
 
     /*--- Use the Harmonic Balance driver. ---*/
 
-    driver = new CGeneralHBDriver(config_file_name, nZone, nDim);
+    driver = new CHBDriver(config_file_name, nTimeInstances, nDim);
+
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && nZone == 2) {
+
+    nGeomZones = nZone;
+    nTimeInstances = config->GetnTimeInstances();
+    /*--- Use the MultiZone Harmonic Balance driver. ---*/
+
+    driver = new CGeneralHBDriver(config_file_name, nGeomZones*nTimeInstances, nDim);
+
 
   } else if ((nZone == 2) && fsi) {
 
