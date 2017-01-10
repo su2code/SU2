@@ -2010,7 +2010,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
           for (jEdge = 0; jEdge < nEdges; jEdge++) {
 
-            /*-- Determine whether this face/edge is on the marker --*/
+            /*-- Retrieve the index of the connected boundary nodes --*/
 
             EdgeIndex = target_geometry->node[target_iPoint]->GetEdge(jEdge);
 
@@ -2029,6 +2029,10 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
               }
             }
           }
+          
+          /* --- If the node is at the head/tail of an open boundary (such as periodic boundaries) --- */
+          if ( count == 1 )
+            target_segment[1] == target_iPoint;
 
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
@@ -2052,10 +2056,16 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
           while( !check ){
   
             /*--- Proceeds until the value of the intersection area is null ---*/
- 
-            donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
-            donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
-
+            
+            if ( Buffer_Receive_nLinkedNodes[donor_iPoint] == 1 ){
+		      donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
+		      donor_backward_point = donor_iPoint;
+		    }
+		    else{
+              donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
+              donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
+            }
+            
             for(iDim = 0; iDim < nDim; iDim++){
               donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
               donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
@@ -2068,7 +2078,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
               continue;
             }
   
-            /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+            /*--- In case the element intersects the target cell, update the auxiliary communication data structure ---*/
 
             tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
             tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
@@ -2128,7 +2138,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
           /*--- Proceeds along the backward direction (depending on which connected boundary node is found first) ---*/
 
-          while( !check ){
+          while( !check && Buffer_Receive_nLinkedNodes[donor_iPoint] != 1){
 
             /*--- Proceeds until the value of the intersection length is null ---*/
             donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_OldiPoint);
@@ -2146,7 +2156,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
               continue;
             }
 
-            /*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+            /*--- In case the element intersects the target cell, update the auxiliary communication data structure ---*/
 
             tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
             tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
