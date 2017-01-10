@@ -120,7 +120,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = (donor_config->GetMarker_n_ZoneInterface())/2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -146,8 +146,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     /*--- On the donor side ---*/
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
@@ -157,8 +157,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     /*--- On the target side ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
@@ -518,7 +518,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = ( donor_config->GetMarker_n_FSIinterface() ) / 2;
+  nMarkerInt     = ( donor_config->GetMarker_n_ZoneInterface() ) / 2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -536,8 +536,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
@@ -547,8 +547,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     /*--- On the target side we only have to identify the marker; then we'll loop over it and retrieve from the fluid points ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         /*--- Store the identifier for the fluid marker ---*/
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -838,7 +838,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = (donor_config->GetMarker_n_ZoneInterface())/2;
   nMarkerTarget  = target_config->GetnMarker_All();
   nMarkerDonor   = donor_config->GetnMarker_All();
   
@@ -862,8 +862,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     /*--- On the donor side ---*/
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -874,8 +874,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     /*--- On the target side we only have to identify the marker; then we'll loop over it and retrieve from the donor points ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         /*--- Store the identifier for the fluid marker ---*/
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -1191,7 +1191,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = (donor_config->GetMarker_n_ZoneInterface())/2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -1217,8 +1217,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     /*--- On the donor side ---*/
     
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerDonor) equals the index we are looping at ---*/
+      if ( donor_config->GetMarker_All_ZoneInterface(iMarkerDonor) == iMarkerInt ) {
         /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
@@ -1229,8 +1229,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     /*--- On the target side we only have to identify the marker; then we'll loop over it and retrieve from the donor points ---*/
     
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
+      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( target_config->GetMarker_All_ZoneInterface(iMarkerTarget) == iMarkerInt ) {
         /*--- Store the identifier for the fluid marker ---*/
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
