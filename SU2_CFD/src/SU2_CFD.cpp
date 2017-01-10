@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 
     /*--- Use the Harmonic Balance driver. ---*/
 
-    driver = new CHBDriver(config_file_name, nZone, nDim);
+    driver = new CGeneralHBDriver(config_file_name, nZone, nDim);
 
   } else if ((nZone == 2) && fsi) {
 

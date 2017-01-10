@@ -425,54 +425,84 @@ public:
  */
 class CHBDriver : public CDriver {
 
-private:
+protected:
 
-	su2double **D; /*!< \brief Harmonic Balance operator. */
+  su2double **D; /*!< \brief Harmonic Balance operator. */
 
 public:
 
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] confFile - Configuration file name.
-	 * \param[in] val_nZone - Total number of zones.
-	 * \param[in] val_nDim - Number of dimensions.
-	 */
-	CHBDriver(char* confFile,
-			unsigned short val_nZone,
-			unsigned short val_nDim);
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   */
+  CHBDriver(char* confFile,
+      unsigned short val_nZone,
+      unsigned short val_nDim);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CHBDriver(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHBDriver(void);
 
-	/*!
-	 * \brief Run a single iteration of a Harmonic Balance problem.
-	 */
-	void Run();
+  /*!
+   * \brief Run a single iteration of a Harmonic Balance problem.
+   */
+  void Run();
 
-	/*!
-	 * \brief Computation and storage of the Harmonic Balance method source terms.
-	 * \author T. Economon, K. Naik
-	 * \param[in] iZone - Current zone number.
-	 */
-	void SetHarmonicBalance(unsigned short iZone);
+  /*!
+   * \brief Computation and storage of the Harmonic Balance method source terms.
+   * \author T. Economon, K. Naik
+   * \param[in] iZone - Current zone number.
+   */
+  void SetHarmonicBalance(unsigned short iZone);
 
-	/*!
-	 * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
-	 * \author A. Rubino, S. Nimmagadda
-	 */
-	void ComputeHB_Operator();
+  /*!
+   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
+   * \author A. Rubino, S. Nimmagadda
+   */
+  void ComputeHB_Operator();
 
-	/*!
-	 * \brief Update the solution for the Harmonic Balance.
-	 */
-	void Update();
+  /*!
+   * \brief Update the solution for the Harmonic Balance.
+   */
+  void Update();
 
-	/*!
-	 * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
-	 */
-	void ResetConvergence();
+  /*!
+   * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
+   */
+  void ResetConvergence();
+};
+
+
+
+/*!
+ * \class CGeneralHBDriver
+ * \brief Temporary Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time and geometric zones.
+ * \author A.Rubino
+ * \version 4.3.0 "Cardinal"
+ */
+class CGeneralHBDriver : public CHBDriver{
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   */
+  CGeneralHBDriver(char* confFile,
+      unsigned short val_nZone,
+      unsigned short val_nDim);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CGeneralHBDriver(void);
+
+
 };
 
 
