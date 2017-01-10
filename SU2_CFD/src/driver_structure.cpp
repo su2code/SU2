@@ -397,7 +397,7 @@ CDriver::CDriver(char* confFile,
 					geometry_container, solver_container, numerics_container,
 					config_container, surface_movement, grid_movement, FFDBox, iZone);
 
-	/*--- Initiate some variables used for external communications trough the Py wrapper. ---*/
+	/*--- Initialize some variables used for external communications trough the Py wrapper. ---*/
 	APIVarCoord[0] = 0.0;
 	APIVarCoord[1] = 0.0;
 	APIVarCoord[2] = 0.0;
@@ -3020,10 +3020,56 @@ su2double CDriver::Get_Lift() {
 	return CLift * factor;
 }
 
+su2double CDriver::Get_Mx(){
+
+  unsigned short val_iZone = ZONE_0;
+  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
+  su2double CMx, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2(0.0), factor;
+
+  /*--- Export free-stream density and reference area ---*/
+  RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
+  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+
+  /*--- Calculate free-stream velocity (squared) ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
+
+  /*--- Calculate moment around x-axis based on coefficients ---*/
+  factor = 0.5 * RefDensity * RefAreaCoeff * RefVel2;
+  CMx = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+
+  return CMx* factor * RefLengthCoeff;
+
+}
+
+su2double CDriver::Get_My(){
+
+  unsigned short val_iZone = ZONE_0;
+  unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
+  su2double CMy, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2(0.0), factor;
+
+  /*--- Export free-stream density and reference area ---*/
+  RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
+  RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
+  RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
+
+  /*--- Calculate free-stream velocity (squared) ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
+
+  /*--- Calculate moment around x-axis based on coefficients ---*/
+  factor = 0.5 * RefDensity * RefAreaCoeff * RefVel2;
+  CMy = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+
+  return CMy* factor * RefLengthCoeff;
+
+}
+
 su2double CDriver::Get_Mz() {
 
-	unsigned short val_iZone = ZONE_0;
-	unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
+        unsigned short val_iZone = ZONE_0;
+        unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
 	su2double CMz, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2(0.0), factor;
 
 	/*--- Export free-stream density and reference area ---*/
@@ -3040,7 +3086,7 @@ su2double CDriver::Get_Mz() {
 
 	/*--- Calculate moment around z-axis based on coefficients ---*/
 	factor = 0.5 * RefDensity * RefAreaCoeff * RefVel2;
-	CMz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+        CMz = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
 
 	return CMz * factor * RefLengthCoeff;
 
