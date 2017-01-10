@@ -56,6 +56,11 @@ pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
 
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
+PY_LIB = -lpython2.7 \
+         -L/usr/lib \
+         -L/usr/lib/x86_64-linux-gnu
+         
+
 SWIG_INCLUDE = ${PY_INCLUDE}
 
 SUBDIR_EXEC = ${bindir}
@@ -81,7 +86,7 @@ SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
 		${abs_top_builddir}/Common/lib/libSU2.a
 
 # Set the linking flags to use
-pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB}
+pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB} ${CGNS_LIB} ${PY_LIB}
 
 # Set the command line flags to use for compilation
 pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${CGNS_INCLUDE} ${pySU2_INCLUDE}
