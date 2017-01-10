@@ -531,7 +531,7 @@ def main():
     # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
-    channel_2D.cfg_file  = "channel_2D_NN.cfg"
+    channel_2D.cfg_file  = "channel_2D_SL.cfg"
     channel_2D.test_iter = 4
     channel_2D.test_vals = [-1.498340, 4.541397, 0.000000, 0.000000] #last 4 columns
     channel_2D.su2_exec  = "parallel_computation.py -f"
@@ -543,7 +543,7 @@ def main():
     # Channel_3D
     channel_3D           = TestCase('channel_3D')
     channel_3D.cfg_dir   = "sliding_interface/channel_3D"
-    channel_3D.cfg_file  = "channel_3D_NN.cfg"
+    channel_3D.cfg_file  = "channel_3D_SL.cfg"
     channel_3D.test_iter = 2
     channel_3D.test_vals = [-1.998330, 3.957669, 0.000000, 0.000000] #last 4 columns
     channel_3D.su2_exec  = "parallel_computation.py -f"
