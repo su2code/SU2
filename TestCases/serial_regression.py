@@ -939,24 +939,6 @@ def main():
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
     pass_list.append(pywrapper_fsi2d.run_test())
-
-
-    ######################################
-    ### RUN EXTERNAL FSI COUPLING TEST ###
-    ######################################
-
-    # Pitch-plunge NACA 0012 (external FSI coupling)
-    #coupled_FSI            = TestCase('coupled_FSI')
-    #coupled_FSI.cfg_dir    = "coupled_fsi/2d_aeroelasticity"
-    #coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
-    #coupled_FSI.test_iter  = 1
-    #coupled_FSI.su2_exec   = "fsi_computation.py"
-    #coupled_FSI.timeout    = 3200
-    #coupled_FSI.reference_file = "StructHistory.dat.ref_serial"
-    #coupled_FSI.test_file  = "StructHistory.dat"
-    #pass_list.append(coupled_FSI.run_filediff())
-    #test_list.append(coupled_FSI)
-
     
     # Tests summary
     print '=================================================================='
