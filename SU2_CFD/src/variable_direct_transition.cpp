@@ -38,9 +38,9 @@ CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CTurbVariable(val_nDim, val_nvar, config) {
   
-	// Initialization of variables
-	Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
-	Solution[1] = val_REth;          Solution_Old[1] = val_REth;
+  // Initialization of variables
+  Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
+  Solution[1] = val_REth;          Solution_Old[1] = val_REth;
   
 }
 
@@ -48,7 +48,7 @@ CTransLMVariable::~CTransLMVariable(void) { }
 
 void CTransLMVariable::SetGammaEff() {
   
-	/* -- Correction for separation-induced transition -- */
-	Solution[0] = max(Solution[0], gamma_sep);
+  /* -- Correction for separation-induced transition -- */
+  Solution[0] = max(Solution[0], gamma_sep);
   
 }
