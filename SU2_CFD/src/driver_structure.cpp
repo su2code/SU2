@@ -271,10 +271,10 @@ CDriver::CDriver(char* confFile,
     cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
   if ( nZone > 1 ) {
-		for (iZone = 0; iZone < nZone; iZone++) {
+    for (iZone = 0; iZone < nZone; iZone++){
 			transfer_container[iZone] = new CTransfer*[nZone];
 			interpolator_container[iZone] = new CInterpolator*[nZone];
-			for (jZone = 0; jZone < nZone; jZone++) {
+      for (jZone = 0; jZone < nZone; jZone++){
         transfer_container[iZone][jZone]     = NULL;
 				interpolator_container[iZone][jZone] = NULL;
 			}
@@ -438,7 +438,7 @@ void CDriver::Postprocessing() {
   
   if (interpolator_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-	  if (interpolator_container[iZone] != NULL) {
+	  if (interpolator_container[iZone] != NULL){
             delete interpolator_container[iZone];
       }
     }
@@ -507,7 +507,7 @@ void CDriver::Postprocessing() {
    wall clock time required. ---*/
 
 #ifndef HAVE_MPI
-	StopTime = su2double(clock()) / su2double(CLOCKS_PER_SEC);
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
 	StopTime = MPI_Wtime();
 #endif
@@ -2204,9 +2204,9 @@ void CDriver::Interface_Preprocessing() {
 	/*--- Coupling between zones ---*/
 	// There's a limit here, the interface boundary must connect only 2 zones
 	/*--- Loops over all target and donor zones to find which ones are connected through an interface boundary (fsi or sliding mesh) ---*/
-	for (targetZone = 0; targetZone < nZone; targetZone++) {
+  for (targetZone = 0; targetZone < nZone; targetZone++) {
 
-		for (donorZone = 0; donorZone < nZone; donorZone++) {
+    for (donorZone = 0; donorZone < nZone; donorZone++) {
 
       if ( donorZone == targetZone ) // We're processing the same zone, so skip the following
 				continue;
@@ -2222,7 +2222,7 @@ void CDriver::Interface_Preprocessing() {
 				/*--- On the donor side ---*/
 				nMarkerDonor = config_container[donorZone]->GetnMarker_All();
 
-				for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
+        for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
 
 					/*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
           if ( config_container[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
@@ -2256,9 +2256,9 @@ void CDriver::Interface_Preprocessing() {
 
 				SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-				if (rank == MASTER_NODE) {
-					for (iRank = 0; iRank < nProcessor; iRank++) {
-						if( Buffer_Recv_mark[iRank] != -1 ) {
+      if (rank == MASTER_NODE) {
+        for (iRank = 0; iRank < nProcessor; iRank++) {
+          if( Buffer_Recv_mark[iRank] != -1 ) {
 							Donor_check = Buffer_Recv_mark[iRank];
 
 							break;
@@ -2270,9 +2270,9 @@ void CDriver::Interface_Preprocessing() {
 
 				SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-				if (rank == MASTER_NODE) {
-					for (iRank = 0; iRank < nProcessor; iRank++) {
-						if( Buffer_Recv_mark[iRank] != -1 ) {
+      if (rank == MASTER_NODE){
+        for (iRank = 0; iRank < nProcessor; iRank++){
+          if( Buffer_Recv_mark[iRank] != -1 ){
 							Target_check = Buffer_Recv_mark[iRank];
 
 							break;
@@ -2347,7 +2347,7 @@ void CDriver::Interface_Preprocessing() {
 				}
 				/*--- Else: interpolate ---*/
 				else {
-					switch (config_container[donorZone]->GetKindInterpolation()) {
+        switch (config_container[donorZone]->GetKindInterpolation()) {
 
 					case NEAREST_NEIGHBOR:
             interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
@@ -3259,7 +3259,7 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
 	switch (config_container[targetZone]->GetKind_TransferMethod()) {
 
 	case BROADCAST_DATA:
-		if (MatchingMesh) {
+      if (MatchingMesh) {
         transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
         geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
         config_container[donorZone], config_container[targetZone]);
@@ -3276,7 +3276,7 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
 		break;
 
 	case SCATTER_DATA:
-		if (MatchingMesh) {
+    if (MatchingMesh) {
       transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
       geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
       config_container[donorZone], config_container[targetZone]);
@@ -3290,7 +3290,7 @@ void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short target
 		break;
 
 	case ALLGATHER_DATA:
-		if (MatchingMesh) {
+    if (MatchingMesh) {
       cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
 			exit(EXIT_FAILURE);
     }
@@ -3635,7 +3635,7 @@ void CHBDriver::ComputeHB_Operator() {
   complex<su2double> **E    = new complex<su2double>*[nZone];
   complex<su2double> **Einv = new complex<su2double>*[nZone];
   complex<su2double> **DD   = new complex<su2double>*[nZone];
-	for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone; iZone++) {
     E[iZone]    = new complex<su2double>[nZone];
     Einv[iZone] = new complex<su2double>[nZone];
     DD[iZone]   = new complex<su2double>[nZone];
@@ -3648,7 +3648,7 @@ void CHBDriver::ComputeHB_Operator() {
   Period /= config_container[ZONE_0]->GetTime_Ref();
 
   /*--- Build the array containing the selected frequencies to solve ---*/
-	for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone; iZone++) {
     Omega_HB[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
     Omega_HB[iZone] /= config_container[iZone]->GetOmega_Ref();
   }
@@ -3656,7 +3656,7 @@ void CHBDriver::ComputeHB_Operator() {
   /*--- Build the diagonal matrix of the frequencies DD ---*/
   for (i = 0; i < nZone; i++) {
     for (k = 0; k < nZone; k++) {
-			if (k == i ) {
+      if (k == i ) {
         DD[i][k] = J*Omega_HB[k];
       }
     }
@@ -3752,7 +3752,7 @@ void CHBDriver::ComputeHB_Operator() {
   /*---  Temporary complex HB operator  ---*/
   complex<su2double> **Dcpx    = new complex<su2double>*[nZone];
 
-	for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone; iZone++){
     Temp[iZone]    = new complex<su2double>[nZone];
     Dcpx[iZone]   = new complex<su2double>[nZone];
   }
@@ -3785,7 +3785,7 @@ void CHBDriver::ComputeHB_Operator() {
   }
 
   /*--- Deallocate dynamic memory ---*/
-		for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone; iZone++){
     delete [] E[iZone];
     delete [] Einv[iZone];
     delete [] DD[iZone];
@@ -3867,7 +3867,7 @@ void CFSIDriver::Run() {
 		else
 			nIntIter = 1;
 
-		for (IntIter = 0; IntIter < nIntIter; IntIter++) {
+	for (IntIter = 0; IntIter < nIntIter; IntIter++){
 
 			config_container[ZONE_FLOW]->SetIntIter(IntIter);
 
