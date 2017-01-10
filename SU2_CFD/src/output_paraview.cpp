@@ -96,20 +96,22 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
 
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
+
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
-        (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+        (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
+
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
     
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
-        (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+        (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
     
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
@@ -936,6 +938,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   string filename, fieldname;
   
 	/*--- Write file name with extension ---*/
+  
   if (surf_sol) {
     if (adjoint)
       filename = config->GetSurfAdjCoeff_FileName();
@@ -948,14 +951,14 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     else
       filename = config->GetFlow_FileName();
   }
-  if (config->GetKind_SU2()==SU2_DEF) {
+  if (config->GetKind_SU2() == SU2_DEF) {
     if (new_file) {
       if (surf_sol) filename = "surface_grid";
       else filename = "volumetric_grid";
     }
     else {
-      if (surf_sol) filename = "surface_deformed_grid";
-      else filename = "volumetric_deformed_grid";
+      if (surf_sol) filename = "surface_grid_def";
+      else filename = "volumetric_grid_def";
     }
   }
   
@@ -980,19 +983,19 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
   
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
 	if (((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
 	}
   
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+	if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 		if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
 		if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));

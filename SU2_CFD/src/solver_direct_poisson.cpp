@@ -108,9 +108,9 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	for (iDim = 0; iDim < nDim; iDim++)
 		Smatrix[iDim] = new su2double [nDim];
   
-	cvector = new su2double* [nVar]; // c vector := transpose(WA)*(Wb)
+	Cvector = new su2double* [nVar]; // c vector := transpose(WA)*(Wb)
 	for (iVar = 0; iVar < nVar; iVar++)
-		cvector[iVar] = new su2double [nDim];
+		Cvector[iVar] = new su2double [nDim];
   
 	/*--- Always instantiate and initialize the variable to a zero value. ---*/
   
@@ -204,7 +204,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				Coord_0 = geometry->node[Point_0]->GetCoord();
 //				Coord_1 = geometry->node[Point_1]->GetCoord();
 //				Coord_2 = geometry->node[Point_2]->GetCoord();
-//        
+//
 //				for (iDim = 0; iDim < nDim; iDim++) {
 //					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
@@ -237,7 +237,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
 //				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
 //				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
-//        
+//
 //				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 //          
 //					Point_0 = geometry->elem[iElem]->GetNode(3);
@@ -247,7 +247,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //					Coord_0 = geometry->node[Point_0]->GetCoord();
 //					Coord_1 = geometry->node[Point_1]->GetCoord();
 //					Coord_2 = geometry->node[Point_2]->GetCoord();
-//          
+//
 //					for (iDim = 0; iDim < nDim; iDim++) {
 //						a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //						b[iDim] = Coord_1[iDim]-Coord_2[iDim];

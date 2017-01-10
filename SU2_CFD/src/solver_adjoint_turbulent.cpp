@@ -113,9 +113,9 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		for (iDim = 0; iDim < nDim; iDim++)
 			Smatrix[iDim] = new su2double [nDim];
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new su2double* [nVar+1];
+		Cvector = new su2double* [nVar+1];
 		for (iVar = 0; iVar < nVar+1; iVar++)
-			cvector[iVar] = new su2double [nDim];
+			Cvector[iVar] = new su2double [nDim];
 	}
 	
 	/*--- Far-Field values and initizalization ---*/
@@ -149,37 +149,66 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
-    long *Global2Local;
-    Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    /*--- First, set all indices to a negative value by default ---*/
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-      Global2Local[iPoint] = -1;
-    }
+    
+    map<unsigned long,unsigned long> Global2Local;
+    map<unsigned long,unsigned long>::const_iterator MI;
+    
     /*--- Now fill array with the transform values only for local points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
     }
     
 		/*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
+    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
     /*--- The first line is the header ---*/
+    
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
-			istringstream point_line(text_line);
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
       
+      getline (restart_file, text_line);
+      
+      istringstream point_line(text_line);
+
       /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      if (iPoint_Local >= 0) {
+       on the current processor, we will load and instantiate the vars. ---*/
+      
+      MI = Global2Local.find(iPoint_Global);
+      if (MI != Global2Local.end()) {
+        
+        iPoint_Local = Global2Local[iPoint_Global];
+        
         if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
         node[iPoint_Local] = new CAdjTurbVariable(Solution[0], nDim, nVar, config);
+        iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
+    }
+    
+    /*--- Detect a wrong solution file ---*/
+    
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+    
+#ifndef HAVE_MPI
+    rbuf_NotMatching = sbuf_NotMatching;
+#else
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
     
     /*--- Instantiate the variable class with an arbitrary solution
@@ -192,8 +221,6 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		/*--- Close the restart file ---*/
 		restart_file.close();
     
-    /*--- Free memory needed for the transformation ---*/
-    delete [] Global2Local;
 	}
   
   /*--- MPI solution ---*/

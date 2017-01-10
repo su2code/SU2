@@ -35,7 +35,6 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-	TS_Source = NULL;
 	Primitive = NULL;
 	
   Gradient_Primitive = NULL;
@@ -66,7 +65,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   
   /*--- Array initialization ---*/
   
-  TS_Source = NULL;
   Primitive = NULL;
   
   Gradient_Primitive = NULL;
@@ -150,13 +148,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
       Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
     }
 	}
-  
-	/*--- Allocate space for the time spectral source terms ---*/
-  
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new su2double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
-	}
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
   
@@ -191,7 +182,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   
   /*--- Array initialization ---*/
   
-  TS_Source = NULL;
   Primitive = NULL;
   
   Gradient_Primitive = NULL;
@@ -266,11 +256,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 		}
 	}
   
-	/*--- Allocate space for the time spectral source terms ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-		TS_Source = new su2double[nVar];
-		for (iVar = 0; iVar < nVar; iVar++) TS_Source[iVar] = 0.0;
-	}
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
 	if (windgust) {
@@ -296,7 +281,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 CIncEulerVariable::~CIncEulerVariable(void) {
 	unsigned short iVar;
 
-  if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
   if (WindGust          != NULL) delete [] WindGust;

@@ -4149,6 +4149,7 @@ private:
   su2double dr, dg, dfw;
   bool incompressible;
   bool rotating_frame;
+  bool transition;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;
   
@@ -4459,7 +4460,7 @@ public:
  */
 class CSourceGravity : public CNumerics {
   su2double Froude;
-  bool compressible, incompressible, freesurface;
+  bool compressible, incompressible;
   
 public:
   

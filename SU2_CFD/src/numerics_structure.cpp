@@ -115,7 +115,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		for (jDim = 0; jDim < nDim; jDim++) {
-			if (iDim == jDim) delta[iDim][jDim]=1.0;
+			if (iDim == jDim) delta[iDim][jDim] = 1.0;
 			else delta[iDim][jDim]=0.0;
 		}
 	}
@@ -138,17 +138,17 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
 CNumerics::~CNumerics(void) {
 
-  if (UnitNormal!=NULL) delete [] UnitNormal;
-  if (UnitNormald!=NULL) delete [] UnitNormald;
+  if (UnitNormal!= NULL) delete [] UnitNormal;
+  if (UnitNormald!= NULL) delete [] UnitNormald;
 
-  if (U_n!=NULL) delete [] U_n;
-  if (U_nM1!=NULL) delete [] U_nM1;
-  if (U_nP1!=NULL) delete [] U_nP1;
+  if (U_n!= NULL) delete [] U_n;
+  if (U_nM1!= NULL) delete [] U_nM1;
+  if (U_nP1!= NULL) delete [] U_nP1;
 
 	// visc
-  if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
+  if (Proj_Flux_Tensor!= NULL) delete [] Proj_Flux_Tensor;
 
-  if (Flux_Tensor!=NULL) {
+  if (Flux_Tensor!= NULL) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }
@@ -268,7 +268,6 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
 	}
 
 }
-
 
 void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
                                            su2double *val_velocity,
@@ -453,7 +452,7 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
     
     sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
     
-    val_p_tensor[0][0]=1.0;
+    val_p_tensor[0][0] = 1.0;
     val_p_tensor[0][1]=0.0;
     val_p_tensor[0][2]=0.5*rhooc;
     val_p_tensor[0][3]=0.5*rhooc;
@@ -526,7 +525,7 @@ void CNumerics::GetPMatrix(su2double *val_density, su2double *val_velocity,
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 		zeta = sqvel - (*val_kappa*0.5*sqvel + *val_chi)/(*val_kappa);
 
-		val_p_tensor[0][0]=1.0;
+		val_p_tensor[0][0] = 1.0;
 		val_p_tensor[0][1]=0.0;
 		val_p_tensor[0][2]=0.5*rhooc;
 		val_p_tensor[0][3]=0.5*rhooc;
@@ -635,7 +634,7 @@ void CNumerics::GetPMatrix_inv(su2double *val_density, su2double *val_velocity,
     
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 
-		val_invp_tensor[0][0]=1.0-0.5*gm1_o_c2*sqvel;
+		val_invp_tensor[0][0] = 1.0-0.5*gm1_o_c2*sqvel;
 		val_invp_tensor[0][1]=gm1_o_c2*val_velocity[0];
 		val_invp_tensor[0][2]=gm1_o_c2*val_velocity[1];
 		val_invp_tensor[0][3]=-gm1_o_c2;
@@ -709,7 +708,7 @@ void CNumerics::GetPMatrix_inv(su2double **val_invp_tensor, su2double *val_densi
 		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1];
 		dp_drho = *val_chi + 0.5*sqvel*(*val_kappa);
 
-		val_invp_tensor[0][0]=1.0 - dp_drho/c2;
+		val_invp_tensor[0][0] = 1.0 - dp_drho/c2;
 		val_invp_tensor[0][1]= k_o_c2*val_velocity[0];
 		val_invp_tensor[0][2]= k_o_c2*val_velocity[1];
 		val_invp_tensor[0][3]=-k_o_c2;
@@ -1026,7 +1025,6 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* Lambda, su2double *val_normal,
 		su2double **val_absPeJac) {
-
 
 	su2double lam1, lam2, lam3, lam4;
 	lam1 = Lambda[0]; lam2 = Lambda[1]; lam3 = Lambda[2]; lam4 = Lambda[3];

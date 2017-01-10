@@ -369,6 +369,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Residual_Old = solver->node[iPoint]->GetResidual_Old();
@@ -435,6 +436,7 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
+        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution_Old = solver->node[iPoint]->GetResidual_Old();
@@ -747,7 +749,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       break;
-            
+          
   }
   
 }
@@ -905,7 +907,6 @@ CStructuralIntegration::~CStructuralIntegration(void) { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container,
                                                   CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-//  su2double monitor = 0.0;
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
@@ -929,11 +930,8 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
   solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
 		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
 
-//  /*--- Compute adimensional parameters and the convergence monitor ---*/
-//
-//  monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));
-
   /*--- Convergence strategy ---*/
+
   Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
 
 }

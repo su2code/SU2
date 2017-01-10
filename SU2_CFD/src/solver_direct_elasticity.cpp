@@ -240,12 +240,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
     
-    long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    
-    /*--- First, set all indices to a negative value by default ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-      Global2Local[iPoint] = -1;
+    map<unsigned long,unsigned long> Global2Local;
+    map<unsigned long,unsigned long>::const_iterator MI;
     
     /*--- Now fill array with the transform values only for local points ---*/
     
@@ -262,17 +258,20 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     
     getline (restart_file, text_line);
     
-    while (getline (restart_file, text_line)) {
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file, text_line);
+      
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
+       on the current processor, we will load and instantiate the vars. ---*/
       
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      if (iPoint_Local >= 0) {
+      MI = Global2Local.find(iPoint_Global);
+      if (MI != Global2Local.end()) {
+        
+        iPoint_Local = Global2Local[iPoint_Global];
+        
         if (dynamic) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
@@ -285,7 +284,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
         node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
         iPoint_Global_Local++;
       }
-      iPoint_Global++;
+
     }
     
     /*--- Detect a wrong solution file ---*/
@@ -297,7 +296,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-    
     if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -324,10 +322,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     /*--- Close the restart file ---*/
     
     restart_file.close();
-    
-    /*--- Free memory needed for the transformation ---*/
-    
-    delete [] Global2Local;
     
   }
   
@@ -1016,12 +1010,8 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
   
-  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   
@@ -1042,13 +1032,12 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1.
-     Otherwise, the local index for this node on the current processor
-     will be returned and used to instantiate the vars. ---*/
+     on the current processor, we will load and instantiate the vars. ---*/
     
-    iPoint_Local = Global2Local[iPoint_Global];
-    
-    if (iPoint_Local >= 0) {
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
       
       if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> index;
       if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> index;
@@ -1069,7 +1058,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
 #else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
   if (rbuf_NotMatching != 0) {
     if (rank == MASTER_NODE) {
       cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -1089,10 +1077,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   /*--- Close the restart file ---*/
   
   prestretch_file.close();
-  
-  /*--- Free memory needed for the transformation ---*/
-  
-  delete [] Global2Local;
   
 }
 
@@ -3139,7 +3123,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
   /*--- Compute solution at t_n+1, and update velocities and accelerations ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
+
     for (iVar = 0; iVar < nVar; iVar++) {
       
       /*--- Compute the solution from the previous time step and the solution computed at t+1-alpha_f ---*/
@@ -3148,6 +3132,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
       Solution[iVar]=(1 / (1 - alpha_f))*(node[iPoint]->GetSolution(iVar) -
                                           alpha_f * node[iPoint]->GetSolution_time_n(iVar));
       
+
     }
     
     /*--- Set the solution in the node structure ---*/

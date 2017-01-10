@@ -59,9 +59,9 @@ inline su2double CVariable::GetVonMises_Stress(void) { return 0; }
 
 inline void CVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) { }
 
-inline su2double *CVariable::Get_SurfaceLoad_Res(void) {return NULL;}
+inline su2double *CVariable::Get_SurfaceLoad_Res(void) { return NULL;}
 
-inline su2double CVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return 0.0;}
+inline su2double CVariable::Get_SurfaceLoad_Res(unsigned short iVar) { return 0.0;}
 
 inline void CVariable::Clear_SurfaceLoad_Res(void) { }
 
@@ -71,9 +71,9 @@ inline su2double CVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return 
 
 inline void CVariable::Add_BodyForces_Res(su2double *val_bodyForce) { }
 
-inline su2double *CVariable::Get_BodyForces_Res(void) {return NULL;}
+inline su2double *CVariable::Get_BodyForces_Res(void) { return NULL;}
 
-inline su2double CVariable::Get_BodyForces_Res(unsigned short iVar) {return 0.0;}
+inline su2double CVariable::Get_BodyForces_Res(unsigned short iVar) { return 0.0;}
 
 inline void CVariable::Clear_BodyForces_Res(void) { }
 
@@ -81,9 +81,9 @@ inline void CVariable::Set_FlowTraction(su2double *val_flowTraction) { }
 
 inline void CVariable::Add_FlowTraction(su2double *val_flowTraction) { }
 
-inline su2double *CVariable::Get_FlowTraction(void) {return NULL;}
+inline su2double *CVariable::Get_FlowTraction(void) { return NULL;}
 
-inline su2double CVariable::Get_FlowTraction(unsigned short iVar) {return 0.0;}
+inline su2double CVariable::Get_FlowTraction(unsigned short iVar) { return 0.0;}
 
 inline void CVariable::Clear_FlowTraction(void) { }
 
@@ -399,7 +399,7 @@ inline bool CVariable::SetSoundSpeed(su2double Gamma) { return false; }
 
 inline bool CVariable::SetTemperature(su2double Gas_Constant) { return false; }
 
-inline bool CVariable::SetTemperature_ve(su2double val_Tve) {return false; }
+inline bool CVariable::SetTemperature_ve(su2double val_Tve) { return false; }
 
 inline bool CVariable::SetTemperature(CConfig *config) { return false; }
 
@@ -487,9 +487,9 @@ inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 
-inline void CVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { }
+inline void CVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { }
 
-inline su2double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return 0; }
+inline su2double CVariable::GetHarmonicBalance_Source(unsigned short val_var) { return 0; }
 
 inline void CVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) { }
 
@@ -683,9 +683,9 @@ inline su2double **CEulerVariable::GetGradient_Secondary(void) { return Gradient
 
 inline su2double *CEulerVariable::GetLimiter_Secondary(void) { return Limiter_Secondary; }
 
-inline void CEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CEulerVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
-inline su2double CEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CEulerVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
 
 inline su2double CEulerVariable::GetPreconditioner_Beta() { return Precond_Beta; }
 
@@ -769,9 +769,9 @@ inline void CAdjEulerVariable::SetIntBoundary_Jump(su2double *val_IntBoundary_Ju
 
 inline void CAdjEulerVariable::SetPhi_Old(su2double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
 
-inline void CAdjEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CAdjEulerVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
-inline su2double CAdjEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CAdjEulerVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
 
 inline su2double *CAdjNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
@@ -839,10 +839,6 @@ inline su2double **CIncEulerVariable::GetGradient_Primitive(void) { return Gradi
 
 inline su2double *CIncEulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
 
-inline void CIncEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
-
-inline su2double CIncEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
-
 inline void CIncEulerVariable::SetWindGust( su2double* val_WindGust) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     WindGust[iDim] = val_WindGust[iDim];}
@@ -881,10 +877,6 @@ inline void CAdjIncEulerVariable::SetIntBoundary_Jump(su2double *val_IntBoundary
 
 inline void CAdjIncEulerVariable::SetPhi_Old(su2double *val_phi) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_phi[iDim]; };
 
-inline void CAdjIncEulerVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
-
-inline su2double CAdjIncEulerVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
-
 inline su2double *CAdjIncNSVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
 
 inline void CAdjIncNSVariable::SetForceProj_Vector(su2double *val_ForceProj_Vector) {	for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
@@ -910,9 +902,9 @@ inline void CFEM_ElasVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) {
 		Residual_Ext_Surf[iVar] += val_surfForce[iVar];
 }
 
-inline su2double *CFEM_ElasVariable::Get_SurfaceLoad_Res(void) {return Residual_Ext_Surf;}
+inline su2double *CFEM_ElasVariable::Get_SurfaceLoad_Res(void) { return Residual_Ext_Surf;}
 
-inline su2double CFEM_ElasVariable::Get_SurfaceLoad_Res(unsigned short iVar) {return Residual_Ext_Surf[iVar];}
+inline su2double CFEM_ElasVariable::Get_SurfaceLoad_Res(unsigned short iVar) { return Residual_Ext_Surf[iVar];}
 
 inline void CFEM_ElasVariable::Clear_SurfaceLoad_Res(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Surf[iVar] = 0.0;
@@ -922,16 +914,16 @@ inline void CFEM_ElasVariable::Set_SurfaceLoad_Res_n(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Surf_n[iVar] = Residual_Ext_Surf[iVar];
 }
 
-inline su2double CFEM_ElasVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar];}
+inline su2double CFEM_ElasVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return Residual_Ext_Surf_n[iVar];}
 
 inline void CFEM_ElasVariable::Add_BodyForces_Res(su2double *val_bodyForce) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)
 		Residual_Ext_Body[iVar] += val_bodyForce[iVar];
 }
 
-inline su2double *CFEM_ElasVariable::Get_BodyForces_Res(void) {return Residual_Ext_Body;}
+inline su2double *CFEM_ElasVariable::Get_BodyForces_Res(void) { return Residual_Ext_Body;}
 
-inline su2double CFEM_ElasVariable::Get_BodyForces_Res(unsigned short iVar) {return Residual_Ext_Body[iVar];}
+inline su2double CFEM_ElasVariable::Get_BodyForces_Res(unsigned short iVar) { return Residual_Ext_Body[iVar];}
 
 inline void CFEM_ElasVariable::Clear_BodyForces_Res(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Body[iVar] = 0.0;
@@ -947,9 +939,9 @@ inline void CFEM_ElasVariable::Add_FlowTraction(su2double *val_flowTraction) {
 		FlowTraction[iVar] += val_flowTraction[iVar];
 }
 
-inline su2double *CFEM_ElasVariable::Get_FlowTraction(void) {return FlowTraction;}
+inline su2double *CFEM_ElasVariable::Get_FlowTraction(void) { return FlowTraction;}
 
-inline su2double CFEM_ElasVariable::Get_FlowTraction(unsigned short iVar) {return FlowTraction[iVar];}
+inline su2double CFEM_ElasVariable::Get_FlowTraction(unsigned short iVar) { return FlowTraction[iVar];}
 
 inline void CFEM_ElasVariable::Clear_FlowTraction(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	FlowTraction[iVar] = 0.0;
@@ -959,7 +951,7 @@ inline void CFEM_ElasVariable::Set_FlowTraction_n(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	FlowTraction_n[iVar] = FlowTraction[iVar];
 }
 
-inline su2double CFEM_ElasVariable::Get_FlowTraction_n(unsigned short iVar) {return FlowTraction_n[iVar];}
+inline su2double CFEM_ElasVariable::Get_FlowTraction_n(unsigned short iVar) { return FlowTraction_n[iVar];}
 
 inline void CFEM_ElasVariable::SetSolution_time_n(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_time_n[iVar] = Solution[iVar];
@@ -1074,13 +1066,13 @@ inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2d
 
 //inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
 
-inline void CTurbSAVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
-inline su2double CTurbSAVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
 
-inline void CTurbMLVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { TS_Source[val_var] = val_source; }
+inline void CTurbMLVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
-inline su2double CTurbMLVariable::GetTimeSpectral_Source(unsigned short val_var) { return TS_Source[val_var]; }
+inline su2double CTurbMLVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
 
 inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 
@@ -1157,13 +1149,13 @@ inline void CVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double 
 
 inline void CDiscAdjVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double der) {DualTime_Derivative_n[iVar] = der;}
 
-inline su2double CVariable::GetDual_Time_Derivative(unsigned short iVar) {return 0.0;}
+inline su2double CVariable::GetDual_Time_Derivative(unsigned short iVar) { return 0.0;}
 
-inline su2double CDiscAdjVariable::GetDual_Time_Derivative(unsigned short iVar) {return DualTime_Derivative[iVar];}
+inline su2double CDiscAdjVariable::GetDual_Time_Derivative(unsigned short iVar) { return DualTime_Derivative[iVar];}
 
-inline su2double CVariable::GetDual_Time_Derivative_n(unsigned short iVar) {return 0.0;}
+inline su2double CVariable::GetDual_Time_Derivative_n(unsigned short iVar) { return 0.0;}
 
-inline su2double CDiscAdjVariable::GetDual_Time_Derivative_n(unsigned short iVar) {return DualTime_Derivative_n[iVar];}
+inline su2double CDiscAdjVariable::GetDual_Time_Derivative_n(unsigned short iVar) { return DualTime_Derivative_n[iVar];}
 
 inline void CVariable::SetSensitivity(unsigned short iDim, su2double val) {}
 
@@ -1171,7 +1163,7 @@ inline su2double CVariable::GetSensitivity(unsigned short iDim) { return 0.0; }
 
 inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val) {Sensitivity[iDim] = val;}
 
-inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim) {return Sensitivity[iDim];}
+inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim) { return Sensitivity[iDim];}
 
 inline su2double* CDiscAdjVariable::GetSolution_Direct() { return Solution_Direct; }
 

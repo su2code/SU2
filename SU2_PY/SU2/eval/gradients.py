@@ -80,11 +80,9 @@ def gradient( func_name, method, config, state=None ):
     state = su2io.State(state)
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
-    if (config.OPT_COMBINE_OBJECTIVE == "YES" and any([method == 'DISCRETE_ADJOINT'])):
-        raise Exception, " Combined objectives and discrete adjoint not currently compatible. Please set OPT_COMBINE_OBJECTIVE=NO."
     func_name_string = func_name
     if (type(func_name)==list):
-        if (config.OPT_COMBINE_OBJECTIVE=="YES" and not any([method == 'DISCRETE_ADJOINT'])):
+        if (config.OPT_COMBINE_OBJECTIVE=="YES"):
             config.OBJECTIVE_FUNCTION = ', '.join(func_name)
             func_name_string = 'COMBO'
         else:
@@ -194,14 +192,15 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------
     #  Initialize    
     # ----------------------------------------------------
-    multi_objective = (type(func_name)==list)
+
     # initialize
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
-    multi_objective = ((config.OPT_COMBINE_OBJECTIVE=="YES") and (type(func_name)==list))
+    
+    # check for multiple objectives
+    multi_objective = (type(func_name)==list)
     func_name_string = func_name
-    if (multi_objective):
-        func_name_string = 'COMBO'
+    if multi_objective:   func_name_string = 'COMBO'
 
     ADJ_NAME = 'ADJOINT_'+func_name_string
 
@@ -427,8 +426,8 @@ def stability( func_name, config, state=None, step=1e-2 ):
 #  Finite Difference Gradients
 # ----------------------------------------------------------------------
 
-def findiff( config, state=None, step=1e-4 ):
-    """ vals = SU2.eval.findiff(config,state=None,step=1e-4)
+def findiff( config, state=None ):
+    """ vals = SU2.eval.findiff(config,state=None)
 
         Evaluates the aerodynamics gradients using 
         finite differencing with:
@@ -449,8 +448,6 @@ def findiff( config, state=None, step=1e-4 ):
         Inputs:
             config - an SU2 config
             state  - optional, an SU2 state
-            step   - finite difference step size, as a float or
-                     list of floats of length n_DV
 
         Outputs:
             A Bunch() with keys of objective function names
@@ -471,6 +468,9 @@ def findiff( config, state=None, step=1e-4 ):
         log_findiff = 'log_FinDiff.out'
     else:
         log_findiff = None
+
+    # evaluate step
+    step = 0.001 * float(config.REF_LENGTH_MOMENT)
 
     # ----------------------------------------------------
     #  Redundancy Check

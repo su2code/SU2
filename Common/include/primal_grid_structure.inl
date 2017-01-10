@@ -59,6 +59,10 @@ inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
 
 inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
+inline unsigned long CPrimalGrid::GetGlobalIndex(void) { return GlobalIndex; }
+
+inline void CPrimalGrid::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
+
 inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
 
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
@@ -138,7 +142,6 @@ inline unsigned short CTriangle::GetnNeighbor_Elements(void) { return nNeighbor_
 inline void CTriangle::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
 
 inline unsigned long CTriangle::GetDomainElement(void) { return DomainElement; }
-
 inline unsigned short CQuadrilateral::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
 inline unsigned short CQuadrilateral::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }

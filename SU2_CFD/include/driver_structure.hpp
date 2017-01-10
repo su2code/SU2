@@ -298,12 +298,12 @@ public:
 
 };
 /*!
- * \class CSingleZoneDriver
- * \brief Class for driving an iteration of the physics within a single zone.
+ * \class CGeneralDriver
+ * \brief Class for driving a structural iteration of the physics within multiple zones.
  * \author T. Economon
  * \version 4.3.0 "Cardinal"
  */
-class CSingleZoneDriver : public CDriver {
+class CGeneralDriver : public CDriver {
 public:
 	
 	/*! 
@@ -312,14 +312,15 @@ public:
 	 * \param[in] val_nZone - Total number of zones.
 	 * \param[in] val_nDim - Number of dimensions.
 	 */
-  CSingleZoneDriver(char* confFile,
+  CGeneralDriver(char* confFile,
+
                     unsigned short val_nZone,
                     unsigned short val_nDim);
 	
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CSingleZoneDriver(void);
+	~CGeneralDriver(void);
 	
 	/*! 
 	 * \brief Run a single iteration of the physics within a single zone.
@@ -355,12 +356,12 @@ public:
 
 
 /*!
- * \class CMultiZoneDriver
+ * \class CFluidDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
- * \author T. Economon
+ * \author T. Economon, G. Gori
  * \version 4.3.0 "Cardinal"
  */
-class CMultiZoneDriver : public CDriver {
+class CFluidDriver : public CDriver {
 public:
   
   /*!
@@ -369,19 +370,19 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
    */
-  CMultiZoneDriver(char* confFile,
+  CFluidDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultiZoneDriver(void);
+  ~CFluidDriver(void);
   
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
-  
+
   void Run();
 
     /*!
@@ -408,68 +409,70 @@ public:
      * \brief Perform a mesh deformation as initial condition (multiple zone).
      */
   void SetInitialMesh();
+
+    /*!
+     * \brief Transfer data among different zones (multiple zone).
+     */
+  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 };
 
 
 /*!
- * \class CSpectralDriver
- * \brief Class for driving an iteration of a spectral method problem using multiple zones.
+ * \class CHBDriver
+ * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
  * \author T. Economon
  * \version 4.3.0 "Cardinal"
  */
-class CSpectralDriver : public CDriver {
+class CHBDriver : public CDriver {
+
+private:
+
+	su2double **D; /*!< \brief Harmonic Balance operator. */
+
 public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Number of dimensions.
-   */
-  CSpectralDriver(char* confFile,
-                  unsigned short val_nZone,
-                  unsigned short val_nDim);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSpectralDriver(void);
-  
-  /*!
-   * \brief Run a single iteration of a spectral method problem.
-   */
-  
-  void Run();
-  
-  /*!
-   * \brief Computation and storage of the time spectral source terms.
-   * \author T. Economon, K. Naik
-   * \param[in] iZone - Current zone number.
-   */
-  void SetTimeSpectral(unsigned short iZone);
-  
-  /*!
-   * \brief Computation of the Time-Spectral operator matrix.
-   * \author K. Naik
-   * \param[in] D - su2double pointer to the operator matrix.
-   */
-  void ComputeTimeSpectral_Operator(su2double **D, su2double period);
-  
-  /*!
-   * \brief Computation and storage of the time-spectral mesh velocities.
-   * \author K. Naik, T. Economon
-   */
-  void SetTimeSpectral_Velocities();
 
-  /*!
-   * \brief Update the solution for the spectral method.
-   */
-  void Update();
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] confFile - Configuration file name.
+	 * \param[in] val_nZone - Total number of zones.
+	 * \param[in] val_nDim - Number of dimensions.
+	 */
+	CHBDriver(char* confFile,
+			unsigned short val_nZone,
+			unsigned short val_nDim);
 
-  /*!
-   * \brief Reset the convergence flag (set to false) of the solver for the spectral method.
-   */
-  void ResetConvergence();  
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CHBDriver(void);
+
+	/*!
+	 * \brief Run a single iteration of a Harmonic Balance problem.
+	 */
+	void Run();
+
+	/*!
+	 * \brief Computation and storage of the Harmonic Balance method source terms.
+	 * \author T. Economon, K. Naik
+	 * \param[in] iZone - Current zone number.
+	 */
+	void SetHarmonicBalance(unsigned short iZone);
+
+	/*!
+	 * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
+	 * \author A. Rubino, S. Nimmagadda
+	 */
+	void ComputeHB_Operator();
+
+	/*!
+	 * \brief Update the solution for the Harmonic Balance.
+	 */
+	void Update();
+
+	/*!
+	 * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
+	 */
+	void ResetConvergence();
 };
 
 
@@ -485,11 +488,11 @@ public:
 	/*!
 	 * \brief Constructor of the class.
 	 * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
+	 * \param[in] val_nZone - Total number of zones.
 	 */
-  CFSIDriver(char* confFile,
-             unsigned short val_nZone,
-             unsigned short val_nDim);
+	CFSIDriver(char* confFile,
+			unsigned short val_nZone,
+			unsigned short val_nDim);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -499,17 +502,17 @@ public:
 	/*!
 	 * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
 	 */
-  
-  void Run();
 
-  /*!
-   * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
-   * \param[in] donorZone - zone in which the displacements will be predicted.
-   * \param[in] targetZone - zone which receives the predicted displacements.
-   */
-  void Predict_Displacements(unsigned short donorZone, unsigned short targetZone);
+	void Run();
 
-  /*!
+	/*!
+	 * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
+	 * \param[in] donorZone - zone in which the displacements will be predicted.
+	 * \param[in] targetZone - zone which receives the predicted displacements.
+	 */
+	void Predict_Displacements(unsigned short donorZone, unsigned short targetZone);
+
+	/*!
    * \brief Predict the fluid tractions to pass them into the structural solver on a BGS implementation.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.

@@ -141,12 +141,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
       Smatrix = new su2double* [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Smatrix[iDim] = new su2double [nDim];
-
-      /*--- c vector := transpose(WA)*(Wb) ---*/
-
-      cvector = new su2double* [nVar];
-      for (iVar = 0; iVar < nVar; iVar++)
-        cvector[iVar] = new su2double [nDim];
     }
 
   }
