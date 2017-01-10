@@ -77,18 +77,24 @@ class Test2DElem : public CPrimalGrid {
     }
     Coord_FaceElems_CG[0][0] =  8.0;
     Coord_FaceElems_CG[0][1] =  0.0;
-    Coord_FaceElems_CG[1][0] = -8.0;
-    Coord_FaceElems_CG[1][1] =  0.0;
-    Coord_FaceElems_CG[2][0] =  0.0;
-    Coord_FaceElems_CG[2][1] =  2.0;
+    Coord_FaceElems_CG[2][0] = -8.0;
+    Coord_FaceElems_CG[2][1] =  0.0;
+    Coord_FaceElems_CG[1][0] =  0.0;
+    Coord_FaceElems_CG[1][1] = -2.0;
     Coord_FaceElems_CG[3][0] =  0.0;
-    Coord_FaceElems_CG[3][1] = -2.0;
+    Coord_FaceElems_CG[3][1] =  2.0;
   };
   ~Test2DElem(void) {};
 
   //---------------------------------------------------------------------------
   void SetResolutionTensor(void) {
     unsigned short iDim, jDim, kDim, lDim;
+    unsigned short iFace;
+    unsigned short* paired_faces;
+    // paired_faces is used to sort the faces into matching pairs.
+    // The code will look for pairs of faces that are mostly opposite, then
+    // sort them so that the face indices in paired_faces[0] and paired_faces[1]
+    // match, then paired_faces[2] and paired_faces[3] match, etc.
 
     // Allocate Mij
     Mij = new su2double* [nDim];
@@ -99,16 +105,53 @@ class Test2DElem : public CPrimalGrid {
       }
     }
 
-    su2double vecs[nDim][nDim];
+    paired_faces = new unsigned short [nFaces];
+
+    su2double eigvecs[nDim][nDim];
+
+    // Create cell center to face vectors
+    su2double center2face[nFaces][nDim];
+    for (iFace = 0; iFace < nFaces; ++iFace) {
+      for (iDim = 0; iDim < nDim; ++iDim) {
+        center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
+      }
+    }
 
     // First vector
+    paired_faces[0] = 0; // Choose vector 1 as our first vector to pair up
+    // Find vector mostly parallel to first
+    su2double min_dp = 1.0;
+    su2double current_dp;
+    for (iFace = 1; iFace < nFaces; ++iFace) {
+      current_dp = dot_prod(center2face[0],center2face[iFace])
+          /(magnitude(center2face[0])*magnitude(center2face[1]));
+      if (current_dp < min_dp) {
+        min_dp = current_dp;
+        paired_faces[1] = iFace;
+      }
+    }
+
     for (iDim = 0; iDim < nDim; ++iDim) {
-      vecs[0][iDim] = Coord_FaceElems_CG[0][iDim] - Coord_FaceElems_CG[1][iDim];
+      eigvecs[0][iDim] = Coord_FaceElems_CG[0][iDim] -
+          Coord_FaceElems_CG[paired_faces[1]][iDim];
     }
 
     // Second vector
+    paired_faces[2] = 0;
+    paired_faces[3] = 0;
+    for (iFace = 1; iFace < nFaces; ++iFace) {
+      if (iFace != paired_faces[1]) {
+        if (paired_faces[2] == 0) {
+          paired_faces[2] = iFace;
+        } else {
+          paired_faces[3] = iFace;
+        }
+      }
+    }
+
     for (iDim = 0; iDim < nDim; ++iDim) {
-      vecs[1][iDim] = Coord_FaceElems_CG[2][iDim] - Coord_FaceElems_CG[3][iDim];
+      eigvecs[1][iDim] = Coord_FaceElems_CG[paired_faces[2]][iDim] -
+          Coord_FaceElems_CG[paired_faces[3]][iDim];
     }
 
     // Normalized vectors
@@ -117,9 +160,9 @@ class Test2DElem : public CPrimalGrid {
       for (jDim = 0; jDim < nDim; ++jDim) {
         eigvalues[iDim][jDim] = 0.0;
       }
-      eigvalues[iDim][iDim] = magnitude(vecs[iDim]);
+      eigvalues[iDim][iDim] = magnitude(eigvecs[iDim]);
       for (jDim = 0; jDim < nDim; ++jDim) {
-        vecs[iDim][jDim] /= eigvalues[iDim][iDim];
+        eigvecs[iDim][jDim] /= eigvalues[iDim][iDim];
       }
     }
 
@@ -130,8 +173,8 @@ class Test2DElem : public CPrimalGrid {
       for (jDim = 0; jDim < nDim; ++jDim) {
         for (kDim = 0; kDim < nDim; ++kDim) {
           for (lDim = 0; lDim < nDim; ++lDim) {
-            Mij[iDim][jDim] += vecs[kDim][iDim]*
-                std::sqrt(eigvalues[kDim][lDim])*vecs[lDim][jDim];
+            Mij[iDim][jDim] += eigvecs[kDim][iDim]*
+                std::sqrt(eigvalues[kDim][lDim])*eigvecs[lDim][jDim];
           }
         }
       }
