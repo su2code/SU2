@@ -47,7 +47,8 @@ PYTHON_INCLUDE = -I/usr/include/python2.7
 MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
                  -I/usr/local/lib/python2.7/site-packages/mpi4py/include \
                  -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include
+                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
+                 -I/Library/Python/2.7/site-packages/mpi4py/include
 
 SWIG = swig
 
