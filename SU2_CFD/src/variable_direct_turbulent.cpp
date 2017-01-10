@@ -242,8 +242,9 @@ CTurbKEVariable::~CTurbKEVariable(void) {
 void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double val_f, su2double StrainMag) {
 
 	unsigned short iDim;
-	su2double C_mu, C_T, C_L;
-        su2double Tm, Lm, nu, temp;
+	su2double C_mu, C_T, C_L, C_eta;
+	//        su2double Tm, Lm, nu, temp;
+        su2double nu, temp;
   
         /*--- Molecular kinematic viscosity ---*/
         nu = val_viscosity/val_density;
@@ -261,5 +262,7 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
         /*--- Model length scale ---*/
 	temp = min(pow(val_kine,1.5)/val_epsi, sqrt(val_kine)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
         Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
+
+	// good here... cout<<" Lm in variable_direct: "<<Lm<<"\n";
   
 }

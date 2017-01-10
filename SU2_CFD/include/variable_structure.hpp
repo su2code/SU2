@@ -3723,8 +3723,7 @@ public:
    * \param[in] constants -
 	 * \param[in] config - Definition of the particular problem.
 	 */
-  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_f, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar,
-			su2double *constants, CConfig *config);
+  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_f, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar, su2double *constants, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.

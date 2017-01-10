@@ -1159,9 +1159,11 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   }
   
   val_residual[0] = 0.0;        val_residual[1] = 0.0;
-  val_Jacobian_i[0][0] = 0.0;		val_Jacobian_i[0][1] = 0.0;
-  val_Jacobian_i[1][0] = 0.0;		val_Jacobian_i[1][1] = 0.0;
+  val_Jacobian_i[0][0] = 0.0;	val_Jacobian_i[0][1] = 0.0;
+  val_Jacobian_i[1][0] = 0.0;	val_Jacobian_i[1][1] = 0.0;
   
+  //  cout<<" F1_i: "<<F1_i<<"\n";
+
   /*--- Computation of blended constants for the source terms---*/
   
   alfa_blended = F1_i*alfa_1 + (1.0 - F1_i)*alfa_2;
@@ -1352,6 +1354,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
   }
   
   /*--- Compute the blended constant for the viscous terms ---*/
+  // there are already stored as inverses
   sigma_kine_i = sigma_k;
   sigma_kine_j = sigma_k;
   sigma_epsi_i = sigma_e;
@@ -1706,6 +1709,8 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_Jacobian_i[3][2] = 0.0;
   val_Jacobian_i[3][3] = 0.0;
   
+
+  //  cout<<" Lm_i: "<<Lm_i<<"\n";
     
     /*--- Production ---*/
     diverg = 0.0;
@@ -1728,16 +1733,16 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     //pf = pf/(Lm_i*Lm_i);
     pf = max(pf,0.0);
     
-    val_residual[0] += pk*Volume;
-    val_residual[1] += pe*Volume;
-    val_residual[2] += pz*Volume;
-    val_residual[3] += pf*Volume;
+    val_residual[0] += pk * Volume;
+    val_residual[1] += pe * Volume;
+    val_residual[2] += pz * Volume;
+    val_residual[3] += pf * Volume;
     
     /*--- Dissipation ---*/
-    val_residual[0] -= Density_i*TurbVar_i[1]*Volume;
-    val_residual[1] -= C_e2*Density_i*TurbVar_i[1]/Tm_i*Volume;
-    val_residual[2] -= TurbVar_i[2]/TurbVar_i[0]*pk*Volume;
-    val_residual[3] -= TurbVar_i[3]*Volume;
+    val_residual[0] -= Density_i*TurbVar_i[1]           * Volume;
+    val_residual[1] -= C_e2*Density_i*TurbVar_i[1]/Tm_i * Volume;
+    val_residual[2] -= TurbVar_i[2]/TurbVar_i[0]*pk     * Volume;
+    val_residual[3] -= TurbVar_i[3]                     * Volume;
     //val_residual[3] -= TurbVar_i[3]/(Lm_i*Lm_i)*Volume;
         
     /*--- Implicit part ---*/
