@@ -81,37 +81,36 @@ protected:
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
-  //Those are used to store the VarCoord of each node during FSI communications
-  su2double APIVarCoord[3];
-  su2double APINodalForce[3];
-  su2double APINodalForceDensity[3];
+  su2double APIVarCoord[3];                     /*!< \brief This is used to store the VarCoord of each node. */
+  su2double APINodalForce[3];                   /*!< \brief This is used to store the force at each node. */
+  su2double APINodalForceDensity[3];            /*!< \brief This is used to store the force density at each node. */
 
 public:
 	
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] confFile - Configuration file name.
-   	 * \param[in] val_nZone - Total number of zones.
-	 * \param[in] val_nDim - Number of dimensions.
-	 */
+  /*! 
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   */
   CDriver(char* confFile,
           unsigned short val_nZone,
           unsigned short val_nDim,
           SU2_Comm MPICommunicator);
 	
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	virtual ~CDriver(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDriver(void);
 
-	/*!
-	 * \brief A virtual member.
-	 */  
+  /*!
+   * \brief A virtual member.
+   */  
   virtual void Run() { };
 
-    /*!
-     * \brief Construction of the edge-based data structure and the multigrid structure.
-     */
+  /*!
+   * \brief Construction of the edge-based data structure and the multigrid structure.
+   */
   void Geometrical_Preprocessing();
 
   /*!
@@ -260,7 +259,7 @@ public:
   void Output(unsigned long ExtIter);
 
   /*!
-   * \brief Perform a dynamic mesh deformation, included grid velocity computation and update of the multigrid structure.
+   * \brief Perform a dynamic mesh deformation, including grid velocity computation and update of the multigrid structure.
    */
   virtual void DynamicMeshUpdate(unsigned long ExtIter) { };
 
@@ -273,36 +272,205 @@ public:
    * \brief Perform a mesh deformation as initial condition.
    */
   virtual void SetInitialMesh() { };
-
-  /*--- External communication layer ---*/
   
+  /*!
+   * \brief Get the total drag.
+   * \return Total drag.
+   */
   su2double Get_Drag();
+
+  /*!
+   * \brief Get the total lift.
+   * \return Total lift.
+   */
   su2double Get_Lift();
+
+  /*!
+   * \brief Get the total x moment.
+   * \return Total x moment.
+   */
+  su2double Get_Mx();
+
+  /*!
+   * \brief Get the total y moment.
+   * \return Total y moment.
+   */
+  su2double Get_My();
+
+  /*!
+   * \brief Get the total z moment.
+   * \return Total z moment.
+   */
   su2double Get_Mz();
+
+  /*!
+   * \brief Get the total drag coefficient.
+   * \return Total drag coefficient.
+   */
   su2double Get_DragCoeff();
+
+  /*!
+   * \brief Get the total lift coefficient.
+   * \return Total lift coefficient.
+   */
   su2double Get_LiftCoeff();
+
+  /*!
+   * \brief Get the moving marker identifier.
+   * \return Moving marker identifier.
+   */
   unsigned short GetMovingMarker();
+
+  /*!
+   * \brief Get the number of vertices (halo nodes included) from a specified marker.
+   * \param[in] iMarker -  Marker identifier.
+   * \return Number of vertices.
+   */
   unsigned long GetNumberVertices(unsigned short iMarker);
+
+    /*!
+   * \brief Get the number of halo vertices from a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \return Number of vertices.
+   */
   unsigned long GetNumberHaloVertices(unsigned short iMarker);
+
+  /*!
+   * \brief Check if a vertex is physical or not (halo node) on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return True if the specified vertex is a halo node.
+   */
   bool IsAHaloNode(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the number of external iterations.
+   * \return Number of external iterations.
+   */
   unsigned long GetnExtIter();
+
+  /*!
+   * \brief Get the global index of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Vertex global index.
+   */
   unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the x coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return x coordinate of the vertex.
+   */
   su2double GetVertexCoordX(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the y coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return y coordinate of the vertex.
+   */
   su2double GetVertexCoordY(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the z coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return z coordinate of the vertex.
+   */
   su2double GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Compute the total force (pressure and shear stress) at a vertex on a specified marker (3 components).
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return True if the vertex is a halo node (non physical force).
+   */
   bool ComputeVertexForces(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the x component of the force at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return x component of the force at the vertex.
+   */
   su2double GetVertexForceX(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the y component of the force at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return y component of the force at the vertex.
+   */
   su2double GetVertexForceY(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the z component of the force at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return z component of the force at the vertex.
+   */
   su2double GetVertexForceZ(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the x component of the force density at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return x component of the force density at the vertex.
+   */
   su2double GetVertexForceDensityX(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the y component of the force density at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return y component of the force density at the vertex.
+   */
   su2double GetVertexForceDensityY(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Get the z component of the force density at a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return z component of the force density at the vertex.
+   */
   su2double GetVertexForceDensityZ(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Set the x coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] newPosX - New x coordinate of the vertex.
+   */
   void SetVertexCoordX(unsigned short iMarker, unsigned short iVertex, su2double newPosX);
+
+  /*!
+   * \brief Set the y coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] newPosY - New y coordinate of the vertex.
+   */
   void SetVertexCoordY(unsigned short iMarker, unsigned short iVertex, su2double newPosY);
+
+  /*!
+   * \brief Set the z coordinate of a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] newPosZ - New z coordinate of the vertex.
+   */
   void SetVertexCoordZ(unsigned short iMarker, unsigned short iVertex, su2double newPosZ);
+
+  /*!
+   * \brief Set the VarCoord of  a vertex on a specified marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Norm of the VarCoord.
+   */
   su2double SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex);
 
 };
+
 /*!
  * \class CGeneralDriver
  * \brief Class for driving a structural iteration of the physics within multiple zones.
