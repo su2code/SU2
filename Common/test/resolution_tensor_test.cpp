@@ -59,6 +59,21 @@ inline void print_matrix(su2double v[2][2]) {
   std::cout << v[1][0] << "," << v[1][1] << "]]" << std::endl;
 }
 
+void GramSchmidt(su2double w[2][2], su2double v[2][2]) {
+  unsigned short iDim, jDim;
+
+  // Set the first basis vector to the first input vector
+  for (iDim = 0; iDim < 2; ++iDim) {
+    v[0][iDim] = w[0][iDim];
+  }
+
+  // Compute the next orthogonal vector
+  for (iDim = 0; iDim < 2; ++iDim) {
+    v[1][iDim] = w[1][iDim] - dot_prod(w[1],v[0])/dot_prod(v[0],v[0])*v[0][iDim];
+  }
+
+}
+
 class Test2DElem : public CPrimalGrid {
  protected:
   su2double **Mij;
@@ -166,7 +181,14 @@ class Test2DElem : public CPrimalGrid {
       }
     }
 
-    // TODO: Gram-Schmidt Orthogonalization
+    // Gram-Schmidt Process to make the vectors orthogonal
+    su2double temp_eigvecs[nDim][nDim];
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      for (jDim = 0; jDim < nDim; ++jDim) {
+        temp_eigvecs[iDim][jDim] = eigvecs[iDim][jDim];
+      }
+    }
+    GramSchmidt(temp_eigvecs, eigvecs);
 
     // Perform matrix multiplication
     for (iDim = 0; iDim < nDim; ++iDim) {
