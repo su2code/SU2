@@ -42,22 +42,134 @@
 #include "config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 
-class TestGeometry : public CPhysicalGeometry {
- protected:
- public:
-  TestGeometry() {
-    nElem = 4;
-    for (int iElem=0; iElem<nElem; iElem++) {
-      elem[iElem] = new CQuadrilateral(0,0,0,0,2);
-    }
-  }
-  void SetResolutionTensor(void) {
-  };
-};
-
-inline su2double dot_prod(su2double v[3], su2double w[3]) {
-  su2double output = v[0]*w[0] + v[1]*w[1] + v[2]*w[2];
+inline su2double dot_prod(su2double v[2], su2double w[2]) {
+  return v[0]*w[0] + v[1]*w[1];
 }
+
+inline su2double dot_prod(vector<su2double> v, vector<su2double> w) {
+  return v[0]*w[0] + v[1]*w[1];
+}
+
+inline su2double magnitude(su2double v[2]) {
+  return std::sqrt(dot_prod(v,v));
+}
+
+inline void print_matrix(su2double v[2][2]) {
+  std::cout << "[[" << v[0][0] << "," << v[0][1] << "],[";
+  std::cout << v[1][0] << "," << v[1][1] << "]]" << std::endl;
+}
+
+class Test2DElem : public CPrimalGrid {
+ protected:
+  su2double **Mij;
+  static const unsigned short nFaces = 4;
+ public:
+  Test2DElem() : CPrimalGrid() {
+    unsigned short iDim, iFace;
+    nDim = 2;
+    /*--- Allocate CG coordinates ---*/
+    Coord_CG = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Coord_CG[iDim] = 0.0;
+    Coord_FaceElems_CG = new su2double* [nFaces];
+    for (iFace = 0; iFace < nFaces; iFace++) {
+      Coord_FaceElems_CG[iFace] = new su2double [nDim];
+    }
+    Coord_FaceElems_CG[0][0] =  8.0;
+    Coord_FaceElems_CG[0][1] =  0.0;
+    Coord_FaceElems_CG[1][0] = -8.0;
+    Coord_FaceElems_CG[1][1] =  0.0;
+    Coord_FaceElems_CG[2][0] =  0.0;
+    Coord_FaceElems_CG[2][1] =  2.0;
+    Coord_FaceElems_CG[3][0] =  0.0;
+    Coord_FaceElems_CG[3][1] = -2.0;
+  };
+  ~Test2DElem(void) {};
+
+  //---------------------------------------------------------------------------
+  void SetResolutionTensor(void) {
+    unsigned short iDim, jDim, kDim, lDim;
+
+    // Allocate Mij
+    Mij = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mij[iDim] = new su2double [nDim];
+      for (jDim = 0; jDim < nDim; ++jDim) {
+        Mij[iDim][jDim] = 0.0;
+      }
+    }
+
+    su2double vecs[nDim][nDim];
+
+    // First vector
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      vecs[0][iDim] = Coord_FaceElems_CG[0][iDim] - Coord_FaceElems_CG[1][iDim];
+    }
+
+    // Second vector
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      vecs[1][iDim] = Coord_FaceElems_CG[2][iDim] - Coord_FaceElems_CG[3][iDim];
+    }
+
+    // Normalized vectors
+    su2double eigvalues[nDim][nDim];
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      for (jDim = 0; jDim < nDim; ++jDim) {
+        eigvalues[iDim][jDim] = 0.0;
+      }
+      eigvalues[iDim][iDim] = magnitude(vecs[iDim]);
+      for (jDim = 0; jDim < nDim; ++jDim) {
+        vecs[iDim][jDim] /= eigvalues[iDim][iDim];
+      }
+    }
+
+    // TODO: Gram-Schmidt Orthogonalization
+
+    // Perform matrix multiplication
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      for (jDim = 0; jDim < nDim; ++jDim) {
+        for (kDim = 0; kDim < nDim; ++kDim) {
+          for (lDim = 0; lDim < nDim; ++lDim) {
+            Mij[iDim][jDim] += vecs[kDim][iDim]*
+                std::sqrt(eigvalues[kDim][lDim])*vecs[lDim][jDim];
+          }
+        }
+      }
+    }
+
+  };
+
+  //---------------------------------------------------------------------------
+  vector<vector<su2double> > GetResolutionTensor(void) {
+    vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+      for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+        output[iDim][jDim] = Mij[iDim][jDim];
+      }
+    }
+    return output;
+  }
+
+  //---------------------------------------------------------------------------
+  // Unused functions; Virtual in CPrimalGrid, so they must be implemented
+  void SetDomainElement(unsigned long val_domainelement) {};
+  unsigned long GetDomainElement(void) {return 0;};
+  void Change_Orientation(void) {};
+  unsigned short GetVTK_Type(void) {return 0;};
+  unsigned short GetRotation_Type(void) {return 0;};
+  void SetRotation_Type(unsigned short val_rotation_type) {};
+  unsigned short GetnNeighbor_Nodes(unsigned short val_node) {return 0;};
+  unsigned short GetnNeighbor_Elements(void) {return 0;};
+  unsigned short GetnNodes(void)  {return 0;};
+  unsigned short GetnFaces(void)  {return 0;};
+  unsigned short GetnNodesFace(unsigned short val_face)  {return 0;};
+  unsigned short GetMaxNodesFace(void)  {return 0;};
+  unsigned long GetNode(unsigned short val_node)  {return 0;};
+  void SetNode(unsigned short val_node, unsigned long val_point) {};
+  unsigned short GetFaces(unsigned short val_face, unsigned short val_index)  {return 0;};
+  unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index)  {return 0;};
+
+};
 
 void ReduceVectors(su2double (&vecs_in)[6][3], su2double (&vecs_out)[3][3]) {
   // Use the first vector
@@ -114,18 +226,19 @@ int main() {
   test_config = new CConfig();
 
   //---------------------------------------------------------------------------
-  // Test
+  // Tests
   //---------------------------------------------------------------------------
-  int nDim = 2;
-  CQuadrilateral* elem = new CQuadrilateral(1,1,1,1,nDim);
-
+  // Error tolerances
   const su2double eps = std::numeric_limits<su2double>::epsilon();
   su2double tol = 10*eps;
 
-  // FIXME: The quadirlateral object does not yet have face CGs
+  Test2DElem* elem = new Test2DElem();
+  static int nDim = 2;
+
   elem->SetResolutionTensor();
   vector<vector<su2double> > Mij = elem->GetResolutionTensor();
 
+  // ---------------------------------------------------------------------------
   // Check that the resolution tensor is nonzero
   su2double sum = 0.0;
   for (int i=0; i<nDim; ++i) {
@@ -138,6 +251,36 @@ int main() {
         << std::endl;
     std::cout << "The sum was within machine precision of zero." << std::endl;
     std::cout << "Sum: " << sum << std::endl;
+    return_flag = 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check that all columns of resolution tensor are orthogonal
+  su2double dp = 0;
+  dp += dot_prod(Mij[0],Mij[1]);
+
+  if (std::abs(dp) > tol) {
+    std::cout << "ERROR: The resolution tensor for a quadrilateral was not correct."
+        << std::endl;
+    std::cout << "The column vectors are not orthogonal." << std::endl;
+    std::cout << "Sum of dot products: " << dp << std::endl;
+    return_flag = 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check that the values of Mij are correct
+  bool entries_correct = true;
+  if (Mij[0][0] != 4.0 ) entries_correct = false;
+  if (Mij[0][1] != 0.0 ) entries_correct = false;
+  if (Mij[1][0] != 0.0 ) entries_correct = false;
+  if (Mij[1][1] != 2.0 ) entries_correct = false;
+
+  if (not(entries_correct)) {
+    std::cout << "ERROR: The resolution tensor for a quadrilateral was not correct."
+        << std::endl;
+    std::cout << "The elements of the array were incorrect." << std::endl;
+    std::cout << "Array elements: [[" << Mij[0][0] << "," << Mij[0][1] << "],[";
+    std::cout << Mij[1][0] << "," << Mij[1][1] << "]]" << std::endl;
     return_flag = 1;
   }
 

@@ -65,7 +65,6 @@ protected:
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
   su2double Volume;    /*!< \brief Volume of the element. */
-  su2double **Mij;
 
 public:
 	
@@ -152,10 +151,6 @@ public:
 	 * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	bool GetDivide(void);
-	
-	void SetResolutionTensor(void);
-
-	vector<vector<su2double> > GetResolutionTensor(void);
 
 	/*!
 	 * \brief A virtual member.
