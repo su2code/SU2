@@ -717,7 +717,9 @@ private:
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
-  double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
+  su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
+  su2double Zonal_Dist;  /*!< \brief Zonal DES distance. */
+  bool Zonal_DES; /*!< \brief Zonal DES flag. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
@@ -5628,6 +5630,13 @@ public:
      */
     double GetConst_DES(void);
     
+    /*!
+     * \brief Get the DES Constant.
+     * \return Verbosity level for the console output.
+     */
+    double GetZonal_Dist(void);
+    
+    bool GetZonal_DES(void);
 };
 
 #include "config_structure.inl"
