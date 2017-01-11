@@ -42,8 +42,8 @@ def main():
 # Command Line Options
    parser = OptionParser()
    parser.add_option("-c", "--ctrl", dest="ctrlFile",
-                     help="reads polara control parameters from FILE (default:polaraCtrl.dat) ",
-                     metavar="FILE", default="polaraCtrl.dat")
+                     help="reads polar control parameters from FILE (default:polarCtrl.in) ",
+                     metavar="FILE", default="polarCtrl.in")
    parser.add_option("-n", "--partitions", dest="partitions", default=2,
                      help="number of PARTITIONS", metavar="PARTITIONS")
    parser.add_option("-i", "--iterations", dest="iterations", default=99999,
