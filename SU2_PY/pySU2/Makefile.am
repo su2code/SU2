@@ -80,7 +80,10 @@ PARMETIS_INCLUDE = -I${abs_top_srcdir}/externals/parmetis/include
 TECIO_INCLUDE = -I${abs_top_srcdir}/externals/tecio/include
 
 #External libraries (METIS_LIB and PARMETIS_LIB are already defined)
-TECIO_LIB = ${abs_top_builddir}/externals/tecio/libtecio.a
+TECIO_LIB =
+if BUILD_TECIO
+  TECIO_LIB += ${abs_top_builddir}/externals/tecio/libtecio.a
+endif
 
 #SU2Core lib
 SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
