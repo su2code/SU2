@@ -80,9 +80,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
+
   
   /*--- Compute source term residuals ---*/
-  
+
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
@@ -93,7 +94,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
-  
+
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -174,7 +175,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   }
-  
+
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -195,7 +196,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
     }
-  
+
 }
 
 
@@ -206,80 +207,80 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
                                      unsigned short RunTime_EqSystem,
                                      unsigned long Iteration) {
 
-	  unsigned short iMarker;
+    unsigned short iMarker;
 
-	  bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
-	  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-	  bool first_iter = (config->GetIntIter() == 0);									// Checks if it is the first iteration
-	  unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA(); 			// Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
-	  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+    bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
+    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+    bool first_iter = (config->GetIntIter() == 0);                  // Checks if it is the first iteration
+    unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();       // Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
+    unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
-	  bool restart = config->GetRestart();																	// Restart solution
-	  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
+    bool restart = config->GetRestart();                                  // Restart solution
+    bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
 
-	  /*--- Compute Mass Matrix ---*/
-	  /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
-	  /*--- problem is linear or nonlinear. This is done in the preprocessing step. ---*/
+    /*--- Compute Mass Matrix ---*/
+    /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
+    /*--- problem is linear or nonlinear. This is done in the preprocessing step. ---*/
 
-	  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
-	  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-	  if ((linear_analysis && initial_calc) ||
-		  (linear_analysis && restart && initial_calc_restart)) {
-		  solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
-	  }
-	  else if (!linear_analysis) {
-		  /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
-		  /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
-		  /*--- They are calculated together to avoid looping twice over the elements ---*/
-		  if (IterativeScheme == NEWTON_RAPHSON) {
-			  /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
-			  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
-		  }
+    /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
+    /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
+    if ((linear_analysis && initial_calc) ||
+      (linear_analysis && restart && initial_calc_restart)) {
+      solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
+    }
+    else if (!linear_analysis) {
+      /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
+      /*--- If the method is full Newton-Raphson, the stiffness matrix and the nodal term are updated every time ---*/
+      /*--- They are calculated together to avoid looping twice over the elements ---*/
+      if (IterativeScheme == NEWTON_RAPHSON) {
+        /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
+        solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+      }
 
-		  /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
-		  /*--- Nevertheless, the Nodal Stress Term has to be computed for each iteration ---*/
-		  else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
+      /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
+      /*--- Nevertheless, the Nodal Stress Term has to be computed for each iteration ---*/
+      else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON) {
 
-			  if (first_iter) {
-				  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
-			  }
+        if (first_iter) {
+          solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+        }
 
-			  else {
-				  solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
-			  }
+        else {
+          solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
+        }
 
-		  }
+      }
 
-	  }
+    }
 
-	  /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
-	  /*--- If there are FSI loads, they have to be previously applied at other level involving both zones. ---*/
+    /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
+    /*--- If there are FSI loads, they have to be previously applied at other level involving both zones. ---*/
 
-	  /*--- Some external loads may be considered constant over the time step ---*/
-	  if (first_iter) {
-		  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		    switch (config->GetMarker_All_KindBC(iMarker)) {
-		      case LOAD_DIR_BOUNDARY:
-				solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-				break;
-		      case LOAD_SINE_BOUNDARY:
-				solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-				break;
-		    }
-		  }
-	  }
+    /*--- Some external loads may be considered constant over the time step ---*/
+    if (first_iter) {
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        switch (config->GetMarker_All_KindBC(iMarker)) {
+          case LOAD_DIR_BOUNDARY:
+        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        break;
+          case LOAD_SINE_BOUNDARY:
+        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        break;
+        }
+      }
+    }
 
-	  /*--- Others are not, because they depend on the geometry ---*/
-	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-	    switch (config->GetMarker_All_KindBC(iMarker)) {
-	      case LOAD_BOUNDARY:
-	        solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-	        break;
-	      case PRESSURE_BOUNDARY:
-	        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-	        break;
-	    }
-	  }
+    /*--- Others are not, because they depend on the geometry ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case LOAD_BOUNDARY:
+          solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
+        case PRESSURE_BOUNDARY:
+          solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
+      }
+    }
 
 }
 
@@ -295,11 +296,11 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
       
       solver_container[iZone][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
       
-			/*--- Set the force coefficients ---*/
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CD());
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CL());
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
+      /*--- Set the force coefficients ---*/
+      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CD());
+      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CL());
+      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
+      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
       /*--- Restrict solution and gradients to the coarse levels ---*/
       
@@ -324,105 +325,105 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Fluid time integration schemes ---*/
 
-	if (KindSolver != FEM_ELASTICITY) {
+  if (KindSolver != FEM_ELASTICITY) {
 
-	  switch (config->GetKind_TimeIntScheme()) {
-		case (RUNGE_KUTTA_EXPLICIT):
-		  solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-		  break;
-		case (EULER_EXPLICIT):
-		  solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
-		  break;
-		case (EULER_IMPLICIT):
-		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-		  break;
-	  }
+    switch (config->GetKind_TimeIntScheme()) {
+    case (RUNGE_KUTTA_EXPLICIT):
+      solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+      break;
+    case (EULER_EXPLICIT):
+      solver_container[MainSolver]->ExplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+    case (EULER_IMPLICIT):
+      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+    }
 
    /*--- Structural time integration schemes ---*/
   
-	}
-	else if (KindSolver == FEM_ELASTICITY) {
+  }
+  else if (KindSolver == FEM_ELASTICITY) {
 
-	  switch (config->GetKind_TimeIntScheme_FEA()) {
-		case (CD_EXPLICIT):
-		  solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
-		  break;
-		case (NEWMARK_IMPLICIT):
-		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
-		  break;
-		case (GENERALIZED_ALPHA):
-		  solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
-		  break;
-	  }
-	}
-  
+    switch (config->GetKind_TimeIntScheme_FEA()) {
+    case (CD_EXPLICIT):
+      solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+      break;
+    case (NEWMARK_IMPLICIT):
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      break;
+    case (GENERALIZED_ALPHA):
+      solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
+      break;
+    }
+  }
+
 }
 
 void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
                                     unsigned short RunTime_EqSystem, unsigned long Iteration) {
 
-	unsigned short iMarker;
+  unsigned short iMarker;
 
-	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
-	/*--- Set the Jacobian according to the different time integration methods ---*/
+  /*--- Set the Jacobian according to the different time integration methods ---*/
 
-	switch (config->GetKind_TimeIntScheme_FEA()) {
-		case (CD_EXPLICIT):
-		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
-		  break;
-		case (NEWMARK_IMPLICIT):
-		  solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
-		  break;
-		case (GENERALIZED_ALPHA):
-		  solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, solver_container, config);
-		  break;
-	  }
+  switch (config->GetKind_TimeIntScheme_FEA()) {
+    case (CD_EXPLICIT):
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      break;
+    case (NEWMARK_IMPLICIT):
+      solver_container[MainSolver]->ImplicitNewmark_Iteration(geometry, solver_container, config);
+      break;
+    case (GENERALIZED_ALPHA):
+      solver_container[MainSolver]->GeneralizedAlpha_Iteration(geometry, solver_container, config);
+      break;
+    }
 
-	/*--- Apply ESSENTIAL BOUNDARY CONDITIONS ---*/
+  /*--- Apply ESSENTIAL BOUNDARY CONDITIONS ---*/
 
-	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-	    switch (config->GetMarker_All_KindBC(iMarker)) {
-	      case CLAMPED_BOUNDARY:
-			solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-			break;
-	      case DISPLACEMENT_BOUNDARY:
-	        solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-	        break;
-	    }
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case CLAMPED_BOUNDARY:
+      solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+      break;
+        case DISPLACEMENT_BOUNDARY:
+          solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          break;
+      }
 
-	/*--- Solver linearized system ---*/
+  /*--- Solver linearized system ---*/
 
-	  solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
+    solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
 
-	/*--- Update solution ---*/
+  /*--- Update solution ---*/
 
-		switch (config->GetKind_TimeIntScheme_FEA()) {
-			case (CD_EXPLICIT):
-			  solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
-			  break;
-			case (NEWMARK_IMPLICIT):
-			  solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
-			  break;
-			case (GENERALIZED_ALPHA):
-			  solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, solver_container, config);
-			  break;
-		  }
+    switch (config->GetKind_TimeIntScheme_FEA()) {
+      case (CD_EXPLICIT):
+        solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+        break;
+      case (NEWMARK_IMPLICIT):
+        solver_container[MainSolver]->ImplicitNewmark_Update(geometry, solver_container, config);
+        break;
+      case (GENERALIZED_ALPHA):
+        solver_container[MainSolver]->GeneralizedAlpha_UpdateDisp(geometry, solver_container, config);
+        break;
+      }
 
-	/*--- Reinforce ESSENTIAL BOUNDARY CONDITIONS: avoids accumulation of numerical error ---*/
+  /*--- Reinforce ESSENTIAL BOUNDARY CONDITIONS: avoids accumulation of numerical error ---*/
 
-	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		switch (config->GetMarker_All_KindBC(iMarker)) {
-		  case CLAMPED_BOUNDARY:
-			solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-			break;
-//		  case DISPLACEMENT_BOUNDARY:
-//			solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-//			break;
-		}
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case CLAMPED_BOUNDARY:
+      solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+      break;
+//      case DISPLACEMENT_BOUNDARY:
+//      solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+//      break;
+    }
 
-	  /*--- Perform the MPI communication of the solution ---*/
-	  solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+    /*--- Perform the MPI communication of the solution ---*/
+    solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
 
 }
 
@@ -554,7 +555,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #ifndef HAVE_MPI
       exit(EXIT_DIVERGENCE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #endif
     }
     
@@ -575,13 +578,13 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     geometry->node[iPoint]->SetVolume_nM1();
     geometry->node[iPoint]->SetVolume_n();
     
-		/*--- Store old coordinates in case there is grid movement ---*/
+    /*--- Store old coordinates in case there is grid movement ---*/
     
-		if (config->GetGrid_Movement()) {
-			geometry->node[iPoint]->SetCoord_n1();
-			geometry->node[iPoint]->SetCoord_n();
-		}
-	}
+    if (config->GetGrid_Movement()) {
+      geometry->node[iPoint]->SetCoord_n1();
+      geometry->node[iPoint]->SetCoord_n();
+    }
+  }
   
   /*--- Store old aeroelastic solutions ---*/
   if (config->GetGrid_Movement() && config->GetAeroelastic_Simulation() && (iMesh == MESH_0)) {
@@ -698,7 +701,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
       if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, solver_container, config);
       break;
     case (GENERALIZED_ALPHA):
-      //if (fsi)	solver_container[FEA_SOL]->Update_StructSolution(geometry, solver_container, config);
+      //if (fsi)  solver_container[FEA_SOL]->Update_StructSolution(geometry, solver_container, config);
       solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, solver_container, config);
       solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
       break;
@@ -748,8 +751,8 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   Residual_RTOL = log10(solver->GetRes_FEM(1));
   Residual_ETOL = log10(solver->GetRes_FEM(2));
   
-  //	cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
-  //	cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
+  //  cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
+  //  cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
   
   if ((Residual_UTOL <= Reference_UTOL) &&
       (Residual_ETOL <= Reference_ETOL) &&

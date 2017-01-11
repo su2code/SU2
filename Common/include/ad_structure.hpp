@@ -132,4 +132,21 @@ namespace AD{
 #define AD_END_PASSIVE
 #endif
 
+/*--- If we compile under OSX we have to overload some of the operators for
+ *   complex numbers to avoid the use of the standard operators
+ *  (they use a lot of functions that are only defined for doubles) ---*/
+
+#ifdef __APPLE__
+
+namespace std{
+  template<>
+  su2double abs(const complex<su2double>& x);
+
+  template<>
+  complex<su2double> operator/(const complex<su2double>& x, const complex<su2double>& y);
+
+  template<>
+  complex<su2double> operator*(const complex<su2double>& x, const complex<su2double>& y);
+}
+#endif
 #include "ad_structure.inl"

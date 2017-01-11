@@ -40,37 +40,38 @@ CSolver::CSolver(void) {
   IterLinSolver = 0;
   
   /*--- Array initialization ---*/
+  
   OutputHeadingNames = NULL;
-  Residual_RMS = NULL;
-  Residual_Max = NULL;
-  Residual = NULL;
-  Residual_i = NULL;
-  Residual_j = NULL;
-  Point_Max = NULL;
-  Point_Max_Coord = NULL;
-  Solution = NULL;
-  Solution_i = NULL;
-  Solution_j = NULL;
-  Vector = NULL;
-  Vector_i = NULL;
-  Vector_j = NULL;
-  Res_Conv = NULL;
-  Res_Visc = NULL;
-  Res_Sour = NULL;
-  Res_Conv_i = NULL;
-  Res_Visc_i = NULL;
-  Res_Conv_j = NULL;
-  Res_Visc_j = NULL;
-  Jacobian_i = NULL;
-  Jacobian_j = NULL;
-  Jacobian_ii = NULL;
-  Jacobian_ij = NULL;
-  Jacobian_ji = NULL;
-  Jacobian_jj = NULL;
-  Smatrix = NULL;
-  cvector = NULL;
-  node = NULL;
-  nOutputVariables = 0;
+  Residual_RMS       = NULL;
+  Residual_Max       = NULL;
+  Residual           = NULL;
+  Residual_i         = NULL;
+  Residual_j         = NULL;
+  Point_Max          = NULL;
+  Point_Max_Coord    = NULL;
+  Solution           = NULL;
+  Solution_i         = NULL;
+  Solution_j         = NULL;
+  Vector             = NULL;
+  Vector_i           = NULL;
+  Vector_j           = NULL;
+  Res_Conv           = NULL;
+  Res_Visc           = NULL;
+  Res_Sour           = NULL;
+  Res_Conv_i         = NULL;
+  Res_Visc_i         = NULL;
+  Res_Conv_j         = NULL;
+  Res_Visc_j         = NULL;
+  Jacobian_i         = NULL;
+  Jacobian_j         = NULL;
+  Jacobian_ii        = NULL;
+  Jacobian_ij        = NULL;
+  Jacobian_ji        = NULL;
+  Jacobian_jj        = NULL;
+  Smatrix            = NULL;
+  Cvector            = NULL;
+  node               = NULL;
+  nOutputVariables   = 0;
   
 }
 
@@ -78,7 +79,8 @@ CSolver::~CSolver(void) {
 
   unsigned short iVar, iDim;
   unsigned long iPoint;
-  /* Public variables, may be accessible outside */
+  
+  /*--- Public variables, may be accessible outside ---*/
 
   if ( OutputHeadingNames != NULL) {
     delete [] OutputHeadingNames;
@@ -91,7 +93,7 @@ CSolver::~CSolver(void) {
     delete [] node;
   }
 
-  /* Private */
+  /*--- Private ---*/
 
   if (Residual_RMS != NULL) delete [] Residual_RMS;
   if (Residual_Max != NULL) delete [] Residual_Max;
@@ -163,10 +165,10 @@ CSolver::~CSolver(void) {
     delete [] Smatrix;
   }
 
-  if (cvector != NULL) {
+  if (Cvector != NULL) {
     for (iVar = 0; iVar < nVarGrad; iVar++)
-      delete [] cvector[iVar];
-    delete [] cvector;
+      delete [] Cvector[iVar];
+    delete [] Cvector;
   }
 
 }
@@ -217,7 +219,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
       if (rank == MASTER_NODE)
         cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
       
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
       
     }
     
@@ -270,37 +274,39 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
 
 void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
   
-  unsigned short nDim = geometry->GetnDim();
-  unsigned short nVar = GetnVar();
+  unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
+  unsigned long iVertex, iEdge;
   su2double ProjGridVel, *Normal;
   
-  //	Loop interior edges
-  for (unsigned long iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  /*--- Loop interior edges ---*/
+   
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
     const unsigned long jPoint = geometry->edge[iEdge]->GetNode(1);
     
-    // Solution at each edge point
+    /*--- Solution at each edge point ---*/
+    
     su2double *Solution_i = node[iPoint]->GetSolution();
     su2double *Solution_j = node[jPoint]->GetSolution();
     
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = 0.5* (Solution_i[iVar] + Solution_j[iVar]);
     
-    // Grid Velocity at each edge point
+    /*--- Grid Velocity at each edge point ---*/
+    
     su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
     su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (iDim = 0; iDim < nDim; iDim++)
       Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
     
     Normal = geometry->edge[iEdge]->GetNormal();
-    //			dS = geometry->edge[iEdge]->GetArea_or_Length();
     
     ProjGridVel = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    for (iDim = 0; iDim < nDim; iDim++)
       ProjGridVel += Vector[iDim]*Normal[iDim];
     
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nVar; iVar++)
       Residual[iVar] = ProjGridVel*Solution[iVar];
     
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -308,37 +314,40 @@ void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
     
   }
   
-  //	Loop boundary edges
-  for (unsigned short iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+  /*--- Loop boundary edges ---*/
+  
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-    for (unsigned long iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
       
-      // Solution at each edge point
+      /*--- Solution at each edge point ---*/
+      
       su2double *Solution = node[Point]->GetSolution();
       
-      // Grid Velocity at each edge point
+      /*--- Grid Velocity at each edge point ---*/
+      
       su2double *GridVel = geometry->node[Point]->GetGridVel();
       
-      // Summed normal components
+      /*--- Summed normal components ---*/
+      
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      //			dS = geometry->vertex[iMarker][iVertex]->GetArea_or_Length();
       
       ProjGridVel = 0.0;
-      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++)
         ProjGridVel -= GridVel[iDim]*Normal[iDim];
       
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = ProjGridVel*Solution[iVar];
       
       LinSysRes.AddBlock(Point, Residual);
     }
   }
+  
 }
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
-  //	Internal variables
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
   unsigned short nDim = geometry->GetnDim(), iDim, iMarker;
   
@@ -346,9 +355,10 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   su2double *Gradient, DualArea, Partial_Res, Grad_Val, *Normal;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    node[iPoint]->SetAuxVarGradientZero();		// Set Gradient to Zero
+    node[iPoint]->SetAuxVarGradientZero();    // Set Gradient to Zero
   
-  //	Loop interior edges
+  /*--- Loop interior edges ---*/
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
@@ -365,7 +375,8 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
     }
   }
   
-  //	Loop boundary edges
+  /*--- Loop boundary edges ---*/
+  
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -385,6 +396,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
       Grad_Val = Gradient[iDim]/(DualArea+EPS);
       node[iPoint]->SetAuxVarGradient(iDim, Grad_Val);
     }
+   
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -396,9 +408,10 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   r23_b, r33, z11, z12, z13, z22, z23, z33, detR2, product;
   bool singular = false;
   
-  su2double *cvector = new su2double [nDim];
+  su2double *Cvector = new su2double [nDim];
   
   /*--- Loop over points of the grid ---*/
+  
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
     Coord_i = geometry->node[iPoint]->GetCoord();
@@ -406,7 +419,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Inizialization of variables ---*/
     for (iDim = 0; iDim < nDim; iDim++)
-      cvector[iDim] = 0.0;
+      Cvector[iDim] = 0.0;
     
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
@@ -436,7 +449,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
         /*--- Entries of c:= transpose(A)*b ---*/
         
         for (iDim = 0; iDim < nDim; iDim++)
-          cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/(weight);
+          Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/(weight);
       }
       
     }
@@ -497,13 +510,13 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
     for (iDim = 0; iDim < nDim; iDim++) {
       product = 0.0;
       for (jDim = 0; jDim < nDim; jDim++)
-        product += Smatrix[iDim][jDim]*cvector[jDim];
+        product += Smatrix[iDim][jDim]*Cvector[jDim];
       if (geometry->node[iPoint]->GetDomain())
         node[iPoint]->SetAuxVarGradient(iDim, product);
     }
   }
   
-  delete [] cvector;
+  delete [] Cvector;
   
 }
 
@@ -577,9 +590,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   z22, z23, z33, product;
   bool singular = false;
   
-  su2double **cvector = new su2double* [nVar];
+  su2double **Cvector = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   
   /*--- Loop over points of the grid ---*/
   
@@ -600,7 +613,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     for (iVar = 0; iVar < nVar; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
-        cvector[iVar][iDim] = 0.0;
+        Cvector[iVar][iDim] = 0.0;
     
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
@@ -633,7 +646,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         
         for (iVar = 0; iVar < nVar; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
-            cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight;
+            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight;
       }
       
     }
@@ -694,7 +707,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
-          product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
         node[iPoint]->SetGradient(iVar, iDim, product);
       }
     }
@@ -704,8 +717,8 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   /*--- Deallocate memory ---*/
   
   for (iVar = 0; iVar < nVar; iVar++)
-    delete [] cvector[iVar];
-  delete [] cvector;
+    delete [] Cvector[iVar];
+  delete [] Cvector;
   
   /*--- Gradient MPI ---*/
   
@@ -719,12 +732,12 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
   su2double *Coord_i, *Coord_j, *Solution_i, *Solution_j, Smatrix[3][3],
   r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight, detR2, z11, z12, z13,
   z22, z23, z33, product;
-  su2double **cvector;
+  su2double **Cvector;
   
   /*--- Note that all nVar entries in this routine have been changed to nDim ---*/
-  cvector = new su2double* [nDim];
+  Cvector = new su2double* [nDim];
   for (iVar = 0; iVar < nDim; iVar++)
-    cvector[iVar] = new su2double [nDim];
+    Cvector[iVar] = new su2double [nDim];
   
   /*--- Loop over points of the grid ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -735,7 +748,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
     /*--- Inizialization of variables ---*/
     for (iVar = 0; iVar < nDim; iVar++)
       for (iDim = 0; iDim < nDim; iDim++)
-        cvector[iVar][iDim] = 0.0;
+        Cvector[iVar][iDim] = 0.0;
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0; r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
     
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -761,7 +774,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
       /*--- Entries of c:= transpose(A)*b ---*/
       for (iVar = 0; iVar < nDim; iVar++)
         for (iDim = 0; iDim < nDim; iDim++)
-          cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
+          Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/(weight);
     }
     
     /*--- Entries of upper triangular matrix R ---*/
@@ -804,7 +817,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
       for (iDim = 0; iDim < nDim; iDim++) {
         product = 0.0;
         for (jDim = 0; jDim < nDim; jDim++)
-          product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
         geometry->node[iPoint]->SetGridVel_Grad(iVar, iDim, product);
       }
     }
@@ -812,8 +825,8 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
   
   /*--- Deallocate memory ---*/
   for (iVar = 0; iVar < nDim; iVar++)
-    delete [] cvector[iVar];
-  delete [] cvector;
+    delete [] Cvector[iVar];
+  delete [] Cvector;
   
   /*--- Gradient MPI ---*/
   // TO DO!!!
@@ -827,10 +840,10 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint, jPoint, iVertex;
   su2double *Coord_i, *Coord_j, AuxVar_i, AuxVar_j;
-  su2double **Smatrix, *cvector;
+  su2double **Smatrix, *Cvector;
   
   Smatrix = new su2double* [nDim];
-  cvector = new su2double [nDim];
+  Cvector = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Smatrix[iDim] = new su2double [nDim];
   
@@ -852,7 +865,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
             
             /*--- Inizialization of variables ---*/
             for (iDim = 0; iDim < nDim; iDim++)
-              cvector[iDim] = 0.0;
+              Cvector[iDim] = 0.0;
             su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
             
             for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
@@ -877,7 +890,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
               
               /*--- Entries of c:= transpose(A)*b ---*/
               for (iDim = 0; iDim < nDim; iDim++)
-                cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
+                Cvector[iDim] += (Coord_j[iDim]-Coord_i[iDim])*(AuxVar_j-AuxVar_i)/weight;
             }
             
             /*--- Entries of upper triangular matrix R ---*/
@@ -921,7 +934,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
             for (iDim = 0; iDim < nDim; iDim++) {
               product = 0.0;
               for (jDim = 0; jDim < nDim; jDim++)
-                product += Smatrix[iDim][jDim]*cvector[jDim];
+                product += Smatrix[iDim][jDim]*Cvector[jDim];
               node[iPoint]->SetAuxVarGradient(iDim, product);
             }
           }
@@ -935,7 +948,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
   /*--- Memory deallocation ---*/
   for (iDim = 0; iDim < nDim; iDim++)
     delete [] Smatrix[iDim];
-  delete [] cvector;
+  delete [] Cvector;
   delete [] Smatrix;
 }
 
@@ -1215,7 +1228,7 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2doub
       UyVar_Gradient[iPoint][iVar] = 0.0;
     }
   
-  /*---	Loop interior edges ---*/
+  /*---  Loop interior edges ---*/
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -1240,7 +1253,7 @@ void CSolver::SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2doub
     
   }
   
-  /*---	Loop boundary edges ---*/
+  /*---  Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
@@ -1594,74 +1607,72 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
-	/*--- This function is intended for dual time simulations ---*/
+  /*--- This function is intended for dual time simulations ---*/
 
-	unsigned long iPoint, index;
+  unsigned long iPoint, index;
 
-	int Unst_RestartIter;
-	ifstream restart_file_n;
-	unsigned short iZone = config->GetiZone();
-	unsigned short nZone = geometry->GetnZone();
-	string filename = config->GetSolution_FlowFileName();
-	string filename_n;
+  int Unst_RestartIter;
+  ifstream restart_file_n;
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+  string filename = config->GetSolution_FlowFileName();
+  string filename_n;
 
-	/*--- Auxiliary vector for storing the coordinates ---*/
-	su2double *Coord;
-	Coord = new su2double[nDim];
+  /*--- Auxiliary vector for storing the coordinates ---*/
+  su2double *Coord;
+  Coord = new su2double[nDim];
 
-	/*--- Variables for reading the restart files ---*/
-	string text_line;
-	long iPoint_Local;
-	unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
-	unsigned short rbuf_NotMatching, sbuf_NotMatching;
+  /*--- Variables for reading the restart files ---*/
+  string text_line;
+  long iPoint_Local;
+  unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
+  unsigned short rbuf_NotMatching, sbuf_NotMatching;
 
-	int rank = MASTER_NODE;
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-	/*--- Multizone problems require the number of the zone to be appended. ---*/
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-	if (nZone > 1)
-		filename = config->GetMultizone_FileName(filename, iZone);
+  if (nZone > 1)
+    filename = config->GetMultizone_FileName(filename, iZone);
 
-	/*--- First, we load the restart file for time n ---*/
+  /*--- First, we load the restart file for time n ---*/
 
-	/*-------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------*/
 
-	/*--- Modify file name for an unsteady restart ---*/
-	Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-	filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+  /*--- Modify file name for an unsteady restart ---*/
+  Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
 
-	/*--- Open the restart file, throw an error if this fails. ---*/
+  /*--- Open the restart file, throw an error if this fails. ---*/
 
-	restart_file_n.open(filename_n.data(), ios::in);
-	if (restart_file_n.fail()) {
-		if (rank == MASTER_NODE)
-			cout << "There is no flow restart file!! " << filename_n.data() << "."<< endl;
-		exit(EXIT_FAILURE);
-	}
+  restart_file_n.open(filename_n.data(), ios::in);
+  if (restart_file_n.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no flow restart file!! " << filename_n.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
 
-	/*--- In case this is a parallel simulation, we need to perform the
+  /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
 
-	long *Global2Local_n = new long[geometry->GetGlobal_nPointDomain()];
+  map<unsigned long,unsigned long> Global2Local_n;
+  map<unsigned long,unsigned long>::const_iterator MI;
 
-	/*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-	iPoint_Global_Local = 0, iPoint_Global = 0;
+  /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
+  iPoint_Global_Local = 0, iPoint_Global = 0;
 
-	for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-		Global2Local_n[iPoint] = -1;
+  /*--- Now fill array with the transform values only for local points ---*/
 
-	/*--- Now fill array with the transform values only for local points ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+    Global2Local_n[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-		Global2Local_n[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  /*--- Read all lines in the restart file ---*/
+  /*--- The first line is the header ---*/
 
-	/*--- Read all lines in the restart file ---*/
-	/*--- The first line is the header ---*/
-
-	getline (restart_file_n, text_line);
+  getline (restart_file_n, text_line);
 
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     
@@ -1669,104 +1680,93 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
     
     istringstream point_line(text_line);
 
-		/*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local_n.find(iPoint_Global);
+    if (MI != Global2Local_n.end()) {
+      
+      iPoint_Local = Global2Local_n[iPoint_Global];
 
-		iPoint_Local = Global2Local_n[iPoint_Global];
+      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
+      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
 
-		/*--- Load the solution for this node. Note that the first entry
-       on the restart file line is the global index, followed by the
-       node coordinates, and then the conservative variables. ---*/
+      geometry->node[iPoint_Local]->SetCoord_n(Coord);
 
-		if (iPoint_Local >= 0) {
+      iPoint_Global_Local++;
+    }
+  }
 
-			if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-			if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
+  /*--- Detect a wrong solution file ---*/
 
-			geometry->node[iPoint_Local]->SetCoord_n(Coord);
+  rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-			iPoint_Global_Local++;
-		}
-	}
-
-	/*--- Detect a wrong solution file ---*/
-
-	rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-	if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
+  if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
 #ifndef HAVE_MPI
-	rbuf_NotMatching = sbuf_NotMatching;
+  rbuf_NotMatching = sbuf_NotMatching;
 #else
-	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-	if (rbuf_NotMatching != 0) {
-		if (rank == MASTER_NODE) {
-			cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file!" << endl;
-			cout << "It could be empty lines at the end of the file." << endl << endl;
-		}
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
 #ifndef HAVE_MPI
-		exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
 #else
-		MPI_Barrier(MPI_COMM_WORLD);
-		MPI_Abort(MPI_COMM_WORLD,1);
-		MPI_Finalize();
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
 #endif
-	}
+  }
 
-	/*--- Close the restart file ---*/
+  /*--- Close the restart file ---*/
 
-	restart_file_n.close();
+  restart_file_n.close();
 
-	/*--- Free memory needed for the transformation ---*/
+  /*-------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------*/
 
-	delete [] Global2Local_n;
+  /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
 
-	/*-------------------------------------------------------------------------------------------*/
-	/*-------------------------------------------------------------------------------------------*/
+  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
 
-	/*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
+    ifstream restart_file_n1;
+    string filename_n1;
 
-	if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+    /*--- Modify file name for an unsteady restart ---*/
+    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
 
-		ifstream restart_file_n1;
-		string filename_n1;
+    /*--- Open the restart file, throw an error if this fails. ---*/
 
-		/*--- Modify file name for an unsteady restart ---*/
-		Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-		filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    restart_file_n.open(filename_n1.data(), ios::in);
+    if (restart_file_n.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename_n1.data() << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
 
-		/*--- Open the restart file, throw an error if this fails. ---*/
-
-		restart_file_n.open(filename_n1.data(), ios::in);
-		if (restart_file_n.fail()) {
-			if (rank == MASTER_NODE)
-				cout << "There is no flow restart file!! " << filename_n1.data() << "."<< endl;
-			exit(EXIT_FAILURE);
-		}
-
-		/*--- In case this is a parallel simulation, we need to perform the
+    /*--- In case this is a parallel simulation, we need to perform the
          Global2Local index transformation first. ---*/
 
-		long *Global2Local_n1 = new long[geometry->GetGlobal_nPointDomain()];
+    map<unsigned long,unsigned long> Global2Local_n1;
+    map<unsigned long,unsigned long>::const_iterator MI;
 
-		/*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-		iPoint_Global_Local = 0, iPoint_Global = 0;
+    /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
+    iPoint_Global_Local = 0, iPoint_Global = 0;
 
-		for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-			Global2Local_n1[iPoint] = -1;
+    /*--- Now fill array with the transform values only for local points ---*/
 
-		/*--- Now fill array with the transform values only for local points ---*/
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+      Global2Local_n1[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 
-		for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-			Global2Local_n1[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    /*--- Read all lines in the restart file ---*/
+    /*--- The first line is the header ---*/
 
-		/*--- Read all lines in the restart file ---*/
-		/*--- The first line is the header ---*/
-
-		getline (restart_file_n, text_line);
+    getline (restart_file_n, text_line);
 
     for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
       
@@ -1774,67 +1774,58 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
       
       istringstream point_line(text_line);
 
-			/*--- Retrieve local index. If this node from the restart file lives
-           on a different processor, the value of iPoint_Local will be -1.
-           Otherwise, the local index for this node on the current processor
-           will be returned and used to instantiate the vars. ---*/
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+      
+      MI = Global2Local_n1.find(iPoint_Global);
+      if (MI != Global2Local_n1.end()) {
+        
+        iPoint_Local = Global2Local_n1[iPoint_Global];
 
-			iPoint_Local = Global2Local_n1[iPoint_Global];
+        if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
+        if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
 
-			/*--- Load the solution for this node. Note that the first entry
-           on the restart file line is the global index, followed by the
-           node coordinates, and then the conservative variables. ---*/
+        geometry->node[iPoint_Local]->SetCoord_n1(Coord);
 
-			if (iPoint_Local >= 0) {
-
-				if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-				if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
-
-				geometry->node[iPoint_Local]->SetCoord_n1(Coord);
-
-				iPoint_Global_Local++;
-			}
+        iPoint_Global_Local++;
+      }
 
     }
 
-		/*--- Detect a wrong solution file ---*/
+    /*--- Detect a wrong solution file ---*/
 
-		rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+    rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-		if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
+    if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 
 #ifndef HAVE_MPI
-		rbuf_NotMatching = sbuf_NotMatching;
+    rbuf_NotMatching = sbuf_NotMatching;
 #else
-		SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-		if (rbuf_NotMatching != 0) {
-			if (rank == MASTER_NODE) {
-				cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file!" << endl;
-				cout << "It could be empty lines at the end of the file." << endl << endl;
-			}
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
 #ifndef HAVE_MPI
-			exit(EXIT_FAILURE);
+      exit(EXIT_FAILURE);
 #else
-			MPI_Barrier(MPI_COMM_WORLD);
-			MPI_Abort(MPI_COMM_WORLD,1);
-			MPI_Finalize();
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #endif
-		}
+    }
 
-		/*--- Close the restart file ---*/
+    /*--- Close the restart file ---*/
 
-		restart_file_n1.close();
+    restart_file_n1.close();
 
-		/*--- Free memory needed for the transformation ---*/
+  }
 
-		delete [] Global2Local_n1;
+  /*--- It's necessary to communicate this information ---*/
 
-	}
-
-	/*--- It's necessary to communicate this information ---*/
-
-	geometry->Set_MPI_OldCoord(config);
+  geometry->Set_MPI_OldCoord(config);
   
   delete [] Coord;
 
@@ -1917,7 +1908,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
-	filename = config->GetSolution_FEMFileName();
+  filename = config->GetSolution_FEMFileName();
   } else {
     filename = config->GetSolution_FlowFileName();
   }
@@ -1925,13 +1916,13 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1  || config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
-	filename = config->GetMultizone_FileName(filename, iZone);
+  filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
-	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
   /*--- Open the restart file ---*/
@@ -1947,6 +1938,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -1961,18 +1953,13 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
   
-  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-  
   
   /*--- Identify the number of fields (and names) in the restart file ---*/
   
@@ -1999,12 +1986,12 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1.
-     Otherwise, the local index for this node on the current processor
-     will be returned and used to instantiate the vars. ---*/
+     on the current processor, we will load and instantiate the vars. ---*/
     
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
       
       /*--- The PointID is not stored --*/
       point_line >> index;
@@ -2050,16 +2037,16 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   }
   
-		/*--- Detect a wrong solution file ---*/
+    /*--- Detect a wrong solution file ---*/
   
-		rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-		if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
+    rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+    if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
 #ifndef HAVE_MPI
-		rbuf_NotMatching = sbuf_NotMatching;
+    rbuf_NotMatching = sbuf_NotMatching;
 #else
-		SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-		if (rbuf_NotMatching != 0) {
+    if (rbuf_NotMatching != 0) {
       if (rank == MASTER_NODE) {
         cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
         cout << "It could be empty lines at the end of the file." << endl << endl;
@@ -2089,7 +2076,6 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Free memory needed for the transformation ---*/
   
-  delete [] Global2Local;
   delete [] Solution;
   
   /*--- MPI solution ---*/
@@ -2376,14 +2362,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
-
-  /*--- First, set all indices to a negative value by default ---*/
-
-  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
-    Global2Local[iPoint] = -1;
-  }
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
 
   /*--- Now fill array with the transform values only for local points ---*/
 
@@ -2406,12 +2386,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
-
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
       
       /*--- The PointID is not stored --*/
       
@@ -2464,7 +2444,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- Free memory needed for the transformation ---*/
   
-  delete [] Global2Local;
   delete [] Solution;
   
   /*--- MPI solution ---*/
@@ -2550,13 +2529,10 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-    Global2Local[iPoint] = -1;
-  }
 
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
+  
   /*--- Now fill array with the transform values only for local points ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
@@ -2565,18 +2541,24 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
+  
   /*--- The first line is the header ---*/
+  
   getline (solution_file, text_line);
-
-  while (getline (solution_file, text_line)) {
+  
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (solution_file, text_line);
+    
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
 
       /*--- The PointID is not stored --*/
       point_line >> index;
@@ -2589,14 +2571,14 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 
 
     }
-    iPoint_Global++;
+
   }
 
   /*--- Close the restart file ---*/
   solution_file.close();
 
   /*--- Free memory needed for the transformation ---*/
-  delete [] Global2Local;
+
   delete [] Solution;
 
 }
