@@ -13119,7 +13119,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           numerics->SetPrimitive( PrimVar_i, PrimVar_j );
           
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
-	        Secondary_i = node[iPoint]->GetSecondary();
+          Secondary_i = node[iPoint]->GetSecondary();
 
             P_static   = PrimVar_j[nDim+1];
             rho_static = PrimVar_j[nDim+2];           
@@ -15156,16 +15156,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Init total coefficients ---*/
   
-  Total_CD         = 0.0;	  Total_CL           = 0.0;    Total_CSF          = 0.0;
-  Total_CMx        = 0.0;	  Total_CMy          = 0.0;    Total_CMz          = 0.0;
-  Total_CEff       = 0.0;	  Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
-  Total_CFx        = 0.0;	  Total_CFy          = 0.0;    Total_CFz          = 0.0;
-  Total_CT         = 0.0;	  Total_CQ           = 0.0;    Total_CMerit       = 0.0;
+  Total_CD         = 0.0;    Total_CL           = 0.0;    Total_CSF          = 0.0;
+  Total_CMx        = 0.0;    Total_CMy          = 0.0;    Total_CMz          = 0.0;
+  Total_CEff       = 0.0;    Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
+  Total_CFx        = 0.0;    Total_CFy          = 0.0;    Total_CFz          = 0.0;
+  Total_CT         = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat    = 0.0;   Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff     = 0.0;   Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
   Total_NetCThrust = 0.0;   Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
   Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
-  Total_AeroCD     = 0.0;	  Total_RadialDistortion   = 0.0; Total_CircumferentialDistortion           = 0.0;
+  Total_AeroCD     = 0.0;    Total_RadialDistortion   = 0.0; Total_CircumferentialDistortion           = 0.0;
 
   /*--- Read farfield conditions from config ---*/
   
@@ -15277,8 +15277,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   SlidingState = new su2double** [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-	  
-	SlidingState[iMarker] = NULL;
+    
+  SlidingState[iMarker] = NULL;
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
@@ -15648,8 +15648,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
   if (actuator_disk) {
-  	Set_MPI_ActDisk(solver_container, geometry, config);
-  	SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    Set_MPI_ActDisk(solver_container, geometry, config);
+    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
 
   /*--- Compute Interface MPI ---*/
