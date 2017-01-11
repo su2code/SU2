@@ -1410,7 +1410,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Friction_Forces(CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Heat_Fluxes(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10468,6 +10475,7 @@ public:
 class CHeatSolver : public CSolver {
 protected:
   unsigned short nMarker;
+  su2double *Heat_Flux, Total_HeatFlux, AllBound_HeatFlux;
 public:
 
   /*!
@@ -10574,6 +10582,10 @@ public:
 
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  void Heat_Fluxes(CGeometry *geometry, CConfig *config);
+
+  su2double GetTotal_HeatFlux(void);
 
   /*!
    * \brief Update the solution using an implicit solver.

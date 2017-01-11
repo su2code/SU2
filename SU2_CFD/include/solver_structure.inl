@@ -840,6 +840,8 @@ inline void CSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMar
 
 inline void CSolver::Friction_Forces(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Heat_Fluxes(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Viscous_DeltaForces(CGeometry *geometry, CConfig *config) { }
@@ -1821,6 +1823,8 @@ inline su2double CIncNSSolver::GetOmega_Max(void) { return Omega_Max; }
 inline void CIncNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
 
 inline void CIncNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
+
+inline su2double CHeatSolver::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
 inline su2double CAdjIncEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 

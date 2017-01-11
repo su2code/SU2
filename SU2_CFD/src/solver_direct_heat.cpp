@@ -145,6 +145,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   }
 
+  Heat_Flux = new su2double[nMarker];
+
   /*--- Non-dimensionalization of heat equation */
   config->SetTemperature_Ref(config->GetTemperature_FreeStream());
   config->SetTemperature_FreeStreamND(config->GetTemperature_FreeStream()/config->GetTemperature_Ref());
@@ -719,6 +721,71 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
+
+}
+
+void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iVertex, iPoint, iPointNormal;
+  unsigned short Boundary, iMarker, iDim;
+  su2double *Coord, *Coord_Normal, *Normal, Area, dist, Twall, dTdn, thermal_conductivity;
+  string Marker_Tag;
+
+#ifdef HAVE_MPI
+  su2double MyAllBound_HeatFlux;
+#endif
+
+  AllBound_HeatFlux = 0.0;
+      
+  for ( iMarker = 0; iMarker < nMarker; iMarker++ ) {
+    
+    Boundary = config->GetMarker_All_KindBC(iMarker);
+    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+    Heat_Flux[iMarker] = 0.0;
+
+    if ( Boundary == ISOTHERMAL ) {
+      
+      Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+
+      for( iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
+
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+        Coord = geometry->node[iPoint]->GetCoord();
+        Coord_Normal = geometry->node[iPointNormal]->GetCoord();
+
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+        dist = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
+        dist = sqrt(dist);
+
+        dTdn = (Twall - node[iPointNormal]->GetSolution(0))/dist;
+        thermal_conductivity = config->GetViscosity_FreeStreamND()/config->GetPrandtl_Lam();
+        Heat_Flux[iMarker] += thermal_conductivity*dTdn*Area;
+
+        //cout << "dTdn " << dTdn << ", tc " << thermal_conductivity << ", Area " << Area;
+      }
+    }
+
+    //cout << "Heat flux computation: " << Heat_Flux[iMarker] << endl;
+    AllBound_HeatFlux += Heat_Flux[iMarker];
+
+  }
+
+#ifdef HAVE_MPI
+
+  MyAllBound_HeatFlux = AllBound_HeatFlux;
+  SU2_MPI::Allreduce(&MyAllBound_HeatFlux, &AllBound_HeatFlux, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+#endif
+
+  Total_HeatFlux = AllBound_HeatFlux;
+
 
 }
 

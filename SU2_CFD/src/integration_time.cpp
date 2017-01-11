@@ -719,7 +719,9 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
     		  else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
     	  }
       }
-      
+
+      if (config->GetHeat_Inc()) solver_container[MESH_0][HEAT_SOL]->Heat_Fluxes(geometry[MESH_0], config);
+
       break;
       
     case RUNTIME_ADJFLOW_SYS:
