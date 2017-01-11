@@ -4095,9 +4095,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           su2double Delta_aux, Laminar_Viscosity_aux, Eddy_Viscosity_aux, StrainMag_aux, *Vorticity_aux, Omega_aux;
           su2double Baux, Gaux, TimeScale, Kaux, Lturb, Aaux, phi_hybrid_i, phi_hybrid_j,Omega_2, StrainMag_2, inv_TimeScale;
           su2double ch1 = 3.0, ch2 = 1.0, ch3 = 2.0, cnu = 0.09, phi_max = 1.0;
-          su2double Const_DES=0.65, uijuij, **Gradient_aux, Ducros_i, Ducros_aux, Ducros_j, phi1, phi2, ujxj;
+          su2double Const_DES=0.65, **Gradient_aux, Ducros_i, Ducros_j, phi1, phi2, ujxj;
           su2double *Coord_i, *Coord_j;
-          unsigned short jDim, nNeigh, iNeigh, NumNeigh;
+          unsigned short nNeigh, iNeigh, NumNeigh;
           
           Coord_i = geometry->node[iPoint]->GetCoord();
           Coord_j = geometry->node[jPoint]->GetCoord();

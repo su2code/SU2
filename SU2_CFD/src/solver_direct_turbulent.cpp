@@ -1892,6 +1892,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       }
       else if (config->GetKind_HybridRANSLES()==SA_IDDES){
           su2double *Coord_i, *Coord_j, aux_delta, Delta_min, aux_min;
+          su2double alpha2, f_b, f_d_tilde, dist_zonal;
           unsigned short nNeigh, iNeigh;
           unsigned long NumNeigh;
           
@@ -1971,12 +1972,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
           psi_2 = min(100.0,psi_2);
 
-          distDES_tilde = fd_tilde * dist_wall + (1.0 - fd_tilde) * distDES*sqrt(psi_2);
+          distDES_tilde = f_d_tilde * dist_wall + (1.0 - f_d_tilde) * distDES*sqrt(psi_2);
           
           /*--- Set distance to the surface with IDDES distance ---*/
           
-          if (config->GetZonal_HybridRANSLES()){
-              dist_zonal = config->GetZonal_Const();
+          if (config->GetZonal_DES()){
+              dist_zonal = config->GetZonal_Dist();
               if (dist_wall <= dist_zonal)
                   numerics->SetDistance(dist_wall, 0.0);
               else
