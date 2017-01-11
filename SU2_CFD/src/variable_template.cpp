@@ -36,6 +36,6 @@
 CTemplateVariable::CTemplateVariable(void) : CVariable() { }
 
 CTemplateVariable::CTemplateVariable(su2double val_Template, unsigned short val_nDim, 
-																		 unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) { }
+                                     unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) { }
 
 CTemplateVariable::~CTemplateVariable(void) { }
