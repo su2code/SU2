@@ -2106,7 +2106,7 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
-        case FFD_PLANE:            nParamDV = 2; break;
+        case FFD_PLANE:            nParamDV = 3; break;
         case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;

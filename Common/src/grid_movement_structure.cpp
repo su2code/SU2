@@ -4148,36 +4148,42 @@ void CSurfaceMovement::SetFFDPlane(CGeometry *geometry, CConfig *config, CFreeFo
   if (ResetDef == true) FFDBox->SetOriginalControlPoints();
 
   design_FFDBox = config->GetFFDTag(iDV);
-  Ampl = config->GetDV_Value(iDV);
-  pIndex =  SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-  kIndex =  SU2_TYPE::Int(config->GetParamDV(iDV, 2));
-  index[pIndex] = kIndex;
-  movement[pIndex] = Ampl;
-
-  if (pIndex==1) { // x plane movement (l constant)
-    lOrder = FFDBox->GetmOrder();
-    mOrder = FFDBox->GetnOrder();
-    iIndex = 1; jIndex = 2;
-  }
-  else if(pIndex==2){ // y plane movement (m constant)
-    lOrder = FFDBox->GetnOrder();
-    mOrder = FFDBox->GetlOrder();
-    iIndex = 2; jIndex = 0;
-  }
-  else{ // z plane movement (n constant)
-    lOrder = FFDBox->GetlOrder();
-    mOrder = FFDBox->GetmOrder();
-    iIndex = 0; jIndex = 1;
-  }
 
   if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
 
+    for (iOrder=0; iOrder<3; iOrder++)
+      index[iOrder]=0;
+
+    Ampl = config->GetDV_Value(iDV);
+
+    pIndex =  SU2_TYPE::Int(config->GetParamDV(iDV, 1));
+    kIndex =  SU2_TYPE::Int(config->GetParamDV(iDV, 2));
+
+    if (pIndex==0) { // x plane movement (l constant)
+      lOrder = FFDBox->GetmOrder();
+      mOrder = FFDBox->GetnOrder();
+      iIndex = 1; jIndex = 2;
+    }
+    else if(pIndex==1){ // y plane movement (m constant)
+      lOrder = FFDBox->GetnOrder();
+      mOrder = FFDBox->GetlOrder();
+      iIndex = 2; jIndex = 0;
+    }
+    else{ // z plane movement (n constant)
+      lOrder = FFDBox->GetlOrder();
+      mOrder = FFDBox->GetmOrder();
+      iIndex = 0; jIndex = 1;
+    }
+
+    index[pIndex] = kIndex;
+    movement[pIndex] = Ampl;
+
     for (iOrder = 0; iOrder < lOrder; iOrder++)
-        for (jOrder = 0; jOrder < mOrder; jOrder++){
-            index[iIndex] = iOrder;
-            index[jIndex] = jOrder;
-            FFDBox->SetControlPoints(index, movement);
-        }
+      for (jOrder = 0; jOrder < mOrder; jOrder++){
+        index[iIndex] = iOrder;
+        index[jIndex] = jOrder;
+        FFDBox->SetControlPoints(index, movement);
+      }
   }
 
 }

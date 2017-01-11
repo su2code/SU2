@@ -345,6 +345,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
           case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, true); break;
+          case FFD_PLANE :            surface_movement->SetFFDPlane(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_ANGLE_OF_ATTACK :  Gradient[iDV][0] = config->GetAoA_Sens(); break;
           }
 

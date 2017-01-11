@@ -392,6 +392,7 @@ int main(int argc, char *argv[]) {
             case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
             case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+            case FFD_PLANE :            surface_movement->SetFFDPlane(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
           }
           
           /*--- Recompute cartesian coordinates using the new control points position ---*/
