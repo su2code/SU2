@@ -3987,7 +3987,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
                (Design_Variable[iDV] == FFD_CONTROL_SURFACE) ||
                (Design_Variable[iDV] == FFD_CAMBER) ||
                (Design_Variable[iDV] == FFD_THICKNESS) ||
-               (Design_Variable[iDV] == FFD_PLANE)) cout << FFDTag[iDV];
+               (Design_Variable[iDV] == FFD_PLANE))) cout << FFDTag[iDV];
           else cout << ParamDV[iDV][iParamDV];
 
           if (iParamDV < nParamDV-1) cout << ", ";
