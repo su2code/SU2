@@ -92,12 +92,13 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDriver(char* confFile,
           unsigned short val_nZone,
           unsigned short val_nDim,
           SU2_Comm MPICommunicator);
-	
+
   /*!
    * \brief Destructor of the class.
    */
@@ -158,7 +159,6 @@ public:
    */
   void Interface_Preprocessing();
 
-
   /*!
    * \brief Definition and allocation of all solver classes.
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
@@ -168,7 +168,6 @@ public:
    */
   void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
-
   /*!
    * \brief Definition and allocation of all solver classes.
    * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
@@ -177,7 +176,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
-
 
   /*!
    * \brief Deallocation routine
@@ -272,7 +270,7 @@ public:
    * \brief Perform a mesh deformation as initial condition.
    */
   virtual void SetInitialMesh() { };
-  
+
   /*!
    * \brief Get the total drag.
    * \return Total drag.
@@ -328,7 +326,7 @@ public:
    */
   unsigned long GetNumberVertices(unsigned short iMarker);
 
-    /*!
+  /*!
    * \brief Get the number of halo vertices from a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \return Number of vertices.
@@ -479,53 +477,52 @@ public:
  */
 class CGeneralDriver : public CDriver {
 public:
-	
-	/*! 
-	 * \brief Constructor of the class.
-	 * \param[in] confFile - Configuration file name.
-	 * \param[in] val_nZone - Total number of zones.
-	 * \param[in] val_nDim - Number of dimensions.
-	 */
-  CGeneralDriver(char* confFile,
-
-                    unsigned short val_nZone,
-                    unsigned short val_nDim,
-                    SU2_Comm MPICommunicator);
-	
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CGeneralDriver(void);
-	
-	/*! 
-	 * \brief Run a single iteration of the physics within a single zone.
-	 */
   
+  /*! 
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CGeneralDriver(char* confFile,
+                 unsigned short val_nZone,
+                 unsigned short val_nDim,
+                 SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CGeneralDriver(void);
+
+  /*! 
+   * \brief Run a single iteration of the physics within a single zone.
+   */  
   void Run();
 
-    /*!
-     * \brief Update the dual-time solution for a single zone.
-     */
+  /*!
+   * \brief Update the dual-time solution for a single zone.
+   */
   void Update();
 
-    /*!
-     * \brief Reset the convergence flag (set to false) of the single zone solver.
-     */
+  /*!
+   * \brief Reset the convergence flag (set to false) of the single zone solver.
+   */
   void ResetConvergence();
 
-    /*!
-     * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (single zone).
-     */
+  /*!
+   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (single zone).
+   */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
-    /*!
-     * \brief Perform a static mesh deformation, without considering grid velocity (single zone).
-     */
+  /*!
+   * \brief Perform a static mesh deformation, without considering grid velocity (single zone).
+   */
   void StaticMeshUpdate();
 
-    /*!
-     * \brief Perform a mesh deformation as initial condition (single zone).
-     */
+  /*!
+   * \brief Perform a mesh deformation as initial condition (single zone).
+   */
   void SetInitialMesh();
 };
 
@@ -544,51 +541,51 @@ public:
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
    * \param[in] val_nDim - Number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CFluidDriver(char* confFile,
-                   unsigned short val_nZone,
-                   unsigned short val_nDim,
-                   SU2_Comm MPICommunicator);
-  
+               unsigned short val_nZone,
+               unsigned short val_nDim,
+               SU2_Comm MPICommunicator);
+
   /*!
    * \brief Destructor of the class.
    */
   ~CFluidDriver(void);
-  
+
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
    */
-
   void Run();
 
-    /*!
-     * \brief Update the dual-time solution within multiple zones.
-     */
+  /*!
+   * \brief Update the dual-time solution within multiple zones.
+   */
   void Update();
 
-    /*!
-     * \brief Reset the convergence flag (set to false) of the multizone solver.
-     */
+  /*!
+   * \brief Reset the convergence flag (set to false) of the multizone solver.
+   */
   void ResetConvergence();
 
-    /*!
-     * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
-     */
+  /*!
+   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
+   */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
-    /*!
-     * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
-     */
+  /*!
+   * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
+   */
   void StaticMeshUpdate();
 
-    /*!
-     * \brief Perform a mesh deformation as initial condition (multiple zone).
-     */
+  /*!
+   * \brief Perform a mesh deformation as initial condition (multiple zone).
+   */
   void SetInitialMesh();
 
-    /*!
-     * \brief Transfer data among different zones (multiple zone).
-     */
+  /*!
+   * \brief Transfer data among different zones (multiple zone).
+   */
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 };
 
@@ -603,54 +600,54 @@ class CHBDriver : public CDriver {
 
 private:
 
-	su2double **D; /*!< \brief Harmonic Balance operator. */
+  su2double **D; /*!< \brief Harmonic Balance operator. */
 
 public:
 
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CHBDriver(char* confFile,
+            unsigned short val_nZone,
+            unsigned short val_nDim,
+            SU2_Comm MPICommunicator);
 
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] confFile - Configuration file name.
-	 * \param[in] val_nZone - Total number of zones.
-	 * \param[in] val_nDim - Number of dimensions.
-	 */
-	CHBDriver(char* confFile,
-			unsigned short val_nZone,
-			unsigned short val_nDim,
-                        SU2_Comm MPICommunicator);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHBDriver(void);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CHBDriver(void);
+  /*!
+   * \brief Run a single iteration of a Harmonic Balance problem.
+   */
+  void Run();
 
-	/*!
-	 * \brief Run a single iteration of a Harmonic Balance problem.
-	 */
-	void Run();
+  /*!
+   * \brief Computation and storage of the Harmonic Balance method source terms.
+   * \author T. Economon, K. Naik
+   * \param[in] iZone - Current zone number.
+   */
+  void SetHarmonicBalance(unsigned short iZone);
 
-	/*!
-	 * \brief Computation and storage of the Harmonic Balance method source terms.
-	 * \author T. Economon, K. Naik
-	 * \param[in] iZone - Current zone number.
-	 */
-	void SetHarmonicBalance(unsigned short iZone);
+  /*!
+   * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
+   * \author A. Rubino, S. Nimmagadda
+   */
+  void ComputeHB_Operator();
 
-	/*!
-	 * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
-	 * \author A. Rubino, S. Nimmagadda
-	 */
-	void ComputeHB_Operator();
+  /*!
+   * \brief Update the solution for the Harmonic Balance.
+   */
+  void Update();
 
-	/*!
-	 * \brief Update the solution for the Harmonic Balance.
-	 */
-	void Update();
-
-	/*!
-	 * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
-	 */
-	void ResetConvergence();
+  /*!
+   * \brief Reset the convergence flag (set to false) of the solver for the Harmonic Balance.
+   */
+  void ResetConvergence();
 };
 
 
@@ -663,35 +660,35 @@ public:
 class CFSIDriver : public CDriver {
 public:
 
-	/*!
-	 * \brief Constructor of the class.
-	 * \param[in] confFile - Configuration file name.
-	 * \param[in] val_nZone - Total number of zones.
-	 */
-	CFSIDriver(char* confFile,
-			unsigned short val_nZone,
-			unsigned short val_nDim,
-                        SU2_Comm MPICommunicator);
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CFSIDriver(char* confFile,
+             unsigned short val_nZone,
+             unsigned short val_nDim,
+             SU2_Comm MPICommunicator);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CFSIDriver(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFSIDriver(void);
 
-	/*!
-	 * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
-	 */
+  /*!
+   * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
+   */
+  void Run();
 
-	void Run();
+  /*!
+   * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
+   * \param[in] donorZone - zone in which the displacements will be predicted.
+   * \param[in] targetZone - zone which receives the predicted displacements.
+   */
+  void Predict_Displacements(unsigned short donorZone, unsigned short targetZone);
 
-	/*!
-	 * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
-	 * \param[in] donorZone - zone in which the displacements will be predicted.
-	 * \param[in] targetZone - zone which receives the predicted displacements.
-	 */
-	void Predict_Displacements(unsigned short donorZone, unsigned short targetZone);
-
-	/*!
+  /*!
    * \brief Predict the fluid tractions to pass them into the structural solver on a BGS implementation.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
@@ -735,5 +732,4 @@ public:
    */
   void Update(unsigned short zoneFlow, unsigned short zoneStruct);
   using CDriver::Update;
-  
 };

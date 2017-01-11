@@ -57,7 +57,7 @@ using namespace std;
  */
 class CIteration {
 protected:
-  unsigned short nZone;	/*!< \brief Total number of zones in the problem. */
+  unsigned short nZone;  /*!< \brief Total number of zones in the problem. */
   
 public:
   
@@ -606,7 +606,7 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-	CFEM_StructuralAnalysis(CConfig *config);
+  CFEM_StructuralAnalysis(CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -635,8 +635,8 @@ public:
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
   void Iterate(COutput *output,
-		  	  CIntegration ***integration_container,
-		  	  CGeometry ***geometry_container,
+          CIntegration ***integration_container,
+          CGeometry ***geometry_container,
               CSolver ****solver_container,
               CNumerics *****numerics_container,
               CConfig **config_container,
@@ -650,15 +650,15 @@ public:
    * \param[in] ??? - Description here.
    */
   void Update(COutput *output,
-		  	  CIntegration ***integration_container,
-		  	  CGeometry ***geometry_container,
-	   	   	  CSolver ****solver_container,
-	   	   	  CNumerics *****numerics_container,
-	   	   	  CConfig **config_container,
-	   	   	  CSurfaceMovement **surface_movement,
-	   	   	  CVolumetricMovement **grid_movement,
-	   	   	  CFreeFormDefBox*** FFDBox,
-		   	  unsigned short val_iZone);
+          CIntegration ***integration_container,
+          CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+           unsigned short val_iZone);
 
   /*!
    * \brief Monitors the convergence and other metrics for the FEM system.
@@ -984,5 +984,5 @@ public:
  * \param[in] ExtIter - Current physical time iteration number.
  */
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-									CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                  CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
