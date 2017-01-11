@@ -85,13 +85,14 @@ libSU2Core_sources = \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
-  ../src/numerics_adjoint_levelset.cpp \
   ../src/numerics_adjoint_mean.cpp \
+  ../src/numerics_adjoint_mean_inc.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
   ../src/numerics_direct_poisson.cpp \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
   ../src/numerics_direct_mean_fem.cpp \
+  ../src/numerics_direct_mean_inc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
   ../src/numerics_direct_wave.cpp \
@@ -106,14 +107,15 @@ libSU2Core_sources = \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
-  ../src/solver_adjoint_levelset.cpp \
   ../src/solver_adjoint_mean.cpp \
+  ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
   ../src/solver_direct_poisson.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
   ../src/solver_direct_mean_fem.cpp \
+  ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
@@ -123,13 +125,14 @@ libSU2Core_sources = \
   ../src/transfer_physics.cpp \
   ../src/transfer_structure.cpp \
   ../src/transport_model.cpp \
-  ../src/variable_adjoint_levelset.cpp \
   ../src/variable_adjoint_mean.cpp \
+  ../src/variable_adjoint_mean_inc.cpp \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
   ../src/variable_direct_poisson.cpp \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \
+  ../src/variable_direct_mean_inc.cpp \
   ../src/variable_direct_transition.cpp \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_wave.cpp \

@@ -47,19 +47,15 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-s", "--step",       dest="step",       default=1E-3,
-                      help="finite difference STEP", metavar="STEP")
     parser.add_option("-q", "--quiet",      dest="quiet",      default='False',
                       help="output QUIET to log files", metavar="QUIET")    
     
     (options, args)=parser.parse_args()
     options.partitions = int( options.partitions )
-    options.step       = float( options.step )    
     options.quiet      = options.quiet.upper() == 'TRUE'
         
     finite_differences( options.filename   ,
                         options.partitions ,
-                        options.step       ,
                         options.quiet       )
 #: def main()
 
@@ -70,7 +66,6 @@ def main():
 
 def finite_differences( filename           , 
                         partitions = 0     , 
-                        step       = 1e-3  ,
                         quiet      = False  ):
     # Config
     config = SU2.io.Config(filename)
@@ -84,7 +79,7 @@ def finite_differences( filename           ,
     state.find_files(config)
     
     # Finite Difference Gradients
-    SU2.eval.gradients.findiff(config,state,step)
+    SU2.eval.gradients.findiff(config,state)
     
     return state
 

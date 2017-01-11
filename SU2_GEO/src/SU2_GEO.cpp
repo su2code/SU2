@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char config_file_name[MAX_STRING_SIZE];
  	char *cstr;
+  bool Local_MoveSurface, MoveSurface;
 	ofstream Gradient_file, ObjFunc_file;
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -334,9 +335,11 @@ int main(int argc, char *argv[]) {
       if ((config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
+          (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_TWIST_2D) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
-          (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_DIHEDRAL_ANGLE) ||
-          (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
+          (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_NACELLE) ||
+          (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_GULL) ||
+          (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_TWIST) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_ROTATION) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CAMBER) ||
           (config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
@@ -351,6 +354,19 @@ int main(int argc, char *argv[]) {
           
           surface_movement->ReadFFDInfo(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox, config_container[ZONE_0]->GetMesh_FileName());
           
+          /*--- Modify the control points for polar based computations ---*/
+          
+          if (config_container[ZONE_0]->GetFFD_CoordSystem() == CYLINDRICAL) {
+            for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetCart2Cyl_ControlPoints(config_container[ZONE_0]);
+            }
+          }
+          else if (config_container[ZONE_0]->GetFFD_CoordSystem() == SPHERICAL) {
+            for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+              FFDBox[iFFDBox]->SetCart2Sphe_ControlPoints(config_container[ZONE_0]);
+            }
+          }
+
           /*--- If the FFDBox was not defined in the input file ---*/
           
           if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
@@ -361,9 +377,11 @@ int main(int argc, char *argv[]) {
           
           for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
             
-            if (rank == MASTER_NODE)
-              cout << "Check the FFD box intersections with the solid surfaces." << endl;
+            if (rank == MASTER_NODE) cout << "Checking FFD box dimension." << endl;
+            surface_movement->CheckFFDDimension(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
+
             
+            if (rank == MASTER_NODE) cout << "Check the FFD box intersections with the solid surfaces." << endl;
             surface_movement->CheckFFDIntersections(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
             
           }
@@ -380,23 +398,31 @@ int main(int argc, char *argv[]) {
         
         /*--- Apply the control point change ---*/
         
+        MoveSurface = false;
+
         for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
           
           switch ( config_container[ZONE_0]->GetDesign_Variable(iDV) ) {
-            case FFD_CONTROL_POINT_2D : surface_movement->SetFFDCPChange_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_CAMBER_2D :        surface_movement->SetFFDCamber_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_THICKNESS_2D :     surface_movement->SetFFDThickness_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_CONTROL_POINT :    surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_TWIST_ANGLE :      surface_movement->SetFFDTwist(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_ROTATION :         surface_movement->SetFFDRotation(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
-            case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iDV, true); break;
+            case FFD_CONTROL_POINT_2D : Local_MoveSurface = surface_movement->SetFFDCPChange_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_CAMBER_2D :        Local_MoveSurface = surface_movement->SetFFDCamber_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_THICKNESS_2D :     Local_MoveSurface = surface_movement->SetFFDThickness_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_TWIST_2D :         Local_MoveSurface = surface_movement->SetFFDTwist_2D(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_CONTROL_POINT :    Local_MoveSurface = surface_movement->SetFFDCPChange(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_NACELLE :    Local_MoveSurface = surface_movement->SetFFDNacelle(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_GULL :    Local_MoveSurface = surface_movement->SetFFDGull(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_TWIST :            Local_MoveSurface = surface_movement->SetFFDTwist(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_ROTATION :         Local_MoveSurface = surface_movement->SetFFDRotation(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_CAMBER :           Local_MoveSurface = surface_movement->SetFFDCamber(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_THICKNESS :        Local_MoveSurface = surface_movement->SetFFDThickness(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
+            case FFD_CONTROL_SURFACE :  Local_MoveSurface = surface_movement->SetFFDControl_Surface(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], FFDBox, iDV, true); break;
           }
           
           /*--- Recompute cartesian coordinates using the new control points position ---*/
           
-          surface_movement->SetCartesianCoord(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox);
+          if (Local_MoveSurface) {
+            MoveSurface = true;
+            surface_movement->SetCartesianCoord(geometry_container[ZONE_0], config_container[ZONE_0], FFDBox[iFFDBox], iFFDBox, true);
+          }
           
         }
         
@@ -409,7 +435,19 @@ int main(int argc, char *argv[]) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
           cout << "Perform 2D deformation of the surface." << endl;
         }
+        MoveSurface = true;
         surface_movement->SetHicksHenne(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
+      }
+
+      /*--- Surface bump design variable ---*/
+
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == SURFACE_BUMP) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        MoveSurface = true;
+        surface_movement->SetSurface_Bump(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
 
       /*--- CST design variable ---*/
@@ -419,6 +457,7 @@ int main(int argc, char *argv[]) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
           cout << "Perform 2D deformation of the surface." << endl;
         }
+        MoveSurface = true;
         surface_movement->SetCST(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
       
@@ -429,6 +468,7 @@ int main(int argc, char *argv[]) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
           cout << "Perform 2D deformation of the surface." << endl;
         }
+        MoveSurface = true;
         surface_movement->SetTranslation(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
       
@@ -439,6 +479,7 @@ int main(int argc, char *argv[]) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
           cout << "Perform 2D deformation of the surface." << endl;
         }
+        MoveSurface = true;
         surface_movement->SetScale(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
       
@@ -449,6 +490,7 @@ int main(int argc, char *argv[]) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
           cout << "Perform 2D deformation of the surface." << endl;
         }
+        MoveSurface = true;
         surface_movement->SetRotation(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
       
@@ -459,6 +501,7 @@ int main(int argc, char *argv[]) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
           cout << "Perform 2D deformation of the surface." << endl;
         }
+        MoveSurface = true;
         surface_movement->SetNACA_4Digits(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
       
@@ -469,10 +512,13 @@ int main(int argc, char *argv[]) {
           cout << endl << "Design variable number "<< iDV <<"." << endl;
           cout << "Perform 2D deformation of the surface." << endl;
         }
+        MoveSurface = true;
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
-      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM and rank==MASTER_NODE)
+      
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM && rank == MASTER_NODE) {
         cout <<"Custom design variable will be used in external script" << endl;
+      }
 
       /*--- Design variable not implement ---*/
       
@@ -481,7 +527,10 @@ int main(int argc, char *argv[]) {
           cout << "Design Variable not implemented yet" << endl;
       }
       
+      if (MoveSurface) {
+      
       /*--- Create airfoil structure ---*/
+      
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
         geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
                                          Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
@@ -492,7 +541,10 @@ int main(int argc, char *argv[]) {
       
       if (geometry_container[ZONE_0]->GetnDim() == 3) Volume_New = geometry_container[ZONE_0]->Compute_Volume(config_container[ZONE_0], false);
       
+      }
+      
 			/*--- Compute gradient ---*/
+      
 			if (rank == MASTER_NODE) {
         
         delta_eps = config_container[ZONE_0]->GetDV_Value(iDV);
@@ -502,12 +554,15 @@ int main(int argc, char *argv[]) {
           cout << "Press any key to exit..." << endl;
           cin.get();
 #ifdef HAVE_MPI
+          MPI_Barrier(MPI_COMM_WORLD);
           MPI_Abort(MPI_COMM_WORLD,1);
           MPI_Finalize();
 #else
-          exit(1);
+          exit(EXIT_FAILURE);
 #endif
         }
+
+        if (MoveSurface) {
 
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
           
@@ -552,6 +607,24 @@ int main(int argc, char *argv[]) {
             cout << "Twist angle gradient: "      << Gradient[7*nPlane + iPlane] << "." << endl;
             cout << "Chord gradient: "                << Gradient[8*nPlane + iPlane] << "." << endl;
             
+          }
+          
+        }
+        
+        }
+        
+        else {
+          
+          for (iPlane = 0; iPlane < nPlane; iPlane++) {
+            Gradient[iPlane] = 0.0;
+            Gradient[1*nPlane + iPlane] = 0.0;
+            Gradient[2*nPlane + iPlane] = 0.0;
+            Gradient[3*nPlane + iPlane] = 0.0;
+            Gradient[4*nPlane + iPlane] = 0.0;
+            Gradient[5*nPlane + iPlane] = 0.0;
+            Gradient[6*nPlane + iPlane] = 0.0;
+            Gradient[7*nPlane + iPlane] = 0.0;
+            Gradient[8*nPlane + iPlane] = 0.0;
           }
           
         }

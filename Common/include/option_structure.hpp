@@ -307,13 +307,10 @@ static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string
 enum ENUM_REGIME {
   COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
   INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
-  FREESURFACE = 2			/*!< \brief Definition of freesurface solver (incompressible). */
 };
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
 ("COMPRESSIBLE", COMPRESSIBLE)
-("INCOMPRESSIBLE", INCOMPRESSIBLE)
-("FREESURFACE", FREESURFACE);
-
+("INCOMPRESSIBLE", INCOMPRESSIBLE);
 /*!
  * \brief different non-dimensional modes
  */
@@ -994,7 +991,6 @@ enum ENUM_OBJECTIVE {
   THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
   TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
-  FREE_SURFACE = 20,				    /*!< \brief Free Surface objective function definition. */
   MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
   MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
   MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
@@ -1005,11 +1001,10 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED = 31,          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
-  IDC_COEFFICIENT = 32, 	           /*!< \brief IDC coefficient objective function definition. */
-  PROPULSIVE_EFFICIENCY = 33, 	       /*!< \brief Mass flow ratio coefficient. */
-  NET_THRUST_COEFFICIENT = 34, 	     /*!< \brief Mass flow ratio coefficient. */
-  CUSTOM_COEFFICIENT = 35 	           /*!< \brief Custom coefficient objective function definition. */
+  OUTFLOW_GENERALIZED = 31,       /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
+  RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
+  CIRCUMFERENTIAL_DISTORTION = 37  /*!< \brief Circumferential Distortion objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1032,7 +1027,6 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
-("FREE_SURFACE", FREE_SURFACE)
 ("MAX_THICKNESS", MAX_THICKNESS)
 ("MIN_THICKNESS", MIN_THICKNESS)
 ("MAX_THICK_SEC1", MAX_THICK_SEC1)
@@ -1044,10 +1038,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
 ("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
-("IDC_COEFFICIENT", IDC_COEFFICIENT)
-("PROPULSIVE_EFFICIENCY", PROPULSIVE_EFFICIENCY)
-("NET_THRUST_COEFFICIENT", NET_THRUST_COEFFICIENT)
-("CUSTOM_COEFFICIENT", CUSTOM_COEFFICIENT);
+("AERO_DRAG", AERO_DRAG_COEFFICIENT)
+("RADIAL_DISTORTION", RADIAL_DISTORTION)
+("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION);
 
 /*!
  * \brief types of residual criteria equations
@@ -1202,24 +1195,27 @@ enum ENUM_PARAM {
   SCALE = 2,			           /*!< \brief Surface rotation as design variable. */
   FFD_SETTING = 3,		       /*!< \brief No surface deformation. */
   FFD_CONTROL_POINT = 4,	   /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_CAMBER = 5,		         /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS = 6,		     /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_DIHEDRAL_ANGLE = 7,	   /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
-  FFD_TWIST_ANGLE = 8,		   /*!< \brief Free form deformation for 3D design (change the twist angle). */
-  FFD_ROTATION = 9,		       /*!< \brief Free form deformation for 3D design (rotation around a line). */
-  FFD_CONTROL_POINT_2D = 10, /*!< \brief Free form deformation for 2D design (change a control point). */
-  FFD_CAMBER_2D = 11,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 12,		 /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_CONTROL_SURFACE = 13,	 /*!< \brief Free form deformation for 3D design (control surface). */
-  HICKS_HENNE = 14,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
-  PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
-  NACA_4DIGITS = 16,	       /*!< \brief The four digits NACA airfoil family as design variables. */
-  AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
-  SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
-  CUSTOM = 19,                /*!< 'CUSTOM' for use in external python analysis. */
-  CST = 20,                /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
-  NO_DEFORMATION = 21,		       /*!< \brief No Deformation. */
-  HTP_INCIDENCE = 22,			         /*!< \brief Incidence of the HTP. */
+  FFD_NACELLE = 5,	         /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_GULL = 6,	             /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_CAMBER = 7,		         /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_TWIST = 8,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
+  FFD_THICKNESS = 9,		     /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_DIHEDRAL_ANGLE = 10,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
+  FFD_ROTATION = 11,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
+  FFD_CONTROL_POINT_2D = 12, /*!< \brief Free form deformation for 2D design (change a control point). */
+  FFD_CAMBER_2D = 13,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_THICKNESS_2D = 14,		 /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_TWIST_2D = 15,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_CONTROL_SURFACE = 16,	 /*!< \brief Free form deformation for 3D design (control surface). */
+  HICKS_HENNE = 17,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
+  PARABOLIC = 18,		         /*!< \brief Parabolic airfoil definition as design variables. */
+  NACA_4DIGITS = 19,	       /*!< \brief The four digits NACA airfoil family as design variables. */
+  AIRFOIL = 20,		           /*!< \brief Airfoil definition as design variables. */
+  CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
+  SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
+  CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
+  NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   GE_LITE = 31,              /*!< Surface deformation by projecting points using the GELite library. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
@@ -1227,21 +1223,24 @@ enum ENUM_PARAM {
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
 ("FFD_CONTROL_POINT_2D", FFD_CONTROL_POINT_2D)
+("FFD_TWIST_2D", FFD_TWIST_2D)
 ("FFD_ANGLE_OF_ATTACK", FFD_ANGLE_OF_ATTACK)
 ("FFD_CAMBER_2D", FFD_CAMBER_2D)
 ("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
 ("HICKS_HENNE", HICKS_HENNE)
+("SURFACE_BUMP", SURFACE_BUMP)
 ("ANGLE_OF_ATTACK", ANGLE_OF_ATTACK)
 ("NACA_4DIGITS", NACA_4DIGITS)
 ("TRANSLATION", TRANSLATION)
 ("ROTATION", ROTATION)
-("HTP_INCIDENCE", HTP_INCIDENCE)
 ("SCALE", SCALE)
 ("FFD_CONTROL_POINT", FFD_CONTROL_POINT)
 ("FFD_DIHEDRAL_ANGLE", FFD_DIHEDRAL_ANGLE)
-("FFD_TWIST_ANGLE", FFD_TWIST_ANGLE)
 ("FFD_ROTATION", FFD_ROTATION)
 ("FFD_CONTROL_SURFACE", FFD_CONTROL_SURFACE)
+("FFD_NACELLE", FFD_NACELLE)
+("FFD_GULL", FFD_GULL)
+("FFD_TWIST", FFD_TWIST)
 ("FFD_CAMBER", FFD_CAMBER)
 ("FFD_THICKNESS", FFD_THICKNESS)
 ("PARABOLIC", PARABOLIC)
@@ -1285,12 +1284,29 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
  * \brief types surface continuity at the intersection with the FFD
  */
 enum ENUM_FFD_CONTINUITY {
+  DERIVATIVE_NONE = 0,		/*!< \brief No derivative continuity. */
   DERIVATIVE_1ST = 1,		/*!< \brief First derivative continuity. */
-  DERIVATIVE_2ND = 2			/*!< \brief Second derivative continuity. */
+  DERIVATIVE_2ND = 2,	/*!< \brief Second derivative continuity. */
+  USER_INPUT = 3			      /*!< \brief User input. */
 };
 static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string, ENUM_FFD_CONTINUITY>
+("NO_DERIVATIVE", DERIVATIVE_NONE)
 ("1ST_DERIVATIVE", DERIVATIVE_1ST)
-("2ND_DERIVATIVE", DERIVATIVE_2ND);
+("2ND_DERIVATIVE", DERIVATIVE_2ND)
+("USER_INPUT", USER_INPUT);
+
+/*!
+ * \brief types of coordinates systems for the FFD
+ */
+enum ENUM_FFD_COORD_SYSTEM {
+  CARTESIAN = 0,
+  CYLINDRICAL = 1,
+  SPHERICAL = 2
+};
+static const map<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = CCreateMap<string, ENUM_FFD_COORD_SYSTEM>
+("CARTESIAN", CARTESIAN)
+("CYLINDRICAL", CYLINDRICAL)
+("SPHERICAL", SPHERICAL);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -1436,7 +1452,7 @@ static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYN
 
 /* END_CONFIG_ENUMS */
 
-class COptionBase{
+class COptionBase {
 private:
 public:
   COptionBase() {};
@@ -1469,7 +1485,7 @@ inline COptionBase::~COptionBase() {}
 
 
 template <class Tenum>
-class COptionEnum : public COptionBase{
+class COptionEnum : public COptionBase {
 
   map<string, Tenum> m;
   unsigned short & field; // Reference to the feildname
@@ -1511,7 +1527,7 @@ public:
   }
 };
 
-class COptionDouble : public COptionBase{
+class COptionDouble : public COptionBase {
   su2double & field; // Reference to the fieldname
   su2double def; // Default value
   string name; // identifier for the option
@@ -1542,7 +1558,7 @@ public:
   }
 };
 
-class COptionString : public COptionBase{
+class COptionString : public COptionBase {
   string & field; // Reference to the fieldname
   string def; // Default value
   string name; // identifier for the option
@@ -1568,7 +1584,7 @@ public:
   }
 };
 
-class COptionInt : public COptionBase{
+class COptionInt : public COptionBase {
   int & field; // Reference to the feildname
   int def; // Default value
   string name; // identifier for the option
@@ -1598,7 +1614,7 @@ public:
   }
 };
 
-class COptionULong : public COptionBase{
+class COptionULong : public COptionBase {
   unsigned long & field; // Reference to the feildname
   unsigned long def; // Default value
   string name; // identifier for the option
@@ -1628,7 +1644,7 @@ public:
   }
 };
 
-class COptionUShort : public COptionBase{
+class COptionUShort : public COptionBase {
   unsigned short & field; // Reference to the feildname
   unsigned short def; // Default value
   string name; // identifier for the option
@@ -1658,7 +1674,7 @@ public:
   }
 };
 
-class COptionLong : public COptionBase{
+class COptionLong : public COptionBase {
   long & field; // Reference to the feildname
   long def; // Default value
   string name; // identifier for the option
@@ -1689,7 +1705,7 @@ public:
 };
 
 
-class COptionBool : public COptionBase{
+class COptionBool : public COptionBase {
   bool & field; // Reference to the feildname
   bool def; // Default value
   string name; // identifier for the option
@@ -1723,7 +1739,7 @@ public:
 };
 
 template <class Tenum>
-class COptionEnumList : public COptionBase{
+class COptionEnumList : public COptionBase {
 
   map<string, Tenum> m;
   unsigned short * & field; // Reference to the feildname
@@ -1768,7 +1784,7 @@ public:
   }
 };
 
-class COptionDoubleArray : public COptionBase{
+class COptionDoubleArray : public COptionBase {
   su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   const int size;
@@ -1827,7 +1843,7 @@ public:
   }
 };
 
-class COptionDoubleList : public COptionBase{
+class COptionDoubleList : public COptionBase {
   su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
@@ -1869,7 +1885,48 @@ public:
   }
 };
 
-class COptionUShortList : public COptionBase{
+class COptionShortList : public COptionBase {
+  short * & field; // Reference to the feildname
+  string name; // identifier for the option
+  unsigned short & size;
+  
+public:
+  COptionShortList(string option_field_name, unsigned short & list_size,  short * & option_field) : field(option_field), size(list_size) {
+    this->name = option_field_name;
+  }
+  
+  ~COptionShortList() {};
+  string SetValue(vector<string> option_value) {
+    // The size is the length of option_value
+    unsigned short option_size = option_value.size();
+    if (option_size == 1 && option_value[0].compare("NONE") == 0) {
+      // No options
+      this->size = 0;
+      return "";
+    }
+    this->size = option_size;
+    
+    // Parse all of the options
+    short * vals = new  short[option_size];
+    for (unsigned long i  = 0; i < option_size; i++) {
+      istringstream is(option_value[i]);
+      unsigned short val;
+      if (!(is >> val)) {
+        delete [] vals;
+        return badValue(option_value, "short", this->name);
+      }
+      vals[i] = val;
+    }
+    this->field = vals;
+    return "";
+  }
+  
+  void SetDefault() {
+    this->size = 0; // There is no default value for list
+  }
+};
+
+class COptionUShortList : public COptionBase {
   unsigned short * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
@@ -1910,7 +1967,7 @@ public:
   }
 };
 
-class COptionStringList : public COptionBase{
+class COptionStringList : public COptionBase {
   string * & field; // Reference to the feildname
   string name; // identifier for the option
   unsigned short & size;
@@ -1944,7 +2001,7 @@ public:
   }
 };
 
-class COptionConvect : public COptionBase{
+class COptionConvect : public COptionBase {
   string name; // identifier for the option
   unsigned short & space;
   unsigned short & centered;
@@ -1994,20 +2051,20 @@ class COptionFEMConvect : public COptionBase{
   string name; // identifier for the option
   unsigned short & space;
   unsigned short & fem;
-  
+
 public:
   COptionFEMConvect(string option_field_name, unsigned short & space_field, unsigned short & fem_field) : space(space_field), fem(fem_field) {
     this->name = option_field_name;
   }
-  
+
   ~COptionFEMConvect() {};
   string SetValue(vector<string> option_value) {
-    
+
     string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
     if (out.compare("") != 0) {
       return out;
     }
-    
+
     if (FEM_Map.count(option_value[0])) {
       this->space = Space_Map.find("FINITE_ELEMENT")->second;
       this->fem = FEM_Map.find(option_value[0])->second;
@@ -2017,15 +2074,15 @@ public:
     // Make them defined in case something weird happens
     this->fem = NO_FEM;
     return badValue(option_value, "convect", this->name);
-    
+
   }
-  
+
   void SetDefault() {
     this->fem = NO_FEM;
   }
 };
 
-class COptionMathProblem : public COptionBase{
+class COptionMathProblem : public COptionBase {
   string name; // identifier for the option
   bool & cont_adjoint;
   bool cont_adjoint_def;
@@ -2083,7 +2140,7 @@ public:
   
 };
 
-class COptionDVParam : public COptionBase{
+class COptionDVParam : public COptionBase {
   string name; // identifier for the option
   unsigned short & nDV;
   su2double ** & paramDV;
@@ -2156,19 +2213,21 @@ public:
         case FFD_CONTROL_POINT_2D: nParamDV = 5; break;
         case FFD_CAMBER_2D:        nParamDV = 2; break;
         case FFD_THICKNESS_2D:     nParamDV = 2; break;
+        case FFD_TWIST_2D:         nParamDV = 3; break;
         case HICKS_HENNE:          nParamDV = 2; break;
+        case SURFACE_BUMP:         nParamDV = 3; break;
         case CST:                  nParamDV = 3; break;
         case ANGLE_OF_ATTACK:      nParamDV = 1; break;
         case SCALE:                nParamDV = 0; break;
         case TRANSLATION:          nParamDV = 3; break;
         case ROTATION:             nParamDV = 6; break;
-        case HTP_INCIDENCE:        nParamDV = 2; break;
         case NACA_4DIGITS:         nParamDV = 3; break;
         case PARABOLIC:            nParamDV = 2; break;
         case AIRFOIL:              nParamDV = 2; break;
         case FFD_CONTROL_POINT:    nParamDV = 7; break;
-        case FFD_DIHEDRAL_ANGLE:   nParamDV = 7; break;
-        case FFD_TWIST_ANGLE:      nParamDV = 7; break;
+        case FFD_NACELLE:          nParamDV = 6; break;
+        case FFD_GULL:             nParamDV = 2; break;
+        case FFD_TWIST:            nParamDV = 8; break;
         case FFD_ROTATION:         nParamDV = 7; break;
         case FFD_CONTROL_SURFACE:  nParamDV = 7; break;
         case FFD_CAMBER:           nParamDV = 3; break;
@@ -2195,10 +2254,12 @@ public:
              (this->design_variable[iDV] == FFD_ANGLE_OF_ATTACK)||
              (this->design_variable[iDV] == FFD_CONTROL_POINT_2D) ||
              (this->design_variable[iDV] == FFD_CAMBER_2D) ||
+             (this->design_variable[iDV] == FFD_TWIST_2D) ||
              (this->design_variable[iDV] == FFD_THICKNESS_2D) ||
              (this->design_variable[iDV] == FFD_CONTROL_POINT) ||
-             (this->design_variable[iDV] == FFD_DIHEDRAL_ANGLE) ||
-             (this->design_variable[iDV] == FFD_TWIST_ANGLE) ||
+             (this->design_variable[iDV] == FFD_NACELLE) ||
+             (this->design_variable[iDV] == FFD_GULL) ||
+             (this->design_variable[iDV] == FFD_TWIST) ||
              (this->design_variable[iDV] == FFD_ROTATION) ||
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
@@ -2234,7 +2295,7 @@ public:
   }
 };
 
-class COptionDVValue : public COptionBase{
+class COptionDVValue : public COptionBase {
   string name; // identifier for the option
   unsigned short* & nDV_Value;
   su2double ** & valueDV;
@@ -2334,7 +2395,7 @@ public:
   }
 };
 
-class COptionFFDDef : public COptionBase{
+class COptionFFDDef : public COptionBase {
   string name;
   unsigned short & nFFD;
   su2double ** & CoordFFD;
@@ -2429,7 +2490,7 @@ public:
   
 };
 
-class COptionFFDDegree : public COptionBase{
+class COptionFFDDegree : public COptionBase {
   string name;
   unsigned short & nFFD;
   unsigned short ** & DegreeFFD;
@@ -2517,7 +2578,7 @@ public:
 };
 
 // Class where the option is represented by (String, su2double, string, su2double, ...)
-class COptionStringDoubleList : public COptionBase{
+class COptionStringDoubleList : public COptionBase {
   string name; // identifier for the option
   unsigned short & size; // how many strings are there (same as number of su2doubles)
 
@@ -2567,7 +2628,7 @@ public:
   }
 };
 
-class COptionInlet : public COptionBase{
+class COptionInlet : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
@@ -2652,7 +2713,7 @@ public:
 };
 
 template <class Tenum>
-class COptionRiemann : public COptionBase{
+class COptionRiemann : public COptionBase {
 
 protected:
   map<string, Tenum> m;
@@ -2769,7 +2830,7 @@ public:
 
 };
 //template <class Tenum>
-//class COptionNRBC : public COptionBase{
+//class COptionNRBC : public COptionBase {
 //
 //  map<string, Tenum> m;
 //  unsigned short* & field; // Reference to the fieldname
@@ -2880,7 +2941,7 @@ public:
 
 
 //Inlet condition where the input direction is assumed
-class COptionExhaust : public COptionBase{
+class COptionExhaust : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
@@ -2944,7 +3005,7 @@ public:
   
 };
 
-class COptionPeriodic : public COptionBase{
+class COptionPeriodic : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker_bound;
@@ -3114,7 +3175,7 @@ public:
 };
 
 
-class COptionMixingPlane : public COptionBase{
+class COptionMixingPlane : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker_bound;
@@ -3178,7 +3239,7 @@ public:
 };
 
 template <class Tenum>
-class COptionTurboPerformance : public COptionBase{
+class COptionTurboPerformance : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker_turboIn;
@@ -3252,7 +3313,7 @@ public:
 };
 
 
-class COptionPython : public COptionBase{
+class COptionPython : public COptionBase {
   string name;
 public:
   COptionPython(const string name) {
@@ -3271,7 +3332,7 @@ public:
 
 
 
-class COptionActDisk : public COptionBase{
+class COptionActDisk : public COptionBase {
   string name; // identifier for the option
   unsigned short & inlet_size;
   unsigned short & outlet_size;
