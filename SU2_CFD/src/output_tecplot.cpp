@@ -1183,24 +1183,24 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   bool first_zone = true;
   unsigned short dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum	 ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   /*--- Consistent data for Tecplot zones ---*/
   
-  Debug						= 0;
-  IsDouble					= 1;
-  NPts						= (INTEGER4)nGlobal_Poin;
-  t							= 0.0;//iExtIter*config->GetDelta_UnstTimeND();
-  KMax						= 0;
-  ICellMax					= 0;
-  JCellMax					= 0;
-  KCellMax					= 0;
-  StrandID					= 0;//(INTEGER4)iExtIter;
-  ParentZn					= 0;
-  IsBlock						= 1;
-  NumFaceConnections			= 0;
-  FaceNeighborMode			= 0;
-  ShareConnectivityFromZone	= 0;
+  Debug            = 0;
+  IsDouble          = 1;
+  NPts            = (INTEGER4)nGlobal_Poin;
+  t              = 0.0;//iExtIter*config->GetDelta_UnstTimeND();
+  KMax            = 0;
+  ICellMax          = 0;
+  JCellMax          = 0;
+  KCellMax          = 0;
+  StrandID          = 0;//(INTEGER4)iExtIter;
+  ParentZn          = 0;
+  IsBlock            = 1;
+  NumFaceConnections      = 0;
+  FaceNeighborMode      = 0;
+  ShareConnectivityFromZone  = 0;
   
   /*--- Write Tecplot solution file ---*/
   
@@ -1764,23 +1764,23 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   unsigned long iExtIter = config->GetExtIter();
   unsigned short NVar, dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum	 ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   /*--- Consistent data for Tecplot zones ---*/
-  Debug						= 0;
-  IsDouble					= 1;
-  NPts						= (INTEGER4)nGlobal_Poin;
-  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
-  KMax						= 0;
-  ICellMax					= 0;
-  JCellMax					= 0;
-  KCellMax					= 0;
-  StrandID					= (INTEGER4)iExtIter+1;
-  ParentZn					= 0;
-  IsBlock						= 1;
-  NumFaceConnections			= 0;
-  FaceNeighborMode			= 0;
-  ShareConnectivityFromZone	= 0;
+  Debug            = 0;
+  IsDouble          = 1;
+  NPts            = (INTEGER4)nGlobal_Poin;
+  t              = SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
+  KMax            = 0;
+  ICellMax          = 0;
+  JCellMax          = 0;
+  KCellMax          = 0;
+  StrandID          = (INTEGER4)iExtIter+1;
+  ParentZn          = 0;
+  IsBlock            = 1;
+  NumFaceConnections      = 0;
+  FaceNeighborMode      = 0;
+  ShareConnectivityFromZone  = 0;
   
   file.str(string());
   buffer = config->GetFlow_FileName();
@@ -1791,11 +1791,11 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   file << buffer;
   
   if (unsteady) {
-    if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			file << "_0000" << iExtIter;
-    if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		file << "_000" << iExtIter;
-    if (((int)iExtIter >= 100) && ((int)iExtIter < 1000))		file << "_00" << iExtIter;
-    if (((int)iExtIter >= 1000) && ((int)iExtIter < 10000))	file << "_0" << iExtIter;
-    if ((int)iExtIter >= 10000)							file << iExtIter;
+    if (((int)iExtIter >= 0) && ((int)iExtIter < 10))      file << "_0000" << iExtIter;
+    if (((int)iExtIter >= 10) && ((int)iExtIter < 100))    file << "_000" << iExtIter;
+    if (((int)iExtIter >= 100) && ((int)iExtIter < 1000))    file << "_00" << iExtIter;
+    if (((int)iExtIter >= 1000) && ((int)iExtIter < 10000))  file << "_0" << iExtIter;
+    if ((int)iExtIter >= 10000)              file << iExtIter;
   }
   file << ".sol.plt";
   FileType = SOLUTION;
@@ -2378,7 +2378,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
   unsigned short iDim, dims = geometry->GetnDim();
   unsigned long iPoint, iElem, iNode;
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum	 ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   /*--- Write Tecplot solution file ---*/
   if (!wrote_surf_file) {
@@ -2451,20 +2451,20 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     }
     
     /*--- Consistent data for Tecplot zones ---*/
-    Debug						= 0;
-    IsDouble					= 1;
-    NPts						= (INTEGER4)nSurf_Poin;
-    t							= 0.0;//iExtIter*config->GetDelta_UnstTimeND();
-    KMax						= 0;
-    ICellMax					= 0;
-    JCellMax					= 0;
-    KCellMax					= 0;
-    StrandID					= 0;//(INTEGER4)iExtIter;
-    ParentZn					= 0;
-    IsBlock						= 1;
-    NumFaceConnections			= 0;
-    FaceNeighborMode			= 0;
-    ShareConnectivityFromZone	= 0;
+    Debug            = 0;
+    IsDouble          = 1;
+    NPts            = (INTEGER4)nSurf_Poin;
+    t              = 0.0;//iExtIter*config->GetDelta_UnstTimeND();
+    KMax            = 0;
+    ICellMax          = 0;
+    JCellMax          = 0;
+    KCellMax          = 0;
+    StrandID          = 0;//(INTEGER4)iExtIter;
+    ParentZn          = 0;
+    IsBlock            = 1;
+    NumFaceConnections      = 0;
+    FaceNeighborMode      = 0;
+    ShareConnectivityFromZone  = 0;
     
     /*--- Open Tecplot file ---*/
     err = TECINI112((char *)config->GetSurfFlowCoeff_FileName().c_str(),
@@ -2682,7 +2682,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   unsigned long iPoint, iElem, iNode, iSurf_Poin, iExtIter = config->GetExtIter();
   unsigned short iDim, NVar, dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum	 ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
+  enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   
   file.str(string());
@@ -2694,11 +2694,11 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   file << buffer;
   
   if (unsteady) {
-    if (((int)iExtIter >= 0) && ((int)iExtIter < 10))			file << "_0000" << iExtIter;
-    if (((int)iExtIter >= 10) && ((int)iExtIter < 100))		file << "_000" << iExtIter;
-    if (((int)iExtIter >= 100) && ((int)iExtIter < 1000))		file << "_00" << iExtIter;
-    if (((int)iExtIter >= 1000) && ((int)iExtIter < 10000))	file << "_0" << iExtIter;
-    if ((int)iExtIter >= 10000)							file << iExtIter;
+    if (((int)iExtIter >= 0) && ((int)iExtIter < 10))      file << "_0000" << iExtIter;
+    if (((int)iExtIter >= 10) && ((int)iExtIter < 100))    file << "_000" << iExtIter;
+    if (((int)iExtIter >= 100) && ((int)iExtIter < 1000))    file << "_00" << iExtIter;
+    if (((int)iExtIter >= 1000) && ((int)iExtIter < 10000))  file << "_0" << iExtIter;
+    if ((int)iExtIter >= 10000)              file << iExtIter;
   }
   file << ".sol.plt";
   FileType = SOLUTION;
@@ -2789,20 +2789,20 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   }
   
   /*--- Consistent data for Tecplot zones ---*/
-  Debug						= 0;
-  IsDouble					= 1;
-  NPts						= (INTEGER4)nSurf_Poin;
-  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
-  KMax						= 0;
-  ICellMax					= 0;
-  JCellMax					= 0;
-  KCellMax					= 0;
-  StrandID					= (INTEGER4)iExtIter+1;
-  ParentZn					= 0;
-  IsBlock						= 1;
-  NumFaceConnections			= 0;
-  FaceNeighborMode			= 0;
-  ShareConnectivityFromZone	= 0;
+  Debug            = 0;
+  IsDouble          = 1;
+  NPts            = (INTEGER4)nSurf_Poin;
+  t              = SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
+  KMax            = 0;
+  ICellMax          = 0;
+  JCellMax          = 0;
+  KCellMax          = 0;
+  StrandID          = (INTEGER4)iExtIter+1;
+  ParentZn          = 0;
+  IsBlock            = 1;
+  NumFaceConnections      = 0;
+  FaceNeighborMode      = 0;
+  ShareConnectivityFromZone  = 0;
   
   
   /*--- Open Tecplot file ---*/
