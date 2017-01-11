@@ -403,7 +403,7 @@ su2double CEulerVariable::GetProjVel(su2double *val_vector) {
 }
 
 bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
-	unsigned short iVar;
+  unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
 
