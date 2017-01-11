@@ -841,8 +841,6 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   CSysSolve system;
   system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-  cout << LinSysSol.norm() << endl;
-
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);

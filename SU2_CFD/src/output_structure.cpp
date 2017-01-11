@@ -4431,12 +4431,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
         }
-        
-        
+                
         if (thermal) {
           Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
           Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
         }
+
+        if (thermal && heat) {
+          Total_Heat     = solver_container[val_iZone][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+          Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
+        }
+
         
         if (equiv_area) {
           Total_CEquivArea    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEquivArea();
@@ -4557,6 +4562,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           for (iVar = 0; iVar < nVar_Turb; iVar++)
             residual_turbulent[iVar] = solver_container[val_iZone][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
+
+        if (heat) {
+          for (iVar = 0; iVar < nVar_Heat; iVar++) {
+            residual_heat[iVar] = solver_container[val_iZone][MESH_0][HEAT_SOL]->GetRes_RMS(iVar);
+          }
+
+        }
         
         /*--- Transition residual ---*/
         
@@ -4604,19 +4616,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           
         }
-
-        if (heat){
-
-          /*--- Heat coefficients  ---*/
-
-          Total_CHeat = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
-
-          /*--- Wave Residuals ---*/
-
-          for (iVar = 0; iVar < nVar_Heat; iVar++) {
-            residual_heat[iVar] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
-          }
-        }
         
         break;
         
@@ -4638,7 +4637,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Heat coefficients  ---*/
         
-        Total_CHeat = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
+        Total_Heat = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
         
         /*--- Wave Residuals ---*/
         
@@ -4890,8 +4889,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             if (heat){
-              SPRINTF (direct_coeff, ", %12.10f", Total_CHeat);
+              //SPRINTF (direct_coeff, ", %12.10f", Total_CHeat);
               SPRINTF (heat_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_heat[0]), dummy, dummy, dummy, dummy );
+              SPRINTF (heat_resid, ", %14.8e", log10 (residual_heat[0]));
             }
 
             break;
@@ -5215,15 +5215,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << endl << " IntIter" << " ExtIter";
             if (incompressible) cout << "   Res[Press]";
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
-            if (heat){
-              cout <<  "     Res[Heat]" << endl;
-            }
+
             switch (config[val_iZone]->GetKind_Turb_Model()) {
               case SA:	   cout << "       Res[nu]"; break;
               case SA_NEG: cout << "       Res[nu]"; break;
               case SST:	   cout << "     Res[kine]" << "     Res[omega]"; break;
             }
             
+            if (heat) { cout <<  "     Res[Heat]"; }
+
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
             else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
@@ -5241,6 +5241,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
             else if (actuator_disk) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
             else if (engine) cout << "      CL(Total)" << "   CD-CT(Total)" << endl;
+            else if (heat) cout << "      HF(Total)" << endl;
             else cout << "      CL(Total)" << "      CD(Total)" << endl;
             
             break;
@@ -5481,10 +5482,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case 2: cout.width(14); cout << log10(residual_turbulent[0]);
               cout.width(15); cout << log10(residual_turbulent[1]); break;
           }
+
           if (heat){
-             cout.width(15); cout << log10(residual_heat[0]);
+             cout.width(14); cout << log10(residual_heat[0]);
           }
-          
+
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
           
           if (rotating_frame && nDim == 3 ) {
@@ -5513,6 +5515,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             cout.unsetf(ios_base::floatfield);
           }
+          else if (heat) { cout.width(15); cout << Total_Heat; }
           else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
           
           if (aeroelastic) {
