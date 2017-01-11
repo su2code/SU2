@@ -3953,13 +3953,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] == PARABOLIC) ||
             (Design_Variable[iDV] == AIRFOIL) ||
             (Design_Variable[iDV] == HTP_INCIDENCE) ||
-            (Design_Variable[iDV] == FFD_ANGLE_OF_ATTACK) ||
-            (Design_Variable[iDV] == FFD_PLANE)   ) nParamDV = 2;
+            (Design_Variable[iDV] == FFD_ANGLE_OF_ATTACK) ) nParamDV = 2;
         if ((Design_Variable[iDV] ==  TRANSLATION) ||
             (Design_Variable[iDV] ==  NACA_4DIGITS) ||
 	    (Design_Variable[iDV] ==  CST) ||
             (Design_Variable[iDV] ==  FFD_CAMBER) ||
-            (Design_Variable[iDV] ==  FFD_THICKNESS) ) nParamDV = 3;
+            (Design_Variable[iDV] ==  FFD_THICKNESS)  ||
+            (Design_Variable[iDV] == FFD_PLANE) ) nParamDV = 3;
         if (Design_Variable[iDV] == FFD_CONTROL_POINT_2D) nParamDV = 5;
         if (Design_Variable[iDV] == ROTATION) nParamDV = 6;
         if ((Design_Variable[iDV] ==  FFD_CONTROL_POINT) ||
