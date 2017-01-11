@@ -85,6 +85,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@BUILD_TECIO_TRUE@am__append_1 = ${abs_top_builddir}/externals/tecio/libtecio.a
 subdir = SU2_PY/pySU2
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -279,7 +280,7 @@ SUBDIR_EXEC = ${bindir}
 EXTRA_CC_FLAGS = -fPIC -O3
 
 #External libraries (METIS_LIB and PARMETIS_LIB are already defined)
-TECIO_LIB = ${abs_top_builddir}/externals/tecio/libtecio.a
+TECIO_LIB = $(am__append_1)
 
 #SU2Core lib
 SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
