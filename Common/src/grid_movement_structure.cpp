@@ -9049,9 +9049,19 @@ su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short va
          - (Order-1.0)/(1e-10 + U[val_i+Order]   - U[val_i+1])*right;
   }
 
-  /*--- Higher order derivatives are not implemented ---*/
+  /*--- Higher order derivatives are not implemented, so we exit if they are requested. ---*/
 
- return 0.0;
+  if (val_order_der > 2){
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+    if (rank == MASTER_NODE){
+      cout << "Higher order derivatives for BSplines are not implemented." << endl;
+    }
+    exit(EXIT_FAILURE);
+  }
+  return 0.0;
 }
 
 CBezierBlending::CBezierBlending(short val_order, short n_controlpoints){
