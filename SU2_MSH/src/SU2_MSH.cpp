@@ -124,7 +124,10 @@ int main(int argc, char *argv[]) {
 #else
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
-  
+	
+	for (long nPoint=0; nPoint < geometry_container[0]->GetGlobal_nPoint(); nPoint++)
+		cout << "Point= " << nPoint << " XCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[1] << endl;
+	
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
 	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
@@ -147,7 +150,6 @@ int main(int argc, char *argv[]) {
 	cout << "Set control volume structure." << endl;
 	geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE); geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-	
 	if ((config_container[ZONE_0]->GetKind_Adaptation() != NONE) && (config_container[ZONE_0]->GetKind_Adaptation() != PERIODIC)) {
 		
 		cout << endl <<"--------------------- Start numerical grid adaptation -------------------" << endl;

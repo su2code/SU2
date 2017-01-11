@@ -4871,7 +4871,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Read grid file with format SU2 ---*/
   
   while (getline (mesh_file, text_line)) {
-    
+
     /*--- Read the dimension of the problem ---*/
     
     position = text_line.find ("NDIME=",0);
@@ -4891,14 +4891,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     position = text_line.find ("NPOIN=",0);
     if (position != string::npos) {
       text_line.erase (0,6);
-      
+
       /*--- Check for ghost points. ---*/
       stringstream test_line(text_line);
       while (test_line >> dummyLong)
         iCount++;
       
       /*--- Now read and store the number of points and possible ghost points. ---*/
-      
+
       stringstream  stream_line(text_line);
       if (iCount == 2) {
         stream_line >> nPoint;
@@ -4989,9 +4989,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
               point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
 #else
-              if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex; }
-              else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = node_count;
-}
+              if (size > SINGLE_NODE) {
+								point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; point_line >> LocalIndex; point_line >> GlobalIndex;
+							} else {
+								point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = node_count;
+							}
 #endif
               node[iPoint] = new CPoint(Coord_2D[0], Coord_2D[1], GlobalIndex, config);
               iPoint++; break;
@@ -14270,7 +14272,7 @@ void CPeriodicGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config
       for (iIndex = 0; iIndex < geometry->PeriodicPoint[iPeriodic][0].size(); iIndex++) {
         bound[iMarkerSend][iVertex] = new CVertexMPI(geometry->PeriodicPoint[iPeriodic][0][iIndex], nDim);
         bound[iMarkerSend][iVertex]->SetRotation_Type(iPeriodic);
-				cout << "Point = " << geometry->PeriodicPoint[iPeriodic][0][iIndex] << " Rotation = " << iPeriodic << endl;
+				//cout << "Point = " << geometry->PeriodicPoint[iPeriodic][0][iIndex] << " Rotation = " << iPeriodic << endl;
         iVertex++;
       }
   
@@ -14410,7 +14412,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       if (iPeriodic == config->GetMarker_All_PerBound(iMarker)) break;
     
     /*--- Retrieve the supplied periodic information. ---*/
-		cout << "Marker = " << iMarker <<" iPer = " << iPeriodic << " Tag Bound = " << config->GetMarker_All_TagBound(iMarker) << endl;
+		// cout << "Marker = " << iMarker <<" iPer = " << iPeriodic << " Tag Bound = " << config->GetMarker_All_TagBound(iMarker) << endl;
 		center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
     angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
     transl = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
