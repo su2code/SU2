@@ -96,10 +96,14 @@ int main(int argc, char *argv[]) {
 
     driver = new CHBDriver(config_file_name, nTimeInstances, nDim);
 
-  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && nZone == 2) {
+  } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && nZone > 1) {
+
+    /*--- Redifine the number of zones for HB only. Geometrical zones are defined to define the physical domains.
+     * A set of time instances is  associated with the single geometrical zone. ---*/
 
     nGeomZones = nZone;
     nTimeInstances = config->GetnTimeInstances();
+
     /*--- Use the MultiZone Harmonic Balance driver. ---*/
 
     driver = new CGeneralHBDriver(config_file_name, nGeomZones*nTimeInstances, nDim);

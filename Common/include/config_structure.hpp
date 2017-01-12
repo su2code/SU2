@@ -1110,8 +1110,8 @@ private:
     COptionBase* val = new COptionPython(name);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
 public:
+
 
 	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 

@@ -4842,7 +4842,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   if (config->GetActDisk_DoubleSurface()) actuator_disk = false;
 
   nZone = val_nZone;
-  
+
+  /*--- Define zones for Harmonic Balance ---*/
+
+  unsigned long nTimeInstances;
+  unsigned long nGeomZones;
+  unsigned long iGeomZone;
+  unsigned long iTimeInstance;
+  if(harmonic_balance){
+    nTimeInstances = config->GetnTimeInstances();
+    nGeomZones    = val_nZone/nTimeInstances;
+    nGeomZones    = val_nZone/nTimeInstances;
+    iGeomZone     = val_iZone/nTimeInstances;
+    iTimeInstance = val_iZone;
+  }
+
   /*--- Initialize some additional counters for the parallel partitioning ---*/
   
   unsigned long total_pt_accounted = 0;
@@ -5410,11 +5424,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
 
   if ( harmonic_balance) {
-    if (harmonic_balance && false) {
-      if (rank == MASTER_NODE) cout << "Reading time instance " << val_iZone+1 << ":" << endl;
+    if (harmonic_balance && nGeomZones == 1){
+      if (rank == MASTER_NODE) cout << "Reading time instance " << iTimeInstance+1 << ":" << endl;
     }
-    else if (harmonic_balance && val_iZone < 3 ){
-      if (rank == MASTER_NODE) cout << "Reading time instance " << val_iZone+1 << ":" << endl;
+    else if (harmonic_balance && iGeomZone < 1  ){
+      if (rank == MASTER_NODE) cout << "Reading time instance " << iTimeInstance+1 << " relative to grid zone " << iGeomZone+1 << endl;
     }
     else {
       while (getline (mesh_file,text_line)) {
@@ -5423,8 +5437,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         if (position != string::npos) {
           text_line.erase (0,6);
           unsigned short jDomain = atoi(text_line.c_str());
-          if (jDomain == 1+1) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " points:" << endl;
+          if (jDomain == iGeomZone+1) {
+            if (rank == MASTER_NODE) cout << "Reading time instance " << iTimeInstance+1 << " relative to grid zone " << iGeomZone+1 << endl;
             break;
           }
         }
@@ -5686,15 +5700,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
     }
   }
-  if (val_iZone > 2 && harmonic_balance) {
+  if (iGeomZone > 0 && harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
       if (position != string::npos) {
         text_line.erase (0,6);
         unsigned short jDomain = atoi(text_line.c_str());
-        if (jDomain == 1+1) {
-          if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " elements:" << endl;
+        if (jDomain == iGeomZone+1) {
+          if (rank == MASTER_NODE) cout << "Reading elements for time instance " << iTimeInstance+1 << endl;
           break;
         }
       }
@@ -6246,15 +6260,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
     }
   }
-  if (val_iZone > 2 && harmonic_balance) {
+  if (iGeomZone > 0 && harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
       if (position != string::npos) {
         text_line.erase (0,6);
         unsigned short jDomain = atoi(text_line.c_str());
-        if (jDomain == 1+1) {
-          if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " elements:" << endl;
+        if (jDomain == iGeomZone+1) {
+//          if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " elements:" << endl;
           break;
         }
       }
@@ -6603,15 +6617,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
     }
   }
-  if (val_iZone > 2 && harmonic_balance) {
+  if (iGeomZone > 0 && harmonic_balance) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
       if (position != string::npos) {
         text_line.erase (0,6);
         unsigned short jDomain = atoi(text_line.c_str());
-        if (jDomain == 1+1) {
-          if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " markers:" << endl;
+        if (jDomain == iGeomZone+1) {
+          if (rank == MASTER_NODE) cout << "Reading markers for time instance " << iTimeInstance+1 << endl;
           break;
         }
       }
