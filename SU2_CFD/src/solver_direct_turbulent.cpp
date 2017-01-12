@@ -870,7 +870,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
     }
     
-    /*---	Loop over the boundary edges ---*/
+    /*---  Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
@@ -1351,9 +1351,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
           
           Density = U[0];
           if (nDim == 2)
-        	  StaticEnergy = U[3]/U[0] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]*U[0]);
+            StaticEnergy = U[3]/U[0] - (U[1]*U[1] + U[2]*U[2])/(2.0*U[0]*U[0]);
           else
-        	  StaticEnergy = U[4]/U[0] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3] )/(2.0*U[0]*U[0]);
+            StaticEnergy = U[4]/U[0] - (U[1]*U[1] + U[2]*U[2] + U[3]*U[3] )/(2.0*U[0]*U[0]);
 
           FluidModel->SetTDState_rhoe(Density, StaticEnergy);
           Laminar_Viscosity = FluidModel->GetLaminarViscosity();
@@ -1641,7 +1641,7 @@ void CTurbSASolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
   unsigned short iVar, iDim;
   su2double *Normal, *V_infty, *V_domain;
   
-  bool grid_movement	= config->GetGrid_Movement();
+  bool grid_movement  = config->GetGrid_Movement();
   
   Normal = new su2double[nDim];
   
@@ -2221,8 +2221,8 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         /*--- Subtract residual, and update Jacobians ---*/
         
-        //				LinSysRes.SubtractBlock(iPoint, Residual);
-        //				Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        //        LinSysRes.SubtractBlock(iPoint, Residual);
+        //        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
         
       }
     }
@@ -2583,7 +2583,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI

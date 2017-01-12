@@ -2177,8 +2177,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   su2double Beta             = (config->GetAoS()*PI_NUMBER)/180.0;
   su2double RefLengthMoment  = config->GetRefLengthMoment();
   su2double *RefOriginMoment = config->GetRefOriginMoment(0);
-  su2double dCD_dCL 				 = config->GetdCD_dCL();
-  su2double dCD_dCM 			   = config->GetdCD_dCM();
+  su2double dCD_dCL          = config->GetdCD_dCL();
+  su2double dCD_dCM          = config->GetdCD_dCM();
   bool Fixed_CL              = config->GetFixed_CL_Mode();
   bool Fixed_CM              = config->GetFixed_CM_Mode();
 
@@ -2437,19 +2437,19 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     for (AngleInt = 0; AngleInt < 180; AngleInt++)
       IndexNF_inv[AngleInt] = -1;
     
-	if (IndexNF.size() <= 180) {
-		for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
-			IndexNF_inv[IndexNF[iIndex]] = iIndex;
-	}
-	else {
-		#ifndef HAVE_MPI
-				exit(EXIT_FAILURE);
-		#else
-				MPI_Barrier(MPI_COMM_WORLD);
-				MPI_Abort(MPI_COMM_WORLD, 1);
-				MPI_Finalize();
-		#endif
-	}
+  if (IndexNF.size() <= 180) {
+    for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
+      IndexNF_inv[IndexNF[iIndex]] = iIndex;
+  }
+  else {
+    #ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+    #else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Finalize();
+    #endif
+  }
     
   }
   
@@ -2583,14 +2583,14 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
             A[1][0] = -velocity[0]*velocity[1]; A[1][1] = velocity[1]; A[1][2] = velocity[0]; A[1][3] = 0.0;
             A[2][0] = 0.5*(Gamma-3.0)*velocity[1]*velocity[1]+0.5*Gamma_Minus_One*velocity[0]*velocity[0]; A[2][1] = -Gamma_Minus_One*velocity[0];
             A[2][2] = (3.0-Gamma)*velocity[1]; A[2][3] = Gamma_Minus_One; A[3][0] = -Gamma*velocity[1]*Energy+Gamma_Minus_One*velocity[1]*sqvel;
-            A[3][1] = -Gamma_Minus_One*velocity[0]*velocity[1]; A[3][2] = Gamma*Energy-0.5*Gamma_Minus_One*(velocity[0]*velocity[0]+3.0*velocity[1]*velocity[1]);	A[3][3] = Gamma*velocity[1];
+            A[3][1] = -Gamma_Minus_One*velocity[0]*velocity[1]; A[3][2] = Gamma*Energy-0.5*Gamma_Minus_One*(velocity[0]*velocity[0]+3.0*velocity[1]*velocity[1]);  A[3][3] = Gamma*velocity[1];
             
             /*--- Compute the transformation matrix ---*/
             
             M[0][0] = 1.0; M[0][1] = 0.0; M[0][2] = 0.0; M[0][3] = 0.0;
             M[1][0] = velocity[0]; M[1][1] = Rho; M[1][2] = 0.0; M[1][3] = 0.0;
             M[2][0] = velocity[1]; M[2][1] = 0.0; M[2][2] = Rho; M[2][3] = 0.0;
-            M[3][0] = 0.5*sqvel;	M[3][1] = Rho*velocity[0]; M[3][2] = Rho*velocity[1]; M[3][3] = 1.0/Gamma_Minus_One;
+            M[3][0] = 0.5*sqvel;  M[3][1] = Rho*velocity[0]; M[3][2] = Rho*velocity[1]; M[3][3] = 1.0/Gamma_Minus_One;
             
             /*--- Create the soruce term (AM)^T X = b ---*/
             
@@ -2995,7 +2995,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
-  //	bool gravity        = (config->GetGravityForce() == YES);
+  //  bool gravity        = (config->GetGravityForce() == YES);
   bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   
   /*--- Initialize the source residual to zero ---*/
@@ -3084,9 +3084,9 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
   }
   
-  //	if (gravity) {
+  //  if (gravity) {
   //
-  //	}
+  //  }
   
 }
 
@@ -3218,59 +3218,59 @@ void CAdjEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *config
     
   }
   
-  //	su2double dx = 0.1;
-  //	su2double LimK = 0.03;
-  //	su2double eps2 =  pow((LimK*dx),3);
+  //  su2double dx = 0.1;
+  //  su2double LimK = 0.03;
+  //  su2double eps2 =  pow((LimK*dx),3);
   //
-  //	unsigned long iPoint, jPoint;
-  //	unsigned short iNeigh, nNeigh, iDim;
-  //	su2double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
-  //	du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
+  //  unsigned long iPoint, jPoint;
+  //  unsigned short iNeigh, nNeigh, iDim;
+  //  su2double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
+  //  du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
   //
   //
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
   //
-  //		if (geometry->node[iPoint]->GetDomain()) {
+  //    if (geometry->node[iPoint]->GetDomain()) {
   //
-  //			Solution_i = node[iPoint]->GetSolution();
-  //			Gradient_i = node[iPoint]->GetGradient();
-  //			Coord_i = geometry->node[iPoint]->GetCoord();
-  //			nNeigh = geometry->node[iPoint]->GetnPoint();
+  //      Solution_i = node[iPoint]->GetSolution();
+  //      Gradient_i = node[iPoint]->GetGradient();
+  //      Coord_i = geometry->node[iPoint]->GetCoord();
+  //      nNeigh = geometry->node[iPoint]->GetnPoint();
   //
-  //			/*--- Find max and min value of the variable in the control volume around the mesh point ---*/
-  //			du_max = 1.0E-8; du_min = -1.0E-8;
-  //			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //				Solution_j = node[jPoint]->GetSolution();
-  //				du_max = max(du_max, Solution_j[0] - Solution_i[0]);
-  //				du_min = min(du_min, Solution_j[0] - Solution_i[0]);
-  //			}
+  //      /*--- Find max and min value of the variable in the control volume around the mesh point ---*/
+  //      du_max = 1.0E-8; du_min = -1.0E-8;
+  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+  //        Solution_j = node[jPoint]->GetSolution();
+  //        du_max = max(du_max, Solution_j[0] - Solution_i[0]);
+  //        du_min = min(du_min, Solution_j[0] - Solution_i[0]);
+  //      }
   //
-  //			r_u = 1.0;
-  //			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+  //      r_u = 1.0;
+  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
   //
-  //				/*--- Unconstrained reconstructed solution ---*/
-  //				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //				Solution_j = node[jPoint]->GetSolution();
-  //				Coord_j = geometry->node[jPoint]->GetCoord();
-  //				u_ij = Solution_i[0]; dist_ij = 0;
-  //				for (iDim = 0; iDim < nDim; iDim++) {
-  //					diff_coord = Coord_j[iDim]-Coord_i[iDim];
-  //					u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
-  //				}
+  //        /*--- Unconstrained reconstructed solution ---*/
+  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+  //        Solution_j = node[jPoint]->GetSolution();
+  //        Coord_j = geometry->node[jPoint]->GetCoord();
+  //        u_ij = Solution_i[0]; dist_ij = 0;
+  //        for (iDim = 0; iDim < nDim; iDim++) {
+  //          diff_coord = Coord_j[iDim]-Coord_i[iDim];
+  //          u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
+  //        }
   //
-  //				/*--- Venkatakrishnan limiter ---*/
-  //				if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
-  //				else	dp = du_min;
-  //				dm = u_ij - Solution_i[0];
-  //				r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
+  //        /*--- Venkatakrishnan limiter ---*/
+  //        if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
+  //        else  dp = du_min;
+  //        dm = u_ij - Solution_i[0];
+  //        r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
   //
-  //				/*--- Take the smallest value of the limiter ---*/
-  //				r_u = min(r_u, r_u_ij);
+  //        /*--- Take the smallest value of the limiter ---*/
+  //        r_u = min(r_u, r_u_ij);
   //
-  //			}
-  //			node[iPoint]->SetSensor(1.0-r_u);
-  //		}
+  //      }
+  //      node[iPoint]->SetSensor(1.0-r_u);
+  //    }
   
   /*--- MPI parallelization ---*/
   Set_MPI_Dissipation_Switch(geometry, config);
@@ -3483,7 +3483,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
     factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX)  ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-	(ObjFunc == MASS_FLOW_RATE) )
+  (ObjFunc == MASS_FLOW_RATE) )
       factor = 1.0;
 
     if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
@@ -4094,7 +4094,7 @@ void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     ACoeff_old = config->GetdCD_dCL();
     
     /*--- Estimate the increment in the A coeff, (note that the slope is negative, a decrease in
-     * 	the CL derivative requires an increase in the A coeff ---*/
+     *   the CL derivative requires an increase in the A coeff ---*/
     
     /*--- A good estimation to d(dOF/dalpha)/dA_coeff is dCL_dAlpha ---*/
     

@@ -713,11 +713,11 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-          if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
-          else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-              if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
-              else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
-          }
+        if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(0));
+        else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+          if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(3));
+          else (*monitor) = log10(solver_container[FinestMesh][FLOW_SOL]->GetRes_RMS(4));
+        }
       }
       
       break;
@@ -741,11 +741,11 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       if (config->GetConvCriteria() == RESIDUAL) {
-          if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
-          else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-              if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
-              else (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
-          }
+        if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0));
+        else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+          if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(3));
+          else (*monitor) = log10(solver_container[FinestMesh][ADJFLOW_SOL]->GetRes_RMS(4));
+        }
       }
       
       break;
@@ -913,7 +913,8 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
   /*--- Preprocessing ---*/
 
   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
-          config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
+      config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
+
 
   /*--- Space integration ---*/
 
@@ -923,12 +924,12 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
   /*--- Time integration ---*/
 
   Time_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
-                    config[iZone], RunTime_EqSystem, Iteration);
+                config[iZone], RunTime_EqSystem, Iteration);
 
   /*--- Postprocessing ---*/
 
   solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
-          config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
+      config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
 
   /*--- Convergence strategy ---*/
 
