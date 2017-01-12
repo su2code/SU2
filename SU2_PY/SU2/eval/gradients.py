@@ -83,14 +83,11 @@ def gradient( func_name, method, config, state=None ):
     func_name_string = func_name
     if (type(func_name)==list):
         if (config.OPT_COMBINE_OBJECTIVE=="YES"):
-            config.OBJECTIVE_FUNCTION = ', '.join(func_name)
             func_name_string = 'COMBO'
         else:
             func_name = func_name[0]
-            config.OBJECTIVE_FUNCTION = func_name
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
-        config.OBJECTIVE_FUNCTION = func_name
         config.OBJECTIVE_WEIGHT = "1.0"
     # redundancy check
     if not state['GRADIENTS'].has_key(func_name_string):
@@ -99,7 +96,7 @@ def gradient( func_name, method, config, state=None ):
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
 
             # If using chain rule
-            if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
+            if 'OUTFLOW_GENERALIZED' in ', '.join(func_name):
                 import downstream_function
                 chaingrad = downstream_function.downstream_gradient(config,state)
                 # Set coefficients for gradients
@@ -133,7 +130,7 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION ):
+        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in ', '.join(func_name)):
             import downstream_function
             chaingrad = downstream_function.downstream_gradient(config,state)
             n_dv = len(grads[func_name_string])
