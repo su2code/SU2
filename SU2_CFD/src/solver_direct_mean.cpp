@@ -12331,59 +12331,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						break;
 
         }
-      }
-      if (incompressible) {
-				
-        /*--- Retrieve the specified velocity for the inlet. ---*/
-				
-        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-				
-        /*--- Store the velocity in the primitive variable vector ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-        
-        /*--- Neumann condition for pressure ---*/
-        
-        V_inlet[0] = node[iPoint]->GetPressureInc();
-        
-        /*--- Constant value of density ---*/
-        
-        V_inlet[nDim+1] = GetDensity_Inf();
-        
-        /*--- Beta coefficient from the config file ---*/
-        
-        V_inlet[nDim+2] = config->GetArtComp_Factor();
-        
-      }
-      if (freesurface) {
-        
-        /*--- Neumann condition for pressure, density, level set, and distance ---*/
-        
-        V_inlet[0] = node[iPoint]->GetPressureInc();
-        V_inlet[nDim+1] = node[iPoint]->GetDensityInc();
-        V_inlet[nDim+5] = node[iPoint]->GetLevelSet();
-        V_inlet[nDim+6] = node[iPoint]->GetDistance();
-        
-        /*--- The velocity is computed from the infinity values ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          V_inlet[iDim+1] = GetVelocity_Inf(iDim);
-        }
-        
-        /*--- The y/z velocity is interpolated due to the
-         free surface effect on the pressure ---*/
-        
-        V_inlet[nDim] = node[iPoint]->GetPrimitive(nDim);
-        
-        /*--- Neumann condition for artifical compresibility factor ---*/
-        
-        V_inlet[nDim+2] = config->GetArtComp_Factor();
-        
-
-      }
-      
+		
       /*--- Set various quantities in the solver class ---*/
       
       conv_numerics->SetPrimitive(V_domain, V_inlet);
