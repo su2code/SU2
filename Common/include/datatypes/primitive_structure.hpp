@@ -32,9 +32,4 @@
  */
 #pragma once
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
-
 typedef double su2double;
-

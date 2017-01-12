@@ -33,11 +33,6 @@
 #pragma once
 #include <complex>
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
-
-
 class CComplexType;
 typedef CComplexType su2double;
 

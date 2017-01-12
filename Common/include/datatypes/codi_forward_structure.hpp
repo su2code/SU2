@@ -34,9 +34,5 @@
 
 #include "codi.hpp"
 
-#ifdef HAVE_MPI
-  #include "mpi.h"
-#endif
-
 typedef codi::RealForward su2double;
 
