@@ -37,11 +37,6 @@
   #include "mpi.h"
 #endif
 
-#ifdef HAVE_MPI
-  typedef MPI_Comm SU2_Comm;
-#else
-  typedef unsigned short SU2_Comm;
-#endif
 
 class CComplexType;
 typedef CComplexType su2double;

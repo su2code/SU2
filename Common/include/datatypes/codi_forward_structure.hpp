@@ -40,8 +40,3 @@
 
 typedef codi::RealForward su2double;
 
-#ifdef HAVE_MPI
-  typedef MPI_Comm SU2_Comm;
-#else
-  typedef unsigned short SU2_Comm;
-#endif

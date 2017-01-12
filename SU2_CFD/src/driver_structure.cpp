@@ -2854,10 +2854,11 @@ unsigned short CDriver::GetMovingMarker() {
 
 unsigned long CDriver::GetNumberVertices(unsigned short iMarker) {
 
-  unsigned long nVertices(0);
+  unsigned long nVertices;
   unsigned short jMarker, Moving;
   string Marker_Tag, Moving_Tag;
 
+  nVertices = 0;
   Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
   if (Moving == YES) {
     for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
@@ -2875,10 +2876,11 @@ unsigned long CDriver::GetNumberVertices(unsigned short iMarker) {
 
 unsigned long CDriver::GetNumberHaloVertices(unsigned short iMarker) {
 
-  unsigned long nHalovertices(0), iVertex, iPoint;
+  unsigned long nHalovertices, iVertex, iPoint;
   unsigned short jMarker, Moving;
   string Marker_Tag, Moving_Tag;
 
+  nHalovertices = 0;
   Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
   if (Moving == YES) {
     for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {

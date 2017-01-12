@@ -45,8 +45,3 @@ typedef codi::RealReverseIndex su2double;
 typedef codi::RealReverse su2double;
 #endif
 
-#ifdef HAVE_MPI
-  typedef MPI_Comm SU2_Comm;
-#else
-  typedef unsigned short SU2_Comm;
-#endif
