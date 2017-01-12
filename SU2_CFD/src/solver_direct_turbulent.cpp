@@ -820,8 +820,11 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         for (iVar = 3; iVar < nVar; iVar++) { // f, no unsteady term
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = 0.0;
+	    //            Residual[iVar] = ( U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Residual[iVar] = 0.0;
+	    //            Residual[iVar] = ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
+	    //                              +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
         }
         
       }
@@ -897,6 +900,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
         for (iVar = 3; iVar < nVar; iVar++)
           Residual[iVar] = 0.0;
+	  //          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
       } 
 
       else {
@@ -924,6 +928,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
         for (iVar = 3; iVar < nVar; iVar++)
           Residual[iVar] = 0.0;
+	  //          Residual[iVar] = U_time_n[iVar]*Residual_GCL;
       } 
 
       else {
@@ -981,6 +986,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
           // f
           for (iVar = 3; iVar < nVar; iVar++)
             Residual[iVar] = 0.0;
+	    //            Residual[iVar] = U_time_n[iVar]*Residual_GCL;
 
         } else {
           for (iVar = 0; iVar < nVar; iVar++)
@@ -1053,8 +1059,11 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         for (iVar = 3; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Residual[iVar] = 0.0;
+	  //            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
             Residual[iVar] = 0.0;
+	    //            Residual[iVar] = (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+	    //            + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
         }
 
 
@@ -3709,7 +3718,7 @@ void CTurbKESolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, epsi, kine, strMag, Lm, Tm, muT, zeta, f;
+  su2double rho = 0.0, mu = 0.0, dist, epsi, kine, strMag, Lm, Tm, zeta, f, muT;
   su2double a1 = constants[11];
   su2double F_mu;
   su2double Re_t;

@@ -1710,7 +1710,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_Jacobian_i[3][3] = 0.0;
   
 
-  //  cout<<" Lm_i: "<<Lm_i<<"\n";
+  //cout<<" Lm_i: "<<Lm_i<<"\n";
     
     /*--- Production ---*/
     diverg = 0.0;

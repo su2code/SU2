@@ -3734,9 +3734,10 @@ public:
   ~CAvgGrad_TurbKE(void);
   
   /*!
-   * \brief Sets value of first blending function.
+   * \brief Sets value of tubulence time and lengthscale.
    */
   void SetLm(su2double val_Lm_i, su2double val_Lm_j) { Lm_i = val_Lm_i; Lm_j = val_Lm_j;}
+  void SetTm(su2double val_Tm_i, su2double val_Tm_j) { Tm_i = val_Tm_i; Tm_j = val_Tm_j;}
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
@@ -3845,6 +3846,7 @@ private:
   *Proj_Mean_GradTurbVar_Corrected;
   
   su2double Lm_i, Lm_j;                    /*!< \brief Lm */
+  su2double Tm_i, Tm_j;                    /*!< \brief Tm */
   
   bool implicit, incompressible;
   unsigned short iVar, iDim;
@@ -3865,9 +3867,10 @@ public:
   ~CAvgGradCorrected_TurbKE(void);
   
   /*!
-   * \brief Sets value of first blending function.
+   * \brief Sets value of turbulence length and timescale.
    */
   void SetLm(su2double val_Lm_i, su2double val_Lm_j) { Lm_i = val_Lm_i; Lm_j = val_Lm_j;}
+  void SetTm(su2double val_Tm_i, su2double val_Tm_j) { Tm_i = val_Tm_i; Tm_j = val_Tm_j;}
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients wtih correction.
