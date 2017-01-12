@@ -829,7 +829,7 @@ def main():
 
     pass_list.append(sphere_ffd_def_bspline.run_def())
     test_list.append(sphere_ffd_def_bspline)
-  
+
 
     # Tests summary
     print '=================================================================='
