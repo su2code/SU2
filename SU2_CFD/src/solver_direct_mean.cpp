@@ -12102,70 +12102,69 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             break;
             
             /*--- Mass flow has been specified at the inlet. ---*/
-            
-					/*--
+					
 					 
-					 case MASS_FLOW:
+					case MASS_FLOW:
 					 
-					 /*--- Retrieve the specified mass flow for the inlet.
-					
-					Density  = config->GetInlet_Ttotal(Marker_Tag);
-					Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-					Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-					
-					/*--- Non-dim. the inputs if necessary.
-					
-					Density /= config->GetDensity_Ref();
-					Vel_Mag /= config->GetVelocity_Ref();
-					
-					/*--- Get primitives from current inlet state.
-					
-					for (iDim = 0; iDim < nDim; iDim++)
-						Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
-					Pressure    = node[iPoint]->GetPressure();
-					SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
-					
-					/*--- Compute the acoustic Riemann invariant that is extrapolated
-					 from the domain interior.
-					
-					Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
-					for (iDim = 0; iDim < nDim; iDim++)
-						Riemann += Velocity[iDim]*UnitNormal[iDim];
-					
-					/*--- Speed of sound squared for fictitious inlet state
-					
-					SoundSpeed2 = Riemann;
-					for (iDim = 0; iDim < nDim; iDim++)
-						SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
-					
-					SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
-					SoundSpeed2 = SoundSpeed2*SoundSpeed2;
-					
-					/*--- Pressure for the fictitious inlet state
-					
-					Pressure = SoundSpeed2*Density/Gamma;
-					
-					/*--- Energy for the fictitious inlet state
-					
-					Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
-					if (tkeNeeded) Energy += GetTke_Inf();
-					
-					/*--- Primitive variables, using the derived quantities
-					
-					V_inlet[0] = Pressure / ( Gas_Constant * Density);
-					for (iDim = 0; iDim < nDim; iDim++)
-						V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-					V_inlet[nDim+1] = Pressure;
-					V_inlet[nDim+2] = Density;
-					V_inlet[nDim+3] = Energy + Pressure/Density;
+						/*--- Retrieve the specified mass flow for the inlet. ---*/
+						
+						Density  = config->GetInlet_Ttotal(Marker_Tag);
+						Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
+						Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+						
+						/*--- Non-dim. the inputs if necessary. ---*/
+						
+						Density /= config->GetDensity_Ref();
+						Vel_Mag /= config->GetVelocity_Ref();
+						
+						/*--- Get primitives from current inlet state. ---*/
+						
+						for (iDim = 0; iDim < nDim; iDim++)
+							Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+						Pressure    = node[iPoint]->GetPressure();
+						SoundSpeed2 = Gamma*Pressure/V_domain[nDim+2];
+						
+						/*--- Compute the acoustic Riemann invariant that is extrapolated
+						 from the domain interior. ---*/
+						
+						Riemann = Two_Gamma_M1*sqrt(SoundSpeed2);
+						for (iDim = 0; iDim < nDim; iDim++)
+							Riemann += Velocity[iDim]*UnitNormal[iDim];
+						
+						/*--- Speed of sound squared for fictitious inlet state ---*/
+						
+						SoundSpeed2 = Riemann;
+						for (iDim = 0; iDim < nDim; iDim++)
+							SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
+						
+						SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+						SoundSpeed2 = SoundSpeed2*SoundSpeed2;
+						
+						/*--- Pressure for the fictitious inlet state ---*/
+						
+						Pressure = SoundSpeed2*Density/Gamma;
+						
+						/*--- Energy for the fictitious inlet state ---*/
+						
+						Energy = Pressure/(Density*Gamma_Minus_One) + 0.5*Vel_Mag*Vel_Mag;
+						if (tkeNeeded) Energy += GetTke_Inf();
+						
+						/*--- Primitive variables, using the derived quantities ---*/
+						
+						V_inlet[0] = Pressure / ( Gas_Constant * Density);
+						for (iDim = 0; iDim < nDim; iDim++)
+							V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+						V_inlet[nDim+1] = Pressure;
+						V_inlet[nDim+2] = Density;
+						V_inlet[nDim+3] = Energy + Pressure/Density;
 					
 					break;
 					 
-					---*/
+				
 					
 						/*--- A velociy profile is specified at this inlet. ---*/
 					
-					case MASS_FLOW:
+					case VEL_PROFILE:
 						
 						/*-
 						// Find the node number for the marker and initialize the density and Uvelocity variables

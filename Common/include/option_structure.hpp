@@ -865,12 +865,14 @@ static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateM
 enum INLET_TYPE {
   TOTAL_CONDITIONS = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
   MASS_FLOW = 2,           /*!< \brief User specifies density and velocity (mass flow). */
-  INPUT_FILE = 3           /*!< \brief User specifies an input file. */
+  INPUT_FILE = 3,           /*!< \brief User specifies an input file. */
+	VEL_PROFILE = 4          /*!< \brief User specifies density, velocity magnitude and a profile. */
 };
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW)
-("INPUT_FILE", INPUT_FILE);
+("INPUT_FILE", INPUT_FILE)
+("VEL_PROFILE", VEL_PROFILE);
 
 /*!
  * \brief types engine inflow boundary treatments
