@@ -858,7 +858,19 @@ def main():
     pass_list.append(sphere_ffd_def.run_def())
     test_list.append(sphere_ffd_def)
 
+    # Spherical FFD test using BSplines
+    sphere_ffd_def_bspline           = TestCase('sphere_ffd_def_bspline')
+    sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
+    sphere_ffd_def_bspline.test_iter = 50
+    sphere_ffd_def_bspline.test_vals = [1.20429e-10] #residual
+    sphere_ffd_def_bspline.su2_exec  = "mpirun -n 2 SU2_DEF"
+    sphere_ffd_def_bspline.timeout   = 1600
+    sphere_ffd_def_bspline.tol       = 1e-16
 
+    pass_list.append(sphere_ffd_def_bspline.run_def())
+    test_list.append(sphere_ffd_def_bspline)
+  
     ######################################
     ### RUN EXTERNAL FSI COUPLING TEST ###
     ######################################

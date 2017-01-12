@@ -10195,7 +10195,7 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
   char cstr[200];
   su2double *** ProbeArray, dx = 0.0, dy = 0.0, dz = 0.0, dx_ = 0.0, dy_ = 0.0, dz_ = 0.0, UpVector[3], radians, RotatedVector[3];
   su2double Pressure, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf,
-  Temperature, TotalTemperature, Pressure_Inf, Temperature_Inf, TotalTemperature_Inf, Velocity_Inf, Gas_Constant;
+  Temperature, TotalTemperature, Pressure_Inf, Temperature_Inf, TotalTemperature_Inf, Velocity_Inf;
 //  su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0;
 //  su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dTT_dT = 0.0, dPT_dMach = 0.0, dTT_dMach = 0.0, Aux = 0.0;
   unsigned short nDim = geometry->GetnDim();
@@ -10456,7 +10456,6 @@ void COutput::WriteSurface_Analysis(CConfig *config, CGeometry *geometry, CSolve
             Velocity2        = FlowSolver->node[iPoint]->GetVelocity2();
             Mach             = sqrt(Velocity2)/SoundSpeed;
             Gamma            = config->GetGamma();
-            Gas_Constant     = config->GetGas_ConstantND();
 
             Mach_Inf         = config->GetMach();
             Pressure_Inf     = config->GetPressure_FreeStreamND();
