@@ -1440,7 +1440,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
   su2double **donor_element, *DonorPoint_Coord, *Buffer_Send_Donor_Coord;
-  
+  unsigned long kVertexTarget, kVertexDonor, *uptr;
     
   /*  1 - Variable pre-processing - */
 
@@ -1457,6 +1457,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 #else
 
   nProcessor = SINGLE_NODE;
+  rank = MASTER_NODE;
 
 #endif
 
@@ -1572,7 +1573,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
       
       Buffer_Send_nLinkedNodes[iVertexTarget] = 0;
-      Aux_Send_Map[iVertexTarget]       = NULL;
+      Aux_Send_Map[iVertexTarget]             = NULL;
       
       iPointTarget = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
       
@@ -1646,7 +1647,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     nGlobalVertex_Target = nLocalVertex_Target;
     nGlobalLinkedNodes   = nLocalLinkedNodes;
 #endif 
-  
+
     TargetPoint_Coord  = new su2double    [ nGlobalVertex_Target * nDim ];
     Target_GlobalPoint = new unsigned long[ nGlobalVertex_Target        ];
     
@@ -1691,18 +1692,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
         tmp_index   += iTmp;
         tmp_index_2 += iTmp2;
       }
- 
-      for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++){
-        iTmp = Target_LinkedNodes[iVertexTarget];
-        for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++){
-          if( Target_GlobalPoint[jVertexTarget] == iTmp ){
-            Target_LinkedNodes[iVertexTarget] = jVertexTarget;
-            break;
-          }
-        }
-      }
     }
-   else{
+    else{
       SU2_MPI::Send(&nLocalLinkedNodes     , 1                , MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD);
       SU2_MPI::Send(Buffer_Send_LinkedNodes, nLocalLinkedNodes, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
     
@@ -1713,15 +1704,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
       SU2_MPI::Send(Buffer_Send_Target_GlobalPoint, nLocalVertex_Target, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
       SU2_MPI::Send(Buffer_Send_nLinkedNodes,       nLocalVertex_Target, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
       SU2_MPI::Send(Buffer_Send_StartLinkedNodes,   nLocalVertex_Target, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD);
-    }
-  
-    SU2_MPI::Bcast(TargetPoint_Coord , nGlobalVertex_Target * nDim, MPI_DOUBLE       , 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Target_GlobalPoint, nGlobalVertex_Target       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-  
-    SU2_MPI::Bcast(Target_nLinkedNodes    , nGlobalVertex_Target, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Target_StartLinkedNodes, nGlobalVertex_Target, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    SU2_MPI::Bcast(Target_LinkedNodes,      nGlobalLinkedNodes  , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
-    
+    }    
 #else
     for (iVertexTarget = 0; iVertexTarget < nDim * nGlobalVertex_Target; iVertexTarget++)
       TargetPoint_Coord[iVertexTarget] = Buffer_Send_Target_Coord[iVertexTarget];
@@ -1732,16 +1715,44 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
       Target_StartLinkedNodes[iVertexTarget] = Buffer_Send_StartLinkedNodes[iVertexTarget];
     }
     
-    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++){
-      iTmp = Buffer_Send_LinkedNodes[iVertexTarget];
-      for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++){
-        if( Target_GlobalPoint[jVertexTarget] == iTmp ){
-          Target_LinkedNodes[iVertexTarget] = jVertexTarget;
-          break;
+    for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
+      Target_LinkedNodes[iVertexTarget] = Buffer_Send_LinkedNodes[iVertexTarget];
+#endif 
+
+    if (rank == MASTER_NODE){
+      for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
+        count = 0;
+        uptr = &Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] ];
+        
+        for (jVertexTarget = 0; jVertexTarget < Target_nLinkedNodes[iVertexTarget]; jVertexTarget++){
+          iTmp = uptr[ jVertexTarget ];
+          for (kVertexTarget = 0; kVertexTarget < nGlobalVertex_Target; kVertexTarget++){
+            if( Target_GlobalPoint[kVertexTarget] == iTmp ){
+              uptr[ jVertexTarget ] = kVertexTarget;
+              count++;
+              break;
+            }
+          }
+          
+          if( count != (jVertexTarget+1) ){
+            for (kVertexTarget = jVertexTarget; kVertexTarget < Target_nLinkedNodes[iVertexTarget]-1; kVertexTarget++){
+              uptr[ kVertexTarget ] = uptr[ kVertexTarget + 1];
+            }
+            Target_nLinkedNodes[iVertexTarget]--;
+            jVertexTarget--;   
+          }
         }
       }
     }
-#endif 
+
+#ifdef HAVE_MPI    
+    SU2_MPI::Bcast(TargetPoint_Coord , nGlobalVertex_Target * nDim, MPI_DOUBLE       , 0, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Target_GlobalPoint, nGlobalVertex_Target       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+  
+    SU2_MPI::Bcast(Target_nLinkedNodes    , nGlobalVertex_Target, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Target_StartLinkedNodes, nGlobalVertex_Target, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Target_LinkedNodes,      nGlobalLinkedNodes  , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD);
+#endif
   
     if( Buffer_Send_Target_Coord       != NULL) {delete [] Buffer_Send_Target_Coord;       Buffer_Send_Target_Coord       = NULL;} 
     if( Buffer_Send_Target_GlobalPoint != NULL) {delete [] Buffer_Send_Target_GlobalPoint; Buffer_Send_Target_GlobalPoint = NULL;}
@@ -1894,16 +1905,6 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
         tmp_index   += iTmp;
         tmp_index_2 += iTmp2;
       }
- 
-      for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++){
-        iTmp = Buffer_Receive_LinkedNodes[iVertexDonor];
-        for (jVertexDonor = 0; jVertexDonor < nGlobalVertex_Donor; jVertexDonor++){
-          if( Donor_GlobalPoint[jVertexDonor] == iTmp ){
-            Buffer_Receive_LinkedNodes[iVertexDonor] = jVertexDonor;
-            break;
-          }
-        }
-      }
     }
     else{
       SU2_MPI::Send( &nLocalLinkedNodes, 1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD );
@@ -1917,7 +1918,48 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
       SU2_MPI::Send( Buffer_Send_nLinkedNodes,      nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
       SU2_MPI::Send( Buffer_Send_StartLinkedNodes,  nLocalVertex_Donor, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
     }
-  
+#else
+    for (iVertexDonor = 0; iVertexDonor < nDim * nGlobalVertex_Donor; iVertexDonor++)
+      DonorPoint_Coord[iVertexDonor] = Buffer_Send_Donor_Coord[iVertexDonor];
+
+    for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
+      Donor_GlobalPoint[iVertexDonor]               = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
+      Donor_proc[ iVertexDonor ]                    = MASTER_NODE;
+      Buffer_Receive_nLinkedNodes[iVertexDonor]     = Buffer_Send_nLinkedNodes[iVertexDonor];
+      Buffer_Receive_StartLinkedNodes[iVertexDonor] = Buffer_Send_StartLinkedNodes[iVertexDonor];
+    }
+    
+    for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++)
+      Buffer_Receive_LinkedNodes[iVertexDonor] = Buffer_Send_LinkedNodes[iVertexDonor];
+#endif 
+
+    if (rank == MASTER_NODE){
+      for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
+        count = 0;
+        uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertexDonor] ];
+        
+        for (jVertexDonor = 0; jVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]; jVertexDonor++){
+          iTmp = uptr[ jVertexDonor ];
+          for (kVertexDonor = 0; kVertexDonor < nGlobalVertex_Donor; kVertexDonor++){
+            if( Donor_GlobalPoint[kVertexDonor] == iTmp ){
+              uptr[ jVertexDonor ] = kVertexDonor;
+              count++;
+              break;
+            }
+          }
+          
+          if( count != (jVertexDonor+1) ){
+            for (kVertexDonor = jVertexDonor; kVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]-1; kVertexDonor++){
+              uptr[ kVertexDonor ] = uptr[ kVertexDonor + 1];
+            }
+            Buffer_Receive_nLinkedNodes[iVertexDonor]--;
+            jVertexDonor--;   
+          }
+        }
+      }
+    }
+
+#ifdef HAVE_MPI    
     SU2_MPI::Bcast( DonorPoint_Coord , nGlobalVertex_Donor * nDim, MPI_DOUBLE       , 0, MPI_COMM_WORLD );
     SU2_MPI::Bcast( Donor_GlobalPoint, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
     SU2_MPI::Bcast( Donor_proc       , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
@@ -1925,27 +1967,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     SU2_MPI::Bcast( Buffer_Receive_nLinkedNodes    , nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
     SU2_MPI::Bcast( Buffer_Receive_StartLinkedNodes, nGlobalVertex_Donor       , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
     SU2_MPI::Bcast( Buffer_Receive_LinkedNodes,      nGlobalLinkedNodes        , MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-#else
-    for (iVertexDonor = 0; iVertexDonor < nDim * nGlobalVertex_Donor; iVertexDonor++)
-      DonorPoint_Coord[iVertexDonor] = Buffer_Send_Donor_Coord[iVertexDonor];
-
-    for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
-      Donor_GlobalPoint[iVertexDonor]                = Buffer_Send_Donor_GlobalPoint[iVertexDonor];
-      Donor_proc[ iVertexDonor ]                     = MASTER_NODE;
-      Buffer_Receive_nLinkedNodes[iVertexDonor]     = Buffer_Send_nLinkedNodes[iVertexDonor];
-      Buffer_Receive_StartLinkedNodes[iVertexDonor] = Buffer_Send_StartLinkedNodes[iVertexDonor];
-    }
-
-    for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++){
-      iTmp = Buffer_Send_LinkedNodes[iVertexDonor];
-      for (jVertexDonor = 0; jVertexDonor < nGlobalVertex_Donor; jVertexDonor++){
-        if( Donor_GlobalPoint[jVertexDonor] == iTmp ){
-          Buffer_Receive_LinkedNodes[iVertexDonor] = jVertexDonor;
-          break;
-        }
-      }
-    }
-#endif 
+#endif
 
     if( Buffer_Send_LinkedNodes       != NULL) {delete [] Buffer_Send_LinkedNodes;       Buffer_Send_LinkedNodes       = NULL;}
     if( Buffer_Send_Donor_Coord       != NULL) {delete [] Buffer_Send_Donor_Coord;       Buffer_Send_Donor_Coord       = NULL;} 
@@ -1955,13 +1977,13 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
 
     if(nDim == 2){
-		
-	  target_iMidEdge_point = new su2double[nDim];
+        
+      target_iMidEdge_point = new su2double[nDim];
       target_jMidEdge_point = new su2double[nDim];
 
       donor_iMidEdge_point = new su2double[nDim];
       donor_jMidEdge_point = new su2double[nDim];
-		
+        
       /*--- Starts with supermesh reconstruction ---*/
 
       target_segment = new unsigned long[2];
@@ -2000,40 +2022,25 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
             }    
           }
 
-          /*--- Contruct information regarding the target cell ---*/
-
           donor_iPoint    = donor_StartIndex;
           donor_OldiPoint = donor_iPoint;
-
-          count  = 0;
-          nEdges = target_geometry->node[target_iPoint]->GetnPoint();
-
-          for (jEdge = 0; jEdge < nEdges; jEdge++) {
-
-            /*-- Retrieve the index of the connected boundary nodes --*/
-
-            EdgeIndex = target_geometry->node[target_iPoint]->GetEdge(jEdge);
-
-            if( target_iPoint == target_geometry->edge[EdgeIndex]->GetNode(0) )
-              dPoint = target_geometry->edge[EdgeIndex]->GetNode(1);
-            else
-              dPoint = target_geometry->edge[EdgeIndex]->GetNode(0);
-
-            dPoint = target_geometry->node[dPoint]->GetGlobalIndex()  ;
-
-            for (jVertex = 0; jVertex < nGlobalVertex_Target; jVertex++){
-              if( dPoint == Target_GlobalPoint[jVertex] ){
-                target_segment[count] = jVertex;
-                count++;  
-                break;
-              }
-            }
-          }
           
-          /* --- If the node is at the head/tail of an open boundary (such as periodic boundaries) --- */
-          if ( count == 1 )
-            target_segment[1] == target_iPoint;
-
+          /*--- Contruct information regarding the target cell ---*/
+          
+          dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
+          for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++)
+            if( dPoint == Target_GlobalPoint[jVertexTarget] )
+              break;
+            
+          if ( Target_nLinkedNodes[jVertexTarget] == 1 ){
+            target_segment[0] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] ];
+            target_segment[1] = jVertexTarget;
+          }
+          else{
+            target_segment[0] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] ];
+            target_segment[1] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] + 1];
+          }
+      
           dTMP = 0;
           for(iDim = 0; iDim < nDim; iDim++){
             target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
@@ -2042,7 +2049,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
             Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
             dTMP += Direction[iDim] * Direction[iDim];
           }
-  
+
           dTMP = sqrt(dTMP);
           for(iDim = 0; iDim < nDim; iDim++)
             Direction[iDim] /= dTMP;
@@ -2058,10 +2065,10 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
             /*--- Proceeds until the value of the intersection area is null ---*/
             
             if ( Buffer_Receive_nLinkedNodes[donor_iPoint] == 1 ){
-		      donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
-		      donor_backward_point = donor_iPoint;
-		    }
-		    else{
+              donor_forward_point  = Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ];
+              donor_backward_point = donor_iPoint;
+            }
+            else{
               donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
               donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
             }
@@ -2127,22 +2134,32 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
             nDonorPoints++;
           }
+             
+          if ( Buffer_Receive_nLinkedNodes[donor_StartIndex] == 2 ){
+            check = false;
            
-          donor_iPoint    = donor_StartIndex;
-          donor_OldiPoint = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_iPoint);                
-          donor_iPoint    = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_OldiPoint);
+            donor_iPoint    = donor_StartIndex;
+            donor_OldiPoint = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_iPoint);                
+            donor_iPoint    = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_OldiPoint);
 
-          donor_OldiPoint = donor_StartIndex;
-
-          check = false;
+            donor_OldiPoint = donor_StartIndex;
+          }
+          else
+            check = true;
 
           /*--- Proceeds along the backward direction (depending on which connected boundary node is found first) ---*/
 
-          while( !check && Buffer_Receive_nLinkedNodes[donor_iPoint] != 1){
+          while( !check ){
 
             /*--- Proceeds until the value of the intersection length is null ---*/
-            donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_OldiPoint);
-            donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ],  donor_forward_point);                        
+            if ( Buffer_Receive_nLinkedNodes[donor_iPoint] == 1 ){
+              donor_forward_point  = donor_OldiPoint;
+              donor_backward_point = donor_iPoint;
+            }
+            else{
+              donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
+              donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
+            }
 
             for(iDim = 0; iDim < nDim; iDim++){
               donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
@@ -2731,10 +2748,10 @@ int CSlidingmesh::FindNextNode_2D(unsigned long *map, unsigned long PreviousNode
   /*--- ONLY for 2D grids ---*/
   /*--- It takes as input the grid, then starts from the NodeID and searches for its neigbours on the specified markID ---*/
   /*--- Since in 2D there are 2 possible neighbours, PreviousNode is needed to move along a certain direction along the boundary ---*/ 
-  if( PreviousNode == map[0] )
-    return map[1];
-  else
+  if( PreviousNode != map[0] )
     return map[0];
+  else
+    return map[1];
 }
 
 su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
