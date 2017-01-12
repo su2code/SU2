@@ -778,7 +778,7 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   
   /*--- Read all lines in the restart file ---*/
   
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global = 0;
   
   /*--- The first line is the header ---*/
   
@@ -795,9 +795,7 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     
     MI = Global2Local.find(iPoint_Global);
     if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      
+            
       point_line >> index >> Solution[0] >> Solution[1];
       node[iPoint]->SetSolution_Direct(Solution);
     }

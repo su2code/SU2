@@ -100,6 +100,8 @@ private:
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
+  unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
+  su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double FFD_Scale;  	/*!< \brief Scale factor between the design variable value and the control point movement. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
@@ -2247,6 +2249,18 @@ public:
    * \return Coordinate system (cartesian, spherical, etc).
    */
   unsigned short GetFFD_CoordSystem(void);
+  
+    /*!
+   * \brief Get the kind of FFD Blending function.
+   * \return Kind of FFD Blending function.
+   */
+  unsigned short GetFFD_Blending(void);
+
+  /*!
+   * \brief Get the kind BSpline Order in i,j,k direction.
+   * \return The kind BSpline Order in i,j,k direction.
+   */
+  su2double* GetFFD_BSplineOrder();
   
   /*!
    * \brief Get the number of Runge-Kutta steps.
