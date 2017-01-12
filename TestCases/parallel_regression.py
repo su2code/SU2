@@ -817,6 +817,34 @@ def main():
     pass_list.append(sphere_ffd_def.run_def())
     test_list.append(sphere_ffd_def)
 
+    # Spherical FFD test using BSplines
+    sphere_ffd_def_bspline           = TestCase('sphere_ffd_def_bspline')
+    sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
+    sphere_ffd_def_bspline.test_iter = 50
+    sphere_ffd_def_bspline.test_vals = [1.20429e-10] #residual
+    sphere_ffd_def_bspline.su2_exec  = "mpirun -n 2 SU2_DEF"
+    sphere_ffd_def_bspline.timeout   = 1600
+    sphere_ffd_def_bspline.tol       = 1e-16
+
+    pass_list.append(sphere_ffd_def_bspline.run_def())
+    test_list.append(sphere_ffd_def_bspline)
+  
+    ######################################
+    ### RUN EXTERNAL FSI COUPLING TEST ###
+    ######################################
+
+    # Pitch-plunge NACA 0012 (external FSI coupling)
+    coupled_FSI            = TestCase('coupled_FSI')
+    coupled_FSI.cfg_dir    = "coupled_fsi/2d_aeroelasticity"
+    coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
+    coupled_FSI.test_iter  = 1
+    coupled_FSI.su2_exec   = "mpirun -np 2 fsi_computation.py"
+    coupled_FSI.timeout    = 1600
+    coupled_FSI.reference_file = "StructHistory.dat.ref_parallel"
+    coupled_FSI.test_file  = "StructHistory.dat"
+    pass_list.append(coupled_FSI.run_filediff())
+    test_list.append(coupled_FSI)
 
     # Tests summary
     print '=================================================================='

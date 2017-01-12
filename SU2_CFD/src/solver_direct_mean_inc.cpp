@@ -4461,7 +4461,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex;
 
-  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, UnitNormal[3], *NormalArea, turb_ke;
+  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
@@ -4490,7 +4490,6 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       
       for (iDim = 0; iDim < nDim; iDim++) {
         NormalArea[iDim] = -Normal[iDim];
-        UnitNormal[iDim] = -Normal[iDim]/Area;
       }
 
       /*--- Compute the residual ---*/
@@ -6795,7 +6794,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   RefDensity, Density = 0.0, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
   Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, MaxNorm = 8.0,
-  Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
+  Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}},
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
 #ifdef HAVE_MPI
@@ -6894,7 +6893,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
           }
-          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, iDim);
         }
 
         Viscosity = node[iPoint]->GetLaminarViscosity();
@@ -7181,7 +7179,6 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned long iVertex, iPoint, total_index;
   
   su2double *GridVel, *Normal, Area;
-  su2double UnitNormal[3] = {0.0, 0.0, 0.0};
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -7207,10 +7204,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
-      
+
       /*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
       
