@@ -35,7 +35,7 @@ from optparse import OptionParser
 import os, sys, shutil, copy, os.path
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
-from polarSweepLib import *
+from SU2.util.polarSweepLib import *
 
 def main():
 
@@ -142,8 +142,8 @@ def main():
       nMach=1
 
    if nAlpha == 0:
-      if 'AoA' in config:
-         alpha.append(config.AoA)
+      if 'AOA' in config:
+         alpha.append(config.AOA)
       else:
          alpha.append(0.0)
       nAlpha=1
@@ -183,7 +183,7 @@ def main():
       print '>>> Mach   '+str(MachList)
 
       
-   results.AoA = alpha
+   results.AOA = alpha
    results.MACH = MachList
    results.SIDESLIP_ANGLE=beta
    
@@ -211,11 +211,11 @@ def main():
    if options.verbose:
       print 'Opening polar sweep file: '+outFile
    if options.Wind:
-      f.write('%  AoA, Mach, CL, CD,  ')
+      f.write('%  AOA, Mach, CL, CD,  ')
       if options.geomDim == 3:
          f.write('CY,  ')
    else:
-      f.write('%  AoA, Mach, CX, CY,  ')
+      f.write('%  AOA, Mach, CX, CY,  ')
       if options.geomDim == 3: 
          f.write('CZ,  ')
         
@@ -270,11 +270,11 @@ def main():
          
     
          # set angle of attack and side-slip angle
-         konfig.AoA = AngleAttack
+         konfig.AOA = AngleAttack
          konfig.SIDESLIP_ANGLE = SIDESLIP_ANGLE
          konfig.MACH_NUMBER = MachNumber
-         caseName='DIRECT_M_'+str(MachNumber)+'_AoA_'+str(AngleAttack)
-         print 'Mach = ' , konfig.MACH_NUMBER , 'AoA = ' , konfig.AoA
+         caseName='DIRECT_M_'+str(MachNumber)+'_AOA_'+str(AngleAttack)
+         print 'Mach = ' , konfig.MACH_NUMBER , 'AOA = ' , konfig.AOA
          print 'case :'+caseName
     
          # run su2
@@ -348,7 +348,7 @@ def main():
 
    # plotting
    #plt.figure()
-   #plt.plot( results.MACH_NUMBER, results.AoA , results.LIFT , results.DRAG )
+   #plt.plot( results.MACH_NUMBER, results.AOA , results.LIFT , results.DRAG )
    #plt.show()
 
    # save data

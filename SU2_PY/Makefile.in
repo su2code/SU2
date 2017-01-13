@@ -295,7 +295,6 @@ bin_SCRIPTS = \
     merge_solution.py \
     set_ffd_design_var.py \
     compute_polar.py \
-    polarSweepLib.py \
     discrete_adjoint.py \
     direct_differentiation.py \
     fsi_computation.py \
@@ -340,6 +339,7 @@ nobase_dist_mypkg_DATA = \
     SU2/util/ordered_bunch.py \
     SU2/util/ordered_dict.py \
     SU2/util/plot.py \
+    SU2/util/polarSweepLib.py \
     SU2/util/pyCppTap.py \
     SU2/util/switch.py \
     SU2/util/which.py \
