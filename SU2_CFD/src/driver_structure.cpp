@@ -2700,13 +2700,14 @@ su2double CDriver::Get_Drag() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CDrag, RefDensity, RefAreaCoeff, RefVel2(0.0), factor;
+  su2double CDrag, RefDensity, RefAreaCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
   RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
 
   /*--- Calculate free-stream velocity (squared) ---*/
+  RefVel2 = 0.0;
   for(unsigned short iDim = 0; iDim < nDim; iDim++)
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
@@ -2721,13 +2722,14 @@ su2double CDriver::Get_Lift() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CLift, RefDensity, RefAreaCoeff, RefVel2(0.0), factor;
+  su2double CLift, RefDensity, RefAreaCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
   RefAreaCoeff = config_container[val_iZone]->GetRefAreaCoeff();
 
   /*--- Calculate free-stream velocity (squared) ---*/
+  RefVel2 = 0.0;
   for(unsigned short iDim = 0; iDim < nDim; iDim++)
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
@@ -2742,7 +2744,7 @@ su2double CDriver::Get_Mx(){
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMx, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2(0.0), factor;
+  su2double CMx, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
@@ -2750,6 +2752,7 @@ su2double CDriver::Get_Mx(){
   RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
 
   /*--- Calculate free-stream velocity (squared) ---*/
+  RefVel2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
@@ -2765,7 +2768,7 @@ su2double CDriver::Get_My(){
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMy, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2(0.0), factor;
+  su2double CMy, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
@@ -2773,6 +2776,7 @@ su2double CDriver::Get_My(){
   RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
 
   /*--- Calculate free-stream velocity (squared) ---*/
+  RefVel2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
@@ -2788,7 +2792,7 @@ su2double CDriver::Get_Mz() {
 
   unsigned short val_iZone = ZONE_0;
   unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-  su2double CMz, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2(0.0), factor;
+  su2double CMz, RefDensity, RefAreaCoeff, RefLengthCoeff, RefVel2, factor;
 
   /*--- Export free-stream density and reference area ---*/
   RefDensity = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
@@ -2796,6 +2800,7 @@ su2double CDriver::Get_Mz() {
   RefLengthCoeff = config_container[val_iZone]->GetRefLengthMoment();
 
   /*--- Calculate free-stream velocity (squared) ---*/
+  RefVel2 = 0.0;
   for(unsigned short iDim = 0; iDim < nDim; iDim++)
     RefVel2 += pow(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim),2);
 
@@ -2811,7 +2816,7 @@ su2double CDriver::Get_DragCoeff() {
 
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-    su2double CDrag(0.0);
+    su2double CDrag;
 
     CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
 
@@ -2822,7 +2827,7 @@ su2double CDriver::Get_LiftCoeff() {
 
     unsigned short val_iZone = ZONE_0;
     unsigned short FinestMesh = config_container[val_iZone]->GetFinestMesh();
-    su2double CLift(0.0);
+    su2double CLift;
 
     CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
 
@@ -2831,9 +2836,10 @@ su2double CDriver::Get_LiftCoeff() {
 
 unsigned short CDriver::GetMovingMarker() {
 
-  unsigned short IDtoSend(0),iMarker, jMarker, Moving;
+  unsigned short IDtoSend,iMarker, jMarker, Moving;
   string Marker_Tag, Moving_Tag;
 
+  IDtoSend = 0;
   for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
     Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
     if (Moving == YES) {
@@ -2994,7 +3000,7 @@ bool CDriver::ComputeVertexForces(unsigned short iMarker, unsigned short iVertex
 
   iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
 
-  /*--- It necessary to distinguish the halo nodes from the others, since they introduice non physical forces. ---*/
+  /*--- It is necessary to distinguish the halo nodes from the others, since they introduce non physical forces. ---*/
   if(geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetDomain()) {
     /*--- Get the normal at the vertex: this normal goes inside the fluid domain. ---*/
     Normal = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNormal();
