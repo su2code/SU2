@@ -596,6 +596,11 @@ void CDriver::Geometrical_Preprocessing() {
     if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
     geometry_container[iZone][MESH_0]->SetCoord_CG();
 
+    /*--- Compute the resolution tensors ---*/
+
+    if (rank == MASTER_NODE) cout << "Computing cell resolution tensors." << endl;
+    geometry_container[iZone][MESH_0]->SetResolutionTensor();
+
     /*--- Create the control volume structures ---*/
 
     if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;

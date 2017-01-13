@@ -167,6 +167,8 @@ inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }
 
+inline void CGeometry::SetResolutionTensor(void) {};
+
 inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) { }
 
 inline void CGeometry::SetControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }

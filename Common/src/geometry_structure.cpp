@@ -894,6 +894,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
     geometry_container[MESH_0]->Set_MPI_Coord(config);
 
     geometry_container[MESH_0]->SetCoord_CG();
+    geometry_container[MESH_0]->SetResolutionTensor();
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
 
@@ -1346,7 +1347,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   unsigned short val_format = config->GetMesh_FileFormat();
 
   /*--- Initialize counters for local/global points & elements ---*/
-  
+
   if (rank == MASTER_NODE)
     cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
   
@@ -8414,15 +8415,15 @@ void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
   su2double **Coord;
-  
+
   /*--- Compute the center of gravity for elements ---*/
-  
+
   for (iElem = 0; iElem<nElem; iElem++) {
     nNode = elem[iElem]->GetnNodes();
     Coord = new su2double* [nNode];
     
     /*--- Store the coordinates for all the element nodes ---*/
-    
+
     for (iNode = 0; iNode < nNode; iNode++) {
       elem_poin = elem[iElem]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
@@ -8440,14 +8441,14 @@ void CPhysicalGeometry::SetCoord_CG(void) {
   }
   
   /*--- Center of gravity for face elements ---*/
-  
+
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     for (iElem = 0; iElem < nElem_Bound[iMarker]; iElem++) {
       nNode = bound[iMarker][iElem]->GetnNodes();
       Coord = new su2double* [nNode];
       
       /*--- Store the coordinates for all the element nodes ---*/
-      
+
       for (iNode = 0; iNode < nNode; iNode++) {
         elem_poin = bound[iMarker][iElem]->GetNode(iNode);
         Coord[iNode] = new su2double [nDim];
@@ -8455,13 +8456,13 @@ void CPhysicalGeometry::SetCoord_CG(void) {
           Coord[iNode][iDim]=node[elem_poin]->GetCoord(iDim);
       }
       /*--- Compute the element CG coordinates ---*/
-      
+
       bound[iMarker][iElem]->SetCoord_CG(Coord);
       for (iNode = 0; iNode < nNode; iNode++)
         if (Coord[iNode] != NULL) delete[] Coord[iNode];
       if (Coord != NULL) delete[] Coord;
     }
-  
+
   /*--- Center of gravity for edges ---*/
   
   for (iEdge = 0; iEdge < nEdge; iEdge++) {
@@ -8469,21 +8470,29 @@ void CPhysicalGeometry::SetCoord_CG(void) {
     Coord = new su2double* [nNode];
     
     /*--- Store the coordinates for all the element nodes ---*/
-    
+
     for (iNode = 0; iNode < nNode; iNode++) {
       edge_poin=edge[iEdge]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
       for (iDim = 0; iDim < nDim; iDim++)
         Coord[iNode][iDim]=node[edge_poin]->GetCoord(iDim);
     }
-    
+
     /*--- Compute the edge CG coordinates ---*/
-    
+
     edge[iEdge]->SetCoord_CG(Coord);
-    
+
     for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
     if (Coord != NULL) delete[] Coord;
+  }
+}
+
+void CPhysicalGeometry::SetResolutionTensor(void) {
+  unsigned long iElem;
+
+  for (iElem = 0; iElem<nElem; iElem++) {
+    elem[iElem]->SetResolutionTensor();
   }
 }
 

@@ -31,6 +31,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
 #include "../include/primal_grid_structure.hpp"
 
 unsigned short CPrimalGrid::nDim;
@@ -116,84 +117,6 @@ CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrim
 	
 }
 
-//inline su2double dot_prod(su2double v[], su2double w[], unsigned short nDim) {
-//  su2double output = 0;
-//  for (unsigned short i = 0; i<nDim; ++i) output += v[i]*w[i];
-//  return output;
-//}
-//
-//vector<vector<su2double> > CPrimalGrid::GetResolutionTensor(void) {
-//  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
-//  for (int i=0; i<nDim; ++i) {
-//    for (int j=0; j<nDim; ++j) {
-//      output[i][j] = Mij[i][j];
-//    }
-//  }
-//  return output;
-//}
-//
-//void CPrimalGrid::SetResolutionTensor(void) {
-//  unsigned short iDim, iNode, iFace, iVec;
-//  unsigned short nFaces;
-//
-//  Mij = new su2double* [nDim];
-//  for (int i = 0; i < nDim; ++i)
-//    Mij[i] = new su2double [nDim];
-//
-//  nFaces = GetnFaces();
-//
-//  if (nDim>1) {
-//    // Construct vectors from each face to the cell center
-//    su2double vecs[nFaces][nDim];
-//    su2double mags[nFaces];
-//    for (iFace = 0; iFace < nFaces;  iFace++) {
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        vecs[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
-//      }
-//      mags[iFace] = std::sqrt(dot_prod(vecs[iFace], vecs[iFace], nDim));
-//    }
-//
-//    unsigned short iFaceRef = 0;
-//    su2double normalized_dp[nFaces];
-//    su2double max_dp, min_dp;
-//    unsigned short iFaceOpposite, iFaceOrthogonal;
-//    su2double eigvectors[nDim][nDim];
-//    for (iVec = 0; iVec < nDim; iVec++) {
-//      // Find the opposite face to the reference face
-//      max_dp = 0.0;
-//      min_dp = 1.0;
-//      for (iFace = 0; iFace < nFaces; iFace++) {
-//        if (iFace == iFaceRef) continue;
-//        normalized_dp[iFace] = dot_prod(vecs[iFaceRef], vecs[iFace], nDim)/
-//            (mags[iFaceRef]*mags[iFace]);
-//        // The opposite vector will have a dot product magnitude close to 1
-//        if (std::abs(normalized_dp[iFace]) > max_dp) {
-//          iFaceOpposite = iFace;
-//          max_dp = std::abs(normalized_dp[iFace]);
-//        }
-//        // An othogonal vector will have a dot product equal to zero
-//        if (std::abs(normalized_dp[iFace]) < min_dp) {
-//          iFaceOrthogonal = iFace;
-//          min_dp = std::abs(normalized_dp[iFace]);
-//        }
-//      }
-//
-//      // Create a vector from the reference to the opposite face
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        eigvectors[iVec][iDim] = Coord_FaceElems_CG[iFaceRef][iDim] -
-//            Coord_FaceElems_CG[iFaceOpposite][iDim];
-//      }
-//
-//      // Set the reference face to a nearly orthogonal face for the next loop
-//      iFaceRef = iFaceOrthogonal;
-//    }
-//  } else {
-//    // A Resolution tensor is simply [[1]] if there are no directions
-//    Mij[0][0] = 1.0;
-//  }
-//
-//}
-
 CVertexMPI::~CVertexMPI() {
   unsigned short iFaces;
   
@@ -204,6 +127,21 @@ CVertexMPI::~CVertexMPI() {
 }
 
 void CVertexMPI::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+
+void CVertexMPI::SetResolutionTensor(void) {
+  // TODO: Not implemented.
+};
+
+vector<vector<su2double> > CVertexMPI::GetResolutionTensor(void) {
+  // TODO: Not implemented.
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = 0;
+    }
+  }
+  return output;
+}
 
 unsigned short CLine::Faces[1][2]={{0,1}};
 
@@ -264,6 +202,21 @@ void CLine::Change_Orientation(void) {
 	jPoint = Nodes[1];
 	Nodes[0] = jPoint;
 	Nodes[1] = iPoint;
+}
+
+void CLine::SetResolutionTensor(void) {
+  // TODO: Not implemented.
+};
+
+vector<vector<su2double> > CLine::GetResolutionTensor(void) {
+  // TODO: Not implemented.
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = 0;
+    }
+  }
+  return output;
 }
 
 unsigned short CTriangle::Faces[3][2] = {{0,1},{1,2},{2,0}};
@@ -332,6 +285,21 @@ void CTriangle::Change_Orientation(void) {
   
 }
 
+void CTriangle::SetResolutionTensor(void) {
+  // TODO: Not implemented.
+};
+
+vector<vector<su2double> > CTriangle::GetResolutionTensor(void) {
+  // TODO: Not implemented.
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = 0;
+    }
+  }
+  return output;
+}
+
 unsigned short CQuadrilateral::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
 
 unsigned short CQuadrilateral::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
@@ -380,7 +348,6 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
 	for (iNeighbor_Elements = 0; iNeighbor_Elements<nNeighbor_Elements; iNeighbor_Elements++) {
 		Neighbor_Elements[iNeighbor_Elements]=-1;
 	}
-  
 }
 
 CQuadrilateral::~CQuadrilateral() {
@@ -390,6 +357,122 @@ CQuadrilateral::~CQuadrilateral() {
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
   
+}
+
+void CQuadrilateral::SetResolutionTensor(void) {
+  unsigned short iDim, jDim, kDim, lDim;
+  unsigned short iFace;
+  unsigned short* paired_faces;
+  // paired_faces is used to sort the faces into matching pairs.
+  // The code will look for pairs of faces that are mostly opposite, then
+  // sort them so that the face indices in paired_faces[0] and paired_faces[1]
+  // match, then paired_faces[2] and paired_faces[3] match, etc.
+
+  // Allocate Mij
+  Mij = new su2double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Mij[iDim] = new su2double [nDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      Mij[iDim][jDim] = 0.0;
+    }
+  }
+
+  paired_faces = new unsigned short [nFaces];
+
+  su2double eigvecs[nDim][nDim];
+
+  // Create cell center to face vectors
+  su2double center2face[nFaces][nDim];
+  for (iFace = 0; iFace < nFaces; ++iFace) {
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
+    }
+  }
+
+
+  // First vector
+  paired_faces[0] = 0; // Choose vector 1 as our first vector to pair up
+  // Find vector mostly parallel to first
+  su2double min_dp = 1.0;
+  su2double current_dp;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    // NOTE: You cannot use nDim in the template functions for the array size;
+    // nDim is not const
+    current_dp = dot_prod<2>(center2face[0],center2face[iFace])
+              /(magnitude<2>(center2face[0])*magnitude<2>(center2face[iFace]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[1] = iFace;
+    }
+  }
+
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    eigvecs[0][iDim] = Coord_FaceElems_CG[0][iDim] -
+        Coord_FaceElems_CG[paired_faces[1]][iDim];
+  }
+
+  // Second vector
+  paired_faces[2] = 0;
+  paired_faces[3] = 0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1]) {
+      if (paired_faces[2] == 0) {
+        paired_faces[2] = iFace;
+      } else {
+        paired_faces[3] = iFace;
+      }
+    }
+  }
+
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    eigvecs[1][iDim] = Coord_FaceElems_CG[paired_faces[2]][iDim] -
+        Coord_FaceElems_CG[paired_faces[3]][iDim];
+  }
+
+  // Get magnitudes
+  su2double eigvalues[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvalues[iDim][jDim] = 0.0;
+    }
+    eigvalues[iDim][iDim] = magnitude<2>(eigvecs[iDim]);
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[iDim][jDim] /= eigvalues[iDim][iDim];
+    }
+  }
+
+
+  // Gram-Schmidt Process to make the vectors orthogonal
+  su2double temp_eigvecs[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      temp_eigvecs[iDim][jDim] = eigvecs[iDim][jDim];
+    }
+  }
+  GramSchmidt<2>(temp_eigvecs, eigvecs);
+
+  // Perform matrix multiplication
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      for (kDim = 0; kDim < nDim; ++kDim) {
+        for (lDim = 0; lDim < nDim; ++lDim) {
+          Mij[iDim][jDim] += eigvecs[kDim][iDim]*
+              eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
+        }
+      }
+    }
+  }
+
+};
+
+vector<vector<su2double> > CQuadrilateral::GetResolutionTensor(void) {
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = Mij[iDim][jDim];
+    }
+  }
+  return output;
 }
 
 void CQuadrilateral::Change_Orientation(void) {
@@ -467,6 +550,21 @@ void CTetrahedron::Change_Orientation(void) {
 	Nodes[0] = jPoint;
 	Nodes[1] = iPoint;
   
+}
+
+void CTetrahedron::SetResolutionTensor(void) {
+  // TODO: Not implemented.
+};
+
+vector<vector<su2double> > CTetrahedron::GetResolutionTensor(void) {
+  // TODO: Not implemented.
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = 0;
+    }
+  }
+  return output;
 }
 
 unsigned short CHexahedron::Faces[6][4] = {{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7},{0,3,2,1},{4,5,6,7}};
@@ -552,6 +650,21 @@ void CHexahedron::Change_Orientation(void) {
   
 }
 
+void CHexahedron::SetResolutionTensor(void) {
+  // TODO: Not implemented.
+};
+
+vector<vector<su2double> > CHexahedron::GetResolutionTensor(void) {
+  // TODO: Not implemented.
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = 0;
+    }
+  }
+  return output;
+}
+
 unsigned short CPrism::Faces[5][4] = {{3,4,1,0},{5,2,1,4},{2,5,3,0},{0,1,2,2},{5,4,3,3}};
 
 unsigned short CPrism::Neighbor_Nodes[6][3] = {{1,2,3},{0,2,4},{1,0,5},{0,4,5},{3,5,1},{4,3,2}};
@@ -628,6 +741,21 @@ void CPrism::Change_Orientation(void) {
   
 }
 
+void CPrism::SetResolutionTensor(void) {
+  // TODO: Not implemented.
+};
+
+vector<vector<su2double> > CPrism::GetResolutionTensor(void) {
+  // TODO: Not implemented.
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = 0;
+    }
+  }
+  return output;
+}
+
 unsigned short CPyramid::Faces[5][4] = {{0,3,2,1},{4,3,0,0},{4,0,1,1},{2,4,1,1},{3,4,2,2}};
 
 unsigned short CPyramid::Neighbor_Nodes[5][4] = {{1,3,4,4},{0,2,4,4},{1,3,4,4},{2,0,4,4},{0,1,2,3}};
@@ -690,3 +818,18 @@ CPyramid::~CPyramid() {
 }
 
 void CPyramid::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+
+void CPyramid::SetResolutionTensor(void) {
+  // TODO: Not implemented.
+};
+
+vector<vector<su2double> > CPyramid::GetResolutionTensor(void) {
+  // TODO: Not implemented.
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = 0;
+    }
+  }
+  return output;
+}

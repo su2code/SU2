@@ -256,6 +256,10 @@ public:
 	 * \return Local index of the nodes that are neighbor to <i>val_node</i>.
 	 */
 	virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) = 0;
+
+  virtual void SetResolutionTensor(void) = 0;
+
+  virtual vector<vector<su2double> > GetResolutionTensor(void) = 0;
 };
 
 /*!
@@ -374,6 +378,10 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -500,6 +508,10 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -628,6 +640,10 @@ public:
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -647,7 +663,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-  
+  su2double** Mij;
 public:
   
 	/*!
@@ -756,6 +772,10 @@ public:
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -871,6 +891,10 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -993,6 +1017,10 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -1111,6 +1139,10 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -1228,6 +1260,10 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  void SetResolutionTensor(void);
+
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 #include "primal_grid_structure.inl"

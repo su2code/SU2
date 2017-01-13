@@ -379,6 +379,11 @@ public:
 	 */		
 	virtual void SetCoord_CG(void);
 
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetResolutionTensor(void);
+
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1083,6 +1088,8 @@ public:
 	 * \brief Set the center of gravity of the face, elements and edges.
 	 */
 	void SetCoord_CG(void);
+
+	void SetResolutionTensor(void);
 
 	/*! 
 	 * \brief Set the edge structure of the control volume.

@@ -33,6 +33,63 @@
  
 #pragma once
 
+template<std::size_t nDim>
+inline su2double dot_prod(su2double v[nDim], su2double w[nDim]) {
+  su2double dot_product = 0.0;
+  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
+    dot_product += v[iDim]*w[iDim];
+  }
+  return dot_product;
+}
+
+template<std::size_t nDim>
+inline su2double dot_prod(vector<su2double> v, vector<su2double> w) {
+  su2double dot_product = 0.0;
+  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
+    dot_product += v[iDim]*w[iDim];
+  }
+  return dot_product;
+}
+
+template<std::size_t nDim>
+inline su2double magnitude(su2double v[nDim]) {
+  return std::sqrt(dot_prod<nDim>(v,v));
+}
+
+// TODO: Remove this when not needed.
+template<std::size_t nDim>
+inline void print_matrix(su2double v[nDim][nDim]) {
+  std::cout << "[[";
+  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned int jDim = 0; jDim < nDim; ++jDim) {
+      std::cout << v[iDim][jDim];
+      if (jDim != nDim-1) std::cout << ",";
+    }
+    if (iDim != nDim-1)  {
+      std::cout << "],[";
+    } else {
+      std::cout << "]]" << std::endl;
+    }
+  }
+}
+
+template<std::size_t nDim>
+void GramSchmidt(su2double w[nDim][nDim], su2double v[nDim][nDim]) {
+  unsigned short iDim, jDim;
+
+  // Set the first basis vector to the first input vector
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[0][iDim] = w[0][iDim];
+  }
+
+  // Compute the next orthogonal vector
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[1][iDim] = w[1][iDim] - dot_prod<nDim>(w[1],v[0])
+            /dot_prod<nDim>(v[0],v[0])*v[0][iDim];
+  }
+
+}
+
 inline unsigned short CPrimalGrid::GetnNodesFace(unsigned short val_face) { return 0; }
 
 inline void CPrimalGrid::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
