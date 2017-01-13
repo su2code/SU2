@@ -460,7 +460,7 @@ public:
   void SetVertexCoordZ(unsigned short iMarker, unsigned short iVertex, su2double newPosZ);
 
   /*!
-   * \brief Set the VarCoord of  a vertex on a specified marker.
+   * \brief Set the VarCoord of a vertex on a specified marker.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
    * \return Norm of the VarCoord.
