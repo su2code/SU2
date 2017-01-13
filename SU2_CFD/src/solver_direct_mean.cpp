@@ -7459,10 +7459,9 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
   PT_Sector_Min, PT_Mean, Mach_Mean, q_Mean, UpVector[3], radians, RotatedVector[3],
 //  RefDensity, RefVel, Factor,
   DC60, IDR, IDC, IDC_Mach;
-  su2double Pressure, Temperature, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf, Gas_Constant;
+  su2double Pressure, Density, SoundSpeed, Velocity2, Mach,  Gamma, TotalPressure, Mach_Inf, TotalPressure_Inf, Pressure_Inf;
 //  su2double dMach_dVel_x = 0.0, dMach_dVel_y = 0.0, dMach_dVel_z = 0.0, dMach_dT = 0.0
 //  su2double dMach_dx = 0.0, dMach_dy = 0.0, dMach_dz = 0.0, dPT_dP = 0.0, dPT_dMach = 0.0, Aux = 0.0;
-  su2double SignFlip = 1.0;
   
   unsigned short iMarker_Analyze;
   int rank, iProcessor, nProcessor;
@@ -7610,13 +7609,11 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
               if (nDim == 3) { Buffer_Send_Coord_z[nVertex_Surface] = geometry->node[iPoint]->GetCoord(2); }
               
               Pressure     = node[iPoint]->GetPressure();
-              Temperature  = node[iPoint]->GetTemperature();
               Density      = node[iPoint]->GetDensity();
               SoundSpeed   = node[iPoint]->GetSoundSpeed();
               Velocity2    = node[iPoint]->GetVelocity2();
               Mach         = sqrt(Velocity2)/SoundSpeed;
               Gamma        = config->GetGamma();
-              Gas_Constant = config->GetGas_ConstantND();
               Mach_Inf     = config->GetMach();
               Pressure_Inf = config->GetPressure_FreeStreamND();
               
@@ -7891,9 +7888,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 Distance = dx*dx + dy*dy;
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
-                
-                SignFlip = 1.0;
-                
+                                
                 if (Engine_HalfModel) {
                   
                   yCoord = -yCoord;
@@ -7907,7 +7902,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                   Distance_Mirror = sqrt(Distance_Mirror);
                   
                   if (Distance_Mirror < Distance) {
-                    SignFlip = -1.0;
                     Distance = Distance_Mirror;
                     dx = dx_; dy = dy_;
                     if (nDim == 3) dz = dz_;
@@ -8071,9 +8065,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 Distance = dx*dx + dy*dy;
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
-                
-                SignFlip = 1.0;
-                
+                                
                 if (Engine_HalfModel) {
                   
                   yCoord = -yCoord;
@@ -8087,7 +8079,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                   Distance_Mirror = sqrt(Distance_Mirror);
                   
                   if (Distance_Mirror < Distance) {
-                    SignFlip = -1.0;
                     Distance = Distance_Mirror;
                     dx = dx_; dy = dy_;
                     if (nDim == 3) dz = dz_;
@@ -8193,9 +8184,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                 Distance = dx*dx + dy*dy;
                 if (nDim == 3) Distance += dz*dz;
                 Distance = sqrt(Distance);
-                
-                SignFlip = 1.0;
-                
+                                
                 if (Engine_HalfModel) {
                   
                   yCoord = -yCoord;
@@ -8209,7 +8198,6 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
                   Distance_Mirror = sqrt(Distance_Mirror);
                   
                   if (Distance_Mirror < Distance) {
-                    SignFlip = -1.0;
                     Distance = Distance_Mirror;
                     dx = dx_; dy = dy_;
                     if (nDim == 3) dz = dz_;
@@ -13119,7 +13107,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           numerics->SetPrimitive( PrimVar_i, PrimVar_j );
           
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
-	        Secondary_i = node[iPoint]->GetSecondary();
+          Secondary_i = node[iPoint]->GetSecondary();
 
             P_static   = PrimVar_j[nDim+1];
             rho_static = PrimVar_j[nDim+2];           
@@ -15156,16 +15144,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Init total coefficients ---*/
   
-  Total_CD         = 0.0;	  Total_CL           = 0.0;    Total_CSF          = 0.0;
-  Total_CMx        = 0.0;	  Total_CMy          = 0.0;    Total_CMz          = 0.0;
-  Total_CEff       = 0.0;	  Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
-  Total_CFx        = 0.0;	  Total_CFy          = 0.0;    Total_CFz          = 0.0;
-  Total_CT         = 0.0;	  Total_CQ           = 0.0;    Total_CMerit       = 0.0;
+  Total_CD         = 0.0;    Total_CL           = 0.0;    Total_CSF          = 0.0;
+  Total_CMx        = 0.0;    Total_CMy          = 0.0;    Total_CMz          = 0.0;
+  Total_CEff       = 0.0;    Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
+  Total_CFx        = 0.0;    Total_CFy          = 0.0;    Total_CFz          = 0.0;
+  Total_CT         = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat    = 0.0;   Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff     = 0.0;   Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
   Total_NetCThrust = 0.0;   Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
   Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
-  Total_AeroCD     = 0.0;	  Total_RadialDistortion   = 0.0; Total_CircumferentialDistortion           = 0.0;
+  Total_AeroCD     = 0.0;    Total_RadialDistortion   = 0.0; Total_CircumferentialDistortion           = 0.0;
 
   /*--- Read farfield conditions from config ---*/
   
@@ -15277,8 +15265,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   SlidingState = new su2double** [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-	  
-	SlidingState[iMarker] = NULL;
+    
+  SlidingState[iMarker] = NULL;
 
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
 
@@ -15648,8 +15636,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Compute the actuator disk properties and distortion levels ---*/
 
   if (actuator_disk) {
-  	Set_MPI_ActDisk(solver_container, geometry, config);
-  	SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+    Set_MPI_ActDisk(solver_container, geometry, config);
+    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
   }
 
   /*--- Compute Interface MPI ---*/
