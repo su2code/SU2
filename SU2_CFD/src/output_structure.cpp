@@ -14653,7 +14653,8 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
                     config->GetDiscrete_Adjoint());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+	bool flipflop = config->GetWrt_FlipFlop_Restart();
+	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   ofstream restart_file;
   string filename;
@@ -14689,7 +14690,22 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
   } else if ((fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
-  
+	
+	/*--- Restart file Flip Flop option selected to write files alternating ---*/
+	if (flipflop){
+		unsigned short lastindex = filename.find_last_of(".");
+		unsigned long restNum = iExtIter/config->GetWrt_Sol_Freq();
+		bool lastRestart = (iExtIter % config->GetWrt_Sol_Freq()) == 0;
+		
+		if ((restNum % 2 != 0 && !lastRestart) || (restNum % 2 == 0 && lastRestart)) {
+			filename =filename.substr(0, lastindex).append("_flop.dat");
+			cout << "Restart filename flop." << endl;
+		} else if ((restNum % 2 == 0 && !lastRestart) || (restNum % 2 != 0 && lastRestart)) {
+			filename =filename.substr(0, lastindex).append("_flip.dat");
+			cout << "Restart filename flip." << endl;
+		}
+	}
+	
   /*--- Only the master node writes the header. ---*/
   
   if (rank == MASTER_NODE) {
