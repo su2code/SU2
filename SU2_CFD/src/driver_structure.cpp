@@ -2226,6 +2226,17 @@ void CDriver::Interface_Preprocessing() {
       if ( donorZone == targetZone ) // We're processing the same zone, so skip the following
         continue;
 
+      /*--- Coupling between zones for HB. Just interfaces corresponding to the same
+       * time instances and at different geometrical zones are considered ---*/
+      if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
+        unsigned short nTimeInstances  = config_container[ZONE_0]->GetnTimeInstances();
+        unsigned short nGeomZones      = nZone/nTimeInstances;
+        unsigned short iDonorGeomZone  = donorZone/nTimeInstances;
+        unsigned short iTargetGeomZone = targetZone/nTimeInstances;
+        if (iDonorGeomZone == iTargetGeomZone) continue;
+        else if(donorZone%nTimeInstances !=  targetZone%nTimeInstances) continue;
+      }
+
       nMarkerInt = (int) ( config_container[donorZone]->GetMarker_n_FSIinterface() / 2 );
 
       /*--- Loops on Interface markers to find if the 2 zones are sharing the boundary and to determine donor and target marker tag ---*/
