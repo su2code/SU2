@@ -98,8 +98,11 @@ int main(int argc, char *argv[]) {
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && nZone > 1) {
 
-    /*--- Redifine the number of zones for HB only. Geometrical zones are defined to define the physical domains.
-     * A set of time instances is  associated with the single geometrical zone. ---*/
+    /*--- Define the meaning of 'zones' for HB multi-zone only.
+     * Geometrical zones correspond to the physical domains.
+     * A set of time instances is  associated with the single geometrical zone.
+     * The current approach is limited to the same number of time instances in
+     * each geometrical zone.---*/
 
     nGeomZones = nZone;
     nTimeInstances = config->GetnTimeInstances();

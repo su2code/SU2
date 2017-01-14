@@ -502,6 +502,12 @@ public:
    */
   ~CGeneralHBDriver(void);
 
+  /*!
+   * \brief Run a single iteration of a Harmonic Balance problem.
+   */
+  void Run();
+
+  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
 };
 
