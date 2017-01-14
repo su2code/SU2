@@ -2229,12 +2229,12 @@ void CDriver::Interface_Preprocessing() {
       /*--- Coupling between zones for HB. Just interfaces corresponding to the same
        * time instances and at different geometrical zones are considered ---*/
       if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
-        unsigned short nTimeInstances  = config_container[ZONE_0]->GetnTimeInstances();
-        unsigned short nGeomZones      = nZone/nTimeInstances;
-        unsigned short iDonorGeomZone  = donorZone/nTimeInstances;
-        unsigned short iTargetGeomZone = targetZone/nTimeInstances;
+        unsigned short nZonalTimeInstances  = config_container[ZONE_0]->GetnTimeInstances();
+        unsigned short nGeomZones      = nZone/nZonalTimeInstances;
+        unsigned short iDonorGeomZone  = donorZone/nZonalTimeInstances;
+        unsigned short iTargetGeomZone = targetZone/nZonalTimeInstances;
         if (iDonorGeomZone == iTargetGeomZone) continue;
-        else if(donorZone%nTimeInstances !=  targetZone%nTimeInstances) continue;
+        else if(donorZone%nZonalTimeInstances !=  targetZone%nZonalTimeInstances) continue;
       }
 
       nMarkerInt = (int) ( config_container[donorZone]->GetMarker_n_FSIinterface() / 2 );
@@ -3498,7 +3498,7 @@ void CHBDriver::Update() {
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Update the harmonic balance terms across all zones ---*/
-  	SetHarmonicBalance(iZone);
+    SetHarmonicBalance(iZone);
 
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
@@ -3852,7 +3852,13 @@ CGeneralHBDriver::CGeneralHBDriver(char* confFile,
                                  unsigned short val_nZone,
                                  unsigned short val_nDim) : CHBDriver(confFile,
                                                                     val_nZone,
-                                                                    val_nDim) {}
+                                                                    val_nDim) {
+
+
+  iTimeInstance = 0; jTimeInstance = 0; iGeomZone = 0; jGeomZone = 0;
+  nTimeInstances = nZone; nGeomZones = nZone/nTimeInstances;
+
+}
 
 
 CGeneralHBDriver::~CGeneralHBDriver(void) {}
@@ -3860,11 +3866,6 @@ CGeneralHBDriver::~CGeneralHBDriver(void) {}
 
 void CGeneralHBDriver::Run() {
 
-  unsigned short nTimeInstances  = nZone;
-  unsigned short nGeomZones      = nZone/nTimeInstances;
-  unsigned short iTimeInstance, jTimeInstance;
-  unsigned short iGeomZone  = iTimeInstance/nTimeInstances;
-  unsigned short jGeomZone  = jTimeInstance/nTimeInstances;
 
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
@@ -3879,10 +3880,13 @@ void CGeneralHBDriver::Run() {
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iTimeInstance);
 
-    /*--- At each pseudo time-step updates transfer data ---*/
-    for (unsigned short iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
-      for (unsigned short jTimeInstance = 0; jTimeInstance < nTimeInstances; jTimeInstance++)
+    /*--- For each time instance update transfer data ---*/
+    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
+      for (jTimeInstance = 0; jTimeInstance < nTimeInstances; jTimeInstance++)
         if(jTimeInstance != iTimeInstance && transfer_container[iTimeInstance][jTimeInstance] != NULL){
+
+          iGeomZone       = iTimeInstance/nTimeInstances;
+          jGeomZone       = jTimeInstance/nTimeInstances;
 
           if (iGeomZone == iGeomZone) continue;
           else if(iTimeInstance%nTimeInstances !=  jTimeInstance%nTimeInstances) continue;
@@ -3948,6 +3952,24 @@ MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       //grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
     }
     break;
+  }
+
+}
+
+
+void CGeneralHBDriver::Update() {
+
+  for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++) {
+
+    /*--- Update the harmonic balance terms across all zones ---*/
+    SetHarmonicBalance(iTimeInstance);
+
+    iteration_container[iTimeInstance]->Update(output, integration_container, geometry_container,
+                                       solver_container, numerics_container, config_container,
+                                       surface_movement, grid_movement, FFDBox, iTimeInstance);
+
+    output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
+
   }
 
 }

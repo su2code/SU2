@@ -105,11 +105,11 @@ int main(int argc, char *argv[]) {
      * each geometrical zone.---*/
 
     nGeomZones = nZone;
-    nTimeInstances = config->GetnTimeInstances();
+    nTimeInstances = config->GetnTimeInstances()*nGeomZones;
 
     /*--- Use the MultiZone Harmonic Balance driver. ---*/
 
-    driver = new CGeneralHBDriver(config_file_name, nGeomZones*nTimeInstances, nDim);
+    driver = new CGeneralHBDriver(config_file_name, nTimeInstances, nDim);
 
 
   } else if ((nZone == 2) && fsi) {

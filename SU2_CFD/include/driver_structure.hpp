@@ -485,6 +485,15 @@ public:
  */
 class CGeneralHBDriver : public CHBDriver{
 
+protected:
+
+  unsigned short nTimeInstances,  /*!< \brief Total number of time instances.*/
+                 nGeomZones,      /*!< \brief Total number of physical zones.*/
+                 iTimeInstance,   /*!< \brief i-th time instance .*/
+                 jTimeInstance,   /*!< \brief j-th time instance.*/
+                 iGeomZone,       /*!< \brief i-th geometrical zone.*/
+                 jGeomZone;       /*!< \brief j-th geometrical zone.*/
+
 public:
 
   /*!
@@ -508,6 +517,11 @@ public:
   void Run();
 
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Update the solution for the Harmonic Balance.
+   */
+  void Update();
 
 };
 
