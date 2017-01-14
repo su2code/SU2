@@ -1644,7 +1644,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           distDES_tilde=dist_wall-f_d*max(0.0,(dist_wall-distDES));
           
           /*--- Set distance to the surface with DDES distance ---*/
-          //fd_print[iPoint]=f_d;
+
           numerics->SetDistance(distDES_tilde, 0.0);
       }
       else if (config->GetKind_HybridRANSLES()==SA_ZDES){
@@ -1954,7 +1954,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
           r_d= (nut)/(uijuij*k2*pow(dist_wall, 2.0));
           f_d= 1.0-tanh(pow(8.0*r_d,3.0));
           
-          alpha2 = pow(0.25 - (dist_wall/(2.0*Delta)) , 2.0);
+          alpha2 = pow(0.25 - (dist_wall/Delta) , 2.0);
           f_b = min(2.0 * exp(-9.0 * alpha2), 1.0);
           f_d_tilde = max((1.0-f_d), f_b);
 
