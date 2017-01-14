@@ -722,6 +722,7 @@ private:
   bool Zonal_DES; /*!< \brief Zonal DES flag. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
+  bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
@@ -5631,12 +5632,23 @@ public:
     double GetConst_DES(void);
     
     /*!
-     * \brief Get the DES Constant.
+     * \brief Get the Zonal DES Distance.
      * \return Verbosity level for the console output.
      */
     double GetZonal_Dist(void);
-    
+   
+   /*!
+    * \brief Get Zonal DES.
+    * \return Verbosity level for the console output 
+    */
     bool GetZonal_DES(void);
+   
+   /*!
+    * \brief Get QCR (SA-QCR2000).
+    * \return Verbosity level for the console output 
+    */
+    bool GetQCR(void);
+    
 };
 
 #include "config_structure.inl"
