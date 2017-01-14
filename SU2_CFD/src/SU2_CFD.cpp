@@ -38,7 +38,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
-  unsigned short nTimeInstances, nGeomZones;
+  unsigned short nTimeInstances, nGeomZones, nTotTimeInstances;
   char config_file_name[MAX_STRING_SIZE];
   bool fsi;
   
@@ -104,12 +104,13 @@ int main(int argc, char *argv[]) {
      * The current approach is limited to the same number of time instances in
      * each geometrical zone.---*/
 
+    nTimeInstances = config->GetnTimeInstances();
     nGeomZones = nZone;
-    nTimeInstances = config->GetnTimeInstances()*nGeomZones;
+    nTotTimeInstances = nTimeInstances*nGeomZones;
 
     /*--- Use the MultiZone Harmonic Balance driver. ---*/
 
-    driver = new CGeneralHBDriver(config_file_name, nTimeInstances, nDim);
+    driver = new CGeneralHBDriver(config_file_name, nTotTimeInstances, nDim);
 
 
   } else if ((nZone == 2) && fsi) {

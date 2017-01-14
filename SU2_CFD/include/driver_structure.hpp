@@ -487,12 +487,13 @@ class CGeneralHBDriver : public CHBDriver{
 
 protected:
 
-  unsigned short nTimeInstances,  /*!< \brief Total number of time instances.*/
-                 nGeomZones,      /*!< \brief Total number of physical zones.*/
-                 iTimeInstance,   /*!< \brief i-th time instance .*/
-                 jTimeInstance,   /*!< \brief j-th time instance.*/
-                 iGeomZone,       /*!< \brief i-th geometrical zone.*/
-                 jGeomZone;       /*!< \brief j-th geometrical zone.*/
+  unsigned short nTotTimeInstances,  /*!< \brief Total number of time instances.*/
+                 nTimeInstances,     /*!< \brief Number of time instances in a single geometrical zone.*/
+                 nGeomZones,         /*!< \brief Total number of physical zones.*/
+                 iTimeInstance,      /*!< \brief i-th time instance .*/
+                 jTimeInstance,      /*!< \brief j-th time instance.*/
+                 iGeomZone,          /*!< \brief i-th geometrical zone.*/
+                 jGeomZone;          /*!< \brief j-th geometrical zone.*/
 
 public:
 

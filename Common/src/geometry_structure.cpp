@@ -4845,13 +4845,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 
   /*--- Define zones for Harmonic Balance ---*/
 
+  unsigned long nTimeInstances;
   unsigned long nGeomZones;
   unsigned long iGeomZone;
   unsigned long iTimeInstance;
   if(harmonic_balance){
-    nGeomZones    = val_nZone/config->GetnTimeInstances();
-    nGeomZones    = val_nZone/config->GetnTimeInstances();
-    iGeomZone     = val_iZone/config->GetnTimeInstances();
+    nTimeInstances = config->GetnTimeInstances();
+    nGeomZones    = val_nZone/nTimeInstances;
+    nGeomZones    = val_nZone/nTimeInstances;
+    iGeomZone     = val_iZone/nTimeInstances;
     iTimeInstance = val_iZone;
   }
 

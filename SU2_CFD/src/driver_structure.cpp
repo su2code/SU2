@@ -2229,12 +2229,12 @@ void CDriver::Interface_Preprocessing() {
       /*--- Coupling between zones for HB. Just interfaces corresponding to the same
        * time instances and at different geometrical zones are considered ---*/
       if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE){
-        unsigned short nZonalTimeInstances  = config_container[ZONE_0]->GetnTimeInstances();
-        unsigned short nGeomZones      = nZone/nZonalTimeInstances;
-        unsigned short iDonorGeomZone  = donorZone/nZonalTimeInstances;
-        unsigned short iTargetGeomZone = targetZone/nZonalTimeInstances;
+        unsigned short nTimeInstances  = config_container[ZONE_0]->GetnTimeInstances();
+        unsigned short nGeomZones      = nZone/nTimeInstances;
+        unsigned short iDonorGeomZone  = donorZone/nTimeInstances;
+        unsigned short iTargetGeomZone = targetZone/nTimeInstances;
         if (iDonorGeomZone == iTargetGeomZone) continue;
-        else if(donorZone%nZonalTimeInstances !=  targetZone%nZonalTimeInstances) continue;
+        else if(donorZone%nTimeInstances !=  targetZone%nTimeInstances) continue;
       }
 
       nMarkerInt = (int) ( config_container[donorZone]->GetMarker_n_FSIinterface() / 2 );
@@ -3856,7 +3856,9 @@ CGeneralHBDriver::CGeneralHBDriver(char* confFile,
 
 
   iTimeInstance = 0; jTimeInstance = 0; iGeomZone = 0; jGeomZone = 0;
-  nTimeInstances = nZone; nGeomZones = nZone/nTimeInstances;
+  nTotTimeInstances = nZone;
+  nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
+  nGeomZones     = nZone/nTimeInstances;
 
 }
 
@@ -3870,19 +3872,19 @@ void CGeneralHBDriver::Run() {
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
 
-  for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
     iteration_container[iTimeInstance]->Preprocess(output, integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iTimeInstance);
 
-  for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
+  for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
     iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iTimeInstance);
 
     /*--- For each time instance update transfer data ---*/
-    for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++)
-      for (jTimeInstance = 0; jTimeInstance < nTimeInstances; jTimeInstance++)
+    for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++)
+      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++)
         if(jTimeInstance != iTimeInstance && transfer_container[iTimeInstance][jTimeInstance] != NULL){
 
           iGeomZone       = iTimeInstance/nTimeInstances;
