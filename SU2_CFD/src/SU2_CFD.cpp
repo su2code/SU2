@@ -110,6 +110,7 @@ int main(int argc, char *argv[]) {
 
     /*--- Use the MultiZone Harmonic Balance driver. ---*/
 
+//    driver = new CGeneralHBDriver(config_file_name, nTotTimeInstances, nDim);
     driver = new CGeneralHBDriver(config_file_name, nTotTimeInstances, nDim);
 
 
