@@ -456,7 +456,7 @@ public:
    * \author T. Economon, K. Naik
    * \param[in] iZone - Current zone number.
    */
-  void SetHarmonicBalance(unsigned short iZone);
+  void SetHarmonicBalance(unsigned short iTimeInstance);
 
   /*!
    * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
