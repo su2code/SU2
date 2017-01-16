@@ -1449,13 +1449,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
+
+  /* DESCRIPTION: Zonal distance for Hybrid RANS/LES */
+  addDoubleOption("ZONAL_DISTANCE", Zonal_Dist, 1.00);
     
+  /* DESCRIPTION: Zonal Hybrid RANS/LES*/
+  addBoolOption("ZONAL_DES", Zonal_DES, NO);
+
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
     
   /* DESCRIPTION:  Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
-    
+
+  /* DESCRIPTION: Activate SA Quadratic Constitutive Relation, 2000 version */
+  addBoolOption("SA_QCR", QCR, false);
   
   /* END_CONFIG_OPTIONS */
 

@@ -4095,9 +4095,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           su2double Delta_aux, Laminar_Viscosity_aux, Eddy_Viscosity_aux, StrainMag_aux, *Vorticity_aux, Omega_aux;
           su2double Baux, Gaux, TimeScale, Kaux, Lturb, Aaux, phi_hybrid_i, phi_hybrid_j,Omega_2, StrainMag_2, inv_TimeScale;
           su2double ch1 = 3.0, ch2 = 1.0, ch3 = 2.0, cnu = 0.09, phi_max = 1.0;
-          su2double Const_DES=0.65, uijuij, **Gradient_aux, Ducros_i, Ducros_aux, Ducros_j, phi1, phi2, ujxj;
+          su2double Const_DES=0.65, **Gradient_aux, Ducros_i, Ducros_j, phi1, phi2, ujxj;
           su2double *Coord_i, *Coord_j;
-          unsigned short jDim, nNeigh, iNeigh, NumNeigh;
+          unsigned short nNeigh, iNeigh, NumNeigh;
           
           Coord_i = geometry->node[iPoint]->GetCoord();
           Coord_j = geometry->node[jPoint]->GetCoord();
@@ -5987,7 +5987,10 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
             else dp = node[iPoint]->GetSolution_Min(iVar);
             
             limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-            limiter = max(limiter, f_Mach_i);
+            
+            /*--- Prevent the limiter to be greater than one ---*/
+            
+            limiter = min(max(limiter, f_Mach_i), 1.0);
             
             if (limiter < node[iPoint]->GetLimiter_Primitive(iVar)){
                 node[iPoint]->SetLimiter_Primitive(iVar, limiter);
@@ -6008,7 +6011,10 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
             else dp = node[jPoint]->GetSolution_Min(iVar);
             
             limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
-            limiter = max(limiter, f_Mach_j);
+            
+            /*--- Prevent the limiter to be greater than one ---*/
+            
+            limiter = min(max(limiter, f_Mach_j),1.0);
             
             if (limiter < node[jPoint]->GetLimiter_Primitive(iVar)){
                 node[jPoint]->SetLimiter_Primitive(iVar, limiter);
@@ -14044,6 +14050,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   su2double Prandtl_Lam     = config->GetPrandtl_Lam();
+  bool QCR                  = config->GetQCR();
   
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -14153,6 +14160,34 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
           }
+        }
+        
+        /*--- If necessary evaluate the QCR contribution to Tau ---*/
+        
+        if (QCR){
+            su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+            unsigned short kDim;
+            
+            /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+            
+            den_aux = 0.0;
+            for (iDim = 0 ; iDim < nDim; iDim++)
+                for (jDim = 0 ; jDim < nDim; jDim++)
+                    den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
+            den_aux = sqrt(max(den_aux,1E-10));
+            
+            /*--- Adding the QCR contribution ---*/
+            
+            for (iDim = 0 ; iDim < nDim; iDim++){
+                for (jDim = 0 ; jDim < nDim; jDim++){
+                    for (kDim = 0 ; kDim < nDim; kDim++){
+                        O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim])/ den_aux;
+                        O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim])/ den_aux;
+                        Tau[iDim][jDim] -= c_cr1 * (O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim]);
+                    }
+                }
+            }
+        
         }
         
         /*--- Project Tau in each surface element ---*/
