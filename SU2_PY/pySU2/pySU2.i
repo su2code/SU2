@@ -38,10 +38,10 @@
 %feature("autodoc","1");
 
 %module(docstring=
-"'WrapSU2' module",
+"'pysu2' module",
 directors="1",
 threads="1"
-) WrapSU2
+) pysu2
 %{
 
 #include "../../SU2_CFD/include/driver_structure.hpp"
