@@ -5007,8 +5007,9 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
   
 	/*--- Get projected flux tensor ---*/
-  
-	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+    bool QCR = config->GetQCR();
+
+	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,QCR);
 
 	/*--- Update viscous residual ---*/
   
@@ -5339,8 +5340,9 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
   }
   
 	/*--- Get projected flux tensor ---*/
-  
-	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+    bool QCR = config->GetQCR();
+    
+	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, QCR);
   
 	/*--- Save residual value ---*/
   
