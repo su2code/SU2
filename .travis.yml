@@ -13,7 +13,7 @@ notifications:
   
 branches:
     only:
-        - feature_turboSM
+        - feature_MZSM
 
 env:
     global:

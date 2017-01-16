@@ -1113,27 +1113,27 @@ private:
 public:
 
 
-	vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
+  vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
 
-	/*!
-	 * \brief Constructor of the class which reads the input file.
-	 */
-	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+  /*!
+   * \brief Constructor of the class which reads the input file.
+   */
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
 
-	/*!
-	 * \brief Constructor of the class which reads the input file.
-	 */
-	CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
-  
+  /*!
+   * \brief Constructor of the class which reads the input file.
+   */
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
+
   /*!
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CConfig(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CConfig(void);
 
   /*!
    * \brief Gets the number of zones in the mesh file.
@@ -1144,6 +1144,12 @@ public:
    */
   static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
 
+  /*!
+   * \brief Gets the number of time instances for harmonic balance.
+   * \param[in] config - Definition of the particular problem.
+   * \return Total number of time instances for HArmonic Balance.
+   */
+  static unsigned short GetnHBTimeZones(CConfig *config);
   /*!
    * \brief Gets the number of dimensions in the mesh file
    * \param[in] val_mesh_filename - Name of the file with the grid information.

@@ -164,6 +164,16 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
   return (unsigned short) nZone;
 }
 
+unsigned short CConfig::GetnHBTimeZones(CConfig *config) {
+
+  unsigned short nTimeZones = 1;
+
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+    nTimeZones =  config->GetnTimeInstances();
+
+  return (unsigned short) nTimeZones;
+}
+
 unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
 
   string text_line, Marker_Tag;

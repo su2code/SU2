@@ -3967,7 +3967,7 @@ void CGeneralHBDriver::Update() {
 //  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++) {
 
     for (unsigned short iTInstance = 0; iTInstance < nTotTimeInstances; iTInstance++) {
-      cout << "------" << iTInstance << endl;
+//      cout << "------" << iTInstance << endl;
       /*--- Update the harmonic balance terms across all zones ---*/
       SetHarmonicBalance(iTInstance);
 
