@@ -462,7 +462,7 @@ public:
    * \brief Computation of the Harmonic Balance operator matrix for harmonic balance.
    * \author A. Rubino, S. Nimmagadda
    */
-  void ComputeHB_Operator();
+  void ComputeHB_Operator(unsigned short nZone);
 
   /*!
    * \brief Update the solution for the Harmonic Balance.

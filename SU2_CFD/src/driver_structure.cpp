@@ -3555,6 +3555,10 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
   unsigned short iVar, jZone, iMGlevel;
   unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
+  unsigned short nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
+  unsigned short nTotTimeInstances = nZone;
+  unsigned short nGeomZones = nZone/nTimeInstances;
+
   unsigned long iPoint;
   bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
@@ -3579,7 +3583,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
   period /= config_container[ZONE_0]->GetTime_Ref();
 
   if (ExtIter == 0)
-    ComputeHB_Operator();
+    ComputeHB_Operator(nTimeInstances);
 
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
@@ -3593,7 +3597,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
       }
 
       /*--- Step across the columns ---*/
-      for (jZone = 0; jZone < nZone; jZone++) {
+      for (jZone = 0; jZone < nTimeInstances; jZone++) {
 
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -3648,7 +3652,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
      on the original grid only). ---*/
     for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nVar_Turb; iVar++) Source_Turb[iVar] = 0.0;
-      for (jZone = 0; jZone < nZone; jZone++) {
+      for (jZone = 0; jZone < nTimeInstances; jZone++) {
 
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++) {
@@ -3674,7 +3678,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 }
 
 
-void CHBDriver::ComputeHB_Operator(){
+void CHBDriver::ComputeHB_Operator(unsigned short nZone){
 
   const   complex<su2double> J(0.0,1.0);
   unsigned short i, j, k, iZone;
@@ -3887,7 +3891,6 @@ void CGeneralHBDriver::Run() {
   }
 
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
-//    config_container[iTimeInstance]->SetIntIter(1);
     iteration_container[iTimeInstance]->Iterate(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
@@ -3958,23 +3961,23 @@ MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 void CGeneralHBDriver::Update() {
 
-//  jTimeInstance = 0;
-//
-//  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++) {
-//
-//    for (iTimeInstance = jTimeInstance; iTimeInstance%nTimeInstances < nTimeInstances; jTimeInstance++) {
+  jTimeInstance = 0;
+
+  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++) {
+
+    for (iTimeInstance = jTimeInstance; iTimeInstance%nTimeInstances < nTimeInstances; jTimeInstance++) {
 //      cout << "------" << iTimeInstance << endl;
-//      /*--- Update the harmonic balance terms across all zones ---*/
-//      SetHarmonicBalance(iTimeInstance);
-//
-//      iteration_container[iTimeInstance]->Update(output, integration_container, geometry_container,
-//          solver_container, numerics_container, config_container,
-//          surface_movement, grid_movement, FFDBox, iTimeInstance);
-//
+      /*--- Update the harmonic balance terms across all zones ---*/
+      SetHarmonicBalance(iTimeInstance);
+
+      iteration_container[iTimeInstance]->Update(output, integration_container, geometry_container,
+          solver_container, numerics_container, config_container,
+          surface_movement, grid_movement, FFDBox, iTimeInstance);
+
 //      output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
-//
-//    }
-//  }
+
+    }
+  }
 
 }
 
