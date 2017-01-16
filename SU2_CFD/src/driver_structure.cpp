@@ -3598,7 +3598,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
       }
 
       /*--- Step across the columns ---*/
-      for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++) {
+      for (jTimeInstance = 0; jTimeInstance < nTimeInstances; jTimeInstance++) {
 
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
@@ -3963,23 +3963,22 @@ MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 void CGeneralHBDriver::Update() {
 
-  jTimeInstance = 0;
 
-  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++) {
+//  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++) {
 
-    for (iTimeInstance = jTimeInstance; iTimeInstance%nTimeInstances < nTimeInstances; jTimeInstance++) {
-//      cout << "------" << iTimeInstance << endl;
+    for (unsigned short iTInstance = 0; iTInstance < nTotTimeInstances; iTInstance++) {
+      cout << "------" << iTInstance << endl;
       /*--- Update the harmonic balance terms across all zones ---*/
-      SetHarmonicBalance(iTimeInstance);
+      SetHarmonicBalance(iTInstance);
 
-      iteration_container[iTimeInstance]->Update(output, integration_container, geometry_container,
+      iteration_container[iTInstance]->Update(output, integration_container, geometry_container,
           solver_container, numerics_container, config_container,
-          surface_movement, grid_movement, FFDBox, iTimeInstance);
+          surface_movement, grid_movement, FFDBox, iTInstance);
 
 //      output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
 
     }
-  }
+//  }
 
 }
 
