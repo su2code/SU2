@@ -3767,6 +3767,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel, Non_Physical = 1.0;
+  su2double z, velocity2_i, velocity2_j, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
   bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
@@ -4225,7 +4226,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Low-Mach number correction ---*/
 
       if (low_mach_corr) {
-        su2double z, velocity2_i = 0.0, velocity2_j = 0.0, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
+
+        velocity2_i = 0.0;
+        velocity2_j = 0.0;
 
         for (iDim = 0; iDim < nDim; iDim++) {
           velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
@@ -4238,16 +4241,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         velocity2_i = 0.0;
         velocity2_j = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
-        	vel_i_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        	vel_i_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
         			+ z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
-        	vel_j_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        	vel_j_corr[iDim] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
         			+ z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
 
-        	velocity2_j += vel_j_corr[iDim+1]*vel_j_corr[iDim+1];
-        	velocity2_i += vel_i_corr[iDim+1]*vel_i_corr[iDim+1];
+        	velocity2_j += vel_j_corr[iDim]*vel_j_corr[iDim];
+        	velocity2_i += vel_i_corr[iDim]*vel_i_corr[iDim];
 
-        	Primitive_i[iDim+1] = vel_i_corr[iDim+1];
-        	Primitive_j[iDim+1] = vel_j_corr[iDim+1];
+        	Primitive_i[iDim+1] = vel_i_corr[iDim];
+        	Primitive_j[iDim+1] = vel_j_corr[iDim];
         }
 
         FluidModel->SetEnergy_Prho(Primitive_i[nDim+1],Primitive_i[nDim+2]);
