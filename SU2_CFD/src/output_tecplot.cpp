@@ -272,9 +272,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
+    unsigned short nTimeInstances = config->GetnTimeInstances();
     su2double period = config->GetHarmonicBalance_Period();
     su2double deltaT = period/(su2double)(config->GetnTimeInstances());
-    Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone+1)<<", SOLUTIONTIME="<<deltaT*val_iZone<<", ";
+    Tecplot_File << "STRANDID="<<SU2_TYPE::Int(val_iZone%nTimeInstances+1)<<", SOLUTIONTIME="<<deltaT*(val_iZone%nTimeInstances)<<", ";
   }
   
   if (nDim == 2) {
