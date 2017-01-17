@@ -168,7 +168,7 @@ unsigned short CConfig::GetnHBTimeZones(CConfig *config) {
 
   unsigned short nTimeZones = 1;
 
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && config->GetKind_SU2() != SU2_DEF)
     nTimeZones =  config->GetnTimeInstances();
 
   return (unsigned short) nTimeZones;
