@@ -160,12 +160,10 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
-    long *Global2Local;
-    Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    /*--- First, set all indices to a negative value by default ---*/
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-      Global2Local[iPoint] = -1;
-    }
+    
+    map<unsigned long,unsigned long> Global2Local;
+    map<unsigned long,unsigned long>::const_iterator MI;
+    
     /*--- Now fill array with the transform values only for local points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
@@ -199,11 +197,13 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       istringstream point_line(text_line);
 
       /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      if (iPoint_Local >= 0) {
+       on the current processor, we will load and instantiate the vars. ---*/
+      
+      MI = Global2Local.find(iPoint_Global);
+      if (MI != Global2Local.end()) {
+        
+        iPoint_Local = Global2Local[iPoint_Global];
+        
         point_line >> index;
         for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
         for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
@@ -245,8 +245,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     /*--- Close the restart file ---*/
     restart_file.close();
 
-    /*--- Free memory needed for the transformation ---*/
-    delete [] Global2Local;
   }
 
   /*--- Store the direct solution ---*/
@@ -415,15 +413,24 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 #endif
 
   /*--- Here we can add new (scalar) objective functions ---*/
-  if (config->GetnObj()==1){
-    switch (config->GetKind_ObjFunc()){
-      case DRAG_COEFFICIENT:
-        ObjFunc_Value = direct_solver->GetTotal_CD();
-        if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-        if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
-        break;
+  if (config->GetnObj()==1) {
+    switch (config->GetKind_ObjFunc()) {
+    case DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CD();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
+      break;
     case LIFT_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CL();
+      break;
+    case AERO_DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_AeroCD();
+      break;
+    case RADIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
+      break;
+    case CIRCUMFERENTIAL_DISTORTION:
+      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
       break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
@@ -452,19 +459,6 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case MASS_FLOW_RATE:
       ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
       break;
-    case NET_THRUST_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_NetCThrust();
-      break;
-    case IDC_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_IDC();
-      break;
-    case PROPULSIVE_EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_Prop_Eff();
-      break;
-    case CUSTOM_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_Custom();
-      break;
-
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()
