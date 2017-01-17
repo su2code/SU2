@@ -59,6 +59,10 @@ inline void CPrimalGrid::SetDivide (bool val_divide) {	Divide = val_divide; }
 
 inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
+inline unsigned long CPrimalGrid::GetGlobalIndex(void) { return GlobalIndex; }
+
+inline void CPrimalGrid::SetGlobalIndex(unsigned long val_globalindex) { GlobalIndex = val_globalindex; }
+
 inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
 
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }

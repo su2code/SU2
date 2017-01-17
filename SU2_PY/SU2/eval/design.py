@@ -293,8 +293,8 @@ def obj_df(dvs,config,state=None):
 
         vals_out.append(grad)
     else:
+        marker_monitored = config['MARKER_MONITORING']
         for i_obj,this_obj in enumerate(objectives):
-            marker_monitored = config['MARKER_MONITORING']
             scale = def_objs[this_obj]['SCALE']
             sign  = su2io.get_objectiveSign(this_obj)
             # Correct marker monitoring for case where multiple objectives are evaluated separately

@@ -56,3 +56,4 @@ template<class A> struct Impl_getValue<codi::Expression<double, A> > {
     return value.getValue();
   }
 };
+

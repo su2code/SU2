@@ -501,26 +501,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
     }
     
-    if (config->GetKind_Regime() == FREESURFACE) {
-      
-      Paraview_File << "\nSCALARS Density float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
-      
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        if (surf_sol) {
-          if (LocalIndex[iPoint+1] != 0) {
-            /*--- Loop over the vars/residuals and write the values to file ---*/
-            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-          }
-        } else {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      }
-      VarCounter++;
-      
-    }
-    
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       
       Paraview_File << "\nSCALARS Pressure float 1\n";
@@ -958,6 +938,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   string filename, fieldname;
   
 	/*--- Write file name with extension ---*/
+  
   if (surf_sol) {
     if (adjoint)
       filename = config->GetSurfAdjCoeff_FileName();
@@ -970,14 +951,14 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     else
       filename = config->GetFlow_FileName();
   }
-  if (config->GetKind_SU2()==SU2_DEF) {
+  if (config->GetKind_SU2() == SU2_DEF) {
     if (new_file) {
       if (surf_sol) filename = "surface_grid";
       else filename = "volumetric_grid";
     }
     else {
-      if (surf_sol) filename = "surface_deformed_grid";
-      else filename = "volumetric_deformed_grid";
+      if (surf_sol) filename = "surface_grid_def";
+      else filename = "volumetric_grid_def";
     }
   }
   
@@ -1407,26 +1388,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
         VarCounter++;
         
       }
-    }
-    
-    if (config->GetKind_Regime() == FREESURFACE) {
-      
-      Paraview_File << "\nSCALARS Density float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
-      
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        if (surf_sol) {
-          if (LocalIndex[iPoint+1] != 0) {
-            /*--- Loop over the vars/residuals and write the values to file ---*/
-            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-          }
-        } else {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      }
-      VarCounter++;
-      
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {

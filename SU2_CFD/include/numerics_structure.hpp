@@ -150,8 +150,6 @@ public:
   *TurbVar_jd;	/*!< \brief Vector of derivative of turbulent variables at point j. */
   su2double *TransVar_i,	/*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;			/*!< \brief Vector of turbulent variables at point j. */
-  su2double *LevelSetVar_i,	/*!< \brief Vector of turbulent variables at point i. */
-  *LevelSetVar_j;			/*!< \brief Vector of turbulent variables at point j. */
   su2double *TurbPsi_i,	/*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;			/*!< \brief Vector of adjoint turbulent variables at point j. */
   su2double **ConsVar_Grad_i,	/*!< \brief Gradient of conservative variables at point i. */
@@ -173,8 +171,6 @@ public:
   **TurbVar_Grad_j;			/*!< \brief Gradient of turbulent variables at point j. */
   su2double **TransVar_Grad_i,	/*!< \brief Gradient of turbulent variables at point i. */
   **TransVar_Grad_j;			/*!< \brief Gradient of turbulent variables at point j. */
-  su2double **LevelSetVar_Grad_i,	/*!< \brief Gradient of level set variables at point i. */
-  **LevelSetVar_Grad_j;			/*!< \brief Gradient of level set variables at point j. */
   su2double **TurbPsi_Grad_i,	/*!< \brief Gradient of adjoint turbulent variables at point i. */
   **TurbPsi_Grad_j;			/*!< \brief Gradient of adjoint turbulent variables at point j. */
   su2double *AuxVar_Grad_i,		/*!< \brief Gradient of an auxiliary variable at point i. */
@@ -429,20 +425,6 @@ public:
   void SetTransVarGradient(su2double **val_transvar_grad_i, su2double **val_transvar_grad_j);
   
   /*!
-   * \brief Set the value of the level set variable.
-   * \param[in] val_levelsetvar_i - Value of the level set variable at point i.
-   * \param[in] val_levelsetvar_j - Value of the level set variable at point j.
-   */
-  void SetLevelSetVar(su2double *val_levelsetvar_i, su2double *val_levelsetvar_j);
-  
-  /*!
-   * \brief Set the gradient of the level set variables.
-   * \param[in] val_levelsetvar_grad_i - Gradient of the level set variable at point i.
-   * \param[in] val_levelsetvar_grad_j - Gradient of the level set variable at point j.
-   */
-  void SetLevelSetVarGradient(su2double **val_levelsetvar_grad_i, su2double **val_levelsetvar_grad_j);
-  
-  /*!
    * \brief Set the value of the adjoint turbulent variable.
    * \param[in] val_turbpsivar_i - Value of the adjoint turbulent variable at point i.
    * \param[in] val_turbpsivar_j - Value of the adjoint turbulent variable at point j.
@@ -598,7 +580,7 @@ public:
    * \param[in] val_densityinc_i - Value of the pressure at point i.
    * \param[in] val_densityinc_j - Value of the pressure at point j.
    */
-  void SetDensityInc(su2double val_densityinc_i, su2double val_densityinc_j);
+  void SetDensity(su2double val_densityinc_i, su2double val_densityinc_j);
   
   /*!
    * \brief Set the value of the beta for incompressible flows.
@@ -794,24 +776,6 @@ public:
                                   su2double *val_normal, su2double *val_Proj_Flux);
   
   /*!
-   * \brief Compute the projected inviscid flux vector for incompresible simulations
-   * \param[in] val_density - Pointer to the density.
-   * \param[in] val_velocity - Pointer to the velocity.
-   * \param[in] val_pressure - Pointer to the pressure.
-   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_Proj_Flux - Pointer to the projected flux.
-   */
-  void GetInviscidArtComp_FreeSurf_ProjFlux(su2double *val_density,
-                                            su2double *val_velocity,
-                                            su2double *val_pressure,
-                                            su2double *val_betainc2,
-                                            su2double *val_levelset,
-                                            su2double *val_normal,
-                                            su2double *val_Proj_Flux);
-  
-  
-  /*!
    * \brief Compute the projection of the viscous fluxes into a direction.
    * \param[in] val_primvar - Primitive variables.
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
@@ -885,24 +849,6 @@ public:
                                  su2double *val_betainc2, su2double *val_normal,
                                  su2double val_scale,
                                  su2double **val_Proj_Jac_tensor);
-  
-  /*!
-   * \brief Compute the projection of the inviscid Jacobian matrices (artificial compresibility).
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Pointer to the velocity.
-   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_scale - Scale of the projection.
-   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
-   */
-  void GetInviscidArtComp_FreeSurf_ProjJac(su2double *val_density,
-                                           su2double *val_ddensity,
-                                           su2double *val_velocity,
-                                           su2double *val_betainc2,
-                                           su2double *val_levelset,
-                                           su2double *val_normal,
-                                           su2double val_scale,
-                                           su2double **val_Proj_Jac_tensor);
   
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices for general fluid model.
@@ -1095,20 +1041,6 @@ public:
                          su2double **val_p_tensor);
   
   /*!
-   * \brief Computation of the matrix P (artificial compresibility), this matrix diagonalize the conservative Jacobians in
-   *        the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_betainv2 - Value of the compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_p_tensor - Pointer to the P matrix.
-   */
-  void GetPArtComp_FreeSurf_Matrix(su2double *val_density, su2double *val_ddensity,
-                                   su2double *val_velocity, su2double *val_betainv2,
-                                   su2double *val_levelset, su2double *val_normal,
-                                   su2double **val_p_tensor);
-  
-  /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
    * in the form $P^{-1}(A.Normal)P=Lambda$.
    * \param[in] val_density - Value of the density.
@@ -1147,23 +1079,6 @@ public:
   void GetPArtCompMatrix_inv(su2double *val_density, su2double *val_velocity,
                              su2double *val_betainv2, su2double *val_normal,
                              su2double **val_invp_tensor);
-  
-  /*!
-   * \brief Computation of the matrix P^{-1} (artificial compresibility), this matrix diagonalize the conservative Jacobians
-   *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_betainv2 - Value of the compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-   */
-  void GetPArtComp_FreeSurf_Matrix_inv(su2double *val_density,
-                                       su2double *val_ddensity,
-                                       su2double *val_velocity,
-                                       su2double *val_betainv2,
-                                       su2double *val_levelset,
-                                       su2double *val_normal,
-                                       su2double **val_invp_tensor);
   
   /*!
    * \brief Compute viscous residual and jacobian.
@@ -1818,53 +1733,6 @@ public:
 };
 
 /*!
- * \class CUpwArtComp_FreeSurf_Flow
- * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
- * \ingroup ConvDiscr
- * \author F. Palacios
- * \version 4.3.0 "Cardinal"
- */
-class CUpwArtComp_FreeSurf_Flow : public CNumerics {
-private:
-  bool implicit;
-  bool gravity;
-  su2double Froude;
-  su2double *Diff_U;
-  su2double *Velocity_i, *Velocity_j, *MeanVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double Proj_ModJac_Tensor_ij, Pressure_i, LevelSet_i, dDensityInc_i, dDensityInc_j,
-  Pressure_j, LevelSet_j, MeanDensityInc, dMeanDensityInc, MeanPressure, MeanLevelSet, MeanBetaInc2,
-  ProjVelocity, Distance_i, Distance_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwArtComp_FreeSurf_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwArtComp_FreeSurf_Flow(void);
-  
-  /*!
-   * \brief Compute the Roe's flux between two nodes i and j.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
  * \class CUpwRoe_AdjFlow
  * \brief Class for solving an approximate Riemann solver of Roe
  *        for the adjoint flow equations.
@@ -2155,48 +2023,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual (su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-};
-
-/*!
- * \class CUpwLin_AdjLevelSet
- * \brief Class for performing a linear upwind solver for the adjoint Level Set equations.
- * \ingroup ConvDiscr
- * \author F. Palacios
- * \version 4.3.0 "Cardinal"
- */
-class CUpwLin_AdjLevelSet : public CNumerics {
-private:
-  bool implicit;
-  su2double *Velocity_i;
-  su2double *Velocity_j;
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CUpwLin_AdjLevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwLin_AdjLevelSet(void);
-  
-  /*!
-   * \brief Compute the upwind flux between two nodes i and j.
-   * \param[out] val_residual_i - Pointer to the total residual at node i.
-   * \param[out] val_residual_j - Pointer to the total residual at node j.
-   * \param[out] val_Jacobian_ii - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_ij - Jacobian of the numerical method from node i to node j (implicit computation).
-   * \param[out] val_Jacobian_ji - Jacobian of the numerical method from node j to node i (implicit computation).
-   * \param[out] val_Jacobian_jj - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii,
-                       su2double **val_Jacobian_ij, su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
 /*!
@@ -4484,6 +4310,7 @@ private:
   su2double dr, dg, dfw;
   bool incompressible;
   bool rotating_frame;
+  bool transition;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;
   
@@ -4794,7 +4621,7 @@ public:
  */
 class CSourceGravity : public CNumerics {
   su2double Froude;
-  bool compressible, incompressible, freesurface;
+  bool compressible, incompressible;
   
 public:
   
@@ -4890,44 +4717,6 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
-/*!
- * \class CSourcePieceWise_AdjLevelSet
- * \brief Class for source term integration of the adjoint level set equation.
- * \ingroup SourceDiscr
- * \author F. Palacios
- * \version 4.3.0 "Cardinal"
- */
-class CSourcePieceWise_AdjLevelSet : public CNumerics {
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CSourcePieceWise_AdjLevelSet(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSourcePieceWise_AdjLevelSet(void);
-  
-  /*!
-   * \brief Source term integration of the adjoint poisson potential equation.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
-};
-
-/*!
- * \class CSourceConservative_AdjFlow
- * \brief Class for source term integration in adjoint problem using a conservative scheme.
- * \ingroup SourceDiscr
- * \author F. Palacios
- * \version 4.3.0 "Cardinal"
- */
 class CSourceConservative_AdjFlow : public CNumerics {
 private:
   su2double *Velocity, *Residual_i, *Residual_j, *Mean_Residual;

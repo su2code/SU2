@@ -38,6 +38,7 @@
 
 #ifdef CODI_REVERSE_TYPE
 void CSysSolve_b::Solve_b(AD::CheckpointHandler* data) {
+  
   /*--- Extract data from the checkpoint handler ---*/
 
   su2double::GradientData *LinSysRes_Indices;
@@ -180,7 +181,7 @@ void CSysSolve_b::Solve_g(AD::CheckpointHandler* data){
 
   /*--- Solve the system ---*/
 
-  switch(config->GetDeform_Linear_Solver()){
+  switch(config->GetKind_Deform_Linear_Solver()){
     case FGMRES:
       solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
       break;
