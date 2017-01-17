@@ -64,9 +64,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
     unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -97,36 +94,33 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Undivided_Laplacian = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  
-  if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-    if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
-    else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
-  }
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
+  else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
 
-    /*--- Allocate residual structures ---*/
+
+  /*--- Allocate residual structures ---*/
   
-    Res_TruncError = new su2double [nVar];
+  Res_TruncError = new su2double [nVar];
   
-    for (iVar = 0; iVar < nVar; iVar++) {
-        Res_TruncError[iVar] = 0.0;
-    }
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
   
-    /*--- Only for residual smoothing (multigrid) ---*/
+  /*--- Only for residual smoothing (multigrid) ---*/
   
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-        nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-    if ((nMGSmooth > 0) || low_fidelity || freesurface) {
-        Residual_Sum = new su2double [nVar];
-        Residual_Old = new su2double [nVar];
-    }
+  if ((nMGSmooth > 0) || low_fidelity) {
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
   
-    /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   
-    if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-        Undivided_Laplacian = new su2double [nVar];
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
+    Undivided_Laplacian = new su2double [nVar];
   }
   
   /*--- Always allocate the slope limiter,
@@ -136,11 +130,10 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
   
-  if(compressible) { 
-    Limiter_Secondary = new su2double [nSecondaryVarGrad];
-    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-      Limiter_Secondary[iVar] = 0.0;
-  }  
+  Limiter_Secondary = new su2double [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    Limiter_Secondary[iVar] = 0.0;
+
 
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -155,81 +148,53 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
     /*--- Solution and old solution initialization ---*/
   
-    if (compressible) {
-        Solution[0] = val_density;
-        Solution_Old[0] = val_density;
-        for (iDim = 0; iDim < nDim; iDim++) {
-            Solution[iDim+1] = val_density*val_velocity[iDim];
-            Solution_Old[iDim+1] = val_density*val_velocity[iDim];
-        }
-        Solution[nVar-1] = val_density*val_energy;
-        Solution_Old[nVar-1] = val_density*val_energy;
-    }
-    if (incompressible || freesurface) {
-        Solution[0] = config->GetPressure_FreeStreamND();
-        Solution_Old[0] = config->GetPressure_FreeStreamND();
-        for (iDim = 0; iDim < nDim; iDim++) {
-            Solution[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-            Solution_Old[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-        }
-    }
-  
+  Solution[0] = val_density;
+  Solution_Old[0] = val_density;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Solution[iDim+1] = val_density*val_velocity[iDim];
+    Solution_Old[iDim+1] = val_density*val_velocity[iDim];
+  }
+  Solution[nVar-1] = val_density*val_energy;
+  Solution_Old[nVar-1] = val_density*val_energy;
+
+
     /*--- Allocate and initialize solution for dual time strategy ---*/
   
-    if (dual_time) {
-    if (compressible) {
-            Solution_time_n[0] = val_density;
-            Solution_time_n1[0] = val_density;
-            for (iDim = 0; iDim < nDim; iDim++) {
-                Solution_time_n[iDim+1] = val_density*val_velocity[iDim];
-                Solution_time_n1[iDim+1] = val_density*val_velocity[iDim];
-            }
-            Solution_time_n[nVar-1] = val_density*val_energy;
-            Solution_time_n1[nVar-1] = val_density*val_energy;
-        }
-    if (incompressible || freesurface) {
-            Solution_time_n[0] = config->GetPressure_FreeStreamND();
-            Solution_time_n1[0] = config->GetPressure_FreeStreamND();
-            for (iDim = 0; iDim < nDim; iDim++) {
-                Solution_time_n[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-                Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-            }
-        }
+  if (dual_time) {
+    Solution_time_n[0] = val_density;
+    Solution_time_n1[0] = val_density;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution_time_n[iDim+1] = val_density*val_velocity[iDim];
+      Solution_time_n1[iDim+1] = val_density*val_velocity[iDim];
     }
+    Solution_time_n[nVar-1] = val_density*val_energy;
+    Solution_time_n1[nVar-1] = val_density*val_energy;
+  }
+
   
-    /*--- Allocate space for the harmonic balance source terms ---*/
+  /*--- Allocate space for the harmonic balance source terms ---*/
   
-    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-        HB_Source = new su2double[nVar];
-        for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
-    }
-    
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    HB_Source = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
+  }
+
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
   
-    if (windgust) {
+  if (windgust) {
     WindGust = new su2double [nDim];
     WindGustDer = new su2double [nDim+1];
   }
   
-    /*--- Allocate auxiliar vector for free surface source term ---*/
-  
-    if (freesurface) Grad_AuxVar = new su2double [nDim];
-  
-  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
+  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
   
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  if (compressible) { 
-    Secondary = new su2double [nSecondaryVar];
-    for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
-  }
+  Secondary = new su2double [nSecondaryVar];
+  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
 
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
-        FreeSurface Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
+  /*--- Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
         We need P, and rho for running the adjoint problem ---*/
   
   Gradient_Primitive = new su2double* [nPrimVarGrad];
@@ -239,22 +204,18 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  if (compressible) {  
-    Gradient_Secondary = new su2double* [nSecondaryVarGrad];
-    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-      Gradient_Secondary[iVar] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Gradient_Secondary[iVar][iDim] = 0.0;
-    }
+  Gradient_Secondary = new su2double* [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+    Gradient_Secondary[iVar] = new su2double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Secondary[iVar][iDim] = 0.0;
   }
+
 }
 
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
     unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -285,44 +246,41 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Undivided_Laplacian = NULL;
  
     /*--- Allocate and initialize the primitive variables and gradients ---*/
-  if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
-  if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
-    if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
-    else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
+  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
+  else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
+
+  
+  /*--- Allocate residual structures ---*/
+  Res_TruncError = new su2double [nVar];
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
   }
   
-    /*--- Allocate residual structures ---*/
-    Res_TruncError = new su2double [nVar];
+  /*--- Only for residual smoothing (multigrid) ---*/
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-    for (iVar = 0; iVar < nVar; iVar++) {
-        Res_TruncError[iVar] = 0.0;
-    }
+  if ((nMGSmooth > 0) || low_fidelity) {
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
   
-    /*--- Only for residual smoothing (multigrid) ---*/
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-        nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
-  
-    if ((nMGSmooth > 0) || low_fidelity || freesurface) {
-        Residual_Sum = new su2double [nVar];
-        Residual_Old = new su2double [nVar];
-    }
-  
-    /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-    if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-        Undivided_Laplacian = new su2double [nVar];
+  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
+    Undivided_Laplacian = new su2double [nVar];
   
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
   Limiter_Primitive = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
- 
-  if (compressible) { 
-    Limiter_Secondary = new su2double [nSecondaryVarGrad];
-    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-      Limiter_Secondary[iVar] = 0.0;
-  }
+
+  Limiter_Secondary = new su2double [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+    Limiter_Secondary[iVar] = 0.0;
+
 
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
@@ -335,52 +293,44 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     Solution_Min[iVar] = 0.0;
   }
   
-    /*--- Solution initialization ---*/
+  /*--- Solution initialization ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar] = val_solution[iVar];
+    Solution_Old[iVar] = val_solution[iVar];
+  }
+  
+  /*--- Allocate and initializate solution for dual time strategy ---*/
+  if (dual_time) {
+    Solution_time_n = new su2double [nVar];
+    Solution_time_n1 = new su2double [nVar];
+    
     for (iVar = 0; iVar < nVar; iVar++) {
-        Solution[iVar] = val_solution[iVar];
-        Solution_Old[iVar] = val_solution[iVar];
+      Solution_time_n[iVar] = val_solution[iVar];
+      Solution_time_n1[iVar] = val_solution[iVar];
     }
+  }
   
-    /*--- Allocate and initializate solution for dual time strategy ---*/
-    if (dual_time) {
-        Solution_time_n = new su2double [nVar];
-        Solution_time_n1 = new su2double [nVar];
-    
-        for (iVar = 0; iVar < nVar; iVar++) {
-            Solution_time_n[iVar] = val_solution[iVar];
-            Solution_time_n1[iVar] = val_solution[iVar];
-        }
-    }
-  
-    /*--- Allocate space for the harmonic balance source terms ---*/
-    if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-        HB_Source = new su2double[nVar];
-        for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
-    }
-    
+  /*--- Allocate space for the harmonic balance source terms ---*/
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    HB_Source = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) HB_Source[iVar] = 0.0;
+  }
+
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
-    if (windgust) {
+  if (windgust) {
     WindGust = new su2double [nDim];
     WindGustDer = new su2double [nDim+1];
   }
   
-    /*--- Allocate auxiliar vector for free surface source term ---*/
-    if (freesurface) Grad_AuxVar = new su2double [nDim];
-
-  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
+  /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  if (compressible) { 
-    Secondary = new su2double [nSecondaryVar];
-    for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
-  }
+  Secondary = new su2double [nSecondaryVar];
+  for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
 
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
+
+  /*--- Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
         We need P, and rho for running the adjoint problem ---*/
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -389,14 +339,13 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  if (compressible) {  
-    Gradient_Secondary = new su2double* [nSecondaryVarGrad];
-    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-      Gradient_Secondary[iVar] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Gradient_Secondary[iVar][iDim] = 0.0;
-    }
+  Gradient_Secondary = new su2double* [nSecondaryVarGrad];
+  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
+    Gradient_Secondary[iVar] = new su2double [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Secondary[iVar][iDim] = 0.0;
   }
+
   
 }
 
@@ -453,8 +402,8 @@ su2double CEulerVariable::GetProjVel(su2double *val_vector) {
     return ProjVel;
 }
 
-bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
-    unsigned short iVar;
+bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
+  unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
 
@@ -505,77 +454,13 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
   
 }
 
-void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+void CEulerVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
    SetdPdrho_e(FluidModel->GetdPdrho_e());
    SetdPde_rho(FluidModel->GetdPde_rho());
 
-}
-
-bool CEulerVariable::SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config) {
-  
-  su2double ArtComp_Factor = config->GetArtComp_Factor();
-  
-  /*--- Set the value of the density ---*/
-  
-  SetDensityInc(Density_Inf);
-  
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-    SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  return true;
-  
-}
-
-bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
-  
-  su2double Heaviside, lambda, DensityInc, LevelSet;
-
-  su2double ArtComp_Factor = config->GetArtComp_Factor();
-  su2double epsilon = config->GetFreeSurface_Thickness();
-  
-  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  LevelSet = Primitive[nDim+5];
-
-  /*--- Set the value of the Heaviside function ---*/
-
-  Heaviside = 0.0;
-  if (LevelSet < -epsilon) Heaviside = 1.0;
-  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-  if (LevelSet > epsilon) Heaviside = 0.0;
-
-  /*--- Set the value of the density ---*/
-
-  lambda = config->GetRatioDensity();
-  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-  SetDensityInc(DensityInc);
-  
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-    SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  return true;
-  
 }
 
 CNSVariable::CNSVariable(void) : CEulerVariable() { }
@@ -658,7 +543,7 @@ bool CNSVariable::SetStrainMag(bool val_limiter) {
   
 }
 
-bool CNSVariable::SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
   
     unsigned short iVar;
   su2double density, staticEnergy;
@@ -731,7 +616,7 @@ bool CNSVariable::SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke
   
 }
 
-void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
     /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
@@ -751,81 +636,3 @@ void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
 }
 
-bool CNSVariable::SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) {
-  
-    su2double ArtComp_Factor = config->GetArtComp_Factor();
-  
-  /*--- Set the value of the density and viscosity ---*/
-  
-  SetDensityInc(Density_Inf);
-  SetLaminarViscosityInc(Viscosity_Inf);
-  
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-    SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  /*--- Set eddy viscosity ---*/
-  
-  SetEddyViscosityInc(eddy_visc);
-  
-  return true;
-  
-}
-
-bool CNSVariable::SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config) {
-
-  su2double Heaviside, lambda, DensityInc, ViscosityInc, LevelSet;
-  
-    su2double ArtComp_Factor = config->GetArtComp_Factor();
-  su2double epsilon = config->GetFreeSurface_Thickness();
-
-  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  LevelSet = Primitive[nDim+5];
-  
-  /*--- Set the value of the Heaviside function ---*/
-
-  Heaviside = 0.0;
-  if (LevelSet < -epsilon) Heaviside = 1.0;
-  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-  if (LevelSet > epsilon) Heaviside = 0.0;
-  
-  /*--- Set the value of the density ---*/
-
-  lambda = config->GetRatioDensity();
-  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-  SetDensityInc(DensityInc);
-  
-  /*--- Set the value of the laminar viscosity ---*/
-
-  lambda = config->GetRatioViscosity();
-  ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-  SetLaminarViscosityInc(ViscosityInc);
-
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-    SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  /*--- Set eddy viscosity ---*/
-  
-  SetEddyViscosityInc(eddy_visc);
-
-  return true;
-  
-}

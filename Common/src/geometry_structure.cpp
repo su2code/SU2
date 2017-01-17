@@ -905,8 +905,10 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
         geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
 
     }
+
     if (config->GetKind_Solver() == DISC_ADJ_RANS)
       geometry_container[MESH_0]->ComputeWall_Distance(config);
+
 }
 
 void CGeometry::ComputeSurf_Curvature(CConfig *config) {
@@ -1362,6 +1364,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -2908,6 +2911,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iElemPris = 0;
   unsigned long iElemPyra = 0;
   
+  unsigned long iElemRecv = 0;
+  
   /*--- Reset presence before storing elems now that we know nElem ---*/
   
   Triangle_presence.clear();
@@ -2983,6 +2988,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
        reusing the presence arrays to make sure that we find the exact same
        set of elements that were counted above to get nElem. ---*/
       
+      iElemRecv = 0;
+      
       for (iElemTriangle = 0; iElemTriangle < nElemTriangle_r[iDomain]; iElemTriangle++) {
         map<unsigned long, bool>::const_iterator MI = Triangle_presence.find(Buffer_Receive_Triangle_presence[iDomain][iElemTriangle]);
         if (MI == Triangle_presence.end()) {
@@ -2990,8 +2997,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           elem[iElem] = new CTriangle(Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+0]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+1]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle[iElemTriangle*3+2]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemTria++;
         }
+        iElemRecv++;
       }
       
       for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
@@ -3002,8 +3011,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+1]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+2]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral[iElemQuadrilateral*4+3]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemRect++;
         }
+        iElemRecv++;
       }
       
       for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron_r[iDomain]; iElemTetrahedron++) {
@@ -3014,8 +3025,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+1]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+2]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron[iElemTetrahedron*4+3]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemTetr++;
         }
+        iElemRecv++;
       }
       
       for (iElemHexahedron = 0; iElemHexahedron < nElemHexahedron_r[iDomain]; iElemHexahedron++) {
@@ -3030,8 +3043,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+5]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+6]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron[iElemHexahedron*8+7]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemHexa++;
         }
+        iElemRecv++;
       }
       
       for (iElemPrism = 0; iElemPrism < nElemPrism_r[iDomain]; iElemPrism++) {
@@ -3044,8 +3059,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+3]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+4]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism[iElemPrism*6+5]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemPris++;
         }
+        iElemRecv++;
       }
       
       for (iElemPyramid = 0; iElemPyramid < nElemPyramid_r[iDomain]; iElemPyramid++) {
@@ -3057,8 +3074,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+2]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+3]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid[iElemPyramid*5+4]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem[iElemRecv]);
           iElem++; iElemPyra++;
         }
+        iElemRecv++;
       }
       
       /*--- Free memory for the element data --*/
@@ -3084,6 +3103,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Store the element data from our local rank ---*/
       
+      iElemRecv = 0;
+      
       for (iElemTriangle = 0; iElemTriangle < nElemTriangle_r[iDomain]; iElemTriangle++) {
         map<unsigned long, bool>::const_iterator MI = Triangle_presence.find(Buffer_Receive_Triangle_presence_loc[iElemTriangle]);
         if (MI == Triangle_presence.end()) {
@@ -3091,8 +3112,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           elem[iElem] = new CTriangle(Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+0]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+1]],
                                       Global_to_local_Point_recv[Buffer_Receive_Triangle_loc[iElemTriangle*3+2]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemTria++;
         }
+        iElemRecv++;
       }
       
       for (iElemQuadrilateral = 0; iElemQuadrilateral < nElemQuadrilateral_r[iDomain]; iElemQuadrilateral++) {
@@ -3103,8 +3126,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+1]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+2]],
                                            Global_to_local_Point_recv[Buffer_Receive_Quadrilateral_loc[iElemQuadrilateral*4+3]], 2);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemRect++;
         }
+        iElemRecv++;
       }
       
       for (iElemTetrahedron = 0; iElemTetrahedron < nElemTetrahedron_r[iDomain]; iElemTetrahedron++) {
@@ -3115,8 +3140,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+1]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+2]],
                                          Global_to_local_Point_recv[Buffer_Receive_Tetrahedron_loc[iElemTetrahedron*4+3]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemTetr++;
         }
+        iElemRecv++;
       }
       
       for (iElemHexahedron = 0; iElemHexahedron < nElemHexahedron_r[iDomain]; iElemHexahedron++) {
@@ -3131,8 +3158,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+5]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+6]],
                                         Global_to_local_Point_recv[Buffer_Receive_Hexahedron_loc[iElemHexahedron*8+7]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemHexa++;
         }
+        iElemRecv++;
       }
       
       for (iElemPrism = 0; iElemPrism < nElemPrism_r[iDomain]; iElemPrism++) {
@@ -3145,8 +3174,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+3]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+4]],
                                    Global_to_local_Point_recv[Buffer_Receive_Prism_loc[iElemPrism*6+5]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemPris++;
         }
+        iElemRecv++;
       }
       
       for (iElemPyramid = 0; iElemPyramid < nElemPyramid_r[iDomain]; iElemPyramid++) {
@@ -3158,8 +3189,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+2]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+3]],
                                      Global_to_local_Point_recv[Buffer_Receive_Pyramid_loc[iElemPyramid*5+4]]);
+          elem[iElem]->SetGlobalIndex(Buffer_Receive_GlobElem_loc[iElemRecv]);
           iElem++; iElemPyra++;
         }
+        iElemRecv++;
       }
       
       /*--- Free memory for element data ---*/
@@ -3244,6 +3277,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nElem << " interior elements including halo cells. " << endl;
   
+  /*--- Set the value of Global_nElemDomain (stored in the geometry container that is passed in) ---*/
+
+  Global_nElemDomain = geometry->GetGlobal_nElemDomain();
+
   /*--- Store total number of each element type after incrementing the
    counters in the recv loop above (to make sure there aren't repeats). ---*/
   
@@ -4859,6 +4896,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -5160,28 +5198,28 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             case TRIANGLE:
               elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
               InElem = false;
-              for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                 if (ActDisk_Bool[vnodes_triangle[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TRIANGLE; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
                   VolumePoint.push_back(vnodes_triangle[i]); } }
               break;
             case QUADRILATERAL:
               elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                 if (ActDisk_Bool[vnodes_quad[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
                   VolumePoint.push_back(vnodes_quad[i]); } }
               break;
             case TETRAHEDRON:
               elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
               InElem = false;
-              for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_tetra[i]]) { InElem = true; break; }              }
               if (InElem) {
-                for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_TETRAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_tetra[i]); } }
               break;
             case HEXAHEDRON:
@@ -5189,30 +5227,30 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
               elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
               InElem = false;
-              for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                 if (ActDisk_Bool[vnodes_hexa[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_HEXAHEDRON; i++) {
                   VolumePoint.push_back(vnodes_hexa[i]); } }
               break;
             case PRISM:
               elem_line >> vnodes_prism[0]; elem_line >> vnodes_prism[1]; elem_line >> vnodes_prism[2];
               elem_line >> vnodes_prism[3]; elem_line >> vnodes_prism[4]; elem_line >> vnodes_prism[5];
               InElem = false;
-              for (i = 0; i < N_POINTS_PRISM; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                 if (ActDisk_Bool[vnodes_prism[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PRISM; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PRISM; i++) {
                   VolumePoint.push_back(vnodes_prism[i]); } }
               break;
             case PYRAMID:
               elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
               elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
               InElem = false;
-              for (i = 0; i < N_POINTS_PYRAMID; i++) {
+              for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                 if (ActDisk_Bool[vnodes_pyramid[i]]) { InElem = true; break; } }
               if (InElem) {
-                for (i = 0; i < N_POINTS_PYRAMID; i++) {
+                for (i = 0; i < (unsigned long)N_POINTS_PYRAMID; i++) {
                   VolumePoint.push_back(vnodes_pyramid[i]); } }
               break;
           }
@@ -5325,7 +5363,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
   }
   
-  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
+  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0; Global_nElemDomain = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
   nelem_triangle = 0; Global_nelem_triangle = 0;
   nelem_quad     = 0; Global_nelem_quad     = 0;
@@ -5353,6 +5391,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -5500,6 +5539,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -5701,7 +5741,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_TRIANGLE; i++) {
+            for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
               
               local_index = vnodes_triangle[i]-starting_node[rank];
               
@@ -5716,7 +5756,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                for (int j=0; j<N_POINTS_TRIANGLE; j++) {
+                for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
                 }
 #endif
@@ -5767,7 +5807,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+            for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
               
               local_index = vnodes_quad[i]-starting_node[rank];
               
@@ -5832,7 +5872,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+            for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
               
               local_index = vnodes_tetra[i]-starting_node[rank];
               
@@ -5847,7 +5887,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                for (int j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
 #endif
@@ -5898,7 +5938,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+            for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
               
               local_index = vnodes_hexa[i]-starting_node[rank];
               
@@ -5967,7 +6007,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_PRISM; i++) {
+            for (unsigned short i = 0; i < N_POINTS_PRISM; i++) {
               
               local_index = vnodes_prism[i]-starting_node[rank];
               
@@ -6035,7 +6075,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              any of the nodes making up this element have a global index value
              that falls within the range of our linear partitioning. ---*/
             
-            for (int i = 0; i < N_POINTS_PYRAMID; i++) {
+            for (unsigned short i = 0; i < N_POINTS_PYRAMID; i++) {
               
               local_index = vnodes_pyramid[i]-starting_node[rank];
               
@@ -6078,6 +6118,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   mesh_file.close();
   
+  /*--- Store the number of elements on the whole domain, excluding halos. ---*/
+
+  Global_nElemDomain = element_count;
+
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   
@@ -6592,6 +6636,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -6751,6 +6796,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -6930,6 +6976,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -6965,6 +7012,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -6998,6 +7046,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
       exit(EXIT_FAILURE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
       MPI_Finalize();
 #endif
@@ -7075,6 +7124,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
+        MPI_Barrier(MPI_COMM_WORLD);
         MPI_Abort(MPI_COMM_WORLD,1);
         MPI_Finalize();
 #endif
@@ -7167,6 +7217,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
           exit(EXIT_FAILURE);
 #else
+          MPI_Barrier(MPI_COMM_WORLD);
           MPI_Abort(MPI_COMM_WORLD,1);
           MPI_Finalize();
 #endif
@@ -7385,6 +7436,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -7546,6 +7598,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
 #else
+                MPI_Barrier(MPI_COMM_WORLD);
                 MPI_Abort(MPI_COMM_WORLD,1);
                 MPI_Finalize();
 #endif
@@ -7974,7 +8027,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case TRIANGLE:
               
-              for ( int j = 0; j < N_POINTS_TRIANGLE; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_TRIANGLE; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TRIANGLE+1][i];
@@ -7994,7 +8047,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case QUADRILATERAL:
               
-              for ( int j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_QUADRILATERAL+1][i];
@@ -8017,7 +8070,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case TETRAHEDRON:
               
-              for ( int j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TETRAHEDRON+1][i];
@@ -8037,7 +8090,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case HEXAHEDRON:
               
-              for ( int j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_HEXAHEDRON+1][i];
@@ -8066,7 +8119,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case PRISM:
               
-              for ( int j = 0; j < N_POINTS_PRISM; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_PRISM; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PRISM+1][i];
@@ -8095,7 +8148,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               
             case PYRAMID:
               
-              for ( int j = 0; j < N_POINTS_PYRAMID; j++ ) {
+              for ( unsigned short j = 0; j < N_POINTS_PYRAMID; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PYRAMID+1][i];
@@ -8130,6 +8183,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
               exit(EXIT_FAILURE);
 #else
+              MPI_Barrier(MPI_COMM_WORLD);
               MPI_Abort(MPI_COMM_WORLD,1);
               MPI_Finalize();
 #endif
@@ -8317,6 +8371,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -8355,6 +8410,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
 #ifndef HAVE_MPI
                     exit(EXIT_FAILURE);
 #else
+                    MPI_Barrier(MPI_COMM_WORLD);
                     MPI_Abort(MPI_COMM_WORLD,1);
                     MPI_Finalize();
 #endif
@@ -8935,28 +8991,28 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
-  
+
   unsigned long nVertex_SolidWall = 0;
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       nVertex_SolidWall += GetnVertex(iMarker);
     }
   }
-  
+
   /*--- Allocate the vectors to hold boundary node coordinates
-        and its local ID. ---*/
+   and its local ID. ---*/
 
   vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
   vector<unsigned long> PointIDs(nVertex_SolidWall);
 
   /*--- Retrieve and store the coordinates of the no-slip boundary nodes
-        and their local point IDs. ---*/
+   and their local point IDs. ---*/
 
   unsigned long ii = 0, jj = 0;
   for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       for(unsigned long iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
         unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -8969,100 +9025,120 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   /*--- Build the ADT of the boundary nodes. ---*/
 
   su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
-  
+
   /*--- Loop over all interior mesh nodes and compute the distances to each
-        of the no-slip boundary nodes. Store the minimum distance to the wall
-        for each interior mesh node. ---*/
+   of the no-slip boundary nodes. Store the minimum distance to the wall
+   for each interior mesh node. ---*/
 
   if( WallADT.IsEmpty() ) {
-
+  
     /*--- No solid wall boundary nodes in the entire mesh.
-          Set the wall distance to zero for all nodes. ---*/
-
+     Set the wall distance to zero for all nodes. ---*/
+    
     for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
       node[iPoint]->SetWall_Distance(0.0);
   }
   else {
 
     /*--- Solid wall boundary nodes are present. Compute the wall
-          distance for all nodes. ---*/
-
+     distance for all nodes. ---*/
+    
     for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
-
+      
       su2double dist;
       unsigned long pointID;
       int rankID;
-
+      
       WallADT.DetermineNearestNode(node[iPoint]->GetCoord(), dist,
                                    pointID, rankID);
       node[iPoint]->SetWall_Distance(dist);
     }
   }
+  
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, PositiveZArea;
+  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea;
+  su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
+
+  bool axisymmetric = config->GetAxisymmetric();
+
   int rank = MASTER_NODE;
-  
-#ifndef HAVE_MPI
-  
-  PositiveZArea = 0.0;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          Normal = vertex[iMarker][iVertex]->GetNormal();
-          if (Normal[nDim-1] < 0) PositiveZArea -= Normal[nDim-1];
-        }
-      }
-  }
-  
-#else
-  
-  su2double TotalPositiveZArea;
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  PositiveZArea = 0.0;
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Boundary = config->GetMarker_All_KindBC(iMarker);
-    Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    
-    if (((Boundary == EULER_WALL)              ||
-         (Boundary == HEAT_FLUX)               ||
-         (Boundary == ISOTHERMAL)              ||
-         (Boundary == LOAD_BOUNDARY)           ||
-         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          Normal = vertex[iMarker][iVertex]->GetNormal();
-          if (Normal[nDim-1] < 0) PositiveZArea -= Normal[nDim-1];
-        }
-      }
-  }
-  SU2_MPI::Reduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  if (rank == MASTER_NODE) PositiveZArea = TotalPositiveZArea;
-  SU2_MPI::Bcast(&PositiveZArea, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  
 #endif
   
-  if (config->GetRefAreaCoeff() == 0.0)
-    config->SetRefAreaCoeff(PositiveZArea);
+  PositiveXArea = 0.0;
+  PositiveYArea = 0.0;
+  PositiveZArea = 0.0;
+  WettedArea = 0.0;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Boundary = config->GetMarker_All_KindBC(iMarker);
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
+    if (((Boundary == EULER_WALL)              ||
+         (Boundary == HEAT_FLUX)               ||
+         (Boundary == ISOTHERMAL)              ||
+         (Boundary == LOAD_BOUNDARY)           ||
+         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
+
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        iPoint = vertex[iMarker][iVertex]->GetNode();
+
+        if (node[iPoint]->GetDomain()) {
+          Normal = vertex[iMarker][iVertex]->GetNormal();
+
+          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*node[iPoint]->GetCoord(1);
+          else AxiFactor = 1.0;
+
+          if (nDim == 2) WettedArea += AxiFactor * sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1]);
+          if (nDim == 3) WettedArea += sqrt (Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
+
+          if (Normal[0] < 0) PositiveXArea -= Normal[0];
+          if (Normal[1] < 0) PositiveYArea -= Normal[1];
+          if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+
+        }
+      }
+  }
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+  TotalPositiveXArea = PositiveXArea;
+  TotalPositiveYArea = PositiveYArea;
+  TotalPositiveZArea = PositiveZArea;
+  TotalWettedArea    = WettedArea;
+#endif
+    
+  if (config->GetRefAreaCoeff() == 0.0) {
+  	if (nDim == 3) config->SetRefAreaCoeff(TotalPositiveZArea);
+  	else config->SetRefAreaCoeff(TotalPositiveYArea);
+  }
   
   if (rank == MASTER_NODE) {
-    if (nDim == 2) cout << "Area projection in the y-plane = "<< PositiveZArea << "." << endl;
-    else cout << "Area projection in the z-plane = "<< PositiveZArea << "." << endl;
+
+  	cout << "Wetted area = "<< TotalWettedArea;
+    if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+
+    cout << "Area projection in the x-plane = "<< TotalPositiveXArea;
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,"; }
+
+    cout << " y-plane = "<< TotalPositiveYArea;
+    if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
+    else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
+
+    if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
+    if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+
   }
   
 }
@@ -12725,7 +12801,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   su2double delta_T, total_T;
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     nExtIter = config->GetUnst_AdjointIter();
-    delta_T  = config->GetDelta_UnstTimeND();
+    delta_T  = config->GetDelta_UnstTime();
     total_T  = (su2double)nExtIter*delta_T;
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     
@@ -12824,7 +12900,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   string filename = config->GetSolution_AdjFileName();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
@@ -12850,7 +12925,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   if (wrt_residuals) { skipMult = 2; }
   if (incompressible) { skipVar += skipMult*(nDim+1); }
-  if (freesurface)    { skipVar += skipMult*(nDim+2); }
   if (compressible)   { skipVar += skipMult*(nDim+2); }
   if (sst)            { skipVar += skipMult*2;}
   if (sa)             { skipVar += skipMult*1;}
@@ -12862,11 +12936,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
-  long *Global2Local = new long[Global_nPointDomain];
   
-  /*--- First, set all indices to a negative value by default ---*/
-  for(iPoint = 0; iPoint < Global_nPointDomain; iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   for(iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -12911,12 +12983,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   	istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-             on a different processor, the value of iPoint_Local will be -1.
-             Otherwise, the local index for this node on the current processor
-             will be returned and used to instantiate the vars. ---*/
-    iPoint_Local = Global2Local[iPoint_Global];
-
-    if (iPoint_Local >= 0) {
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
+      
       point_line >> index;
       for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -12939,8 +13012,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   restart_file.close();
 
-
-  delete [] Global2Local;
 }
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
