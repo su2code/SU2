@@ -3845,6 +3845,12 @@ void CGeneralHBDriver::Run() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iTimeInstance);
 
+  for (iTimeInstance = 0; iTimeInstance < nZone; iTimeInstance++) {
+    for (jTimeInstance = 0; jTimeInstance < nZone; jTimeInstance++)
+      if(jTimeInstance != iTimeInstance && interpolator_container[iTimeInstance][jTimeInstance] != NULL)
+        interpolator_container[iTimeInstance][jTimeInstance]->Set_TransferCoeff(config_container);
+  }
+
   /*--- For each time instance update transfer data ---*/
   for (iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++){
     for (jTimeInstance = 0; jTimeInstance < nTotTimeInstances; jTimeInstance++){
@@ -3887,7 +3893,7 @@ MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
         config_container[donorZone], config_container[targetZone]);
         /*--- Set the volume deformation for the fluid zone ---*/
-        //grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//        grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
       }
     break;
 
@@ -3926,21 +3932,17 @@ MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 void CGeneralHBDriver::Update() {
 
 
-//  for (iGeomZone = 0; iGeomZone < nGeomZones; iGeomZone++) {
+  for (unsigned short iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {
+    /*--- Update the harmonic balance terms across all zones ---*/
+    SetHarmonicBalance(iTimeInstance);
 
-    for (unsigned short iTInstance = 0; iTInstance < nTotTimeInstances; iTInstance++) {
-//      cout << "------" << iTInstance << endl;
-      /*--- Update the harmonic balance terms across all zones ---*/
-      SetHarmonicBalance(iTInstance);
+    iteration_container[iTimeInstance]->Update(output, integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iTimeInstance);
 
-      iteration_container[iTInstance]->Update(output, integration_container, geometry_container,
-          solver_container, numerics_container, config_container,
-          surface_movement, grid_movement, FFDBox, iTInstance);
+    //      output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
 
-//      output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
-
-    }
-//  }
+  }
 
 }
 
