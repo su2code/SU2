@@ -158,8 +158,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool low_mach_corr = config->Low_Mach_Correction(); 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   
@@ -378,7 +379,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
   
-  if (roe_turkel) {
+  if (roe_turkel || low_mach_corr) {
     LowMach_Precontioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       LowMach_Precontioner[iVar] = new su2double[nVar];
@@ -5391,6 +5392,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
+  bool low_mach_corr = config->Low_Mach_Correction();
   
   /*--- Set maximum residual to zero ---*/
   
@@ -5416,7 +5418,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      if (roe_turkel) {
+      if (roe_turkel || low_mach_corr) {
         SetPreconditioner(config, iPoint);
         for (iVar = 0; iVar < nVar; iVar ++ )
           for (jVar = 0; jVar < nVar; jVar ++ )
@@ -6352,7 +6354,7 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   su2double *U_i = NULL;
   su2double Beta_min = config->GetminTurkelBeta();
   su2double Beta_max = config->GetmaxTurkelBeta();
-  
+  su2double Mach_infty2, Mach_lim2, aux, parameter;
   
   /*--- Variables to calculate the preconditioner parameter Beta ---*/
   local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
@@ -12783,8 +12785,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool low_mach_corr = config->Low_Mach_Correction();
+  
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   
@@ -12907,7 +12911,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
   
-  if (roe_turkel) {
+  if (roe_turkel || low_mach_corr) {
     LowMach_Precontioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       LowMach_Precontioner[iVar] = new su2double[nVar];
