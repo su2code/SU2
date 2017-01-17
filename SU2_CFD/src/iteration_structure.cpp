@@ -56,10 +56,15 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
 
   /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
+  unsigned short nTimeInstances = 1;
   if (harmonic_balance) {
-    ExtIter = val_iZone;
-    Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
+    nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
+    ExtIter = val_iZone%nTimeInstances;
+    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(val_iZone/nTimeInstances);
   }
+  /*--- Define the geometrical zone.
+   * This may differ in the case of harmonic balance calculation ---*/
+  unsigned short iGeomZone = val_iZone/nTimeInstances;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -145,13 +150,13 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
        velocities for the fine mesh. ---*/
 
       grid_movement[val_iZone]->Rigid_Translation(geometry_container[val_iZone][MESH_0],
-                                       config_container[val_iZone], val_iZone, ExtIter);
+                                       config_container[iGeomZone], iGeomZone, ExtIter);
       grid_movement[val_iZone]->Rigid_Plunging(geometry_container[val_iZone][MESH_0],
-                                    config_container[val_iZone], val_iZone, ExtIter);
+                                    config_container[iGeomZone], iGeomZone, ExtIter);
       grid_movement[val_iZone]->Rigid_Pitching(geometry_container[val_iZone][MESH_0],
-                                    config_container[val_iZone], val_iZone, ExtIter);
+                                    config_container[iGeomZone], iGeomZone, ExtIter);
       grid_movement[val_iZone]->Rigid_Rotation(geometry_container[val_iZone][MESH_0],
-                                    config_container[val_iZone], val_iZone, ExtIter);
+                                    config_container[iGeomZone], iGeomZone, ExtIter);
 
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/

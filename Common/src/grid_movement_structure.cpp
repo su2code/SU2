@@ -2506,11 +2506,6 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
   
-  /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
-  if (harmonic_balance) {
-	  iZone = ZONE_0;
-  }
-
   /*--- Get motion center and translation rates from config ---*/
   Center[0] = config->GetMotion_Origin_X(iZone);
   Center[1] = config->GetMotion_Origin_Y(iZone);

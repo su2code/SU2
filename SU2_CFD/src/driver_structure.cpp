@@ -298,6 +298,7 @@ CDriver::CDriver(char* confFile,
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
       if (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE)
+        unsigned short nTimeInstances = config_container[ZONE_0]->GetnTimeInstances();
         iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
     }
 
