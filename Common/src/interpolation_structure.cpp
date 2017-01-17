@@ -258,15 +258,15 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
 #endif
 }
 
-int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface){
+int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface) {
     
   unsigned short nMarker = config->GetnMarker_All();
   unsigned short iMarker;
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
     /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
-    if (config->GetMarker_All_FSIinterface(iMarker) == val_marker_interface ){
+    if (config->GetMarker_All_FSIinterface(iMarker) == val_marker_interface ) {
 
       /*--- We have identified the identifier for the interface marker ---*/
       return iMarker;
@@ -350,7 +350,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -362,7 +362,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
     
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -473,23 +473,23 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
         su2double dist_t;
 
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-        	for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
-        		Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
+          for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
+            Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
-        		/*--- Compute the dist ---*/
-        		dist  = 0.0;
-        		dist_t = 0.0;
-        		for (iDim = 0; iDim < nDim; iDim++) {
-        			Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-        			if ( iDim == pDir && Coord_i[iDim] > CoordGlobal_j_max   ){
-        				dist += pow(Coord_j[iDim] - (Coord_i[iDim] - 0.105),2.0);
-        			}
-        			else if ( iDim == pDir && Coord_i[iDim] <=  CoordGlobal_j_min  ){
-        				dist += pow(Coord_j[iDim] - (Coord_i[iDim] + 0.105),2.0);
-        			}
-        			else
-        				dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
-        		}
+            /*--- Compute the dist ---*/
+            dist  = 0.0;
+            dist_t = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
+              if ( iDim == pDir && Coord_i[iDim] > CoordGlobal_j_max   ){
+                dist += pow(Coord_j[iDim] - (Coord_i[iDim] - 0.105),2.0);
+              }
+              else if ( iDim == pDir && Coord_i[iDim] <=  CoordGlobal_j_min  ){
+                dist += pow(Coord_j[iDim] - (Coord_i[iDim] + 0.105),2.0);
+              }
+              else
+                dist += pow(Coord_j[iDim] - (Coord_i[iDim]),2.0);
+            }
 
 //--------END SECTION FOR TRANSLATION
 
@@ -629,414 +629,414 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 }
 
 
-
 CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone) {
 
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
 
   /*--- For fluid-structure interaction data interpolated with have nDim dimensions ---*/
- // InitializeData(Zones,nDim);
+  // InitializeData(Zones,nDim);
 }
+
 
 CIsoparametric::~CIsoparametric() {}
 
 void CIsoparametric::Set_TransferCoeff(CConfig **config) {
-	unsigned long iVertex, jVertex;
-	unsigned long  dPoint, inode, jElem, nElem;
-	unsigned short iDim, iDonor=0, iFace;
+  unsigned long iVertex, jVertex;
+  unsigned long  dPoint, inode, jElem, nElem;
+  unsigned short iDim, iDonor=0, iFace;
 
-	unsigned short nDim = donor_geometry->GetnDim();
+  unsigned short nDim = donor_geometry->GetnDim();
 
-	unsigned short nMarkerInt;
-	unsigned short iMarkerInt;
+  unsigned short nMarkerInt;
+  unsigned short iMarkerInt;
 
-	int markDonor=0, markTarget=0;
-	int Target_check, Donor_check;
+  int markDonor=0, markTarget=0;
+  int Target_check, Donor_check;
 
-	long donor_elem=0, temp_donor=0;
-	unsigned int nNodes=0;
-	/*--- Restricted to 2-zone for now ---*/
-	unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
-	bool face_on_marker=true;
+  long donor_elem=0, temp_donor=0;
+  unsigned int nNodes=0;
+  /*--- Restricted to 2-zone for now ---*/
+  unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
+  bool face_on_marker=true;
 
-	unsigned long nVertexDonor = 0, nVertexTarget= 0;
-	unsigned long Point_Target = 0;
+  unsigned long nVertexDonor = 0, nVertexTarget= 0;
+  unsigned long Point_Target = 0;
 
-	unsigned long iVertexDonor, iPointDonor = 0;
-	unsigned long jGlobalPoint = 0;
-	int iProcessor;
+  unsigned long iVertexDonor, iPointDonor = 0;
+  unsigned long jGlobalPoint = 0;
+  int iProcessor;
 
-	unsigned long nLocalFace_Donor = 0, nLocalFaceNodes_Donor=0;
+  unsigned long nLocalFace_Donor = 0, nLocalFaceNodes_Donor=0;
 
-	unsigned long faceindex;
+  unsigned long faceindex;
 
-	su2double dist = 0.0, mindist=1E6, *Coord, *Coord_i;
-	su2double myCoeff[10]; // Maximum # of donor points
-	su2double  *Normal;
-	su2double *projected_point = new su2double[nDim];
-	su2double tmp, tmp2;
-	su2double storeCoeff[10];
-	unsigned long storeGlobal[10];
-	int storeProc[10];
+  su2double dist = 0.0, mindist=1E6, *Coord, *Coord_i;
+  su2double myCoeff[10]; // Maximum # of donor points
+  su2double  *Normal;
+  su2double *projected_point = new su2double[nDim];
+  su2double tmp, tmp2;
+  su2double storeCoeff[10];
+  unsigned long storeGlobal[10];
+  int storeProc[10];
 
-	int rank = MASTER_NODE;
-	int nProcessor = SINGLE_NODE;
-	Coord = new su2double[nDim];
-	Normal = new su2double[nDim];
+  int rank = MASTER_NODE;
+  int nProcessor = SINGLE_NODE;
+  Coord = new su2double[nDim];
+  Normal = new su2double[nDim];
 
 #ifdef HAVE_MPI
 
-	int *Buffer_Recv_mark, iRank;
+  int *Buffer_Recv_mark=NULL, iRank;
 
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 
-	if (rank == MASTER_NODE)
-		Buffer_Recv_mark = new int[nProcessor];
+  if (rank == MASTER_NODE) 
+    Buffer_Recv_mark = new int[nProcessor];
 
 #else
 
-	nProcessor = SINGLE_NODE;
+  nProcessor = SINGLE_NODE;
 
 #endif
 
-	/*--- Number of markers on the FSI interface ---*/
-	nMarkerInt = (config[donorZone]->GetMarker_n_FSIinterface())/2;
+  /*--- Number of markers on the FSI interface ---*/
+  nMarkerInt = (config[donorZone]->GetMarker_n_FSIinterface())/2;
 
-	/*--- For the number of markers on the interface... ---*/
-	for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-		/*--- Procedure:
-		 * -Loop through vertices of the aero grid
-		 * -Find nearest element and allocate enough space in the aero grid donor point info
-		 *    -set the transfer coefficient values
-		 */
+  /*--- For the number of markers on the interface... ---*/
+  for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+    /*--- Procedure:
+     * -Loop through vertices of the aero grid
+     * -Find nearest element and allocate enough space in the aero grid donor point info
+     *    -set the transfer coefficient values
+     */
 
-		/*--- On the donor side: find the tag of the boundary sharing the interface ---*/
-		markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+    /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
+    markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
 
-		/*--- On the target side: find the tag of the boundary sharing the interface ---*/
-		markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+    /*--- On the target side: find the tag of the boundary sharing the interface ---*/
+    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
 #ifdef HAVE_MPI
 
-		Donor_check  = -1;
-		Target_check = -1;
+    Donor_check  = -1;
+    Target_check = -1;
 
-		/*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+    /*--- We gather a vector in MASTER_NODE to determines whether the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 
-		SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-		if (rank == MASTER_NODE)
-			for (iRank = 0; iRank < nProcessor; iRank++)
-				if( Buffer_Recv_mark[iRank] != -1 ){
-					Donor_check = Buffer_Recv_mark[iRank];
-					break;
-				}
+    if (rank == MASTER_NODE)
+      for (iRank = 0; iRank < nProcessor; iRank++)
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Donor_check = Buffer_Recv_mark[iRank];
+          break;
+        }
 
-		SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-		SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-		if (rank == MASTER_NODE)
-			for (iRank = 0; iRank < nProcessor; iRank++)
-				if( Buffer_Recv_mark[iRank] != -1 ){
-					Target_check = Buffer_Recv_mark[iRank];
-					break;
-				}
+    if (rank == MASTER_NODE)
+      for (iRank = 0; iRank < nProcessor; iRank++)
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Target_check = Buffer_Recv_mark[iRank];
+          break;
+        }
 
-		SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
 #else
-	Donor_check  = markDonor;
-	Target_check = markTarget;
+    Donor_check  = markDonor;
+    Target_check = markTarget;  
 #endif
 
-		/*--- Checks if the zone contains the interface, if not continue to the next step ---*/
-		if(Target_check == -1 || Donor_check == -1)
-			continue;
+    /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
+    if(Target_check == -1 || Donor_check == -1)
+      continue;
 
-		if(markDonor != -1)
-			nVertexDonor  = donor_geometry->GetnVertex( markDonor );
-		else
-			nVertexDonor  = 0;
+    if(markDonor != -1)
+      nVertexDonor  = donor_geometry->GetnVertex( markDonor );
+    else
+      nVertexDonor  = 0;
 
-		if(markTarget != -1)
-			nVertexTarget = target_geometry->GetnVertex( markTarget );
-		else
-			nVertexTarget  = 0;
+    if(markTarget != -1)
+      nVertexTarget = target_geometry->GetnVertex( markTarget );
+    else
+      nVertexTarget  = 0;
 
-		Buffer_Send_nVertex_Donor    = new unsigned long [1];
-		Buffer_Send_nFace_Donor      = new unsigned long [1];
-		Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
+    Buffer_Send_nVertex_Donor    = new unsigned long [1];
+    Buffer_Send_nFace_Donor      = new unsigned long [1];
+    Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
 
-		Buffer_Receive_nVertex_Donor    = new unsigned long [nProcessor];
-		Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
-		Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
+    Buffer_Receive_nVertex_Donor    = new unsigned long [nProcessor];
+    Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
+    Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
 
-		/* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-		Determine_ArraySize(true, markDonor, markTarget, nVertexDonor, nDim);
+    /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
+    Determine_ArraySize(true, markDonor, markTarget, nVertexDonor, nDim);
 
-		Buffer_Send_Coord       = new su2double [MaxLocalVertex_Donor*nDim];
-		Buffer_Send_Normal      = new su2double [MaxLocalVertex_Donor*nDim];
-		Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
+    Buffer_Send_Coord       = new su2double [MaxLocalVertex_Donor*nDim];
+    Buffer_Send_Normal      = new su2double [MaxLocalVertex_Donor*nDim];
+    Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
 
-		Buffer_Receive_Coord       = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
-		Buffer_Receive_Normal      = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
-		Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
+    Buffer_Receive_Coord       = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
+    Buffer_Receive_Normal      = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
+    Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
 
-		/*-- Collect coordinates, global points, and normal vectors ---*/
-		Collect_VertexInfo(true, markDonor,markTarget,nVertexDonor,nDim);
+    /*-- Collect coordinates, global points, and normal vectors ---*/
+    Collect_VertexInfo(true, markDonor,markTarget,nVertexDonor,nDim);
 
-		Buffer_Send_FaceIndex    = new unsigned long[MaxFace_Donor];
-		Buffer_Send_FaceNodes    = new unsigned long[MaxFaceNodes_Donor];
-		Buffer_Send_FaceProc     = new unsigned long[MaxFaceNodes_Donor];
+    Buffer_Send_FaceIndex    = new unsigned long[MaxFace_Donor];
+    Buffer_Send_FaceNodes    = new unsigned long[MaxFaceNodes_Donor];
+    Buffer_Send_FaceProc     = new unsigned long[MaxFaceNodes_Donor];
 
-		Buffer_Receive_FaceIndex = new unsigned long[MaxFace_Donor*nProcessor];
-		Buffer_Receive_FaceNodes = new unsigned long[MaxFaceNodes_Donor*nProcessor];
-		Buffer_Receive_FaceProc  = new unsigned long[MaxFaceNodes_Donor*nProcessor];
+    Buffer_Receive_FaceIndex = new unsigned long[MaxFace_Donor*nProcessor];
+    Buffer_Receive_FaceNodes = new unsigned long[MaxFaceNodes_Donor*nProcessor];
+    Buffer_Receive_FaceProc  = new unsigned long[MaxFaceNodes_Donor*nProcessor];
 
-		nLocalFace_Donor=0;
-		nLocalFaceNodes_Donor=0;
+    nLocalFace_Donor=0;
+    nLocalFaceNodes_Donor=0;
 
-		/*--- Collect Face info ---*/
+    /*--- Collect Face info ---*/
 
-		for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++){
-			Buffer_Send_FaceIndex[iVertex] = 0;
-		}
-		for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++){
-			Buffer_Send_FaceNodes[iVertex] = 0;
-			Buffer_Send_FaceProc[iVertex]  = 0;
-		}
+    for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++) {
+      Buffer_Send_FaceIndex[iVertex] = 0;
+    }
+    for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++) {
+      Buffer_Send_FaceNodes[iVertex] = 0;
+      Buffer_Send_FaceProc[iVertex]  = 0;
+    }
 
-		Buffer_Send_FaceIndex[0] = rank * MaxFaceNodes_Donor;
+    Buffer_Send_FaceIndex[0] = rank * MaxFaceNodes_Donor;
 
-		if (nDim==2) nNodes=2;
+    if (nDim==2) nNodes=2;
 
-		for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
-			iPointDonor = donor_geometry->vertex[markDonor][iVertexDonor]->GetNode();
+    for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
+      iPointDonor = donor_geometry->vertex[markDonor][iVertexDonor]->GetNode();
 
-			if (donor_geometry->node[iPointDonor]->GetDomain()) {
+      if (donor_geometry->node[iPointDonor]->GetDomain()) {
 
-				if (nDim==3)  nElem = donor_geometry->node[iPointDonor]->GetnElem();
-				else          nElem =donor_geometry->node[iPointDonor]->GetnPoint();
+        if (nDim==3)  nElem = donor_geometry->node[iPointDonor]->GetnElem();
+        else          nElem =donor_geometry->node[iPointDonor]->GetnPoint();
 
-				for (jElem=0; jElem < nElem; jElem++) {
-					if (nDim==3) {
-						temp_donor = donor_geometry->node[iPointDonor]->GetElem(jElem);
-						nFaces = donor_geometry->elem[temp_donor]->GetnFaces();
-						for (iFace=0; iFace<nFaces; iFace++) {
-							/*-- Determine whether this face/edge is on the marker --*/
-							face_on_marker=true;
-							nNodes = donor_geometry->elem[temp_donor]->GetnNodesFace(iFace);
-							for (iDonor=0; iDonor<nNodes; iDonor++) {
-								inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
-								dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
-								face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
-							}
+        for (jElem=0; jElem < nElem; jElem++) {
+          if (nDim==3) {
+            temp_donor = donor_geometry->node[iPointDonor]->GetElem(jElem);
+            nFaces = donor_geometry->elem[temp_donor]->GetnFaces();
+            for (iFace=0; iFace<nFaces; iFace++) {
+              /*-- Determine whether this face/edge is on the marker --*/
+              face_on_marker=true;
+              nNodes = donor_geometry->elem[temp_donor]->GetnNodesFace(iFace);
+              for (iDonor=0; iDonor<nNodes; iDonor++) {
+                inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
+                dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
+                face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
+              }
 
-							if (face_on_marker ) {
-								for (iDonor=0; iDonor<nNodes; iDonor++) {
-									inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
-									dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
-									// Match node on the face to the correct global index
-									jGlobalPoint=donor_geometry->node[dPoint]->GetGlobalIndex();
-									for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-										for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-											if (jGlobalPoint ==Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
-												Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
-												Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
-											}
-										}
-									}
-									nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
-								}
-								/* Store the indices */
-								Buffer_Send_FaceIndex[nLocalFace_Donor+1] = Buffer_Send_FaceIndex[nLocalFace_Donor]+nNodes;
-								nLocalFace_Donor++; // Increment number of faces / processor
-							}
-						}
-					}
-					else {
-						/*-- Determine whether this face/edge is on the marker --*/
-						face_on_marker=true;
-						for (iDonor=0; iDonor<nNodes; iDonor++) {
-							inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
-							dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-							face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
-						}
-						if (face_on_marker ) {
-							for (iDonor=0; iDonor<nNodes; iDonor++) {
-								inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
-								dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-								// Match node on the face to the correct global index
-								jGlobalPoint=donor_geometry->node[dPoint]->GetGlobalIndex();
-								for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-									for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-										if (jGlobalPoint ==Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
-											Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
-											Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
-										}
-									}
-								}
-								nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
-							}
-							/* Store the indices */
-							Buffer_Send_FaceIndex[nLocalFace_Donor+1] = Buffer_Send_FaceIndex[nLocalFace_Donor]+nNodes;
-							nLocalFace_Donor++; // Increment number of faces / processor
-						}
-					}
-				}
-			}
-		}
+              if (face_on_marker ) {
+                for (iDonor=0; iDonor<nNodes; iDonor++) {
+                  inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
+                  dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
+                  // Match node on the face to the correct global index
+                  jGlobalPoint=donor_geometry->node[dPoint]->GetGlobalIndex();
+                  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+                    for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
+                      if (jGlobalPoint ==Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
+                        Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
+                        Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
+                      }
+                    }
+                  }
+                  nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
+                }
+                /* Store the indices */
+                Buffer_Send_FaceIndex[nLocalFace_Donor+1] = Buffer_Send_FaceIndex[nLocalFace_Donor]+nNodes;
+                nLocalFace_Donor++; // Increment number of faces / processor
+              }
+            }
+          }
+          else {
+            /*-- Determine whether this face/edge is on the marker --*/
+            face_on_marker=true;
+            for (iDonor=0; iDonor<nNodes; iDonor++) {
+              inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
+              dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
+              face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
+            }
+            if (face_on_marker ) {
+              for (iDonor=0; iDonor<nNodes; iDonor++) {
+                inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
+                dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
+                // Match node on the face to the correct global index
+                jGlobalPoint=donor_geometry->node[dPoint]->GetGlobalIndex();
+                for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+                  for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
+                    if (jGlobalPoint ==Buffer_Receive_GlobalPoint[MaxLocalVertex_Donor*iProcessor+jVertex]) {
+                      Buffer_Send_FaceNodes[nLocalFaceNodes_Donor]=MaxLocalVertex_Donor*iProcessor+jVertex;
+                      Buffer_Send_FaceProc[nLocalFaceNodes_Donor]=iProcessor;
+                    }
+                  }
+                }
+                nLocalFaceNodes_Donor++; // Increment total number of face-nodes / processor
+              }
+              /* Store the indices */
+              Buffer_Send_FaceIndex[nLocalFace_Donor+1] = Buffer_Send_FaceIndex[nLocalFace_Donor]+nNodes;
+              nLocalFace_Donor++; // Increment number of faces / processor
+            }
+          }
+        }
+      }
+    }
 
-		//Buffer_Send_FaceIndex[nLocalFace_Donor+1] = MaxFaceNodes_Donor*rank+nLocalFaceNodes_Donor;
+    //Buffer_Send_FaceIndex[nLocalFace_Donor+1] = MaxFaceNodes_Donor*rank+nLocalFaceNodes_Donor;
 #ifdef HAVE_MPI
-		SU2_MPI::Allgather(Buffer_Send_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, Buffer_Receive_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-		SU2_MPI::Allgather(Buffer_Send_FaceProc, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, Buffer_Receive_FaceProc, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-		SU2_MPI::Allgather(Buffer_Send_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG, Buffer_Receive_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(Buffer_Send_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, Buffer_Receive_FaceNodes, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(Buffer_Send_FaceProc, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, Buffer_Receive_FaceProc, MaxFaceNodes_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(Buffer_Send_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG, Buffer_Receive_FaceIndex, MaxFace_Donor, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 #else
-		for (iFace=0; iFace<MaxFace_Donor; iFace++) {
-			Buffer_Receive_FaceIndex[iFace] = Buffer_Send_FaceIndex[iFace];
-		}
-		for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertex++)
-			Buffer_Receive_FaceNodes[iVertex] = Buffer_Send_FaceNodes[iVertex];
-		for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertex++)
-			Buffer_Receive_FaceProc[iVertex] = Buffer_Send_FaceProc[iVertex];
+    for (iFace=0; iFace<MaxFace_Donor; iFace++) {
+      Buffer_Receive_FaceIndex[iFace] = Buffer_Send_FaceIndex[iFace];
+    }
+    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertex++)
+      Buffer_Receive_FaceNodes[iVertex] = Buffer_Send_FaceNodes[iVertex];
+    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertex++)
+      Buffer_Receive_FaceProc[iVertex] = Buffer_Send_FaceProc[iVertex];
 #endif
 
-		/*--- Loop over the vertices on the target Marker ---*/
-		for (iVertex = 0; iVertex<nVertexTarget; iVertex++) {
-			mindist=1E6;
-			for (unsigned short iCoeff=0; iCoeff<10; iCoeff++) {
-				storeCoeff[iCoeff]=0;
-			}
-			Point_Target = target_geometry->vertex[markTarget][iVertex]->GetNode();
+    /*--- Loop over the vertices on the target Marker ---*/
+    for (iVertex = 0; iVertex<nVertexTarget; iVertex++) {
+      mindist=1E6;
+      for (unsigned short iCoeff=0; iCoeff<10; iCoeff++) {
+        storeCoeff[iCoeff]=0;
+      }
+      Point_Target = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
-			if (target_geometry->node[Point_Target]->GetDomain()) {
+      if (target_geometry->node[Point_Target]->GetDomain()) {
 
-				Coord_i = target_geometry->node[Point_Target]->GetCoord();
-				/*---Loop over the faces previously communicated/stored ---*/
-				for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        Coord_i = target_geometry->node[Point_Target]->GetCoord();
+        /*---Loop over the faces previously communicated/stored ---*/
+        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
 
-					nFaces = (unsigned int)Buffer_Receive_nFace_Donor[iProcessor];
+          nFaces = (unsigned int)Buffer_Receive_nFace_Donor[iProcessor];
 
-					for (iFace = 0; iFace< nFaces; iFace++) {
-						/*--- ---*/
+          for (iFace = 0; iFace< nFaces; iFace++) {
+            /*--- ---*/
 
-						nNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
-								(unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
+            nNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
+                (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
 
-						su2double *X = new su2double[nNodes*nDim];
-						faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
-						for (iDonor=0; iDonor<nNodes; iDonor++) {
-							jVertex = Buffer_Receive_FaceNodes[iDonor+faceindex]; // index which points to the stored coordinates, global points
-							for (iDim=0; iDim<nDim; iDim++) {
-								X[iDim*nNodes+iDonor]=
-										Buffer_Receive_Coord[jVertex*nDim+iDim];
-							}
-						}
-						jVertex = Buffer_Receive_FaceNodes[faceindex];
+            su2double *X = new su2double[nNodes*nDim];
+            faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
+            for (iDonor=0; iDonor<nNodes; iDonor++) {
+              jVertex = Buffer_Receive_FaceNodes[iDonor+faceindex]; // index which points to the stored coordinates, global points
+              for (iDim=0; iDim<nDim; iDim++) {
+                X[iDim*nNodes+iDonor]=
+                    Buffer_Receive_Coord[jVertex*nDim+iDim];
+              }
+            }
+            jVertex = Buffer_Receive_FaceNodes[faceindex];
 
-						for (iDim=0; iDim<nDim; iDim++) {
-							Normal[iDim] = Buffer_Receive_Normal[jVertex*nDim+iDim];
-						}
+            for (iDim=0; iDim<nDim; iDim++) {
+              Normal[iDim] = Buffer_Receive_Normal[jVertex*nDim+iDim];
+            }
 
-						/* Project point used for case where surfaces are not exactly coincident, where
-						 * the point is assumed connected by a rigid rod normal to the surface.
-						 */
-						tmp = 0;
-						tmp2=0;
-						for (iDim=0; iDim<nDim; iDim++) {
-							tmp+=Normal[iDim]*Normal[iDim];
-							tmp2+=Normal[iDim]*(Coord_i[iDim]-X[iDim*nNodes]);
-						}
-						tmp = 1/tmp;
-						tmp2 = tmp2*sqrt(tmp);
-						for (iDim=0; iDim<nDim; iDim++) {
-							// projection of \vec{q} onto plane defined by \vec{n} and \vec{p}:
-							// \vec{q} - \vec{n} ( (\vec{q}-\vec{p} ) \cdot \vec{n})
-							// tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
-							// \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
-							projected_point[iDim]=Coord_i[iDim] + Normal[iDim]*tmp2*tmp;
-						}
+            /* Project point used for case where surfaces are not exactly coincident, where
+             * the point is assumed connected by a rigid rod normal to the surface.
+             */
+            tmp = 0;
+            tmp2=0;
+            for (iDim=0; iDim<nDim; iDim++) {
+              tmp+=Normal[iDim]*Normal[iDim];
+              tmp2+=Normal[iDim]*(Coord_i[iDim]-X[iDim*nNodes]);
+            }
+            tmp = 1/tmp;
+            tmp2 = tmp2*sqrt(tmp);
+            for (iDim=0; iDim<nDim; iDim++) {
+              // projection of \vec{q} onto plane defined by \vec{n} and \vec{p}:
+              // \vec{q} - \vec{n} ( (\vec{q}-\vec{p} ) \cdot \vec{n})
+              // tmp2 = ( (\vec{q}-\vec{p} ) \cdot \vec{N})
+              // \vec{n} = \vec{N}/(|N|), tmp = 1/|N|^2
+              projected_point[iDim]=Coord_i[iDim] + Normal[iDim]*tmp2*tmp;
+            }
 
-						Isoparameters(nDim, nNodes, X, projected_point,myCoeff);
+            Isoparameters(nDim, nNodes, X, projected_point,myCoeff);
 
-						/*--- Find distance to the interpolated point ---*/
-						dist = 0.0;
-						for (iDim=0; iDim<nDim; iDim++) {
-							Coord[iDim] = Coord_i[iDim];
-							for(iDonor=0; iDonor< nNodes; iDonor++) {
-								Coord[iDim]-=myCoeff[iDonor]*X[iDim*nNodes+iDonor];
-							}
-							dist+=pow(Coord[iDim],2.0);
-						}
+            /*--- Find distance to the interpolated point ---*/
+            dist = 0.0;
+            for (iDim=0; iDim<nDim; iDim++) {
+              Coord[iDim] = Coord_i[iDim];
+              for(iDonor=0; iDonor< nNodes; iDonor++) {
+                Coord[iDim]-=myCoeff[iDonor]*X[iDim*nNodes+iDonor];
+              }
+              dist+=pow(Coord[iDim],2.0);
+            }
 
-						/*--- If the dist is shorter than last closest (and nonzero nodes are on the boundary), update ---*/
-						if (dist<mindist ) {
-							/*--- update last dist ---*/
-							mindist = dist;
-							/*--- Store info ---*/
-							donor_elem = temp_donor;
-							target_geometry->vertex[markTarget][iVertex]->SetDonorElem(donor_elem); // in 2D is nearest neighbor
-							target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
-							for (iDonor=0; iDonor<nNodes; iDonor++) {
-								storeCoeff[iDonor] = myCoeff[iDonor];
-								jVertex = Buffer_Receive_FaceNodes[faceindex+iDonor];
-								storeGlobal[iDonor] =Buffer_Receive_GlobalPoint[jVertex];
-								storeProc[iDonor] = (int)Buffer_Receive_FaceProc[faceindex+iDonor];
-							}
-						}
+            /*--- If the dist is shorter than last closest (and nonzero nodes are on the boundary), update ---*/
+            if (dist<mindist ) {
+              /*--- update last dist ---*/
+              mindist = dist;
+              /*--- Store info ---*/
+              donor_elem = temp_donor;
+              target_geometry->vertex[markTarget][iVertex]->SetDonorElem(donor_elem); // in 2D is nearest neighbor
+              target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
+              for (iDonor=0; iDonor<nNodes; iDonor++) {
+                storeCoeff[iDonor] = myCoeff[iDonor];
+                jVertex = Buffer_Receive_FaceNodes[faceindex+iDonor];
+                storeGlobal[iDonor] =Buffer_Receive_GlobalPoint[jVertex];
+                storeProc[iDonor] = (int)Buffer_Receive_FaceProc[faceindex+iDonor];
+              }
+            }
 
-						delete [] X;
-					}
-				}
-				/*--- Set the appropriate amount of memory and fill ---*/
-				nNodes =target_geometry->vertex[markTarget][iVertex]->GetnDonorPoints();
-				target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+            delete [] X;
+          }
+        }
+        /*--- Set the appropriate amount of memory and fill ---*/
+        nNodes =target_geometry->vertex[markTarget][iVertex]->GetnDonorPoints();
+        target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
 
-				for (iDonor=0; iDonor<nNodes; iDonor++) {
-					target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,storeGlobal[iDonor]);
-					//cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
-					target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,storeCoeff[iDonor]);
-					target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
-				}
-			}
-		}
+        for (iDonor=0; iDonor<nNodes; iDonor++) {
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,storeGlobal[iDonor]);
+          //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
+          target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,storeCoeff[iDonor]);
+          target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+        }
+      }
+    }
 
-		delete[] Buffer_Send_nVertex_Donor;
-		delete[] Buffer_Send_nFace_Donor;
-		delete[] Buffer_Send_nFaceNodes_Donor;
+    delete[] Buffer_Send_nVertex_Donor;
+    delete[] Buffer_Send_nFace_Donor;
+    delete[] Buffer_Send_nFaceNodes_Donor;
 
-		delete[] Buffer_Receive_nVertex_Donor;
-		delete[] Buffer_Receive_nFace_Donor;
-		delete[] Buffer_Receive_nFaceNodes_Donor;
+    delete[] Buffer_Receive_nVertex_Donor;
+    delete[] Buffer_Receive_nFace_Donor;
+    delete[] Buffer_Receive_nFaceNodes_Donor;
 
-		delete[] Buffer_Send_Coord;
-		delete[] Buffer_Send_Normal;
-		delete[] Buffer_Send_GlobalPoint;
+    delete[] Buffer_Send_Coord;
+    delete[] Buffer_Send_Normal;
+    delete[] Buffer_Send_GlobalPoint;
 
-		delete[] Buffer_Receive_Coord;
-		delete[] Buffer_Receive_Normal;
-		delete[] Buffer_Receive_GlobalPoint;
+    delete[] Buffer_Receive_Coord;
+    delete[] Buffer_Receive_Normal;
+    delete[] Buffer_Receive_GlobalPoint;
 
-		delete[] Buffer_Send_FaceIndex;
-		delete[] Buffer_Send_FaceNodes;
-		delete[] Buffer_Send_FaceProc;
+    delete[] Buffer_Send_FaceIndex;
+    delete[] Buffer_Send_FaceNodes;
+    delete[] Buffer_Send_FaceProc;
 
-		delete[] Buffer_Receive_FaceIndex;
-		delete[] Buffer_Receive_FaceNodes;
-		delete[] Buffer_Receive_FaceProc;
-	}
-	delete [] Coord;
-	delete [] Normal;
+    delete[] Buffer_Receive_FaceIndex;
+    delete[] Buffer_Receive_FaceNodes;
+    delete[] Buffer_Receive_FaceProc;
+  }
+  delete [] Coord;
+  delete [] Normal;
 
-	delete [] projected_point;
+  delete [] projected_point;
 
 #ifdef HAVE_MPI
-	if (rank == MASTER_NODE)
-		delete [] Buffer_Recv_mark;
+  if (rank == MASTER_NODE)
+    delete [] Buffer_Recv_mark;
 #endif
 }
 
@@ -1044,7 +1044,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     su2double *X, su2double *xj, su2double *isoparams) {
   short iDonor,iDim,k; // indices
   su2double tmp, tmp2;
-  
+
   su2double *x     = new su2double[nDim+1];
   su2double *x_tmp = new su2double[nDim+1];
   su2double *Q     = new su2double[nDonor*nDonor];
@@ -1052,12 +1052,12 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   su2double *A     = new su2double[nDim+1*nDonor];
   su2double *A2    = NULL;
   su2double *x2    = new su2double[nDim+1];
-  
+
   bool *test  = new bool[nDim+1];
   bool *testi = new bool[nDim+1];
-  
+
   su2double eps = 1E-10;
-  
+
   short n = nDim+1;
 
   if (nDonor>2) {
@@ -1065,12 +1065,12 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     /*--- Right hand side is [1, \vec{x}']'---*/
     for (iDonor=0; iDonor<nDonor; iDonor++) {
       isoparams[iDonor]=0;
-      A[iDonor]=1.0;
+      A[iDonor] = 1.0;
       for (iDim=0; iDim<n; iDim++)
         A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
     }
 
-    x[0]=1.0;
+    x[0] = 1.0;
     for (iDim=0; iDim<nDim; iDim++)
       x[iDim+1]=xj[iDim];
 
@@ -1208,17 +1208,17 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
       }
       // [0,1]
       if (isoparams[iDonor]<0) isoparams[iDonor]=0;
-      if (isoparams[iDonor]>1) isoparams[iDonor]=1;
+      if (isoparams[iDonor]>1) isoparams[iDonor] = 1;
       tmp +=isoparams[iDonor];
     }
     if (tmp>0)
       for (iDonor=0; iDonor< nDonor; iDonor++)
         isoparams[iDonor]=isoparams[iDonor]/tmp;
     else {
-      isoparams[k]=1.0;
+      isoparams[k] = 1.0;
     }
   }
-  
+
   delete [] x;
   delete [] x_tmp;
   delete [] Q;
@@ -1226,7 +1226,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   delete [] A;
   if (A2 != NULL) delete [] A2;
   delete [] x2;
-  
+
   delete [] test;
   delete [] testi;
 
@@ -1270,10 +1270,10 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
 #ifdef HAVE_MPI
   int *Buffer_Recv_mark=NULL, iRank;
-  
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
+
   if (rank == MASTER_NODE) 
     Buffer_Recv_mark = new int[nProcessor];
 
@@ -1291,11 +1291,11 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
   /*--- For the number of markers on the interface... ---*/
   for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-   /*--- Procedure:
-    * -Loop through vertices of the aero grid
-    * -Find nearest element and allocate enough space in the aero grid donor point info
-    *    -set the transfer coefficient values
-    */
+    /*--- Procedure:
+     * -Loop through vertices of the aero grid
+     * -Find nearest element and allocate enough space in the aero grid donor point info
+     *    -set the transfer coefficient values
+     */
 
     /*--- On the donor side: find the tag of the boundary sharing the interface ---*/
     markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
@@ -1303,7 +1303,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
     /*--- On the target side: find the tag of the boundary sharing the interface ---*/
     markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
-    #ifdef HAVE_MPI
+#ifdef HAVE_MPI
 
     Donor_check  = -1;
     Target_check = -1;
@@ -1314,7 +1314,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Donor_check = Buffer_Recv_mark[iRank];
           break;
         }
@@ -1325,17 +1325,17 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
     if (rank == MASTER_NODE)
       for (iRank = 0; iRank < nProcessor; iRank++)
-        if( Buffer_Recv_mark[iRank] != -1 ){
+        if( Buffer_Recv_mark[iRank] != -1 ) {
           Target_check = Buffer_Recv_mark[iRank];
           break;
         }
 
     SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
-    #else
+#else
     Donor_check  = markDonor;
     Target_check = markTarget;  
-    #endif
+#endif
 
     /*--- Checks if the zone contains the interface, if not continue to the next step ---*/
     if(Target_check == -1 || Donor_check == -1)
@@ -1512,8 +1512,9 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
   }
 
-  #ifdef HAVE_MPI
+#ifdef HAVE_MPI
   if (rank == MASTER_NODE) 
     delete [] Buffer_Recv_mark;
-  #endif
+#endif
 }
+

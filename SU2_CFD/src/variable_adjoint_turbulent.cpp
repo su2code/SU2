@@ -37,10 +37,10 @@ CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-	dmuT_dUTvar = NULL;
-	dRTstar_dUTvar = NULL;
-	dFT_dUTvar = NULL;
-	EddyViscSens = NULL;
+  dmuT_dUTvar = NULL;
+  dRTstar_dUTvar = NULL;
+  dFT_dUTvar = NULL;
+  EddyViscSens = NULL;
   
 }
 
@@ -48,27 +48,27 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
   
   /*--- Array initialization ---*/
   
-	dmuT_dUTvar = NULL;
-	dRTstar_dUTvar = NULL;
-	dFT_dUTvar = NULL;
-	EddyViscSens = NULL;
+  dmuT_dUTvar = NULL;
+  dRTstar_dUTvar = NULL;
+  dFT_dUTvar = NULL;
+  EddyViscSens = NULL;
   
-	/*--- Initialization of variables ---*/
+  /*--- Initialization of variables ---*/
   
-	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar] = val_psinu_inf;
-		Solution_Old[iVar] = val_psinu_inf;
-	}
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar] = val_psinu_inf;
+    Solution_Old[iVar] = val_psinu_inf;
+  }
   
-	Residual_Old = new su2double [nVar];
+  Residual_Old = new su2double [nVar];
   
-	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
+  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
   
 }
 
 CAdjTurbVariable::~CAdjTurbVariable(void) {
   
-	if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
-	if (EddyViscSens  != NULL) delete [] EddyViscSens;
+  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
+  if (EddyViscSens  != NULL) delete [] EddyViscSens;
   
 }

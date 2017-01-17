@@ -94,11 +94,23 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-6.574770, -1.191178, 0.299959, 0.019387] #last 4 columns
+    fixedCL_naca0012.test_vals = [-5.930145,-0.546310,0.300089,0.019393] #last 4 columns
     fixedCL_naca0012.su2_exec  = "parallel_computation.py -f"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
     test_list.append(fixedCL_naca0012)
+    
+    # Polar sweep of the inviscid NACA0012
+    polar_naca0012           = TestCase('polar_naca0012')
+    polar_naca0012.cfg_dir   = "polar/naca0012"
+    polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
+    polar_naca0012.polar     = True
+    polar_naca0012.test_iter = 10
+    polar_naca0012.test_vals = [-1.298373, 4.139860, 0.010703, 0.008932] #last 4 columns
+    polar_naca0012.su2_exec  = "compute_polar.py -i 11"
+    polar_naca0012.timeout   = 1600
+    polar_naca0012.tol       = 0.00001
+    test_list.append(polar_naca0012)
 
     ##########################
     ###  Compressible N-S  ###
@@ -219,6 +231,21 @@ def main():
     propeller.tol       = 0.00001
     test_list.append(propeller)
 
+    #############################
+    ### Incompressible Euler  ###
+    #############################
+
+    # NACA0012 Hydrofoil
+    inc_euler_naca0012           = TestCase('inc_euler_naca0012')
+    inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
+    inc_euler_naca0012.test_iter = 20
+    inc_euler_naca0012.test_vals = [-3.544713,-3.135163,0.968231,0.010161] #last 4 columns
+    inc_euler_naca0012.su2_exec  = "parallel_computation.py -f"
+    inc_euler_naca0012.timeout   = 1600
+    inc_euler_naca0012.tol       = 0.00001
+    test_list.append(inc_euler_naca0012)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -233,6 +260,21 @@ def main():
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
     test_list.append(inc_turb_naca0012)
+
+    ############################
+    ###      Transition      ###
+    ############################
+
+    # Schubauer-Klebanoff Natural Transition Case
+    schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
+    schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
+    schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
+    schubauer_klebanoff_transition.test_iter    = 250
+    schubauer_klebanoff_transition.test_vals    = [-9.467876, -15.630835, 0.000520, 0.001062] #last 4 columns
+    schubauer_klebanoff_transition.su2_exec     = "parallel_computation.py -f"
+    schubauer_klebanoff_transition.timeout      = 1600
+    schubauer_klebanoff_transition.tol          = 0.00001
+    test_list.append(schubauer_klebanoff_transition)
 
     #####################################
     ### Cont. adj. compressible Euler ###
@@ -380,15 +422,15 @@ def main():
     ######################################                                                                                    
 
     # Description of the regression test 
-#    harmonic_balance           = TestCase('harmonic_balance')
-#    harmonic_balance.cfg_dir   = "harmonic_balance"
-#    harmonic_balance.cfg_file  = "HB.cfg"
-#    harmonic_balance.test_iter = 25
-#    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
-#    harmonic_balance.su2_exec  = "parallel_computation.py -f"
-#    harmonic_balance.timeout   = 1600
-#    harmonic_balance.tol       = 0.00001
-#    test_list.append(harmonic_balance)
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "parallel_computation.py -f"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###
@@ -761,7 +803,45 @@ def main():
     pass_list.append(brick_hex_rans_def.run_def())
     test_list.append(brick_hex_rans_def)
 
+    # Cylindrical FFD test
+    cylinder_ffd_def           = TestCase('cylinder_ffd_def')
+    cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
+    cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
+    cylinder_ffd_def.test_iter = 50
+    cylinder_ffd_def.test_vals = [2.31204e-10] #residual
+    cylinder_ffd_def.su2_exec  = "mpirun -n 2 SU2_DEF"
+    cylinder_ffd_def.timeout   = 1600
+    cylinder_ffd_def.tol       = 1e-16
 
+    pass_list.append(cylinder_ffd_def.run_def())
+    test_list.append(cylinder_ffd_def)
+
+    # Spherical FFD test
+    sphere_ffd_def           = TestCase('sphere_ffd_def')
+    sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def.cfg_file  = "def_spherical.cfg"
+    sphere_ffd_def.test_iter = 50
+    sphere_ffd_def.test_vals = [2.0062e-10] #residual
+    sphere_ffd_def.su2_exec  = "mpirun -n 2 SU2_DEF"
+    sphere_ffd_def.timeout   = 1600
+    sphere_ffd_def.tol       = 1e-16
+
+    pass_list.append(sphere_ffd_def.run_def())
+    test_list.append(sphere_ffd_def)
+
+    # Spherical FFD test using BSplines
+    sphere_ffd_def_bspline           = TestCase('sphere_ffd_def_bspline')
+    sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
+    sphere_ffd_def_bspline.test_iter = 50
+    sphere_ffd_def_bspline.test_vals = [1.20429e-10] #residual
+    sphere_ffd_def_bspline.su2_exec  = "mpirun -n 2 SU2_DEF"
+    sphere_ffd_def_bspline.timeout   = 1600
+    sphere_ffd_def_bspline.tol       = 1e-16
+
+    pass_list.append(sphere_ffd_def_bspline.run_def())
+    test_list.append(sphere_ffd_def_bspline)
+  
     ######################################
     ### RUN EXTERNAL FSI COUPLING TEST ###
     ######################################
