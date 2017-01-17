@@ -182,7 +182,7 @@ static AuxDataItem_s *AuxDataItemAlloc(const char   *Name,
             if (strValue != NULL)
             {
                 char *strCopy = DupString(dontTranslate(strValue));
-                Result->Value = (ArbParam_t)strCopy;
+                Result->Value = atoi(strCopy);
                 IsOk = (strCopy != NULL);
             }
             else
