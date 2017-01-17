@@ -32,13 +32,13 @@
 #pragma once
 
 inline void CTransfer::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-	   	   	   	   	   	   	   	   	   	     CGeometry *donor_geometry, CGeometry *target_geometry,
-											 CConfig *donor_config, CConfig *target_config) { }
+                                                    CGeometry *donor_geometry, CGeometry *target_geometry,
+                       CConfig *donor_config, CConfig *target_config) { }
 
 inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, 
-								   	     CConfig *donor_config, unsigned long Marker_Donor, 
-										 unsigned long Vertex_Donor, unsigned long Point_Donor) { }
+                          CConfig *donor_config, unsigned long Marker_Donor, 
+                     unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
 inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-										  CConfig *target_config, unsigned long Marker_Target,
-										  unsigned long Vertex_Target, unsigned long Point_Target) { }
+                      CConfig *target_config, unsigned long Marker_Target,
+                      unsigned long Vertex_Target, unsigned long Point_Target) { }

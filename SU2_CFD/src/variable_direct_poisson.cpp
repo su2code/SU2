@@ -36,7 +36,7 @@
 CPotentialVariable::CPotentialVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
-	Charge_Density = NULL;
+  Charge_Density = NULL;
   
 }
 
@@ -46,22 +46,22 @@ CPotentialVariable::CPotentialVariable(su2double val_potential,
                                        CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
                                                                     config) {
-	unsigned short iVar;
+  unsigned short iVar;
   
-	Residual_Old = new su2double [nVar];
-	Residual_Sum = new su2double [nVar];
+  Residual_Old = new su2double [nVar];
+  Residual_Sum = new su2double [nVar];
   
-	/*--- Initialization of variables ---*/
-	for (iVar = 0; iVar< nVar; iVar++) {
-		Solution[iVar] = val_potential;
-		Solution_Old[iVar] = val_potential;
-	}
-	Charge_Density = new su2double [2];
+  /*--- Initialization of variables ---*/
+  for (iVar = 0; iVar< nVar; iVar++) {
+    Solution[iVar] = val_potential;
+    Solution_Old[iVar] = val_potential;
+  }
+  Charge_Density = new su2double [2];
   
 }
 
 CPotentialVariable::~CPotentialVariable(void) {
   
-	if (Charge_Density != NULL) delete [] Charge_Density;
+  if (Charge_Density != NULL) delete [] Charge_Density;
   
 }

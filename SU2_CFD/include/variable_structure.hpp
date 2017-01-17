@@ -834,12 +834,6 @@ public:
   
   /*!
 	 * \brief A virtual member.
-	 * \return Value of the eddy viscosity.
-	 */
-	virtual su2double GetEddyViscosityInc(void);
-
-	/*!
-	 * \brief A virtual member.
 	 * \return Value of the flow enthalpy.
 	 */		
 	virtual su2double GetEnthalpy(void);
@@ -851,12 +845,6 @@ public:
 	virtual su2double GetPressure(void);
   
   /*!
-	 * \brief A virtual member.
-	 * \return Value of the flow pressure.
-	 */
-	virtual su2double GetPressureInc(void);
-
-	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_vector - Direction of projection.
 	 * \return Value of the projected velocity.
@@ -877,24 +865,6 @@ public:
 	 */		
 	virtual su2double GetSoundSpeed(void);
 
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the density for the incompressible flow.
-	 */		
-	virtual su2double GetDensityInc(void);
-
-  /*!
-	 * \brief A virtual member.
-	 * \return Value of the levelset for the freesurface flows.
-	 */
-	virtual su2double GetLevelSet(void);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \return Value of the distance for the freesurface flows.
-	 */
-	virtual su2double GetDistance(void);
-  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the beta for the incompressible flow.
@@ -950,11 +920,6 @@ public:
 	 */		
 	virtual su2double GetLaminarViscosity(void);
 
-	/*!
-	 * \brief A virtual member.
-	 * \return The laminar viscosity of the incompressible flow.
-	 */		
-	virtual su2double GetLaminarViscosityInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1042,29 +1007,23 @@ public:
   
   /*!
 	 * \brief A virtual member.
-	 * \param[in] eddy_visc - Value of the eddy viscosity.
-	 */
-	virtual void SetEddyViscosityInc(su2double eddy_visc);
-
-	/*!
-	 * \brief A virtual member.
 	 */		
 	virtual void SetEnthalpy(void);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Compressible(CConfig *config);
+  virtual bool SetPrimVar(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	 virtual bool SetPrimVar_Compressible(CFluidModel *FluidModel);
+  virtual bool SetPrimVar(CFluidModel *FluidModel);
 
 	/*!
      * \brief A virtual member.
 	 */
-     virtual void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
+  virtual void SetSecondaryVar(CFluidModel *FluidModel);
 
   /*!
 	 * \brief A virtual member.
@@ -1080,47 +1039,27 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-	
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual bool SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
-	/*!
-	 * \brief A virtual member.
-	 */		
-	virtual bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CConfig *config);
-	
-	/*!
-	 * \brief A virtual member.
-	 */		
-	virtual bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  virtual bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config);
+  virtual bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(CConfig *config);
+  virtual bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  virtual bool SetPrimVar(su2double Density_Inf, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
+  virtual bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1205,17 +1144,17 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetDensityInc(su2double val_density);
+  virtual void SetDensity(su2double val_density);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPressureInc(void);
+  virtual void SetPressure(void);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetVelocityInc(void);
+  virtual void SetVelocity(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1246,11 +1185,6 @@ public:
 	virtual bool SetPressure(su2double Gamma, su2double turb_ke);
 
 	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressure(void);
-  
-  /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
    */
   virtual su2double CalcEve(su2double *V, CConfig *config, unsigned short val_Species);
@@ -1381,11 +1315,6 @@ public:
 	 * \param[in] config - Configuration parameters.
 	 */
 	virtual void SetThermalCoeff(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetVelocity(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1528,12 +1457,6 @@ public:
   
   /*!
 	 * \brief A virtual member.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */
-	virtual void SetVelocityInc_Old(su2double *val_velocity);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] laminarViscosity
 	 */	
 	virtual void SetLaminarViscosity(su2double laminarViscosity);
@@ -1543,12 +1466,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetLaminarViscosity(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
-	 */		
-	virtual void SetLaminarViscosityInc(su2double val_laminar_viscosity_inc);
 
 	/*!
 	 * \brief A virtual member.
@@ -1765,17 +1682,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_difflevelset - Value of the diff level set (value-target).
-	 */	
-	virtual void SetDiffLevelSet(su2double val_difflevelset);
-
-	/*!
-	 * \brief A virtual member.
-	 */		
-	virtual su2double GetDiffLevelSet(void);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the harmonic balance source.
 	 */
@@ -1810,7 +1716,6 @@ public:
 	 * \return Pointer to the direct solution vector.
 	 */
 	virtual su2double *GetSolution_Direct(void);
-
 
 	/*!
 	 * STRUCTURAL ANALYSIS: NEW VARIABLES
@@ -2337,7 +2242,7 @@ protected:
 	su2double *FlowTraction;					/*!< \brief Traction from the fluid field. */
 	su2double *FlowTraction_n;					/*!< \brief Traction from the fluid field at time n. */
 
-//	su2double *Residual_Int;					/*!< \brief Internal stress term for the calculation of the residual */
+  //  su2double *Residual_Int;          /*!< \brief Internal stress term for the calculation of the residual */
 	su2double *Residual_Ext_Surf;				/*!< \brief Term of the residual due to external forces */
 	su2double *Residual_Ext_Surf_n;				/*!< \brief Term of the residual due to external forces at time n */
 	su2double *Residual_Ext_Body;				/*!< \brief Term of the residual due to body forces */
@@ -2402,7 +2307,6 @@ public:
 	 * \param[in] val_stress - value of the stress
 	 */
     void AddStress_FEM(unsigned short iVar, su2double val_stress);
-
 
 	/*!
 	 * \brief Add surface load to the residual term
@@ -2662,7 +2566,6 @@ public:
 	 */
 	su2double *GetSolution_Accel_time_n(void);
 
-
 	/*!
 	 * \brief Set the value of the solution predictor.
 	 */
@@ -2898,9 +2801,9 @@ public:
 
 /*! 
  * \class CEulerVariable
- * \brief Main class for defining the variables of the Euler's solver.
+ * \brief Main class for defining the variables of the compressible Euler solver.
  * \ingroup Euler_Equations
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 4.3.0 "Cardinal"
  */
 class CEulerVariable : public CVariable {
@@ -3110,33 +3013,15 @@ public:
 	 */
 	void SetEnthalpy(void);
 	
-//	/*!
-//	 * \brief Set all the primitive variables for compressible flows.
-//	 */
-//	bool SetPrimVar_Compressible(CConfig *config);
-
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	bool SetPrimVar_Compressible(CFluidModel *FluidModel);
-  using CVariable::SetPrimVar_Compressible;
+  bool SetPrimVar(CFluidModel *FluidModel);
   
 	/*!
 	 * \brief A virtual member.
 	 */
-	void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
-
-	/*!
-	 * \brief Set all the primitive variables for incompressible flows.
-	 */
-	bool SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
-  
-  /*!
-	 * \brief Set all the primitive variables for incompressible flows.
-	 */
-	bool SetPrimVar_FreeSurface(CConfig *config);
-	using CVariable::SetPrimVar_FreeSurface;
+  void SetSecondaryVar(CFluidModel *FluidModel);
   
 	/*!
 	 * \brief Get the primitive variables.
@@ -3197,29 +3082,9 @@ public:
 	/*!
 	 * \brief Set the value of the density for the incompressible flows.
 	 */
-	void SetDensityInc(su2double val_density);
-  
-  /*!
-	 * \brief Set the value of the density for the incompressible flows.
-	 */
 	bool SetDensity(void);
   
   /*!
-	 * \brief Set the value of the density for the incompressible flows.
-	 */
-	void SetPressureInc(void);
-  
-  /*!
-	 * \brief Set the value of the density for the incompressible flows.
-	 */
-	void SetVelocityInc(void);
-
-	/*!
-	 * \brief Set the value of the beta coeffient for incompressible flows.
-	 */
-	void SetBetaInc2(su2double val_betainc2);
-
-	/*!
 	 * \brief Set the value of the temperature.
 	 * \param[in] Gas_Constant - Value of Gas Constant
 	 */
@@ -3238,40 +3103,10 @@ public:
 	su2double GetPressure(void);
   
   /*!
-	 * \brief Get the flow pressure.
-	 * \return Value of the flow pressure.
-	 */
-	su2double GetPressureInc(void);
-  
-	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
 	 */
 	su2double GetSoundSpeed(void);
-
-	/*!
-	 * \brief Get the value of density for the incompressible flow
-	 * \return Value of beta squared.
-	 */
-	su2double GetDensityInc(void);
-
-  /*!
-	 * \brief Get the value of levelset for the freesurface flows
-	 * \return Value of beta squared.
-	 */
-	su2double GetLevelSet(void);
-  
-  /*!
-	 * \brief Get the value of distance for the freesurface flows
-	 * \return Value of beta squared.
-	 */
-	su2double GetDistance(void);
-  
-	/*!
-	 * \brief Get the value of beta squared for the incompressible flow
-	 * \return Value of beta squared.
-	 */
-	su2double GetBetaInc2(void);
 
 	/*!
 	 * \brief Get the enthalpy of the flow.
@@ -3324,12 +3159,6 @@ public:
 	void SetVelocity_Old(su2double *val_velocity);
   
   /*!
-	 * \brief Set the velocity vector from the old solution.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */
-	void SetVelocityInc_Old(su2double *val_velocity);
-
-	/*!
 	 * \brief Set the harmonic balance source term.
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
@@ -3381,39 +3210,42 @@ public:
 };
 
 /*! 
- * \class CNSVariable
- * \brief Main class for defining the variables of the Navier-Stokes' solver.
- * \ingroup Navier_Stokes_Equations
- * \author F. Palacios
+ * \class CIncEulerVariable
+ * \brief Main class for defining the variables of the incompressible Euler solver.
+ * \ingroup Euler_Equations
+ * \author F. Palacios, T. Economon, T. Albring
  * \version 4.3.0 "Cardinal"
  */
-class CNSVariable : public CEulerVariable {
-private:
-	su2double Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
-	su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
-	su2double Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
-	su2double Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
-	su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
-	su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
-	su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+class CIncEulerVariable : public CVariable {
+protected:
+  su2double Velocity2;      /*!< \brief Square of the velocity vector. */
+  su2double Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
+  su2double *WindGust;           /*! < \brief Wind gust value */
+  su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
+  
+  /*--- Primitive variable definition ---*/
+  
+  su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+  
 public:
 
 	/*!
 	 * \brief Constructor of the class. 
 	 */
-	CNSVariable(void);
+  CIncEulerVariable(void);
 
 	/*!
 	 * \overload
-	 * \param[in] val_density - Value of the flow density (initialization value).
+   * \param[in] val_pressure - value of the pressure.
 	 * \param[in] val_velocity - Value of the flow velocity (initialization value).
-	 * \param[in] val_energy - Value of the flow energy (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.		 
 	 * \param[in] val_nvar - Number of variables of the problem.		 
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CNSVariable(su2double val_density, su2double *val_velocity, 
-			su2double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
+                    unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \overload
@@ -3422,101 +3254,312 @@ public:
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.	
 	 */
-	CNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class. 
 	 */	
-	~CNSVariable(void);
+  virtual ~CIncEulerVariable(void);
 
 	/*!
-	 * \brief Set the laminar viscosity.
+   * \brief Set to zero the gradient of the primitive variables.
 	 */
-	void SetLaminarViscosity(su2double laminarViscosity);
+  void SetGradient_PrimitiveZero(unsigned short val_primvar);
 
 	/*!
-	 * \overload
-	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
+   * \brief Add <i>val_value</i> to the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value to add to the gradient of the primitive variables.
 	 */
-	void SetLaminarViscosityInc(su2double val_laminar_viscosity_inc);
+  void AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value);
 
 	/*!
-	 * \brief Set the laminar viscosity.
+   * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
 	 */
-	void SetThermalConductivity(su2double thermalConductivity);
+  void SubtractGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value);
 
 	/*!
-	 * \brief Set the specific heat Cp.
+   * \brief Get the value of the primitive variables gradient.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the primitive variables gradient.
 	 */
-	void SetSpecificHeatCp(su2double Cp);
+  su2double GetGradient_Primitive(unsigned short val_var, unsigned short val_dim);
 
 	/*!
-	 * \brief Set the vorticity value.
+   * \brief Get the value of the primitive variables gradient.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the primitive variables gradient.
 	 */
-	bool SetVorticity(bool val_limiter);
+  su2double GetLimiter_Primitive(unsigned short val_var);
 
 	/*!
-	 * \brief Set the rate of strain magnitude.
+   * \brief Set the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_dim - Index of the dimension.
+   * \param[in] val_value - Value of the gradient.
 	 */
-	bool SetStrainMag(bool val_limiter);
+  void SetGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value);
 
 	/*!
-	 * \overload
-	 * \param[in] eddy_visc - Value of the eddy viscosity.
+   * \brief Set the gradient of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_value - Value of the gradient.
 	 */
-	void SetEddyViscosity(su2double eddy_visc);
+  void SetLimiter_Primitive(unsigned short val_var, su2double val_value);
   
   /*!
-	 * \overload
-	 * \param[in] eddy_visc - Value of the eddy viscosity.
+   * \brief Get the value of the primitive variables gradient.
+   * \return Value of the primitive variables gradient.
 	 */
-	void SetEddyViscosityInc(su2double eddy_visc);
+  su2double **GetGradient_Primitive(void);
 
 	/*!
-	 * \brief Get the laminar viscosity of the flow.
-	 * \return Value of the laminar viscosity of the flow.
+   * \brief Get the value of the primitive variables gradient.
+   * \return Value of the primitive variables gradient.
 	 */
-	su2double GetLaminarViscosity(void);
+  su2double *GetLimiter_Primitive(void);
 
 	/*!
-	 * \brief Get the laminar viscosity of the incompressible flow.
-	 * \return Value of the laminar viscosity of the incompressible flow.
+   * \brief Set the value of the pressure.
 	 */
-	su2double GetLaminarViscosityInc(void);
+  void SetPressure();
 
 	/*!
-	 * \brief Get the thermal conductivity of the flow.
-	 * \return Value of the laminar viscosity of the flow.
+   * \brief Get the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the primitive variable for the index <i>val_var</i>.
 	 */
-	su2double GetThermalConductivity(void);
+  su2double GetPrimitive(unsigned short val_var);
 
 	/*!
-	 * \brief Get the eddy viscosity of the flow.
-	 * \return The eddy viscosity of the flow.
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_var - Index of the variable.
+   * \return Set the value of the primitive variable for the index <i>val_var</i>.
 	 */
-	su2double GetEddyViscosity(void);
+  void SetPrimitive(unsigned short val_var, su2double val_prim);
 
 	/*!
-	 * \brief Get the specific heat at constant P of the flow.
-	 * \return Value of the specific heat at constant P  of the flow.
+   * \brief Set the value of the primitive variables.
+   * \param[in] val_prim - Primitive variables.
+   * \return Set the value of the primitive variable for the index <i>val_var</i>.
 	 */
-	su2double GetSpecificHeatCp(void);
+  void SetPrimitive(su2double *val_prim);
 
     /*!
-	 * \brief Get the eddy viscosity of the flow.
-	 * \return The eddy viscosity of the flow.
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
 	 */
-	su2double GetEddyViscosityInc(void);
+  su2double *GetPrimitive(void);
 
 	/*!
-	 * \brief Set the temperature at the wall
+   * \brief Set the value of the density for the incompressible flows.
 	 */
-	void SetWallTemperature(su2double temperature_wall);
+  void SetDensity(su2double val_density);
 
 	/*!
-	 * \brief Get the value of the vorticity.
-	 * \param[in] val_dim - Index of the dimension.
-	 * \return Value of the vorticity.
+   * \brief Set the value of the density for the incompressible flows.
+   */
+  void SetVelocity(void);
+  
+  /*!
+   * \brief Set the value of the beta coeffient for incompressible flows.
+   */
+  void SetBetaInc2(su2double val_betainc2);
+  
+  /*!
+   * \brief Get the norm 2 of the velocity.
+   * \return Norm 2 of the velocity vector.
+   */
+  su2double GetVelocity2(void);
+  
+  /*!
+   * \brief Get the flow pressure.
+   * \return Value of the flow pressure.
+   */
+  su2double GetPressure(void);
+  
+  /*!
+   * \brief Get the value of beta squared for the incompressible flow
+   * \return Value of beta squared.
+   */
+  su2double GetBetaInc2(void);
+  
+  /*!
+   * \brief Get the density of the flow.
+   * \return Value of the density of the flow.
+   */
+  su2double GetDensity(void);
+  
+  /*!
+   * \brief Get the velocity of the flow.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the velocity for the dimension <i>val_dim</i>.
+   */
+  su2double GetVelocity(unsigned short val_dim);
+  
+  /*!
+   * \brief Get the projected velocity in a unitary vector direction (compressible solver).
+   * \param[in] val_vector - Direction of projection.
+   * \return Value of the projected velocity.
+   */
+  su2double GetProjVel(su2double *val_vector);
+  
+  /*!
+   * \brief Set the velocity vector from the old solution.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  void SetVelocity_Old(su2double *val_velocity);
+
+  /*!
+   * \brief Get the value of the wind gust
+   * \return Value of the wind gust
+   */
+  su2double* GetWindGust();
+  
+  /*!
+   * \brief Set the value of the wind gust
+   * \param[in] Value of the wind gust
+   */
+  void SetWindGust(su2double* val_WindGust);
+  
+  /*!
+   * \brief Get the value of the derivatives of the wind gust
+   * \return Value of the derivatives of the wind gust
+   */
+  su2double* GetWindGustDer();
+  
+  /*!
+   * \brief Set the value of the derivatives of the wind gust
+   * \param[in] Value of the derivatives of the wind gust
+   */
+  void SetWindGustDer(su2double* val_WindGust);
+  
+  /*!
+   * \brief Set all the primitive variables for incompressible flows.
+   */
+  bool SetPrimVar(su2double Density_Inf, CConfig *config);
+  
+};
+
+/*!
+ * \class CNSVariable
+ * \brief Main class for defining the variables of the compressible Navier-Stokes solver.
+ * \ingroup Navier_Stokes_Equations
+ * \author F. Palacios, T. Economon
+ * \version 4.3.0 "Cardinal"
+ */
+class CNSVariable : public CEulerVariable {
+private:
+  su2double Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
+  su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
+  su2double Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
+  su2double Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
+  su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
+  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
+  su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CNSVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_density - Value of the flow density (initialization value).
+   * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_energy - Value of the flow energy (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CNSVariable(su2double val_density, su2double *val_velocity,
+              su2double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the flow value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CNSVariable(void);
+  
+  /*!
+   * \brief Set the laminar viscosity.
+   */
+  void SetLaminarViscosity(su2double laminarViscosity);
+  
+  /*!
+   * \brief Set the laminar viscosity.
+   */
+  void SetThermalConductivity(su2double thermalConductivity);
+  
+  /*!
+   * \brief Set the specific heat Cp.
+   */
+  void SetSpecificHeatCp(su2double Cp);
+  
+  /*!
+   * \brief Set the vorticity value.
+   */
+  bool SetVorticity(bool val_limiter);
+  
+  /*!
+   * \brief Set the rate of strain magnitude.
+   */
+  bool SetStrainMag(bool val_limiter);
+  
+  /*!
+   * \overload
+   * \param[in] eddy_visc - Value of the eddy viscosity.
+   */
+  void SetEddyViscosity(su2double eddy_visc);
+  
+  /*!
+   * \brief Get the laminar viscosity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  su2double GetLaminarViscosity(void);
+  
+  /*!
+   * \brief Get the thermal conductivity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  su2double GetThermalConductivity(void);
+  
+  /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  su2double GetEddyViscosity(void);
+  
+  /*!
+   * \brief Get the specific heat at constant P of the flow.
+   * \return Value of the specific heat at constant P  of the flow.
+   */
+  su2double GetSpecificHeatCp(void);
+  
+  /*!
+   * \brief Set the temperature at the wall
+   */
+  void SetWallTemperature(su2double temperature_wall);
+  
+  /*!
+   * \brief Get the value of the vorticity.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the vorticity.
 	 */	
 	su2double *GetVorticity(void);
 
@@ -3559,25 +3602,113 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows
    */
-  bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
-  using CVariable::SetPrimVar_Compressible;
+  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  using CVariable::SetPrimVar;
   
 	/*!
 	 * \brief Set all the secondary variables (partial derivatives) for compressible flows
 	 */
-	void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
+  void SetSecondaryVar(CFluidModel *FluidModel);
+};
+
+/*!
+ * \class CIncNSVariable
+ * \brief Main class for defining the variables of the incompressible Navier-Stokes solver.
+ * \ingroup Navier_Stokes_Equations
+ * \author F. Palacios, T. Economon, T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CIncNSVariable : public CIncEulerVariable {
+private:
+  su2double Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
+  su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
+  su2double Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
+  su2double Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
+  su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
+  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
+  su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncNSVariable(void);
 
 	/*!
-	 * \brief Set all the primitive variables for incompressible flows
+   * \overload
+   * \param[in] val_pressure - value of the pressure.
+   * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CIncNSVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the flow value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CIncNSVariable(void);
+  
+  /*!
+   * \brief Set the laminar viscosity.
+   */
+  void SetLaminarViscosity(su2double laminarViscosity);
+  
+  /*!
+   * \brief Set the vorticity value.
+   */
+  bool SetVorticity(bool val_limiter);
+  
+  /*!
+   * \brief Set the rate of strain magnitude.
+   */
+  bool SetStrainMag(bool val_limiter);
+  
+  /*!
+   * \overload
+   * \param[in] eddy_visc - Value of the eddy viscosity.
+   */
+  void SetEddyViscosity(su2double eddy_visc);
+  
+  /*!
+   * \brief Get the laminar viscosity of the flow.
+   * \return Value of the laminar viscosity of the flow.
 	 */
-	bool SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
+  su2double GetLaminarViscosity(void);
+  
+  /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  su2double GetEddyViscosity(void);
+  
+  /*!
+   * \brief Get the value of the vorticity.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the vorticity.
+   */
+  su2double *GetVorticity(void);
+  
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  su2double GetStrainMag(void);
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
-  using CVariable::SetPrimVar_FreeSurface;
+  bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  using CVariable::SetPrimVar;
   
 };
 
@@ -3840,7 +3971,7 @@ public:
  * \class CAdjEulerVariable
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  * \version 4.3.0 "Cardinal"
  */
 class CAdjEulerVariable : public CVariable {
@@ -3886,20 +4017,115 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	bool SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_Compressible;
+  bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
+  
+  /*!
+   * \brief Set the value of the adjoint velocity.
+   * \param[in] val_phi - Value of the adjoint velocity.
+   */
+  void SetPhi_Old(su2double *val_phi);
+  
+  /*!
+   * \brief Set the value of the force projection vector.
+   * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
+   */
+  void SetForceProj_Vector(su2double *val_ForceProj_Vector);
+  
+  /*!
+   * \brief Set the value of the objective function source.
+   * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
+   */
+  void SetObjFuncSource(su2double *val_SetObjFuncSource);
+  
+  /*!
+   * \brief Set the value of the interior boundary jump vector vector.
+   * \param[in] val_IntBoundary_Jump - Pointer to the interior boundary jump vector.
+   */
+  void SetIntBoundary_Jump(su2double *val_IntBoundary_Jump);
+  
+  /*!
+   * \brief Get the value of the force projection vector.
+   * \return Pointer to the force projection vector.
+   */
+  su2double *GetForceProj_Vector(void);
+  
+  /*!
+   * \brief Get the value of the objective function source.
+   * \param[in] val_SetObjFuncSource - Pointer to the objective function source.
+	 */
+  su2double *GetObjFuncSource(void);
+  
+  /*!
+   * \brief Get the value of the force projection vector.
+   * \return Pointer to the force projection vector.
+   */
+  su2double *GetIntBoundary_Jump(void);
+  
+  /*!
+   * \brief Set the harmonic balance source term.
+   * \param[in] val_var - Index of the variable.
+   * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
+   */
+  void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
+  
+  /*!
+   * \brief Get the harmonic balance source term.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the harmonic balance source term for the index <i>val_var</i>.
+   */
+  su2double GetHarmonicBalance_Source(unsigned short val_var);
+};
+
+/*!
+ * \class CAdjIncEulerVariable
+ * \brief Main class for defining the variables of the adjoint incompressible Euler solver.
+ * \ingroup Euler_Equations
+ * \author F. Palacios, T. Economon, T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CAdjIncEulerVariable : public CVariable {
+protected:
+  su2double *Psi;    /*!< \brief Vector of the adjoint variables. */
+  su2double *ForceProj_Vector;  /*!< \brief Vector d. */
+  su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
+  su2double *IntBoundary_Jump;  /*!< \brief Interior boundary jump vector. */
+  bool incompressible;
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CAdjIncEulerVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_psirho - Value of the adjoint density (initialization value).
+   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
+   * \param[in] val_psie - Value of the adjoint energy (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAdjIncEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAdjIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CAdjIncEulerVariable(void);
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	bool SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
-  
-  /*!
-	 * \brief Set all the primitive variables for compressible flows.
-	 */
-	bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_FreeSurface;
+  bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
@@ -3944,18 +4170,18 @@ public:
 	su2double *GetIntBoundary_Jump(void);
 
 	/*!
-	 * \brief Set the harmonic balance source term.
+   * \brief Set the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the harmonic balance source term. for the index <i>val_var</i>.
+   * \param[in] val_solution - Value of the time spectral source term. for the index <i>val_var</i>.
 	 */
-	void SetHarmonicBalance_Source(unsigned short val_var, su2double val_source);
+  void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
 
 	/*!
-	 * \brief Get the harmonic balance source term.
+   * \brief Get the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
-	 * \return Value of the harmonic balance source term for the index <i>val_var</i>.
+   * \return Value of the time spectral source term for the index <i>val_var</i>.
 	 */
-	su2double GetHarmonicBalance_Source(unsigned short val_var);
+  su2double GetTimeSpectral_Source(unsigned short val_var);
 };
 
 /*! 
@@ -4031,6 +4257,78 @@ public:
 };
 
 /*! 
+ * \class CAdjIncNSVariable
+ * \brief Main class for defining the variables of the adjoint incompressible Navier-Stokes solver.
+ * \ingroup Navier_Stokes_Equations
+ * \author F. Palacios, T. Economon, T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CAdjIncNSVariable : public CAdjIncEulerVariable {
+private:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class. 
+	 */		
+  CAdjIncNSVariable(void);
+
+	/*!
+	 * \overload
+   * \param[in] val_psirho - Value of the adjoint density (initialization value).
+   * \param[in] val_phi - Value of the adjoint velocity (initialization value).
+   * \param[in] val_psie - Value of the adjoint energy (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nvar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.	 
+	 */		
+  CAdjIncNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAdjIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class. 
+	 */		
+  ~CAdjIncNSVariable(void);
+
+	/*!
+   * \brief Set the value of the adjoint velocity.
+   * \param[in] val_phi - Value of the adjoint velocity.
+	 */
+  void SetPhi_Old(su2double *val_phi);
+
+	/*!
+   * \brief Set the value of the force projection vector.
+   * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
+	 */
+  void SetForceProj_Vector(su2double *val_ForceProj_Vector);
+  
+  /*!
+   * \brief Get the value of the force projection vector.
+   * \return Pointer to the force projection vector.
+   */
+  su2double *GetForceProj_Vector(void);
+  
+  /*!
+   * \brief Set the value of the force projection vector on the solution vector.
+   */
+  void SetVelSolutionOldDVector(void);
+  
+  /*!
+   * \brief Set the value of the force projection vector on the old solution vector.
+   */
+  void SetVelSolutionDVector(void);
+  
+};
+
+/*! 
  * \class CAdjTurbVariable
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
@@ -4039,83 +4337,45 @@ public:
  */
 class CAdjTurbVariable : public CVariable {
 protected:
-	su2double *dmuT_dUTvar;       /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
-	su2double **dRTstar_dUTvar; 	/*!< \brief Sensitivity of modified turbulence residual (no boundary flux)
-	 	 	 	 	 	 	 	 to mean flow and turbulence vars. */
-	su2double **dFT_dUTvar; 	/*!< \brief Sensitivity of boundary flux
-		 	 	 	 	 	 	 	 to mean flow and turbulence vars. */
-	su2double *EddyViscSens;    /*!< \brief Eddy Viscosity Sensitivity. */
-
+  su2double *dmuT_dUTvar;       /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
+  su2double **dRTstar_dUTvar;   /*!< \brief Sensitivity of modified turbulence residual (no boundary flux)
+                                 to mean flow and turbulence vars. */
+  su2double **dFT_dUTvar;   /*!< \brief Sensitivity of boundary flux
+                             to mean flow and turbulence vars. */
+  su2double *EddyViscSens;    /*!< \brief Eddy Viscosity Sensitivity. */
+  
 public:
-
-	/*!
-	 * \brief Constructor of the class. 
-	 */		
-	CAdjTurbVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */		
-	CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class. 
-	 */		
-	~CAdjTurbVariable(void);
-
-	/*!
-	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
-	 * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
-	 */
-	void SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar);
-
-	/*!
-	 * \brief Get the Eddy Viscosity Sensitivity of the problem.
-	 * \return Pointer to the Eddy Viscosity Sensitivity.
-	 */
-	su2double *GetEddyViscSens(void);
-};
-
-/*! 
- * \class CAdjLevelSetVariable
- * \brief Main class for defining the variables of the Level Set.
- * \ingroup LevelSet_Model
- * \author F. Palacios
- * \version 4.3.0 "Cardinal"
- */
-class CAdjLevelSetVariable : public CVariable {
-public:
+  
 	/*!
 	 * \brief Constructor of the class. 
 	 */	
-	CAdjLevelSetVariable(void);
+  CAdjTurbVariable(void);
 
 	/*!
 	 * \overload
+   * \param[in] val_psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	CAdjLevelSetVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
 
 	/*!
-	 * \overload
-	 * \param[in] val_levelset - Level set variable value (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
+   * \brief Destructor of the class. 
 	 */	
-	CAdjLevelSetVariable(su2double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  ~CAdjTurbVariable(void);
 
 	/*!
-	 * \brief Destructor of the class.
+   * \brief Set the Eddy Viscosity Sensitivity of the problem.
+   * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
 	 */
-	virtual ~CAdjLevelSetVariable(void);
+  void SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar);
 
+  /*!
+   * \brief Get the Eddy Viscosity Sensitivity of the problem.
+   * \return Pointer to the Eddy Viscosity Sensitivity.
+   */
+  su2double *GetEddyViscSens(void);
 };
 
 /*! 

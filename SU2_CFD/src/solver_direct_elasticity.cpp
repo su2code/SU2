@@ -260,12 +260,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
 
-    long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-
-    /*--- First, set all indices to a negative value by default ---*/
-
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-      Global2Local[iPoint] = -1;
+    map<unsigned long,unsigned long> Global2Local;
+    map<unsigned long,unsigned long>::const_iterator MI;
 
     /*--- Now fill array with the transform values only for local points ---*/
 
@@ -289,13 +285,13 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       istringstream point_line(text_line);
 
       /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
+       on the current processor, we will load and instantiate the vars. ---*/
+      
+      MI = Global2Local.find(iPoint_Global);
+      if (MI != Global2Local.end()) {
 
       iPoint_Local = Global2Local[iPoint_Global];
 
-      if (iPoint_Local >= 0) {
         if (dynamic) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
@@ -346,10 +342,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     /*--- Close the restart file ---*/
 
     restart_file.close();
-
-    /*--- Free memory needed for the transformation ---*/
-
-    delete [] Global2Local;
 
   }
 
@@ -1186,12 +1178,8 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
   
-  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   
@@ -1212,13 +1200,12 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1.
-     Otherwise, the local index for this node on the current processor
-     will be returned and used to instantiate the vars. ---*/
+     on the current processor, we will load and instantiate the vars. ---*/
     
-    iPoint_Local = Global2Local[iPoint_Global];
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
     
-    if (iPoint_Local >= 0) {
+      iPoint_Local = Global2Local[iPoint_Global];
       
       if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> index;
       if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> index;
@@ -1258,10 +1245,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   /*--- Close the restart file ---*/
   
   prestretch_file.close();
-  
-  /*--- Free memory needed for the transformation ---*/
-  
-  delete [] Global2Local;
   
 }
 
@@ -3779,13 +3762,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
       // Retrieve the values of pressure, viscosity and density
       if (incompressible) {
 
-        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
         Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
         if (viscous_flow) {
 
           Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
         }
       }
       else if (compressible) {
@@ -4016,13 +3999,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
         // Retrieve the values of pressure, viscosity and density
         if (incompressible) {
 
-          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
           Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
           if (viscous_flow) {
 
             Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
           }
         }
         else if (compressible) {
