@@ -38,20 +38,20 @@ CFluidModel::CFluidModel(void) {
 
   /*--- Attributes initialization ---*/
 
-	StaticEnergy = 0.0;
-	Entropy = 0.0;
-	Density = 0.0;
-	Pressure = 0.0;
-	SoundSpeed2 = 0.0;
-	Temperature = 0.0;
-	dPdrho_e = 0.0;
-	dPde_rho = 0.0;
-	dTdrho_e = 0.0;
-	dTde_rho = 0.0;
-	Cp       = 0.0;
+  StaticEnergy = 0.0;
+  Entropy = 0.0;
+  Density = 0.0;
+  Pressure = 0.0;
+  SoundSpeed2 = 0.0;
+  Temperature = 0.0;
+  dPdrho_e = 0.0;
+  dPde_rho = 0.0;
+  dTdrho_e = 0.0;
+  dTde_rho = 0.0;
+  Cp       = 0.0;
 
-	LaminarViscosity = NULL;
-	ThermalConductivity = NULL;
+  LaminarViscosity = NULL;
+  ThermalConductivity = NULL;
 
 }
 
@@ -62,27 +62,27 @@ CFluidModel::~CFluidModel(void) {
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
   
-	switch (config->GetKind_ViscosityModel()) {
-	case CONSTANT_VISCOSITY:
-		LaminarViscosity = new CConstantViscosity(config->GetMu_ConstantND());
-		break;
-	case SUTHERLAND:
-		LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
-		break;
-	}
+  switch (config->GetKind_ViscosityModel()) {
+  case CONSTANT_VISCOSITY:
+    LaminarViscosity = new CConstantViscosity(config->GetMu_ConstantND());
+    break;
+  case SUTHERLAND:
+    LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
+    break;
+  }
   
 }
 
 void CFluidModel::SetThermalConductivityModel (CConfig *config) {
   
-	switch (config->GetKind_ConductivityModel()) {
-	case CONSTANT_CONDUCTIVITY:
-		ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
-		break;
-	case CONSTANT_PRANDTL:
-		ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
-		break;
-	}
+  switch (config->GetKind_ConductivityModel()) {
+  case CONSTANT_CONDUCTIVITY:
+    ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
+    break;
+  case CONSTANT_PRANDTL:
+    ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
+    break;
+  }
   
 }
 

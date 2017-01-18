@@ -46,8 +46,8 @@ CTransfer_FlowTraction::~CTransfer_FlowTraction(void) {
 }
 
 void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
-		   	   	   	   	   	   	   	   	   	   	   CGeometry *flow_geometry, CGeometry *struct_geometry,
-												   CConfig *flow_config, CConfig *struct_config) {
+                                                         CGeometry *flow_geometry, CGeometry *struct_geometry,
+                           CConfig *flow_config, CConfig *struct_config) {
 
 	unsigned short iVar;
 
@@ -184,7 +184,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 }
 
 void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
-					   	   	   	   	   	   	   unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Struct) {
+                                           unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Struct) {
 
 
 	unsigned short iVar, jVar;
@@ -216,29 +216,19 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 		// Get the normal at the vertex: this normal goes inside the fluid domain.
 	Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
-	// Retrieve the values of pressure
-	if (incompressible){
+  // Retrieve the values of pressure
 
-		Pn = flow_solution->node[Point_Flow]->GetPressureInc();
+  Pn = flow_solution->node[Point_Flow]->GetPressure();
 
-	}
-	else if (compressible) {
+  // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
+  for (iVar = 0; iVar < nVar; iVar++) 
+    Donor_Variable[iVar] = -(Pn-Pinf)*Normal_Flow[iVar];
 
-		Pn = flow_solution->node[Point_Flow]->GetPressure();
+  // Calculate tn in the fluid nodes for the viscous term
 
-	}
+  if ((incompressible || compressible) && viscous_flow) {
 
-	// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Donor_Variable[iVar] = -(Pn-Pinf)*Normal_Flow[iVar];
-	}
-
-	// Calculate tn in the fluid nodes for the viscous term
-
-	if ((incompressible || compressible) && viscous_flow) {
-
-	  if (incompressible) Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
-	  else Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
+    Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0 ; jVar < nVar; jVar++) {
@@ -271,8 +261,8 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 }
 
 void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-												CConfig *fea_config, unsigned long Marker_Struct,
-												unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                        CConfig *fea_config, unsigned long Marker_Struct,
+                        unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
 	/*--- Add to the Flow traction ---*/
 	fea_solution->node[Point_Struct]->Add_FlowTraction(Target_Variable);
@@ -295,13 +285,13 @@ CTransfer_StructuralDisplacements::~CTransfer_StructuralDisplacements(void) {
 
 
 void CTransfer_StructuralDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-		   	   	   	   	   	   	   	   	   	   	   CGeometry *struct_geometry, CGeometry *flow_geometry,
-												   CConfig *struct_config, CConfig *flow_config) {
+                                                         CGeometry *struct_geometry, CGeometry *flow_geometry,
+                           CConfig *struct_config, CConfig *flow_config) {
 
 }
 
 void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
+                                                       unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
 
 	su2double *DisplacementDonor, *DisplacementDonor_Prev;
@@ -319,8 +309,8 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 }
 
 void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
-														   CConfig *flow_config, unsigned long Marker_Flow,
-														   unsigned long Vertex_Flow, unsigned long Point_Flow) {
+                               CConfig *flow_config, unsigned long Marker_Flow,
+                               unsigned long Vertex_Flow, unsigned long Point_Flow) {
 
 	su2double VarCoord[3] = {0.0, 0.0, 0.0};
 	unsigned short iVar;
@@ -464,16 +454,7 @@ void CTransfer_FlowTraction_DiscAdj::GetDonor_Variable(CSolver *flow_solution, C
   Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
   // Retrieve the values of pressure
-  if (incompressible){
-
-    Pn = flow_solution->node[Point_Flow]->GetPressureInc();
-
-  }
-  else if (compressible){
-
-    Pn = flow_solution->node[Point_Flow]->GetPressure();
-
-  }
+  Pn = flow_solution->node[Point_Flow]->GetPressure();
 
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -484,8 +465,7 @@ void CTransfer_FlowTraction_DiscAdj::GetDonor_Variable(CSolver *flow_solution, C
 
   if ((incompressible || compressible) && viscous_flow){
 
-    if (incompressible) Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
-    else Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
+    Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0 ; jVar < nVar; jVar++) {
@@ -542,13 +522,13 @@ CTransfer_ConservativeVars::~CTransfer_ConservativeVars(void) {
 
 
 void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
-													   CConfig *donor_config, CConfig *target_config) {
+                                                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
+                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
   su2double *Solution;
   unsigned short iVar;
@@ -561,11 +541,11 @@ void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeo
 }
 
 void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-													CConfig *target_config, unsigned long Marker_Target,
-													unsigned long Vertex_Target, unsigned long Point_Target) {
+                          CConfig *target_config, unsigned long Marker_Target,
+                          unsigned long Vertex_Target, unsigned long Point_Target) {
 
-	/*--- Set the target solution with the value of the Target Variable ---*/
-	target_solution->node[Point_Target]->SetSolution(Target_Variable);
+  /*--- Set the target solution with the value of the Target Variable ---*/
+  target_solution->node[Point_Target]->SetSolution(Target_Variable);
 
 }
 
@@ -583,15 +563,14 @@ CTransfer_SlidingInterface::~CTransfer_SlidingInterface(void) {
 
 
 void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
-													   CConfig *donor_config, CConfig *target_config){
+                                                             CGeometry *donor_geometry, CGeometry *target_geometry,
+                             CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor){
+                                                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  su2double *Solution;
   unsigned short iVar;
 
   /*--- Retrieve solution and set it as the donor variable ---*/
@@ -601,8 +580,8 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
 }
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-													CConfig *target_config, unsigned long Marker_Target,
-													unsigned long Vertex_Target, unsigned long Point_Target){
+                          CConfig *target_config, unsigned long Marker_Target,
+                          unsigned long Vertex_Target, unsigned long Point_Target) {
 
   unsigned short iVar;
   /*--- Set the Sliding solution with the value of the Target Variable ---*/

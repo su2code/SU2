@@ -52,7 +52,7 @@
 #include "./datatype_structure.hpp"
 
 #ifdef HAVE_CGNS
-  #include "cgnslib.h"
+#include "cgnslib.h"
 #endif
 
 using namespace std;
@@ -106,12 +106,16 @@ private:
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
+  unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
+  su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
+  su2double FFD_Scale;  	/*!< \brief Scale factor between the design variable value and the control point movement. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
+  Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
@@ -145,6 +149,8 @@ private:
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
   su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
+  su2double DVBound_Upper;		/*!< \brief Previous value of the design variable. */
+  su2double DVBound_Lower;		/*!< \brief Previous value of the design variable. */
 	su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -156,12 +162,6 @@ private:
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
 	unsigned short *Design_Variable; /*!< \brief Kind of design variable. */
-	su2double RatioDensity,				/*!< \brief Ratio of density for a free surface problem. */
-	RatioViscosity,				/*!< \brief Ratio of viscosity for a free surface problem. */
-	FreeSurface_Thickness,  /*!< \brief Thickness of the interfase for a free surface problem. */
-	FreeSurface_Outlet,  /*!< \brief Outlet of the interfase for a free surface problem. */
-	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
-	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for  harmonic balance. */
 	su2double HarmonicBalance_Period;		/*!< \brief Period of oscillation to be used with harmonic balance computations. */
@@ -391,9 +391,11 @@ private:
 	unsigned short GeometryMode;			/*!< \brief Gemoetry mode (analysis or gradient computation). */
 	unsigned short MGCycle;			/*!< \brief Kind of multigrid cycle. */
 	unsigned short FinestMesh;		/*!< \brief Finest mesh for the full multigrid approach. */
+  unsigned short nFFD_Fix_IDir, nFFD_Fix_JDir, nFFD_Fix_KDir;                 /*!< \brief Number of planes fixed in the FFD. */
 	unsigned short nMG_PreSmooth,                 /*!< \brief Number of MG pre-smooth parameters found in config file. */
 	nMG_PostSmooth,                             /*!< \brief Number of MG post-smooth parameters found in config file. */
 	nMG_CorrecSmooth;                           /*!< \brief Number of MG correct-smooth parameters found in config file. */
+  short *FFD_Fix_IDir, *FFD_Fix_JDir, *FFD_Fix_KDir;	/*!< \brief Exact sections. */
 	unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
 	*MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
 	*MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
@@ -406,10 +408,11 @@ private:
 	Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
+  Kind_Deform_Linear_Solver, /*!< Numerical method to deform the grid */
+  Kind_Deform_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
 	Kind_Linear_Solver_FSI_Struc,	 /*!< \brief Numerical solver for the structural part in FSI problems. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
-	Kind_Deform_Linear_Solver_Prec,     /*!< \brief Preconditioner of the linear solver for the mesh deformation. */
 	Kind_Linear_Solver_Prec_FSI_Struc,		/*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
 	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
@@ -420,14 +423,12 @@ private:
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
-	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
 	Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
 	Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
 	Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
 	Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
-	Kind_TimeIntScheme_AdjLevelSet,	/*!< \brief Time integration for the adjoint level set model. */
 	Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
 	Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
@@ -440,18 +441,15 @@ private:
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
 	Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
 	Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
-	Kind_ConvNumScheme_AdjLevelSet,	/*!< \brief Centered or upwind scheme for the adjoint level set equation. */
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
-	Kind_Centered_AdjLevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
 	Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
 	Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
 	Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
-	Kind_Upwind_AdjLevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
@@ -464,8 +462,7 @@ private:
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   unsigned short nID_DE;  /*!< \brief ID for the DE when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
@@ -495,6 +492,7 @@ private:
   nVolSections;               /*!< \brief Number of sections. */
 	su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
 	*Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+  su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
 	su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
 	Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
 	Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
@@ -510,10 +508,11 @@ private:
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
   su2double Deform_Coeff; /*!< Deform coeffienct */
-  unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
+  unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
+  bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
 	su2double Mach;		/*!< \brief Mach number. */
 	su2double Reynolds;	/*!< \brief Reynolds number. */
 	su2double Froude;	/*!< \brief Froude number. */
@@ -675,8 +674,6 @@ private:
 	Mu_RefND,   /*!< \brief reference viscosity for Sutherland model.  */
 	Mu_Temperature_RefND,   /*!< \brief reference Temperature for Sutherland model.  */
 	Mu_SND,   /*!< \brief reference S for Sutherland model.  */
-	FreeSurface_Zero,	/*!< \brief Coordinate of the level set zero. */
-	FreeSurface_Depth,	/*!< \brief Coordinate of the level set zero. */
 	*Velocity_FreeStream,     /*!< \brief Total velocity of the fluid.  */
 	Energy_FreeStream,     /*!< \brief Total energy of the fluid.  */
 	ModVel_FreeStream,     /*!< \brief Total density of the fluid.  */
@@ -872,7 +869,7 @@ private:
   unsigned short DirectDiff;  /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;       /*!< \brief AD-based discrete adjoint mode. */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
-  *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
+  *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
@@ -883,6 +880,7 @@ private:
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
+  *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1002,6 +1000,7 @@ private:
   //  for (int i = 0; i < size; i++) {
   //    def[i] = default_value[i];
   //  }
+    
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
@@ -1015,6 +1014,13 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
+  void addShortListOption(const string name, unsigned short & size, short * & option_field) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionShortList(name, size, option_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
   void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
@@ -1338,42 +1344,6 @@ public:
 	unsigned short GetAxis_Orientation(void);
 
 	/*!
-	 * \brief Get the ratio of density for a free surface problem.
-	 * \return Ratio of density for a free surface problem.
-	 */
-	su2double GetRatioDensity(void);
-
-	/*!
-	 * \brief Get the ratio of viscosity for a free surface problem.
-	 * \return Ratio of viscosity for a free surface problem.
-	 */
-	su2double GetRatioViscosity(void);
-
-	/*!
-	 * \brief Get the thickness of the interfase for a free surface problem.
-	 * \return Thickness of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Thickness(void);
-
-	/*!
-	 * \brief Get the damping of the free surface for a free surface problem.
-	 * \return Damping of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Damping_Coeff(void);
-
-	/*!
-	 * \brief Get the damping of the free surface for a free surface problem.
-	 * \return Damping of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Damping_Length(void);
-
-	/*!
-	 * \brief Get the outlet position of the free surface for a free surface problem.
-	 * \return Outlet position of the interfase for a free surface problem.
-	 */
-	su2double GetFreeSurface_Outlet(void);
-
-  /*!
 	 * \brief Creates a tecplot file to visualize the partition made by the DDC software.
 	 * \return <code>TRUE</code> if the partition is going to be plotted; otherwise <code>FALSE</code>.
 	 */
@@ -1416,22 +1386,10 @@ public:
 	su2double GetSection_Location(unsigned short val_var);
 
 	/*!
-	 * \brief Get the array that maps chemical consituents to each chemical reaction.
-	 * \return Memory location of the triple pointer to the 3-D reaction map array.
+   * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
+   * \return Coordinate of the Axis.
 	 */
-	int ***GetReaction_Map(void);
-
-	/*!
-	 * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
-	 * \return Memory location of the triple pointer to the 3-D collision integral array.
-	 */
-	su2double ***GetCollisionIntegral00(void);
-
-	/*!
-	 * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
-	 * \return Memory location of the triple pointer to the 3-D collision integral array.
-	 */
-	su2double ***GetCollisionIntegral11(void);
+  su2double GetFFD_Axis(unsigned short val_var);
 
 	/*!
 	 * \brief Get the value of the bulk modulus.
@@ -1444,18 +1402,6 @@ public:
 	 * \return Value of the artificial compresibility factor.
 	 */
 	su2double GetArtComp_Factor(void);
-
-	/*!
-	 * \brief Get the Level set zero for free surface .
-	 * \return Value of the level set zero coordinate
-	 */
-	su2double GetFreeSurface_Zero(void);
-
-	/*!
-	 * \brief Get the Level set zero for free surface .
-	 * \return Value of the level set zero coordinate
-	 */
-	su2double GetFreeSurface_Depth(void);
 
 	/*!
 	 * \brief Get the value of specific gas constant.
@@ -2382,32 +2328,32 @@ public:
 	su2double GetParamDV(unsigned short val_dv, unsigned short val_param);
 
   /*!
-   * \brief Get a parameter of the particular design variable.
-   * \param[in] val_ffd - Number of the ffd that we want to read.
+   * \brief Get the coordinates of the FFD corner points.
+   * \param[in] val_ffd - Index of the FFD box.
    * \param[in] val_coord - Index of the coordinate that we want to read.
-   * \return FFD parameter.
+   * \return Value of the coordinate.
    */
-  su2double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_coord);
+  su2double GetCoordFFDBox(unsigned short val_ffd, unsigned short val_index);
 
   /*!
-   * \brief Get a parameter of the particular design variable.
-   * \param[in] val_ffd - Number of the ffd that we want to read.
-   * \param[in] val_coord - Index of the coordinate that we want to read.
-   * \return FFD parameter.
+   * \brief Get the degree of the FFD corner points.
+   * \param[in] val_ffd - Index of the FFD box.
+   * \param[in] val_degree - Index (I,J,K) to obtain the degree.
+   * \return Value of the degree in a particular direction.
    */
-  unsigned short GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_degree);
+  unsigned short GetDegreeFFDBox(unsigned short val_ffd, unsigned short val_index);
 
   /*!
 	 * \brief Get the FFD Tag of a particular design variable.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
-	 * \return Design variable parameter.
+   * \return Name of the FFD box.
 	 */
 	string GetFFDTag(unsigned short val_dv);
   
   /*!
-   * \brief Get the FFD Tag of a particular design variable.
-   * \param[in] val_dv - Number of the design variable that we want to read.
-   * \return Design variable parameter.
+   * \brief Get the FFD Tag of a particular FFD box.
+   * \param[in] val_ffd - Number of the FFD box that we want to read.
+   * \return Name of the FFD box.
    */
   string GetTagFFDBox(unsigned short val_ffd);
 
@@ -2424,8 +2370,8 @@ public:
   unsigned short GetnDV_Value(unsigned short iDV);
 
   /*!
-   * \brief Get the number of design variables.
-   * \return Number of the design variables.
+   * \brief Get the number of FFD boxes.
+   * \return Number of FFD boxes.
    */
   unsigned short GetnFFDBox(void);
   
@@ -2436,6 +2382,24 @@ public:
   unsigned short GetFFD_Continuity(void);
 
 	/*!
+   * \brief Get the coordinate system that we are going to use to define the FFD
+   * \return Coordinate system (cartesian, spherical, etc).
+   */
+  unsigned short GetFFD_CoordSystem(void);
+  
+    /*!
+   * \brief Get the kind of FFD Blending function.
+   * \return Kind of FFD Blending function.
+   */
+  unsigned short GetFFD_Blending(void);
+
+  /*!
+   * \brief Get the kind BSpline Order in i,j,k direction.
+   * \return The kind BSpline Order in i,j,k direction.
+   */
+  su2double* GetFFD_BSplineOrder();
+  
+  /*!
 	 * \brief Get the number of Runge-Kutta steps.
 	 * \return Number of Runge-Kutta steps.
 	 */
@@ -2980,7 +2944,6 @@ public:
 	 */
 	unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
 
-
 	/*!
 	 * \brief Get the number of FSI interface markers <i>val_marker</i>.
 	 * \param[in] void.
@@ -3024,12 +2987,50 @@ public:
 	unsigned short GetMG_CorrecSmooth(unsigned short val_mesh);
 
 	/*!
+   * \brief plane of the FFD (I axis) that should be fixed.
+   * \param[in] val_index - Index of the arrray with all the planes in the I direction that should be fixed.
+   * \return Index of the plane that is going to be freeze.
+   */
+  short GetFFD_Fix_IDir(unsigned short val_index);
+  
+  /*!
+   * \brief plane of the FFD (J axis) that should be fixed.
+   * \param[in] val_index - Index of the arrray with all the planes in the J direction that should be fixed.
+   * \return Index of the plane that is going to be freeze.
+   */
+  short GetFFD_Fix_JDir(unsigned short val_index);
+  
+  /*!
+   * \brief plane of the FFD (K axis) that should be fixed.
+   * \param[in] val_index - Index of the arrray with all the planes in the K direction that should be fixed.
+   * \return Index of the plane that is going to be freeze.
+   */
+  short GetFFD_Fix_KDir(unsigned short val_index);
+  
+  /*!
+   * \brief Get the number of planes to fix in the I direction.
+   * \return Number of planes to fix in the I direction.
+   */
+  unsigned short GetnFFD_Fix_IDir(void);
+  
+  /*!
+   * \brief Get the number of planes to fix in the J direction.
+   * \return Number of planes to fix in the J direction.
+   */
+  unsigned short GetnFFD_Fix_JDir(void);
+  
+  /*!
+   * \brief Get the number of planes to fix in the K direction.
+   * \return Number of planes to fix in the K direction.
+   */
+  unsigned short GetnFFD_Fix_KDir(void);
+  
+  /*!
 	 * \brief Governing equations of the flow (it can be different from the run time equation).
 	 * \param[in] val_zone - Zone where the soler is applied.
 	 * \return Governing equation that we are solving.
 	 */
 	unsigned short GetKind_Solver(void);
-
 
 	/*!
 	 * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -3178,11 +3179,6 @@ public:
 	 */
 	unsigned short GetKind_Linear_Solver(void);
   
-  /*!
-   * \brief Get the kind of solver for the implicit solver.
-   * \return Numerical solver for implicit formulation (solving the linear system).
-   */
-  unsigned short GetDeform_Linear_Solver(void);
 
 	/*!
 	 * \brief Get the kind of preconditioner for the implicit solver.
@@ -3191,10 +3187,16 @@ public:
 	unsigned short GetKind_Linear_Solver_Prec(void);
 
   /*!
-   * \brief Get the kind of preconditioner for the linear solver for mesh deformation.
+   * \brief Get the kind of solver for the implicit solver.
+   * \return Numerical solver for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Deform_Linear_Solver(void);
+  
+  /*!
+   * \brief Set the kind of preconditioner for the implicit solver.
    * \return Numerical preconditioner for implicit formulation (solving the linear system).
    */
-  unsigned short GetKind_Deform_Linear_Solver_Prec(void);
+  void SetKind_Deform_Linear_Solver_Prec(unsigned short val_kind_prec);
 
 	/*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
@@ -3281,6 +3283,12 @@ public:
   unsigned short GetKind_DiscAdj_Linear_Prec(void);
 
 	/*!
+   * \brief Get the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Deform_Linear_Solver_Prec(void);
+  
+  /*!
 	 * \brief Set the kind of preconditioner for the implicit solver.
 	 * \return Numerical preconditioner for implicit formulation (solving the linear system).
 	 */
@@ -3364,6 +3372,12 @@ public:
 	bool GetVisualize_Deformation(void);
 
 	/*!
+   * \brief Define the FFD box with a symetry plane.
+   * \return <code>TRUE</code> if there is a symmetry plane in the FFD; otherwise <code>FALSE</code>.
+   */
+  bool GetFFD_Symmetry_Plane(void);
+  
+  /*!
 	 * \brief Get the kind of SU2 software component.
 	 * \return Kind of the SU2 software component.
 	 */
@@ -3475,15 +3489,6 @@ public:
 	 *       linearized) that is being solved.
 	 * \return Kind of upwind scheme for the convective terms.
 	 */
-	unsigned short GetSpatialOrder_AdjLevelSet(void);
-
-  /*!
-	 * \brief Get the order of the spatial integration.
-	 * \note This is the information that the code will use, the method will
-	 *       change in runtime depending of the specific equation (direct, adjoint,
-	 *       linearized) that is being solved.
-	 * \return Kind of upwind scheme for the convective terms.
-	 */
 	unsigned short GetSpatialOrder_AdjFlow(void);
 
 	/*!
@@ -3576,29 +3581,12 @@ public:
 	unsigned short GetKind_ConvNumScheme_Template(void);
 
 	/*!
-	 * \brief Get the kind of convective numerical scheme for the adjoint level set
-	 *        equations (centered or upwind).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of convective numerical scheme for the level set equation.
-	 */
-	unsigned short GetKind_ConvNumScheme_AdjLevelSet(void);
-
-	/*!
 	 * \brief Get the kind of center convective numerical scheme for the flow equations.
 	 * \note This value is obtained from the config file, and it is constant
 	 *       during the computation.
 	 * \return Kind of center convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_Centered_Flow(void);
-
-	/*!
-	 * \brief Get the kind of center convective numerical scheme for the adjoint level set equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of center convective numerical scheme for the level set equations.
-	 */
-	unsigned short GetKind_Centered_AdjLevelSet(void);
 
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the plasma equations.
@@ -3617,14 +3605,6 @@ public:
 	unsigned short GetKind_Upwind_Flow(void);
 
 	/*!
-	 * \brief Get the kind of upwind convective numerical scheme for the adjoint level set equation.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of upwind convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Upwind_AdjLevelSet(void);
-
-	/*!
 	 * \brief Get the method for limiting the spatial gradients.
 	 * \return Method for limiting the spatial gradients.
 	 */
@@ -3641,12 +3621,6 @@ public:
 	 * \return Method for limiting the spatial gradients solving the turbulent equation.
 	 */
 	unsigned short GetKind_SlopeLimit_Turb(void);
-
-	/*!
-	 * \brief Get the method for limiting the spatial gradients.
-	 * \return Method for limiting the spatial gradients solving the level set equation.
-	 */
-	unsigned short GetKind_SlopeLimit_AdjLevelSet(void);
 
 	/*!
 	 * \brief Get the method for limiting the spatial gradients.
@@ -3739,15 +3713,6 @@ public:
 	 * \return Kind of integration scheme for the turbulence equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Turb(void);
-
-	/*!
-	 * \brief Get the kind of integration scheme (implicit)
-	 *        for the level set equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of integration scheme for the level set equations.
-	 */
-	unsigned short GetKind_TimeIntScheme_AdjLevelSet(void);
 
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the turbulence
@@ -6649,15 +6614,23 @@ public:
 	su2double GetGust_Begin_Loc(void);
 
   /*!
-	 * \brief Value of the time at which to begin the gust.
+   * \brief Get the number of iterations to evaluate the parametric coordinates.
+   * \return Number of iterations to evaluate the parametric coordinates.
 	 */
 	unsigned short GetnFFD_Iter(void);
 
   /*!
-	 * \brief Value of the location ath which the gust begins.
+   * \brief Get the tolerance of the point inversion algorithm.
+   * \return Tolerance of the point inversion algorithm.
 	 */
 	su2double GetFFD_Tol(void);
 
+  /*!
+   * \brief Get the scale factor between the input design variable and the final movement of the control point.
+   * \return Scale factor between the input design variable and the final movement of the control point.
+   */
+  su2double GetFFD_Scale(void);
+  
   /*!
 	 * \brief Get the node number of the CV to visualize.
 	 * \return Node number of the CV to visualize.
