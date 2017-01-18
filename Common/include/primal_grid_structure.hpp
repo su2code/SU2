@@ -58,6 +58,7 @@ protected:
 	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
+  su2double **Mij;
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                  quadrilateral and edges. */
 	unsigned long DomainElement;	/*!< \brief Only for boundaries, in this variable the 3D elements which
@@ -663,7 +664,6 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-  su2double** Mij;
 public:
   
 	/*!
