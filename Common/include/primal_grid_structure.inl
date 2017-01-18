@@ -60,13 +60,13 @@ inline su2double magnitude(su2double v[nDim]) {
 template<std::size_t nDim>
 inline void print_matrix(su2double v[nDim][nDim]) {
   std::cout << "[[";
-  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
-    for (unsigned int jDim = 0; jDim < nDim; ++jDim) {
+  for (unsigned int jDim = 0; jDim < nDim; ++jDim) {
+    for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
       std::cout << v[iDim][jDim];
-      if (jDim != nDim-1) std::cout << ",";
+      if (iDim != nDim-1) std::cout << ",\t";
     }
-    if (iDim != nDim-1)  {
-      std::cout << "],[";
+    if (jDim != nDim-1)  {
+      std::cout << "]," << std::endl << " [";
     } else {
       std::cout << "]]" << std::endl;
     }

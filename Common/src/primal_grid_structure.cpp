@@ -42,7 +42,7 @@ unsigned short CPrimalGrid::nDim;
 void GramSchmidt2D(su2double w[][2], su2double v[][2]) {
   unsigned short iDim;
   const unsigned short nDim = 2;
-G
+
   // Set the first basis vector to the first input vector
   for (iDim = 0; iDim < nDim; ++iDim) {
     v[0][iDim] = w[0][iDim];
@@ -56,7 +56,7 @@ G
 
 }
 
-void GramSchmidt3D(su2double w[][3], su2double v[][2]) {
+void GramSchmidt3D(su2double w[][3], su2double v[][3]) {
   unsigned short iDim;
   const unsigned short nDim = 3;
 
@@ -77,6 +77,7 @@ void GramSchmidt3D(su2double w[][3], su2double v[][2]) {
         dot_prod<nDim>(w[2],v[0])/dot_prod<nDim>(v[0],v[0])*v[0][iDim] -
         dot_prod<nDim>(w[2],v[1])/dot_prod<nDim>(v[1],v[1])*v[1][iDim];
   }
+
 }
 
 CPrimalGrid::CPrimalGrid(void) {
@@ -728,7 +729,6 @@ void CHexahedron::SetResolutionTensor(void) {
       center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
     }
   }
-
   //--------------------------------------------------------------------------
   // First vector
   paired_faces[0] = 0; // Choose vector 1 as our first vector to pair up
@@ -793,17 +793,13 @@ void CHexahedron::SetResolutionTensor(void) {
     }
   }
 
-
-  // Normalized vectors
+  // Get lengths of vectors
   su2double eigvalues[nDim][nDim];
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       eigvalues[iDim][jDim] = 0.0;
     }
     eigvalues[iDim][iDim] = magnitude<3>(eigvecs[iDim]);
-    for (jDim = 0; jDim < nDim; ++jDim) {
-      eigvecs[iDim][jDim] /= eigvalues[iDim][iDim];
-    }
   }
 
   // Gram-Schmidt Process to make the vectors orthogonal
@@ -814,6 +810,15 @@ void CHexahedron::SetResolutionTensor(void) {
     }
   }
   GramSchmidt3D(temp_eigvecs, eigvecs);
+
+  // Normalize results of Gram-Schmidt
+  su2double mag;
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    mag = magnitude<3>(eigvecs[iDim]);
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[iDim][jDim] /= mag;
+    }
+  }
 
   // Perform matrix multiplication
   for (iDim = 0; iDim < nDim; ++iDim) {
