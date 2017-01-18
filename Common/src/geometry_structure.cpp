@@ -13488,14 +13488,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     TrailingEdge[iPlane] = new su2double[nDim];
 
-  su2double **LeadingEdge_Filter   = new su2double*[nPlane];
-  for (iPlane = 0; iPlane < nPlane; iPlane++ )
-    LeadingEdge_Filter[iPlane] = new su2double[nDim];
-
-  su2double **TrailingEdge_Filter    = new su2double*[nPlane];
-  for (iPlane = 0; iPlane < nPlane; iPlane++ )
-    TrailingEdge_Filter[iPlane] = new su2double[nDim];
-
   su2double **Plane_P0     = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     Plane_P0[iPlane] = new su2double[nDim];
@@ -13541,17 +13533,17 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     if (config->GetOutput_FileFormat() == PARAVIEW) {
       Wing_File.open("Wing_Distribution.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Filter Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in),\"Filter Trailing Edge Z (in)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
       else
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Filter Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m),\"Filter Trailing Edge Z (m)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
     }
     else {
-      Wing_File.open("Wing_Distribution.dat", ios::out);
+      Wing_File.open("wing_description.dat", ios::out);
       Wing_File << "TITLE = \"Wing description\"" << endl;
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Filter Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\",\"Filter Trailing Edge Z (in)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
       else
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Filter Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\",\"Filter Trailing Edge Z (m)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
       Wing_File << "ZONE T= \"Baseline wing\"" << endl;
     }
 
@@ -13589,91 +13581,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     }
     
-    /*--- Explicit filtering of the leading and the trailing edge for curvature and dihedral evaluation ---*/
-    
-    for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      for (iDim = 0; iDim < nDim; iDim++) {
-        LeadingEdge_Filter[iPlane][iDim] = 0.0;
-        TrailingEdge_Filter[iPlane][iDim] = 0.0;
-      }
-    }
-    
-    unsigned short iVar, jVar, nVar =5;
-    su2double *b, **A;
-    b = new su2double [nVar];
-    A = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {  A[iVar] = new su2double [nVar]; }
-
-    /*--- Least Squares Fitting pylinomial for the  leading edge ---*/
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        if ((iVar == 0) && (jVar == 0)) A[0][0] = double(nPlane);
-        else {
-          A[iVar][jVar] = 0.0;
-          for (iPlane = 0; iPlane < nPlane; iPlane++) {
-            A[iVar][jVar] += pow(LeadingEdge[iPlane][1], double(iVar+jVar));
-          }
-        }
-      }
-      b[iVar] = 0.0;
-      for (iPlane = 0; iPlane < nPlane; iPlane++) {
-        b[iVar] += pow(LeadingEdge[iPlane][1], double(iVar))*LeadingEdge[iPlane][2];
-      }
-    }
-
-//    Gauss_Elimination(A, b, nVar);
-
-    /*--- Recalculation of the Leading edge using the 4th order polynomial ---*/
-
-    for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      LeadingEdge_Filter[iPlane][0]  = LeadingEdge[iPlane][0];
-      LeadingEdge_Filter[iPlane][1]  = LeadingEdge[iPlane][1];
-      LeadingEdge_Filter[iPlane][2]  = 0.0;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        LeadingEdge_Filter[iPlane][2] += pow(LeadingEdge[iPlane][1], iVar) * b[iVar];
-      }
-    }
-
-    /*--- Least Squares Fitting pylinomial for the  trailing edge ---*/
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        if ((iVar == 0) && (jVar == 0)) A[0][0] = double(nPlane);
-        else {
-          A[iVar][jVar] = 0.0;
-          for (iPlane = 0; iPlane < nPlane; iPlane++) {
-            A[iVar][jVar] += pow(TrailingEdge[iPlane][1], double(iVar+jVar));
-          }
-        }
-      }
-      b[iVar] = 0.0;
-      for (iPlane = 0; iPlane < nPlane; iPlane++) {
-        b[iVar] += pow(TrailingEdge[iPlane][1], double(iVar))*TrailingEdge[iPlane][2];
-      }
-    }
-
-//    Gauss_Elimination(A, b, nVar);
-
-    /*--- Recalculation of the Trailing edge using the 4th order polynomial ---*/
-
-    for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      TrailingEdge_Filter[iPlane][0]  = TrailingEdge[iPlane][0];
-      TrailingEdge_Filter[iPlane][1]  = TrailingEdge[iPlane][1];
-      TrailingEdge_Filter[iPlane][2]  = 0.0;
-      for (iVar = 0; iVar < nVar; iVar++) {
-        TrailingEdge_Filter[iPlane][2] += pow(TrailingEdge[iPlane][1],  iVar) * b[iVar];
-      }
-    }
-
-    /*--- Deallocate the linear system ---*/
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      delete [] A[iVar];
-    }
-    delete [] A;
-    delete [] b;
-
     /*--- Evaluate  geometrical quatities that have been computed using a filtered value (they depend on more than one point) ---*/
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -13684,13 +13591,13 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
       if (Xcoord_Airfoil[iPlane].size() != 0) {
 
         if ((iPlane == 0) || (iPlane == nPlane-1)) Curvature[iPlane] = 0.0;
-        else Curvature[iPlane] = Compute_Curvature(LeadingEdge_Filter[iPlane-1], TrailingEdge_Filter[iPlane-1],
-                                                   LeadingEdge_Filter[iPlane], TrailingEdge_Filter[iPlane],
-                                                   LeadingEdge_Filter[iPlane+1], TrailingEdge_Filter[iPlane+1]);
+        else Curvature[iPlane] = Compute_Curvature(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
+                                                   LeadingEdge[iPlane], TrailingEdge[iPlane],
+                                                   LeadingEdge[iPlane+1], TrailingEdge[iPlane+1]);
 
         if (iPlane == 0) Dihedral[iPlane] = 0.0;
-        else Dihedral[iPlane] = Compute_Dihedral(LeadingEdge_Filter[iPlane-1], TrailingEdge_Filter[iPlane-1],
-                                                 LeadingEdge_Filter[iPlane], TrailingEdge_Filter[iPlane]);
+        else Dihedral[iPlane] = Compute_Dihedral(LeadingEdge[iPlane-1], TrailingEdge[iPlane-1],
+                                                 LeadingEdge[iPlane], TrailingEdge[iPlane]);
 
       }
 
@@ -13713,14 +13620,14 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
       if (config->GetOutput_FileFormat() == PARAVIEW) {
         Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane]  <<", "<< ToC[iPlane]
         <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
-        <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2] <<", "<< LeadingEdge_Filter[iPlane][2]
-        <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  <<", "<< TrailingEdge_Filter[iPlane][2]  << endl;
+        <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
+        <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
       }
       else  {
         Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane]  <<" "<< ToC[iPlane]
         <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
-        <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2] <<" "<< LeadingEdge_Filter[iPlane][2]
-        <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2]  <<" "<< TrailingEdge_Filter[iPlane][2]  << endl;
+        <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
+        <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
       }
     }
 
@@ -13728,7 +13635,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     Wing_File.close();
 
 
-    Section_File.open("Aircraft_Slices.dat", ios::out);
+    Section_File.open("wing_slices.dat", ios::out);
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
 
@@ -13811,14 +13718,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++)
     delete [] TrailingEdge[iPlane];
   delete [] TrailingEdge;
-
-  for (iPlane = 0; iPlane < nPlane; iPlane++)
-    delete [] LeadingEdge_Filter[iPlane];
-  delete [] LeadingEdge_Filter;
-
-  for (iPlane = 0; iPlane < nPlane; iPlane++)
-    delete [] TrailingEdge_Filter[iPlane];
-  delete [] TrailingEdge_Filter;
 
   for (iPlane = 0; iPlane < nPlane; iPlane++)
     delete [] Plane_P0[iPlane];
