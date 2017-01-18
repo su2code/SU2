@@ -907,7 +907,6 @@ CStructuralIntegration::~CStructuralIntegration(void) { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container,
                                                   CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-//  su2double monitor = 0.0;
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 

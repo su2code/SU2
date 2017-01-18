@@ -239,6 +239,29 @@ public:
 	 */
 	void DeleteValsRowi(unsigned long i);
   
+  /*!
+   * \brief Recursive definition of determinate using expansion by minors. Written by Paul Bourke
+   * \param[in] a - Matrix to compute the determinant.
+   * \param[in] n - Size of the quare matrix.
+   * \return Value of the determinant.
+   */
+  su2double MatrixDeterminant(su2double **a, unsigned long n);
+
+  /*!
+   * \brief Find the cofactor matrix of a square matrix. Written by Paul Bourke
+   * \param[in] a - Matrix to compute the determinant.
+   * \param[in] n - Size of the quare matrix.
+   * \param[out] b - cofactor matrix
+   */
+  void MatrixCoFactor(su2double **a, unsigned long n, su2double **b) ;
+
+  /*!
+   * \brief Transpose of a square matrix, do it in place. Written by Paul Bourke
+   * \param[in] a - Matrix to compute the determinant.
+   * \param[in] n - Size of the quare matrix.
+   */
+  void MatrixTranspose(su2double **a, unsigned long n) ;
+  
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
 	 * \param[in] block_i - Index of the (i, i) subblock in the matrix-by-blocks structure.

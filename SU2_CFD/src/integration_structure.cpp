@@ -73,10 +73,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       break;
   }
   
-  
   /*--- Compute viscous residuals ---*/
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
+  
   
   
   /*--- Compute source term residuals ---*/
@@ -587,7 +587,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 #ifndef HAVE_MPI
       exit(EXIT_DIVERGENCE);
 #else
+      MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #endif
     }
     
