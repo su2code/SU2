@@ -7787,13 +7787,13 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
     }
     
-    nSection = config->GetnSections();
+    nSection = config->GetnAirfoilSections();
     
     for (iSection = 0; iSection < nSection; iSection++) {
       
       /*--- Read the values from the config file ---*/
       
-      MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
+      MinPlane = config->GetSection_VolumeBounds(0); MaxPlane = config->GetSection_VolumeBounds(1);
       MinXCoord = -1E6; MaxXCoord = 1E6;
       
       Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
