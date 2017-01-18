@@ -61,8 +61,8 @@ void WriteQuadMeshFile () {
     KindBound = 9; // Quadrilateral
 
     /*--- Store the number of nodes in each direction ---*/
-    iDim = 4;
-    jDim = 4;
+    iDim = 2;
+    jDim = 2;
     kDim = 2;
 
     /*--- The grid spacing in each direction ---*/
@@ -92,14 +92,14 @@ void WriteQuadMeshFile () {
           Mesh_File << KindElem << "\t";
           // Proper ordering here is essential.
           // See VTK documentation for hexahedral cells for ordering.
-          Mesh_File << iNode     + (jNode*jDim)     + (kNode*jDim*kDim) << "\t";
-          Mesh_File << (iNode+1) + (jNode*jDim)     + (kNode*jDim*kDim) << "\t";
-          Mesh_File << (iNode+1) + ((jNode+1)*jDim) + (kNode*jDim*kDim) << "\t";
-          Mesh_File << iNode     + ((jNode+1)*jDim) + (kNode*jDim*kDim) << "\t";
-          Mesh_File << iNode     + (jNode*jDim)     + ((kNode+1)*jDim*kDim) << "\t";
-          Mesh_File << (iNode+1) + (jNode*jDim)     + ((kNode+1)*jDim*kDim) << "\t";
-          Mesh_File << (iNode+1) + ((jNode+1)*jDim) + ((kNode+1)*jDim*kDim) << "\t";
-          Mesh_File << iNode     + ((jNode+1)*jDim) + ((kNode+1)*jDim*kDim) << "\t";
+          Mesh_File << iNode     + (jNode*jDim)     + (kNode*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + (jNode*jDim)     + (kNode*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + ((jNode+1)*jDim) + (kNode*jDim*iDim) << "\t";
+          Mesh_File << iNode     + ((jNode+1)*jDim) + (kNode*jDim*iDim) << "\t";
+          Mesh_File << iNode     + (jNode*jDim)     + ((kNode+1)*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + (jNode*jDim)     + ((kNode+1)*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + ((jNode+1)*jDim) + ((kNode+1)*jDim*iDim) << "\t";
+          Mesh_File << iNode     + ((jNode+1)*jDim) + ((kNode+1)*jDim*iDim) << "\t";
           Mesh_File << iElem << std::endl;
           iElem++;
         }
@@ -242,7 +242,7 @@ int main() {
   WriteCfgFile();
 
   // The use of "geometry_aux" is necessary to mock a multigrid configuration
-  CConfig* config = new CConfig("hextest.cfg", SU2_CFD, 0, 1, 2, VERB_HIGH);
+  CConfig* config = new CConfig("hextest.cfg", SU2_CFD, 0, 1, 2, VERB_NONE);
   CGeometry *geometry_aux = NULL;
   geometry_aux = new CPhysicalGeometry(config, 0, 1);
   CGeometry* geometry = new CGeometry();
