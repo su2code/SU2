@@ -1,6 +1,7 @@
 /*!
  * \file resolution_tensor_test.cpp
- * \brief 
+ * \brief This test checks whether the resolution tensor is correctly set for a grid
+ * of quadrilateral cells.
  * \author C. Pederson
  * \version 4.3.0 "Cardinal"
  *

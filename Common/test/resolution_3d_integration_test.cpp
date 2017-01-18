@@ -1,6 +1,7 @@
 /*!
  * \file resolution_tensor_3D_test.cpp
- * \brief 
+ * \brief This test checks whether the resolution tensor is correctly set for a grid
+ * of hexahedral cells.
  * \author C. Pederson
  * \version 4.3.0 "Cardinal"
  *
@@ -61,12 +62,12 @@ void WriteQuadMeshFile () {
     KindBound = 9; // Quadrilateral
 
     /*--- Store the number of nodes in each direction ---*/
-    iDim = 2;
-    jDim = 2;
-    kDim = 2;
+    iDim = 4;
+    jDim = 4;
+    kDim = 4;
 
     /*--- The grid spacing in each direction ---*/
-    xSpacing = 4.0;
+    xSpacing = 3.0;
     ySpacing = 2.0;
     zSpacing = 1.0;
 
@@ -273,7 +274,7 @@ int main() {
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct
     bool entries_correct = true;
-    if (Mij[0][0] != 4.0 ) entries_correct = false;
+    if (Mij[0][0] != 3.0 ) entries_correct = false;
     if (Mij[0][1] != 0.0 ) entries_correct = false;
     if (Mij[0][1] != 0.0 ) entries_correct = false;
     if (Mij[1][0] != 0.0 ) entries_correct = false;
@@ -284,7 +285,7 @@ int main() {
     if (Mij[2][2] != 1.0 ) entries_correct = false;
 
     if (not(entries_correct)) {
-      std::cout << "ERROR: The resolution tensor for a quadrilateral was not correct."
+      std::cout << "ERROR: The resolution tensor for a hexahedron was not correct."
           << std::endl;
       std::cout << "The elements of the array were incorrect." << std::endl;
       std::cout << "Computed array elements:" << std::endl;

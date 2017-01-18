@@ -36,48 +36,41 @@
 
 unsigned short CPrimalGrid::nDim;
 
-// TODO: This would be better with templates
-// NOTE: This could be replaced with CSysSolve's GramSchmidt method,
-// but the current implementation has ModGramSchmidt as a private method
-void GramSchmidt2D(su2double w[][2], su2double v[][2]) {
-  unsigned short iDim;
-  const unsigned short nDim = 2;
+void CPrimalGrid::GramSchmidt(std::vector<std::vector<su2double> > &w,
+                              std::vector<std::vector<su2double> > &v) {
+  unsigned short iDim, jDim;
+  const unsigned short nDim = w.size();
 
   // Set the first basis vector to the first input vector
   for (iDim = 0; iDim < nDim; ++iDim) {
     v[0][iDim] = w[0][iDim];
   }
 
-  // Compute the next orthogonal vector
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    v[1][iDim] = w[1][iDim] - dot_prod<nDim>(w[1],v[0])
-            /dot_prod<nDim>(v[0],v[0])*v[0][iDim];
+  if (nDim > 1) {
+    // Compute the next orthogonal vector
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      v[1][iDim] = w[1][iDim] -
+          inline_dot_prod(w[1],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim];
+    }
   }
 
-}
-
-void GramSchmidt3D(su2double w[][3], su2double v[][3]) {
-  unsigned short iDim;
-  const unsigned short nDim = 3;
-
-  // Set the first basis vector to the first input vector
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    v[0][iDim] = w[0][iDim];
+  if (nDim > 2) {
+    // Compute the third orthogonal vector
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      v[2][iDim] = w[2][iDim] -
+          inline_dot_prod(w[2],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim] -
+          inline_dot_prod(w[2],v[1])/inline_dot_prod(v[1],v[1])*v[1][iDim];
+    }
   }
 
-  // Compute the next orthogonal vector
+  // Normalize results of the Gram-Schmidt
+  su2double mag;
   for (iDim = 0; iDim < nDim; ++iDim) {
-    v[1][iDim] = w[1][iDim] - dot_prod<nDim>(w[1],v[0])
-            /dot_prod<nDim>(v[0],v[0])*v[0][iDim];
+    mag = inline_magnitude(v[iDim]);
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      v[iDim][jDim] /= mag;
+    }
   }
-
-  // Compute the third orthogonal vector
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    v[2][iDim] = w[2][iDim] -
-        dot_prod<nDim>(w[2],v[0])/dot_prod<nDim>(v[0],v[0])*v[0][iDim] -
-        dot_prod<nDim>(w[2],v[1])/dot_prod<nDim>(v[1],v[1])*v[1][iDim];
-  }
-
 }
 
 CPrimalGrid::CPrimalGrid(void) {
@@ -87,7 +80,7 @@ CPrimalGrid::CPrimalGrid(void) {
 	Neighbor_Elements = NULL;
 	Coord_CG = NULL;
 	Coord_FaceElems_CG = NULL;
-	Mij = NULL;
+	Resolution_Tensor = NULL;
   
 }
 
@@ -96,7 +89,7 @@ CPrimalGrid::~CPrimalGrid() {
 	if (Nodes != NULL) delete[] Nodes;
 	if (Coord_CG != NULL) delete[] Coord_CG;
   if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
-  if (Mij != NULL) delete[] Mij;
+  if (Resolution_Tensor != NULL) delete[] Resolution_Tensor;
    
 }
 
@@ -414,27 +407,25 @@ void CQuadrilateral::SetResolutionTensor(void) {
   // sort them so that the face indices in paired_faces[0] and paired_faces[1]
   // match, then paired_faces[2] and paired_faces[3] match, etc.
 
-  // Allocate Mij
-  Mij = new su2double* [nDim];
+  // Allocate ResolutionTensor
+  Resolution_Tensor = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    Mij[iDim] = new su2double [nDim];
+    Resolution_Tensor[iDim] = new su2double [nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
-      Mij[iDim][jDim] = 0.0;
+      Resolution_Tensor[iDim][jDim] = 0.0;
     }
   }
 
   paired_faces = new unsigned short [nFaces];
-
-  su2double eigvecs[2][2];
+  vector<vector<su2double> > eigvecs(nDim, vector<su2double>(nDim));
 
   // Create cell center to face vectors
-  su2double center2face[nFaces][nDim];
+  vector<vector<su2double> > center2face(nFaces, vector<su2double>(nDim));
   for (iFace = 0; iFace < nFaces; ++iFace) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
     }
   }
-
 
   // First vector
   paired_faces[0] = 0; // Choose vector 1 as our first vector to pair up
@@ -444,8 +435,9 @@ void CQuadrilateral::SetResolutionTensor(void) {
   for (iFace = 1; iFace < nFaces; ++iFace) {
     // NOTE: You cannot use nDim in the template functions for the array size;
     // nDim is not const
-    current_dp = dot_prod<2>(center2face[0],center2face[iFace])
-              /(magnitude<2>(center2face[0])*magnitude<2>(center2face[iFace]));
+    current_dp = inline_dot_prod(center2face[0],center2face[iFace])
+              /(inline_magnitude(center2face[0])*
+                  inline_magnitude(center2face[iFace]));
     if (current_dp < min_dp) {
       min_dp = current_dp;
       paired_faces[1] = iFace;
@@ -481,30 +473,22 @@ void CQuadrilateral::SetResolutionTensor(void) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       eigvalues[iDim][jDim] = 0.0;
     }
-    eigvalues[iDim][iDim] = magnitude<2>(eigvecs[iDim]);
+    eigvalues[iDim][iDim] = inline_magnitude(eigvecs[iDim]);
     for (jDim = 0; jDim < nDim; ++jDim) {
       eigvecs[iDim][jDim] /= eigvalues[iDim][iDim];
     }
   }
 
-
   // Gram-Schmidt Process to make the vectors orthogonal
-  // NOTE: This could be replaced with CSysSolve's GramSchmidt method,
-  // but the current implementation has ModGramSchmidt as a private method
-  su2double temp_eigvecs[2][2];
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    for (jDim = 0; jDim < nDim; ++jDim) {
-      temp_eigvecs[iDim][jDim] = eigvecs[iDim][jDim];
-    }
-  }
-  GramSchmidt2D(temp_eigvecs, eigvecs);
+  vector<vector<su2double> > temp_eigvecs = eigvecs;
+  GramSchmidt(temp_eigvecs, eigvecs);
 
   // Perform matrix multiplication
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       for (kDim = 0; kDim < nDim; ++kDim) {
         for (lDim = 0; lDim < nDim; ++lDim) {
-          Mij[iDim][jDim] += eigvecs[kDim][iDim]*
+          Resolution_Tensor[iDim][jDim] += eigvecs[kDim][iDim]*
               eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
         }
       }
@@ -517,7 +501,7 @@ vector<vector<su2double> > CQuadrilateral::GetResolutionTensor(void) {
   vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
   for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
     for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-      output[iDim][jDim] = Mij[iDim][jDim];
+      output[iDim][jDim] = Resolution_Tensor[iDim][jDim];
     }
   }
   return output;
@@ -709,21 +693,21 @@ void CHexahedron::SetResolutionTensor(void) {
   // match, then paired_faces[2] and paired_faces[3] match, etc.
 
 
-  // Allocate Mij
-  Mij = new su2double* [nDim];
+  // Allocate ResolutionTensor
+  Resolution_Tensor = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
-    Mij[iDim] = new su2double [nDim];
+    Resolution_Tensor[iDim] = new su2double [nDim];
     for (jDim = 0; jDim < nDim; ++jDim) {
-      Mij[iDim][jDim] = 0.0;
+      Resolution_Tensor[iDim][jDim] = 0.0;
     }
   }
 
   paired_faces = new unsigned short [nFaces];
 
-  su2double eigvecs[nDim][nDim];
+  vector<vector<su2double> > eigvecs(nDim, vector<su2double>(nDim));
 
   // Create cell center to face vectors
-  su2double center2face[nFaces][nDim];
+  vector<vector<su2double> > center2face(nFaces, vector<su2double>(nDim));
   for (iFace = 0; iFace < nFaces; ++iFace) {
     for (iDim = 0; iDim < nDim; ++iDim) {
       center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
@@ -738,8 +722,8 @@ void CHexahedron::SetResolutionTensor(void) {
   for (iFace = 1; iFace < nFaces; ++iFace) {
     // NOTE: You cannot use nDim in the template functions for the array size;
     // nDim is not const
-    current_dp = dot_prod<3>(center2face[0],center2face[iFace])
-        /(magnitude<3>(center2face[0])*magnitude<3>(center2face[iFace]));
+    current_dp = inline_dot_prod(center2face[0],center2face[iFace])
+        /(inline_magnitude(center2face[0])*inline_magnitude(center2face[iFace]));
     if (current_dp < min_dp) {
       min_dp = current_dp;
       paired_faces[1] = iFace;
@@ -760,9 +744,9 @@ void CHexahedron::SetResolutionTensor(void) {
     // NOTE: You cannot use nDim in the template functions for the array size;
     // nDim is not const
     if (iFace == paired_faces[1]) continue;
-    current_dp = dot_prod<3>(center2face[paired_faces[2]],center2face[iFace])
-        /(magnitude<3>(center2face[paired_faces[2]])
-            *magnitude<3>(center2face[1]));
+    current_dp = inline_dot_prod(center2face[paired_faces[2]],center2face[iFace])
+        /(inline_magnitude(center2face[paired_faces[2]])
+            *inline_magnitude(center2face[1]));
     if (current_dp < min_dp) {
       min_dp = current_dp;
       paired_faces[3] = iFace;
@@ -799,33 +783,19 @@ void CHexahedron::SetResolutionTensor(void) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       eigvalues[iDim][jDim] = 0.0;
     }
-    eigvalues[iDim][iDim] = magnitude<3>(eigvecs[iDim]);
+    eigvalues[iDim][iDim] = inline_magnitude(eigvecs[iDim]);
   }
 
   // Gram-Schmidt Process to make the vectors orthogonal
-  su2double temp_eigvecs[nDim][nDim];
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    for (jDim = 0; jDim < nDim; ++jDim) {
-      temp_eigvecs[iDim][jDim] = eigvecs[iDim][jDim];
-    }
-  }
-  GramSchmidt3D(temp_eigvecs, eigvecs);
-
-  // Normalize results of Gram-Schmidt
-  su2double mag;
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    mag = magnitude<3>(eigvecs[iDim]);
-    for (jDim = 0; jDim < nDim; ++jDim) {
-      eigvecs[iDim][jDim] /= mag;
-    }
-  }
+  vector<vector<su2double> > temp_eigvecs = eigvecs;
+  GramSchmidt(temp_eigvecs, eigvecs);
 
   // Perform matrix multiplication
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       for (kDim = 0; kDim < nDim; ++kDim) {
         for (lDim = 0; lDim < nDim; ++lDim) {
-          Mij[iDim][jDim] += eigvecs[kDim][iDim]
+          Resolution_Tensor[iDim][jDim] += eigvecs[kDim][iDim]
               *eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
         }
       }
@@ -839,7 +809,7 @@ vector<vector<su2double> > CHexahedron::GetResolutionTensor(void) {
   vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
   for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
     for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-      output[iDim][jDim] = Mij[iDim][jDim];
+      output[iDim][jDim] = Resolution_Tensor[iDim][jDim];
     }
   }
   return output;
