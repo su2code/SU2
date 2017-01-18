@@ -73,23 +73,6 @@ inline void print_matrix(su2double v[nDim][nDim]) {
   }
 }
 
-template<std::size_t nDim>
-void GramSchmidt(su2double w[nDim][nDim], su2double v[nDim][nDim]) {
-  unsigned short iDim, jDim;
-
-  // Set the first basis vector to the first input vector
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    v[0][iDim] = w[0][iDim];
-  }
-
-  // Compute the next orthogonal vector
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    v[1][iDim] = w[1][iDim] - dot_prod<nDim>(w[1],v[0])
-            /dot_prod<nDim>(v[0],v[0])*v[0][iDim];
-  }
-
-}
-
 inline unsigned short CPrimalGrid::GetnNodesFace(unsigned short val_face) { return 0; }
 
 inline void CPrimalGrid::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }

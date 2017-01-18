@@ -36,6 +36,49 @@
 
 unsigned short CPrimalGrid::nDim;
 
+// TODO: This would be better with templates
+// NOTE: This could be replaced with CSysSolve's GramSchmidt method,
+// but the current implementation has ModGramSchmidt as a private method
+void GramSchmidt2D(su2double w[][2], su2double v[][2]) {
+  unsigned short iDim;
+  const unsigned short nDim = 2;
+G
+  // Set the first basis vector to the first input vector
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[0][iDim] = w[0][iDim];
+  }
+
+  // Compute the next orthogonal vector
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[1][iDim] = w[1][iDim] - dot_prod<nDim>(w[1],v[0])
+            /dot_prod<nDim>(v[0],v[0])*v[0][iDim];
+  }
+
+}
+
+void GramSchmidt3D(su2double w[][3], su2double v[][2]) {
+  unsigned short iDim;
+  const unsigned short nDim = 3;
+
+  // Set the first basis vector to the first input vector
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[0][iDim] = w[0][iDim];
+  }
+
+  // Compute the next orthogonal vector
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[1][iDim] = w[1][iDim] - dot_prod<nDim>(w[1],v[0])
+            /dot_prod<nDim>(v[0],v[0])*v[0][iDim];
+  }
+
+  // Compute the third orthogonal vector
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    v[2][iDim] = w[2][iDim] -
+        dot_prod<nDim>(w[2],v[0])/dot_prod<nDim>(v[0],v[0])*v[0][iDim] -
+        dot_prod<nDim>(w[2],v[1])/dot_prod<nDim>(v[1],v[1])*v[1][iDim];
+  }
+}
+
 CPrimalGrid::CPrimalGrid(void) {
   
   /*--- Set the default values for the pointers ---*/
@@ -43,6 +86,7 @@ CPrimalGrid::CPrimalGrid(void) {
 	Neighbor_Elements = NULL;
 	Coord_CG = NULL;
 	Coord_FaceElems_CG = NULL;
+	Mij = NULL;
   
 }
 
@@ -51,6 +95,7 @@ CPrimalGrid::~CPrimalGrid() {
 	if (Nodes != NULL) delete[] Nodes;
 	if (Coord_CG != NULL) delete[] Coord_CG;
   if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
+  if (Mij != NULL) delete[] Mij;
    
 }
 
@@ -379,7 +424,7 @@ void CQuadrilateral::SetResolutionTensor(void) {
 
   paired_faces = new unsigned short [nFaces];
 
-  su2double eigvecs[nDim][nDim];
+  su2double eigvecs[2][2];
 
   // Create cell center to face vectors
   su2double center2face[nFaces][nDim];
@@ -443,13 +488,15 @@ void CQuadrilateral::SetResolutionTensor(void) {
 
 
   // Gram-Schmidt Process to make the vectors orthogonal
-  su2double temp_eigvecs[nDim][nDim];
+  // NOTE: This could be replaced with CSysSolve's GramSchmidt method,
+  // but the current implementation has ModGramSchmidt as a private method
+  su2double temp_eigvecs[2][2];
   for (iDim = 0; iDim < nDim; ++iDim) {
     for (jDim = 0; jDim < nDim; ++jDim) {
       temp_eigvecs[iDim][jDim] = eigvecs[iDim][jDim];
     }
   }
-  GramSchmidt<2>(temp_eigvecs, eigvecs);
+  GramSchmidt2D(temp_eigvecs, eigvecs);
 
   // Perform matrix multiplication
   for (iDim = 0; iDim < nDim; ++iDim) {
@@ -651,15 +698,143 @@ void CHexahedron::Change_Orientation(void) {
 }
 
 void CHexahedron::SetResolutionTensor(void) {
-  // TODO: Not implemented.
+
+  unsigned short iDim, jDim, kDim, lDim;
+  unsigned short iFace;
+  unsigned short* paired_faces;
+  // paired_faces is used to sort the faces into matching pairs.
+  // The code will look for pairs of faces that are mostly opposite, then
+  // sort them so that the face indices in paired_faces[0] and paired_faces[1]
+  // match, then paired_faces[2] and paired_faces[3] match, etc.
+
+
+  // Allocate Mij
+  Mij = new su2double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Mij[iDim] = new su2double [nDim];
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      Mij[iDim][jDim] = 0.0;
+    }
+  }
+
+  paired_faces = new unsigned short [nFaces];
+
+  su2double eigvecs[nDim][nDim];
+
+  // Create cell center to face vectors
+  su2double center2face[nFaces][nDim];
+  for (iFace = 0; iFace < nFaces; ++iFace) {
+    for (iDim = 0; iDim < nDim; ++iDim) {
+      center2face[iFace][iDim] = Coord_FaceElems_CG[iFace][iDim] - Coord_CG[iDim];
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // First vector
+  paired_faces[0] = 0; // Choose vector 1 as our first vector to pair up
+  // Find vector mostly parallel to first
+  su2double min_dp = 1.0;
+  su2double current_dp;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    // NOTE: You cannot use nDim in the template functions for the array size;
+    // nDim is not const
+    current_dp = dot_prod<3>(center2face[0],center2face[iFace])
+        /(magnitude<3>(center2face[0])*magnitude<3>(center2face[iFace]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[1] = iFace;
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // Second vector
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1]) {
+      paired_faces[2] = iFace;
+      break;
+    }
+  }
+
+  min_dp = 1.0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    // NOTE: You cannot use nDim in the template functions for the array size;
+    // nDim is not const
+    if (iFace == paired_faces[1]) continue;
+    current_dp = dot_prod<3>(center2face[paired_faces[2]],center2face[iFace])
+        /(magnitude<3>(center2face[paired_faces[2]])
+            *magnitude<3>(center2face[1]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[3] = iFace;
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // Third vector
+  paired_faces[4] = 0;
+  paired_faces[5] = 0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1] &&
+        iFace != paired_faces[2] &&
+        iFace != paired_faces[3]) {
+      if (paired_faces[4] == 0) {
+        paired_faces[4] = iFace;
+      } else {
+        paired_faces[5] = iFace;
+      }
+    }
+  }
+
+  // Use paired_faces list to build vectors
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[jDim][iDim] = Coord_FaceElems_CG[paired_faces[jDim*2]][iDim] -
+          Coord_FaceElems_CG[paired_faces[jDim*2+1]][iDim];
+    }
+  }
+
+
+  // Normalized vectors
+  su2double eigvalues[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvalues[iDim][jDim] = 0.0;
+    }
+    eigvalues[iDim][iDim] = magnitude<3>(eigvecs[iDim]);
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[iDim][jDim] /= eigvalues[iDim][iDim];
+    }
+  }
+
+  // Gram-Schmidt Process to make the vectors orthogonal
+  su2double temp_eigvecs[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      temp_eigvecs[iDim][jDim] = eigvecs[iDim][jDim];
+    }
+  }
+  GramSchmidt3D(temp_eigvecs, eigvecs);
+
+  // Perform matrix multiplication
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      for (kDim = 0; kDim < nDim; ++kDim) {
+        for (lDim = 0; lDim < nDim; ++lDim) {
+          Mij[iDim][jDim] += eigvecs[kDim][iDim]
+              *eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
+        }
+      }
+    }
+  }
+
+
 };
 
 vector<vector<su2double> > CHexahedron::GetResolutionTensor(void) {
-  // TODO: Not implemented.
   vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
   for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
     for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
-      output[iDim][jDim] = 0;
+      output[iDim][jDim] = Mij[iDim][jDim];
     }
   }
   return output;
