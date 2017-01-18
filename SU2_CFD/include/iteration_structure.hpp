@@ -771,6 +771,30 @@ public:
    */
   void Postprocess();
   
+  /*!
+   * \brief Compute the gradient at the end of a continuous adjoint calculation using a field integral formulation.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Value of the current zone number.
+   */
+  void ComputeGradient(COutput *output,
+                       CIntegration ***integration_container,
+                       CGeometry ***geometry_container,
+                       CSolver ****solver_container,
+                       CNumerics *****numerics_container,
+                       CConfig **config_container,
+                       CSurfaceMovement **surface_movement,
+                       CVolumetricMovement **grid_movement,
+                       CFreeFormDefBox*** FFDBox,
+                       unsigned short val_iZone);
+  
 };
 
 /*!

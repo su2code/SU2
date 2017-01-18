@@ -2775,7 +2775,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Initialize the convective residual vector ---*/
     
-    LinSysRes.SetBlock_Zero(iPoint);
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   
@@ -6372,7 +6372,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     /*--- Initialize the convective residual vector ---*/
     
-    LinSysRes.SetBlock_Zero(iPoint);
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
     
   }
   

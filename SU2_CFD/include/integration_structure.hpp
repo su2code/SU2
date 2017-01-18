@@ -414,6 +414,24 @@ public:
    */
   virtual void Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                        unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   * \param[in] iZone - Current zone number.
+   */
+  virtual void Residual_Evaluation(CGeometry ***geometry,
+                                   CSolver ****solver_container,
+                                   CNumerics *****numerics_container,
+                                   CConfig **config,
+                                   unsigned short RunTime_EqSystem,
+                                   unsigned long Iteration,
+                                   unsigned short iZone);
 
 };
 
@@ -587,6 +605,25 @@ public:
    */
   void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
              CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief This subroutine calls a single evaluation of the spatial residual with the input solution and mesh.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   * \param[in] iZone - Current zone number.
+   */
+  void Residual_Evaluation(CGeometry ***geometry,
+                           CSolver ****solver_container,
+                           CNumerics *****numerics_container,
+                           CConfig **config,
+                           unsigned short RunTime_EqSystem,
+                           unsigned long Iteration,
+                           unsigned short iZone);
+  
 };
 
 /*! 

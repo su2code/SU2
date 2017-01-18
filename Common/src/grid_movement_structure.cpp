@@ -8991,7 +8991,7 @@ su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
 
   /*--- Special cases ---*/
 
-  if ((val_i == 0 && val_t == U[0]) || (val_i == U.size()-1 && val_t == U.back())) {return 1.0;}
+  if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) {return 1.0;}
 
   /*--- Local property of BSplines ---*/
 

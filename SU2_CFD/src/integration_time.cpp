@@ -754,6 +754,50 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
   
 }
 
+void CMultiGridIntegration::Residual_Evaluation(CGeometry ***geometry,
+                                                CSolver ****solver_container,
+                                                CNumerics *****numerics_container,
+                                                CConfig **config,
+                                                unsigned short RunTime_EqSystem,
+                                                unsigned long Iteration,
+                                                unsigned short iZone) {
+  
+  su2double monitor = 0.0;
+  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+  
+  /*--- Preprocessing ---*/
+  
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Preprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0, RunTime_EqSystem, false);
+  
+  /*--- Set the old solution ---*/
+  
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][FinestMesh]);
+  
+  /*--- Time step evaluation ---*/
+  
+  solver_container[iZone][FinestMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0);
+  
+  /*--- Space integration ---*/
+  
+  Space_Integration(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], numerics_container[iZone][FinestMesh][SolContainer_Position], config[iZone], FinestMesh, NO_RK_ITER, RunTime_EqSystem);
+  
+  /*--- Postprocessing ---*/
+  
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Postprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh);
+  
+  /*--- Compute non-dimensional parameters and the convergence monitor ---*/
+  
+  NonDimensional_Parameters(geometry[iZone], solver_container[iZone],
+                            numerics_container[iZone], config[iZone],
+                            FinestMesh, RunTime_EqSystem, Iteration, &monitor);
+  
+  /*--- Convergence strategy ---*/
+  
+  Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
+  
+}
+
 CSingleGridIntegration::CSingleGridIntegration(CConfig *config) : CIntegration(config) { }
 
 CSingleGridIntegration::~CSingleGridIntegration(void) { }

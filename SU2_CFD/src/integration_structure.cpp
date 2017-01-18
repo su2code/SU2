@@ -76,7 +76,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   /*--- Compute viscous residuals ---*/
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
-  
 
   
   /*--- Compute source term residuals ---*/
