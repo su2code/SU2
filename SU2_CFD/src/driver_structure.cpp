@@ -3568,24 +3568,24 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
 
           if (!adjoint) {
             U[iVar] = solver_container[iTimeInstance][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-            Source[iVar] += U[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance%nTimeInstances];
+            Source[iVar] += U[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
 
             if (implicit) {
               U_old[iVar] = solver_container[iTimeInstance][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
               deltaU = U[iVar] - U_old[iVar];
-              Source[iVar] += deltaU*D[iTimeInstance%nTimeInstances][jTimeInstance%nTimeInstances];
+              Source[iVar] += deltaU*D[iTimeInstance%nTimeInstances][jTimeInstance];
             }
 
           }
 
           else {
-            Psi[iVar] = solver_container[jTimeInstance][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
-            Source[iVar] += Psi[iVar]*D[jTimeInstance%nTimeInstances][iTimeInstance%nTimeInstances];
+            Psi[iVar] = solver_container[iTimeInstance][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
+            Source[iVar] += Psi[iVar]*D[jTimeInstance][iTimeInstance%nTimeInstances];
 
             if (implicit) {
-              Psi_old[iVar] = solver_container[jTimeInstance][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+              Psi_old[iVar] = solver_container[iTimeInstance][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
               deltaPsi = Psi[iVar] - Psi_old[iVar];
-              Source[iVar] += deltaPsi*D[jTimeInstance%nTimeInstances][iTimeInstance%nTimeInstances];
+              Source[iVar] += deltaPsi*D[jTimeInstance][iTimeInstance%nTimeInstances];
             }
           }
         }
@@ -3621,7 +3621,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar_Turb; iVar++) {
           U_Turb[iVar] = solver_container[iTimeInstance][MESH_0][TURB_SOL]->node[iPoint]->GetSolution(iVar);
-          Source_Turb[iVar] += U_Turb[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance%nTimeInstances];
+          Source_Turb[iVar] += U_Turb[iVar]*D[iTimeInstance%nTimeInstances][jTimeInstance];
         }
       }
 
