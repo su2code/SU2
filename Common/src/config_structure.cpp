@@ -384,7 +384,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow	      = NULL;    
   Kappa_AdjFlow       = NULL;
-  Section_Location    = NULL;
+  Section_VolumeBounds    = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -404,7 +404,7 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement	  = NULL;
+  Kind_GridMovement	  = NULL;    AirfoilSections	  = NULL;
   Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z	    = NULL;
   Translation_Rate_X  = NULL;    Translation_Rate_Y  = NULL;    Translation_Rate_Z  = NULL;
   Rotation_Rate_X     = NULL;    Rotation_Rate_Y     = NULL;    Rotation_Rate_Z     = NULL;
@@ -683,6 +683,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /*!\brief REF_AREA\n DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) \ingroup Config*/
   addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
+  /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
+  addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
   /*!\brief REF_LENGTH_MOMENT\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
   /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
@@ -1114,13 +1116,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_geo_loc);
+  addDoubleArrayOption("GEO_VOLUME_BOUNDS", 2, Section_VolumeBounds, default_geo_loc);
   /* DESCRIPTION: Identify the axis of the section */
   addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
-  /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  addUnsignedShortOption("GEO_NUMBER_SECTIONS", nSections, 5);
   /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
   addUnsignedShortOption("GEO_VOLUME_SECTIONS", nVolSections, 101);
+  /* DESCRIPTION: Definition of the airfoil sections */
+  addDoubleListOption("GEO_AIRFOIL_SECTIONS", nAirfoilSections, AirfoilSections);
   /* DESCRIPTION: Output sectional forces for specified markers. */
   addBoolOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
@@ -2926,7 +2928,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) );
   
-  
+  /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
+
+  Section_VolumeBounds[0] += EPS;
+  Section_VolumeBounds[1] += EPS;
+
+  for (unsigned short iSections = 0; iSections < nAirfoilSections; iSections++) {
+    AirfoilSections[iSections] += EPS;
+  }
+
   /*--- Re-scale the length based parameters. The US system uses feet,
    but SU2 assumes that the grid is in inches ---*/
   
@@ -2950,13 +2960,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
     Highlite_Area = Highlite_Area/144.0;
+    SemiSpan = SemiSpan/12.0;
 
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
     
-    Section_Location[0] = Section_Location[0]/12.0;
-    Section_Location[1] = Section_Location[1]/12.0;
+    for (unsigned short iSections = 0; iSections < nAirfoilSections; iSections++) {
+      AirfoilSections[iSections] = AirfoilSections[iSections]/12.0;
+    }
+
+    Section_VolumeBounds[0] = Section_VolumeBounds[0]/12.0;
+    Section_VolumeBounds[1] = Section_VolumeBounds[1]/12.0;
     
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
@@ -5147,6 +5162,10 @@ CConfig::~CConfig(void) {
   /*--- Free memory for unspecified grid motion parameters ---*/
 
  if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
+
+ /*--- Free memory for airfoil sections ---*/
+
+ if (AirfoilSections   != NULL) delete [] AirfoilSections;
 
   /*--- motion origin: ---*/
   

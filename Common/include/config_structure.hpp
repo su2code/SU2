@@ -389,6 +389,7 @@ private:
   unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
+  su2double *AirfoilSections;   /*!< \brief Airfoil sections in wing slicing subroutine. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
@@ -464,6 +465,7 @@ private:
   unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
   unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  su2double SemiSpan;		/*!< \brief Wing Semi span. */
   su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
   su2double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
@@ -471,9 +473,9 @@ private:
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-  su2double *Section_Location;                  /*!< \brief Airfoil section limit. */
-  unsigned short nSections,      /*!< \brief Number of section cuts to make when calculating internal volume. */
-  nVolSections;               /*!< \brief Number of sections. */
+  su2double *Section_VolumeBounds;                  /*!< \brief Airfoil section limit. */
+  unsigned short nAirfoilSections,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
+  nVolSections;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
@@ -1323,7 +1325,7 @@ public:
    * \brief Get the value of the limits for the sections.
    * \return Value of the limits for the sections.
    */
-  su2double GetSection_Location(unsigned short val_var);
+  su2double GetSection_VolumeBounds(unsigned short val_var);
   
   /*!
    * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
@@ -2817,6 +2819,13 @@ public:
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
   
   /*!
+   * \brief Get the airfoil sections in the slicing process.
+   * \param[in] val_section - Index of the section.
+   * \return Coordinate of the airfoil to slice.
+   */
+  su2double GetAirfoilSections(unsigned short val_section);
+
+  /*!
    * \brief Get the number of pre-smoothings in a multigrid strategy.
    * \param[in] val_mesh - Index of the grid.
    * \return Number of smoothing iterations.
@@ -3096,6 +3105,12 @@ public:
    */
   su2double GetRoe_Kappa(void);
   
+  /*!
+   * \brief Get the wing semi span.
+   * \return value of the wing semi span.
+   */
+  su2double GetSemiSpan(void);
+
   /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
@@ -3725,7 +3740,7 @@ public:
    * \brief Get the number of sections.
    * \return Number of sections
    */
-  unsigned short GetnSections(void);
+  unsigned short GetnAirfoilSections(void);
   
   /*!
    * \brief Get the number of sections for computing internal volume.
