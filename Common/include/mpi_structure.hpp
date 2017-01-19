@@ -43,6 +43,8 @@
 
 #ifdef HAVE_MPI
 
+typedef MPI_Comm SU2_Comm;
+
 /*--- Depending on the datatype used, the correct MPI wrapper class is defined.
  * For the default (double type) case this results in using the normal MPI routines. ---*/
 
@@ -271,5 +273,8 @@ protected:
 
 };
 #endif
+
+#else //HAVE_MPI
+typedef unsigned short SU2_Comm;
 #endif
 #include "mpi_structure.inl"
