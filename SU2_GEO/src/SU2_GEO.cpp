@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
-  su2double FanRadius_Diff, FanRadius_Diff_Grad, FanRadius_Diff_New, *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
+  su2double FanRadius_Diff_Grad, *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal,
   
   Wing_Volume = 0.0, Wing_MinMaxThickness = 0.0, Wing_MaxChord = 0.0, Wing_MinToC = 0.0, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0, Wing_MaxDihedral = 0.0,
@@ -296,15 +296,15 @@ int main(int argc, char *argv[]) {
         ObjectiveFunc[8*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane],
                                                                                     iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
         
-        cout << "Max. thickness: "   << ObjectiveFunc[iPlane] << ". ";
-        cout << "1/3C thickness: " << ObjectiveFunc[2*nPlane+iPlane] << ". ";
-        cout << "2/3C thickness: " << ObjectiveFunc[4*nPlane+iPlane] << "." << endl;
-        cout << "1/4C thickness: " << ObjectiveFunc[1*nPlane+iPlane] << ". ";
-        cout << "1/2C thickness: " << ObjectiveFunc[3*nPlane+iPlane] << ". ";
-        cout << "3/4C thickness: " << ObjectiveFunc[5*nPlane+iPlane] << "." << endl;
-        cout << "Area: "                << ObjectiveFunc[6*nPlane+iPlane] << ". ";
-        cout << "Twist angle: "     << ObjectiveFunc[7*nPlane+iPlane] << ". ";
-        cout << "Chord: "               << ObjectiveFunc[8*nPlane+iPlane] << "." << endl;
+        cout << "Max. thickness: "   << ObjectiveFunc[iPlane] << ", ";
+        cout << "1/3C thickness: " << ObjectiveFunc[2*nPlane+iPlane] << ", ";
+        cout << "2/3C thickness: " << ObjectiveFunc[4*nPlane+iPlane] << endl;
+        cout << "1/4C thickness: " << ObjectiveFunc[1*nPlane+iPlane] << ", ";
+        cout << "1/2C thickness: " << ObjectiveFunc[3*nPlane+iPlane] << ", ";
+        cout << "3/4C thickness: " << ObjectiveFunc[5*nPlane+iPlane] << endl;
+        cout << "Area: "                << ObjectiveFunc[6*nPlane+iPlane] << ", ";
+        cout << "Twist angle: "     << ObjectiveFunc[7*nPlane+iPlane] << ", ";
+        cout << "Chord: "               << ObjectiveFunc[8*nPlane+iPlane] << endl;
         
       }
       
