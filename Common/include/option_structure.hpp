@@ -1321,7 +1321,7 @@ enum ENUM_AXIS_ORIENTATION {
   Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
   Z_AXIS = 2    /*!< \brief Z axis orientation. */
 };
-static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
+static const map<string, ENUM_AXIS_ORIENTATION> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
 ("X_AXIS", X_AXIS)
 ("Y_AXIS", Y_AXIS)
 ("Z_AXIS", Z_AXIS);
