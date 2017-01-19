@@ -438,30 +438,24 @@ class TestCase:
             start_solver = False
             for line in output:
                 if not start_solver: # Don't bother parsing anything before SU2_GEO starts
-                    if line.find('Section 1') > -1:
+                    if line.find('Station 1') > -1:
                         start_solver=True
-                elif line.find('Section 2') > -1: # jump out of loop if we hit the next section
+                elif line.find('Station 2') > -1: # jump out of loop if we hit the next section
                     break
                 else:   # Found the lines; parse the input
 
-                    if line.find('Maximum thickness') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
+                    if line.find('Max. thickness') > -1:
+                        raw_data = line.replace(",","").split()
+                        data.append(raw_data[2])
                         found_thick = True
 
                     elif line.find('Area') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
+                        raw_data = line.replace(",","").split()
+                        data.append(raw_data[1])
                         found_area = True
-
-                    elif line.find('Twist angle') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
+                        data.append(raw_data[4])
                         found_twist = True
-
-                    elif line.find('Chord') > -1:
-                        raw_data = line.split()
-                        data.append(raw_data[-1][:-1])
+                        data.append(raw_data[6])
                         found_chord = True
 
 
