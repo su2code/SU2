@@ -3928,7 +3928,7 @@ void CHBDriver::ComputeHB_Operator(unsigned short nZone){
 
 }
 
-CGeneralHBDriver::CGeneralHBDriver(char* confFile,
+CHBMultiZoneDriver::CHBMultiZoneDriver(char* confFile,
                                  unsigned short val_nZone,
                                  unsigned short val_nDim, SU2_Comm MPICommunicator) : CHBDriver(confFile,
                                                                                                 val_nZone,
@@ -3943,10 +3943,10 @@ CGeneralHBDriver::CGeneralHBDriver(char* confFile,
 
 }
 
-CGeneralHBDriver::~CGeneralHBDriver(void) {}
+CHBMultiZoneDriver::~CHBMultiZoneDriver(void) {}
 
 
-void CGeneralHBDriver::Run() {
+void CHBMultiZoneDriver::Run() {
 
 
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
@@ -3979,7 +3979,7 @@ void CGeneralHBDriver::Run() {
   }
 }
 
-void CGeneralHBDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone){
+void CHBMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone){
 
 #ifdef HAVE_MPI
 int rank;
@@ -4041,7 +4041,7 @@ MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 }
 
 
-void CGeneralHBDriver::Update() {
+void CHBMultiZoneDriver::Update() {
 
 
   for (unsigned short iTimeInstance = 0; iTimeInstance < nTotTimeInstances; iTimeInstance++) {

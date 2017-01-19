@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
     /*--- Use the MultiZone Harmonic Balance driver. ---*/
 
-    driver = new CGeneralHBDriver(config_file_name, nTotTimeInstances, nDim, MPICommunicator);
+    driver = new CHBMultiZoneDriver(config_file_name, nTotTimeInstances, nDim, MPICommunicator);
 
 
   } else if ((nZone == 2) && fsi) {

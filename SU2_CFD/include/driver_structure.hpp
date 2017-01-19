@@ -653,12 +653,12 @@ public:
 
 
 /*!
- * \class CGeneralHBDriver
+ * \class CHBMultiZoneDriver
  * \brief Temporary Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time and geometric zones.
  * \author A.Rubino
  * \version 4.3.0 "Cardinal"
  */
-class CGeneralHBDriver : public CHBDriver{
+class CHBMultiZoneDriver : public CHBDriver{
 
 protected:
 
@@ -679,7 +679,7 @@ public:
    * \param[in] val_nDim - Number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
-  CGeneralHBDriver(char* confFile,
+  CHBMultiZoneDriver(char* confFile,
       unsigned short val_nZone,
       unsigned short val_nDim,
       SU2_Comm MPICommunicator);
@@ -687,7 +687,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CGeneralHBDriver(void);
+  ~CHBMultiZoneDriver(void);
 
   /*!
    * \brief Run a single iteration of a Harmonic Balance problem.
