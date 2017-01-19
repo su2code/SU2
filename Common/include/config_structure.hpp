@@ -67,9 +67,8 @@ using namespace std;
 
 class CConfig {
 private:
-  
+  SU2_Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank;
-  
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
@@ -1125,12 +1124,25 @@ public:
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-  
+
+
+  /*!
+   * \brief Get the MPI communicator of SU2.
+   * \return MPI communicator of SU2.
+   */
+  SU2_Comm GetMPICommunicator();
+
+  /*!
+   * \brief Set the MPI communicator for SU2.
+   * \param[in] Communicator - MPI communicator for SU2.
+   */
+  void SetMPICommunicator(SU2_Comm Communicator);
+
   /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
