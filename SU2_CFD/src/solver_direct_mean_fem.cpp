@@ -2529,8 +2529,8 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           
 
     /*--- Compute the pressure and the total enthalpy. ---*/
     FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-    const su2double Pressure  = FluidModel->GetPressure();
-    const su2double Htot      = (sol[nDim+1]+Pressure)*DensityInv;
+    const su2double Pressure = FluidModel->GetPressure();
+    const su2double Htot     = (sol[nDim+1]+Pressure)*DensityInv;
 
     /* Easier storage of the metric terms in this integration point. The +1
        is present, because the first element of the metric terms is the
@@ -2570,7 +2570,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           
     }
 
     /*--- Set the pointer to store the divergence terms for this integration point.
-          and compute these terms, multiplied by the integration weight. */
+          and compute these terms, multiplied by the integration weight. ---*/
     su2double *divFluxInt = divFlux + nVar*i;
 
     divFluxInt[0]      = weights[i]*abv1;
@@ -4916,8 +4916,8 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
   DenseMatrixProduct(nInt*nDim, nVar*nDim, nDOFs, matDerBasisInt, fluxesDOF,
                      gradFluxesInt);
 
-  /*--- Loop over the integration points to compute the divergence of the inviscid
-        fluxes in these integration points, multiplied by the integration weight. ---*/
+  /*--- Loop over the integration points to compute the divergence of the fluxes
+        in these integration points, multiplied by the integration weight. ---*/
   for(unsigned short i=0; i<nInt; ++i) {
 
     /* Easier storage of the location where the data of the derivatives of the
@@ -4969,8 +4969,12 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
                                                            su2double         *res,
                                                            su2double         *work) {
 
-  /* Constant factor present in the heat flux vector. */
+  /* Constant factor present in the heat flux vector, the inverse of
+     the specific heat at constant volume and ratio lambdaOverMu. */
   const su2double factHeatFlux = Gamma/Prandtl_Lam;
+  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double CvInv        = Gamma_Minus_One/Gas_Constant;
+  const su2double lambdaOverMu = -2.0/3.0;
 
   /*--- Get the necessary information from the standard element. ---*/
   const unsigned short ind                = elem->indStandardElement;
@@ -4983,10 +4987,28 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
 
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
-     can be used for both help arrays. */
-  su2double *solAndGradInt = work;
-  su2double *divFlux       = work;
-  su2double *secDerSolInt  = solAndGradInt + nVar*(nDim+1)*nInt;
+     can be used for both help arrays. Set the pointer for the second
+     derivatives such that they are stored after the first derivatives. */
+  su2double *solAndGradInt      = work;
+  su2double *divFlux            = work;
+  const unsigned short offPoint = nVar*(nDim+1)*max(nInt, nDOFs);
+  su2double *secDerSolInt       = solAndGradInt + offPoint;
+
+  /* Determine the offset between the solution variables and the r-derivatives,
+     which is also the offset between the r- and s-derivatives and the offset
+     between s- and t-derivatives. Also determine the offset between the data
+     of the second derivatives. */
+  const unsigned short offDeriv    = nVar*nInt;
+  const unsigned short off2ndDeriv = nDim*offDeriv;
+
+  /* Store the number of metric points per integration point, which depends
+     on the number of dimensions. */
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+
+  /* Store the number of additional metric points per integration point, which
+     are needed to compute the second derivatives. These terms take the
+     non-constant metric into account. */
+  const unsigned short nMetric2ndDerPerPoint = nDim*(nDim + nDim*(nDim-1)/2);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the conserved solution variables to the        ---*/
@@ -5030,8 +5052,193 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   /*---         of the fluxes in the integration points.                   ---*/
   /*--------------------------------------------------------------------------*/
 
-  cout << "CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual: Not implemented yet" << endl;
-  exit(1);
+  /*--- Loop over the integration points to compute the divergence of the fluxes
+        in these integration points, multiplied by the integration weight. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the location where the solution data of this
+       integration point starts. */
+    const su2double *sol = solAndGradInt + nVar*i;
+
+    /*--- Compute the velocities and static energy in this integration point. ---*/
+    const su2double DensityInv = 1.0/sol[0];
+    su2double vel[3], Velocity2 = 0.0;
+    for(unsigned short j=0; j<nDim; ++j) {
+      vel[j]     = sol[j+1]*DensityInv;
+      Velocity2 += vel[j]*vel[j];
+    }
+
+    const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
+    const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+
+    /*--- Compute the viscosity, its derivative w.r.t. temperature,
+          pressure and the total enthalpy. ---*/
+    FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+    const su2double Viscosity = FluidModel->GetLaminarViscosity();
+    const su2double dViscdT   = FluidModel->GetdmudT_rho();
+    const su2double Pressure  = FluidModel->GetPressure();
+    const su2double Htot      = (sol[nDim+1]+Pressure)*DensityInv;
+
+    /* Easier storage of the metric terms in this integration point.  Store the
+       Jacobian and its inverse for later purposes and update the pointer for
+       the metric terms by one, such that it starts at the position where drdx
+       of this integration point is stored. */
+    const su2double *metricTerms = elem->metricTerms.data() + i*nMetricPerPoint;
+    const su2double Jac          = metricTerms[0];
+    const su2double JacInv       = 1.0/Jac;
+    const su2double JacInv2      = JacInv*JacInv;
+    metricTerms                 += 1;
+
+    /*--- Compute the Cartesian gradients of the independent solution
+          variables from the gradients in parametric coordinates and the
+          metric terms in this integration point. Note that at the end a
+          multiplication with JacInv takes places, because the metric terms
+          are scaled by the Jacobian. ---*/
+    su2double solGradCart[5][3];
+    for(unsigned short k=0; k<nDim; ++k) {
+      for(unsigned short j=0; j<nVar; ++j) {
+        solGradCart[j][k] = 0.0;
+        for(unsigned short l=0; l<nDim; ++l)
+          solGradCart[j][k] += sol[j+(l+1)*offDeriv]*metricTerms[k+l*nDim];
+        solGradCart[j][k] *= JacInv;
+      }
+    }
+
+    /* Easier storage of the location where the data of second derivatives of
+       this integration point starts as well as the necessary additional metric
+       terms to compute the Cartesian second derivatives. */
+    const su2double *sol2ndDer         = secDerSolInt + nVar*nDim*i;
+    const su2double *metricTerms2ndDer = elem->metricTerms2ndDer.data()
+                                       + i*nMetric2ndDerPerPoint;
+
+    /*--- Compute the Cartesian second derivatives of the independent solution
+          variables from the gradients and second derivatives in parametric
+          coordinates and the metric terms and its derivatives w.r.t. the
+          parametric coordinates. ---*/
+    su2double sol2ndDerCart[5][3][3];
+    for(unsigned short j=0; j<nVar; ++j) {
+      unsigned short llDerMet = 0;
+      for(unsigned short l=0; l<nDim; ++l) {
+        for(unsigned short k=0; k<=l; ++k) {
+          sol2ndDerCart[j][k][l] = 0.0;
+
+          /* First the terms coming from the second derivatives w.r.t.
+             the parametric coordinates. The result is multiplied by the
+             square of the inverse of the Jacobian, because this term is
+             not present in the metric terms itself. */
+          for(unsigned short m=0; m<nDim; ++m) {
+            const su2double *secDerJ = sol2ndDer + m*off2ndDeriv + j;
+            for(unsigned short n=0; n<nDim; ++n)
+              sol2ndDerCart[j][k][l] += secDerJ[n*nVar]*metricTerms[l+m*nDim]
+                                      * metricTerms[k+n*nDim];
+          }
+          sol2ndDerCart[j][k][l] *= JacInv2;
+
+          /* There is also a contribution to the second derivative from the first
+             derivatives and non-constant metric terms. This is added here. */
+          for(unsigned short m=0; m<nDim; ++m, ++llDerMet)
+            sol2ndDerCart[j][k][l] += metricTerms2ndDer[llDerMet]*sol[j+(m+1)*offDeriv];
+
+          /* The Hessian is symmetric, so copy this derivative to its
+             symmetric counterpart. */
+          sol2ndDerCart[j][l][k] = sol2ndDerCart[j][k][l];
+        }
+      }
+    }
+
+    /*--- Compute the Cartesian gradients of the pressure, velocity components,
+          static energy and dynamic viscosity. ---*/
+    su2double pGrad[3], velGrad[3][3], StaticEnergyGrad[3], ViscosityGrad[3];
+    for(unsigned short k=0; k<nDim; ++k) {
+      pGrad[k]            = solGradCart[nVar-1][k] + 0.5*Velocity2*solGradCart[0][k];
+      StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
+                          -             TotalEnergy*solGradCart[0][k]);
+      for(unsigned short l=0; l<nDim; ++l) {
+        pGrad[k]            -= vel[l]*solGradCart[l+1][k];
+        velGrad[l][k]        = DensityInv*(solGradCart[l+1][k]
+                             -             vel[l]*solGradCart[0][k]);
+        StaticEnergyGrad[k] -= vel[l]*velGrad[l][k];
+      }
+      pGrad[k] *= Gamma_Minus_One;
+
+      ViscosityGrad[k] = CvInv*StaticEnergyGrad[k]*dViscdT;
+    }
+
+    /*--- Compute the second derivatives of the velocity components. ---*/
+    su2double vel2ndDer[3][3][3];
+    for(unsigned short j=0; j<nDim; ++j) {
+      for(unsigned short l=0; l<nDim; ++l) {
+        for(unsigned short k=0; k<=l; ++k) {
+          vel2ndDer[j][k][l] = DensityInv*(sol2ndDerCart[j+1][k][l] - vel[j]*sol2ndDerCart[0][k][l]
+                             +     DensityInv*(2.0*vel[j]*solGradCart[0][k]*solGradCart[0][l]
+                             -                 solGradCart[j+1][k]*solGradCart[0][l]
+                             -                 solGradCart[j+1][l]*solGradCart[0][k]));
+          vel2ndDer[j][l][k] = vel2ndDer[j][k][l];
+        }
+      }
+    }
+
+    /*--- Compute the second derivatives of the static energy. Note that this
+          term appears in the heat flux and therefore only the pure second
+          derivatives are needed. Hence, the cross-derivatives are omitted. ---*/
+    su2double StaticEnergy2ndDer[3];
+    for(unsigned short l=0; l<nDim; ++l) {
+      StaticEnergy2ndDer[l] = DensityInv*(sol2ndDerCart[nDim+1][l][l] - TotalEnergy*sol2ndDerCart[0][0][l]
+                            +     2.0*DensityInv*(TotalEnergy*solGradCart[0][l]*solGradCart[0][l]
+                            -                     solGradCart[nDim+1][l]*solGradCart[0][l]));
+      for(unsigned short k=0; k<nDim; ++k)
+        StaticEnergy2ndDer[l] -= vel[k]*vel2ndDer[k][l][l] - velGrad[k][l]*velGrad[k][l];
+    }
+
+    /* Abbreviations, which make it easier to compute the divergence term. */
+    su2double abv1 = 0.0, abv2 = 0.0, abv3 = 0.0, abv4 = 0.0;
+    for(unsigned short k=0; k<nDim; ++k) {
+      abv1 += solGradCart[k+1][k];
+      abv2 += vel[k]*solGradCart[0][k];
+      abv3 += vel[k]*(solGradCart[nVar-1][k] + pGrad[k]);
+      abv4 += velGrad[k][k];
+    }
+
+    /*--- Set the pointer to store the divergence terms for this integration
+          point and compute these terms, multiplied by the integration weight
+          and Jacobian. ---*/
+    const su2double weightJac = weights[i]*Jac;
+    su2double *divFluxInt     = divFlux + nVar*i;
+
+    divFluxInt[0]      = weightJac*abv1;
+    divFluxInt[nVar-1] = abv3 + Htot*(abv1 - abv2);
+
+    for(unsigned short k=0; k<nDim; ++k) {
+      divFluxInt[k+1]     = pGrad[k] + vel[k]*(abv1 - abv2)
+                          - lambdaOverMu*ViscosityGrad[k]*abv4;
+      divFluxInt[nVar-1] -= abv4*lambdaOverMu*(Viscosity*velGrad[k][k]
+                          +                    vel[k]*ViscosityGrad[k])
+                          + factHeatFlux*(ViscosityGrad[k]*StaticEnergyGrad[k]
+                          +               Viscosity*StaticEnergy2ndDer[k]);
+
+      for(unsigned short l=0; l<nDim; ++l) {
+        divFluxInt[k+1]    += vel[l]*solGradCart[k+1][l]
+                            - lambdaOverMu*Viscosity*vel2ndDer[l][k][l]
+                            - Viscosity*(vel2ndDer[k][l][l] + vel2ndDer[l][k][l])
+                            - ViscosityGrad[l]*(velGrad[k][l] + velGrad[l][k]);
+        divFluxInt[nVar-1] -= (Viscosity*velGrad[k][l] + vel[k]*ViscosityGrad[l])
+                            * (velGrad[k][l] + velGrad[l][k])
+                            + vel[k]*Viscosity*(vel2ndDer[k][l][l] + vel2ndDer[l][k][l]
+                            +                   lambdaOverMu*vel2ndDer[l][k][l]);
+      } 
+
+      divFluxInt[k+1] *= weightJac;
+    }
+
+    divFluxInt[nVar-1] *= weightJac;
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Compute the residual in the DOFs, which is the matrix      ---*/
+  /*---         product of basisFunctionsIntTrans and divFlux.             ---*/
+  /*--------------------------------------------------------------------------*/
+
+  DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
