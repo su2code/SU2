@@ -8,7 +8,7 @@
  * SU2 Project Leaders: Dr. Palacios (Francisco.D.Palacios@boeing.com)
  *                      Dr. Economon (economon@stanford.edu)
  *
- * Copyright (C) 2012-2016 SU2 Developers.
+ * Copyright (C) 2012-2017 SU2 Developers.
  * 
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
