@@ -283,7 +283,7 @@ inline su2double *CConfig::GetDistortionRack(void) { return DistortionRack; }
 
 inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_Surface; }
 
-inline unsigned short CConfig::GetAxis_Orientation(void) { return Axis_Orientation; }
+inline unsigned short CConfig::GetAxis_Stations(void) { return Axis_Stations; }
 
 inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
@@ -333,7 +333,7 @@ inline su2double CConfig::GetMach(void) { return Mach; }
 
 inline su2double CConfig::GetGamma(void) { return Gamma; }
 
-inline su2double CConfig::GetSection_VolumeBounds(unsigned short val_var) { return Section_VolumeBounds[val_var]; }
+inline su2double CConfig::GetSection_WingBounds(unsigned short val_var) { return Section_WingBounds[val_var]; }
 
 inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
 
@@ -610,7 +610,7 @@ inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
 
-inline su2double CConfig::GetAirfoilSections(unsigned short val_section) { return AirfoilSections[val_section]; }
+inline su2double CConfig::GetLocationStations(unsigned short val_section) { return LocationStations[val_section]; }
 
 inline unsigned short CConfig::GetnFFD_Fix_IDir(void) { return nFFD_Fix_IDir; }
 
@@ -947,9 +947,9 @@ inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) { retu
 
 inline unsigned short CConfig::GetKind_TurboPerf(unsigned short index) { return Kind_TurboPerformance[index];}
 
-inline unsigned short CConfig::GetnAirfoilSections(void) { return nAirfoilSections; }
+inline unsigned short CConfig::GetnLocationStations(void) { return nLocationStations; }
 
-inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
+inline unsigned short CConfig::GetnWingStations(void) { return nWingStations; }
 
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 

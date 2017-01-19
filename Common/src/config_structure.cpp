@@ -384,7 +384,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow	      = NULL;    
   Kappa_AdjFlow       = NULL;
-  Section_VolumeBounds    = NULL;
+  Section_WingBounds    = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -404,7 +404,7 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement	  = NULL;    AirfoilSections	  = NULL;
+  Kind_GridMovement	  = NULL;    LocationStations	  = NULL;
   Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z	    = NULL;
   Translation_Rate_X  = NULL;    Translation_Rate_Y  = NULL;    Translation_Rate_Z  = NULL;
   Rotation_Rate_X     = NULL;    Rotation_Rate_Y     = NULL;    Rotation_Rate_Z     = NULL;
@@ -1116,15 +1116,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_VOLUME_BOUNDS", 2, Section_VolumeBounds, default_geo_loc);
+  addDoubleArrayOption("GEO_WING_BOUNDS", 2, Section_WingBounds, default_geo_loc);
   /* DESCRIPTION: Identify the axis of the section */
-  addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
+  addEnumOption("GEO_AXIS_STATIONS", Axis_Stations, Axis_Stations_Map, Y_AXIS);
   /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
-  addUnsignedShortOption("GEO_VOLUME_SECTIONS", nVolSections, 101);
+  addUnsignedShortOption("GEO_WING_STATIONS", nWingStations, 101);
   /* DESCRIPTION: Definition of the airfoil sections */
-  addDoubleListOption("GEO_AIRFOIL_SECTIONS", nAirfoilSections, AirfoilSections);
+  addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   /* DESCRIPTION: Output sectional forces for specified markers. */
-  addBoolOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, false);
+  addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
   addEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, FUNCTION);
 
@@ -2930,11 +2930,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
-  Section_VolumeBounds[0] += EPS;
-  Section_VolumeBounds[1] += EPS;
+  Section_WingBounds[0] += EPS;
+  Section_WingBounds[1] += EPS;
 
-  for (unsigned short iSections = 0; iSections < nAirfoilSections; iSections++) {
-    AirfoilSections[iSections] += EPS;
+  for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+    LocationStations[iSections] += EPS;
   }
 
   /*--- Re-scale the length based parameters. The US system uses feet,
@@ -2966,12 +2966,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
     
-    for (unsigned short iSections = 0; iSections < nAirfoilSections; iSections++) {
-      AirfoilSections[iSections] = AirfoilSections[iSections]/12.0;
+    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+      LocationStations[iSections] = LocationStations[iSections]/12.0;
     }
 
-    Section_VolumeBounds[0] = Section_VolumeBounds[0]/12.0;
-    Section_VolumeBounds[1] = Section_VolumeBounds[1]/12.0;
+    Section_WingBounds[0] = Section_WingBounds[0]/12.0;
+    Section_WingBounds[1] = Section_WingBounds[1]/12.0;
     
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
@@ -5165,7 +5165,7 @@ CConfig::~CConfig(void) {
 
  /*--- Free memory for airfoil sections ---*/
 
- if (AirfoilSections   != NULL) delete [] AirfoilSections;
+ if (LocationStations   != NULL) delete [] LocationStations;
 
   /*--- motion origin: ---*/
   

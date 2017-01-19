@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
   /*--- Set the number of sections, and allocate the memory ---*/
   
   if (geometry_container[ZONE_0]->GetnDim() == 2) nPlane = 1;
-  else nPlane = config_container[ZONE_0]->GetnAirfoilSections();
+  else nPlane = config_container[ZONE_0]->GetnLocationStations();
 
   Xcoord_Airfoil = new vector<su2double>[nPlane];
   Ycoord_Airfoil = new vector<su2double>[nPlane];
@@ -212,15 +212,15 @@ int main(int argc, char *argv[]) {
   }
   else if (geometry_container[ZONE_0]->GetnDim() == 3) {
     
-    MinPlane = config_container[ZONE_0]->GetSection_VolumeBounds(0); MaxPlane = config_container[ZONE_0]->GetSection_VolumeBounds(1);
+    MinPlane = config_container[ZONE_0]->GetSection_WingBounds(0); MaxPlane = config_container[ZONE_0]->GetSection_WingBounds(1);
     MinXCoord = -1E6; MaxXCoord = 1E6;
         
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
         Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
         Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
         Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-        Plane_Normal[iPlane][config_container[ZONE_0]->GetAxis_Orientation()] = 1.0;
-        Plane_P0[iPlane][config_container[ZONE_0]->GetAxis_Orientation()] = config_container[ZONE_0]->GetAirfoilSections(iPlane);
+        Plane_Normal[iPlane][config_container[ZONE_0]->GetAxis_Stations()] = 1.0;
+        Plane_P0[iPlane][config_container[ZONE_0]->GetAxis_Stations()] = config_container[ZONE_0]->GetLocationStations(iPlane);
       }
   }
   
@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
   
   if (geometry_container[ZONE_0]->GetnDim() == 3) {
     
-    if (rank == MASTER_NODE)  cout << "Computing the wing continuous description." << endl;
+    if (rank == MASTER_NODE)  cout << "Computing the wing continuous description." << endl << endl;
     
     geometry_container[ZONE_0]->Compute_Wing(config_container[ZONE_0], true,
                                              Wing_Volume, Wing_MinMaxThickness, Wing_MaxChord, Wing_MinToC,

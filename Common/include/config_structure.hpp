@@ -389,7 +389,7 @@ private:
   unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
-  su2double *AirfoilSections;   /*!< \brief Airfoil sections in wing slicing subroutine. */
+  su2double *LocationStations;   /*!< \brief Airfoil sections in wing slicing subroutine. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
@@ -473,9 +473,9 @@ private:
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
   unsigned short AdjTurb_Linear_Iter;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
-  su2double *Section_VolumeBounds;                  /*!< \brief Airfoil section limit. */
-  unsigned short nAirfoilSections,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
-  nVolSections;               /*!< \brief Number of section cuts to make when calculating internal volume. */
+  su2double *Section_WingBounds;                  /*!< \brief Airfoil section limit. */
+  unsigned short nLocationStations,      /*!< \brief Number of section cuts to make when outputting mesh and cp . */
+  nWingStations;               /*!< \brief Number of section cuts to make when calculating internal volume. */
   su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
   *Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
   su2double* FFD_Axis;       /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
@@ -579,7 +579,7 @@ private:
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
-  unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
+  unsigned short Axis_Stations;	/*!< \brief Axis orientation. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
   unsigned short Output_FileFormat;	/*!< \brief Format of the output files. */
   unsigned short ActDisk_Jump;	/*!< \brief Format of the output files. */
@@ -1283,7 +1283,7 @@ public:
    * \return Definition of the surfaces. NONE implies that there isn't any analytical definition
    *         and it will use and interpolation.
    */
-  unsigned short GetAxis_Orientation(void);
+  unsigned short GetAxis_Stations(void);
   
   /*!
    * \brief Creates a tecplot file to visualize the partition made by the DDC software.
@@ -1325,7 +1325,7 @@ public:
    * \brief Get the value of the limits for the sections.
    * \return Value of the limits for the sections.
    */
-  su2double GetSection_VolumeBounds(unsigned short val_var);
+  su2double GetSection_WingBounds(unsigned short val_var);
   
   /*!
    * \brief Get the value of the vector that connects the cartesian axis with a sherical or cylindrical one.
@@ -2823,7 +2823,7 @@ public:
    * \param[in] val_section - Index of the section.
    * \return Coordinate of the airfoil to slice.
    */
-  su2double GetAirfoilSections(unsigned short val_section);
+  su2double GetLocationStations(unsigned short val_section);
 
   /*!
    * \brief Get the number of pre-smoothings in a multigrid strategy.
@@ -3740,13 +3740,13 @@ public:
    * \brief Get the number of sections.
    * \return Number of sections
    */
-  unsigned short GetnAirfoilSections(void);
+  unsigned short GetnLocationStations(void);
   
   /*!
    * \brief Get the number of sections for computing internal volume.
    * \return Number of sections for computing internal volume.
    */
-  unsigned short GetnVolSections(void);
+  unsigned short GetnWingStations(void);
   
   /*!
    * \brief Provides information about the the nodes that are going to be moved on a deformation
