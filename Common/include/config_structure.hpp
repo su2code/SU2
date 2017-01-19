@@ -67,9 +67,8 @@ using namespace std;
 
 class CConfig {
 private:
-  
+  SU2_Comm SU2_Communicator; /*!< \brief MPI communicator of SU2.*/
   int rank;
-  
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
@@ -101,6 +100,8 @@ private:
   bool ActDisk_SU2_DEF;  /*!< \brief actuator disk double surface  */
   unsigned short ConvCriteria;	/*!< \brief Kind of convergence criteria. */
   unsigned short nFFD_Iter; 	/*!< \brief Iteration for the point inversion problem. */
+  unsigned short FFD_Blending; /*!< \brief Kind of FFD Blending function. */
+  su2double* FFD_BSpline_Order; /*!< \brief BSpline order in i,j,k direction. */
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   su2double FFD_Scale;  	/*!< \brief Scale factor between the design variable value and the control point movement. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
@@ -1122,12 +1123,25 @@ public:
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-  
+
+
+  /*!
+   * \brief Get the MPI communicator of SU2.
+   * \return MPI communicator of SU2.
+   */
+  SU2_Comm GetMPICommunicator();
+
+  /*!
+   * \brief Set the MPI communicator for SU2.
+   * \param[in] Communicator - MPI communicator for SU2.
+   */
+  void SetMPICommunicator(SU2_Comm Communicator);
+
   /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
@@ -2243,6 +2257,18 @@ public:
    * \return Coordinate system (cartesian, spherical, etc).
    */
   unsigned short GetFFD_CoordSystem(void);
+  
+    /*!
+   * \brief Get the kind of FFD Blending function.
+   * \return Kind of FFD Blending function.
+   */
+  unsigned short GetFFD_Blending(void);
+
+  /*!
+   * \brief Get the kind BSpline Order in i,j,k direction.
+   * \return The kind BSpline Order in i,j,k direction.
+   */
+  su2double* GetFFD_BSplineOrder();
   
   /*!
    * \brief Get the number of Runge-Kutta steps.
