@@ -15016,7 +15016,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   su2double delta_T, total_T;
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     nExtIter = config->GetUnst_AdjointIter();
-    delta_T  = config->GetDelta_UnstTimeND();
+    delta_T  = config->GetDelta_UnstTime();
     total_T  = (su2double)nExtIter*delta_T;
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
     

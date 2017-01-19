@@ -304,7 +304,7 @@ bin_SCRIPTS = \
     discrete_adjoint.py \
     direct_differentiation.py \
     fsi_computation.py \
-    pyWrap_SU2_CFD.py
+    SU2_CFD.py
 
 mypkgdir = $(prefix)/bin
 nobase_dist_mypkg_DATA = \
@@ -345,6 +345,7 @@ nobase_dist_mypkg_DATA = \
     SU2/util/ordered_bunch.py \
     SU2/util/ordered_dict.py \
     SU2/util/plot.py \
+    SU2/util/polarSweepLib.py \
     SU2/util/pyCppTap.py \
     SU2/util/switch.py \
     SU2/util/which.py \
