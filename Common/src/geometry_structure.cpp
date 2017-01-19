@@ -13116,7 +13116,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
     if (Normal[index] >= 0.0) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
@@ -13354,7 +13354,7 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
     Xcoord_Normal.push_back(Normal[0]); Ycoord_Normal.push_back(Normal[1]); Zcoord_Normal.push_back(Normal[2]);
     
     unsigned short index = 2;
-    if ((config->GetAxis_Orientation() == Z_AXIS) && (nDim == 3)) index = 0;
+    if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
     if (Normal[index] >= 0.0) {
       Xcoord_Upper.push_back(Xcoord_Airfoil_[iVertex]);
@@ -13467,7 +13467,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   
   /*--- Make a large number of section cuts for approximating volume ---*/
   
-  nPlane = 75;
+  nPlane = config->GetnWingStations();
   SemiSpan = config->GetSemiSpan();
   
   /*--- Allocate memory for the section cutting ---*/
@@ -13480,15 +13480,15 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   Curvature = new su2double [nPlane];
   Dihedral = new su2double [nPlane];
 
-  su2double **LeadingEdge   = new su2double*[nPlane];
+  su2double **LeadingEdge = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     LeadingEdge[iPlane] = new su2double[nDim];
   
-  su2double **TrailingEdge     = new su2double*[nPlane];
+  su2double **TrailingEdge = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     TrailingEdge[iPlane] = new su2double[nDim];
 
-  su2double **Plane_P0     = new su2double*[nPlane];
+  su2double **Plane_P0 = new su2double*[nPlane];
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     Plane_P0[iPlane] = new su2double[nDim];
   
@@ -13496,7 +13496,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   for (iPlane = 0; iPlane < nPlane; iPlane++ )
     Plane_Normal[iPlane] = new su2double[nDim];
   
-  MinPlane = config->GetSection_VolumeBounds(0); MaxPlane = config->GetSection_VolumeBounds(1);
+  MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
   MinXCoord = -1E6; MaxXCoord = 1E6;
   dPlane = fabs((MaxPlane - MinPlane)/su2double(nPlane-1));
 
@@ -13504,8 +13504,8 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
     Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
-    Plane_Normal[iPlane][config->GetAxis_Orientation()] = 1.0;
-    Plane_P0[iPlane][config->GetAxis_Orientation()] = MinPlane + iPlane*dPlane;
+    Plane_Normal[iPlane][config->GetAxis_Stations()] = 1.0;
+    Plane_P0[iPlane][config->GetAxis_Stations()] = MinPlane + iPlane*dPlane;
   }
   
   /*--- Allocate some vectors for storing airfoil coordinates ---*/
@@ -13516,14 +13516,14 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   Variable_Airfoil = new vector<su2double>[nPlane];
   
   /*--- Create the section slices through the geometry ---*/
-  
+
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
                            MinXCoord, MaxXCoord, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
   }
-  
+
   /*--- Compute the area at each section ---*/
   
   if (rank == MASTER_NODE) {
@@ -13580,7 +13580,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
       }
 
     }
-    
+
     /*--- Evaluate  geometrical quatities that have been computed using a filtered value (they depend on more than one point) ---*/
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -13617,20 +13617,21 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     /*--- Plot the geometrical quatities ---*/
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
-        Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane]  <<", "<< ToC[iPlane]
-        <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
-        <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
-        <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
-      }
-      else  {
-        Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane]  <<" "<< ToC[iPlane]
-        <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
-        <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
-        <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
-      }
+    	if (Xcoord_Airfoil[iPlane].size() != 0) {
+    		if (config->GetOutput_FileFormat() == PARAVIEW) {
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane]  <<", "<< ToC[iPlane]
+    			                                                                                                                                            <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
+    			                                                                                                                                                                                                                <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
+    			                                                                                                                                                                                                                                                                                                              <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
+    		}
+    		else  {
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane]  <<" "<< ToC[iPlane]
+    			                                                                                                                                        <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
+    			                                                                                                                                                                                                          <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
+    			                                                                                                                                                                                                                                                                                                     <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
+    		}
+    	}
     }
-
 
     Wing_File.close();
 
@@ -13734,7 +13735,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   delete [] Twist;
   delete [] Curvature;
   delete [] Dihedral;
-  
+
 }
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
