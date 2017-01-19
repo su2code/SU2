@@ -4,7 +4,7 @@
  *        alternating digital tree (ADT).
  *        The subroutines and functions are in the <i>adt_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

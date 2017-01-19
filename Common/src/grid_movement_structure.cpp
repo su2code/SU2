@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -8991,7 +8991,7 @@ su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
 
   /*--- Special cases ---*/
 
-  if ((val_i == 0 && val_t == U[0]) || (val_i == U.size()-1 && val_t == U.back())) {return 1.0;}
+  if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) {return 1.0;}
 
   /*--- Local property of BSplines ---*/
 

@@ -4,7 +4,7 @@
 # \file pySU2.i
 # \brief Configuration file for the Swig compilation of the Python wrapper.
 # \author D. Thomas
-# \version 4.3.0 "Cardinal"
+# \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

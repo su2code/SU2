@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char config_file_name[MAX_STRING_SIZE];
  	char *cstr;
-  bool Local_MoveSurface, MoveSurface;
+  bool Local_MoveSurface, MoveSurface = false;
 	ofstream Gradient_file, ObjFunc_file;
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;

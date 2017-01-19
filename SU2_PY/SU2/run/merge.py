@@ -1,7 +1,7 @@
 ## \file merge.py
 #  \brief python package for merging meshes
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # Copyright (C) 2012-2016 SU2 Developers.
 #
