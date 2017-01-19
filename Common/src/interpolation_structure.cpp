@@ -2,7 +2,7 @@
  * \file interpolation_structure.cpp
  * \brief Main subroutines used by SU2_FSI
  * \author H. Kline
- * \version 4.0.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

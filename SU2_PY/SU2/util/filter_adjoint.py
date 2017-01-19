@@ -3,7 +3,7 @@
 ## \file filter_adjoint.py
 #  \brief Applies various filters to the adjoint surface sensitivities of an airfoil
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).

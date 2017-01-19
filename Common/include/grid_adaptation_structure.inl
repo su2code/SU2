@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.inl
  * \brief In-Line subroutines of the <i>grid_adaptation_structure.hpp</i> file.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

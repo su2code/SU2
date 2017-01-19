@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -62,7 +62,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CConfig {
