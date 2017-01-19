@@ -4745,8 +4745,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   }
 
   /* Determine the number of metric terms per integration point.
-     This depends on the number of spatial dimensions of the problem. */
-  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+     This depends on the number of spatial dimensions of the problem.
+     Also determine the additional number of metric terms per integration
+     point for the computation of the second derivatives. */
+  const unsigned short nMetricPerPoint       = nDim*nDim + 1;
+  const unsigned short nMetric2ndDerPerPoint = nDim*(nDim + nDim*(nDim-1)/2);
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Determine the metric terms, drdx, drdy, drdz, dsdx, etc.   ---*/
@@ -4886,12 +4889,142 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       }
 
       /* Compute the derivatives of the metric terms w.r.t. the
-         parametric coordinates. First allocate the memory. */
-      volElem[i].metricTerms2ndDer.resize(nDim*nInt*(nMetricPerPoint-1));
+         parametric coordinates in the integration points.
+         First allocate the memory to store the results. */
+      vector<su2double> helpVecDerMetrics(nDim*nInt*(nMetricPerPoint-1));
+      su2double *vecDerMetrics = helpVecDerMetrics.data();
 
       DenseMatrixProduct(nDim*nInt, nMetricPerPoint-1, nDOFsGrid,
                          matDerBasisInt, metricGridDOFs.data(),
-                         volElem[i].metricTerms2ndDer.data());
+                         vecDerMetrics);
+
+      /* Allocate the memory for the additional metric terms needed to
+         compute the second derivatives. */
+      volElem[i].metricTerms2ndDer.resize(nInt*nMetric2ndDerPerPoint);
+
+      /*--- Loop over the integration points to compute the additional metric
+            terms needed for the second derivatives. This is a combination of
+            the original metric terms and derivatives of these terms.
+            Make a distinction between 2D and 3D. ---*/
+      switch( nDim ) {
+        case 2: {
+
+          /* 2D computation. Loop over the integration points. */
+          for(unsigned short j=0; j<nInt; ++j) {
+
+            /* Set the pointers where the data for this integration
+               point starts. */
+            const su2double *metric       = volElem[i].metricTerms.data()
+                                          + j*nMetricPerPoint;
+            const su2double *rDerMetric   = vecDerMetrics + j*(nMetricPerPoint-1);
+            const su2double *sDerMetric   = rDerMetric + nInt*(nMetricPerPoint-1);
+            su2double       *metric2ndDer = volElem[i].metricTerms2ndDer.data()
+                                          + j*nMetric2ndDerPerPoint;
+
+            /* More readable abbreviations for the metric terms
+               and its derivatives. */
+            const su2double JacInv = 1.0/metric[0];
+            const su2double drdx   = JacInv*metric[1], drdy = JacInv*metric[2];
+            const su2double dsdx   = JacInv*metric[3], dsdy = JacInv*metric[4];
+
+            const su2double ddrdx_dr = rDerMetric[0], ddrdy_dr = rDerMetric[1];
+            const su2double ddsdx_dr = rDerMetric[2], ddsdy_dr = rDerMetric[3];
+
+            const su2double ddrdx_ds = sDerMetric[0], ddrdy_ds = sDerMetric[1];
+            const su2double ddsdx_ds = sDerMetric[2], ddsdy_ds = sDerMetric[3];
+
+            /* Compute the metric terms needed to compute the Cartesian 2nd
+               derivatives. Note that for the cross derivatives an average of
+               the two possibilities is taken. */
+            metric2ndDer[0] = drdx*ddrdx_dr + dsdx*ddrdx_ds;
+            metric2ndDer[1] = drdx*ddsdx_dr + dsdx*ddsdx_ds;
+
+            metric2ndDer[2] = 0.5*(drdx*ddrdy_dr + dsdx*ddrdy_ds
+                            +      drdy*ddrdx_dr + dsdy*ddrdx_ds);
+            metric2ndDer[3] = 0.5*(drdx*ddsdy_dr + dsdx*ddsdy_ds
+                            +      drdy*ddsdx_dr + dsdy*ddsdx_ds);
+
+            metric2ndDer[4] = drdy*ddrdy_dr + dsdy*ddrdy_ds;
+            metric2ndDer[5] = drdy*ddsdy_dr + dsdy*ddsdy_ds;
+          }
+
+          break;
+        }
+
+        case 3: {
+
+          /* 3D computation. Loop over the integration points. */
+          for(unsigned short j=0; j<nInt; ++j) {
+
+            /* Set the pointers where the data for this integration
+               point starts. */
+            const su2double *metric       = volElem[i].metricTerms.data()
+                                          + j*nMetricPerPoint;
+            const su2double *rDerMetric   = vecDerMetrics + j*(nMetricPerPoint-1);
+            const su2double *sDerMetric   = rDerMetric + nInt*(nMetricPerPoint-1);
+            const su2double *tDerMetric   = sDerMetric + nInt*(nMetricPerPoint-1);
+            su2double       *metric2ndDer = volElem[i].metricTerms2ndDer.data()
+                                          + j*nMetric2ndDerPerPoint;
+
+            /* More readable abbreviations for the metric terms
+               and its derivatives. */
+            const su2double JacInv = 1.0/metric[0];
+            const su2double drdx   = JacInv*metric[1], drdy = JacInv*metric[2], drdz = JacInv*metric[3];
+            const su2double dsdx   = JacInv*metric[4], dsdy = JacInv*metric[5], dsdz = JacInv*metric[6];
+            const su2double dtdx   = JacInv*metric[7], dtdy = JacInv*metric[5], dtdz = JacInv*metric[9];
+
+            const su2double ddrdx_dr = rDerMetric[0], ddrdy_dr = rDerMetric[1], ddrdz_dr = rDerMetric[2];
+            const su2double ddsdx_dr = rDerMetric[3], ddsdy_dr = rDerMetric[4], ddsdz_dr = rDerMetric[5];
+            const su2double ddtdx_dr = rDerMetric[6], ddtdy_dr = rDerMetric[7], ddtdz_dr = rDerMetric[8];
+
+            const su2double ddrdx_ds = sDerMetric[0], ddrdy_ds = sDerMetric[1], ddrdz_ds = sDerMetric[2];
+            const su2double ddsdx_ds = sDerMetric[3], ddsdy_ds = sDerMetric[4], ddsdz_ds = sDerMetric[5];
+            const su2double ddtdx_ds = sDerMetric[6], ddtdy_ds = sDerMetric[7], ddtdz_ds = sDerMetric[8];
+
+            const su2double ddrdx_dt = tDerMetric[0], ddrdy_dt = tDerMetric[1], ddrdz_dt = tDerMetric[2];
+            const su2double ddsdx_dt = tDerMetric[3], ddsdy_dt = tDerMetric[4], ddsdz_dt = tDerMetric[5];
+            const su2double ddtdx_dt = tDerMetric[6], ddtdy_dt = tDerMetric[7], ddtdz_dt = tDerMetric[8];
+
+            /* Compute the metric terms needed to compute the Cartesian 2nd
+               derivatives. Note that for the cross derivatives an average of
+               the two possibilities is taken. */
+            metric2ndDer[0] = drdx*ddrdx_dr + dsdx*ddrdx_ds + dtdx*ddrdx_dt;
+            metric2ndDer[1] = drdx*ddsdx_dr + dsdx*ddsdx_ds + dtdx*ddsdx_dt;
+            metric2ndDer[2] = drdx*ddtdx_dr + dsdx*ddtdx_ds + dtdx*ddtdx_dt;
+
+            metric2ndDer[3] = 0.5*(drdx*ddrdy_dr + dsdx*ddrdy_ds + dtdx*ddrdy_dt
+                            +      drdy*ddrdx_dr + dsdy*ddrdx_ds + dtdy*ddrdx_dt);
+            metric2ndDer[4] = 0.5*(drdx*ddsdy_dr + dsdx*ddsdy_ds + dtdx*ddsdy_dt
+                            +      drdy*ddsdx_dr + dsdy*ddsdx_ds + dtdy*ddsdx_dt);
+            metric2ndDer[5] = 0.5*(drdx*ddtdy_dr + dsdx*ddtdy_ds + dtdx*ddtdy_dt
+                            +      drdy*ddtdx_dr + dsdy*ddtdx_ds + dtdy*ddtdx_dt);
+
+            metric2ndDer[6] = drdy*ddrdy_dr + dsdy*ddrdy_ds + dtdy*ddrdy_dt;
+            metric2ndDer[7] = drdy*ddsdy_dr + dsdy*ddsdy_ds + dtdy*ddsdy_dt;
+            metric2ndDer[8] = drdy*ddtdy_dr + dsdy*ddtdy_ds + dtdy*ddtdy_dt;
+
+            metric2ndDer[9]  = 0.5*(drdx*ddrdz_dr + dsdx*ddrdz_ds + dtdx*ddrdz_dt
+                             +      drdz*ddrdx_dr + dsdz*ddrdx_ds + dtdz*ddrdx_dt);
+            metric2ndDer[10] = 0.5*(drdx*ddsdz_dr + dsdx*ddsdz_ds + dtdx*ddsdz_dt
+                             +      drdz*ddsdx_dr + dsdz*ddsdx_ds + dtdz*ddsdx_dt);
+            metric2ndDer[11] = 0.5*(drdx*ddtdz_dr + dsdx*ddtdz_ds + dtdx*ddtdz_dt
+                             +      drdz*ddtdx_dr + dsdz*ddtdx_ds + dtdz*ddtdx_dt);
+
+            metric2ndDer[12] = 0.5*(drdy*ddrdz_dr + dsdy*ddrdz_ds + dtdy*ddrdz_dt
+                             +      drdz*ddrdy_dr + dsdz*ddrdy_ds + dtdz*ddrdy_dt);
+            metric2ndDer[13] = 0.5*(drdy*ddsdz_dr + dsdy*ddsdz_ds + dtdy*ddsdz_dt
+                             +      drdz*ddsdy_dr + dsdz*ddsdy_ds + dtdz*ddsdy_dt);
+            metric2ndDer[14] = 0.5*(drdy*ddtdz_dr + dsdy*ddtdz_ds + dtdy*ddtdz_dt
+                             +      drdz*ddtdy_dr + dsdz*ddtdy_ds + dtdz*ddtdy_dt);
+
+            metric2ndDer[15] = drdz*ddrdz_dr + dsdz*ddrdz_ds + dtdz*ddrdz_dt;
+            metric2ndDer[16] = drdz*ddsdz_dr + dsdz*ddsdz_ds + dtdz*ddsdz_dt;
+            metric2ndDer[17] = drdz*ddtdz_dr + dsdz*ddtdz_ds + dtdz*ddtdz_dt;
+          }
+
+          break;
+        }
+      }
     }
   }
 
