@@ -160,7 +160,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool low_mach_corr = config->Low_Mach_Correction(); 
+  bool low_mach_prec = config->Low_Mach_Preconditioning();
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   
@@ -379,7 +379,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
   
-  if (roe_turkel || low_mach_corr) {
+  if (roe_turkel || low_mach_prec) {
     LowMach_Precontioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       LowMach_Precontioner[iVar] = new su2double[nVar];
@@ -5392,7 +5392,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
-  bool low_mach_corr = config->Low_Mach_Correction();
+  bool low_mach_prec = config->Low_Mach_Preconditioning();
   
   /*--- Set maximum residual to zero ---*/
   
@@ -5418,7 +5418,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      if (roe_turkel || low_mach_corr) {
+      if (roe_turkel || low_mach_prec) {
         SetPreconditioner(config, iPoint);
         for (iVar = 0; iVar < nVar; iVar ++ )
           for (jVar = 0; jVar < nVar; jVar ++ )
@@ -6358,14 +6358,14 @@ void CEulerSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) {
   
   /*--- Variables to calculate the preconditioner parameter Beta ---*/
   local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
-  Beta 		    = max(Beta_min, min(local_Mach, Beta_max));
-  Beta2 		    = Beta*Beta;
-  
+  Beta = max(Beta_min, min(local_Mach, Beta_max));
+  Beta2 = Beta*Beta;
+
   /*--- Weiss and Smith Preconditioning---*/
   Mach_infty2 = pow(config->GetMach(),2.0);
   Mach_lim2 = pow(0.00001,2.0);
   aux = max(pow(local_Mach,2.0),Mach_lim2);
-  parameter = min(1.0, max(aux,3.0*Mach_infty2));
+  parameter = min(1.0, max(aux,Beta_max*Mach_infty2));
   
   U_i = node[iPoint]->GetSolution();
   
@@ -12787,7 +12787,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool low_mach_corr = config->Low_Mach_Correction();
+  bool low_mach_prec = config->Low_Mach_Preconditioning();
   
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
@@ -12911,7 +12911,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Define some auxiliary vectors related to low-speed preconditioning ---*/
   
-  if (roe_turkel || low_mach_corr) {
+  if (roe_turkel || low_mach_prec) {
     LowMach_Precontioner = new su2double* [nVar];
     for (iVar = 0; iVar < nVar; iVar ++)
       LowMach_Precontioner[iVar] = new su2double[nVar];
