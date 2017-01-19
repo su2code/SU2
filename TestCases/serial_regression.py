@@ -685,7 +685,6 @@ def main():
     pass_list.append(naca0012_geo.run_geo())
     test_list.append(naca0012_geo)
 
-
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
