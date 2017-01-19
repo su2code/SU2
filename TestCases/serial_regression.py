@@ -99,6 +99,18 @@ def main():
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
     test_list.append(fixedCL_naca0012)
+    
+    # Polar sweep of the inviscid NACA0012
+    polar_naca0012           = TestCase('polar_naca0012')
+    polar_naca0012.cfg_dir   = "polar/naca0012"
+    polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
+    polar_naca0012.polar     = True
+    polar_naca0012.test_iter = 10
+    polar_naca0012.test_vals = [-1.319488, 4.112397, 0.011954, 0.009584] #last 4 columns
+    polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
+    polar_naca0012.timeout   = 1600
+    polar_naca0012.tol       = 0.00001
+    test_list.append(polar_naca0012)
 
     ##########################
     ###  Compressible N-S  ###
@@ -938,7 +950,7 @@ def main():
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
     pywrapper_naca0012.test_vals = [-6.191618, -5.592802, 0.334809, 0.022197] #last 4 columns
-    pywrapper_naca0012.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_naca0012.su2_exec  = "SU2_CFD.py -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
     test_list.append(pywrapper_naca0012)
@@ -950,7 +962,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals = [-15.039675, -7.219913, 1.059622, 0.019138] #last 4 columns
-    pywrapper_turb_naca0012_sst.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
     test_list.append(pywrapper_turb_naca0012_sst)
@@ -962,7 +974,7 @@ def main():
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
     pywrapper_square_cylinder.test_vals = [-1.166406,0.076804,1.398548,2.197047] #last 4 columns
-    pywrapper_square_cylinder.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_square_cylinder.su2_exec  = "SU2_CFD.py -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
     pywrapper_square_cylinder.unsteady  = True
@@ -975,7 +987,7 @@ def main():
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
     pywrapper_aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
-    pywrapper_aeroelastic.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_aeroelastic.su2_exec  = "SU2_CFD.py -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.000001
     pywrapper_aeroelastic.unsteady  = True
@@ -988,29 +1000,11 @@ def main():
     pywrapper_fsi2d.cfg_file  = "configFSI_2D.cfg"
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.777916, -1.139835] #last 4 columns
-    pywrapper_fsi2d.su2_exec  = "pyWrap_SU2_CFD.py --nZone 2 --fsi True -f"
+    pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
     pass_list.append(pywrapper_fsi2d.run_test())
-
-
-    ######################################
-    ### RUN EXTERNAL FSI COUPLING TEST ###
-    ######################################
-
-    # Pitch-plunge NACA 0012 (external FSI coupling)
-    coupled_FSI            = TestCase('coupled_FSI')
-    coupled_FSI.cfg_dir    = "coupled_fsi/2d_aeroelasticity"
-    coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
-    coupled_FSI.test_iter  = 1
-    coupled_FSI.su2_exec   = "fsi_computation.py"
-    coupled_FSI.timeout    = 3200
-    coupled_FSI.reference_file = "StructHistory.dat.ref_serial"
-    coupled_FSI.test_file  = "StructHistory.dat"
-    pass_list.append(coupled_FSI.run_filediff())
-    test_list.append(coupled_FSI)
-
     
     # Tests summary
     print '=================================================================='

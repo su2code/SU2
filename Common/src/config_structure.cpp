@@ -128,6 +128,18 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
 }
 
+SU2_Comm CConfig::GetMPICommunicator() {
+
+  return SU2_Communicator;
+
+}
+
+void CConfig::SetMPICommunicator(SU2_Comm Communicator) {
+
+  SU2_Communicator = Communicator;
+
+}
+
 unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
   string text_line, Marker_Tag;
   ifstream mesh_file;
@@ -284,6 +296,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
   return (unsigned short) nDim;
 }
+
 void CConfig::SetPointersNull(void) {
   
   Marker_CfgFile_Out_1D       = NULL;   Marker_All_Out_1D        = NULL;
