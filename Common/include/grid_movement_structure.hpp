@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -18,7 +18,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CGridMovement {
 public:
@@ -85,7 +85,7 @@ public:
  * \class CFreeFormBlending
  * \brief Class that defines the particular kind of blending function for the free form deformation.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CFreeFormBlending {
 
@@ -143,7 +143,7 @@ public:
  * \class CBSplineBlending
  * \brief Class that defines the blending using uniform BSplines.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CBSplineBlending : public CFreeFormBlending{
 
@@ -192,7 +192,7 @@ public:
  * \class CBezierBlending
  * \brief Class that defines the blending using Bernsteinpolynomials (Bezier Curves).
  * \author F. Palacios, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CBezierBlending : public CFreeFormBlending{
 
@@ -268,7 +268,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -950,7 +950,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -1282,7 +1282,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
