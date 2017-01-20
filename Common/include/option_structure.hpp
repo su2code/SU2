@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -19,7 +19,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1321,7 +1321,7 @@ enum ENUM_AXIS_ORIENTATION {
   Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
   Z_AXIS = 2    /*!< \brief Z axis orientation. */
 };
-static const map<string, ENUM_AXIS_ORIENTATION> Axis_Orientation_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
+static const map<string, ENUM_AXIS_ORIENTATION> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
 ("X_AXIS", X_AXIS)
 ("Y_AXIS", Y_AXIS)
 ("Z_AXIS", Z_AXIS);

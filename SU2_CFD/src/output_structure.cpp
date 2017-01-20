@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -6089,7 +6089,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 4.3.0  \"Cardinal\"                         |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 5.0.0  \"Raven\"                            |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
@@ -6107,7 +6107,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
     Breakdown_file << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
-    Breakdown_file << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << "\n";
+    Breakdown_file << "| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << "\n";
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << "\n";
@@ -7787,21 +7787,21 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
     }
     
-    nSection = config->GetnSections();
+    nSection = config->GetnLocationStations();
     
     for (iSection = 0; iSection < nSection; iSection++) {
       
       /*--- Read the values from the config file ---*/
       
-      MinPlane = config->GetSection_Location(0); MaxPlane = config->GetSection_Location(1);
+      MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
       MinXCoord = -1E6; MaxXCoord = 1E6;
       
       Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
       Plane_Normal[1] = 0.0;    Plane_P0[1] = 0.0;
       Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
       
-      Plane_Normal[config->GetAxis_Orientation()] = 1.0;
-      Plane_P0[config->GetAxis_Orientation()] = MinPlane + iSection*(MaxPlane - MinPlane)/su2double(nSection-1);
+      Plane_Normal[config->GetAxis_Stations()] = 1.0;
+			Plane_P0[config->GetAxis_Stations()] = config->GetLocationStations(iSection);
       
       /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       
