@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -283,7 +283,7 @@ inline su2double *CConfig::GetDistortionRack(void) { return DistortionRack; }
 
 inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_Surface; }
 
-inline unsigned short CConfig::GetAxis_Orientation(void) { return Axis_Orientation; }
+inline unsigned short CConfig::GetAxis_Stations(void) { return Axis_Stations; }
 
 inline su2double CConfig::GetDualVol_Power(void) { return DualVol_Power; }
 
@@ -333,7 +333,7 @@ inline su2double CConfig::GetMach(void) { return Mach; }
 
 inline su2double CConfig::GetGamma(void) { return Gamma; }
 
-inline su2double CConfig::GetSection_Location(unsigned short val_var) { return Section_Location[val_var]; }
+inline su2double CConfig::GetSection_WingBounds(unsigned short val_var) { return Section_WingBounds[val_var]; }
 
 inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
 
@@ -610,6 +610,8 @@ inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
 inline su2double CConfig::Get_Alpha_RKStep(unsigned short val_step) { return RK_Alpha_Step[val_step]; }
 
+inline su2double CConfig::GetLocationStations(unsigned short val_section) { return LocationStations[val_section]; }
+
 inline unsigned short CConfig::GetnFFD_Fix_IDir(void) { return nFFD_Fix_IDir; }
 
 inline unsigned short CConfig::GetnFFD_Fix_JDir(void) { return nFFD_Fix_JDir; }
@@ -801,6 +803,8 @@ inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Fa
 
 inline su2double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
 
+inline su2double CConfig::GetSemiSpan(void) { return SemiSpan; }
+
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Solver(void) { return Kind_AdjTurb_Linear_Solver; }
 
 inline unsigned short CConfig::GetKind_AdjTurb_Linear_Prec(void) { return Kind_AdjTurb_Linear_Prec; }
@@ -955,9 +959,9 @@ inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) { retu
 
 inline unsigned short CConfig::GetKind_TurboPerf(unsigned short index) { return Kind_TurboPerformance[index];}
 
-inline unsigned short CConfig::GetnSections(void) { return nSections; }
+inline unsigned short CConfig::GetnLocationStations(void) { return nLocationStations; }
 
-inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
+inline unsigned short CConfig::GetnWingStations(void) { return nWingStations; }
 
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
