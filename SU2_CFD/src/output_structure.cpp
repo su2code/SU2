@@ -6254,8 +6254,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         switch (config[val_iZone]->GetKind_Solver()) {
-          case EULER :                  case NAVIER_STOKES:
-            case FEM_EULER : case FEM_NAVIER_STOKES:
+          case EULER :     case NAVIER_STOKES:
+          case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
             
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
@@ -6505,7 +6505,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       switch (config[val_iZone]->GetKind_Solver()) {
         case EULER : case NAVIER_STOKES:
-        case FEM_EULER : case FEM_NAVIER_STOKES:
+        case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
           
           if (!DualTime_Iteration) {
             if (compressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
