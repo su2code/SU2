@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,6 +110,18 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   if (runtime_file) {
     config->SetnExtIter(nExtIter);
   }
+
+}
+
+SU2_Comm CConfig::GetMPICommunicator() {
+
+  return SU2_Communicator;
+
+}
+
+void CConfig::SetMPICommunicator(SU2_Comm Communicator) {
+
+  SU2_Communicator = Communicator;
 
 }
 
@@ -269,6 +281,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
   return (unsigned short) nDim;
 }
+
 void CConfig::SetPointersNull(void) {
   
   Marker_CfgFile_Out_1D       = NULL;   Marker_All_Out_1D        = NULL;
@@ -390,7 +403,7 @@ void CConfig::SetPointersNull(void) {
   PlaneTag            = NULL;
   Kappa_Flow	      = NULL;    
   Kappa_AdjFlow       = NULL;
-  Section_Location    = NULL;
+  Section_WingBounds    = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
   Design_Variable     = NULL;
@@ -410,7 +423,7 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement	  = NULL;
+  Kind_GridMovement	  = NULL;    LocationStations	  = NULL;
   Motion_Origin_X     = NULL;    Motion_Origin_Y     = NULL;    Motion_Origin_Z	    = NULL;
   Translation_Rate_X  = NULL;    Translation_Rate_Y  = NULL;    Translation_Rate_Z  = NULL;
   Rotation_Rate_X     = NULL;    Rotation_Rate_Y     = NULL;    Rotation_Rate_Z     = NULL;
@@ -689,6 +702,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("REF_ORIGIN_MOMENT_Z", nRefOriginMoment_Z, RefOriginMoment_Z);
   /*!\brief REF_AREA\n DESCRIPTION: Reference area for force coefficients (0 implies automatic calculation) \ingroup Config*/
   addDoubleOption("REF_AREA", RefAreaCoeff, 1.0);
+  /*!\brief SEMI_SPAN\n DESCRIPTION: Wing semi-span (1 by deafult) \ingroup Config*/
+  addDoubleOption("SEMI_SPAN", SemiSpan, 1.0);
   /*!\brief REF_LENGTH_MOMENT\n DESCRIPTION: Reference length for pitching, rolling, and yawing non-dimensional moment \ingroup Config*/
   addDoubleOption("REF_LENGTH_MOMENT", RefLengthMoment, 1.0);
   /*!\brief REF_ELEM_LENGTH\n DESCRIPTION: Reference element length for computing the slope limiter epsilon \ingroup Config*/
@@ -1135,15 +1150,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_geo_loc);
+  addDoubleArrayOption("GEO_WING_BOUNDS", 2, Section_WingBounds, default_geo_loc);
   /* DESCRIPTION: Identify the axis of the section */
-  addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
-  /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
-  addUnsignedShortOption("GEO_NUMBER_SECTIONS", nSections, 5);
+  addEnumOption("GEO_AXIS_STATIONS", Axis_Stations, Axis_Stations_Map, Y_AXIS);
   /* DESCRIPTION: Number of section cuts to make when calculating internal volume */
-  addUnsignedShortOption("GEO_VOLUME_SECTIONS", nVolSections, 101);
+  addUnsignedShortOption("GEO_WING_STATIONS", nWingStations, 101);
+  /* DESCRIPTION: Definition of the airfoil sections */
+  addDoubleListOption("GEO_LOCATION_STATIONS", nLocationStations, LocationStations);
   /* DESCRIPTION: Output sectional forces for specified markers. */
-  addBoolOption("GEO_PLOT_SECTIONS", Plot_Section_Forces, false);
+  addBoolOption("GEO_PLOT_STATIONS", Plot_Section_Forces, false);
   /* DESCRIPTION: Mode of the GDC code (analysis, or gradient) */
   addEnumOption("GEO_MODE", GeometryMode, GeometryMode_Map, FUNCTION);
 
@@ -1542,7 +1557,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
 
   /* DESCRIPTION: Identify the axis that delimits the distribution of DEs */
-  addEnumOption("ELECTRIC_FIELD_AXIS", Axis_EField, Axis_Orientation_Map, X_AXIS);
+  addEnumOption("ELECTRIC_FIELD_AXIS", Axis_EField, Axis_Stations_Map, X_AXIS);
   /* DESCRIPTION: Modulus of the electric fields */
   addDoubleListOption("ELECTRIC_FIELD_DELIMITERS", nDel_EField, Electric_Field_Del);
 
@@ -3103,6 +3118,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) );
   
+  /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
+
+  Section_WingBounds[0] += EPS;
+  Section_WingBounds[1] += EPS;
+
+  for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+    LocationStations[iSections] += EPS;
+  }
   
   /*--- Re-scale the length based parameters. The US system uses feet,
    but SU2 assumes that the grid is in inches ---*/
@@ -3127,13 +3150,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Length_Reynolds = Length_Reynolds/12.0;
     RefElemLength = RefElemLength/12.0;
     Highlite_Area = Highlite_Area/144.0;
+    SemiSpan = SemiSpan/12.0;
 
     EA_IntLimit[0] = EA_IntLimit[0]/12.0;
     EA_IntLimit[1] = EA_IntLimit[1]/12.0;
     EA_IntLimit[2] = EA_IntLimit[2]/12.0;
     
-    Section_Location[0] = Section_Location[0]/12.0;
-    Section_Location[1] = Section_Location[1]/12.0;
+    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+      LocationStations[iSections] = LocationStations[iSections]/12.0;
+    }
+
+    Section_WingBounds[0] = Section_WingBounds[0]/12.0;
+    Section_WingBounds[1] = Section_WingBounds[1]/12.0;
     
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
@@ -3773,7 +3801,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.3.0  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 5.0.0  \"Raven\"                            |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3799,7 +3827,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
   cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
+  cout << "| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |" << endl;
   cout << "|                                                                       |" << endl;
   cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
   cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -5387,6 +5415,10 @@ CConfig::~CConfig(void) {
   /*--- Free memory for unspecified grid motion parameters ---*/
 
  if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
+
+ /*--- Free memory for airfoil sections ---*/
+
+ if (LocationStations   != NULL) delete [] LocationStations;
 
   /*--- motion origin: ---*/
   
