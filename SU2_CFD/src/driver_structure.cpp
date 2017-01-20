@@ -3726,7 +3726,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iTimeInstance) {
 
     /*--- Loop over only the finest mesh level (turbulence is always solved
      on the original grid only). ---*/
-    for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
+    for (iPoint = 0; iPoint < geometry_container[iTimeInstance][MESH_0]->GetnPoint(); iPoint++) {
       for (iVar = 0; iVar < nVar_Turb; iVar++) Source_Turb[iVar] = 0.0;
       for (jTimeInstance = 0; jTimeInstance < nTimeInstances; jTimeInstance++) {
 
