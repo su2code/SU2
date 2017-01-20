@@ -302,7 +302,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   unsigned long nVertexDonor, nVertexTarget, Point_Target, jVertex, iVertexTarget;
   unsigned long Global_Point_Donor, pGlobalPoint=0;
 
-  su2double *Coord_i, Coord_j[3], dist, mindist, maxdist;
+  su2double Coord_i[3], Coord_j[3], dist, mindist, maxdist;
 
 #ifdef HAVE_MPI
 
@@ -330,7 +330,87 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   iDonor = 0;
   
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+ 
+       unsigned long iPeriodic_Index;
+       bool periodic_rotation, periodic_translation;
+su2double *angles, *transl, *centre; 
+ int iMarker, j, nPeriodicModes;
+su2double theta, cosTheta, sinTheta;
+su2double phi, cosPhi, sinPhi;
+su2double psi, cosPsi, sinPsi;
+su2double rotMatrix[3][3], RotAxis[3];
+su2double dTmp[3], translRotation[3], Angle, Target_Angle, Donor_Angle, Target_Angle_O, Donor_Angle_O, delta_alpha;
+int jDim;
+  
+  periodic_rotation    = false;
+  periodic_translation = false;
+  
+  nPeriodicModes = 0;
 
+  for (iMarker = 0; iMarker < config[targetZone]->GetnMarker_All(); iMarker++){
+    if (config[targetZone]->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) { 
+
+      //cout << iMarker << "  " << config[targetZone]->GetMarker_All_TagBound(iMarker) << endl;
+      
+      angles = config[targetZone]->GetPeriodicRotAngles(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
+      centre = config[targetZone]->GetPeriodicRotCenter(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
+      transl = config[targetZone]->GetPeriodicTranslation( config[targetZone]->GetMarker_All_TagBound(iMarker) );
+
+      /*--- Store angles separately for clarity. ---*/
+      theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+      cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+      sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+      /*--- Compute the rotation matrix. Note that the implicit
+      ordering is rotation about the x-axis, y-axis,
+      then z-axis. Note that this is the transpose of the matrix
+      used during the preprocessing stage. ---*/
+      rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+      rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+      rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+      RotAxis[0] = rotMatrix[2][1] - rotMatrix[1][2];
+      RotAxis[1] = rotMatrix[0][2] - rotMatrix[2][0];
+      RotAxis[2] = rotMatrix[1][0] - rotMatrix[0][1];
+      
+      Angle = 0;
+      for (iDim = 0; iDim < 3; iDim++)
+        Angle += RotAxis[iDim] * RotAxis[iDim];
+        
+       Angle = asin(sqrt(Angle)/2);
+       
+      /*
+      for (iDim = 0; iDim < 3; iDim++)
+        cout << angles[iDim] << "  ";
+      cout << endl;
+      
+      for (iDim = 0; iDim < 3; iDim++)
+        cout << transl[iDim] << "  ";
+      cout << endl;
+      * 
+      cout << "Angle " << Angle << endl;getchar();
+      */
+      if ( Angle != 0 ) {
+        periodic_rotation = true;
+        for (iDim = 0; iDim < 3; iDim++)
+          RotAxis[iDim] /= Angle;
+      }
+      
+      for (jDim = 0; jDim < 3; jDim++)
+        if ( transl[jDim] != 0 ){
+          periodic_translation = true;
+          break;
+        } 
+        
+      nPeriodicModes++;
+      
+    }
+  }
+  
+  if ( nPeriodicModes > 2 ) {
+    cout << "Fatal error in CNearestNeighbor::Set_TransferCoeff: more than 1 periodicity found!" << endl;
+    exit(1);
+  }
 
   /*--- Cycle over nMarkersInt interface to determine communication pattern ---*/
 
@@ -404,24 +484,54 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
     /*-- Collect coordinates, global points, and normal vectors ---*/
     Collect_VertexInfo( false, markDonor, markTarget, nVertexDonor, nDim );
-
+    
     /*--- Compute the closest point to a Near-Field boundary point ---*/
     maxdist = 0.0;
 
     for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
       Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-
+      Target_Angle_O = 0;
+      delta_alpha    = 0;
+      
       if ( target_geometry->node[Point_Target]->GetDomain() ) {
 
         target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
         target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo(); // Possible meme leak?
 
         /*--- Coordinates of the boundary point ---*/
-        Coord_i = target_geometry->node[Point_Target]->GetCoord();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Coord_i[iDim] = target_geometry->node[Point_Target]->GetCoord(iDim);
 
+        if(periodic_translation){
+          /*--- Periodic translation ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            if (transl[iDim] != 0 )
+              Coord_i[iDim] = Coord_i[iDim] - (int)(Coord_i[iDim] / transl[iDim]) * transl[iDim];
+        }
+        if(periodic_rotation){
+          /*--- Periodic rotation ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            Coord_i[iDim] -= centre[iDim];
+          
+          for (iDim = 0; iDim < nDim; iDim++){
+            dTmp[iDim] = Coord_i[iDim] * RotAxis[iDim];
+            Coord_i[iDim] -= dTmp[iDim];
+          }
+          
+          Target_Angle   = atan2(Coord_i[1], Coord_i[0]);
+          Target_Angle_O = ((int)(Target_Angle/Angle)) * Angle;
+          
+          Target_Angle = Target_Angle - Target_Angle_O;
+          
+          Coord_i[0] = Target_Angle;
+          Coord_i[1] = 0.0;
+          Coord_i[2] = 0.0;
+        }
+        
         mindist    = 1E6; 
         pProcessor = 0;
+        Donor_Angle_O = 0;
 
         /*--- Loop over all the boundaries to find the pair ---*/
 
@@ -429,17 +539,77 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
           for (jVertex = 0; jVertex < MaxLocalVertex_Donor; jVertex++) {
             Global_Point_Donor = iProcessor*MaxLocalVertex_Donor+jVertex;
 
-            /*--- Compute the dist ---*/
-            dist = 0.0; 
-            for (iDim = 0; iDim < nDim; iDim++) {
+            /*--- Compute the dist ---*/ 
+            
+            for (iDim = 0; iDim < nDim; iDim++)
               Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-              dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
+            
+            if ( periodic_translation ){
+              /*--- Periodic translation ---*/
+              for (iDim = 0; iDim < nDim; iDim++)
+                if (transl[iDim] != 0 )
+                  Coord_j[iDim] = Coord_j[iDim] - (int)(Coord_j[iDim] / transl[iDim]) * transl[iDim] ;
             }
+            
+            if(periodic_rotation){
+              /*--- Periodic rotation ---*/
+              for (iDim = 0; iDim < nDim; iDim++)
+                Coord_j[iDim] -= centre[iDim];
+          
+              for (iDim = 0; iDim < nDim; iDim++){
+                dTmp[iDim] = Coord_j[iDim] * RotAxis[iDim];
+                Coord_j[iDim] -= dTmp[iDim];
+              }
+          
+              Donor_Angle   = atan2(Coord_j[1], Coord_j[0]);
+              Donor_Angle_O = ((int)(Donor_Angle/Angle)) * Angle;
+              
+              Donor_Angle = Donor_Angle - Donor_Angle_O;
+          
+              Coord_j[0] = Donor_Angle;
+              Coord_j[1] = 0.0;
+              Coord_j[2] = 0.0;
+            }
+
+            dist = 0.0;            
+            for (iDim = 0; iDim < nDim; iDim++)
+              dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
 
             if (dist < mindist) {
-              mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+              mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor]; delta_alpha = Target_Angle_O - Donor_Angle_O;
+            } 
+            
+            if (periodic_translation){
+                dist = 0.0;            
+                for (iDim = 0; iDim < nDim; iDim++)
+                  dist += pow( (Coord_j[iDim] + transl[iDim]) - Coord_i[iDim], 2.0);
+                      
+                if (dist < mindist) {
+                  mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+                }       
+              
+                dist = 0.0;            
+                for (iDim = 0; iDim < nDim; iDim++)
+                  dist += pow( (Coord_j[iDim] - transl[iDim]) - Coord_i[iDim], 2.0);
+                      
+                if (dist < mindist) {
+                  mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor];
+                }              
             }
-
+            
+            if (periodic_rotation){
+                
+                dist = pow(Donor_Angle + Angle - Target_Angle, 2.0);  
+                if (dist < mindist) {
+                  mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor]; delta_alpha = Target_Angle_O - Donor_Angle_O;
+                }       
+          
+                dist = pow(Donor_Angle - Angle - Target_Angle, 2.0);  
+                if (dist < mindist) {
+                  mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[Global_Point_Donor]; delta_alpha = Target_Angle_O - Donor_Angle_O;
+                }   
+            }
+            
             if (dist == 0.0) break;
           }
 

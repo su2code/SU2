@@ -1400,8 +1400,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
-	// these options share nDV as their size in the option references; not a good idea
-	/*!\par CONFIG_CATEGORY: Grid deformation \ingroup Config*/
+  // these options share nDV as their size in the option references; not a good idea
+  /*!\par CONFIG_CATEGORY: Grid deformation \ingroup Config*/
   /*--- Options related to the grid deformation ---*/
 
     /* DESCRIPTION: Kind of deformation */
@@ -1656,7 +1656,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("FFD_ITERATIONS", nFFD_Iter, 500);
 
   /* DESCRIPTION: Free surface damping coefficient */
-	addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
+  addDoubleOption("FFD_TOLERANCE", FFD_Tol, 1E-10);
   
   /* DESCRIPTION: Free surface damping coefficient */
   addDoubleOption("FFD_SCALE", FFD_Scale, 1.0);
@@ -4009,7 +4009,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
     }
 
-	if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
+  if (((val_software == SU2_CFD) && ( ContinuousAdjoint || DiscreteAdjoint)) || (val_software == SU2_DOT)) {
 
         cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
         if (nObj==1) {
