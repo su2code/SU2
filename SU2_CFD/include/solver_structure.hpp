@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -18,7 +18,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CSolver {
 protected:
@@ -3909,7 +3909,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -3972,7 +3972,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -7667,7 +7667,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -8067,7 +8067,7 @@ public:
  * \brief Main class for defining the incompressible Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CIncNSSolver : public CIncEulerSolver {
 private:
@@ -8441,7 +8441,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -8579,7 +8579,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -8806,7 +8806,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -8958,7 +8958,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -9134,7 +9134,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -10153,7 +10153,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -10262,7 +10262,7 @@ public:
  * \brief Main class for defining the incompressible Navier-Stokes adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjIncNSSolver : public CAdjIncEulerSolver {
 public:
@@ -10371,7 +10371,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -10517,7 +10517,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 4.3.0 "Cardinal"
+ *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -10649,7 +10649,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 4.3.0 "Cardinal"
+ *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -10808,7 +10808,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios
- *  \version 4.3.0 "Cardinal"
+ *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -10929,7 +10929,7 @@ public:
 /*! \class CFEM_ElasticitySolver
  *  \brief Main class for defining a FEM solver for elastic structural problems.
  *  \author R. Sanchez.
- *  \version 4.3.0 "Cardinal"
+ *  \version 5.0.0 "Raven"
  *  \date July 10, 2015.
  */
 class CFEM_ElasticitySolver : public CSolver {
@@ -11566,8 +11566,7 @@ public:
 /*! \class CFEM_ElasticitySolver_Adj
  *  \brief Main class for defining an adjoint FEM solver for elastic structural problems.
  *  \author R. Sanchez.
- *  \version 4.3.0 "Cardinal"
- *  \date April 2016.
+ *  \version 5.0.0 "Raven"
  */
 class CFEM_ElasticitySolver_Adj : public CSolver {
 private:
@@ -12030,7 +12029,7 @@ public:
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDiscAdjSolver : public CSolver {
 private:
@@ -12331,7 +12330,7 @@ public:
  * \brief Main class for defining the discrete adjoint solver for FE structural problems.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez
- * \version 4.2.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDiscAdjFEASolver : public CSolver {
 private:

@@ -2,7 +2,7 @@
  * \file fluid_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Main class for defining the Thermo-Physical Model
  * a child class for each particular Model (Ideal-Gas, Van der Waals, etc.)
  * \author: S.Vitale, G.Gori, M.Pini
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CFluidModel {
 protected:
@@ -269,7 +269,7 @@ public:
  * \class CIdealGas
  * \brief Child class for defining ideal gas model.
  * \author: S.Vitale, M.Pini.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CIdealGas : public CFluidModel {
 
@@ -360,7 +360,7 @@ public:
  * derived class CVanDerWaalsGas
  * \brief Child class for defining the Van der Waals model.
  * \author: S.Vitale, M.Pini
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVanDerWaalsGas : public CIdealGas {
 
@@ -446,7 +446,7 @@ public:
  * \derived class CPengRobinson
  * \brief Child class for defining the Peng-Robinson model.
  * \author: S.Vitale, G. Gori
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPengRobinson : public CIdealGas {
 
