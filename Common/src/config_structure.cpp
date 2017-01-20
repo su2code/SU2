@@ -3775,6 +3775,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
           case SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
           case WALE:         cout << "WALE"         << endl; break;
+          default:
+            cout << endl << "Subgrid Scale model not specified." << endl;
+#ifndef HAVE_MPI
+            exit(EXIT_FAILURE);
+#else
+            MPI_Abort(MPI_COMM_WORLD,1);
+            MPI_Finalize();
+#endif
         }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
@@ -5876,6 +5884,14 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       }
       break;
     case FEM_NAVIER_STOKES:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              SpatialOrder_Flow, Kind_FEM_Flow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
+      }
+      break;
+    case FEM_LES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
