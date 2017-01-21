@@ -1,0 +1,25 @@
+# -*- cmake -*-
+# - Find CGNS
+#
+# yue.nicholas@gmail.com
+#
+
+FIND_PACKAGE ( PackageHandleStandardArgs )
+
+FIND_PATH( CGNS_LOCATION include/cgnslib.h 
+  $ENV{CGNS_ROOT}
+  NO_DEFAULT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+  )
+
+MESSAGE ( "CGNS_LOCATION = ${CGNS_LOCATION}/include" )
+
+FIND_PACKAGE_HANDLE_STANDARD_ARGS ( CGNS
+  REQUIRED_VARS CGNS_LOCATION
+  )
+
+IF ( CGNS_FOUND )
+  SET( CGNS_INCLUDE_DIR "${CGNS_LOCATION}/include" CACHE STRING "CGNS include path")
+  SET ( CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so" )
+  FIND_LIBRARY ( CGNS_cgns_LIBRARY cgns ${CGNS_LOCATION}/lib CACHE STRING "CGNS library")
+ENDIF ()

@@ -1,0 +1,24 @@
+# -*- cmake -*-
+# - Find METIS
+#
+# yue.nicholas@gmail.com
+#
+
+FIND_PACKAGE ( PackageHandleStandardArgs )
+
+FIND_PATH( METIS_LOCATION include/metis.h 
+  $ENV{METIS_ROOT}
+  NO_DEFAULT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+  )
+
+MESSAGE ( "METIS_LOCATION = ${METIS_LOCATION}/include" )
+
+FIND_PACKAGE_HANDLE_STANDARD_ARGS ( Metis
+  REQUIRED_VARS METIS_LOCATION
+  )
+
+IF ( METIS_FOUND )
+  SET( Metis_INCLUDE_DIR "${METIS_LOCATION}/include" CACHE STRING "METIS include path")
+  FIND_LIBRARY ( Metis_metis_LIBRARY metis ${METIS_LOCATION}/lib CACHE STRING "METIS library")
+ENDIF ()
