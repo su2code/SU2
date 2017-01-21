@@ -98,13 +98,13 @@ class Config(ordered_bunch):
         # read config if it exists
         if filename:
             try:
-                self.read(filename)
+                self.read(filename)		# raises IO Exceptions, and config file Asserts
             except IOError:
                 print 'Could not find config file: %s' % filename
-	    except:
-		print 'Unexpected error: ',sys.exc_info()[0]
-		raise
-        
+            except:				# route for asserts that test validity of user modified config file 
+                print 'Unexpected error: ',sys.exc_info()[0]
+                raise
+
         self._filename = filename
     
     def read(self,filename):
