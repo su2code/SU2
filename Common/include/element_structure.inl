@@ -53,15 +53,15 @@ inline su2double CElement::GetCurr_Coord(unsigned short iNode, unsigned short iD
 
 inline su2double CElement::GetWeight(unsigned short iGauss) { return GaussWeight[iGauss];}
 
-inline su2double CElement::GetJ_X(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_X();}
+inline su2double CElement::GetJ_X(unsigned short iGauss) { return GaussPoint[iGauss]->GetJ_X();}
 
-inline su2double CElement::GetJ_x(unsigned short iGauss) {return GaussPoint[iGauss]->GetJ_x();}
+inline su2double CElement::GetJ_x(unsigned short iGauss) { return GaussPoint[iGauss]->GetJ_x();}
 
-inline su2double CElement::GetJ_X_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_X();}
+inline su2double CElement::GetJ_X_P(unsigned short iGauss) { return GaussPointP[iGauss]->GetJ_X();}
 
-inline su2double CElement::GetJ_x_P(unsigned short iGauss) {return GaussPointP[iGauss]->GetJ_x();}
+inline su2double CElement::GetJ_x_P(unsigned short iGauss) { return GaussPointP[iGauss]->GetJ_x();}
 
-inline su2double CElement::GetElement_Pressure(void) {return el_Pressure;}
+inline su2double CElement::GetElement_Pressure(void) { return el_Pressure;}
 
 inline su2double CElement::Get_Mab(unsigned short nodeA, unsigned short nodeB) { return Mab[nodeA][nodeB]; }
 

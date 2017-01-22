@@ -247,8 +247,8 @@ def setPolaraType(ctrl,nc,verbose):
 #
 # Now let us find out which angles are specified in the control file, to figure out polarSweepType and polarVar
 #
-    keyWordListAoA='angles of attack'
-    iListAOA = parLocator(keyWordListAoA,ctrl,nc,-1,verbose)
+    keyWordListAOA='angles of attack'
+    iListAOA = parLocator(keyWordListAOA,ctrl,nc,-1,verbose)
     keyWordListPhi='roll angles'
     iListPhi = parLocator(keyWordListPhi,ctrl,nc,-1,verbose)
     keyWordListBeta='side slip angle'
@@ -530,8 +530,8 @@ def updatedControlFile(ctrl,nc,parAngle,ctrlFile,verbose):
     updatedAngleList=st1[1:-1]
 # Now let us find out which angles are specified in the control file, to figure out polarSweepType and polarVar
 #
-    keyWordListAoA='angles of attack'
-    iListAOA = parLocator(keyWordListAoA,ctrl,nc,-1,verbose)
+    keyWordListAOA='angles of attack'
+    iListAOA = parLocator(keyWordListAOA,ctrl,nc,-1,verbose)
     keyWordListPhi='roll angles'
     iListPhi = parLocator(keyWordListPhi,ctrl,nc,-1,verbose)
     keyWordListBeta='side slip angle'
