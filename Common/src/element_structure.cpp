@@ -324,7 +324,7 @@ void CElement::Set_ElProperties(CElementProperty *input_element) {
 
   iDV = input_element->GetDV();
   iProp = input_element->GetMat_Prop();
-
+  iDe = input_element->GetElectric_Prop();
 
 }
 
