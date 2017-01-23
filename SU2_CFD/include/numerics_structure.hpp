@@ -1396,6 +1396,12 @@ public:
   virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to set element-based electric field modulus
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
+
+  /*!
    * \brief A virtual member to set the electric field
    * \param[in] EField_DV - New electric field computed by adjoint methods.
    */
@@ -3873,6 +3879,8 @@ public:
 
 	virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
 
+  virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
+
   virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
 
 };
@@ -3984,9 +3992,8 @@ protected:
 	unsigned short nElectric_Field,
 	nDim_Electric_Field;
 
-	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
-
-
+	su2double ke_DE;					    /*!< \brief Electric Constant for Dielectric Elastomers. */
+	su2double EFieldMod_Ref;      /*!< \brief Modulus of the electric field in the reference configuration. */
 
 
 public:
@@ -4015,6 +4022,8 @@ public:
 	void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
 	void Add_MaxwellStress(CElement *element_container, CConfig *config);
+
+  void SetElectric_Properties(CElement *element_container, CConfig *config);
 
 	void Compute_FmT_Mat(void);
 

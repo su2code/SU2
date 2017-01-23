@@ -87,6 +87,10 @@ inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *c
 
 inline void CFEM_Elasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
+inline void CFEM_Elasticity::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
 inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
 
 inline void CFEM_Elasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }

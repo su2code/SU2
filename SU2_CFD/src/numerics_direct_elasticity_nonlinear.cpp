@@ -119,6 +119,9 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		unsigned short nDelimiters, nEField_Read;
 		su2double ref_Efield_mod;
 
+		// Initialize value of the electric field in the reference configuration
+		EFieldMod_Ref = 0.0;
+
 		ke_DE = config->GetDE_Modulus();
 
 		nEField_Read = config->GetnElectric_Field();
@@ -129,8 +132,10 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 	   /*--- DV_Val: Vector to store the value of the design variable. ---*/
 
 	  /*--- The number of design variables is equal to the total number of regions ---*/
-	  if (nDim == 2) nElectric_Field = config->GetnDV_X() * config->GetnDV_Y();
-	  else nElectric_Field = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
+//	  if (nDim == 2) nElectric_Field = config->GetnDV_X() * config->GetnDV_Y();
+//	  else nElectric_Field = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
+
+		nElectric_Field = config->GetnElectric_Field();
 
 //		/*--- If the input of values for the electric field is only 1, every region gets the same value ---*/
 //		if (nEField_Read == 1){
@@ -174,22 +179,32 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
 		EField_Ref_Mod = new su2double[nElectric_Field];
 
+    for (iVar = 0; iVar < nElectric_Field; iVar++)
+      EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+
+    if (config->GetDirectDiff() == D_EFIELD){
+      unsigned short iID_DE = config->GetnID_DE();
+      SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
+    }
+
 		/*--- If the input of values for the electric field is only 1, every region gets the same value for a start ---*/
-		if (nEField_Read == 1){
-			for (iVar = 0; iVar < nElectric_Field; iVar++) {
-				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(0);
-			  if (config->GetDirectDiff() == D_EFIELD)   SU2_TYPE::SetDerivative(EField_Ref_Mod[iVar],1.0);
-			}
-		}
-		else{
-			for (iVar = 0; iVar < nElectric_Field; iVar++) {
-				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
-			}
-      if (config->GetDirectDiff() == D_EFIELD){
-        unsigned short iID_DE = config->GetnID_DE();
-        SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
-      }
-		}
+//		if (nEField_Read == 1){
+//			for (iVar = 0; iVar < nElectric_Field; iVar++) {
+//				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(0);
+//			  if (config->GetDirectDiff() == D_EFIELD)   SU2_TYPE::SetDerivative(EField_Ref_Mod[iVar],1.0);
+//			}
+//		}
+//		else{
+//			for (iVar = 0; iVar < nElectric_Field; iVar++) {
+//
+//				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+//
+//			}
+//      if (config->GetDirectDiff() == D_EFIELD){
+//        unsigned short iID_DE = config->GetnID_DE();
+//        SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
+//      }
+//		}
 
 		/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
 		EField_Curr_Unit = new su2double[nDim_Electric_Field];
@@ -285,6 +300,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
   /*--- TODO: Initialize values for the material model considered ---*/
 //	cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
   SetElement_Properties(element, config);
+  if (maxwell_stress) SetElectric_Properties(element, config);
   /*-----------------------------------------------------------*/
 
 	/*--- Initialize auxiliary matrices ---*/
@@ -529,6 +545,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
+  if (maxwell_stress) SetElectric_Properties(element, config);
   /*-----------------------------------------------------------*/
 
 	/*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
@@ -625,6 +642,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
+  if (maxwell_stress) SetElectric_Properties(element, config);
   /*-----------------------------------------------------------*/
 
 	su2double Weight, Jac_x;
@@ -819,10 +837,11 @@ void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element, CConfig *
 
 void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config){
 
-//	cout << "HERE, I WILL ADD THE MAXWELL STRESS!!!!!!" << endl;
+//	Adds the Maxwell stress to the output of the stress Sxx, Syy, Szz, SVM...
 
 	unsigned short iVar, iDim, jDim;
-	su2double mod_Curr, mod_Ref;
+
+  unsigned short iRegion;
 
 	su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
 	su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
@@ -837,28 +856,26 @@ void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *con
 		}
 	}
 
-	mod_Curr = sqrt(pow(EField_Curr_Unit[0],2)+pow(EField_Curr_Unit[1],2));
-	mod_Ref = sqrt(pow(EField_Ref_Unit[0],2)+pow(EField_Ref_Unit[1],2));
+  iRegion = element->Get_iDe();
 
-	E0 = EField_Ref_Mod[0]*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
-	E1 = EField_Ref_Mod[0]*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
-	if (nDim == 3) {E2 = EField_Ref_Mod[0]*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
+  E0 = EFieldMod_Ref*EField_Curr_Unit[0];         E0_2 = pow(E0,2);
+  E1 = EFieldMod_Ref*EField_Curr_Unit[1];         E1_2 = pow(E1,2);
+  if (nDim == 3) {E2 = EFieldMod_Ref*EField_Curr_Unit[2]; E2_2 = pow(E2,2);}
 
 	E_2 = E0_2+E1_2+E2_2;
-//	cout.precision(15);
-//	cout << endl << "Maxwell Stress tensor" << endl;
-//	cout << scientific << ke_DE*(E0_2-0.5*E_2) << " " << ke_DE*E0*E1 << " " << ke_DE*E0*E2 << endl;
-//	cout << scientific << ke_DE*E1*E0 << " " << ke_DE*(E1_2-0.5*E_2) << " " << ke_DE*E1*E2 << endl;
-//	cout << scientific << ke_DE*E2*E0 << " " << ke_DE*E2*E1 << " " << ke_DE*(E2_2-0.5*E_2) << endl;
 
 	Stress_Tensor[0][0] += ke_DE*(E0_2-0.5*E_2);	Stress_Tensor[0][1] += ke_DE*E0*E1;				Stress_Tensor[0][2] += ke_DE*E0*E2;
 	Stress_Tensor[1][0] += ke_DE*E1*E0;				Stress_Tensor[1][1] += ke_DE*(E1_2-0.5*E_2);	Stress_Tensor[1][2] += ke_DE*E1*E2;
 	Stress_Tensor[2][0] += ke_DE*E2*E0;				Stress_Tensor[2][1] += ke_DE*E2*E1;				Stress_Tensor[2][2] += ke_DE*(E2_2-0.5*E_2);
 
-//	cout << endl << "Stress tensor final" << endl;
-//	cout << scientific << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
-//	cout << scientific << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
-//	cout << scientific << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+
+}
+
+void CFEM_NonlinearElasticity::SetElectric_Properties(CElement *element, CConfig *config){
+
+  // Set the modulus of the electric field in the current element
+
+  EFieldMod_Ref = EField_Ref_Mod[element->Get_iDe()];
 
 
 }
@@ -997,6 +1014,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
+  if (maxwell_stress) SetElectric_Properties(element, config);
   /*-----------------------------------------------------------*/
 
 	su2double Weight, Jac_x;
@@ -1532,11 +1550,6 @@ void CFEM_IdealDE::Compute_Constitutive_Matrix(CElement *element, CConfig *confi
 	else if (nDim == 3){
 
 	}
-//	cout.precision(15);
-//	cout << endl << "DDSDDE" << endl;
-//	cout << scientific << D_Mat[0][0] << " " << D_Mat[0][1] << " " << D_Mat[0][2] << endl;
-//	cout << scientific << D_Mat[1][0] << " " << D_Mat[1][1] << " " << D_Mat[1][2] << endl;
-//	cout << scientific << D_Mat[2][0] << " " << D_Mat[2][1] << " " << D_Mat[2][2] << endl;
 
 }
 
@@ -1617,15 +1630,12 @@ void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, CC
 void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
 	unsigned short iVar, iDim, jDim;
-	su2double mod_Curr, mod_Ref;
 
 	su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
 	su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
 	su2double E_2 = 0.0;
 
 	unsigned short iRegion;
-
-//	cout << endl << "------ DIRECT -------" << endl;
 
 	Compute_FmT_Mat();
 
@@ -1636,82 +1646,17 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 		}
 	}
 
-	mod_Curr = sqrt(pow(EField_Curr_Unit[0],2)+pow(EField_Curr_Unit[1],2));
-	mod_Ref = sqrt(pow(EField_Ref_Unit[0],2)+pow(EField_Ref_Unit[1],2));
-//
-//	// Temporary
-//	for (iDim = 0; iDim < nDim; iDim++){
-//		EField_Curr_Unit[iDim] = EField_Curr_Unit[iDim] / mod_Curr;
-//	}
-//
-//	mod_Curr = sqrt(pow(EField_Curr_Unit[0],2)+pow(EField_Curr_Unit[1],2));
-
-//	cout << "E_Ref(" << iVar << ")  = (" << EField_Ref_Unit[0] << "," << EField_Ref_Unit[1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
-//	cout << "E_Curr(" << iVar << ") = (" << EField_Curr_Unit[0] << "," << EField_Curr_Unit[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
-//
 	iRegion = element->Get_iDe();
 
-//	for (iVar = 0; iVar < nElectric_Field; iVar++){
-//		cout << EField_Ref_Mod[iVar] << " ";
-//	}
-//	cout << endl;
-
-//	E0 = EField_Ref_Mod[0]*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
-//	E1 = EField_Ref_Mod[0]*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
-//	if (nDim == 3) {E2 = EField_Ref_Mod[0]*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
-
-	E0 = EField_Ref_Mod[iRegion]*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
-	E1 = EField_Ref_Mod[iRegion]*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
-	if (nDim == 3) {E2 = EField_Ref_Mod[iRegion]*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
+	E0 = EFieldMod_Ref*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
+	E1 = EFieldMod_Ref*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
+	if (nDim == 3) {E2 = EFieldMod_Ref*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
 
 	E_2 = E0_2+E1_2+E2_2;
 
 	Stress_Tensor[0][0] = ke_DE*(E0_2-0.5*E_2);	Stress_Tensor[0][1] = ke_DE*E0*E1;			Stress_Tensor[0][2] = ke_DE*E0*E2;
 	Stress_Tensor[1][0] = ke_DE*E1*E0;			Stress_Tensor[1][1] = ke_DE*(E1_2-0.5*E_2);	Stress_Tensor[1][2] = ke_DE*E1*E2;
 	Stress_Tensor[2][0] = ke_DE*E2*E0;			Stress_Tensor[2][1] = ke_DE*E2*E1;			Stress_Tensor[2][2] = ke_DE*(E2_2-0.5*E_2);
-
-//	cout << endl << "F:" << endl;
-//	cout << F_Mat[0][0] << " " << F_Mat[0][1] << " " << F_Mat[0][2] << endl;
-//	cout << F_Mat[1][0] << " " << F_Mat[1][1] << " " << F_Mat[1][2] << endl;
-//	cout << F_Mat[2][0] << " " << F_Mat[2][1] << " " << F_Mat[2][2] << endl;
-//
-//	su2double matrix_check[3][3], matrix_check_2[3][3], Ft[3][3];
-//
-//	Ft[0][0] = F_Mat[0][0];		Ft[0][1] = F_Mat[1][0];		Ft[0][2] = F_Mat[2][0];
-//	Ft[1][0] = F_Mat[0][1];		Ft[1][1] = F_Mat[1][1];		Ft[1][2] = F_Mat[2][1];
-//	Ft[2][0] = F_Mat[0][2];		Ft[2][1] = F_Mat[1][2];		Ft[2][2] = F_Mat[2][2];
-//
-//	cout << endl << "Ft:" << endl;
-//	cout << Ft[0][0] << " " << Ft[0][1] << " " << Ft[0][2] << endl;
-//	cout << Ft[1][0] << " " << Ft[1][1] << " " << Ft[1][2] << endl;
-//	cout << Ft[2][0] << " " << Ft[2][1] << " " << Ft[2][2] << endl;
-
-//	cout << endl << "FmT:" << endl;
-//	cout << FmT_Mat[0][0] << " " << FmT_Mat[0][1] << " " << FmT_Mat[0][2] << endl;
-//	cout << FmT_Mat[1][0] << " " << FmT_Mat[1][1] << " " << FmT_Mat[1][2] << endl;
-//	cout << FmT_Mat[2][0] << " " << FmT_Mat[2][1] << " " << FmT_Mat[2][2] << endl;
-//
-//
-//	for (iDim = 0; iDim < 3; iDim++){
-//		for (jDim = 0; jDim < 3; jDim++){
-//			matrix_check[iDim][jDim] = 0.0;
-//			matrix_check_2[iDim][jDim] = 0.0;
-//			for (iVar = 0; iVar < 3; iVar++){
-//				matrix_check[iDim][jDim] += FmT_Mat[iDim][iVar]*Ft[iVar][jDim];
-//				matrix_check_2[iDim][jDim] += Ft[iDim][iVar]*FmT_Mat[iVar][jDim];
-//			}
-//		}
-//	}
-//
-//	cout << endl << "Check_1:" << endl;
-//	cout << matrix_check[0][0] << " " << matrix_check[0][1] << " " << matrix_check[0][2] << endl;
-//	cout << matrix_check[1][0] << " " << matrix_check[1][1] << " " << matrix_check[1][2] << endl;
-//	cout << matrix_check[2][0] << " " << matrix_check[2][1] << " " << matrix_check[2][2] << endl;
-//
-//	cout << endl << "Check_2:" << endl;
-//	cout << matrix_check_2[0][0] << " " << matrix_check_2[0][1] << " " << matrix_check_2[0][2] << endl;
-//	cout << matrix_check_2[1][0] << " " << matrix_check_2[1][1] << " " << matrix_check_2[1][2] << endl;
-//	cout << matrix_check_2[2][0] << " " << matrix_check_2[2][1] << " " << matrix_check_2[2][2] << endl;
 
 
 }
