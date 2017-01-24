@@ -2721,6 +2721,34 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
   }
 }
 
+void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
+                                          CSolver **solver_container,
+                                          CNumerics *numerics,
+                                          CNumerics *second_numerics,
+                                          CConfig *config,
+                                          unsigned short iMesh) {
+
+  /*--- Stub for source term integration. ---*/
+
+  bool body_force = config->GetBody_Force();
+
+  if (body_force) {
+
+    su2double *body_force_vector = config->GetBody_Force_Vector();
+
+    /*--- Source term integration goes here... dummy output for now. ---*/
+    
+    cout << " Applying a body force of (";
+    for( unsigned short iDim = 0; iDim < nDim; iDim++) {
+      cout << body_force_vector[iDim];
+      if (iDim < nDim-1) cout << ", ";
+    }
+    cout << ")." << endl;
+
+  }
+
+}
+
 void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                            CConfig *config, unsigned short iMesh, unsigned short iStep) {
 
