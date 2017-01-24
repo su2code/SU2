@@ -846,14 +846,21 @@ static const map<string, ENUM_DYN_TRANSFER_METHOD> Dyn_Transfer_Method_Map = CCr
  * \brief Kinds of Design Variables for FEA problems (temporary)
  */
 enum ENUM_DVFEA {
-  YOUNG_MODULUS = 0,		/*!< \brief Young modulus (E) as design variables. */
-  LAME_CONSTANTS = 1,  		/*!< \brief Lame constants (Lambda, mu) as design variables. */
-  ELECTRIC_FIELD = 2,       /*!< \brief Electric field (E) as design variable. */
+  NODV_FEA = 0,         /*!< \brief No design variable for FEA problems. */
+  YOUNG_MODULUS = 1,		/*!< \brief Young modulus (E) as design variable. */
+  POISSON_RATIO = 2,  	/*!< \brief Poisson ratio (Nu) as design variable. */
+  DENSITY_VAL = 3,      /*!< \brief Density (Rho) as design variable. */
+  DEAD_WEIGHT = 4,      /*!< \brief Dead Weight (Rho_DL) as design variable. */
+  ELECTRIC_FIELD = 5    /*!< \brief Electric field (E) as design variable. */
 };
 static const map<string, ENUM_DVFEA> DVFEA_Map = CCreateMap<string, ENUM_DVFEA>
+("NONE", NODV_FEA)
 ("YOUNG_MODULUS", YOUNG_MODULUS)
-("LAME_CONSTANTS", LAME_CONSTANTS)
+("POISSON_RATIO", POISSON_RATIO)
+("DENSITY", DENSITY_VAL)
+("DEAD_WEIGHT", DEAD_WEIGHT)
 ("ELECTRIC_FIELD", ELECTRIC_FIELD);
+
 
 /*!
  * \brief types Riemann boundary treatments

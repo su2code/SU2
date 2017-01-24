@@ -83,6 +83,14 @@ inline void CFEM_Elasticity::Compute_Eigenproblem(CElement *element_container, C
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
+
+inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) { return 0.0; }
+
+inline void CFEM_Elasticity::Set_DV_Val(unsigned short i_DV, su2double val_DV){ DV_Val[i_DV] = val_DV;}
+
+inline su2double CFEM_Elasticity::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
+
 inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
 
 inline void CFEM_Elasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
@@ -103,9 +111,9 @@ inline void CFEM_DielectricElastomer_Adj::Set_ElectricField(unsigned short i_DV,
 
 inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
 
-inline void CNumerics::SetMaterial_Properties(su2double val_E, su2double val_Nu){ }
+inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ }
 
-inline void CNumerics::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ }
+inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ }
 
 inline void CFEM_Elasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
   E_i[0] = val_Young; 
@@ -128,25 +136,23 @@ inline void CFEM_NeoHookean_Comp_Adj::Set_YoungModulus(unsigned short i_DV, su2d
 //  Kappa  = Lambda + (2/3)*Mu;
 }
 
-inline void CFEM_Elasticity::SetMaterial_Properties(su2double val_E, su2double val_Nu){ 
-  E_i[0] = val_E; 
-  Nu_i[0] = val_Nu; 
-//  Mu     = E / (2.0*(1.0 + Nu));
-//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-//  Kappa  = Lambda + (2/3)*Mu;
+inline void CFEM_Elasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
 }
 
-inline void CFEM_NonlinearElasticity::SetMaterial_Properties(su2double val_E, su2double val_Nu){ 
-  E_i[0] = val_E; 
-  Nu_i[0] = val_Nu; 
-//  Mu     = E / (2.0*(1.0 + Nu));
-//  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-//  Kappa  = Lambda + (2/3)*Mu;
+inline void CFEM_NonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
 }
 
-inline void CFEM_Elasticity::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ Rho_s_i[0] = val_Rho; Rho_s_DL_i[0] = val_Rho_DL;}
+inline void CFEM_Elasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
 
-inline void CFEM_NonlinearElasticity::SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL){ Rho_s_i[0] = val_Rho; Rho_s_DL_i[0] = val_Rho_DL;}
+inline void CFEM_NonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
 
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
 

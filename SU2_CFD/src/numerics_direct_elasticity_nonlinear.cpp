@@ -182,10 +182,10 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
     for (iVar = 0; iVar < nElectric_Field; iVar++)
       EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
 
-    if (config->GetDirectDiff() == D_EFIELD){
-      unsigned short iID_DE = config->GetnID_DE();
-      SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
-    }
+//    if (config->GetDirectDiff() == D_EFIELD){
+//      unsigned short iID_DE = config->GetnID_DV();
+//      SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
+//    }
 
 		/*--- If the input of values for the electric field is only 1, every region gets the same value for a start ---*/
 //		if (nEField_Read == 1){
@@ -201,7 +201,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 //
 //			}
 //      if (config->GetDirectDiff() == D_EFIELD){
-//        unsigned short iID_DE = config->GetnID_DE();
+//        unsigned short iID_DE = config->GetnID_DV();
 //        SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
 //      }
 //		}
@@ -211,6 +211,24 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
 			EField_Curr_Unit[iDim] = 0.0;
 		}
+
+	  switch (config->GetDV_FEA()) {
+	    case YOUNG_MODULUS:
+	    case POISSON_RATIO:
+	    case DENSITY_VAL:
+	    case DEAD_WEIGHT:
+	    case ELECTRIC_FIELD:
+	      break;
+	    default:
+	      switch (config->GetDirectDiff()){
+	        case D_EFIELD:
+	          SU2_TYPE::SetDerivative(EField_Ref_Mod[config->GetnID_DV()],1.0);
+	          break;
+	        default:
+	          break;
+	      }
+
+	  }
 
 	}
 
@@ -877,6 +895,11 @@ void CFEM_NonlinearElasticity::SetElectric_Properties(CElement *element, CConfig
 
   EFieldMod_Ref = EField_Ref_Mod[element->Get_iDe()];
 
+  switch (config->GetDV_FEA()) {
+    case ELECTRIC_FIELD:
+      EFieldMod_Ref   = DV_Val[element->Get_iDV()];
+      break;
+  }
 
 }
 

@@ -590,27 +590,31 @@ inline su2double CSolver::GetViscosity_Inf(void) { return 0; }
 
 inline su2double CSolver::GetTke_Inf(void) { return 0; }
 
-inline su2double CSolver::GetTotal_Sens_E(void) { return 0.0; }
+inline su2double CSolver::GetTotal_Sens_E(unsigned short iVal) { return 0.0; }
 
-inline su2double CSolver::GetTotal_Sens_Nu(void) { return 0.0; }
+inline su2double CSolver::GetTotal_Sens_Nu(unsigned short iVal) { return 0.0; }
 
-inline su2double CSolver::GetGlobal_Sens_E(void) { return 0.0; }
+inline su2double CSolver::GetGlobal_Sens_E(unsigned short iVal) { return 0.0; }
 
-inline su2double CSolver::GetGlobal_Sens_Nu(void) { return 0.0; }
+inline su2double CSolver::GetGlobal_Sens_Nu(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_EField(unsigned short iEField) { return 0.0; }
 
-inline su2double CSolver::GetVal_Young(void) { return 0.0; }
+inline su2double CSolver::GetVal_Young(unsigned short iVal) { return 0.0; }
 
-inline su2double CSolver::GetVal_Poisson(void) { return 0.0; }
+inline su2double CSolver::GetVal_Poisson(unsigned short iVal) { return 0.0; }
 
-inline su2double CSolver::GetVal_Rho(void) { return 0.0; }
+inline su2double CSolver::GetVal_Rho(unsigned short iVal) { return 0.0; }
 
-inline su2double CSolver::GetVal_Rho_DL(void) { return 0.0; }
+inline su2double CSolver::GetVal_Rho_DL(unsigned short iVal) { return 0.0; }
 
-inline unsigned short CSolver::Get_nEField(void) { return 0; }
+inline unsigned short CSolver::GetnEField(void) { return 0; }
+
+inline unsigned short CSolver::GetnDVFEA(void) { return 0; }
 
 inline su2double CSolver::GetVal_EField(unsigned short iVal) { return 0.0; }
+
+inline su2double CSolver::GetVal_DVFEA(unsigned short iVal) { return 0.0; }
 
 inline su2double* CSolver::GetConstants() { return NULL;}
 
@@ -1941,10 +1945,6 @@ inline su2double CFEM_ElasticitySolver::Get_MassMatrix(unsigned long iPoint, uns
 
 inline unsigned short CFEM_ElasticitySolver::Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
 
-inline void CFEM_ElasticitySolver::Set_DV_Val(su2double val_EField, unsigned short i_DV){ DV_Val[i_DV] = val_EField;}
-
-inline su2double CFEM_ElasticitySolver::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
-
 inline su2double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
 inline su2double CFEM_ElasticitySolver::GetTotal_CFEA() { return Total_CFEA; }
@@ -2011,27 +2011,31 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPre
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
-inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(void) { return Total_Sens_E; }
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
 
-inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(void) { return Total_Sens_Nu; }
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(unsigned short iVal) { return Total_Sens_Nu[iVal]; }
 
-inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(void) { return Global_Sens_E; }
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(unsigned short iVal) { return Global_Sens_E[iVal]; }
 
-inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Nu(void) { return Global_Sens_Nu; }
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Nu(unsigned short iVal) { return Global_Sens_Nu[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
 
-inline su2double CDiscAdjFEASolver::GetVal_Young(void) { return E; }
+inline su2double CDiscAdjFEASolver::GetVal_Young(unsigned short iVal) { return E_i[iVal]; }
 
-inline su2double CDiscAdjFEASolver::GetVal_Poisson(void) { return Nu; }
+inline su2double CDiscAdjFEASolver::GetVal_Poisson(unsigned short iVal) { return Nu_i[iVal]; }
 
-inline su2double CDiscAdjFEASolver::GetVal_Rho(void) { return n_EField; }
+inline su2double CDiscAdjFEASolver::GetVal_Rho(unsigned short iVal) { return Rho_i[iVal]; }
 
-inline su2double CDiscAdjFEASolver::GetVal_Rho_DL(void) { return Rho_DL; }
+inline su2double CDiscAdjFEASolver::GetVal_Rho_DL(unsigned short iVal) { return Rho_DL_i[iVal]; }
 
-inline unsigned short CDiscAdjFEASolver::Get_nEField(void) { return n_EField; }
+inline unsigned short CDiscAdjFEASolver::GetnEField(void) { return nEField; }
+
+inline unsigned short CDiscAdjFEASolver::GetnDVFEA(void) { return nDV; }
 
 inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return EField[iVal]; }
+
+inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
 
 inline void CSolver::SetMesh_Recording(CGeometry **geometry, CVolumetricMovement *grid_movement, CConfig *config, unsigned short kind_recording) {}
 

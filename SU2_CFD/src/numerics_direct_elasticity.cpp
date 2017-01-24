@@ -68,10 +68,9 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 //	Rho_s_i[0]    = config->GetMaterialDensity(0);       // For inertial effects
 //	Rho_s_DL_i[0] = config->GetMaterialDensity(0);    // For dead loads
 
-	if (config->GetDirectDiff() == D_YOUNG)   SU2_TYPE::SetDerivative(E_i[0],1.0);
-	if (config->GetDirectDiff() == D_POISSON) SU2_TYPE::SetDerivative(Nu_i[0],1.0);
-  if (config->GetDirectDiff() == D_RHO)     SU2_TYPE::SetDerivative(Rho_s_i[0],1.0);
-  if (config->GetDirectDiff() == D_RHO_DL)  SU2_TYPE::SetDerivative(Rho_s_DL_i[0],1.0);
+
+
+
 
 	if (pseudo_static) Rho_s_i[0] = 0.0;             // Pseudo-static: no inertial effects considered
 
@@ -130,6 +129,45 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 			GradNi_Curr_Mat[iVar] 	= new su2double[nDim];
 		}
 	}
+
+  DV_Val      = NULL;
+  n_DV        = config->GetnDV();
+  switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+    case POISSON_RATIO:
+    case DENSITY_VAL:
+    case DEAD_WEIGHT:
+    case ELECTRIC_FIELD:
+      DV_Val = new su2double[n_DV];
+      for (unsigned short iDV = 0; iDV < n_DV; iDV++)
+        DV_Val[iDV] = config->GetDV_Value(iDV,0);
+
+      if ((config->GetDirectDiff() == D_YOUNG) ||
+          (config->GetDirectDiff() == D_POISSON) ||
+          (config->GetDirectDiff() == D_RHO) ||
+          (config->GetDirectDiff() == D_RHO_DL) ||
+          (config->GetDirectDiff() == D_EFIELD)){
+            SU2_TYPE::SetDerivative(DV_Val[config->GetnID_DV()],1.0);
+          }
+      break;
+
+    default:
+      switch (config->GetDirectDiff()){
+        case D_YOUNG:
+          SU2_TYPE::SetDerivative(E_i[config->GetnID_DV()],1.0);
+          break;
+        case D_POISSON:
+          SU2_TYPE::SetDerivative(Nu_i[config->GetnID_DV()],1.0);
+          break;
+        case D_RHO:
+          SU2_TYPE::SetDerivative(Rho_s_i[config->GetnID_DV()],1.0);
+          break;
+        case D_RHO_DL:
+          SU2_TYPE::SetDerivative(Rho_s_DL_i[config->GetnID_DV()],1.0);
+          break;
+      }
+
+  }
 }
 
 CFEM_Elasticity::~CFEM_Elasticity(void) {
@@ -169,6 +207,8 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 	delete [] D_Mat;
 	delete [] GradNi_Ref_Mat;
 	delete [] GradNi_Curr_Mat;
+
+  if (DV_Val != NULL) delete[] DV_Val;
 
 	if (FAux_Dead_Load 		!= NULL) delete [] FAux_Dead_Load;
 
@@ -282,6 +322,21 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
   Nu  = Nu_i[element->Get_iProp()];
   Rho_s = Rho_s_i[element->Get_iProp()];
   Rho_s_DL = Rho_s_DL_i[element->Get_iProp()];
+
+  switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      E   = DV_Val[element->Get_iDV()];
+      break;
+    case POISSON_RATIO:
+      Nu  = DV_Val[element->Get_iDV()];
+      break;
+    case DENSITY_VAL:
+      Rho_s = DV_Val[element->Get_iDV()];
+      break;
+    case DEAD_WEIGHT:
+      Rho_s_DL = DV_Val[element->Get_iDV()];
+      break;
+  }
 
   Mu     = E / (2.0*(1.0 + Nu));
   Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));

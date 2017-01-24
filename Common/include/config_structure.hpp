@@ -464,7 +464,7 @@ private:
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-  unsigned short nID_DE;  /*!< \brief ID for the DE when computed using direct differentiation. */
+  unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
@@ -7136,10 +7136,10 @@ public:
 	 bool GetFSI_Simulation(void);
 
 	 /*!
-	  * \brief Get the ID for the DE region we want to compute the gradient for using direct differentiation
+	  * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
 	  * \return ID
 	  */
-	 unsigned short GetnID_DE(void);
+	 unsigned short GetnID_DV(void);
 
 	/*!
 	 * \brief Check if we want to apply an incremental load to the nonlinear structural simulation
