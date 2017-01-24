@@ -1390,6 +1390,19 @@ public:
   virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to set the value of the design variables
+   * \param[in] i_DV - Index of the design variable.
+   * \param[in] val_DV - Value of the design variable
+   */
+  virtual void Set_DV_Val(unsigned short i_DV, su2double val_DV);
+
+  /*!
+   * \brief A virtual member to retrieve the value of the design variables
+   * \param[in] i_DV - Index of the design variable.
+   */
+  virtual su2double Get_DV_Val(unsigned short i_DV);
+
+  /*!
    * \brief A virtual member to add the Maxwell stress contribution
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -1415,17 +1428,19 @@ public:
 
   /*!
    * \brief A virtual member to set the material properties
+   * \param[in] iVal - Index of the region of concern
    * \param[in] val_E - Value of the Young Modulus.
    * \param[in] val_Nu - Value of the Poisson's ratio.
    */
-  virtual void SetMaterial_Properties(su2double val_E, su2double val_Nu);
+  virtual void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
 
   /*!
    * \brief A virtual member to set the material properties
+   * \param[in] iVal - Index of the region of concern
    * \param[in] val_Rho - Value of the density (inertial effects).
    * \param[in] val_Rho_DL - Value of the density (dead load effects).
    */
-  virtual void SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL);
+  virtual void SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL);
 
   /*!
    * \brief A virtual member to compute the mass matrix
@@ -3834,6 +3849,9 @@ protected:
 
 	su2double *FAux_Dead_Load;		/*!< \brief Auxiliar vector for the dead loads */
 
+  su2double *DV_Val;          /*!< \brief For optimization cases, value of the design variables. */
+  unsigned short n_DV;          /*!< \brief For optimization cases, number of design variables. */
+
 public:
 
 	/*!
@@ -3849,9 +3867,9 @@ public:
 	 */
 	virtual ~CFEM_Elasticity(void);
 
-  void SetMaterial_Properties(su2double val_E, su2double val_Nu);
+  void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
 
-  void SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL);
+  void SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL);
 
 	void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
 
@@ -3860,6 +3878,10 @@ public:
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
   void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  void Set_DV_Val(unsigned short i_DV, su2double val_DV);
+
+  su2double Get_DV_Val(unsigned short i_DV);
 
 	virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
@@ -4035,9 +4057,9 @@ public:
 
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
-  void SetMaterial_Properties(su2double val_E, su2double val_Nu);
+  void SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu);
 
-  void SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL);
+  void SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL);
 
 	su2double deltaij(unsigned short iVar, unsigned short jVar);
 

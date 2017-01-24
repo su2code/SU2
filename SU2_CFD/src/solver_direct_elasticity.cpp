@@ -41,8 +41,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 
   nFEA_Terms = 1;
 
-  n_DV = 0;
-
   nPoint = 0;
   nPointDomain = 0;
 
@@ -88,8 +86,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
   Solution_Interm = NULL;
 
   iElem_iDe   = NULL;
-
-  DV_Val      = NULL;
 
 }
 
@@ -492,12 +488,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   solutionPredictor = new su2double [nVar];
 
   iElem_iDe = NULL;
-  DV_Val = NULL;
   /*---- If we are solving an adjoint problem we need to define the number of design variables and delimit the regions ---*/
   /*---- The same if we are solving a problem with DEs ---*/
-  n_DV = 0;
-  DV_Val = NULL;
-  iElem_iDe = NULL;
 
 //  if (de_effects){
 //
@@ -766,7 +758,6 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   delete [] stressTensor;
 
   if (iElem_iDe != NULL) delete [] iElem_iDe;
-  if (DV_Val != NULL) delete[] DV_Val;
 
 }
 
@@ -1840,35 +1831,35 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
     for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_SurfaceLoad_Res();
   }
 
-  /*---- If we are solving an adjoint problem, we need to update the values of the design variables ---*/
-  if (config->GetKind_Solver() == ADJ_ELASTICITY){
-
-    /*
-     * We change the variables only at the beginning of the time step, but not for the first time step
-     * (when we want the input values to be the true ones computed).
-     */
-
-    if ( ((!restart) && ((!initial_calc) && first_iter)) ||
-        ( (restart) && ((!initial_calc_restart) && first_iter))
-    ){
-      unsigned short i_DV;
-      cout << " The design variables are now: ";
-      for (i_DV = 0; i_DV < n_DV; i_DV++){
-        cout << DV_Val[i_DV] << " ";
-        switch (config->GetDV_FEA()) {
-          case YOUNG_MODULUS:
-            numerics[FEA_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
-            if(de_effects) numerics[DE_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
-            break;
-          case ELECTRIC_FIELD:
-            numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
-            numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
-            break;
-        }
-      }
-      cout << endl;
-    }
-  }
+//  /*---- If we are solving an adjoint problem, we need to update the values of the design variables ---*/
+//  if (config->GetKind_Solver() == ADJ_ELASTICITY){
+//
+//    /*
+//     * We change the variables only at the beginning of the time step, but not for the first time step
+//     * (when we want the input values to be the true ones computed).
+//     */
+//
+//    if ( ((!restart) && ((!initial_calc) && first_iter)) ||
+//        ( (restart) && ((!initial_calc_restart) && first_iter))
+//    ){
+//      unsigned short i_DV;
+//      cout << " The design variables are now: ";
+//      for (i_DV = 0; i_DV < n_DV; i_DV++){
+//        cout << DV_Val[i_DV] << " ";
+//        switch (config->GetDV_FEA()) {
+//          case YOUNG_MODULUS:
+//            numerics[FEA_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+//            if(de_effects) numerics[DE_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+//            break;
+//          case ELECTRIC_FIELD:
+//            numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+//            numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+//            break;
+//        }
+//      }
+//      cout << endl;
+//    }
+//  }
 
   /*
    * If we apply pressure forces, we need to clear the residual on each iteration
@@ -2067,7 +2058,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 //    cout << "INDEX: " << geometry->elem[iElem]->GetGlobalIndex() << " ";
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
-    element_container[DE_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+    if (de_effects) element_container[DE_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     /*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
 
@@ -5229,9 +5220,9 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
     myfile_res.precision(15);
 
-    if (n_DV > 1){
-      myfile_res << config->GetnID_DE() << "\t";
-    }
+//    if (n_DV > 1){
+//      myfile_res << config->GetnID_DE() << "\t";
+//    }
 
     myfile_res << scientific << Total_OFRefGeom << "\t";
 
@@ -5353,9 +5344,9 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
     myfile_res.precision(15);
 
-    if (n_DV > 1){
-      myfile_res << config->GetnID_DE() << "\t";
-    }
+//    if (n_DV > 1){
+//      myfile_res << config->GetnID_DE() << "\t";
+//    }
 
     myfile_res << scientific << Total_OFRefNode << "\t";
 

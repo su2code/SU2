@@ -6279,8 +6279,8 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
       }
 
       if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
-        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E() << "\t";
-        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu() << "\t";
+        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0) << "\t";
+        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0) << "\t";
         myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0) << "\t";
       }
 

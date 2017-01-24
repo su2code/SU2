@@ -3174,25 +3174,25 @@ public:
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
-  virtual su2double GetTotal_Sens_E(void);
+  virtual su2double GetTotal_Sens_E(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the Mach sensitivity for the Poisson's ratio Nu
    */
-  virtual su2double GetTotal_Sens_Nu(void);
+  virtual su2double GetTotal_Sens_Nu(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
-  virtual su2double GetGlobal_Sens_E(void);
+  virtual su2double GetGlobal_Sens_E(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Poisson's ratio Nu
    */
-  virtual su2double GetGlobal_Sens_Nu(void);
+  virtual su2double GetGlobal_Sens_Nu(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
@@ -3204,31 +3204,37 @@ public:
    * \brief A virtual member.
    * \return Value of the Young modulus from the adjoint solver
    */
-  virtual su2double GetVal_Young(void);
+  virtual su2double GetVal_Young(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the Poisson's ratio from the adjoint solver
    */
-  virtual su2double GetVal_Poisson(void);
+  virtual su2double GetVal_Poisson(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the density for inertial effects, from the adjoint solver
    */
-  virtual su2double GetVal_Rho(void);
+  virtual su2double GetVal_Rho(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the density for dead loads, from the adjoint solver
    */
-  virtual su2double GetVal_Rho_DL(void);
+  virtual su2double GetVal_Rho_DL(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Number of electric field variables from the adjoint solver
    */
-  virtual unsigned short Get_nEField(void);
+  virtual unsigned short GetnEField(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Number of design variables from the adjoint solver
+   */
+  virtual unsigned short GetnDVFEA(void);
   
   /*!
    * \brief A virtual member.
@@ -3236,6 +3242,12 @@ public:
    */
   virtual su2double GetVal_EField(unsigned short iVal);
   
+  /*!
+   * \brief A virtual member.
+   * \return Pointer to the values of the design variables
+   */
+  virtual su2double GetVal_DVFEA(unsigned short iVal);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -10974,8 +10986,6 @@ private:
   unsigned long *elProperties;  /*!< \brief Auxiliary vector to read the element properties from file */
 
   unsigned short *iElem_iDe;			/*!< \brief For DE cases, ID of the region considered for each iElem. */
-  su2double *DV_Val;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
-  unsigned short n_DV;          /*!< \brief For DE cases, number of design variables. */
   
   su2double a_dt[9];          /*!< \brief Integration constants. */
   
@@ -11521,20 +11531,6 @@ public:
    * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
    */
   unsigned short Get_iElem_iDe(unsigned long iElem);
-  
-  /*!
-   * \brief Set the value of the Electric Field modulus, design variable for DE computations
-   * \param[in] i_DV - number of design variable.
-   * \param[in] val_EField - value of the design variable.
-   */
-  void Set_DV_Val(su2double val_EField, unsigned short i_DV);
-  
-  /*!
-   * \brief Retrieve the Electric Field modulus, design variable for DE computations
-   * \param[in] i_DV - number of design variable.
-   * \param[out] DV_Val - value of the design variable.
-   */
-  su2double Get_DV_Val(unsigned short i_DV);
   
   /*!
    * \brief Retrieve the Mass Matrix term (to add to the Jacobian of the adjoint problem)
@@ -12346,17 +12342,17 @@ private:
 
   su2double *SolRest;     /*!< \brief Auxiliary vector to restart the solution */
 
-  su2double Total_Sens_E;       /*!< \brief Total Young modulus sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_Nu;      /*!< \brief Total Poisson's ratio sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_Rho;     /*!< \brief Total density sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_Rho_DL;  /*!< \brief Total density sensitivity coefficient for all the boundaries. */
+//  su2double Total_Sens_E;       /*!< \brief Total Young modulus sensitivity coefficient for all the boundaries. */
+//  su2double Total_Sens_Nu;      /*!< \brief Total Poisson's ratio sensitivity coefficient for all the boundaries. */
+//  su2double Total_Sens_Rho;     /*!< \brief Total density sensitivity coefficient for all the boundaries. */
+//  su2double Total_Sens_Rho_DL;  /*!< \brief Total density sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_nL;      /*!< \brief Total normal pressure sensitivity coefficient for all the boundaries. */
 
   /*!< \brief Global sensitivities. */
-  su2double Global_Sens_E,
-  Global_Sens_Nu,
-  Global_Sens_Rho,
-  Global_Sens_Rho_DL;
+//  su2double Global_Sens_E,
+//  Global_Sens_Nu,
+//  Global_Sens_Rho,
+//  Global_Sens_Rho_DL;
 
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
   su2double E, Nu, Rho, Rho_DL; /*!< \brief Value of the extra variables we want to obtain the adjoint for. */
@@ -12364,12 +12360,33 @@ private:
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
 
-  bool de_effects;              /*!< \brief Determines if DE effects are considered. */
-  su2double *EField;            /*!< \brief Array that stores the electric field as design variables. */
-  unsigned short n_EField;    /*!< \brief Number of electric field areas in the code. */
-  su2double *Local_Sens_EField, /*!< \brief Local sensitivity of the Electric Field. */
-  *Global_Sens_EField;  /*!< \brief Global sensitivity of the Electric Field. */
+  /*!< \brief Definition of element based sensitivities. */
+  unsigned short nMPROP;        /*!< \brief Number of material properties */
 
+  su2double *E_i,               /*!< \brief Values of the Young's Modulus. */
+            *Nu_i,              /*!< \brief Values of the Poisson's ratio. */
+            *Rho_i,             /*!< \brief Values of the density (for inertial effects). */
+            *Rho_DL_i;          /*!< \brief Values of the density (for volume loading) */
+  su2double *Local_Sens_E, *Global_Sens_E,            /*!< \brief Local and global sensitivity of the Young's modulus. */
+            *Local_Sens_Nu, *Global_Sens_Nu,          /*!< \brief Local and global sensitivity of the Poisson ratio. */
+            *Local_Sens_Rho, *Global_Sens_Rho,        /*!< \brief Local and global sensitivity of the density. */
+            *Local_Sens_Rho_DL, *Global_Sens_Rho_DL;  /*!< \brief Local and global sensitivity of the volume load. */
+  su2double *Total_Sens_E,       /*!< \brief Total sensitivity of the Young's modulus (time domain). */
+            *Total_Sens_Nu,      /*!< \brief Local and global sensitivity of the Poisson ratio. */
+            *Total_Sens_Rho,     /*!< \brief Local and global sensitivity of the density. */
+            *Total_Sens_Rho_DL;  /*!< \brief Local and global sensitivity of the volume load. */
+
+  bool de_effects;              /*!< \brief Determines if DE effects are considered. */
+  unsigned short nEField;       /*!< \brief Number of electric field areas in the problem. */
+  su2double *EField;            /*!< \brief Array that stores the electric field as design variables. */
+  su2double *Local_Sens_EField, *Global_Sens_EField; /*!< \brief Local and global sensitivity of the Electric Field. */
+  su2double *Total_Sens_EField;
+
+  bool fea_dv;                  /*!< \brief Determines if the design variable we study is a FEA parameter. */
+  unsigned short nDV;           /*!< \brief Number of design variables in the problem. */
+  su2double *DV_Val;            /*!< \brief Value of the design variables. */
+  su2double *Local_Sens_DV, *Global_Sens_DV;          /*!< \brief Local and global sensitivity of the Design Variable. */
+  su2double *Total_Sens_DV;
 
 public:
   
@@ -12515,25 +12532,25 @@ public:
    * \return Value of the total Young's modulus sensitivity
    *         (inviscid + viscous contribution).
    */
-  su2double GetTotal_Sens_E(void);
+  su2double GetTotal_Sens_E(unsigned short iVal);
   
   /*!
    * \brief Set the total Poisson's ratio sensitivity.
    * \return Value of the Poisson's ratio sensitivity
    */
-  su2double GetTotal_Sens_Nu(void);
+  su2double GetTotal_Sens_Nu(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
    */
-  su2double GetGlobal_Sens_E(void);
+  su2double GetGlobal_Sens_E(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
    * \return Value of the Mach sensitivity for the Poisson's ratio Nu
    */
-  su2double GetGlobal_Sens_Nu(void);
+  su2double GetGlobal_Sens_Nu(unsigned short iVal);
   
   /*!
    * \brief A virtual member.
@@ -12545,38 +12562,50 @@ public:
    * \brief Get the value of the Young modulus from the adjoint solver
    * \return Value of the Young modulus from the adjoint solver
    */
-  su2double GetVal_Young(void);
+  su2double GetVal_Young(unsigned short iVal);
   
   /*!
    * \brief Get the value of the Poisson's ratio from the adjoint solver
    * \return Value of the Poisson's ratio from the adjoint solver
    */
-  su2double GetVal_Poisson(void);
+  su2double GetVal_Poisson(unsigned short iVal);
   
   /*!
    * \brief Get the value of the density from the adjoint solver, for inertial effects
    * \return Value of the density from the adjoint solver
    */
-  su2double GetVal_Rho(void);
+  su2double GetVal_Rho(unsigned short iVal);
   
   /*!
    * \brief Get the value of the density from the adjoint solver, for dead loads
    * \return Value of the density for dead loads, from the adjoint solver
    */
-  su2double GetVal_Rho_DL(void);
+  su2double GetVal_Rho_DL(unsigned short iVal);
   
   /*!
-   * \brief Get the number of variables for the Electric Field of the density from the adjoint solver, for dead loads
+   * \brief Get the number of variables for the Electric Field from the adjoint solver
    * \return Number of electric field variables from the adjoint solver
    */
-  unsigned short Get_nEField(void);
+  unsigned short GetnEField(void);
   
   /*!
-   * \brief Get the value of the Electric Field from the adjoint solver, for dead loads
+   * \brief Get the number of design variables from the adjoint solver,
+   * \return Number of design variables from the adjoint solver
+   */
+  unsigned short GetnDVFEA(void);
+
+  /*!
+   * \brief Get the value of the Electric Field from the adjoint solver
    * \return Pointer to the values of the Electric Field
    */
   su2double GetVal_EField(unsigned short iVal);
   
+  /*!
+   * \brief Get the value of the design variables from the adjoint solver
+   * \return Pointer to the values of the design variables
+   */
+  su2double GetVal_DVFEA(unsigned short iVal);
+
   /*!
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.

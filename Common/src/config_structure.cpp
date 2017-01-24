@@ -1571,7 +1571,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief DESIGN_VARIABLE_FEA
    *  \n DESCRIPTION: Design variable for FEA problems (Temp) \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
-  addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, YOUNG_MODULUS);
+  addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, NODV_FEA);
 
   /*  DESCRIPTION: Consider a reference solution for the structure (optimization applications)
   *  Options: NO, YES \ingroup Config */
@@ -1689,8 +1689,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("FSI_LINEAR_SOLVER_ERROR_STRUC", Linear_Solver_Error_FSI_Struc, 1E-6);
 
-  /* DESCRIPTION: DE for which we want number of iterations of the turbulent adjoint linear solver for the implicit formulation */
-  addUnsignedShortOption("DE_INDEX_DIRECTDIFF", nID_DE, 0);
+  /* DESCRIPTION: ID of the region we want to compute the sensitivities using direct differentiation */
+  addUnsignedShortOption("FEA_ID_DIRECTDIFF", nID_DV, 0);
 
   /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
   addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);

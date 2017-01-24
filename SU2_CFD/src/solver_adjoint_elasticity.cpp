@@ -1952,12 +1952,56 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Initialize the values of the total sensitivities ---*/
 
-  Total_Sens_E        = 0.0;
-  Total_Sens_Nu       = 0.0;
-  Total_Sens_Rho      = 0.0;
-  Total_Sens_Rho_DL   = 0.0;
+//  Total_Sens_E        = 0.0;
+//  Total_Sens_Nu       = 0.0;
+//  Total_Sens_Rho      = 0.0;
+//  Total_Sens_Rho_DL   = 0.0;
 
-  /*--- Implementation for Dielectric Elastomers ---*/
+
+  /*--- Initialize vector structures for multiple material definition ---*/
+
+  nMPROP = config->GetnElasticityMod();
+
+  /*--- For a material to be fully defined, we need to have the same number for all three parameters ---*/
+  bool checkDef = ((config->GetnElasticityMod() == config->GetnPoissonRatio()) &&
+                   (config->GetnElasticityMod() == config->GetnMaterialDensity()) &&
+                   (config->GetnMaterialDensity() == config->GetnPoissonRatio()));
+
+  if (!checkDef){
+      if (rank == MASTER_NODE) cout << "WARNING: For a material to be fully defined, E, Nu and Rho need to have the same dimensions." << endl;
+      exit(EXIT_FAILURE);
+  }
+
+  bool pseudo_static = config->GetPseudoStatic();
+
+  E_i           = new su2double[nMPROP];
+  Local_Sens_E  = new su2double[nMPROP];
+  Global_Sens_E = new su2double[nMPROP];
+  Total_Sens_E  = new su2double[nMPROP];
+
+  Nu_i           = new su2double[nMPROP];
+  Local_Sens_Nu  = new su2double[nMPROP];
+  Global_Sens_Nu = new su2double[nMPROP];
+  Total_Sens_Nu = new su2double[nMPROP];
+
+  Rho_i         = new su2double[nMPROP];     // For inertial effects
+  Local_Sens_Rho  = new su2double[nMPROP];
+  Global_Sens_Rho = new su2double[nMPROP];
+  Total_Sens_Rho  = new su2double[nMPROP];
+
+  Rho_DL_i         = new su2double[nMPROP];     // For dead loads
+  Local_Sens_Rho_DL  = new su2double[nMPROP];
+  Global_Sens_Rho_DL = new su2double[nMPROP];
+  Total_Sens_Rho_DL  = new su2double[nMPROP];
+
+  for (iVar = 0; iVar < nMPROP; iVar++){
+      Total_Sens_E[iVar]      = 0.0;
+      Total_Sens_Nu[iVar]     = 0.0;
+      Total_Sens_Rho[iVar]    = 0.0;
+      Total_Sens_Rho_DL[iVar] = 0.0;
+  }
+
+  /*--- Initialize vector structures for multiple electric regions ---*/
 
   de_effects = config->GetDE_Effects();
 
@@ -1966,14 +2010,44 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   Global_Sens_EField = NULL;
   if(de_effects){
 
-    if (nDim == 2) n_EField = config->GetnDV_X() * config->GetnDV_Y();
-    else n_EField = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
+    nEField = config->GetnElectric_Field();
 
-    EField             = new su2double[n_EField];
-    Local_Sens_EField  = new su2double[n_EField];
-    Global_Sens_EField = new su2double[n_EField];
+    EField             = new su2double[nEField];
+    Local_Sens_EField  = new su2double[nEField];
+    Global_Sens_EField = new su2double[nEField];
+    Total_Sens_EField  = new su2double[nEField];
+    for (iVar = 0; iVar < nEField; iVar++){
+        Total_Sens_EField[iVar] = 0.0;
+    }
   }
 
+  /*--- Initialize vector structures for structural-based design variables ---*/
+
+  nDV = config->GetnDV();
+  DV_Val = NULL;
+  fea_dv = false;
+  switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+    case POISSON_RATIO:
+    case DENSITY_VAL:
+    case DEAD_WEIGHT:
+    case ELECTRIC_FIELD:
+      fea_dv = true;
+      break;
+    default:
+      fea_dv = false;
+      break;
+  }
+
+  if (fea_dv){
+      DV_Val         = new su2double[nDV];
+      Local_Sens_DV  = new su2double[nDV];
+      Global_Sens_DV = new su2double[nDV];
+      Total_Sens_DV  = new su2double[nDV];
+      for (iVar = 0; iVar < nDV; iVar++){
+          Total_Sens_DV[iVar] = 0.0;
+      }
+  }
 
 }
 
@@ -1988,6 +2062,26 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
     delete [] CSensitivity;
   }
 
+  if (E_i           != NULL) delete [] E_i;
+  if (Nu_i          != NULL) delete [] Nu_i;
+  if (Rho_i       != NULL) delete [] Rho_i;
+  if (Rho_DL_i    != NULL) delete [] Rho_DL_i;
+
+  if (Local_Sens_E         != NULL) delete [] Local_Sens_E;
+  if (Local_Sens_Nu        != NULL) delete [] Local_Sens_Nu;
+  if (Local_Sens_Rho       != NULL) delete [] Local_Sens_Rho;
+  if (Local_Sens_Rho_DL    != NULL) delete [] Local_Sens_Rho_DL;
+
+  if (Global_Sens_E         != NULL) delete [] Global_Sens_E;
+  if (Global_Sens_Nu        != NULL) delete [] Global_Sens_Nu;
+  if (Global_Sens_Rho       != NULL) delete [] Global_Sens_Rho;
+  if (Global_Sens_Rho_DL    != NULL) delete [] Global_Sens_Rho_DL;
+
+  if (Total_Sens_E         != NULL) delete [] Total_Sens_E;
+  if (Total_Sens_Nu        != NULL) delete [] Total_Sens_Nu;
+  if (Total_Sens_Rho       != NULL) delete [] Total_Sens_Rho;
+  if (Total_Sens_Rho_DL    != NULL) delete [] Total_Sens_Rho_DL;
+
   if (normalLoads   != NULL) delete [] normalLoads;
   if (Sens_E        != NULL) delete [] Sens_E;
   if (Sens_Nu       != NULL) delete [] Sens_Nu;
@@ -1996,6 +2090,10 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
   if (EField        != NULL) delete [] EField;
   if (Local_Sens_EField        != NULL) delete [] Local_Sens_EField;
   if (Global_Sens_EField       != NULL) delete [] Global_Sens_EField;
+
+  if (DV_Val               != NULL) delete [] DV_Val;
+  if (Local_Sens_DV        != NULL) delete [] Local_Sens_DV;
+  if (Global_Sens_DV       != NULL) delete [] Global_Sens_DV;
 
   if (Solution_Vel   != NULL) delete [] Solution_Vel;
   if (Solution_Accel != NULL) delete [] Solution_Accel;
@@ -2361,47 +2459,44 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
-  /*--- Register farfield values as input ---*/
+  /*--- Register element-based values as input ---*/
+
+  unsigned short iVar;
 
   if (KindDirect_Solver == RUNTIME_FEA_SYS) {
 
     bool pseudo_static = config->GetPseudoStatic();
-    // TODO: Adapt here for a number of properties
-    E           = config->GetElasticyMod(0);
-    Nu          = config->GetPoissonRatio(0);
 
-    Rho         = config->GetMaterialDensity(0);     // For inertial effects
-    Rho_DL      = config->GetMaterialDensity(0);     // For dead loads
-    if (pseudo_static) Rho = 0.0;                   // Pseudo-static: no inertial effects considered
+    for (iVar = 0; iVar < nMPROP; iVar++){
+        E_i[iVar]         = config->GetElasticyMod(iVar);
+        Nu_i[iVar]        = config->GetPoissonRatio(iVar);
+        Rho_DL_i[iVar]  = config->GetMaterialDensity(iVar);
+        if (pseudo_static) Rho_i[iVar] = 0.0;
+        else               Rho_i[iVar] = config->GetMaterialDensity(iVar);
+    }
 
     /*--- Read the values of the electric field ---*/
     if(de_effects){
-      unsigned short nEField_Read, i_DV;
+        for (iVar = 0; iVar < nEField; iVar++) EField[iVar] = config->Get_Electric_Field_Mod(iVar);
+    }
 
-      /*--- This is the number of values read ---*/
-      nEField_Read = config->GetnElectric_Field();
-      /*--- If there are different input values ---*/
-      if (nEField_Read == n_EField){
-        for (i_DV = 0; i_DV < n_EField; i_DV++){
-          EField[i_DV] = config->Get_Electric_Field_Mod(i_DV);
-        }
-      } /*--- Or if they are all the same ---*/
-      else if (nEField_Read == 1){
-        for (i_DV = 0; i_DV < n_EField; i_DV++){
-          EField[i_DV] = config->Get_Electric_Field_Mod(0);
-        }
-      }
+    if(fea_dv){
+        for (iVar = 0; iVar < nDV; iVar++) DV_Val[iVar] = config->GetDV_Value(iVar,0);
     }
 
     if (!reset){
-      AD::RegisterInput(E);
-      AD::RegisterInput(Nu);
-      AD::RegisterInput(Rho);
-      AD::RegisterInput(Rho_DL);
+        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(E_i[iVar]);
+        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Nu_i[iVar]);
+        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_i[iVar]);
+        for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(Rho_DL_i[iVar]);
 
-      if(de_effects){
-        for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++) AD::RegisterInput(EField[i_DV]);
-      }
+        if(de_effects){
+          for (iVar = 0; iVar < nEField; iVar++) AD::RegisterInput(EField[iVar]);
+        }
+
+        if(fea_dv){
+          for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
+        }
 
     }
 
@@ -2663,45 +2758,96 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  su2double Local_Sens_E, Local_Sens_Nu, Local_Sens_Rho, Local_Sens_Rho_DL;
+//  su2double Local_Sens_E, Local_Sens_Nu, Local_Sens_Rho, Local_Sens_Rho_DL;
+//
+//  /*--- Extract the adjoint values of the farfield values ---*/
+//
+//  if (KindDirect_Solver == RUNTIME_FEA_SYS){
+//    Local_Sens_E  = SU2_TYPE::GetDerivative(E);
+//    Local_Sens_Nu   = SU2_TYPE::GetDerivative(Nu);
+//    Local_Sens_Rho  = SU2_TYPE::GetDerivative(Rho);
+//    Local_Sens_Rho_DL   = SU2_TYPE::GetDerivative(Rho_DL);
+//
+//#ifdef HAVE_MPI
+//    SU2_MPI::Allreduce(&Local_Sens_E,  &Global_Sens_E,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//    SU2_MPI::Allreduce(&Local_Sens_Nu, &Global_Sens_Nu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//    SU2_MPI::Allreduce(&Local_Sens_Rho,  &Global_Sens_Rho,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//    SU2_MPI::Allreduce(&Local_Sens_Rho_DL, &Global_Sens_Rho_DL, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//#else
+//    Global_Sens_E        = Local_Sens_E;
+//    Global_Sens_Nu       = Local_Sens_Nu;
+//    Global_Sens_Rho      = Local_Sens_Rho;
+//    Global_Sens_Rho_DL   = Local_Sens_Rho_DL;
+//#endif
+//
+//    /*--- Extract here the adjoint values of the electric field in the case that it is a design variable. ---*/
+//
+//    if(de_effects){
+//
+//      for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++)
+//        Local_Sens_EField[i_DV] = SU2_TYPE::GetDerivative(EField[i_DV]);
+//
+//  #ifdef HAVE_MPI
+//      SU2_MPI::Allreduce(Local_Sens_EField,  Global_Sens_EField, n_EField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+//  #else
+//      for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++) Global_Sens_EField[i_DV] = Local_Sens_EField[i_DV];
+//  #endif
+//
+//    }
+//
+//  }
+
+  unsigned short iVar;
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
   if (KindDirect_Solver == RUNTIME_FEA_SYS){
-    Local_Sens_E  = SU2_TYPE::GetDerivative(E);
-    Local_Sens_Nu   = SU2_TYPE::GetDerivative(Nu);
-    Local_Sens_Rho  = SU2_TYPE::GetDerivative(Rho);
-    Local_Sens_Rho_DL   = SU2_TYPE::GetDerivative(Rho_DL);
+
+    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_E[iVar]  = SU2_TYPE::GetDerivative(E_i[iVar]);
+    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_Nu[iVar] = SU2_TYPE::GetDerivative(Nu_i[iVar]);
+    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_Rho[iVar] = SU2_TYPE::GetDerivative(Rho_i[iVar]);
+    for (iVar = 0; iVar < nMPROP; iVar++) Local_Sens_Rho_DL[iVar] = SU2_TYPE::GetDerivative(Rho_DL_i[iVar]);
 
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&Local_Sens_E,  &Global_Sens_E,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Nu, &Global_Sens_Nu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Rho,  &Global_Sens_Rho,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Rho_DL, &Global_Sens_Rho_DL, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_E,  Global_Sens_E,  nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_Nu, Global_Sens_Nu, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_Rho, Global_Sens_Rho, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Local_Sens_Rho_DL, Global_Sens_Rho_DL, nMPROP, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-    Global_Sens_E        = Local_Sens_E;
-    Global_Sens_Nu       = Local_Sens_Nu;
-    Global_Sens_Rho      = Local_Sens_Rho;
-    Global_Sens_Rho_DL   = Local_Sens_Rho_DL;
+    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_E[iVar]        = Local_Sens_E[iVar];
+    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_Nu[iVar]       = Local_Sens_Nu[iVar];
+    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_Rho[iVar]      = Local_Sens_Rho[iVar];
+    for (iVar = 0; iVar < nMPROP; iVar++) Global_Sens_Rho_DL[iVar]   = Local_Sens_Rho_DL[iVar];
 #endif
 
-    /*--- Extract here the adjoint values of the electric field in the case that it is a design variable. ---*/
+    /*--- Extract here the adjoint values of the electric field in the case that it is a parameter of the problem. ---*/
 
     if(de_effects){
 
-      for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++)
-        Local_Sens_EField[i_DV] = SU2_TYPE::GetDerivative(EField[i_DV]);
+      for (iVar = 0; iVar < nEField; iVar++) Local_Sens_EField[iVar] = SU2_TYPE::GetDerivative(EField[iVar]);
 
   #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(Local_Sens_EField,  Global_Sens_EField, n_EField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(Local_Sens_EField,  Global_Sens_EField, nEField, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   #else
-      for (unsigned short i_DV = 0; i_DV < n_EField; i_DV++) Global_Sens_EField[i_DV] = Local_Sens_EField[i_DV];
+      for (iVar = 0; iVar < nEField; iVar++) Global_Sens_EField[iVar] = Local_Sens_EField[iVar];
   #endif
 
     }
 
-  }
+    if(fea_dv){
 
+      for (iVar = 0; iVar < nDV; iVar++) Local_Sens_DV[iVar] = SU2_TYPE::GetDerivative(DV_Val[iVar]);
+
+  #ifdef HAVE_MPI
+      SU2_MPI::Allreduce(Local_Sens_DV,  Global_Sens_DV, nDV, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  #else
+      for (iVar = 0; iVar < nDV; iVar++) Global_Sens_DV[iVar] = Local_Sens_DV[iVar];
+  #endif
+
+    }
+
+
+  }
 
 
 }
@@ -2847,10 +2993,14 @@ void CDiscAdjFEASolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config)
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
 
-  Total_Sens_E        += Global_Sens_E;
-  Total_Sens_Nu       += Global_Sens_Nu;
-  Total_Sens_Rho      += Global_Sens_Rho;
-  Total_Sens_Rho_DL   += Global_Sens_Rho_DL;
+  unsigned short iVar;
+
+  for (iVar = 0; iVar < nMPROP; iVar++){
+    Total_Sens_E[iVar]        += Global_Sens_E[iVar];
+    Total_Sens_Nu[iVar]       += Global_Sens_Nu[iVar];
+    Total_Sens_Rho[iVar]      += Global_Sens_Rho[iVar];
+    Total_Sens_Rho_DL[iVar]   += Global_Sens_Rho_DL[iVar];
+  }
 
 }
 

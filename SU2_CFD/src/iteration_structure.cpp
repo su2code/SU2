@@ -3084,9 +3084,9 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
     myfile_res << "Sens_Nu" << " ";
     if (de_effects){
       /*--- Number of electric field variables ---*/
-      unsigned short n_EField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
+      unsigned short nEField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnEField();
 
-      for (unsigned short iEField; iEField < n_EField; iEField++) myfile_res << "Sens_EF_" << iEField << " ";
+      for (unsigned short iEField; iEField < nEField; iEField++) myfile_res << "Sens_EF_" << iEField << " ";
 
     }
 
@@ -3096,14 +3096,14 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 
 //    myfile_res << scientific << config_container[val_iZone]->GetElasticyMod() << " ";
     myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << " ";
-    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E() << " ";
-    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu() << " ";
+    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0) << " ";
+    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0) << " ";
 
     if (de_effects){
       /*--- Number of electric field variables ---*/
-      unsigned short n_EField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
+      unsigned short nEField = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnEField();
 
-      for (unsigned short iEField; iEField < n_EField; iEField++)
+      for (unsigned short iEField; iEField < nEField; iEField++)
         myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(iEField) << " ";
 
     }
@@ -3234,28 +3234,86 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry
 
 void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
+  unsigned short iVar;
+  unsigned short iMPROP = config_container[iZone]->GetnElasticityMod();
 
-    /*--- Add dependencies for E and Nu ---*/
+  for (iVar = 0; iVar < iMPROP; iVar++){
 
-    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
+      /*--- Add dependencies for E and Nu ---*/
 
-    /*--- Add dependencies for Rho and Rho_DL ---*/
+      numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(iVar,
+                                                                                   solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(iVar),
+                                                                                   solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson(iVar));
 
-    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
+      /*--- Add dependencies for Rho and Rho_DL ---*/
 
-    /*--- Add dependencies for the Electric Field ---*/
+      numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(iVar,
+                                                                                solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(iVar),
+                                                                                solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL(iVar));
 
-    if (config_container[iZone]->GetDE_Effects()){
+  }
 
-      unsigned short n_EField = solver_container[iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
+  if (config_container[iZone]->GetDE_Effects()){
 
-      for (unsigned short iEField; iEField < n_EField; iEField++)
-        numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField, solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
+      unsigned short nEField = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnEField();
 
-    }
+      for (unsigned short iEField; iEField < nEField; iEField++){
+
+          numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_ElectricField(iEField,
+                                                                                 solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
+
+          numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField,
+                                                                                 solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
+
+      }
 
 
+  }
 
+  switch (config_container[iZone]->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+    case POISSON_RATIO:
+    case DENSITY_VAL:
+    case DEAD_WEIGHT:
+    case ELECTRIC_FIELD:
+
+      unsigned short nDV = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
+
+      for (unsigned short iDV; iDV < nDV; iDV++){
+
+          numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
+                                                                           solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+
+          if (config_container[iZone]->GetDE_Effects()){
+            numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
+                                                                            solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
+          }
+
+      }
+
+    break;
+
+  }
+
+
+//    /*--- Add dependencies for E and Nu ---*/
+//
+//    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
+//
+//    /*--- Add dependencies for Rho and Rho_DL ---*/
+//
+//    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
+//
+//    /*--- Add dependencies for the Electric Field ---*/
+//
+//    if (config_container[iZone]->GetDE_Effects()){
+//
+//      unsigned short n_EField = solver_container[iZone][MESH_0][ADJFEA_SOL]->Get_nEField();
+//
+//      for (unsigned short iEField; iEField < n_EField; iEField++)
+//        numerics_container[iZone][MESH_0][FEA_SOL][DE_TERM]->Set_ElectricField(iEField, solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_EField(iEField));
+//
+//    }
 
 }
 
