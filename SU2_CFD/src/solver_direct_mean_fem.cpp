@@ -4396,7 +4396,6 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
         break;
 
       default:
-
         cout << "Unknown SGS model encountered" << endl;
 
 #ifndef HAVE_MPI
