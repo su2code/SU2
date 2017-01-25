@@ -1080,7 +1080,12 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     config->Tick(&tick);
     solver_container[MainSolver]->Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
     config->Tock(tick,"Volume_Residual",3);
-  
+
+    /*--- Compute source term residuals ---*/
+    config->Tick(&tick);
+    solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+    config->Tock(tick,"Source_Residual",3);
+
     /*--- Boundary conditions ---*/
     for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       switch (config->GetMarker_All_KindBC(iMarker)) {
