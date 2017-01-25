@@ -468,6 +468,7 @@ void CConfig::SetPointersNull(void) {
   default_grid_fix      = NULL;
   default_inc_crit      = NULL;
   default_htp_axis      = NULL;
+  default_body_force    = NULL;
 
   Riemann_FlowDir= NULL;
   NRBC_FlowDir = NULL;
@@ -535,6 +536,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_grid_fix      = new su2double[6];
   default_inc_crit      = new su2double[3];
   default_htp_axis      = new su2double[2];
+  default_body_force    = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -1530,6 +1532,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("QUADRATURE_FACTOR_TIME_ADER_DG", Quadrature_Factor_Time_ADER_DG, 2.0);
   /* DESCRIPTION: Factor for the symmetrizing terms in the DG FEM discretization (1.0 by default) */
   addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
+  /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
+  addBoolOption("BODY_FORCE", Body_Force, false);
+  default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
+  /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
+  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
 
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
@@ -5701,6 +5708,7 @@ CConfig::~CConfig(void) {
   if (default_grid_fix      != NULL) delete [] default_grid_fix;
   if (default_inc_crit      != NULL) delete [] default_inc_crit;
   if (default_htp_axis      != NULL) delete [] default_htp_axis;
+  if (default_body_force    != NULL) delete [] default_body_force;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;

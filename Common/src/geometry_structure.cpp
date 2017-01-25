@@ -13514,7 +13514,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       /*--- Double loop over the integration points to determine the minimum
             value of the cosine between the normals. Also the minimum and
             maximum length of the normal is determined.     ---*/
-      su2double normLenMin, normLenMax;
+      su2double normLenMin = 1.0e-15, normLenMax = 0.0;
       su2double minCosAngleFaceNormals = 1.0;
       unsigned short kk = (nDim+1);
       for(unsigned short k=0; k<nIntegration; ++k) {
