@@ -1238,6 +1238,10 @@ enum ENUM_PARAM {
   CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
   NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   DV_EFIELD = 30,            /*!< \brief Electric field in deformable membranes. */
+  DV_YOUNG = 31,
+  DV_POISSON = 32,
+  DV_RHO = 33,
+  DV_RHO_DL = 34,
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1271,6 +1275,10 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("CST", CST)
 ("ELECTRIC_FIELD", DV_EFIELD)
+("YOUNG_MODULUS", DV_YOUNG)
+("POISSON_RATIO", DV_POISSON)
+("STRUCTURAL_DENSITY", DV_RHO)
+("DEAD_WEIGHT", DV_RHO_DL)
 ;
 
 
@@ -2257,7 +2265,11 @@ public:
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
         case CUSTOM:               nParamDV = 1; break;
-        case DV_EFIELD: nParamDV = 2; break;
+        case DV_EFIELD:            nParamDV = 2; break;
+        case DV_YOUNG:             nParamDV = 0; break;
+        case DV_POISSON:           nParamDV = 0; break;
+        case DV_RHO:               nParamDV = 0; break;
+        case DV_RHO_DL:            nParamDV = 0; break;
         default : {
           string newstring;
           newstring.append(this->name);
