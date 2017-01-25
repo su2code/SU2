@@ -44,7 +44,7 @@
 #include <valarray>
 //#include "fft_r2.cpp"
 //#include "bessel_new.c"
-
+#include <string.h>
 typedef std::complex<su2double> Complex;
 typedef std::valarray<Complex> CArray;
 
@@ -57,8 +57,9 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
     su2double  x, y, z, nx, ny, nz,  Area;
     su2double R = 287.058;
     su2double CheckNormal=0.0;
+    unsigned long nFWH, FWHcount;
     nDim = geometry->GetnDim();
-
+    totFWH = 0;
 
     SPL = 0.0;
     end_iter  = config->GetnExtIter();
@@ -115,7 +116,7 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
       U1 = M*a_inf*cos(AOA*pi/180) ;
       U2 = M*a_inf*sin(AOA*pi/180) ;
       U3 = 0.0;    //FIX THIS LATER!!!
-   cout<<U1<<",  "<<U2<<",  "<<M<<",  "<<a_inf<<",  "<<FreeStreamPressure<<", "<<FreeStreamDensity;
+   cout<<U1<<",  "<<U2<<",  "<<M<<",  "<<a_inf<<",  "<<FreeStreamPressure<<", "<<FreeStreamDensity<<endl;
 #ifdef HAVE_MPI
   int rank, nProcessor;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -125,13 +126,23 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
 
         nPanel =  0;
         panelCount = 0;
+        FWHcount = 0;
 
     nMarker      = config->GetnMarker_All();
    for (iMarker = 0; iMarker < nMarker; iMarker++){
 
      /* --- Loop over boundary markers to select those on the FWH surface --- */
        if (config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY) {
-        cout<<"Internal Boundary Detected"<<endl;
+      //  cout<<"Internal Boundary Detected"<<endl;
+    //            cout<<"Rank: "<<rank<<", "<< config->GetMarker_All_TagBound(iMarker)<<endl;
+           size_t last_index = config->GetMarker_All_TagBound(iMarker).find_last_not_of("0123456789");
+         string result = config->GetMarker_All_TagBound(iMarker).substr(last_index + 1);
+                 int f = std::strtol(result.c_str(),NULL, 10);
+   //     cout<<"Rank: "<<rank<<", "<< config->GetMarker_All_TagBound(iMarker)<<", trailing digit="<< result <<endl;
+
+        cout<<"Rank: "<<rank<<", "<< config->GetMarker_All_TagBound(iMarker)<<", trailing digit="<< f <<", coeff= "<<1.0/f<<endl;
+                FWHcount++;
+
 //       if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
 
          for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
@@ -158,15 +169,28 @@ FWHSolver::FWHSolver(CConfig *config,CGeometry *geometry) {
                 //  if (CheckNormal>0){
                      panelCount++;
                 //   }
-     cout<<"Normal="<<CheckNormal<<", x="<<x<<", y="<<y<<", nx="<<nx<<", ny="<<ny<<endl;
+  //   cout<<"Normal="<<CheckNormal<<", x="<<x<<", y="<<y<<", nx="<<nx<<", ny="<<ny<<endl;
                  }
            }
           nPanel = panelCount;
      }
+          nFWH = FWHcount;
     }
 
-  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+ cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
+ //cout<<"Rank= "<<rank<<", nFWH= "<< nFWH<<endl;
+ //communicate the global total count of the FWH surfaces to all processors
+ unsigned long Buffer_Send_nFWH[1], *Buffer_Recv_nFWH = NULL;
+ if (rank == MASTER_NODE) Buffer_Recv_nFWH= new unsigned long [nProcessor];
 
+  Buffer_Send_nFWH[0]=nFWH;
+#ifdef HAVE_MPI
+   SU2_MPI::Gather(&Buffer_Send_nFWH, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nFWH, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+   SU2_MPI::Allreduce(&nFWH,&totFWH,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+ //  SU2_MPI::Reduce(&nPanel,&Tot_nPanel,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+#endif
+
+  cout<<"Rank= "<<rank<<", nFWH= "<< nFWH<<", totFWH= "<< totFWH <<endl;
 
    dJdU = new su2double** [nDim+3];
    for(int iDim = 0; iDim < nDim+3 ; iDim++)
@@ -557,12 +581,14 @@ void FWHSolver::SetCFD_PressureFluctuation(CSolver *solver, CConfig *config, CGe
          if (config->GetKind_Solver()==NAVIER_STOKES){
 //         Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(6);
            Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(2*nDim+2);
-           cout<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) <<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", p="<<Local_AvgPressureFluctuation;
-        }
+         }
         if (config->GetKind_Solver()==RANS){
 //         Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(7);
            Local_AvgPressureFluctuation = solver->node[ClosestIndex]->GetSolution(2*nDim+3);
         }
+           cout<<std::setprecision(9)<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) <<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", p="<<Local_AvgPressureFluctuation<<endl;
+//        cout<<"Obs_x= "<<  SU2_TYPE::GetValue(Observer_Location[0]) << ", Obs_y= "<< SU2_TYPE::GetValue(Observer_Location[1]) <<", x= "<<solver->node[ClosestIndex]->GetSolution(0)<<", y="<<solver->node[ClosestIndex]->GetSolution(1)<<", p="<<Local_AvgPressureFluctuation<<endl;
+
      }
 #ifdef HAVE_MPI
   SU2_MPI::Reduce(&Local_AvgPressureFluctuation,&CFD_PressureFluctuation,1,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
@@ -579,6 +605,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
   su2double  x, y, z, nx, ny, nz, dS, Area;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE, ux, uy, uz, StaticEnergy, p;
   su2double CheckNormal=0.0;
+  su2double Area_Factor=1.0;
 
   nMarker      = config->GetnMarker_All();
   unsigned long ExtIter = config->GetExtIter();
@@ -589,13 +616,40 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
      MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
-
+  iPanel = 0;
   for (iMarker = 0; iMarker < nMarker; iMarker++){
 
     /* --- Loop over boundary markers to select those on the FWH surface --- */
       if (config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY) {
 //      if (config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY) {
-          iPanel = 0;
+
+         /* Determine the area factor for outflow boundary averaging */
+        size_t last_index = config->GetMarker_All_TagBound(iMarker).find_last_not_of("0123456789");
+        string result = config->GetMarker_All_TagBound(iMarker).substr(last_index + 1);
+        int iFWH = std::strtol(result.c_str(),NULL, 10);
+        //For the case of an open FWH surface
+        if (totFWH==1){
+            Area_Factor = 1.0;
+          }
+        //Closed FWH surface with at least one outflow boundary
+        else if (totFWH>1){
+            if (iFWH>0 && iFWH<totFWH){
+                Area_Factor = 1.0*(totFWH-iFWH)/(totFWH-1.0);
+              }
+            else if (iFWH == totFWH){
+                Area_Factor = 1.0/(totFWH-1.0);
+              }
+            else{
+                cout<<"WARNING!!! iFWH > totFWH or iFWH < 0 !!!! Check FWH Markers!!!"<<endl;
+              }
+
+
+          }
+        else{
+            cout<<"WARNING!!! totFWH < 1 !!!! Check FWH Markers!!!"<<endl;
+          }
+
+
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
               if( geometry->node[iPoint]->GetDomain()){
@@ -617,7 +671,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                     //only extract flow data for points on the boundary that has surface normal pointing AWAY from the body.
                      CheckNormal =  x*nx+y*ny+z*nz;
                      if(CheckNormal<0) {
-                      cout<<"Inward Pointing Normal Detected!!! Flipping Normals"<<", x="<<x<<", y="<<y<<", nx="<<nx<<", ny="<<ny<<endl;
+                  //    cout<<"Inward Pointing Normal Detected!!! Flipping Normals"<<", x="<<x<<", y="<<y<<", nx="<<nx<<", ny="<<ny<<endl;
                       nx=-nx; ny=-ny;
                       }
 
@@ -629,7 +683,7 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                             surface_geo[iPanel][1] = y;
                             surface_geo[iPanel][2] = nx;
                             surface_geo[iPanel][3] = ny;
-                            surface_geo[iPanel][4] = dS;
+                            surface_geo[iPanel][4] = Area_Factor*dS;
                             if (nDim==3){
                                 surface_geo[iPanel][5] = z;
                                 surface_geo[iPanel][6] = nz;
@@ -1222,7 +1276,7 @@ void FWHSolver::Write_Sensitivities(CSolver *solver, CConfig *config, CGeometry 
       if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(iExtIter));
       if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
       strcat (cstr, buffer);
-//      cout<<cstr<<endl;
+      cout<<cstr<<endl;
       CAA_AdjointFile.precision(15);
       CAA_AdjointFile.open(cstr, ios::out);
 
