@@ -4273,6 +4273,10 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
   Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
   MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
+
+  /*--- Set the SGS model to NULL and indicate that no SGS model is used. ---*/
+  SGSModel     = NULL;
+  SGSModelUsed = false;
 }
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
@@ -4328,10 +4332,10 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   
   /*--- Init total coefficients ---*/
   
-  Total_CD   = 0.0;	Total_CL        = 0.0;  Total_CSF   = 0.0;
-  Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
-  Total_CEff    = 0.0;
-  Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
+  Total_CD   = 0.0; Total_CL  = 0.0; Total_CSF = 0.0;
+  Total_CMx  = 0.0; Total_CMy = 0.0; Total_CMz = 0.0;
+  Total_CEff = 0.0;
+  Total_CFx  = 0.0; Total_CFy = 0.0; Total_CFz = 0.0;
   
   /*--- Read farfield conditions from config ---*/
   
@@ -4339,6 +4343,50 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   Prandtl_Lam   = config->GetPrandtl_Lam();
   Prandtl_Turb  = config->GetPrandtl_Turb();
   Tke_Inf       = config->GetTke_FreeStreamND();
+
+  /*--- Set the SGS model in case an LES simulation is carried out ---*/
+
+  if(config->GetKind_Solver() == FEM_LES) {
+
+    /* Make a distinction between the SGS models used and set SGSModel and
+       SGSModelUsed accordingly. */
+    switch( config->GetKind_SGS_Model() ) {
+
+      case IMPLICIT_LES:
+        SGSModel     = NULL;
+        SGSModelUsed = false;
+        break;
+
+      case SMAGORINSKY:
+        SGSModel     = new CSmagorinskyModel;
+        SGSModelUsed = true;
+        break;
+
+      case WALE:
+        SGSModel     = new CWALEModel;
+        SGSModelUsed = true;
+        break;
+
+      default:
+
+        cout << "Unknown SGS model encountered" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+    }
+  }
+  else {
+
+    /* No LES, so no SGS model needed.
+       Set the pointer to NULL and the boolean to false. */
+    SGSModel     = NULL;
+    SGSModelUsed = false;
+  }
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
@@ -4346,28 +4394,28 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   
   if (CD_Visc != NULL)       delete [] CD_Visc;
   if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)  delete [] CSF_Visc;
-  if (CMx_Visc != NULL)         delete [] CMx_Visc;
-  if (CMy_Visc != NULL)         delete [] CMy_Visc;
-  if (CMz_Visc != NULL)         delete [] CMz_Visc;
-  if (CFx_Visc != NULL)         delete [] CFx_Visc;
-  if (CFy_Visc != NULL)         delete [] CFy_Visc;
-  if (CFz_Visc != NULL)         delete [] CFz_Visc;
-  if (CEff_Visc != NULL)        delete [] CEff_Visc;
-  if (ForceViscous != NULL)     delete [] ForceViscous;
-  if (MomentViscous != NULL)    delete [] MomentViscous;
+  if (CSF_Visc != NULL)      delete [] CSF_Visc;
+  if (CMx_Visc != NULL)      delete [] CMx_Visc;
+  if (CMy_Visc != NULL)      delete [] CMy_Visc;
+  if (CMz_Visc != NULL)      delete [] CMz_Visc;
+  if (CFx_Visc != NULL)      delete [] CFx_Visc;
+  if (CFy_Visc != NULL)      delete [] CFy_Visc;
+  if (CFz_Visc != NULL)      delete [] CFz_Visc;
+  if (CEff_Visc != NULL)     delete [] CEff_Visc;
+  if (ForceViscous != NULL)  delete [] ForceViscous;
+  if (MomentViscous != NULL) delete [] MomentViscous;
   
   
-  if (Surface_CL_Visc != NULL)      delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != NULL)      delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != NULL) delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != NULL)       delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != NULL)        delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != NULL)        delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != NULL)        delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
+  if (Surface_CL_Visc != NULL)   delete [] Surface_CL_Visc;
+  if (Surface_CD_Visc != NULL)   delete [] Surface_CD_Visc;
+  if (Surface_CSF_Visc != NULL)  delete [] Surface_CSF_Visc;
+  if (Surface_CEff_Visc != NULL) delete [] Surface_CEff_Visc;
+  if (Surface_CFx_Visc != NULL)  delete [] Surface_CFx_Visc;
+  if (Surface_CFy_Visc != NULL)  delete [] Surface_CFy_Visc;
+  if (Surface_CFz_Visc != NULL)  delete [] Surface_CFz_Visc;
+  if (Surface_CMx_Visc != NULL)  delete [] Surface_CMx_Visc;
+  if (Surface_CMy_Visc != NULL)  delete [] Surface_CMy_Visc;
+  if (Surface_CMz_Visc != NULL)  delete [] Surface_CMz_Visc;
 
   if (Heat_Visc        != NULL)  delete [] Heat_Visc;
   if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
@@ -4380,6 +4428,8 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
     }
     delete [] CSkinFriction;
   }
+
+  if( SGSModel ) delete SGSModel;
 }
 
 void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {

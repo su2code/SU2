@@ -49,6 +49,7 @@
 
 #include "fluid_model.hpp"
 #include "numerics_structure.hpp"
+#include "sgs_model.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
@@ -12617,6 +12618,9 @@ private:
   su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at the infinity. */
   su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb;            /*!< \brief Turbulent Prandtl number. */
+
+  CSGSModel *SGSModel;     /*!< \brief LES Subgrid Scale model. */
+  bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
   
   su2double
   *ForceViscous,         /*!< \brief Viscous force for each boundary. */
