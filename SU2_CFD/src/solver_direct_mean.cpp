@@ -190,7 +190,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
    before computing all the non-dimesional quantities. ---*/
   
   if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-    
     /*--- Multizone problems require the number of the zone to be appended. ---*/
     
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
@@ -4177,7 +4176,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  
+	
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar, iDim;
   su2double Area_Children, Area_Parent,
@@ -4325,7 +4324,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
    all the multigrid levels, this is important with the dual time strategy ---*/
   
   if (restart && (ExtIter == 0)) {
-    
     Solution = new su2double[nVar];
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -4342,13 +4340,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
       }
       solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+			solver_container[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
     delete [] Solution;
     
     /*--- Interpolate the turblence variable also, if needed ---*/
     
     if (rans) {
-      
       unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
       Solution = new su2double[nVar_Turb];
       for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -14587,7 +14585,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Check for a restart file to check if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
-  
+	
   if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
     
     /*--- Multizone problems require the number of the zone to be appended. ---*/
@@ -15421,6 +15419,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
         node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
+				
       }
 
     }
