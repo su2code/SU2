@@ -2569,7 +2569,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
 }
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
-  unsigned short iVar, iDim, nLineLets;
+	unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double dull_val;
   ifstream restart_file;
@@ -2733,7 +2733,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     node[iPoint] = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nDim, nVar, constants, config);
   }
   else {
-    
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
