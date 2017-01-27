@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,14 +37,14 @@ CIteration::CIteration(CConfig *config) { }
 CIteration::~CIteration(void) { }
 
 void CIteration::SetGrid_Movement(CGeometry ***geometry_container, 
-				  CSurfaceMovement **surface_movement,
-                      		  CVolumetricMovement **grid_movement,
-				  CFreeFormDefBox ***FFDBox,
-                      		  CSolver ****solver_container,
-				  CConfig **config_container,
-                      		  unsigned short val_iZone,
-				  unsigned long IntIter,
-				  unsigned long ExtIter)   {
+          CSurfaceMovement **surface_movement,
+                            CVolumetricMovement **grid_movement,
+          CFreeFormDefBox ***FFDBox,
+                            CSolver ****solver_container,
+          CConfig **config_container,
+                            unsigned short val_iZone,
+          unsigned long IntIter,
+          unsigned long ExtIter)   {
 
   unsigned short iDim, iMGlevel, nMGlevels = config_container[val_iZone]->GetnMGLevels();
   unsigned short Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(val_iZone);
@@ -52,11 +52,11 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
   unsigned long iPoint;
   bool stat_mesh = true;
   bool adjoint = config_container[val_iZone]->GetContinuous_Adjoint();
-  bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 
-  /*--- For a time-spectral case, set "iteration number" to the zone number,
+  /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
-  if (time_spectral) {
+  if (harmonic_balance) {
     ExtIter = val_iZone;
     Kind_Grid_Movement = config_container[val_iZone]->GetKind_GridMovement(ZONE_0);
   }
@@ -306,7 +306,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
       }
 
       /*--- Use the if statement to move the grid only at selected dual time step iterations. ---*/
-      else if (IntIter % config_container[val_iZone]->GetAeroelasticIter() ==0) {
+      else if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0) {
 
         if (rank == MASTER_NODE)
           cout << endl << " Solving aeroelastic equations and updating surface positions." << endl;
@@ -379,7 +379,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
           cout << "Computing grid velocities by finite differencing." << endl;
         geometry_container[val_iZone][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
       }
-      else if (stat_mesh){
+      else if (stat_mesh) {
           if (rank == MASTER_NODE)
             cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
       }
@@ -461,8 +461,8 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This must be done only in the first subiteration ---*/
-  if( ((fsi)&&(FSIIter == 0)) )
-	 solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+  if( fsi  && ( FSIIter == 0 ) )
+   solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
   
   /*--- Apply a Wind Gust ---*/
@@ -494,38 +494,38 @@ void CMeanFlowIteration::Iterate(COutput *output,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) {
   
-  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  unsigned long IntIter, ExtIter;
   
-  /*--- Set the value of the internal iteration ---*/
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+  ExtIter = config_container[val_iZone]->GetExtIter();
+  
+  /* --- Setting up iteration values depending on if this is a
+   steady or an unsteady simulaiton */
+  
+  if ( !unsteady ) IntIter = ExtIter;
+  else IntIter = config_container[val_iZone]->GetIntIter();
   
   /*--- Update global parameters ---*/
   
-  if ((config_container[val_iZone]->GetKind_Solver() == EULER) ||
-      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
-    config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-  }
-  if ((config_container[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
-    config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-  }
-  if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
-      (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
-    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
+  switch( config_container[val_iZone]->GetKind_Solver() ) {
+      
+    case EULER: case DISC_ADJ_EULER:
+      config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
+      
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
+      config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+      
+    case RANS: case DISC_ADJ_RANS:
+      config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;
+      
   }
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
   
   integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
+  
   
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
       (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
@@ -546,81 +546,27 @@ void CMeanFlowIteration::Iterate(COutput *output,
     
   }
   
-  /*--- Dual time stepping strategy ---*/
-
-   if (((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
-	 !config_container[val_iZone]->GetDiscrete_Adjoint()) {
-
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
+  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
+  
+  if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
       
-      /*--- Write the convergence history (only screen output) ---*/
-      
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-      
-      /*--- Set the value of the internal iteration ---*/
-      
-      config_container[val_iZone]->SetIntIter(IntIter);
-      
-      /*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
-      
-      if ((config_container[val_iZone]->GetKind_Solver() == EULER) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
-        config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
-      }
-      if ((config_container[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)) {
-        config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
-      }
-      if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
-        config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter);
-      }
-      
-      /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-      
-      integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                      config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
-      
-      /*--- Pseudo-timestepping the turbulence model ---*/
-      
-      if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
-          (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS)) {
-        
-        /*--- Solve the turbulence model ---*/
-        
-        config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
-        integration_container[val_iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                         config_container, RUNTIME_TURB_SYS, IntIter, val_iZone);
-        
-        /*--- Solve transition model ---*/
-        
-        if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {
-          config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
-          integration_container[val_iZone][TRANS_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                            config_container, RUNTIME_TRANS_SYS, IntIter, val_iZone);
-        }
-        
-      }
-      
-      /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-      if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation())) {
-        SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox,
-                         solver_container, config_container, val_iZone, IntIter, ExtIter);
-        /*--- Apply a Wind Gust ---*/
-        if (config_container[val_iZone]->GetWind_Gust()) {
-          if (IntIter % config_container[val_iZone]->GetAeroelasticIter() ==0)
-            SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone], solver_container[val_iZone]);
-        }
-      }
-      
-      if (integration_container[val_iZone][FLOW_SOL]->GetConvergence()) break;
-      
+    SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, val_iZone, IntIter, ExtIter);
+    
+    /*--- Apply a Wind Gust ---*/
+    
+    if (config_container[val_iZone]->GetWind_Gust()) {
+      if (IntIter % config_container[val_iZone]->GetAeroelasticIter() == 0 && IntIter != 0)
+        SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone], solver_container[val_iZone]);
     }
-
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
     
   }
+  
+  
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() )
+    
+  /*--- Write the convergence history (only screen output) ---*/
+    
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
   
 }
 
@@ -754,6 +700,7 @@ void CMeanFlowIteration::SetWind_GustField(CConfig *config_container, CGeometry 
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
@@ -931,9 +878,9 @@ void CMeanFlowIteration::SetMixingPlane(CGeometry ***geometry_container, CSolver
       if (config_container[iZone]->GetMarker_All_TagBound(intMarker) == config_container[iZone]->GetMarker_MixingPlane_Bound(intMarkerMix) ) {
         solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], intMarker);
         extMarker_Tag = config_container[iZone]->GetMarker_MixingPlane_Donor(intMarkerMix);
-        for (jZone = 0; jZone < nZone; jZone++){
+        for (jZone = 0; jZone < nZone; jZone++) {
           for (extMarker = 0; extMarker < config_container[jZone]->GetnMarker_All(); extMarker++)
-            if (config_container[jZone]->GetMarker_All_TagBound(extMarker) == extMarker_Tag){
+            if (config_container[jZone]->GetMarker_All_TagBound(extMarker) == extMarker_Tag) {
               solver_container[jZone][MESH_0][FLOW_SOL]->SetExtAveragedValue(solver_container[iZone][MESH_0][FLOW_SOL], intMarker, extMarker);
             }
         }
@@ -955,11 +902,11 @@ void CMeanFlowIteration::SetTurboPerformance(CGeometry ***geometry_container, CS
   for (inMarker = 0; inMarker < config_container[iZone]->GetnMarker_All(); inMarker++)
     for (inMarkerTP=0; inMarkerTP < config_container[iZone]->Get_nMarkerTurboPerf(); inMarkerTP++)
       if (config_container[iZone]->GetMarker_All_TagBound(inMarker) == config_container[iZone]->GetMarker_TurboPerf_BoundIn(inMarkerTP) ) {
-        outMarker_Tag =	config_container[iZone]->GetMarker_TurboPerf_BoundOut(inMarkerTP);
+        outMarker_Tag =  config_container[iZone]->GetMarker_TurboPerf_BoundOut(inMarkerTP);
         Kind_TurboPerf = config_container[iZone]->GetKind_TurboPerf(inMarkerTP);
         for (jZone = 0; jZone < nZone; jZone++)
           for (outMarker = 0; outMarker < config_container[jZone]->GetnMarker_All(); outMarker++)
-            if (config_container[jZone]->GetMarker_All_TagBound(outMarker) == outMarker_Tag){
+            if (config_container[jZone]->GetMarker_All_TagBound(outMarker) == outMarker_Tag) {
               solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], inMarker);
               solver_container[jZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[jZone][MESH_0], solver_container[jZone][MESH_0], config_container[jZone], outMarker);
               solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(solver_container[jZone][MESH_0][FLOW_SOL], config_container[iZone], inMarker, outMarker, Kind_TurboPerf, inMarkerTP);
@@ -1076,7 +1023,7 @@ void CHeatIteration::Iterate(COutput *output,
                              CSurfaceMovement **surface_movement,
                              CVolumetricMovement **grid_movement,
                              CFreeFormDefBox*** FFDBox,
-                             unsigned short val_iZone){
+                             unsigned short val_iZone) {
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -1196,299 +1143,299 @@ CFEM_StructuralAnalysis::CFEM_StructuralAnalysis(CConfig *config) : CIteration(c
 CFEM_StructuralAnalysis::~CFEM_StructuralAnalysis(void) { }
 void CFEM_StructuralAnalysis::Preprocess() { }
 void CFEM_StructuralAnalysis::Iterate(COutput *output,
-                         	 	  CIntegration ***integration_container,
-                         	 	  CGeometry ***geometry_container,
-                         	 	  CSolver ****solver_container,
-                         	 	  CNumerics *****numerics_container,
-                         	 	  CConfig **config_container,
-                         	 	  CSurfaceMovement **surface_movement,
-                         	 	  CVolumetricMovement **grid_movement,
-                         	 	  CFreeFormDefBox*** FFDBox,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox,
                                   unsigned short val_iZone
-                         	 	  ) {
+                                ) {
 
-	int rank = MASTER_NODE;
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-	su2double loadIncrement;
-	unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
-	unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  su2double loadIncrement;
+  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
 
-	bool fsi = config_container[val_iZone]->GetFSI_Simulation();
+  bool fsi = config_container[val_iZone]->GetFSI_Simulation();
 
-	unsigned long iIncrement;
-	unsigned long nIncrements = config_container[val_iZone]->GetNumberIncrements();
+  unsigned long iIncrement;
+  unsigned long nIncrements = config_container[val_iZone]->GetNumberIncrements();
 
-	bool nonlinear = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
-	bool linear = (config_container[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Geometrically non-linear problems
+  bool nonlinear = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
+  bool linear = (config_container[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Geometrically non-linear problems
 
-	bool initial_calc = config_container[val_iZone]->GetExtIter() == 0;				// Checks if it is the first calculation.
-	bool first_iter = config_container[val_iZone]->GetIntIter() == 0;				// Checks if it is the first iteration
-	bool restart = config_container[val_iZone]->GetRestart();												// Restart analysis
-	bool initial_calc_restart = (SU2_TYPE::Int(config_container[val_iZone]->GetExtIter()) == config_container[val_iZone]->GetDyn_RestartIter()); // Initial calculation for restart
+  bool initial_calc = config_container[val_iZone]->GetExtIter() == 0;        // Checks if it is the first calculation.
+  bool first_iter = config_container[val_iZone]->GetIntIter() == 0;        // Checks if it is the first iteration
+  bool restart = config_container[val_iZone]->GetRestart();                        // Restart analysis
+  bool initial_calc_restart = (SU2_TYPE::Int(config_container[val_iZone]->GetExtIter()) == config_container[val_iZone]->GetDyn_RestartIter()); // Initial calculation for restart
 
-	su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
-	su2double Static_Time = config_container[val_iZone]->GetStatic_Time();
+  su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
+  su2double Static_Time = config_container[val_iZone]->GetStatic_Time();
 
-	bool statTime = (CurrentTime <= Static_Time);
+  bool statTime = (CurrentTime <= Static_Time);
 
-	bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();							// If an incremental load is applied
+  bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();              // If an incremental load is applied
 
-	/*--- This is to prevent problems when running a linear solver ---*/
-	if (!nonlinear) incremental_load = false;
+  /*--- This is to prevent problems when running a linear solver ---*/
+  if (!nonlinear) incremental_load = false;
 
-	/*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
-	integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
+  /*--- Set the convergence monitor to false, to prevent the solver to stop in intermediate FSI subiterations ---*/
+  integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
-	if (linear){
+  if (linear) {
 
-		/*--- Set the value of the internal iteration ---*/
+    /*--- Set the value of the internal iteration ---*/
 
-		IntIter = ExtIter;
+    IntIter = ExtIter;
 
-		/*--- FEA equations ---*/
+    /*--- FEA equations ---*/
 
-		config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+    config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-		/*--- Run the iteration ---*/
+    /*--- Run the iteration ---*/
 
-		integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-				config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+    integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+        config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
-	}
-	/*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
-	else if ((nonlinear) && ((!statTime) || (!fsi))){
+  }
+  /*--- If the structure is held static and the solver is nonlinear, we don't need to solve for static time, but we need to compute Mass Matrix and Integration constants ---*/
+  else if ((nonlinear) && ((!statTime) || (!fsi))) {
 
-		/*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
+    /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
-		if (!incremental_load){
+    if (!incremental_load) {
 
-			/*--- Set the value of the internal iteration ---*/
+      /*--- Set the value of the internal iteration ---*/
 
-			IntIter = 0;
+      IntIter = 0;
 
-			/*--- FEA equations ---*/
+      /*--- FEA equations ---*/
 
-			config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+      config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-			/*--- Run the iteration ---*/
+      /*--- Run the iteration ---*/
 
-			integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-					config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+      integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+          config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
 
-			/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+      /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-			for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++){
+      for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
-				/*--- Write the convergence history (only screen output) ---*/
+        /*--- Write the convergence history (only screen output) ---*/
 
-				output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
-				config_container[val_iZone]->SetIntIter(IntIter);
+        config_container[val_iZone]->SetIntIter(IntIter);
 
-				integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-						config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+        integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+            config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
-				if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
+        if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
 
-			}
+      }
 
-		}
-		/*--- The incremental load is only used in nonlinear cases ---*/
-		else if (incremental_load){
+    }
+    /*--- The incremental load is only used in nonlinear cases ---*/
+    else if (incremental_load) {
 
-			/*--- Set the initial condition: store the current solution as Solution_Old ---*/
+      /*--- Set the initial condition: store the current solution as Solution_Old ---*/
 
-			solver_container[val_iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+      solver_container[val_iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
-			/*--- The load increment is 1.0 ---*/
-			loadIncrement = 1.0;
-			solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+      /*--- The load increment is 1.0 ---*/
+      loadIncrement = 1.0;
+      solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 
-			/*--- Set the value of the internal iteration ---*/
+      /*--- Set the value of the internal iteration ---*/
 
-			IntIter = 0;
+      IntIter = 0;
 
-			/*--- FEA equations ---*/
+      /*--- FEA equations ---*/
 
-			config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+      config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-			/*--- Run the first iteration ---*/
+      /*--- Run the first iteration ---*/
 
-			integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-					config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+      integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+          config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
 
-			/*--- Write the convergence history (only screen output) ---*/
+      /*--- Write the convergence history (only screen output) ---*/
 
-			output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
-			/*--- Run the second iteration ---*/
+      /*--- Run the second iteration ---*/
 
-			IntIter = 1;
+      IntIter = 1;
 
-			config_container[val_iZone]->SetIntIter(IntIter);
+      config_container[val_iZone]->SetIntIter(IntIter);
 
-			integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-					config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+      integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+          config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
 
-			bool meetCriteria;
-			su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-			su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
+      bool meetCriteria;
+      su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+      su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
 
-			Criteria_UTOL = config_container[val_iZone]->GetIncLoad_Criteria(0);
-			Criteria_RTOL = config_container[val_iZone]->GetIncLoad_Criteria(1);
-			Criteria_ETOL = config_container[val_iZone]->GetIncLoad_Criteria(2);
+      Criteria_UTOL = config_container[val_iZone]->GetIncLoad_Criteria(0);
+      Criteria_RTOL = config_container[val_iZone]->GetIncLoad_Criteria(1);
+      Criteria_ETOL = config_container[val_iZone]->GetIncLoad_Criteria(2);
 
-			Residual_UTOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(0));
-			Residual_RTOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(1));
-			Residual_ETOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(2));
+      Residual_UTOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(0));
+      Residual_RTOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(1));
+      Residual_ETOL = log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(2));
 
-			meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-					( Residual_RTOL <  Criteria_RTOL ) &&
-					( Residual_ETOL <  Criteria_ETOL ) );
+      meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
+          ( Residual_RTOL <  Criteria_RTOL ) &&
+          ( Residual_ETOL <  Criteria_ETOL ) );
 
-			/*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
-			if (meetCriteria){
+      /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
+      if (meetCriteria) {
 
-				for (IntIter = 2; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++){
+        for (IntIter = 2; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
-					/*--- Write the convergence history (only screen output) ---*/
+          /*--- Write the convergence history (only screen output) ---*/
 
-					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
-					config_container[val_iZone]->SetIntIter(IntIter);
+          config_container[val_iZone]->SetIntIter(IntIter);
 
-					integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-							config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+          integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+              config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
-					if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
+          if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
 
-				}
+        }
 
-			}
+      }
 
-			/*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
+      /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
 
-			else {
+      else {
 
-				/*--- Here we have to restart the solution to the original one of the iteration ---*/
-				/*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
+        /*--- Here we have to restart the solution to the original one of the iteration ---*/
+        /*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
 
-				solver_container[val_iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+        solver_container[val_iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
-				/*--- For the number of increments ---*/
-				for (iIncrement = 0; iIncrement < nIncrements; iIncrement++){
+        /*--- For the number of increments ---*/
+        for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
 
-					loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
+          loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
 
-					/*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
+          /*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
 
-					/*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
-					integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
+          /*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
+          integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
-					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
-					/*--- FEA equations ---*/
+          /*--- FEA equations ---*/
 
-					config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+          config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
 
-					solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+          solver_container[val_iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 
-					if (rank == MASTER_NODE){
-						cout << endl;
-						cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
-					}
+          if (rank == MASTER_NODE) {
+            cout << endl;
+            cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
+          }
 
-					/*--- Set the value of the internal iteration ---*/
-					IntIter = 0;
-					config_container[val_iZone]->SetIntIter(IntIter);
+          /*--- Set the value of the internal iteration ---*/
+          IntIter = 0;
+          config_container[val_iZone]->SetIntIter(IntIter);
 
-					/*--- FEA equations ---*/
+          /*--- FEA equations ---*/
 
-					config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+          config_container[val_iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-					/*--- Run the iteration ---*/
+          /*--- Run the iteration ---*/
 
-					integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-							config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+          integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+              config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
 
-					/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+          /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-					for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++){
+          for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
 
-						/*--- Write the convergence history (only screen output) ---*/
+            /*--- Write the convergence history (only screen output) ---*/
 
-						output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+            output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
 
-						config_container[val_iZone]->SetIntIter(IntIter);
+            config_container[val_iZone]->SetIntIter(IntIter);
 
-						integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-								config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
+            integration_container[val_iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                config_container, RUNTIME_FEA_SYS, IntIter, val_iZone);
 
-						if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
+            if (integration_container[val_iZone][FEA_SOL]->GetConvergence()) break;
 
-					}
+          }
 
-				}
+        }
 
-			}
+      }
 
-		}
+    }
 
 
-	}
-	else if (
-			(nonlinear && statTime) &&
-			((first_iter && initial_calc) || (restart && initial_calc_restart))
-	){
+  }
+  else if (
+      (nonlinear && statTime) &&
+      ((first_iter && initial_calc) || (restart && initial_calc_restart))
+  ) {
 
-		/*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
-		solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
-				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
+    /*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
+    solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
+        config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
 
-	}
+  }
 
 }
 
 void CFEM_StructuralAnalysis::Update(COutput *output,
-	 	  CIntegration ***integration_container,
-	 	  CGeometry ***geometry_container,
-	 	  CSolver ****solver_container,
-	 	  CNumerics *****numerics_container,
-	 	  CConfig **config_container,
-	 	  CSurfaceMovement **surface_movement,
-	 	  CVolumetricMovement **grid_movement,
-	 	  CFreeFormDefBox*** FFDBox,
-	 	  unsigned short val_iZone){
+       CIntegration ***integration_container,
+       CGeometry ***geometry_container,
+       CSolver ****solver_container,
+       CNumerics *****numerics_container,
+       CConfig **config_container,
+       CSurfaceMovement **surface_movement,
+       CVolumetricMovement **grid_movement,
+       CFreeFormDefBox*** FFDBox,
+       unsigned short val_iZone) {
 
-	su2double Physical_dt, Physical_t;
-  	unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
-	bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
+  su2double Physical_dt, Physical_t;
+    unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);          // Dynamic problems
 
-	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
+  /*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
-	solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
+  solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
 
-	/*----------------- Update structural solver ----------------------*/
+  /*----------------- Update structural solver ----------------------*/
 
-	if (dynamic){
-		integration_container[val_iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
-		integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
+  if (dynamic) {
+    integration_container[val_iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
+    integration_container[val_iZone][FEA_SOL]->SetConvergence(false);
 
-	    /*--- Verify convergence criteria (based on total time) ---*/
+      /*--- Verify convergence criteria (based on total time) ---*/
 
-		Physical_dt = config_container[val_iZone]->GetDelta_DynTime();
-		Physical_t  = (ExtIter+1)*Physical_dt;
-		if (Physical_t >=  config_container[val_iZone]->GetTotal_DynTime())
-			integration_container[val_iZone][FEA_SOL]->SetConvergence(true);
-	}
+    Physical_dt = config_container[val_iZone]->GetDelta_DynTime();
+    Physical_t  = (ExtIter+1)*Physical_dt;
+    if (Physical_t >=  config_container[val_iZone]->GetTotal_DynTime())
+      integration_container[val_iZone][FEA_SOL]->SetConvergence(true);
+  }
 
 }
 void CFEM_StructuralAnalysis::Monitor()     { }
@@ -1510,7 +1457,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
                                        unsigned short val_iZone) {
   
   unsigned short iMesh;
-  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool harmonic_balance = (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool dynamic_mesh = config_container[ZONE_0]->GetGrid_Movement();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -1522,7 +1469,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
   
   /*--- For the unsteady adjoint, load a new direct solution from a restart file. ---*/
   
-  if (((dynamic_mesh && ExtIter == 0) || config_container[val_iZone]->GetUnsteady_Simulation()) && !time_spectral) {
+  if (((dynamic_mesh && ExtIter == 0) || config_container[val_iZone]->GetUnsteady_Simulation()) && !harmonic_balance) {
     int Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
     if (rank == MASTER_NODE && val_iZone == ZONE_0 && config_container[val_iZone]->GetUnsteady_Simulation())
       cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
@@ -1589,8 +1536,8 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
       
       /*--- Set the value of the non-dimensional coefficients in the coarse levels, using the fine level solution ---*/
       
-      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CDrag(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CLift(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
+      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CD(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD());
+      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CL(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CT(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CQ(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
@@ -1625,22 +1572,33 @@ void CAdjMeanFlowIteration::Iterate(COutput *output,
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
   /*--- Set the value of the internal iteration ---*/
   
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    IntIter = 0;
+  ExtIter = config_container[val_iZone]->GetExtIter();
+  
+  /* --- Setting up iteration values depending on if this is a 
+  steady or an unsteady simulaiton */
+
+  if ( !unsteady ) 
+    IntIter = ExtIter;
+  else
+    IntIter = config_container[val_iZone]->GetIntIter();
+    
+    
+  switch( config_container[val_iZone]->GetKind_Solver() ) {
+
+  case ADJ_EULER:
+    config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS, ExtIter); break;
+
+  case ADJ_NAVIER_STOKES:
+    config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS, ExtIter); break;
+
+  case ADJ_RANS:
+    config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_ADJFLOW_SYS, ExtIter); break;          
   }
-  
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_EULER)
-    config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)
-    config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_RANS)
-    config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_ADJFLOW_SYS, ExtIter);
-  
+    
   /*--- Iteration of the flow adjoint problem ---*/
   
   integration_container[val_iZone][ADJFLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
@@ -1723,7 +1681,7 @@ void CAdjMeanFlowIteration::Monitor()     { }
 void CAdjMeanFlowIteration::Output()      { }
 void CAdjMeanFlowIteration::Postprocess() { }
 
-CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
+CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE) {
   
   meanflow_iteration = new CMeanFlowIteration(config);
   
@@ -1766,11 +1724,11 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
     /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
 
-    if (dual_time){
+    if (dual_time) {
       Direct_Iter += 1;
     }
 
-    if (dual_time_2nd){
+    if (dual_time_2nd) {
 
       /*--- Load solution at timestep n-2 ---*/
 
@@ -1778,18 +1736,18 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
       /*--- Push solution back to correct array ---*/
 
-      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++){
-        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
+      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
+        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++) {
           solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
           solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-          if (turbulent){
+          if (turbulent) {
             solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
             solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
           }
         }
       }
     }
-    if (dual_time){
+    if (dual_time) {
 
       /*--- Load solution at timestep n-1 ---*/
 
@@ -1797,10 +1755,10 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
       /*--- Push solution back to correct array ---*/
 
-      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++){
-        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
+      for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
+        for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++) {
           solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-          if (turbulent){
+          if (turbulent) {
             solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
           }
         }
@@ -1814,26 +1772,28 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
     /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
 
-    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
       solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution());
     }
-    if (turbulent){
-      for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+    if (turbulent) {
+      for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
         solver_container[val_iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
       }
     }
   }
 
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
-  if (turbulent){
+  if (turbulent) {
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);
   }
 
-  if (CurrentRecording != FLOW_VARIABLES || unsteady){
+  if (CurrentRecording != FLOW_VARIABLES || unsteady) {
     
-    if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )) {
+      cout << endl << "-------------------------------------------------------------------------" << endl;
       cout << "Direct iteration to store computational graph." << endl;
       cout << "Compute residuals to check the convergence of the direct problem." << endl;
+      cout << "-------------------------------------------------------------------------" << endl << endl;
     }
     
     /*--- Record one mean flow iteration with flow variables as input ---*/
@@ -1843,16 +1803,18 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
     
     /*--- Print residuals in the first iteration ---*/
     
-    if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )){
+    if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )) {
       cout << "log10[RMS Density]: "<< log10(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
-          <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+           <<", CD: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD()
+          <<", CL: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL() << "." << endl;
 
-      if (turbulent){
+      if (turbulent) {
         cout << "log10[RMS k]: " << log10(solver_container[val_iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
       }
     }
+    
   }
+  
 }
 
 
@@ -1868,12 +1830,12 @@ void CDiscAdjMeanFlowIteration::LoadUnsteady_Solution(CGeometry ***geometry_cont
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  if (val_DirectIter >= 0){
+  if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading flow solution from direct iteration " << val_DirectIter  << "." << endl;
     solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
     solver_container[val_iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0, val_DirectIter, RUNTIME_FLOW_SYS, false);
-    if (turbulent){
+    if (turbulent) {
       solver_container[val_iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
       solver_container[val_iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
     }
@@ -1881,10 +1843,10 @@ void CDiscAdjMeanFlowIteration::LoadUnsteady_Solution(CGeometry ***geometry_cont
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Setting freestream conditions at direct iteration " << val_DirectIter << "." << endl;
-    for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++){
+    for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
       solver_container[val_iZone][iMesh][FLOW_SOL]->Preprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh, val_DirectIter, RUNTIME_FLOW_SYS, false);
-      if (turbulent){
+      if (turbulent) {
         solver_container[val_iZone][iMesh][TURB_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
         solver_container[val_iZone][iMesh][TURB_SOL]->Postprocessing(geometry_container[val_iZone][iMesh],solver_container[val_iZone][iMesh], config_container[val_iZone], iMesh);
       }
@@ -1910,14 +1872,12 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   bool dual_time_2nd = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
 
-
   config_container[val_iZone]->SetIntIter(IntIter);
 
   if(dual_time)
     nIntIter = config_container[val_iZone]->GetUnst_nIntIter();
 
-
-  for(IntIter=0; IntIter< nIntIter; IntIter++){
+  for(IntIter=0; IntIter< nIntIter; IntIter++) {
 
     /*--- Set the internal iteration ---*/
 
@@ -1953,7 +1913,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
     integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
                                                                           IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
-    if(integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()){
+    if(integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) {
       break;
     }
 
@@ -1964,14 +1924,12 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
 
   }
 
-
-  if (dual_time){
+  if (dual_time) {
     integration_container[val_iZone][ADJFLOW_SOL]->SetConvergence(false);
   }
-
   
   if (((ExtIter+1 >= config_container[val_iZone]->GetnExtIter()) || (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) ||
-      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) || (dual_time)){
+      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) || (dual_time)) {
     
     /*--- Record one mean flow iteration with geometry variables as input ---*/
     
@@ -2012,7 +1970,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   unsigned short iMesh;
 
   DirectExtIter = 0;
-  if (unsteady){
+  if (unsteady) {
     DirectExtIter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
   }
 
@@ -2022,13 +1980,13 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   /*--- We only need to reset the indices if the current recording is different from the recording we want to have ---*/
 
-  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
+  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ) {
 
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
+    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
       solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
 
-    if (turbulent){
+    if (turbulent) {
       solver_container[val_iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
 
@@ -2042,16 +2000,16 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
                                 config_container,surface_movement,grid_movement,FFDBox,val_iZone);
 
   }
+
     /*--- Prepare for recording ---*/
 
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
+    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
       solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
 
-    if (turbulent){
+    if (turbulent) {
       solver_container[val_iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     }
-
 
   /*--- Start the recording of all operations ---*/
   
@@ -2067,12 +2025,13 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   
   /*--- Set the correct direct iteration number ---*/
 
-  if (unsteady){
+  if (unsteady) {
     config_container[val_iZone]->SetExtIter(DirectExtIter);
   }
 
   /*--- Run the direct iteration ---*/
 
+  config_container[val_iZone]->SetIntIter(0);
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
 
@@ -2081,12 +2040,21 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Register flow variables and objective function as output ---*/
   
   /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
-  if (config_container[val_iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
-    output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                 geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
-  
+  for (unsigned short iObj=0; iObj<config_container[val_iZone]->GetnObj(); iObj++) {
+    if (config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_OUTLET_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_TOTAL_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==MASS_FLOW_RATE) {
+      output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                   geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+      break;
+    }
+  }
+
+  /*--- For a combined objective function, the total should be computed and stored ---*/
+  if (config_container[val_iZone]->GetnObj()>0) {
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[val_iZone]);
+  }
+
   RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
   
   /*--- Stop the recording ---*/
@@ -2097,17 +2065,17 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   
   CurrentRecording = kind_recording;
 
-  /* --- Reset the number of the internal iterations---*/
+  /*--- Reset the number of the internal iterations---*/
 
   config_container[ZONE_0]->SetIntIter(IntIter);
 
 }
 
 
-void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording) {
   
   
-  if (kind_recording == FLOW_VARIABLES){
+  if (kind_recording == FLOW_VARIABLES) {
     
     /*--- Register flow and turbulent variables as input ---*/
     
@@ -2115,11 +2083,11 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
     
     solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
     
-    if (turbulent){
+    if (turbulent) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
-  if (kind_recording == GEOMETRY_VARIABLES){
+  if (kind_recording == GEOMETRY_VARIABLES) {
     
     /*--- Register node coordinates as input ---*/
     
@@ -2129,10 +2097,9 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
 
 }
 
-void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording) {
 
-
-  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)){
+  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)) {
 
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
@@ -2142,14 +2109,15 @@ void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CG
 
   /*--- Compute coupling between flow and turbulent equations ---*/
 
-  if (turbulent){
+  if (turbulent) {
     solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+
     solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
   }
 
 }
 
-void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone) {
   
   /*--- Register objective function as output of the iteration ---*/
   
@@ -2159,13 +2127,13 @@ void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGe
   
   solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
   
-  if (turbulent){
+  if (turbulent) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
                                                                  config_container[iZone]);
   }
 }
 
-void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone) {
   
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
@@ -2176,7 +2144,7 @@ void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, 
   solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                   config_container[iZone]);
   
-  if (turbulent){
+  if (turbulent) {
     solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
                                                                     config_container[iZone]);
   }
@@ -2195,276 +2163,277 @@ void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
 void CDiscAdjMeanFlowIteration::Postprocess() { }
 
+
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-                  	  	  	  	 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-                  	  	  	  	 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
+                                 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+                                 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox) {
 
-	su2double Physical_dt, Physical_t;
-	su2double loadIncrement;
-	unsigned short iZone;
-	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-	unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  su2double Physical_dt, Physical_t;
+  su2double loadIncrement;
+  unsigned short iZone;
+  unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+    unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-  	unsigned long iIncrement;
-  	unsigned long nIncrements = config_container[ZONE_0]->GetNumberIncrements();
+    unsigned long iIncrement;
+    unsigned long nIncrements = config_container[ZONE_0]->GetNumberIncrements();
 
-	bool dynamic = (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC);					// Dynamic problems
-	bool nonlinear = (config_container[ZONE_0]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+  bool dynamic = (config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC);          // Dynamic problems
+  bool nonlinear = (config_container[ZONE_0]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
 
-	bool incremental_load = config_container[ZONE_0]->GetIncrementalLoad();							// If an incremental load is applied
+  bool incremental_load = config_container[ZONE_0]->GetIncrementalLoad();              // If an incremental load is applied
 
-	/*--- This is to prevent problems when running a linear solver ---*/
-	if (!nonlinear) incremental_load = false;
+  /*--- This is to prevent problems when running a linear solver ---*/
+  if (!nonlinear) incremental_load = false;
 
-	int rank = MASTER_NODE;
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
 
-	/*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
+  /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
-	if (!incremental_load){
+  if (!incremental_load) {
 
-		/*--- Set the initial condition ---*/
+    /*--- Set the initial condition ---*/
 
-//		for (iZone = 0; iZone < nZone; iZone++)
-//			solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+//    for (iZone = 0; iZone < nZone; iZone++)
+//      solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
 
-		for (iZone = 0; iZone < nZone; iZone++) {
+    for (iZone = 0; iZone < nZone; iZone++) {
 
-			/*--- Set the value of the internal iteration ---*/
+      /*--- Set the value of the internal iteration ---*/
 
-			IntIter = ExtIter;
-			if (nonlinear) IntIter = 0;
+      IntIter = ExtIter;
+      if (nonlinear) IntIter = 0;
 
-			/*--- FEA equations ---*/
+      /*--- FEA equations ---*/
 
-			config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+      config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-			/*--- Run the iteration ---*/
+      /*--- Run the iteration ---*/
 
-			integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-	                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+      integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                                                                      config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 
 
-		}
+    }
 
-		/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+    /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-		if (nonlinear){
-			for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++){
+    if (nonlinear) {
+      for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
 
-				for (iZone = 0; iZone < nZone; iZone++) {
+        for (iZone = 0; iZone < nZone; iZone++) {
 
-					/*--- Write the convergence history (only screen output) ---*/
+          /*--- Write the convergence history (only screen output) ---*/
 
-					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
 
-					config_container[iZone]->SetIntIter(IntIter);
+          config_container[iZone]->SetIntIter(IntIter);
 
-					integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-			                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+          integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                                                                          config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
-				}
+        }
 
-				if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
+        if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
 
-			}
+      }
 
-		}
+    }
 
-	}
-	/*--- The incremental load is only used in nonlinear cases ---*/
-	else if (incremental_load){
+  }
+  /*--- The incremental load is only used in nonlinear cases ---*/
+  else if (incremental_load) {
 
-		/*--- Set the initial condition: store the current solution as Solution_Old ---*/
+    /*--- Set the initial condition: store the current solution as Solution_Old ---*/
 
-		for (iZone = 0; iZone < nZone; iZone++)
-			solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+    for (iZone = 0; iZone < nZone; iZone++)
+      solver_container[iZone][MESH_0][FEA_SOL]->SetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
 
-		for (iZone = 0; iZone < nZone; iZone++) {
+    for (iZone = 0; iZone < nZone; iZone++) {
 
-				/*--- The load increment is 1.0 ---*/
-				loadIncrement = 1.0;
-				solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+        /*--- The load increment is 1.0 ---*/
+        loadIncrement = 1.0;
+        solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
 
-				/*--- Set the value of the internal iteration ---*/
+        /*--- Set the value of the internal iteration ---*/
 
-				IntIter = 0;
+        IntIter = 0;
 
-				/*--- FEA equations ---*/
+        /*--- FEA equations ---*/
 
-				config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+        config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-				/*--- Run the first iteration ---*/
+        /*--- Run the first iteration ---*/
 
-				integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-		                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+        integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                                                                        config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 
-				/*--- Write the convergence history (only screen output) ---*/
+        /*--- Write the convergence history (only screen output) ---*/
 
-				output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
 
-				/*--- Run the second iteration ---*/
+        /*--- Run the second iteration ---*/
 
-				IntIter = 1;
+        IntIter = 1;
 
-				config_container[iZone]->SetIntIter(IntIter);
+        config_container[iZone]->SetIntIter(IntIter);
 
-				integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-		                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+        integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                                                                        config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
-		}
+    }
 
-		bool meetCriteria;
-		su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-		su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
+    bool meetCriteria;
+    su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+    su2double Criteria_UTOL, Criteria_RTOL, Criteria_ETOL;
 
-		Criteria_UTOL = config_container[ZONE_0]->GetIncLoad_Criteria(0);
-		Criteria_RTOL = config_container[ZONE_0]->GetIncLoad_Criteria(1);
-		Criteria_ETOL = config_container[ZONE_0]->GetIncLoad_Criteria(2);
+    Criteria_UTOL = config_container[ZONE_0]->GetIncLoad_Criteria(0);
+    Criteria_RTOL = config_container[ZONE_0]->GetIncLoad_Criteria(1);
+    Criteria_ETOL = config_container[ZONE_0]->GetIncLoad_Criteria(2);
 
-		Residual_UTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(0));
-		Residual_RTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(1));
-		Residual_ETOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(2));
+    Residual_UTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(0));
+    Residual_RTOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(1));
+    Residual_ETOL = log10(solver_container[ZONE_0][MESH_0][FEA_SOL]->GetRes_FEM(2));
 
-		meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
-				 	 	 ( Residual_RTOL <  Criteria_RTOL ) &&
-						 ( Residual_ETOL <  Criteria_ETOL ) );
+    meetCriteria = ( ( Residual_UTOL <  Criteria_UTOL ) &&
+               ( Residual_RTOL <  Criteria_RTOL ) &&
+             ( Residual_ETOL <  Criteria_ETOL ) );
 
-		/*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
-		if (meetCriteria){
+    /*--- If the criteria is met and the load is not "too big", do the regular calculation ---*/
+    if (meetCriteria) {
 
-			for (IntIter = 2; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++){
+      for (IntIter = 2; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
 
-				for (iZone = 0; iZone < nZone; iZone++) {
+        for (iZone = 0; iZone < nZone; iZone++) {
 
-				/*--- Write the convergence history (only screen output) ---*/
+        /*--- Write the convergence history (only screen output) ---*/
 
-				output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
 
-				config_container[iZone]->SetIntIter(IntIter);
+        config_container[iZone]->SetIntIter(IntIter);
 
-				integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-																				config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+        integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                                        config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
-				}
+        }
 
-				if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
+        if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
 
-			}
+      }
 
-		}
+    }
 
-		/*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
+    /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done ---*/
 
-		else {
+    else {
 
-			/*--- Here we have to restart the solution to the original one of the iteration ---*/
-			/*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
+      /*--- Here we have to restart the solution to the original one of the iteration ---*/
+      /*--- Retrieve the Solution_Old as the current solution before subiterating ---*/
 
-			for (iZone = 0; iZone < nZone; iZone++)
-				solver_container[iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
+      for (iZone = 0; iZone < nZone; iZone++)
+        solver_container[iZone][MESH_0][FEA_SOL]->ResetInitialCondition(geometry_container[iZone], solver_container[iZone], config_container[iZone], ExtIter);
 
-			/*--- For the number of increments ---*/
-			for (iIncrement = 0; iIncrement < nIncrements; iIncrement++){
+      /*--- For the number of increments ---*/
+      for (iIncrement = 0; iIncrement < nIncrements; iIncrement++) {
 
-				loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
+        loadIncrement = (iIncrement + 1.0) * (1.0 / nIncrements);
 
-				/*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
+        /*--- Set the load increment and the initial condition, and output the parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
 
-				for (iZone = 0; iZone < nZone; iZone++){
+        for (iZone = 0; iZone < nZone; iZone++) {
 
-					/*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
-					integration_container[iZone][FEA_SOL]->SetConvergence(false);
+          /*--- Set the convergence monitor to false, to force se solver to converge every subiteration ---*/
+          integration_container[iZone][FEA_SOL]->SetConvergence(false);
 
-					output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+          output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
 
-					/*--- FEA equations ---*/
+          /*--- FEA equations ---*/
 
-					config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+          config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
 
-					solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
-				}
+          solver_container[iZone][MESH_0][FEA_SOL]->SetLoad_Increment(loadIncrement);
+        }
 
-				if (rank == MASTER_NODE){
-					cout << endl;
-					cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
-				}
+        if (rank == MASTER_NODE) {
+          cout << endl;
+          cout << "-- Incremental load: increment " << iIncrement + 1 << " ------------------------------------------" << endl;
+        }
 
-				for (iZone = 0; iZone < nZone; iZone++) {
+        for (iZone = 0; iZone < nZone; iZone++) {
 
-					/*--- Set the value of the internal iteration ---*/
-					IntIter = 0;
-					config_container[iZone]->SetIntIter(IntIter);
+          /*--- Set the value of the internal iteration ---*/
+          IntIter = 0;
+          config_container[iZone]->SetIntIter(IntIter);
 
-					/*--- FEA equations ---*/
+          /*--- FEA equations ---*/
 
-					config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+          config_container[iZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
 
-					/*--- Run the iteration ---*/
+          /*--- Run the iteration ---*/
 
-					integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-			                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+          integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                                                                          config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
 
 
-				}
+        }
 
-				/*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
+        /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
-				for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++){
+        for (IntIter = 1; IntIter < config_container[ZONE_0]->GetDyn_nIntIter(); IntIter++) {
 
-					for (iZone = 0; iZone < nZone; iZone++) {
+          for (iZone = 0; iZone < nZone; iZone++) {
 
-						/*--- Write the convergence history (only screen output) ---*/
+            /*--- Write the convergence history (only screen output) ---*/
 
-						output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
+            output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_0);
 
-						config_container[iZone]->SetIntIter(IntIter);
+            config_container[iZone]->SetIntIter(IntIter);
 
-						integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
-					                                                                		config_container, RUNTIME_FEA_SYS, IntIter, iZone);
+            integration_container[iZone][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+                                                                              config_container, RUNTIME_FEA_SYS, IntIter, iZone);
 
-					}
+          }
 
-					if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
+          if (integration_container[ZONE_0][FEA_SOL]->GetConvergence()) break;
 
-				}
+        }
 
-			}
+      }
 
-		}
+    }
 
-	}
+  }
 
 
 
-	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
+  /*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
-	for (iZone = 0; iZone < nZone; iZone++)
-		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL], config_container[iZone]);
+  for (iZone = 0; iZone < nZone; iZone++)
+    solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL], config_container[iZone]);
 
-	/*----------------- Update structural solver ----------------------*/
+  /*----------------- Update structural solver ----------------------*/
 
-	if (dynamic){
-		for (iZone = 0; iZone < nZone; iZone++) {
-			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
-			integration_container[iZone][FEA_SOL]->SetConvergence(false);
-		}
+  if (dynamic) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
+      integration_container[iZone][FEA_SOL]->SetConvergence(false);
+    }
 
-	    /*--- Verify convergence criteria (based on total time) ---*/
+      /*--- Verify convergence criteria (based on total time) ---*/
 
-		Physical_dt = config_container[ZONE_0]->GetDelta_DynTime();
-		Physical_t  = (ExtIter+1)*Physical_dt;
-		if (Physical_t >=  config_container[ZONE_0]->GetTotal_DynTime())
-			integration_container[ZONE_0][FEA_SOL]->SetConvergence(true);
-	}
+    Physical_dt = config_container[ZONE_0]->GetDelta_DynTime();
+    Physical_t  = (ExtIter+1)*Physical_dt;
+    if (Physical_t >=  config_container[ZONE_0]->GetTotal_DynTime())
+      integration_container[ZONE_0][FEA_SOL]->SetConvergence(true);
+  }
 
 
 }
