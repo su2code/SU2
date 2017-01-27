@@ -663,11 +663,12 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
  */
 enum ENUM_HYBRIDRANSLES {
   NO_HYBRIDRANSLES = 0, /*!< \brief No turbulence model. */
-  SA_DES   = 1, /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation). */
-  SA_DDES  = 2,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed Detached Eddy Simulation). */
-  SA_ZDES  = 3,  /*!< \brief Kind of Hybrid RANS/LES (SA - Zonal Detached Eddy Simulation). */
-  SA_EDDES  = 4,  /*!< \brief Kind of Hybrid RANS/LES (SA - Enhanced Delayed Detached Eddy Simulation). */
-  SA_IDDES  = 5  /*!< \brief Kind of Hybrid RANS/LES (SA - Enhanced Delayed Detached Eddy Simulation). */
+  SA_DES   = 1, /*!< \brief Kind of Hybrid RANS/LES (SA - Detached Eddy Simulation (DES)). */
+  SA_DDES  = 2,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Delta_max SGS ). */
+  SA_ZDES  = 3,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Vorticity based SGS like Zonal DES). */
+  SA_EDDES  = 4,  /*!< \brief Kind of Hybrid RANS/LES (SA - Delayed DES (DDES) with Shear Layer Adapted SGS: Enhanced DDES). */
+  SA_IDDES  = 5,  /*!< \brief Kind of Hybrid RANS/LES (SA - Improved DDES with Delta_max SGS). */
+  SA_IZDES  = 6  /*!< \brief Kind of Hybrid RANS/LES (SA - Improved DDES with Vorticity based SGS). */
 };
 static const map<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = CCreateMap<string, ENUM_HYBRIDRANSLES>
 ("NONE", NO_HYBRIDRANSLES)
@@ -675,7 +676,8 @@ static const map<string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = CCreateMap<stri
 ("SA_DDES", SA_DDES)
 ("SA_ZDES", SA_ZDES)
 ("SA_EDDES", SA_EDDES)
-("SA_IDDES", SA_IDDES);
+("SA_IDDES", SA_IDDES)
+("SA_IZDES", SA_IZDES);
 
 /*!
  * \brief types of Roe Low Dissipation Schemes

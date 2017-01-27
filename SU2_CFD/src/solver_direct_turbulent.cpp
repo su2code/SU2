@@ -1987,6 +1987,115 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
             numerics->SetDistance(distDES_tilde, 0.0);
           
       }
+      else if (config->GetKind_HybridRANSLES()==SA_IZDES){
+          su2double *Coord_i, *Coord_j, aux_delta, Delta_min, aux_min;
+          su2double alpha2, f_b, f_d_tilde, dist_zonal;
+          su2double deltax=0.0, deltay=0.0, deltaz=0.0, *Vorticity_i;
+          su2double Omega, ratio_Omegax, ratio_Omegay, ratio_Omegaz, Delta_w;
+          unsigned short nNeigh, iNeigh;
+          unsigned long NumNeigh;
+          
+          Coord_i = geometry->node[iPoint]->GetCoord();
+          nNeigh = geometry->node[iPoint]->GetnPoint();
+          
+          Delta = 0.0;
+          Delta_min = 0.0;
+          for (iNeigh=0;iNeigh<nNeigh;++iNeigh){
+              NumNeigh = geometry->node[iPoint]->GetPoint(iNeigh);
+              Coord_j = geometry->node[NumNeigh]->GetCoord();
+              
+              aux_delta = 0.0;
+              aux_min = 0.0;
+              for (iDim=0;iDim<nDim;++iDim){
+                  aux_delta = max(aux_delta,Coord_j[iDim]-Coord_i[iDim]);
+                  aux_min = min(aux_min,Coord_j[iDim]-Coord_i[iDim]);
+              }
+              Delta_min = min(Delta_min, aux_min);
+              Delta = max(Delta,aux_delta);
+              
+              deltax = max(deltax, abs(Coord_j[0] - Coord_i[0]));
+              deltay = max(deltay, abs(Coord_j[1] - Coord_i[1]));
+              deltaz = max(deltaz, abs(Coord_j[2] - Coord_i[2]));
+          }
+                    
+          Vorticity_i = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
+          Omega = sqrt(Vorticity_i[0]*Vorticity_i[0]+ Vorticity_i[1]*Vorticity_i[1]+ Vorticity_i[2]*Vorticity_i[2]);
+          ratio_Omegax = Vorticity_i[0]/Omega;
+          ratio_Omegay = Vorticity_i[1]/Omega;
+          ratio_Omegaz = Vorticity_i[2]/Omega;
+          
+          Delta_w =sqrt(pow(ratio_Omegax,2.0)*deltay*deltaz + pow(ratio_Omegay,2.0)*deltax*deltaz + pow(ratio_Omegaz,2.0)*deltax*deltay);
+          
+          dist_wall = geometry->node[iPoint]->GetWall_Distance();
+          
+          distDES = max(cw_iddes*dist_wall, cw_iddes*Delta);
+          distDES = max(distDES, Delta_min);
+          distDES = min(distDES,Delta_w) * Const_DES;
+          
+          PrimVar_Grad=solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+          
+          uijuij=0.0;
+          for(iDim=0;iDim<nDim;++iDim){
+              for(jDim=0;jDim<nDim;++jDim){
+                  uijuij+= PrimVar_Grad[1+iDim][jDim]*PrimVar_Grad[1+iDim][jDim];}}
+          
+          uijuij=sqrt(fabs(uijuij));
+          uijuij=max(uijuij,1e-10);
+          
+          if (compressible){
+              rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+              mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+          }
+          if (incompressible) {
+              rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+              mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+          }
+          
+          nu=mu/rho;
+          
+          eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+          nut=eddy_visc/rho;
+          k2=pow(0.41,2.0);
+          
+          /*--- The variables r_d and f_d are functions only of the eddy viscosity ---*/
+          
+          r_d= (nut)/(uijuij*k2*pow(dist_wall, 2.0));
+          f_d= 1.0-tanh(pow(8.0*r_d,3.0));
+          
+          alpha2 = pow(0.25 - (dist_wall/Delta) , 2.0);
+          f_b = min(2.0 * exp(-9.0 * alpha2), 1.0);
+          f_d_tilde = max((1.0-f_d), f_b);
+
+          /*--- Low Reynolds number correction term ---*/
+          
+          nu_hat = node[iPoint]->GetSolution();
+          Ji   = nu_hat[0]/nu;
+          Ji_2 = Ji * Ji;
+          Ji_3 = Ji*Ji*Ji;
+          fv1  = Ji_3/(Ji_3+cv1_3);
+          fv2 = 1.0 - Ji/(1.0+Ji*fv1);
+          ft2 = ct3*exp(-ct4*Ji_2);
+          cw1 = cb1/k2+(1.0+cb2)/sigma;
+          
+          psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
+          psi_2 = min(100.0,psi_2);
+
+          distDES_tilde = f_d_tilde * dist_wall + (1.0 - f_d_tilde) * distDES*sqrt(psi_2);
+          
+          /*--- Set distance to the surface with IDDES distance ---*/
+          
+//          if (config->GetZonal_DES()){
+//              dist_zonal = config->GetZonal_Dist();
+//              if (dist_wall <= dist_zonal)
+//                  numerics->SetDistance(dist_wall, 0.0);
+//              else
+//                  numerics->SetDistance(distDES_tilde, 0.0);
+//          }
+//          else
+//            numerics->SetDistance(distDES_tilde, 0.0);
+          
+      }
+      
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
