@@ -116,7 +116,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Convergence strategy ---*/
   
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
-  
+
 }
 
 void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,

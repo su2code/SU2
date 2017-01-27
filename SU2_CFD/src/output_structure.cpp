@@ -108,10 +108,16 @@ COutput::COutput(void) {
   RhoRes_New = EPS;
   RhoRes_Old = EPS;
   
-  /*--- Initialize distortion average ---*/
+  /*--- Initialize distortion average counter ---*/
 
-  Sum_Total_RadialDistortion = 0.0;
-  Sum_Total_CircumferentialDistortion = 0.0;
+  iCounter_Total_IDR = 0;
+  iCounter_Total_IDC = 0;
+
+	for (iCounter = 0; iCounter < nCounter_Total_IDR; iCounter++)
+		Serie_Total_IDR[iCounter] = 0.0;
+
+	for (iCounter = 0; iCounter < nCounter_Total_IDC; iCounter++)
+		Serie_Total_IDC[iCounter] = 0.0;
 
 }
 
@@ -3973,7 +3979,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   if (config->GetKind_Solver() == RANS or config->GetKind_Solver()  == NAVIER_STOKES) {
     thermal = true;
   }
-
   
   /*--- Write file name with extension ---*/
   
@@ -4254,8 +4259,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
     su2double OneD_AvgStagPress = 0.0, OneD_AvgMach = 0.0, OneD_AvgTemp = 0.0, OneD_MassFlowRate = 0.0,
     OneD_FluxAvgPress = 0.0, OneD_FluxAvgDensity = 0.0, OneD_FluxAvgVelocity = 0.0, OneD_FluxAvgEntalpy = 0.0,
-    Total_ComboObj=0.0, Total_AeroCD = 0.0, Total_RadialDistortion = 0.0, Total_CircumferentialDistortion = 0.0,
-    Ave_Total_RadialDistortion = 0.0, Ave_Total_CircumferentialDistortion = 0.0;
+    Total_ComboObj=0.0, Total_AeroCD = 0.0, Total_RadialDistortion = 0.0, Total_CircumferentialDistortion = 0.0;
     
     /*--- Initialize variables to store information from all zone for turboperformance (direct solution) ---*/
     
@@ -4446,13 +4450,35 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (engine || actuator_disk) {
           Total_AeroCD  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
-          Total_RadialDistortion    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_RadialDistortion();
-          Sum_Total_RadialDistortion += Total_RadialDistortion;
-          Ave_Total_RadialDistortion = Sum_Total_RadialDistortion / (config[val_iZone]->GetExtIter()+1);
 
-          Total_CircumferentialDistortion    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CircumferentialDistortion();
-          Sum_Total_CircumferentialDistortion += Total_CircumferentialDistortion;
-          Ave_Total_CircumferentialDistortion = Sum_Total_CircumferentialDistortion / (config[val_iZone]->GetExtIter()+1);
+          Total_RadialDistortion          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_RadialDistortion();
+          Total_CircumferentialDistortion = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CircumferentialDistortion();
+
+          /*--- Average IDC and IDR computation (last 100 elements) ---*/
+
+          nCounter_Total_IDR = 100; nCounter_Total_IDC = 100;
+
+          Serie_Total_IDR[iCounter_Total_IDR] = Total_RadialDistortion;
+          Serie_Total_IDC[iCounter_Total_IDC] = Total_CircumferentialDistortion;
+          iCounter_Total_IDR++; if (iCounter_Total_IDR == nCounter_Total_IDR) iCounter_Total_IDR = 0;
+          iCounter_Total_IDC++; if (iCounter_Total_IDC == nCounter_Total_IDC) iCounter_Total_IDC = 0;
+
+          if (iExtIter  >= nCounter_Total_IDR) {
+          	Ave_Total_IDR = 0.0;
+          	for (iCounter = 0; iCounter < nCounter_Total_IDR; iCounter++)
+          		Ave_Total_IDR += Serie_Total_IDR[iCounter];
+          	Ave_Total_IDR /= su2double(nCounter_Total_IDR);
+          }
+          else { Ave_Total_IDR = Total_RadialDistortion; }
+
+          if (iExtIter  >= nCounter_Total_IDC) {
+          	Ave_Total_IDC = 0.0;
+          	for (iCounter = 0; iCounter < nCounter_Total_IDC; iCounter++)
+          		Ave_Total_IDC += Serie_Total_IDC[iCounter];
+          	Ave_Total_IDC /= su2double(nCounter_Total_IDC);
+          }
+          else { Ave_Total_IDC = Total_CircumferentialDistortion; }
+
 
         }
         
@@ -4720,7 +4746,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                      Total_CFz, Total_CEff);
             if (engine || actuator_disk)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx,
-                  Total_CFy, Total_CFz, Total_CEff, Total_AeroCD, Total_RadialDistortion, Ave_Total_RadialDistortion, Total_CircumferentialDistortion, Ave_Total_CircumferentialDistortion);
+                  Total_CFy, Total_CFz, Total_CEff, Total_AeroCD, Total_RadialDistortion, Ave_Total_IDR, Total_CircumferentialDistortion, Ave_Total_IDC);
             if (equiv_area)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz,
                   Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
@@ -4738,8 +4764,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
               if (engine || actuator_disk)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
-                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_RadialDistortion, Ave_Total_RadialDistortion, Total_CircumferentialDistortion,
-                        Ave_Total_CircumferentialDistortion);
+                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_AeroCD, Total_RadialDistortion, Ave_Total_IDR, Total_CircumferentialDistortion,
+                        Ave_Total_IDC);
               if (equiv_area)
                 SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CEquivArea, Total_CNearFieldOF);
               if (rotating_frame)
