@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -79,9 +79,14 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     
+    # check for multiple objectives
     multi_objective = (type(func_name)==list)
+    # func_name_string is only used to check whether the function has already been evaluated. 
+    func_name_string = func_name
+    if multi_objective:   func_name_string = func_name[0]  
+
     # redundancy check
-    if multi_objective or not state['FUNCTIONS'].has_key(func_name):
+    if not state['FUNCTIONS'].has_key(func_name_string):
 
         # Aerodynamics
         if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:

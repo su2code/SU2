@@ -2,7 +2,7 @@
  * \file variable_adjoint_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,10 +37,10 @@ CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-	dmuT_dUTvar = NULL;
-	dRTstar_dUTvar = NULL;
-	dFT_dUTvar = NULL;
-	EddyViscSens = NULL;
+  dmuT_dUTvar = NULL;
+  dRTstar_dUTvar = NULL;
+  dFT_dUTvar = NULL;
+  EddyViscSens = NULL;
   
 }
 
@@ -48,27 +48,27 @@ CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_n
   
   /*--- Array initialization ---*/
   
-	dmuT_dUTvar = NULL;
-	dRTstar_dUTvar = NULL;
-	dFT_dUTvar = NULL;
-	EddyViscSens = NULL;
+  dmuT_dUTvar = NULL;
+  dRTstar_dUTvar = NULL;
+  dFT_dUTvar = NULL;
+  EddyViscSens = NULL;
   
-	/*--- Initialization of variables ---*/
+  /*--- Initialization of variables ---*/
   
-	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar] = val_psinu_inf;
-		Solution_Old[iVar] = val_psinu_inf;
-	}
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar] = val_psinu_inf;
+    Solution_Old[iVar] = val_psinu_inf;
+  }
   
-	Residual_Old = new su2double [nVar];
+  Residual_Old = new su2double [nVar];
   
-	if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
+  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) Limiter = new su2double [nVar];
   
 }
 
 CAdjTurbVariable::~CAdjTurbVariable(void) {
   
-	if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
-	if (EddyViscSens  != NULL) delete [] EddyViscSens;
+  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
+  if (EddyViscSens  != NULL) delete [] EddyViscSens;
   
 }
