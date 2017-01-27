@@ -110,8 +110,8 @@ COutput::COutput(void) {
   
   /*--- Initialize distortion average counter ---*/
 
-  iCounter_Total_IDR = 0;
-  iCounter_Total_IDC = 0;
+  iCounter_Total_IDR = 0; nCounter_Total_IDR = 100;
+  iCounter_Total_IDC = 0; nCounter_Total_IDC = 100;
 
 	for (iCounter = 0; iCounter < nCounter_Total_IDR; iCounter++)
 		Serie_Total_IDR[iCounter] = 0.0;
@@ -4455,8 +4455,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_CircumferentialDistortion = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CircumferentialDistortion();
 
           /*--- Average IDC and IDR computation (last 100 elements) ---*/
-
-          nCounter_Total_IDR = 100; nCounter_Total_IDC = 100;
 
           Serie_Total_IDR[iCounter_Total_IDR] = Total_RadialDistortion;
           Serie_Total_IDC[iCounter_Total_IDC] = Total_CircumferentialDistortion;
