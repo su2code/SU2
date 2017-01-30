@@ -2,7 +2,7 @@
  * \file datatype_structure.inl
  * \brief In-Line subroutines of the <i>datatype_structure.hpp</i> file.
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -150,6 +150,24 @@ inline int sprintfOver(char * str, const char * format, const A001 &a001, const 
 template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014>
 inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014) {
   return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015));
+}
+
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016));
+}
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017));
+}
+template <class A001, class A002, class A003, class A004, class A005, class A006, class A007, class A008, class A009, class A010, class A011, class A012, class A013, class A014, class A015, class A016, class A017, class A018>
+inline int sprintfOver(char * str, const char * format, const A001 &a001, const A002 &a002, const A003 &a003, const A004 &a004, const A005 &a005, const A006 &a006, const A007 &a007, const A008 &a008, const A009 &a009, const A010 &a010, const A011 &a011, const A012 &a012, const A013 &a013, const A014 &a014, const A015 &a015, const A016 &a016, const A017 &a017, const A018 &a018) {
+  return sprintf(str, format, Impl_getValue<A001 >::getValue(a001), Impl_getValue<A002 >::getValue(a002), Impl_getValue<A003 >::getValue(a003), Impl_getValue<A004 >::getValue(a004), Impl_getValue<A005 >::getValue(a005), Impl_getValue<A006 >::getValue(a006), Impl_getValue<A007 >::getValue(a007), Impl_getValue<A008 >::getValue(a008), Impl_getValue<A009 >::getValue(a009), Impl_getValue<A010 >::getValue(a010), Impl_getValue<A011 >::getValue(a011), Impl_getValue<A012 >::getValue(a012), Impl_getValue<A013 >::getValue(a013), Impl_getValue<A014 >::getValue(a014), Impl_getValue<A015 >::getValue(a015), Impl_getValue<A016 >::getValue(a016), Impl_getValue<A017 >::getValue(a017), Impl_getValue<A018 >::getValue(a018));
 }
 #endif
 
