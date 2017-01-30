@@ -301,7 +301,9 @@ inline bool CConfig::GetDE_Effects(void) { return DE_Effects; }
 
 inline bool CConfig::GetDE_Predicted(void) { return DE_Predicted; }
 
-inline su2double CConfig::GetDE_Modulus(void) { return DE_Modulus; }
+inline unsigned short CConfig::GetnElectric_Constant(void) { return nElectric_Constant; }
+
+inline su2double CConfig::GetElectric_Constant(unsigned short iVar) { return Electric_Constant[iVar]; }
 
 inline su2double CConfig::GetDE_Rate(void) { return DE_Rate; }
 

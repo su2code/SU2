@@ -122,7 +122,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		// Initialize value of the electric field in the reference configuration
 		EFieldMod_Ref = 0.0;
 
-		ke_DE = config->GetDE_Modulus();
+		ke_DE = config->GetElectric_Constant(0);
 
 		nEField_Read = config->GetnElectric_Field();
 		nDim_Electric_Field = config->GetnDim_Electric_Field();
@@ -131,30 +131,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 	   /*--- DV_Val: Vector to store the value of the design variable. ---*/
 
-	  /*--- The number of design variables is equal to the total number of regions ---*/
-//	  if (nDim == 2) nElectric_Field = config->GetnDV_X() * config->GetnDV_Y();
-//	  else nElectric_Field = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
-
 		nElectric_Field = config->GetnElectric_Field();
-
-//		/*--- If the input of values for the electric field is only 1, every region gets the same value ---*/
-//		if (nEField_Read == 1){
-//			if (nDelimiters == 0){
-//				nElectric_Field = 1;
-//			}
-//			else{
-//				nElectric_Field = nDelimiters;
-//			}
-//		} else{
-//			if (nDelimiters == nEField_Read){
-//				nElectric_Field = nEField_Read;
-//			}
-//			else{
-//				cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
-//				exit(EXIT_FAILURE);
-//			}
-//		}
-
 
 		/*--- We initialize the modulus ---*/
 		ref_Efield_mod = 0.0;
@@ -178,39 +155,26 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 		/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
 		EField_Ref_Mod = new su2double[nElectric_Field];
-
     for (iVar = 0; iVar < nElectric_Field; iVar++)
       EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
-
-//    if (config->GetDirectDiff() == D_EFIELD){
-//      unsigned short iID_DE = config->GetnID_DV();
-//      SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
-//    }
-
-		/*--- If the input of values for the electric field is only 1, every region gets the same value for a start ---*/
-//		if (nEField_Read == 1){
-//			for (iVar = 0; iVar < nElectric_Field; iVar++) {
-//				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(0);
-//			  if (config->GetDirectDiff() == D_EFIELD)   SU2_TYPE::SetDerivative(EField_Ref_Mod[iVar],1.0);
-//			}
-//		}
-//		else{
-//			for (iVar = 0; iVar < nElectric_Field; iVar++) {
-//
-//				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
-//
-//			}
-//      if (config->GetDirectDiff() == D_EFIELD){
-//        unsigned short iID_DE = config->GetnID_DV();
-//        SU2_TYPE::SetDerivative(EField_Ref_Mod[iID_DE],1.0);
-//      }
-//		}
 
 		/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
 		EField_Curr_Unit = new su2double[nDim_Electric_Field];
 		for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
 			EField_Curr_Unit[iDim] = 0.0;
 		}
+
+    /*--- Auxiliary vector for storing the electric field constant ---*/
+		unsigned short nElectric_Constant = config->GetnElectric_Constant();
+		ke_DE_i = new su2double[nElectric_Field];
+		if (nElectric_Field > 1){
+		    if (nElectric_Constant == nElectric_Field)
+		        for (iVar = 0; iVar < nElectric_Field; iVar++) ke_DE_i[iVar] = config->GetElectric_Constant(iVar);
+		    else
+		        for (iVar = 0; iVar < nElectric_Field; iVar++) ke_DE_i[iVar] = config->GetElectric_Constant(0);
+
+		}
+
 
 	  switch (config->GetDV_FEA()) {
 	    case YOUNG_MODULUS:
@@ -894,6 +858,7 @@ void CFEM_NonlinearElasticity::SetElectric_Properties(CElement *element, CConfig
   // Set the modulus of the electric field in the current element
 
   EFieldMod_Ref = EField_Ref_Mod[element->Get_iDe()];
+  ke_DE = ke_DE_i[element->Get_iDe()];
 
   switch (config->GetDV_FEA()) {
     case ELECTRIC_FIELD:

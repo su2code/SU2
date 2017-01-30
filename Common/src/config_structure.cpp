@@ -369,6 +369,7 @@ void CConfig::SetPointersNull(void) {
   Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      Electric_Field_Max = NULL;
   Electric_Field_Min = NULL;  Electric_Field_Del = NULL;      RefNode_Displacement = NULL;
   DV_Del_X = NULL;        DV_Del_Y = NULL;            DV_Del_Z = NULL;
+  Electric_Constant = NULL;
 
   /*--- Actuator Disk Boundary Condition settings ---*/
   
@@ -1538,8 +1539,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*  DESCRIPTION: Include DE effects
   *  Options: NO, YES \ingroup Config */
   addBoolOption("DE_EFFECTS", DE_Effects, false);
-  /*!\brief DE_MODULUS \n DESCRIPTION: Value of the Dielectric elastomer modulus \n DEFAULT 1 */
-  addDoubleOption("DE_MODULUS", DE_Modulus, 1);
+  /*!\brief DE_MODULUS \n DESCRIPTION: Value of the Dielectric elastomer modulus */
+  addDoubleListOption("ELECTRIC_FIELD_CONST", nElectric_Constant, Electric_Constant);
   /* DESCRIPTION: Modulus of the electric fields */
   addDoubleListOption("ELECTRIC_FIELD_MOD", nElectric_Field, Electric_Field_Mod);
   /* DESCRIPTION: Maximum value of the modulus of the electric field */
@@ -3058,6 +3059,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nMaterialDensity == 0) {
   nMaterialDensity = 1;
   MaterialDensity = new su2double[1]; MaterialDensity[0] = 7854;
+  }
+
+  if (nElectric_Constant == 0) {
+  nElectric_Constant = 1;
+  Electric_Constant = new su2double[1]; Electric_Constant[0] = 0.0;
   }
 
   if (nElectric_Field == 0) {

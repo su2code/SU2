@@ -4014,6 +4014,8 @@ protected:
 	unsigned short nElectric_Field,
 	nDim_Electric_Field;
 
+  su2double *ke_DE_i;           /*!< \brief Electric Constant for Dielectric Elastomers. */
+
 	su2double ke_DE;					    /*!< \brief Electric Constant for Dielectric Elastomers. */
 	su2double EFieldMod_Ref;      /*!< \brief Modulus of the electric field in the reference configuration. */
 
