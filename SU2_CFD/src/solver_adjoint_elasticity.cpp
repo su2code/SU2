@@ -2039,12 +2039,17 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
       break;
   }
 
+  Local_Sens_DV = NULL;
+  Global_Sens_DV= NULL;
+  Total_Sens_DV = NULL;
   if (fea_dv){
       DV_Val         = new su2double[nDV];
       Local_Sens_DV  = new su2double[nDV];
       Global_Sens_DV = new su2double[nDV];
       Total_Sens_DV  = new su2double[nDV];
       for (iVar = 0; iVar < nDV; iVar++){
+          Local_Sens_DV[iVar] = 0.0;
+          Global_Sens_DV[iVar] = 0.0;
           Total_Sens_DV[iVar] = 0.0;
       }
   }
