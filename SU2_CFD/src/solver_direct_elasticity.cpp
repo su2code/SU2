@@ -2038,24 +2038,6 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
       }
     }
 
-//    if (de_effects){
-//
-//      element_container[DE_TERM][EL_KIND]->Set_iDe(iElem_iDe[iElem]);
-//
-////      bool multiple_de = (n_DV > 1);
-////      /*--- So far, this will only be enabled for quadrilateral elements ---*/
-////      bool feature_enabled = (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL);
-////
-////      if ((multiple_de) && (feature_enabled)) {
-////        element_container[DE_TERM][EL_KIND]->Set_iDe(iElem_iDe[iElem]);
-////      }
-////      else{
-////        element_container[DE_TERM][EL_KIND]->Set_iDe(0);
-////      }
-//    }
-
-
-//    cout << "INDEX: " << geometry->elem[iElem]->GetGlobalIndex() << " ";
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     if (de_effects) element_container[DE_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
