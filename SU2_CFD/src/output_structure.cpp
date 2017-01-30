@@ -108,7 +108,6 @@ COutput::COutput(CConfig *config) {
   	EntropyOut                    = new su2double*[nMarkerTurboPerf];
   	EntropyIn_BC                  = new su2double*[nMarkerTurboPerf];
   	PressureRatio                 = new su2double*[nMarkerTurboPerf];
-  	TotalPresureIn                = new su2double*[nMarkerTurboPerf];
   	TotalTemperatureIn            = new su2double*[nMarkerTurboPerf];
   	EnthalpyOut                   = new su2double*[nMarkerTurboPerf];
   	MachIn                        = new su2double**[nMarkerTurboPerf];
@@ -125,8 +124,8 @@ COutput::COutput(CConfig *config) {
   	AbsFlowAngleIn                = new su2double*[nMarkerTurboPerf];
   	TotalEnthalpyOut              = new su2double*[nMarkerTurboPerf];
   	TotalEnthalpyOutIs            = new su2double*[nMarkerTurboPerf];
-  	TotalRothalpyIn               = new su2double*[nMarkerTurboPerf];
-  	TotalRothalpyOut              = new su2double*[nMarkerTurboPerf];
+  	RothalpyIn               			= new su2double*[nMarkerTurboPerf];
+  	RothalpyOut             		 	= new su2double*[nMarkerTurboPerf];
   	AbsFlowAngleOut               = new su2double*[nMarkerTurboPerf];
   	PressureOut_BC                = new su2double*[nMarkerTurboPerf];
   	TemperatureIn                 = new su2double*[nMarkerTurboPerf];
@@ -154,7 +153,6 @@ COutput::COutput(CConfig *config) {
   		EntropyOut              [iMarker] = new su2double [nSpanWiseSections + 1];
   		EntropyIn_BC            [iMarker] = new su2double [nSpanWiseSections + 1];
   		PressureRatio           [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalPresureIn          [iMarker] = new su2double [nSpanWiseSections + 1];
   		TotalTemperatureIn      [iMarker] = new su2double [nSpanWiseSections + 1];
   		EnthalpyOut             [iMarker] = new su2double [nSpanWiseSections + 1];
   		MachIn                  [iMarker] = new su2double*[nSpanWiseSections + 1];
@@ -171,8 +169,8 @@ COutput::COutput(CConfig *config) {
   		AbsFlowAngleIn          [iMarker] = new su2double [nSpanWiseSections + 1];
   		TotalEnthalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
   		TotalEnthalpyOutIs      [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalRothalpyIn         [iMarker] = new su2double [nSpanWiseSections + 1];
-  		TotalRothalpyOut        [iMarker] = new su2double [nSpanWiseSections + 1];
+  		RothalpyIn         			[iMarker] = new su2double [nSpanWiseSections + 1];
+  		RothalpyOut        			[iMarker] = new su2double [nSpanWiseSections + 1];
   		AbsFlowAngleOut         [iMarker] = new su2double [nSpanWiseSections + 1];
   		PressureOut_BC          [iMarker] = new su2double [nSpanWiseSections + 1];
   		TemperatureIn           [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -202,7 +200,6 @@ COutput::COutput(CConfig *config) {
   			EntropyOut              [iMarker][iSpan] = 0.0;
   			EntropyIn_BC            [iMarker][iSpan] = 0.0;
   			PressureRatio           [iMarker][iSpan] = 0.0;
-  			TotalPresureIn          [iMarker][iSpan] = 0.0;
   			TotalTemperatureIn      [iMarker][iSpan] = 0.0;
   			EnthalpyOut             [iMarker][iSpan] = 0.0;
 
@@ -219,8 +216,8 @@ COutput::COutput(CConfig *config) {
   			AbsFlowAngleIn          [iMarker][iSpan] = 0.0;
   			TotalEnthalpyOut        [iMarker][iSpan] = 0.0;
   			TotalEnthalpyOutIs      [iMarker][iSpan] = 0.0;
-  			TotalRothalpyIn         [iMarker][iSpan] = 0.0;
-  			TotalRothalpyOut        [iMarker][iSpan] = 0.0;
+  			RothalpyIn         			[iMarker][iSpan] = 0.0;
+  			RothalpyOut        			[iMarker][iSpan] = 0.0;
   			AbsFlowAngleOut         [iMarker][iSpan] = 0.0;
   			PressureOut_BC          [iMarker][iSpan] = config->GetPressureOut_BC();
 
@@ -279,7 +276,6 @@ COutput::~COutput(void) {
 			delete [] PressureRatio        [iMarker];
 			delete [] EnthalpyOut          [iMarker];
 			delete [] VelocityOutIs        [iMarker];
-			delete [] TotalPresureIn       [iMarker];
 			delete [] TotalTemperatureIn   [iMarker];
 			delete [] FlowAngleIn_BC       [iMarker];
 			delete [] EntropyIn            [iMarker];
@@ -292,8 +288,8 @@ COutput::~COutput(void) {
 			delete [] EnthalpyOutIs        [iMarker];
 			delete [] EntropyGen           [iMarker];
 			delete [] AbsFlowAngleIn       [iMarker];
-			delete [] TotalRothalpyIn      [iMarker];
-			delete [] TotalRothalpyOut     [iMarker];
+			delete [] RothalpyIn      		 [iMarker];
+			delete [] RothalpyOut     		 [iMarker];
 			delete [] AbsFlowAngleOut      [iMarker];
 			delete [] PressureOut_BC       [iMarker];
 			delete [] MachIn               [iMarker];
@@ -324,7 +320,6 @@ COutput::~COutput(void) {
 		delete [] PressureRatio;
 		delete [] EnthalpyOut;
 		delete [] VelocityOutIs;
-		delete [] TotalPresureIn;
 		delete [] TotalTemperatureIn;
 		delete [] FlowAngleIn_BC;
 		delete [] EntropyIn;
@@ -337,8 +332,8 @@ COutput::~COutput(void) {
 		delete [] EnthalpyOutIs;
 		delete [] EntropyGen;
 		delete [] AbsFlowAngleIn;
-		delete [] TotalRothalpyIn;
-		delete [] TotalRothalpyOut;
+		delete [] RothalpyIn;
+		delete [] RothalpyOut;
 		delete [] AbsFlowAngleOut;
 		delete [] PressureOut_BC;
 		delete [] MachIn;
@@ -10166,7 +10161,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 	unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
   FluidModel = solver_container->GetFluidModel();
-  su2double area, absVel2, soundSpeed, mach;
+  su2double area, absVel2, soundSpeed, mach, tangVel, tangVel2, *relVel, relVel2;
+  su2double relPressureIn, relPressureOut, enthalpyOutIs, relVelOutIs2;
+  relVel = new su2double[nDim];
 
 
   /*--- Compute BC imposed value for convergence monitoring ---*/
@@ -10182,6 +10179,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 	for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
 		for(iSpan = 0; iSpan < nSpanWiseSection +1; iSpan++){
 
+
+			/*--- INFLOW ---*/
 			/*--- Retrieve Inflow primitive quantities ---*/
 			DensityIn[iMarkerTP][iSpan]          = solver_container->GetDensityIn(iMarkerTP, iSpan);
 			PressureIn[iMarkerTP][iSpan]         = solver_container->GetPressureIn(iMarkerTP, iSpan);
@@ -10205,13 +10204,6 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			EnthalpyIn[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureIn[iMarkerTP][iSpan]/DensityIn[iMarkerTP][iSpan];
 			soundSpeed                           = FluidModel->GetSoundSpeed();
 
-			mach          = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++){
-				MachIn[iMarkerTP][iSpan][iDim]       = TurboVelocityIn[iMarkerTP][iSpan][iDim]/soundSpeed;
-				mach 																 = MachIn[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
-			}
-			MachIn[iMarkerTP][iSpan][4]            = sqrt(mach);
-
 
 			/*--- Compute Total Inflow quantities ---*/
 			TotalEnthalpyIn[iMarkerTP][iSpan]    = EnthalpyIn[iMarkerTP][iSpan] + 0.5*absVel2;
@@ -10219,8 +10211,37 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			TotalPressureIn[iMarkerTP][iSpan]    = FluidModel->GetPressure();
 			TotalTemperatureIn[iMarkerTP][iSpan] = FluidModel->GetTemperature();
 
+			/*--- Retrieve Inflow relative quantities ---*/
+			tangVel = geometry->GetTangGridVelIn(iMarkerTP, iSpan);
+			tangVel2 = tangVel*tangVel;
+
+			for (iDim = 0; iDim < nDim; iDim++){
+				relVel[iDim] = TurboVelocityIn[iMarkerTP][iSpan][iDim];
+			}
+			relVel[1] -= tangVel;
+
+			relVel2 = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++){
+				relVel2 += relVel[iDim]*relVel[iDim];
+			}
+
+			/*--- Compute Total relative Inflow quantities ---*/
+			RothalpyIn[iMarkerTP][iSpan]    = EnthalpyIn[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
+			FluidModel->SetTDState_hs(RothalpyIn[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
+			relPressureIn    = FluidModel->GetPressure();
+
+			/*--- Compute kinematic relative Inflow quantities ---*/
+			FlowAngleIn[iMarkerTP][iSpan]   = atan(relVel[1]/relVel[0]);
+			mach          = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++){
+				MachIn[iMarkerTP][iSpan][iDim]       = relVel[iDim]/soundSpeed;
+				mach 																 = MachIn[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
+			}
+			MachIn[iMarkerTP][iSpan][4]            = sqrt(mach);
 
 
+
+			/*--- OUTFLOW ---*/
 			/*--- Retrieve Outflow primitive quantities ---*/
 			DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
 			PressureOut[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
@@ -10236,21 +10257,61 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			EntropyOut[iMarkerTP][iSpan]				 = FluidModel->GetEntropy();
 			MassFlowOut[iMarkerTP][iSpan]         = DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
 			AbsFlowAngleOut[iMarkerTP][iSpan]     = atan(TurboVelocityOut[iMarkerTP][iSpan][1]/TurboVelocityOut[iMarkerTP][iSpan][0]);
-
+			EnthalpyOut[iMarkerTP][iSpan]         = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/DensityOut[iMarkerTP][iSpan];
 			soundSpeed                           = FluidModel->GetSoundSpeed();
 
+			/*--- Compute Total Outflow quantities ---*/
+			TotalEnthalpyOut[iMarkerTP][iSpan]    = EnthalpyOut[iMarkerTP][iSpan] + 0.5*absVel2;
+			FluidModel->SetTDState_hs(TotalEnthalpyOut[iMarkerTP][iSpan], EntropyOut[iMarkerTP][iSpan]);
+			TotalPressureOut[iMarkerTP][iSpan]    = FluidModel->GetPressure();
+			TotalTemperatureOut[iMarkerTP][iSpan] = FluidModel->GetTemperature();
+
+			/*--- Retrieve relative Outflow  quantities ---*/
+			tangVel = geometry->GetTangGridVelOut(iMarkerTP, iSpan);
+			tangVel2 = tangVel*tangVel;
+
+			for (iDim = 0; iDim < nDim; iDim++){
+				relVel[iDim] = TurboVelocityOut[iMarkerTP][iSpan][iDim];
+			}
+			relVel[1] -= tangVel;
+
+			relVel2 = 0.0;
+			for (iDim = 0; iDim < nDim; iDim++){
+				relVel2 += relVel[iDim]*relVel[iDim];
+			}
+
+			/*--- Compute Total relative Outflow quantities ---*/
+			RothalpyOut[iMarkerTP][iSpan]    = EnthalpyOut[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
+			FluidModel->SetTDState_hs(RothalpyOut[iMarkerTP][iSpan], EntropyOut[iMarkerTP][iSpan]);
+			relPressureIn    = FluidModel->GetPressure();
+
+			/*--- Compute isentropic Outflow quantities ---*/
+			FluidModel->SetTDState_Ps(PressureOut[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
+			enthalpyOutIs = FluidModel->GetStaticEnergy() + PressureOut[iMarkerTP][iSpan]/FluidModel->GetDensity();
+      relVelOutIs2  = 2*(RothalpyOut[iMarkerTP][iSpan] - enthalpyOutIs) + tangVel2;
+
+
+			/*--- Compute kinematic relative Outflow quantities ---*/
+			FlowAngleOut[iMarkerTP][iSpan]   = atan(relVel[1]/relVel[0]);
 			mach          = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++){
-				MachOut[iMarkerTP][iSpan][iDim]       = TurboVelocityOut[iMarkerTP][iSpan][iDim]/soundSpeed;
-				mach 																 = MachOut[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
+				MachOut[iMarkerTP][iSpan][iDim]       = relVel[iDim]/soundSpeed;
+				mach 																 = MachOut[iMarkerTP][iSpan][iDim]*MachOut[iMarkerTP][iSpan][iDim];
 			}
 			MachOut[iMarkerTP][iSpan][4]            = sqrt(mach);
 
-			/*--- Compute turbo-performance ---*/
+
+
+			/*--- TURBO-PERFORMANCE---*/
 			EntropyGen[iMarkerTP][iSpan]				 = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+			EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
+			TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
+			KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
 
 		}
 	}
+
+	delete [] relVel;
 }
 
 void COutput::WriteTutboPerfConvHistory(CConfig *config){
@@ -10316,9 +10377,9 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 		//cout << "     Inlet Total Enthalpy " << "    Outlet Total Enthalpy" << "     err(%)" <<  endl;
 		//else
 		cout << "     Inlet Total Rothalpy " << "    Outlet Total Rothalpy" << "       err(%)" <<  endl;
-		cout.width(25); cout << TotalRothalpyIn[iMarker_Monitoring][nSpanWiseSections]*config->GetEnergy_Ref();
-		cout.width(25); cout << TotalRothalpyOut[iMarker_Monitoring][nSpanWiseSections]*config->GetEnergy_Ref();
-		cout.width(25); cout << abs((TotalRothalpyIn[iMarker_Monitoring][nSpanWiseSections] - TotalRothalpyOut[iMarker_Monitoring][nSpanWiseSections])/TotalRothalpyIn[iMarker_Monitoring][nSpanWiseSections])*100.0;
+		cout.width(25); cout << RothalpyIn[iMarker_Monitoring][nSpanWiseSections]*config->GetEnergy_Ref();
+		cout.width(25); cout << RothalpyOut[iMarker_Monitoring][nSpanWiseSections]*config->GetEnergy_Ref();
+		cout.width(25); cout << abs((RothalpyIn[iMarker_Monitoring][nSpanWiseSections] - RothalpyOut[iMarker_Monitoring][nSpanWiseSections])/RothalpyIn[iMarker_Monitoring][nSpanWiseSections])*100.0;
 		cout << endl;
 		cout << endl;
 		cout << "Blade performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
@@ -10528,8 +10589,8 @@ void COutput::SpanwiseFile(CGeometry ***geometry,
     myfile.width(30); myfile << "\"TotalEnthalpyIn[J]\"";
     myfile.width(30); myfile << "\"TotalEnthalpyOut[J]\"";
     myfile.width(30); myfile << "\"TotalEnthalpyOutIs[J]\"";
-    myfile.width(30); myfile << "\"TotalRothalpyIn[J]\"";
-    myfile.width(30); myfile << "\"TotalRothalpyOut[J]\"";
+    myfile.width(30); myfile << "\"RothalpyIn[J]\"";
+    myfile.width(30); myfile << "\"RothalpyOut[J]\"";
     myfile.width(30); myfile << "\"MassFlowIn[kg/s]\"";
     myfile.width(30); myfile << "\"MassFlowOut[kg/s]\"";
     myfile.width(30); myfile << "\"VelocityOutIs[m/s]\"";
@@ -10591,8 +10652,8 @@ void COutput::SpanwiseFile(CGeometry ***geometry,
           myfile.width(30); myfile << TotalEnthalpyIn      [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
           myfile.width(30); myfile << TotalEnthalpyOut     [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
           myfile.width(30); myfile << TotalEnthalpyOutIs   [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
-          myfile.width(30); myfile << TotalRothalpyIn      [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
-          myfile.width(30); myfile << TotalRothalpyOut     [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+          myfile.width(30); myfile << RothalpyIn      [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
+          myfile.width(30); myfile << RothalpyOut     [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();
           myfile.width(30); myfile << MassFlowIn           [iMarker_Monitoring-1][iSpan]*1;
           myfile.width(30); myfile << MassFlowOut          [iMarker_Monitoring-1][iSpan]*1;
           myfile.width(30); myfile << VelocityOutIs        [iMarker_Monitoring-1][iSpan]*config[ZONE_0]->GetEnergy_Ref();

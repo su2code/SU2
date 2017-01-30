@@ -9936,7 +9936,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
             config->SetActDisk_BCThrust_Old(Marker_Tag, Initial_BCThrust);
           }
           
-          if (Kind_ActDisk == MASSFLOW) {
+          if (Kind_ActDisk == MASSFLUX) {
             Initial_BCThrust = config->GetInitial_BCThrust() / Ref;
             config->SetActDisk_BCThrust(Marker_Tag, Initial_BCThrust);
             config->SetActDisk_BCThrust_Old(Marker_Tag, Initial_BCThrust);
@@ -16175,21 +16175,21 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
               /*--- Compute the integral fluxes for the boundary of interest ---*/
 
               switch(average_process){
-              case ALGEBRAIC_AVG:
+              case ALGEBRAIC:
                 TotalDensity += Density;
                 TotalPressure += Pressure;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalVelocity[iDim] += Velocity[iDim];
                 break;
 
-              case AREA_AVG:
+              case AREA:
                 TotalAreaPressure += Area*Pressure;
                 TotalAreaDensity  += Area*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
                 break;
 
-              case MIXEDOUT_AVG:
+              case MIXEDOUT:
 							  TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
 							  TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
 							  for (iDim = 2; iDim < nDim+1; iDim++)
@@ -16202,7 +16202,7 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
 								  TotalAreaVelocity[iDim] += Area*Velocity[iDim];
 							  break;
 
-              case MASSFLOW_AVG:
+              case MASSFLUX:
                 TotalFluxes[0]     += Area*(Density*VelNormal ); //?
                 TotalMassPressure += Area*(Density*VelNormal )*Pressure;
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
@@ -16286,28 +16286,28 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
             // cout << "Mass flow" << TotalMassFlow << "Total area" << TotalArea << endl;
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
             switch(average_process){
-            case ALGEBRAIC_AVG:
+            case ALGEBRAIC:
               AverageDensity[iMarker][iSpan] = TotalDensity / nVert;
               AveragePressure[iMarker][iSpan] = TotalPressure / nVert;
               for (iDim = 0; iDim < nDim; iDim++)
                 AverageVelocity[iMarker][iSpan][iDim] = TotalVelocity[iDim] / nVert;
               break;
 
-            case AREA_AVG:
+            case AREA:
               AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
               AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
               for (iDim = 0; iDim < nDim; iDim++)
                 AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
               break;
 
-            case MASSFLOW_AVG:
+            case MASSFLUX:
               AverageDensity[iMarker][iSpan] = TotalMassDensity / TotalFluxes[0];
               AveragePressure[iMarker][iSpan] = TotalMassPressure / TotalFluxes[0];
               for (iDim = 0; iDim < nDim; iDim++)
                 AverageVelocity[iMarker][iSpan][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
               break;
 
-            case MIXEDOUT_AVG:
+            case MIXEDOUT:
                for (iVar = 0; iVar<nVar; iVar++){
                  AverageFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar]/TotalArea;
                  SpanTotalFlux[iMarker][iSpan][iVar]= TotalFluxes[iVar];
@@ -16558,21 +16558,21 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
 
               /*--- Compute the integral fluxes for the boundary of interest ---*/
               switch(average_process){
-              case ALGEBRAIC_AVG:
+              case ALGEBRAIC:
                 TotalDensity += Density;
                 TotalPressure += Pressure;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalVelocity[iDim] += Velocity[iDim];
                 break;
 
-              case AREA_AVG:
+              case AREA:
                 TotalAreaPressure += Area*Pressure;
                 TotalAreaDensity  += Area*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
                 break;
 
-              case MIXEDOUT_AVG:
+              case MIXEDOUT:
 							  TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
 							  TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
 							  for (iDim = 2; iDim < nDim+1; iDim++)
@@ -16585,7 +16585,7 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
 								  TotalAreaVelocity[iDim] += Area*Velocity[iDim];
 							  break;
 
-              case MASSFLOW_AVG:
+              case MASSFLUX:
                 TotalFluxes[0]     += Area*(Density*VelNormal ); //?
                 TotalMassPressure += Area*(Density*VelNormal )*Pressure;
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
@@ -16666,28 +16666,28 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
 
           /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
           switch(average_process){
-          case ALGEBRAIC_AVG:
+          case ALGEBRAIC:
             AverageDensity[iMarker][nSpanWiseSections] = TotalDensity / nVert;
             AveragePressure[iMarker][nSpanWiseSections] = TotalPressure / nVert;
             for (iDim = 0; iDim < nDim; iDim++)
               AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalVelocity[iDim] / nVert;
             break;
 
-          case AREA_AVG:
+          case AREA:
             AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
             AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
             for (iDim = 0; iDim < nDim; iDim++)
               AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
             break;
 
-          case MASSFLOW_AVG:
+          case MASSFLUX:
             AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalFluxes[0];
             AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalFluxes[0];
             for (iDim = 0; iDim < nDim; iDim++)
               AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
             break;
 
-          case MIXEDOUT_AVG:
+          case MIXEDOUT:
              for (iVar = 0; iVar<nVar; iVar++){
                AverageFlux[iMarker][nSpanWiseSections][iVar] = TotalFluxes[iVar]/TotalArea;
                SpanTotalFlux[iMarker][nSpanWiseSections][iVar] = TotalFluxes[iVar];
