@@ -141,7 +141,7 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 	su2double ref_Efield_mod;
 	unsigned short nEField_Read;
 
-	ke_DE = config->GetDE_Modulus();
+	ke_DE = config->GetElectric_Constant(0);
 
   nEField_Read = config->GetnElectric_Field();
   nDim_Electric_Field = config->GetnDim_Electric_Field();

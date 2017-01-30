@@ -719,8 +719,9 @@ private:
 //	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 //	PoissonRatio,						/*!< \brief Poisson's ratio. */
 //	MaterialDensity,								/*!< \brief Material density. */
-	su2double DE_Modulus,							/*!< \brief Dielectric elastomer modulus. */
-	DE_Rate;							  /*!< \brief Dielectric elastomer maximum rate of change. */
+	unsigned short nElectric_Constant; /*!< \brief Number of different electric constants. */
+	su2double *Electric_Constant;   /*!< \brief Dielectric constant modulus. */
+	su2double DE_Rate;							/*!< \brief Dielectric elastomer maximum rate of change. */
 	bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
   bool DE_Predicted;            /*!< Application of DE effects to FE analysis */
 	bool RefGeom; 						/*!< Read a reference geometry for optimization purposes. */
@@ -1767,10 +1768,16 @@ public:
   bool GetDE_Predicted(void);
 
 	/*!
-	 * \brief Get the value of the DE modulus.
+	 * \brief Get the number of different electric constants.
 	 * \return Value of the DE modulus.
 	 */
-	su2double GetDE_Modulus(void);
+	unsigned short GetnElectric_Constant(void);
+
+  /*!
+   * \brief Get the value of the DE modulus.
+   * \return Value of the DE modulus.
+   */
+  su2double GetElectric_Constant(unsigned short iVar);
 
 	/*!
 	 * \brief Get the value of the DE rate of change from one iter to the next.
