@@ -10226,9 +10226,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			}
 
 			/*--- Compute Total relative Inflow quantities ---*/
-			RothalpyIn[iMarkerTP][iSpan]    = EnthalpyIn[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
+			RothalpyIn[iMarkerTP][iSpan]  = EnthalpyIn[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
 			FluidModel->SetTDState_hs(RothalpyIn[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
-			relPressureIn    = FluidModel->GetPressure();
+			relPressureIn   = FluidModel->GetPressure();
 
 			/*--- Compute kinematic relative Inflow quantities ---*/
 			FlowAngleIn[iMarkerTP][iSpan]   = atan(relVel[1]/relVel[0]);
@@ -10237,7 +10237,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 				MachIn[iMarkerTP][iSpan][iDim]       = relVel[iDim]/soundSpeed;
 				mach 																 = MachIn[iMarkerTP][iSpan][iDim]*MachIn[iMarkerTP][iSpan][iDim];
 			}
-			MachIn[iMarkerTP][iSpan][4]            = sqrt(mach);
+			MachIn[iMarkerTP][iSpan][nDim]            = sqrt(mach);
 
 
 
@@ -10245,8 +10245,16 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			/*--- Retrieve Outflow primitive quantities ---*/
 			DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
 			PressureOut[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
-      for (iDim = 0; iDim < 3; iDim++){
-        TurboVelocityOut[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan)[iDim];
+			absVel2 = 0.0;
+
+			for (iDim = 0; iDim < nDim; iDim++){
+			  TurboVelocityOut[iMarkerTP][iSpan][iDim]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan)[iDim];
+			  absVel2   += TurboVelocityOut[iMarkerTP][iSpan][iDim]*TurboVelocityOut[iMarkerTP][iSpan][iDim];
+      }
+			TurboVelocityOut[iMarkerTP][iSpan][nDim] = sqrt(absVel2);
+
+
+			for (iDim = 0; iDim < 3; iDim++){
       }
 //			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
 			area																 = geometry->GetSpanAreaOut(iMarkerTP, iSpan);
@@ -10281,9 +10289,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			}
 
 			/*--- Compute Total relative Outflow quantities ---*/
-			RothalpyOut[iMarkerTP][iSpan]    = EnthalpyOut[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
+			RothalpyOut[iMarkerTP][iSpan] = EnthalpyOut[iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
 			FluidModel->SetTDState_hs(RothalpyOut[iMarkerTP][iSpan], EntropyOut[iMarkerTP][iSpan]);
-			relPressureIn    = FluidModel->GetPressure();
+			relPressureOut    = FluidModel->GetPressure();
 
 			/*--- Compute isentropic Outflow quantities ---*/
 			FluidModel->SetTDState_Ps(PressureOut[iMarkerTP][iSpan], EntropyIn[iMarkerTP][iSpan]);
@@ -10298,7 +10306,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 				MachOut[iMarkerTP][iSpan][iDim]       = relVel[iDim]/soundSpeed;
 				mach 																 = MachOut[iMarkerTP][iSpan][iDim]*MachOut[iMarkerTP][iSpan][iDim];
 			}
-			MachOut[iMarkerTP][iSpan][4]            = sqrt(mach);
+			MachOut[iMarkerTP][iSpan][nDim]            = sqrt(mach);
 
 
 
