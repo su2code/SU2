@@ -1769,6 +1769,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   
   /*--- Solver definition for the FEM problem ---*/
   if (fem) {
+
+  /*--- Initialize the container for FEA_TERM. This will be the only one for most of the cases ---*/
 	switch (config->GetGeometricConditions()) {
     	case SMALL_DEFORMATIONS :
     		switch (config->GetMaterialModel()) {
@@ -1803,14 +1805,41 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     		}
     		break;
     	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
+
 	}
 
+	/*--- The following definitions only make sense if we have a non-linear solution ---*/
+	if (config->GetGeometricConditions() == LARGE_DEFORMATIONS){
 
-	bool de_effects = config->GetDE_Effects();
-//	bool structural_adj = config->GetStructural_Adj();
+	    /*--- This allocates a container for electromechanical effects ---*/
 
-	if (de_effects) numerics_container[MESH_0][FEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
-//	if (structural_adj && de_effects) numerics_container[MESH_0][FEA_SOL][DE_ADJ] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
+	    bool de_effects = config->GetDE_Effects();
+	    if (de_effects) numerics_container[MESH_0][FEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
+
+	    string filename;
+	    ifstream properties_file;
+
+	    filename = config->GetFEA_FileName();
+	    if (nZone > 1)
+	      filename = config->GetMultizone_FileName(filename, iZone);
+
+	    properties_file.open(filename.data(), ios::in);
+
+	    /*--- In case there is a properties file, containers are allocated for a number of material models ---*/
+
+	    if (!(properties_file.fail())) {
+
+	        cout << "THERE IS A PROPERTIES FILE!! " << endl;
+	        numerics_container[MESH_0][FEA_SOL][MAT_NHCOMP]  = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
+	        numerics_container[MESH_0][FEA_SOL][MAT_NHINC]   = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
+	        numerics_container[MESH_0][FEA_SOL][MAT_IDEALDE] = new CFEM_IdealDE(nDim, nVar_FEM, config);
+	        numerics_container[MESH_0][FEA_SOL][MAT_KNOWLES] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
+
+	        properties_file.close();
+	    }
+
+	}
+
 
   }
 
