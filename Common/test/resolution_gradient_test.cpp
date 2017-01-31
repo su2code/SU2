@@ -53,6 +53,10 @@ void WriteQuadMeshFile () {
     int iPoint;
     int num_Nodes;
     double xSpacing, ySpacing, zSpacing;
+    double xFactor, yFactor, zFactor;
+    double xCoord[4] = {0, 1, 2, 3};
+    double yCoord[4] = {0, 1, 2, 3};
+    double zCoord[4] = {0, 1, 2, 3};
 
     std::ofstream Mesh_File;
 
@@ -66,13 +70,8 @@ void WriteQuadMeshFile () {
     jDim = 4;
     kDim = 4;
 
-    /*--- The grid spacing in each direction ---*/
-    xSpacing = 3.0;
-    ySpacing = 2.0;
-    zSpacing = 1.0;
-
     /*--- Open .su2 grid file ---*/
-    Mesh_File.open("hextestgrid.su2", ios::out);
+    Mesh_File.open("gradtestgrid.su2", ios::out);
     Mesh_File << fixed << setprecision(15);
 
     /*--- Write the dimension of the problem and the number of interior elements ---*/
@@ -118,16 +117,14 @@ void WriteQuadMeshFile () {
     for (kNode = 0; kNode < kDim; kNode++) {
       for (jNode = 0; jNode < jDim; jNode++) {
         for (iNode = 0; iNode < iDim; iNode++) {
-          Mesh_File << iNode*xSpacing << "\t";
-          Mesh_File << jNode*ySpacing << "\t";
-          Mesh_File << kNode*zSpacing << "\t";
+          Mesh_File << xCoord[iNode] << "\t";
+          Mesh_File << yCoord[jNode] << "\t";
+          Mesh_File << zCoord[kNode] << "\t";
           Mesh_File << iPoint << std::endl;
           iPoint++;
         }
       }
     }
-
-
 
     /*--- Write the header information for the boundary markers ---*/
     Mesh_File << "%" << std::endl;
@@ -217,10 +214,10 @@ void WriteQuadMeshFile () {
 void WriteCfgFile() {
   std::ofstream cfg_file;
 
-  cfg_file.open("hextest.cfg", ios::out);
+  cfg_file.open("gradtest.cfg", ios::out);
   cfg_file << "PHYSICAL_PROBLEM= NAVIER_STOKES" << std::endl;
   cfg_file << "MARKER_FAR= ( top bottom back front left right )"  << std::endl;
-  cfg_file << "MESH_FILENAME= hextestgrid.su2" << std::endl;
+  cfg_file << "MESH_FILENAME= gradtestgrid.su2" << std::endl;
   cfg_file << "MESH_FORMAT= SU2" << std::endl;
 
   cfg_file.close();
@@ -243,7 +240,7 @@ int main() {
   WriteCfgFile();
 
   // The use of "geometry_aux" is necessary to mock a multigrid configuration
-  CConfig* config = new CConfig("hextest.cfg", SU2_CFD, 0, 1, 2, VERB_NONE);
+  CConfig* config = new CConfig("gradtest.cfg", SU2_CFD, 0, 1, 2, VERB_NONE);
   CGeometry *geometry_aux = NULL;
   geometry_aux = new CPhysicalGeometry(config, 0, 1);
   CGeometry* geometry = new CGeometry();
@@ -267,43 +264,65 @@ int main() {
   // Tests
   //---------------------------------------------------------------------------
 
+  /**
+   * Due to the way that the dual mesh is set up, the edge control volumes
+   * (the ones lying on the boundary) have a different size than the interior
+   * control volumes.  This means that the gradient in our test case is nonzero,
+   * even though the primal grid is set up to be uniform.
+   *
+   * If you calculate out what the derivative should be, it's either +.375 or
+   * -.375 for these interior nodes.
+   */
+
+  unsigned short iDim, nDim = 3;
+  unsigned short iPoint;
+
   geometry->SetResolutionTensor();
 
-  unsigned short iPoint;
+  bool entries_correct = true;
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     bool isBoundary = geometry->node[iPoint]->GetBoundary();
     if (isBoundary) continue;
 
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+    for (iDim = 0; iDim < nDim; iDim++) {
+      vector<vector<su2double> > dMsqdx = geometry->node[iPoint]->GetResolutionGradient(iDim);
 
-    // ---------------------------------------------------------------------------
-    // Check that the values of Mij are correct
-    bool entries_correct = true;
-    if (Mij[0][0] != 3.0 ) entries_correct = false;
-    if (Mij[0][1] != 0.0 ) entries_correct = false;
-    if (Mij[0][1] != 0.0 ) entries_correct = false;
-    if (Mij[1][0] != 0.0 ) entries_correct = false;
-    if (Mij[1][1] != 2.0 ) entries_correct = false;
-    if (Mij[1][2] != 0.0 ) entries_correct = false;
-    if (Mij[2][0] != 0.0 ) entries_correct = false;
-    if (Mij[2][1] != 0.0 ) entries_correct = false;
-    if (Mij[2][2] != 1.0 ) entries_correct = false;
+      // Entries of dMdx are indexed as d(M_ij)/dx = dMdx[i][j]
+      for (int i = 0; i<nDim; ++i) {
+        for (int j = 0; j<nDim; ++j) {
+          if (i==j and iDim==i) {
+            if(std::abs(std::abs(dMsqdx[i][j])-0.375) > 1e-6)
+              entries_correct = false;
+          } else if (dMsqdx[i][j] != 0) {
+            entries_correct = false;
+          }
+        }
+      }
 
-    if (not(entries_correct)) {
-      std::cout << "ERROR: The resolution tensor for a hexahedron was not correct."
-          << std::endl;
-      std::cout << "The elements of the array were incorrect." << std::endl;
-      std::cout << "Computed array elements:" << std::endl;
-      std::cout << "[[";
-      std::cout << Mij[0][0] << "," << Mij[0][1] << "," << Mij[0][2] << "],[";
-      std::cout << Mij[1][0] << "," << Mij[1][1] << "," << Mij[1][2] << "],[";
-      std::cout << Mij[2][0] << "," << Mij[2][1] << "," << Mij[2][2] << "]]";
-      std::cout << std::endl;
-      return_flag = 1;
-      break;
+      if (not(entries_correct)) {
+        std::cout << "ERROR: The gradient of the resolution tensor was not correct."
+            << std::endl;
+        std::cout << "The elements of the array were incorrect for point: ";
+        std::cout << iPoint << std::endl;
+        std::cout << "And direction: " << iDim << std::endl;
+
+        std::cout << "Found:" << std::endl;
+        std::cout << "[[";
+        std::cout << dMsqdx[0][0] << "," << dMsqdx[0][1] << "," << dMsqdx[0][2];
+        std::cout << "]" << std::endl;
+        std::cout << " [";
+        std::cout << dMsqdx[1][0] << "," << dMsqdx[1][1] << "," << dMsqdx[1][2];
+        std::cout << "]" << std::endl;
+        std::cout << " [";
+        std::cout << dMsqdx[2][0] << "," << dMsqdx[2][1] << "," << dMsqdx[2][2];
+        std::cout << "]]" << std::endl;
+
+        return_flag = 1;
+//        break;
+      }
     }
-    if (not(entries_correct)) break;
+//    if (not(entries_correct)) break;
   }
 
   //---------------------------------------------------------------------------

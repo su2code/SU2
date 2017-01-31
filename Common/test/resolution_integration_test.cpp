@@ -194,13 +194,17 @@ int main() {
   delete geometry_aux;
 
   // Initialize the geometry
-  geometry->SetPoint_Connectivity();
+  geometry->SetBoundaries(config);
   geometry->SetPoint_Connectivity();
   geometry->SetElement_Connectivity();
+  geometry->SetBoundVolume();
   geometry->Check_IntElem_Orientation(config);
+  geometry->Check_BoundElem_Orientation(config);
   geometry->SetEdges();
   geometry->SetVertex(config);
   geometry->SetCoord_CG();
+  geometry->SetControlVolume(config, ALLOCATE);
+  geometry->SetBoundControlVolume(config, ALLOCATE);
 
   unsigned short nDim = 2;
 
@@ -208,19 +212,20 @@ int main() {
   // Tests
   //---------------------------------------------------------------------------
 
+  bool entries_correct = true;
+
   geometry->SetResolutionTensor();
 
   unsigned short iPoint;
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    bool isBoundary = not(geometry->node[iPoint]->GetBoundary());
-    if(isBoundary) continue;
+    bool isBoundary = geometry->node[iPoint]->GetBoundary();
+    if (isBoundary) continue;
 
     vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
 
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct
-    bool entries_correct = true;
     if (Mij[0][0] != 4.0 ) entries_correct = false;
     if (Mij[0][1] != 0.0 ) entries_correct = false;
     if (Mij[1][0] != 0.0 ) entries_correct = false;
