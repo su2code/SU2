@@ -115,6 +115,12 @@ COutput::COutput(CConfig *config) {
   Sum_Total_RadialDistortion = 0.0;
   Sum_Total_CircumferentialDistortion = 0.0;
 
+
+  wrote_Paraview_base = false;
+
+  /*--- Initialize turbo flag ---*/
+  turbo = config->GetBoolTurbomachinery();
+
   if(turbo){
   	/*--- Initializate quantities for turboperformace ---*/
   	nSpanWiseSections = config->GetnSpanWiseSections();

@@ -2401,11 +2401,11 @@ void CDriver::Interface_Preprocessing() {
         transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
         if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
       }
-      else if (fluid_donor && fluid_target && config_container[donorZone]->GetBoolMixingPlaneInterface()){
-        nVarTransfer = 0;
-        transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone]);
-        if (rank == MASTER_NODE) cout << "mixing-plane averages. "<< endl;
-      }
+//      else if (fluid_donor && fluid_target && config_container[donorZone]->GetBoolMixingPlaneInterface()){
+//        nVarTransfer = 0;
+//        transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone]);
+//        if (rank == MASTER_NODE) cout << "mixing-plane averages. "<< endl;
+//      }
       else if (!structural_donor && !structural_target) {
           nVarTransfer = 0;
           nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnPrimVar();
@@ -2420,6 +2420,12 @@ void CDriver::Interface_Preprocessing() {
 
         break;
 
+      }
+
+      if (config_container[donorZone]->GetBoolMixingPlaneInterface()){
+      	nVarTransfer = 0;
+      	transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone]);
+      	if (rank == MASTER_NODE) cout << "mixing-plane averages. "<< endl;
       }
 
     }
