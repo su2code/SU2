@@ -105,6 +105,10 @@ protected:
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
+  void GramSchmidt(std::vector<std::vector<su2double> > &w,
+                   std::vector<std::vector<su2double> > &v);
+  su2double inline_dot_prod(vector<su2double> v, vector<su2double> w);
+  su2double inline_magnitude(vector<su2double> v);
 
 public:
 	unsigned long *nElem_Bound;			/*!< \brief Number of elements of the boundary. */
@@ -310,6 +314,8 @@ public:
 	 */
 	unsigned long GetMax_GlobalPoint(void);
 
+  void SetResolutionTensor(void);
+
 	/*! 
 	 * \brief A virtual function.
 	 * \param[in] first_elem - Identification of the first element.
@@ -379,17 +385,13 @@ public:
 	 */		
 	virtual void SetCoord_CG(void);
 
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void SetResolutionTensor(void);
-
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] action - Allocate or not the new elements.		 
 	 */
 	virtual void SetControlVolume(CConfig *config, unsigned short action);
+
 
   /*!
 	 * \brief A virtual member.
@@ -1088,8 +1090,6 @@ public:
 	 * \brief Set the center of gravity of the face, elements and edges.
 	 */
 	void SetCoord_CG(void);
-
-	void SetResolutionTensor(void);
 
 	/*! 
 	 * \brief Set the edge structure of the control volume.

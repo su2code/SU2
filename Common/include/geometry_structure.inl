@@ -167,8 +167,6 @@ inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }
 
-inline void CGeometry::SetResolutionTensor(void) {};
-
 inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) { }
 
 inline void CGeometry::SetControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
@@ -212,6 +210,19 @@ inline su2double CGeometry::Compute_Volume(CConfig *config, bool original_surfac
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 
 inline void CGeometry::SetBoundSensitivity(CConfig *config) { }
+
+inline su2double CGeometry::inline_dot_prod(vector<su2double> v, vector<su2double> w) {
+  su2double dot_product = 0.0;
+  unsigned short nDim = v.size();
+  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
+    dot_product += v[iDim]*w[iDim];
+  }
+  return dot_product;
+}
+
+inline su2double CGeometry::inline_magnitude(vector<su2double> v) {
+  return std::sqrt(inline_dot_prod(v,v));
+}
 
 inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeometry::SetPoint_Connectivity(geometry); } 
 
