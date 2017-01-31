@@ -107,6 +107,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   bool body_forces = config->GetDeadLoad(); // Body forces (dead loads).
   bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
 
+  element_based = false;          // A priori we don't have an element-based input file (most of the applications will be like this)
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1253,7 +1255,10 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
     filename = config->GetMultizone_FileName(filename, iZone);
 
   if (dynamic) {
-    filename = config->GetUnsteady_FileName(filename, val_iter);
+
+    Dyn_RestartIter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+
+    filename = config->GetUnsteady_FileName(filename, (int)Dyn_RestartIter);
   }
 
   restart_file.open(filename.data(), ios::in);
@@ -1269,12 +1274,8 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
 
-  long *Global2Local = new long[geometry[MESH_0]->GetGlobal_nPointDomain()];
-
-  /*--- First, set all indices to a negative value by default ---*/
-
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
 
   /*--- Now fill array with the transform values only for local points ---*/
 
@@ -1291,18 +1292,21 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
   getline (restart_file, text_line);
 
-  while (getline (restart_file, text_line)) {
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    getline (restart_file, text_line);
+
     istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1.
-     Otherwise, the local index for this node on the current processor
-     will be returned and used to instantiate the vars. ---*/
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
 
     iPoint_Local = Global2Local[iPoint_Global];
 
-    if (iPoint_Local >= 0) {
-      if (dynamic){
+      if (dynamic) {
         if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
         if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
       }
@@ -1319,7 +1323,7 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
       iPoint_Global_Local++;
     }
-    iPoint_Global++;
+
   }
 
   /*--- Detect a wrong solution file ---*/
@@ -1331,7 +1335,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 #else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-
   if (rbuf_NotMatching != 0) {
     if (rank == MASTER_NODE) {
       cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
@@ -1349,10 +1352,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   /*--- Close the restart file ---*/
 
   restart_file.close();
-
-  /*--- Free memory needed for the transformation ---*/
-
-  delete [] Global2Local;
 
   /*--- MPI solution ---*/
 
@@ -1401,8 +1400,12 @@ void CFEM_ElasticitySolver::Set_ElementProperties(CGeometry *geometry, CConfig *
       element_properties[iElem] = new CElementProperty(0, 0, 0, 0);
     }
 
+    element_based = false;
+
   }
   else{
+
+    element_based = true;
 
 //    for (iElem = 0; iElem < nElement; iElem++){
 //      element_properties[iElem] = new CElementProperty(0, 0, 0, 0);
@@ -1957,7 +1960,15 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
-    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    /*--- Compute the components of the jacobian and the stress term ---*/
+    if (element_based){
+      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    }
+    else{
+      numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    }
+
+//    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -2046,7 +2057,15 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
     if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[FEA_TERM][EL_KIND], config);
 
-    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    /*--- Compute the components of the jacobian and the stress term ---*/
+    if (element_based){
+      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    }
+    else{
+      numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    }
+
+//    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
     if (de_effects) numerics[DE_TERM]->Compute_Tangent_Matrix(element_container[DE_TERM][EL_KIND], config);
 
@@ -2226,7 +2245,15 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
-    numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
+    /*--- Compute the components of the jacobian and the stress term ---*/
+    if (element_based){
+      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
+    }
+    else{
+      numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
+    }
+
+//    numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -2309,7 +2336,15 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
-    numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
+    /*--- Compute the components of the jacobian and the stress term ---*/
+    if (element_based){
+      numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
+    }
+    else{
+      numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
+    }
+
+//    numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
