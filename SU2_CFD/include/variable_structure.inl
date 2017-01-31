@@ -571,12 +571,12 @@ inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_sol
 
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
-void CEulerVariable::SetSolution_New(void) {
+inline void CEulerVariable::SetSolution_New(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_New[iVar] = Solution[iVar];
 }
 
-void CEulerVariable::AddSolution_New(unsigned short val_var, su2double val_solution) {
+inline void CEulerVariable::AddSolution_New(unsigned short val_var, su2double val_solution) {
   Solution_New[val_var] += val_solution;
 }
 
