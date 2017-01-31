@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -94,11 +94,23 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 500
-    fixedCL_naca0012.test_vals = [-6.383469, -0.995368, 0.299940, 0.019386] #last 4 columns
+    fixedCL_naca0012.test_vals = [-6.707530,-1.319851,0.300017,0.019390] #last 4 columns
     fixedCL_naca0012.su2_exec  = "SU2_CFD"
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
     test_list.append(fixedCL_naca0012)
+    
+    # Polar sweep of the inviscid NACA0012
+    polar_naca0012           = TestCase('polar_naca0012')
+    polar_naca0012.cfg_dir   = "polar/naca0012"
+    polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
+    polar_naca0012.polar     = True
+    polar_naca0012.test_iter = 10
+    polar_naca0012.test_vals = [-1.319488, 4.112397, 0.011954, 0.009584] #last 4 columns
+    polar_naca0012.su2_exec  = "compute_polar.py -n 1 -i 11"
+    polar_naca0012.timeout   = 1600
+    polar_naca0012.tol       = 0.00001
+    test_list.append(polar_naca0012)
 
     ##########################
     ###  Compressible N-S  ###
@@ -218,6 +230,21 @@ def main():
     propeller.tol       = 0.00001
     test_list.append(propeller)
 
+    #############################
+    ### Incompressible Euler  ###
+    #############################
+
+    # NACA0012 Hydrofoil
+    inc_euler_naca0012           = TestCase('inc_euler_naca0012')
+    inc_euler_naca0012.cfg_dir   = "incomp_euler/naca0012"
+    inc_euler_naca0012.cfg_file  = "incomp_NACA0012.cfg"
+    inc_euler_naca0012.test_iter = 20
+    inc_euler_naca0012.test_vals = [-3.590333,-3.151515,0.960192,0.013260] #last 4 columns
+    inc_euler_naca0012.su2_exec  = "SU2_CFD"
+    inc_euler_naca0012.timeout   = 1600
+    inc_euler_naca0012.tol       = 0.00001
+    test_list.append(inc_euler_naca0012)
+
     ############################
     ### Incompressible RANS  ###
     ############################
@@ -232,6 +259,21 @@ def main():
     inc_turb_naca0012.timeout   = 1600
     inc_turb_naca0012.tol       = 0.00001
     test_list.append(inc_turb_naca0012)
+
+    #########################
+    ###    Transition     ###
+    #########################
+
+    # Schubauer-Klebanoff Natural Transition
+    schubauer_klebanoff_transition              = TestCase('Schubauer_Klebanoff')
+    schubauer_klebanoff_transition.cfg_dir      = "transition/Schubauer_Klebanoff"
+    schubauer_klebanoff_transition.cfg_file     = "transitional_BC_model_ConfigFile.cfg"
+    schubauer_klebanoff_transition.test_iter    = 250
+    schubauer_klebanoff_transition.test_vals    = [-9.474452, -15.630834, 0.000520, 0.001062] #last 4 columns
+    schubauer_klebanoff_transition.su2_exec     = "SU2_CFD"
+    schubauer_klebanoff_transition.timeout      = 1600
+    schubauer_klebanoff_transition.tol          = 0.00001
+    test_list.append(schubauer_klebanoff_transition)
 
     #####################################
     ### Cont. adj. compressible Euler ###
@@ -378,16 +420,16 @@ def main():
     ### Harmonic Balance               ###
     ######################################
     
-#    # Description of the regression test
-#    harmonic_balance           = TestCase('harmonic_balance')
-#    harmonic_balance.cfg_dir   = "harmonic_balance"
-#    harmonic_balance.cfg_file  = "HB.cfg"
-#    harmonic_balance.test_iter = 25
-#    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
-#    harmonic_balance.su2_exec  = "SU2_CFD"
-#    harmonic_balance.timeout   = 1600
-#    harmonic_balance.tol       = 0.00001
-#    test_list.append(harmonic_balance)
+    # Description of the regression test
+    harmonic_balance           = TestCase('harmonic_balance')
+    harmonic_balance.cfg_dir   = "harmonic_balance"
+    harmonic_balance.cfg_file  = "HB.cfg"
+    harmonic_balance.test_iter = 25
+    harmonic_balance.test_vals = [-1.569573, 3.941896, 0.008780, 0.079775] #last 4 columns
+    harmonic_balance.su2_exec  = "SU2_CFD"
+    harmonic_balance.timeout   = 1600
+    harmonic_balance.tol       = 0.00001
+    test_list.append(harmonic_balance)
 
     ######################################
     ### Moving Wall                    ###
@@ -643,7 +685,6 @@ def main():
     pass_list.append(naca0012_geo.run_geo())
     test_list.append(naca0012_geo)
 
-
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
@@ -765,7 +806,45 @@ def main():
     pass_list.append(brick_hex_rans_def.run_def())
     test_list.append(brick_hex_rans_def)
 
+    # Cylindrical FFD test
+    cylinder_ffd_def           = TestCase('cylinder_ffd_def')
+    cylinder_ffd_def.cfg_dir   = "deformation/cylindrical_ffd"
+    cylinder_ffd_def.cfg_file  = "def_cylindrical.cfg"
+    cylinder_ffd_def.test_iter = 50
+    cylinder_ffd_def.test_vals = [1.30556e-10] #residual
+    cylinder_ffd_def.su2_exec  = "SU2_DEF"
+    cylinder_ffd_def.timeout   = 1600
+    cylinder_ffd_def.tol       = 1e-16
 
+    pass_list.append(cylinder_ffd_def.run_def())
+    test_list.append(cylinder_ffd_def)
+
+    # Spherical FFD test
+    sphere_ffd_def           = TestCase('sphere_ffd_def')
+    sphere_ffd_def.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def.cfg_file  = "def_spherical.cfg"
+    sphere_ffd_def.test_iter = 50
+    sphere_ffd_def.test_vals = [1.09326e-10] #residual
+    sphere_ffd_def.su2_exec  = "SU2_DEF"
+    sphere_ffd_def.timeout   = 1600
+    sphere_ffd_def.tol       = 1e-16
+
+    pass_list.append(sphere_ffd_def.run_def())
+    test_list.append(sphere_ffd_def)
+    
+    # Spherical FFD test using BSplines
+    sphere_ffd_def_bspline           = TestCase('sphere_ffd_def_bspline')
+    sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
+    sphere_ffd_def_bspline.test_iter = 50
+    sphere_ffd_def_bspline.test_vals = [6.69927e-11] #residual
+    sphere_ffd_def_bspline.su2_exec  = "SU2_DEF"
+    sphere_ffd_def_bspline.timeout   = 1600
+    sphere_ffd_def_bspline.tol       = 1e-16
+
+    pass_list.append(sphere_ffd_def_bspline.run_def())
+    test_list.append(sphere_ffd_def_bspline)
+   
     ######################################
     ### RUN PYTHON TESTS               ###
     ###################################### 
@@ -807,16 +886,16 @@ def main():
     test_list.append(shape_opt_euler_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    contadj_multi_py            = TestCase('contadj_multi_py')
-    contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
-    contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
-    contadj_multi_py.test_iter  = 10
-    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
-    contadj_multi_py.timeout    = 1600
-    contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
-    contadj_multi_py.test_file  = "of_grad_combo.dat"
-    pass_list.append(contadj_multi_py.run_filediff())
-    test_list.append(contadj_multi_py)
+    #contadj_multi_py            = TestCase('contadj_multi_py')
+    #contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    #contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    #contadj_multi_py.test_iter  = 10
+    #contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    #contadj_multi_py.timeout    = 1600
+    #contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
+    #contadj_multi_py.test_file  = "of_grad_combo.dat"
+    #pass_list.append(contadj_multi_py.run_filediff())
+    #test_list.append(contadj_multi_py)
 
 
     ##########################
@@ -829,7 +908,7 @@ def main():
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
     pywrapper_naca0012.test_vals = [-6.191618, -5.592802, 0.334809, 0.022197] #last 4 columns
-    pywrapper_naca0012.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_naca0012.su2_exec  = "SU2_CFD.py -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
     test_list.append(pywrapper_naca0012)
@@ -841,7 +920,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals = [-15.039675, -7.219913, 1.059622, 0.019138] #last 4 columns
-    pywrapper_turb_naca0012_sst.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_turb_naca0012_sst.su2_exec  = "SU2_CFD.py -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
     test_list.append(pywrapper_turb_naca0012_sst)
@@ -853,7 +932,7 @@ def main():
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
     pywrapper_square_cylinder.test_vals = [-1.166406,0.076804,1.398548,2.197047] #last 4 columns
-    pywrapper_square_cylinder.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_square_cylinder.su2_exec  = "SU2_CFD.py -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
     pywrapper_square_cylinder.unsteady  = True
@@ -866,7 +945,7 @@ def main():
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
     pywrapper_aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
-    pywrapper_aeroelastic.su2_exec  = "pyWrap_SU2_CFD.py -f"
+    pywrapper_aeroelastic.su2_exec  = "SU2_CFD.py -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.000001
     pywrapper_aeroelastic.unsteady  = True
@@ -879,29 +958,11 @@ def main():
     pywrapper_fsi2d.cfg_file  = "configFSI_2D.cfg"
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.777916, -1.139835] #last 4 columns
-    pywrapper_fsi2d.su2_exec  = "pyWrap_SU2_CFD.py --nZone 2 --fsi True -f"
+    pywrapper_fsi2d.su2_exec  = "SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
     pass_list.append(pywrapper_fsi2d.run_test())
-
-
-    ######################################
-    ### RUN EXTERNAL FSI COUPLING TEST ###
-    ######################################
-
-    # Pitch-plunge NACA 0012 (external FSI coupling)
-    coupled_FSI            = TestCase('coupled_FSI')
-    coupled_FSI.cfg_dir    = "coupled_fsi/2d_aeroelasticity"
-    coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
-    coupled_FSI.test_iter  = 1
-    coupled_FSI.su2_exec   = "fsi_computation.py"
-    coupled_FSI.timeout    = 3200
-    coupled_FSI.reference_file = "StructHistory.dat.ref_serial"
-    coupled_FSI.test_file  = "StructHistory.dat"
-    pass_list.append(coupled_FSI.run_filediff())
-    test_list.append(coupled_FSI)
-
     
     # Tests summary
     print '=================================================================='

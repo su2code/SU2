@@ -3,7 +3,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -83,14 +83,11 @@ def gradient( func_name, method, config, state=None ):
     func_name_string = func_name
     if (type(func_name)==list):
         if (config.OPT_COMBINE_OBJECTIVE=="YES"):
-            config.OBJECTIVE_FUNCTION = ', '.join(func_name)
             func_name_string = 'COMBO'
         else:
             func_name = func_name[0]
-            config.OBJECTIVE_FUNCTION = func_name
     else:
         config.OPT_COMBINE_OBJECTIVE="NO"
-        config.OBJECTIVE_FUNCTION = func_name
         config.OBJECTIVE_WEIGHT = "1.0"
     # redundancy check
     if not state['GRADIENTS'].has_key(func_name_string):
@@ -99,7 +96,7 @@ def gradient( func_name, method, config, state=None ):
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
 
             # If using chain rule
-            if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
+            if 'OUTFLOW_GENERALIZED' in ', '.join(func_name):
                 import downstream_function
                 chaingrad = downstream_function.downstream_gradient(config,state)
                 # Set coefficients for gradients
@@ -133,7 +130,7 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION ):
+        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in ', '.join(func_name)):
             import downstream_function
             chaingrad = downstream_function.downstream_gradient(config,state)
             n_dv = len(grads[func_name_string])
@@ -429,8 +426,8 @@ def stability( func_name, config, state=None, step=1e-2 ):
 #  Finite Difference Gradients
 # ----------------------------------------------------------------------
 
-def findiff( config, state=None, step=1e-4 ):
-    """ vals = SU2.eval.findiff(config,state=None,step=1e-4)
+def findiff( config, state=None ):
+    """ vals = SU2.eval.findiff(config,state=None)
 
         Evaluates the aerodynamics gradients using 
         finite differencing with:
@@ -451,8 +448,6 @@ def findiff( config, state=None, step=1e-4 ):
         Inputs:
             config - an SU2 config
             state  - optional, an SU2 state
-            step   - finite difference step size, as a float or
-                     list of floats of length n_DV
 
         Outputs:
             A Bunch() with keys of objective function names
@@ -473,6 +468,9 @@ def findiff( config, state=None, step=1e-4 ):
         log_findiff = 'log_FinDiff.out'
     else:
         log_findiff = None
+
+    # evaluate step
+    step = 0.001 * float(config.REF_LENGTH_MOMENT)
 
     # ----------------------------------------------------
     #  Redundancy Check

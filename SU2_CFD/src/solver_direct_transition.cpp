@@ -2,7 +2,7 @@
  * \file solution_direct_transition.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author A. Aranake
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,43 +36,43 @@
 CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {}
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
-	unsigned short iVar, iDim, nLineLets;
-	unsigned long iPoint, index;
-	su2double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey;
-	ifstream restart_file;
-	char *cstr;
-	string text_line;
+  unsigned short iVar, iDim, nLineLets;
+  unsigned long iPoint, index;
+  su2double Density_Inf, Viscosity_Inf, tu_Inf, nu_tilde_Inf, Factor_nu_Inf, dull_val, rey;
+  ifstream restart_file;
+  char *cstr;
+  string text_line;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-	bool restart = (config->GetRestart() || config->GetRestart_Flow());
-	
+  bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  
   cout << "Entered constructor for CTransLMSolver -AA\n";
-	Gamma = config->GetGamma();
-	Gamma_Minus_One = Gamma - 1.0;
-	
-	/*--- Define geometry constans in the solver structure ---*/
-	nDim = geometry->GetnDim();
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+  
+  /*--- Define geometry constans in the solver structure ---*/
+  nDim = geometry->GetnDim();
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
-	node = new CVariable*[geometry->GetnPoint()];
-	
-	/*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
-	nVar = 2;
+  node = new CVariable*[geometry->GetnPoint()];
+  
+  /*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
+  nVar = 2;
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
   nVarGrad = nVar;
-	
-	if (iMesh == MESH_0) {
-		
-		/*--- Define some auxillary vectors related to the residual ---*/
-		Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-		Residual_i   = new su2double[nVar]; Residual_j   = new su2double[nVar];
+  
+  if (iMesh == MESH_0) {
+    
+    /*--- Define some auxillary vectors related to the residual ---*/
+    Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+    Residual_i   = new su2double[nVar]; Residual_j   = new su2double[nVar];
     Residual_Max = new su2double[nVar];
 
     /*--- Define some structures for locating max residuals ---*/
@@ -84,28 +84,28 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
       for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
     }
 
-		/*--- Define some auxiliar vector related with the solution ---*/
-		Solution   = new su2double[nVar];
-		Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
-		
-		/*--- Define some auxiliar vector related with the geometry ---*/
-		Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-				
+    /*--- Define some auxiliar vector related with the solution ---*/
+    Solution   = new su2double[nVar];
+    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
+    
+    /*--- Define some auxiliar vector related with the geometry ---*/
+    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
+        
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     
-		/*--- Jacobians and vector structures for implicit computations ---*/
-		if (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT) {
+    /*--- Jacobians and vector structures for implicit computations ---*/
+    if (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT) {
 
-			/*--- Point to point Jacobians ---*/
-			Jacobian_i = new su2double* [nVar];
-			Jacobian_j = new su2double* [nVar];
-			for (iVar = 0; iVar < nVar; iVar++) {
-				Jacobian_i[iVar] = new su2double [nVar];
-				Jacobian_j[iVar] = new su2double [nVar];
-			}
-			/*--- Initialization of the structure of the whole Jacobian ---*/
-			Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+      /*--- Point to point Jacobians ---*/
+      Jacobian_i = new su2double* [nVar];
+      Jacobian_j = new su2double* [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Jacobian_i[iVar] = new su2double [nVar];
+        Jacobian_j[iVar] = new su2double [nVar];
+      }
+      /*--- Initialization of the structure of the whole Jacobian ---*/
+      Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
       
       if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
           (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
@@ -113,26 +113,26 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
         if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
       }
       
-		}
-	
-	/*--- Computation of gradients by least squares ---*/
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-		/*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-		Smatrix = new su2double* [nDim];
-		for (iDim = 0; iDim < nDim; iDim++)
-			Smatrix[iDim] = new su2double [nDim];
-		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new su2double* [nVar];
-		for (iVar = 0; iVar < nVar; iVar++)
-			cvector[iVar] = new su2double [nDim];
-	}
-	
-	/*--- Read farfield conditions from config ---*/
-	Density_Inf       = config->GetDensity_FreeStreamND();
+    }
+  
+  /*--- Computation of gradients by least squares ---*/
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new su2double [nDim];
+    /*--- c vector := transpose(WA)*(Wb) ---*/
+    Cvector = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      Cvector[iVar] = new su2double [nDim];
+  }
+  
+  /*--- Read farfield conditions from config ---*/
+  Density_Inf       = config->GetDensity_FreeStreamND();
   Viscosity_Inf     = config->GetViscosity_FreeStreamND();
   Intermittency_Inf = config->GetIntermittency_FreeStream();
   tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
-	
+  
   /*-- Initialize REth from correlation --*/
   if (tu_Inf <= 1.3) {
     REth_Inf = (1173.51-589.428*tu_Inf+0.2196/(tu_Inf*tu_Inf));
@@ -143,13 +143,13 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 //  REth_Inf *= mach/rey;
   cout << "REth_Inf = " << REth_Inf << ", rey: "<< rey << " -AA" << endl;
-	
-	/*--- Factor_nu_Inf in [3.0, 5.0] ---*/
-	Factor_nu_Inf = config->GetNuFactor_FreeStream();
-	nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
-		
-	/*--- Restart the solution from file information ---*/
-	if (!restart) {
+  
+  /*--- Factor_nu_Inf in [3.0, 5.0] ---*/
+  Factor_nu_Inf = config->GetNuFactor_FreeStream();
+  nu_tilde_Inf  = Factor_nu_Inf*Viscosity_Inf/Density_Inf;
+    
+  /*--- Restart the solution from file information ---*/
+  if (!restart) {
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       // TODO: Erase this bubble of specially initialized points -AA
 //      if (iPoint == 9745||iPoint == 9746||iPoint == 9608||iPoint == 9609) {
@@ -160,71 +160,71 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
     }
 
-	}
-	else {
+  }
+  else {
     cout << "No LM restart yet!!" << endl; // TODO, Aniket
     int j;
     cin >> j;
-		string mesh_filename = config->GetSolution_FlowFileName();
-		cstr = new char [mesh_filename.size()+1];
-		strcpy (cstr, mesh_filename.c_str());
-		restart_file.open(cstr, ios::in);
-		if (restart_file.fail()) {
-			cout << "There is no turbulent restart file!!" << endl;
-			exit(EXIT_FAILURE);
-		}
-		
-		for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-			getline(restart_file, text_line);
-			istringstream point_line(text_line);
-			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
-			node[iPoint] = new CTurbSAVariable(Solution[0], 0, nDim, nVar, config);
-		}
-		restart_file.close();
-	}
+    string mesh_filename = config->GetSolution_FlowFileName();
+    cstr = new char [mesh_filename.size()+1];
+    strcpy (cstr, mesh_filename.c_str());
+    restart_file.open(cstr, ios::in);
+    if (restart_file.fail()) {
+      cout << "There is no turbulent restart file!!" << endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      getline(restart_file, text_line);
+      istringstream point_line(text_line);
+      if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+      if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0];
+      node[iPoint] = new CTurbSAVariable(Solution[0], 0, nDim, nVar, config);
+    }
+    restart_file.close();
+  }
 
 }
 
 CTransLMSolver::~CTransLMSolver(void) {
-	
+  
 }
 
 void CTransLMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-	unsigned long iPoint;
+  unsigned long iPoint;
 
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
-		LinSysRes.SetBlock_Zero(iPoint);
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
+    LinSysRes.SetBlock_Zero(iPoint);
   Jacobian.SetValZero();
 
-	if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 }
 
 void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
   /*--- Correction for separation-induced transition, Replace intermittency with gamma_eff ---*/
-	for (unsigned int iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
+  for (unsigned int iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++)
     node[iPoint]->SetGammaEff();
 }
 
 void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
-	unsigned short iVar;
-	unsigned long iPoint, total_index;
-	su2double Delta, Delta_flow, Vol;
+  unsigned short iVar;
+  unsigned long iPoint, total_index;
+  su2double Delta, Delta_flow, Vol;
   
   
   /*--- Set maximum residual to zero ---*/
   
-	for (iVar = 0; iVar < nVar; iVar++) {
-		SetRes_RMS(iVar, 0.0);
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
   
-	/*--- Build implicit system ---*/
+  /*--- Build implicit system ---*/
   
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
@@ -254,15 +254,15 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
       LinSysSol[total_index] = 0.0;
     }
   }
-	
+  
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
   system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
-	/*--- Update solution (system written in terms of increments) ---*/
+  /*--- Update solution (system written in terms of increments) ---*/
   
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++)
       node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
   }
@@ -315,9 +315,9 @@ void CTransLMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
 
 void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-																				CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-	unsigned long iEdge, iPoint, jPoint;
-	
+                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  unsigned long iEdge, iPoint, jPoint;
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge ---*/
@@ -365,64 +365,64 @@ void CTransLMSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-																			 CConfig *config, unsigned short iMesh) {
+                                       CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
   su2double gamma_sep = 0.0;
 
   //cout << "Setting Trans residual -AA " << endl;
   cout << "\nBeginAA" << endl;
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     cout << "\niPoint: " << iPoint << endl;
-		
-		/*--- Conservative variables w/o reconstruction ---*/
     
-		numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
-		
-		/*--- Gradient of the primitive and conservative variables ---*/
+    /*--- Conservative variables w/o reconstruction ---*/
     
-		numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
-		
-		/*--- Laminar and eddy viscosity ---*/
+    numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(), NULL);
     
-		numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
+    /*--- Gradient of the primitive and conservative variables ---*/
+    
+    numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
+    
+    /*--- Laminar and eddy viscosity ---*/
+    
+    numerics->SetLaminarViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(), 0.0);
     numerics->SetEddyViscosity(solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(),0.0);
-		
-		/*--- Turbulent variables w/o reconstruction, and its gradient ---*/
     
-		numerics->SetTransVar(node[iPoint]->GetSolution(), NULL);
-		// numerics->SetTransVarGradient(node[iPoint]->GetGradient(), NULL);  // Is this needed??
-		
-		/*--- Set volume ---*/
+    /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
     
-		numerics->SetVolume(geometry->node[iPoint]->GetVolume());
-		
-		/*--- Set distance to the surface ---*/
+    numerics->SetTransVar(node[iPoint]->GetSolution(), NULL);
+    // numerics->SetTransVarGradient(node[iPoint]->GetGradient(), NULL);  // Is this needed??
     
-		numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
-		
-		/*--- Compute the source term ---*/
+    /*--- Set volume ---*/
     
-		numerics->ComputeResidual_TransLM(Residual, Jacobian_i, NULL, config, gamma_sep);
-		
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+    
+    /*--- Set distance to the surface ---*/
+    
+    numerics->SetDistance(geometry->node[iPoint]->GetWall_Distance(), 0.0);
+    
+    /*--- Compute the source term ---*/
+    
+    numerics->ComputeResidual_TransLM(Residual, Jacobian_i, NULL, config, gamma_sep);
+    
     /*-- Store gamma_sep in variable class --*/
     
     node[iPoint]->SetGammaSep(gamma_sep);
 
-		/*--- Subtract residual and the Jacobian ---*/
+    /*--- Subtract residual and the Jacobian ---*/
     
-		LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(iPoint, Residual);
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
-	}
+  }
 }
 
 void CTransLMSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-																			 CConfig *config, unsigned short iMesh) {
+                                       CConfig *config, unsigned short iMesh) {
 }
 
 void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex;
-	unsigned short iVar, iDim;
+  unsigned long iPoint, iVertex;
+  unsigned short iVar, iDim;
   su2double *U_i;
   su2double *U_domain = new su2double[nVar];
   su2double *U_wall   = new su2double[nVar];
@@ -432,28 +432,28 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT); 
 
 //  cout << "Setting wall BC -AA\n";
-	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-		
-		/*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
 
-			/*--- Normal vector for this vertex (negate for outward convention) ---*/
-			geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Set both interior and exterior point to current value ---*/
       for (iVar=0; iVar < nVar; iVar++) {
         U_domain[iVar] = node[iPoint]->GetSolution(iVar);
-        U_wall[iVar]   = node[iPoint]->GetSolution(iVar); 	
+        U_wall[iVar]   = node[iPoint]->GetSolution(iVar);   
       }
 
       /*--- Set various quantities in the solver class ---*/
       numerics->SetNormal(Normal);
       numerics->SetTransVar(U_domain,U_wall);
-  		U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-  		numerics->SetConservative(U_i, U_i);
+      U_i = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+      numerics->SetConservative(U_i, U_i);
 
       /*--- Compute the residual using an upwind scheme ---*/
 //      cout << "BC calling SetResidual: -AA" << endl;
@@ -464,8 +464,8 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, Residual);
 
 //      cout << "Implicit part -AA" << endl;
-			/*--- Jacobian contribution for implicit integration ---*/
-			if (implicit) {
+      /*--- Jacobian contribution for implicit integration ---*/
+      if (implicit) {
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
@@ -475,22 +475,22 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 //    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 //
-//		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//		if (geometry->node[iPoint]->GetDomain()) {
+//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+//    if (geometry->node[iPoint]->GetDomain()) {
 //
 //      /*--- Impose boundary values (Dirichlet) ---*/
 //      Solution[0] = 0.0;
 //      Solution[1] = 0.0;
-//			node[iPoint]->SetSolution_Old(Solution);
-//			LinSysRes.SetBlock_Zero(iPoint);
+//      node[iPoint]->SetSolution_Old(Solution);
+//      LinSysRes.SetBlock_Zero(iPoint);
 //
-//			/*--- includes 1 in the diagonal ---*/
+//      /*--- includes 1 in the diagonal ---*/
 //      for (iVar = 0; iVar < nVar; iVar++) {
 //        total_index = iPoint*nVar+iVar;
 //        Jacobian.DeleteValsRowi(total_index);
 //      }
-//		}
-//	}
+//    }
+//  }
   
   delete [] U_domain;
   delete [] U_wall;
@@ -500,7 +500,7 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-	unsigned long iPoint, iVertex;
+  unsigned long iPoint, iVertex;
   unsigned long total_index;
   unsigned short iVar;
 
@@ -508,39 +508,39 @@ void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-		/*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-		if (geometry->node[iPoint]->GetDomain()) {
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
 
       /*--- Impose boundary values (Dirichlet) ---*/
       Solution[0] = Intermittency_Inf;
       Solution[1] = REth_Inf;
-			node[iPoint]->SetSolution_Old(Solution);
-			LinSysRes.SetBlock_Zero(iPoint);
+      node[iPoint]->SetSolution_Old(Solution);
+      LinSysRes.SetBlock_Zero(iPoint);
 
-			/*--- includes 1 in the diagonal ---*/
+      /*--- includes 1 in the diagonal ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar+iVar;
         Jacobian.DeleteValsRowi(total_index);
       }
-		}
-	}
+    }
+  }
 
 }
 
 void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-																unsigned short val_marker) {
+                                unsigned short val_marker) {
 //cout << "BC_Inlet reached -AA" << endl;
 BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CTransLMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-																 CConfig *config, unsigned short val_marker) {
+                                 CConfig *config, unsigned short val_marker) {
 //cout << "BC_Outlet reached -AA" << endl;
 BC_Far_Field(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CTransLMSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-																 CConfig *config, unsigned short val_marker) {
+                                 CConfig *config, unsigned short val_marker) {
 //cout << "BC_Outlet reached -AA" << endl;
 BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
