@@ -10076,8 +10076,8 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
           available. SU2_SOL will remain intact for writing files
           until this capability is completed. ---*/
     
-    bool Wrt_Vol = false;
-    bool Wrt_Srf = false;
+    bool Wrt_Vol = true;
+    bool Wrt_Srf = true;
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
     
     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
@@ -14616,6 +14616,10 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
   } else if ((fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
+
+  /*--- For now, append an extra suffix for the parallel restart. ---*/
+
+  filename.append(".parallel");
   
   /*--- Only the master node writes the header. ---*/
   
