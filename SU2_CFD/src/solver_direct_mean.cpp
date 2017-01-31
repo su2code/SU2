@@ -6277,6 +6277,66 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   
 }
 
+void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                        CConfig *config, unsigned short iRKStep) {
+  su2double *Residual, *Res_TruncError, Vol, Delta, Res, tmp_time, tmp_func;
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
+  su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
+  su2double RK_TimeCoeff[4] = {0.5, 0.5, 1.0, 1.0};
+
+  bool adjoint = config->GetContinuous_Adjoint();
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+
+  /*--- Update the solution ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    Vol = geometry->node[iPoint]->GetVolume();
+    Delta = node[iPoint]->GetDelta_Time() / Vol;
+
+    Res_TruncError = node[iPoint]->GetResTruncError();
+    Residual = LinSysRes.GetBlock(iPoint);
+
+    tmp_time = -1.0*RK_TimeCoeff[iRKStep]*Delta;
+    tmp_func = -1.0*RK_FuncCoeff[iRKStep]*Delta;
+
+    if (!adjoint) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res = Residual[iVar] + Res_TruncError[iVar];
+        if (iRKStep < 3) {
+          /* Base Solution Update */
+          node[iPoint]->AddSolution(iVar, tmp_time*Res);
+
+          /* New Solution Update */
+          node[iPoint]->AddSolution_New(iVar, tmp_func*Res);
+        } else {
+          node[iPoint]->SetSolution(iVar, node[iPoint]->GetSolution_New(iVar) + tmp_func*Res);
+        }
+
+        AddRes_RMS(iVar, Res*Res);
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+      }
+    }
+
+  }
+
+  /*--- MPI solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+
+  /*--- Compute the root mean square residual ---*/
+
+  SetResidual_RMS(geometry, config);
+
+}
+
 void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   unsigned short iVar;
