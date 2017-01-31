@@ -34,7 +34,6 @@
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-#include <iostream> // XXX: Take this out after debugging
 #include <cmath> // std::abs
 
 /*--- Epsilon definition ---*/
@@ -1366,10 +1365,7 @@ void CGeometry::SetResolutionTensor(void) {
       coord_max[iDim] = node[iPoint]->GetCoord()[iDim];
       coord_min[iDim] = node[iPoint]->GetCoord()[iDim];
     }
-    std::cout << "Point #" << iPoint << std::endl;
-    std::cout << "Center: ";
-    std::cout << coord_min[0] << ", " << coord_min[1] << std::endl;
-    std::cout << "Points:" << std::endl;
+
     // Find the maximum and minimum x,y,z values:
     for (jPoint = 0; jPoint<node[iPoint]->GetnPoint(); jPoint++) {
       jGlobalIndex = node[iPoint]->GetPoint(jPoint);
@@ -1383,12 +1379,6 @@ void CGeometry::SetResolutionTensor(void) {
         }
       }
     }
-    std::cout << "Max and min:" << std::endl;
-    std::cout << coord_max[0] << ", " << coord_max[1] << std::endl;
-    std::cout << coord_min[0] << ", " << coord_min[1] << std::endl;
-    std::cout << "Center: ";
-    std::cout << node[iPoint]->GetCoord()[0] << ", ";
-    std::cout << node[iPoint]->GetCoord()[1] << std::endl;
 
     // Set the elements of the resolution tensor
     for (iDim = 0; iDim < nDim; iDim++) {
