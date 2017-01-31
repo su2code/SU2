@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -260,7 +260,7 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-	if (config->GetnObj()>1) {
+	if (config->GetnObj() > 1) {
 	  SPRINTF (buffer, "_combo.dat");
 	}
 	else {
@@ -3532,7 +3532,7 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-  if (config->GetnObj()>1) {
+  if (config->GetnObj() > 1) {
     SPRINTF (buffer, "_combo.dat");
   }
   else {

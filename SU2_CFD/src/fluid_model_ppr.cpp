@@ -2,7 +2,7 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,20 +34,20 @@
 #include "./../include/fluid_model.hpp"
 
 CPengRobinson::CPengRobinson() : CIdealGas() {
-	a= 0.0;
-	b =0.0;
-	k = 0.0;
-	TstarCrit = 0.0;
+  a= 0.0;
+  b =0.0;
+  k = 0.0;
+  TstarCrit = 0.0;
 }
 
 CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w) : CIdealGas(gamma, R) {
 
-	a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
-	b = 0.0778*Gas_Constant*Tstar/Pstar;
-	TstarCrit = Tstar;
-	Zed=1.0;
+  a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
+  b = 0.0778*Gas_Constant*Tstar/Pstar;
+  TstarCrit = Tstar;
+  Zed=1.0;
 
-	if (w <= 0.49)
+  if (w <= 0.49)
         k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
         else
         k = 0.379642 + 1.48503 * w - 0.164423 * w*w + 0.016666 * w*w*w;
@@ -60,42 +60,42 @@ CPengRobinson::~CPengRobinson(void) { }
 
 su2double CPengRobinson::alpha2(su2double T) {
 
-	return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
+  return ( 1 + k*(1 - sqrt(T/TstarCrit)))*( 1 + k*(1 - sqrt(T/TstarCrit)));
 }
 
 su2double CPengRobinson::T_v_h(su2double v, su2double h) {
-	su2double fv, A, B, C, T, d, atanh;
-	su2double sqrt2=sqrt(2.0);
+  su2double fv, A, B, C, T, d, atanh;
+  su2double sqrt2=sqrt(2.0);
 
-	d = (v*v+2*b*v-b*b);
+  d = (v*v+2*b*v-b*b);
   
   atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
   
-	fv = atanh;
+  fv = atanh;
 
-	A = Gas_Constant*(1 / Gamma_Minus_One + v/(v-b)) - a*v*k*k / (TstarCrit * d);
-	B = a*k*(k+1)/sqrt(TstarCrit) *( fv/(b*sqrt2) + 2*v/d );
-	C = h + a*(1+k)*(1+k)*(fv/(b*sqrt2) + v/d);
+  A = Gas_Constant*(1 / Gamma_Minus_One + v/(v-b)) - a*v*k*k / (TstarCrit * d);
+  B = a*k*(k+1)/sqrt(TstarCrit) *( fv/(b*sqrt2) + 2*v/d );
+  C = h + a*(1+k)*(1+k)*(fv/(b*sqrt2) + v/d);
 
-	T = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+  T = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
 
-	return T*T;
+  return T*T;
 }
 
 su2double CPengRobinson::T_P_rho(su2double P, su2double rho) {
-	su2double A, B, C, T, vb1, vb2;
-	vb1 = (1/rho -b);
-	vb2 = (1/rho/rho + 2*b/rho - b*b);
+  su2double A, B, C, T, vb1, vb2;
+  vb1 = (1/rho -b);
+  vb2 = (1/rho/rho + 2*b/rho - b*b);
 
-	A =   Gas_Constant/vb1 - a*k*k/TstarCrit/vb2;
+  A =   Gas_Constant/vb1 - a*k*k/TstarCrit/vb2;
 
-	B =   2*a*k*(k+1)/sqrt(TstarCrit)/vb2;
+  B =   2*a*k*(k+1)/sqrt(TstarCrit)/vb2;
 
-	C = - P - a*(1+k)*(1+k)/vb2;
+  C = - P - a*(1+k)*(1+k)/vb2;
 
-	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
-	T *= T;
-	return T;
+  T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
+  T *= T;
+  return T;
 }
 
 void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
@@ -151,124 +151,124 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 }
 
 void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
-	su2double toll= 1e-6;
-	su2double A, B, Z, DZ=1.0, F, F1, atanh;
-	su2double rho, fv, e;
-	su2double sqrt2=sqrt(2.0);
-	unsigned short nmax = 20, count=0;
+  su2double toll= 1e-6;
+  su2double A, B, Z, DZ=1.0, F, F1, atanh;
+  su2double rho, fv, e;
+  su2double sqrt2=sqrt(2.0);
+  unsigned short nmax = 20, count=0;
 
-	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
-	B= b*P/(T*Gas_Constant);
+  A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
+  B= b*P/(T*Gas_Constant);
 
   if (Zed > 0.1) Z = min(Zed, 0.99);
-		else Z=0.99;
+    else Z=0.99;
   
-	do {
-		F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
-		F1 = 3*Z*Z + 2*Z*(B - 1.0) + (A - 2*B - 3*B*B);
-		DZ = F/F1;
-		Z-= DZ;
-	} while(abs(DZ)>toll && count < nmax);
+  do {
+    F = Z*Z*Z + Z*Z*(B - 1.0) + Z*(A - 2*B - 3*B*B)  + (B*B*B + B*B - A*B);
+    F1 = 3*Z*Z + 2*Z*(B - 1.0) + (A - 2*B - 3*B*B);
+    DZ = F/F1;
+    Z-= DZ;
+  } while(abs(DZ)>toll && count < nmax);
 
-	if (count == nmax) {
-		cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;
-		cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<< endl;
-	}
-	// check if the solution is physical otherwise uses previous point  solution
-	if (Z <= 1.0001 && Z >= 0.05 && count < nmax)
-	    Zed = Z;
+  if (count == nmax) {
+    cout << "Warning Newton-Raphson exceed number of max iteration in PT"<< endl;
+    cout << "Compressibility factor  "<< Z << " would be substituted with "<< Zed<< endl;
+  }
+  // check if the solution is physical otherwise uses previous point  solution
+  if (Z <= 1.0001 && Z >= 0.05 && count < nmax)
+      Zed = Z;
 
 
-	rho= P/(Zed*Gas_Constant*T);
+  rho= P/(Zed*Gas_Constant*T);
   
   atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
   
-	fv = atanh;
+  fv = atanh;
 
   e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
 
-	SetTDState_rhoe(rho, e);
+  SetTDState_rhoe(rho, e);
 }
 
 void CPengRobinson::SetTDState_Prho (su2double P, su2double rho ) {
 
     SetEnergy_Prho(P, rho);
 
-	SetTDState_rhoe(rho, StaticEnergy);
+  SetTDState_rhoe(rho, StaticEnergy);
 
 }
 
 void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
-	su2double T, fv, sqrt2=sqrt(2.0), A;
-	su2double f, v, atanh;
-	su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
-	su2double toll = 1e-9, FACTOR=0.2;
-	su2double cons_s, cons_h;
-	unsigned short countrtb=0, NTRY=100, ITMAX=100;
+  su2double T, fv, sqrt2=sqrt(2.0), A;
+  su2double f, v, atanh;
+  su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
+  su2double toll = 1e-9, FACTOR=0.2;
+  su2double cons_s, cons_h;
+  unsigned short countrtb=0, NTRY=100, ITMAX=100;
 
-	A = Gas_Constant / Gamma_Minus_One;
-	T = h*Gamma_Minus_One/Gas_Constant/Gamma;
-	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
-
-
-	x1 = 0.2*v;
-	x2 = 0.35*v;
+  A = Gas_Constant / Gamma_Minus_One;
+  T = h*Gamma_Minus_One/Gas_Constant/Gamma;
+  v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
 
 
+    x1 = 0.2*v;
+    x2 = 0.35*v;
 
-	T = T_v_h(x1, h);
+
+
+  T = T_v_h(x1, h);
   
   atanh = (log(1.0+( b*sqrt2 / (x1 + b))) - log(1.0-( b*sqrt2 / (x1 + b))))/2.0;
-	fv = atanh;
+  fv = atanh;
   
-	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-	T = T_v_h(x2, h);
+  fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  T = T_v_h(x2, h);
   
   atanh = (log(1.0+( b*sqrt2 / (x2 + b))) - log(1.0-( b*sqrt2 / (x2 + b))))/2.0;
-	fv = atanh;
+  fv = atanh;
   
-	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
-	// zbrac algorithm NR
+  // zbrac algorithm NR
 
-	for (int j=1; j<=NTRY; j++) {
-		if (fx1*fx2 > 0.0) {
-			if (fabs(fx1) < fabs(fx2)) {
-				x1 += FACTOR*(x1-x2);
-				T = T_v_h(x1, h);
+  for (int j=1; j<=NTRY; j++) {
+    if (fx1*fx2 > 0.0) {
+      if (fabs(fx1) < fabs(fx2)) {
+        x1 += FACTOR*(x1-x2);
+        T = T_v_h(x1, h);
         atanh = (log(1.0+( b*sqrt2/(x1 + b))) - log(1.0-( b*sqrt2/(x1 + b))))/2.0;
-				fv = atanh;
-				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-			} else {
-				x2 += FACTOR*(x2-x1);
-				T = T_v_h(x2, h);
+        fv = atanh;
+        fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+      } else {
+        x2 += FACTOR*(x2-x1);
+        T = T_v_h(x2, h);
         atanh = (log(1.0+( b*sqrt2/(x2 + b))) - log(1.0-( b*sqrt2/(x2 + b))))/2.0;
         fv = atanh;
-				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-			}
-		}
-	}
+        fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+      }
+    }
+  }
 
-	// rtbis algorithm NR
+  // rtbis algorithm NR
 
-	f=fx1;
-	fmid=fx2;
-	if (f*fmid >= 0.0) {
-		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
-		SetTDState_rhoT(Density, Temperature);
-	}
-	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
-	do{
-		xmid=rtb+(dx *= 0.5);
-		T = T_v_h(xmid, h);
+  f=fx1;
+  fmid=fx2;
+  if (f*fmid >= 0.0) {
+    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+    SetTDState_rhoT(Density, Temperature);
+  }
+  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  do{
+    xmid=rtb+(dx *= 0.5);
+    T = T_v_h(xmid, h);
     atanh = (log(1.0+( b* sqrt2/(xmid + b))) - log(1.0-( b* sqrt2/(xmid + b))))/2.0;
-		fv = atanh;
-		fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+    fv = atanh;
+    fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
-		if (fmid <= 0.0) rtb=xmid;
-		countrtb++;
-	}while(abs(fmid) > toll && countrtb<ITMAX);
+    if (fmid <= 0.0) rtb=xmid;
+    countrtb++;
+  }while(abs(fmid) > toll && countrtb<ITMAX);
 
 	v = xmid;
 	if (countrtb==ITMAX) {
@@ -276,7 +276,6 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 		cout << countrtb <<endl;
 
 	}
-
 	if (v!=v) {
 		cout <<"not physical solution found, h and s input " << h << " "<< s << endl;
 		SetTDState_rhoT(Density, Temperature);
@@ -319,12 +318,12 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 }
 
 void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
-	su2double fv, e, atanh;
+  su2double fv, e, atanh;
 
   atanh = (log(1.0+( rho * b * sqrt(2.0)/(1 + rho*b))) - log(1.0-( rho * b * sqrt(2.0)/(1 + rho*b))))/2.0;
-	fv = atanh;
-	e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * fv;
-	SetTDState_rhoe(rho, e);
+  fv = atanh;
+  e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * fv;
+  SetTDState_rhoe(rho, e);
 }
 
 void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
@@ -334,78 +333,78 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 	su2double toll = 1e-5, FACTOR=0.2;
 	unsigned short count=0, NTRY=100, ITMAX=100;
 
-	A = Gas_Constant / Gamma_Minus_One;
-	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
-	v = (T*Gas_Constant)/P;
+  A = Gas_Constant / Gamma_Minus_One;
+  T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+  v = (T*Gas_Constant)/P;
 
-	if(Zed<0.9999) {
-		x1 = Zed*v;
-		x2 = v;
+  if(Zed<0.9999) {
+    x1 = Zed*v;
+    x2 = v;
 
-	}else {
-		x1 = 0.2*v;
-		x2 = v;
-	}
-	T = T_P_rho(P,1.0/x1);
+  }else {
+    x1 = 0.2*v;
+    x2 = v;
+  }
+  T = T_P_rho(P,1.0/x1);
   
   atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
   fv = atanh;
   
-	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-	T = T_P_rho(P,1.0/x2);
+  fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  T = T_P_rho(P,1.0/x2);
   
   atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
   fv = atanh;
 
-	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+  fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
-	// zbrac algorithm NR
+  // zbrac algorithm NR
 
-	for (int j=1;j<=NTRY;j++) {
-		if (fx1*fx2 > 0.0) {
-			if (fabs(fx1) < fabs(fx2)) {
-				x1 += FACTOR*(x1-x2);
-				T = T_P_rho(P,1.0/x1);
+  for (int j=1;j<=NTRY;j++) {
+    if (fx1*fx2 > 0.0) {
+      if (fabs(fx1) < fabs(fx2)) {
+        x1 += FACTOR*(x1-x2);
+        T = T_P_rho(P,1.0/x1);
         
         atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
         fv = atanh;
         
-				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-			}else {
-				T = T_P_rho(P,1.0/x2);
+        fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+      }else {
+        T = T_P_rho(P,1.0/x2);
         
         atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
         fv = atanh;
 
-				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-				}
-		}
-	}
+        fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+        }
+    }
+  }
 
 
-	// rtbis algorithm NR
+  // rtbis algorithm NR
 
-	f=fx1;
-	fmid=fx2;
-	if (f*fmid >= 0.0) {
-		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
-		SetTDState_rhoT(Density, Temperature);
-	}
-	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
-	do{
-		xmid=rtb+(dx *= 0.5);
-		T = T_P_rho(P,1.0/xmid);
+  f=fx1;
+  fmid=fx2;
+  if (f*fmid >= 0.0) {
+    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+    SetTDState_rhoT(Density, Temperature);
+  }
+  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  do{
+    xmid=rtb+(dx *= 0.5);
+    T = T_P_rho(P,1.0/xmid);
     
     atanh = (log(1.0 + ( b*sqrt2 / (xmid + b) )) - log(1.0-( b*sqrt2 / (xmid + b) )))/2.0;
     fv = atanh;
     
-		fmid = A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-		if (fmid <= 0.0) rtb=xmid;
-		count++;
-		}while(abs(fmid) > toll && count<ITMAX);
+    fmid = A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+    if (fmid <= 0.0) rtb=xmid;
+    count++;
+    }while(abs(fmid) > toll && count<ITMAX);
 
-		if(count==ITMAX) {
-			cout <<"Too many bisections in rtbis" << endl;
+    if(count==ITMAX) {
+      cout <<"Too many bisections in rtbis" << endl;
 		}
 
 	rho = 1.0/xmid;

@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,12 +91,12 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
-  bool fsi = config->GetFSI_Simulation();												// FSI simulation
-  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool fsi = config->GetFSI_Simulation();                        // FSI simulation
+  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
   
-  bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+  bool body_forces = config->GetDeadLoad();  // Body forces (dead loads).
   bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   
   int rank = MASTER_NODE;
@@ -147,15 +147,15 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     }
   }
   
-  node          	  = new CVariable*[nPoint];
+  node              = new CVariable*[nPoint];
   
   GradN_X = new su2double [nDim];
   GradN_x = new su2double [nDim];
   
-  Total_CFEA			= 0.0;
-  WAitken_Dyn      	= 0.0;
-  WAitken_Dyn_tn1  	= 0.0;
-  loadIncrement 		= 0.0;
+  Total_CFEA      = 0.0;
+  WAitken_Dyn        = 0.0;
+  WAitken_Dyn_tn1    = 0.0;
+  loadIncrement     = 0.0;
   
   SetFSI_ConvValue(0,0.0);
   SetFSI_ConvValue(1,0.0);
@@ -240,12 +240,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
     
-    long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-    
-    /*--- First, set all indices to a negative value by default ---*/
-    
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-      Global2Local[iPoint] = -1;
+    map<unsigned long,unsigned long> Global2Local;
+    map<unsigned long,unsigned long>::const_iterator MI;
     
     /*--- Now fill array with the transform values only for local points ---*/
     
@@ -269,13 +265,13 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       istringstream point_line(text_line);
       
       /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
+       on the current processor, we will load and instantiate the vars. ---*/
       
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      if (iPoint_Local >= 0) {
+      MI = Global2Local.find(iPoint_Global);
+      if (MI != Global2Local.end()) {
+        
+        iPoint_Local = Global2Local[iPoint_Global];
+        
         if (dynamic) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
@@ -326,10 +322,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     /*--- Close the restart file ---*/
     
     restart_file.close();
-    
-    /*--- Free memory needed for the transformation ---*/
-    
-    delete [] Global2Local;
     
   }
   
@@ -534,7 +526,7 @@ void CFEM_ElasticitySolver::Set_MPI_Solution(CGeometry *geometry, CConfig *confi
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
   
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   
   unsigned short nSolVar;
   
@@ -752,7 +744,7 @@ void CFEM_ElasticitySolver::Set_MPI_Solution_DispOnly(CGeometry *geometry, CConf
 #endif
       
       nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nVar;     	  nBufferR_Vector = nVertexR*nVar;
+      nBufferS_Vector = nVertexS*nVar;         nBufferR_Vector = nVertexR*nVar;
       
       /*--- Allocate Receive and send buffers  ---*/
       Buffer_Receive_U = new su2double [nBufferR_Vector];
@@ -1018,12 +1010,8 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
   
-  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  
-  /*--- First, set all indices to a negative value by default ---*/
-  
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-    Global2Local[iPoint] = -1;
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
   
   /*--- Now fill array with the transform values only for local points ---*/
   
@@ -1044,13 +1032,12 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
     istringstream point_line(text_line);
     
     /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1.
-     Otherwise, the local index for this node on the current processor
-     will be returned and used to instantiate the vars. ---*/
+     on the current processor, we will load and instantiate the vars. ---*/
     
-    iPoint_Local = Global2Local[iPoint_Global];
-    
-    if (iPoint_Local >= 0) {
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      
+      iPoint_Local = Global2Local[iPoint_Global];
       
       if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> index;
       if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> index;
@@ -1091,10 +1078,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   
   prestretch_file.close();
   
-  /*--- Free memory needed for the transformation ---*/
-  
-  delete [] Global2Local;
-  
 }
 
 
@@ -1102,18 +1085,18 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
   
   
   unsigned long iPoint;
-  bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
-  bool first_iter = (config->GetIntIter() == 0);													// Checks if it is the first iteration
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
-  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
-  bool restart = config->GetRestart();												// Restart analysis
+  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
+  bool first_iter = (config->GetIntIter() == 0);                          // Checks if it is the first iteration
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
+  bool restart = config->GetRestart();                        // Restart analysis
   bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter()); // Initial calculation for restart
   
-  bool incremental_load = config->GetIncrementalLoad();								// If an incremental load is applied
+  bool incremental_load = config->GetIncrementalLoad();                // If an incremental load is applied
   
-  bool body_forces = config->GetDeadLoad();											// Body forces (dead loads).
+  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
   /*--- Set vector entries to zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -1176,15 +1159,15 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
    * iteration.
    */
   
-  if ((nonlinear_analysis) && ((newton_raphson) || (first_iter)))	{
+  if ((nonlinear_analysis) && ((newton_raphson) || (first_iter)))  {
     Jacobian.SetValZero();
-    //		StiffMatrix.SetValZero();
+    //    StiffMatrix.SetValZero();
   }
   
   /*
    * Some external forces may be considered constant over the time step.
    */
-  if (first_iter)	{
+  if (first_iter)  {
     for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_SurfaceLoad_Res();
   }
   
@@ -1218,7 +1201,7 @@ void CFEM_ElasticitySolver::SetTime_Step(CGeometry *geometry, CSolver **solver_c
 void CFEM_ElasticitySolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
   
   unsigned long iPoint, nPoint;
-  bool incremental_load = config->GetIncrementalLoad();							// If an incremental load is applied
+  bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
   
   nPoint = geometry[MESH_0]->GetnPoint();
   
@@ -1234,7 +1217,7 @@ void CFEM_ElasticitySolver::SetInitialCondition(CGeometry **geometry, CSolver **
 void CFEM_ElasticitySolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
   
   unsigned long iPoint, nPoint;
-  bool incremental_load = config->GetIncrementalLoad();							// If an incremental load is applied
+  bool incremental_load = config->GetIncrementalLoad();              // If an incremental load is applied
   
   nPoint = geometry[MESH_0]->GetnPoint();
   
@@ -1685,8 +1668,8 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
     unsigned long iVertex;
     su2double val_Reaction;
     
-    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
     
     if (!dynamic) {
       /*--- Loop over all the markers  ---*/
@@ -1737,9 +1720,9 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
           if (linear_analysis) {
             for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
               for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
-                a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
-                a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+                Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
+                a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
+                a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
               }
               TimeRes_Aux.SetBlock(iPoint, Residual);
             }
@@ -1747,10 +1730,10 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
           else if (nonlinear_analysis) {
             for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
               for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
-                - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
-                + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)		//a2*U'(t)
-                + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+                Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+                - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+                + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+                + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
               }
               TimeRes_Aux.SetBlock(iPoint, Residual);
             }
@@ -1899,7 +1882,7 @@ void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
       /*--- Needs to be updated if accounting for structural damping ---*/
       
       //      su2double beta = config->Get_Int_Coeffs(0);
-      //      //	su2double gamma =  config->Get_Int_Coeffs(1);
+      //      //  su2double gamma =  config->Get_Int_Coeffs(1);
       //      su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
       //
       //      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f)) ;
@@ -2031,7 +2014,7 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index;
   
   bool first_iter = (config->GetIntIter() == 0);
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);		// Nonlinear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);    // Nonlinear analysis.
   
   su2double solNorm = 0.0, solNorm_recv = 0.0;
   
@@ -2049,9 +2032,9 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
     /*--- ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) ----*/
     
     if (first_iter) {
-      Conv_Ref[0] = 1.0;											// Position for the norm of the solution
-      Conv_Ref[1] = max(LinSysRes.norm(), EPS);					// Position for the norm of the residual
-      Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);		// Position for the energy tolerance
+      Conv_Ref[0] = 1.0;                      // Position for the norm of the solution
+      Conv_Ref[1] = max(LinSysRes.norm(), EPS);          // Position for the norm of the residual
+      Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);    // Position for the energy tolerance
       
       /*--- Make sure the computation runs at least 2 iterations ---*/
       Conv_Check[0] = 1.0;
@@ -2075,11 +2058,11 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
       solNorm_recv         = solNorm;
 #endif
       
-      Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);						// Norm of the solution vector
+      Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);            // Norm of the solution vector
       
-      Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];					// Norm of the delta-solution vector
-      Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];					// Norm of the residual
-      Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];	// Position for the energy tolerance
+      Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];          // Norm of the delta-solution vector
+      Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];          // Norm of the residual
+      Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
       
     }
     
@@ -2495,9 +2478,9 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
     Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
     if (nDim == 3) {
       
-      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
+      Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);  Coord_2 = geometry->node[Point_2]->GetCoord();
       if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL) {
-        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
+        Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);  Coord_3 = geometry->node[Point_3]->GetCoord();
       }
       
     }
@@ -2509,8 +2492,8 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
       
       Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
-      //			Normal_Elem[0] =   a[1];
-      //			Normal_Elem[1] = -(a[0]);
+      //      Normal_Elem[0] =   a[1];
+      //      Normal_Elem[1] = -(a[0]);
       
     }
     
@@ -2605,18 +2588,18 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
+  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetIntIter() == 0);
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
-  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();												// FSI simulation.
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
+  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
   
-  bool body_forces = config->GetDeadLoad();											// Body forces (dead loads).
+  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
-  bool restart = config->GetRestart();													// Restart solution
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
+  bool restart = config->GetRestart();                          // Restart solution
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
   
   bool incremental_load = config->GetIncrementalLoad();
   
@@ -2694,9 +2677,9 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
     if (linear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
-          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
-          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
+          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
+          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
         }
         TimeRes_Aux.SetBlock(iPoint, Residual);
       }
@@ -2704,10 +2687,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
     else if (nonlinear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
-          - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
-          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)		//a2*U'(t)
-          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
         }
         TimeRes_Aux.SetBlock(iPoint, Residual);
       }
@@ -2782,9 +2765,9 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
-  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
+  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
+  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);          // Dynamic simulations.
   
   /*--- Update solution ---*/
   
@@ -2798,7 +2781,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
       
       if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
-      if (nonlinear)	node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
     }
     
@@ -2923,18 +2906,18 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool initial_calc = (config->GetExtIter() == 0);									// Checks if it is the first calculation.
+  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetIntIter() == 0);
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
-  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();												// FSI simulation.
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
+  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
   
-  bool body_forces = config->GetDeadLoad();											// Body forces (dead loads).
+  bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
-  bool restart = config->GetRestart();													// Restart solution
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
+  bool restart = config->GetRestart();                          // Restart solution
+  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
   
   su2double alpha_f = config->Get_Int_Coeffs(2);
   
@@ -3015,9 +2998,9 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
     if (linear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+		//a0*U(t)
-          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+	//a2*U'(t)
-          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
+          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
+          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
         }
         TimeRes_Aux.SetBlock(iPoint, Residual);
       }
@@ -3025,10 +3008,10 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
     else if (nonlinear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)  			//a0*U(t)
-          - a_dt[0]*node[iPoint]->GetSolution(iVar) 					//a0*U(t+dt)(k-1)
-          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)		//a2*U'(t)
-          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
+          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
         }
         TimeRes_Aux.SetBlock(iPoint, Residual);
       }
@@ -3103,8 +3086,8 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSo
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
-  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
+  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
   
   /*--- Update solution ---*/
   
@@ -3118,7 +3101,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSo
       
       if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
-      if (nonlinear)	node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
     }
     
@@ -3244,11 +3227,11 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
                                         CGeometry **flow_geometry, CConfig *fea_config,
                                         CConfig *flow_config, CNumerics *fea_numerics) {
   
-  unsigned short nMarkerFSI, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
-  unsigned short iMarkerFSI, iMarkerFlow;		// Variables for iteration over markers
+  unsigned short nMarkerFSI, nMarkerFlow;    // Number of markers on FSI problem, FEA and Flow side
+  unsigned short iMarkerFSI, iMarkerFlow;    // Variables for iteration over markers
   int Marker_Flow = -1;
   
-  unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
+  unsigned long iVertex, iPoint;                // Variables for iteration over vertices and nodes
   
   unsigned short iDim, jDim;
   
@@ -3301,7 +3284,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   /*--- Number of markers on the FSI interface ---*/
   
   nMarkerFSI = (fea_config->GetMarker_n_FSIinterface())/2;
-  nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on Fluid side
+  nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();    // Retrieve total number of markers on Fluid side
   
   // Parameters for the calculations
   // Pn: Pressure
@@ -3317,11 +3300,11 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   su2double *Normal_Flow;
   
   su2double *tn_f;
-  tn_f 				= new su2double [nVar];			// Fluid traction
+  tn_f         = new su2double [nVar];      // Fluid traction
   
 #ifndef HAVE_MPI
   
-  unsigned long nVertexFlow;						// Number of vertices on FEA and Flow side
+  unsigned long nVertexFlow;            // Number of vertices on FEA and Flow side
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->Clear_FlowTraction();
@@ -3358,13 +3341,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
       // Retrieve the values of pressure, viscosity and density
       if (incompressible) {
         
-        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
         Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
         
         if (viscous_flow) {
           
           Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
         }
       }
       else if (compressible) {
@@ -3441,7 +3424,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   
   int iProcessor, nProcessor = 0;
   
-  unsigned short nMarkerStruct, iMarkerStruct;		// Variables for iteration over markers
+  unsigned short nMarkerStruct, iMarkerStruct;    // Variables for iteration over markers
   int Marker_Struct = -1;
   
   /*--- Number of markers on the FSI interface ---*/
@@ -3515,8 +3498,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
       }
     }
     
-    Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;							    // Retrieve total number of vertices on FEA marker
-    Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;								    // Retrieve total number of vertices on Flow marker
+    Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;                  // Retrieve total number of vertices on FEA marker
+    Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;                    // Retrieve total number of vertices on Flow marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexStruct = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     if (rank == MASTER_NODE) Buffer_Recv_nVertexFlow = new unsigned long[size];     // Allocate memory to receive how many vertices are on each rank on the fluid side
     
@@ -3595,13 +3578,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
         // Retrieve the values of pressure, viscosity and density
         if (incompressible) {
           
-          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
           Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
           
           if (viscous_flow) {
             
             Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
           }
         }
         else if (compressible) {
@@ -3666,32 +3649,32 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     SU2_MPI::Gather(Buffer_Send_FlowTraction, nBuffer_FlowTraction, MPI_DOUBLE, Buffer_Recv_FlowTraction, nBuffer_FlowTraction, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
     
-    //		if (rank == MASTER_NODE) {
-    //			cout << endl << "-----------------------------------------------------------" << endl;
-    //			cout << "For tag " << iMarkerFSI << ":" << endl;
-    //			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    //				cout << "The processor " << iProcessor << " has " << Buffer_Recv_nVertexStruct[iProcessor] << " nodes on the structural side and ";
-    //				cout << Buffer_Recv_nVertexFlow[iProcessor] << " nodes on the fluid side " << endl;
-    //			}
-    //			cout << "The max number of vertices is " << MaxLocalVertexStruct << " on the structural side and ";
-    //			cout << MaxLocalVertexFlow << " on the fluid side." << endl;
+    //    if (rank == MASTER_NODE) {
+    //      cout << endl << "-----------------------------------------------------------" << endl;
+    //      cout << "For tag " << iMarkerFSI << ":" << endl;
+    //      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    //        cout << "The processor " << iProcessor << " has " << Buffer_Recv_nVertexStruct[iProcessor] << " nodes on the structural side and ";
+    //        cout << Buffer_Recv_nVertexFlow[iProcessor] << " nodes on the fluid side " << endl;
+    //      }
+    //      cout << "The max number of vertices is " << MaxLocalVertexStruct << " on the structural side and ";
+    //      cout << MaxLocalVertexFlow << " on the fluid side." << endl;
     //
-    //			cout << "---------------- Check received buffers ---------------------" << endl;
-    //			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    //				long initialIndex, initialIndex2;
-    //				initialIndex = iProcessor*nBuffer_FlowTraction;
-    //				initialIndex2 = iProcessor*nBuffer_DonorIndices;
-    //				for (long iCheck = 0; iCheck < Buffer_Recv_nVertexStruct[iProcessor]; iCheck++) {
-    //					cout << "From processor " << iProcessor << " we get coordinates (";
-    //						for (iDim = 0; iDim < nDim; iDim++)
-    //							cout << Buffer_Recv_FlowTraction[initialIndex+iCheck*nDim+iDim] << ",";
-    //					cout << "), the donor index for the flow " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2] ;
-    //					cout << " and the donor processor " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2+1] << endl;
+    //      cout << "---------------- Check received buffers ---------------------" << endl;
+    //      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    //        long initialIndex, initialIndex2;
+    //        initialIndex = iProcessor*nBuffer_FlowTraction;
+    //        initialIndex2 = iProcessor*nBuffer_DonorIndices;
+    //        for (long iCheck = 0; iCheck < Buffer_Recv_nVertexStruct[iProcessor]; iCheck++) {
+    //          cout << "From processor " << iProcessor << " we get coordinates (";
+    //            for (iDim = 0; iDim < nDim; iDim++)
+    //              cout << Buffer_Recv_FlowTraction[initialIndex+iCheck*nDim+iDim] << ",";
+    //          cout << "), the donor index for the flow " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2] ;
+    //          cout << " and the donor processor " << Buffer_Recv_DonorIndices[initialIndex2+iCheck*2+1] << endl;
     //
-    //				}
-    //			}
+    //        }
+    //      }
     //
-    //		}
+    //    }
     
     /*--- Counter to determine where in the array we have to set the information ---*/
     long *Counter_Processor_Struct = NULL;
@@ -3768,21 +3751,21 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
         
       }
       
-      //			cout << "---------------- Check send buffers ---------------------" << endl;
+      //      cout << "---------------- Check send buffers ---------------------" << endl;
       //
-      //			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      //				long initialIndex, initialIndex2;
-      //				initialIndex = iProcessor*nBuffer_StructTraction;
-      //				initialIndex2 = iProcessor*nBuffer_SetIndex;
-      //				for (long iCheck = 0; iCheck < Buffer_Recv_nVertexFlow[iProcessor]; iCheck++) {
-      //					cout << "Processor " << iProcessor << " will receive the node " ;
-      //					cout << Buffer_Send_SetIndex[initialIndex2+iCheck] << " which corresponds to the coordinates ";
-      //					for (iDim = 0; iDim < nDim; iDim++)
-      //						cout << "x" << iDim << "=" << Buffer_Send_StructTraction[initialIndex + iCheck*nDim + iDim] << ", ";
-      //					cout << endl;
-      //				}
+      //      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      //        long initialIndex, initialIndex2;
+      //        initialIndex = iProcessor*nBuffer_StructTraction;
+      //        initialIndex2 = iProcessor*nBuffer_SetIndex;
+      //        for (long iCheck = 0; iCheck < Buffer_Recv_nVertexFlow[iProcessor]; iCheck++) {
+      //          cout << "Processor " << iProcessor << " will receive the node " ;
+      //          cout << Buffer_Send_SetIndex[initialIndex2+iCheck] << " which corresponds to the coordinates ";
+      //          for (iDim = 0; iDim < nDim; iDim++)
+      //            cout << "x" << iDim << "=" << Buffer_Send_StructTraction[initialIndex + iCheck*nDim + iDim] << ", ";
+      //          cout << endl;
+      //        }
       //
-      //			}
+      //      }
       
     }
     
