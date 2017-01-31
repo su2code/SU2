@@ -10954,6 +10954,8 @@ private:
   unsigned short nMarker;
   int nFEA_Terms;
   
+  bool element_based;             /*!< \brief Bool to determine if an element-based file is used. */
+
   su2double *GradN_X,
   *GradN_x;
   
