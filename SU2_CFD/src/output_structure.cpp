@@ -5399,7 +5399,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEM(Total)"<<  endl;
             }
             else if (nonlinear_analysis) {
-              cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                switch (config[val_iZone]->GetResidual_Criteria_FEM()) {
+                  case RESFEM_RELATIVE:
+                    cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                    break;
+                  case RESFEM_ABSOLUTE:
+                    cout << "    Res[UTOL-A]" << "    Res[RTOL-A]" << "    Res[ETOL-A]"  << "   CFEM(Total)"<<  endl;
+                    break;
+                  default:
+                    cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                    break;
+                }
             }
            break;
 

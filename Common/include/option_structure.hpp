@@ -1078,6 +1078,19 @@ static const map<string, ENUM_RESIDUAL> Residual_Map = CCreateMap<string, ENUM_R
 ("RHO_ENERGY", RHO_ENERGY_RESIDUAL);
 
 /*!
+ * \brief types of residual criteria for structural problems
+ */
+
+enum ENUM_RESFEM {
+  RESFEM_RELATIVE = 1,         /*!< \brief Relative criteria: Res/Res0. */
+  RESFEM_ABSOLUTE = 2          /*!< \brief Absolute criteria: abs(Res). */
+};
+
+static const map<string, ENUM_RESFEM> ResFem_Map = CCreateMap<string, ENUM_RESFEM>
+("RELATIVE", RESFEM_RELATIVE)
+("ABSOLUTE", RESFEM_ABSOLUTE);
+
+/*!
  * \brief types of sensitivities to compute
  */
 enum ENUM_SENS {
