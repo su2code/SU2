@@ -38,7 +38,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
 	CFluidModel *FluidModel;
 	unsigned short nDim = geometry->GetnDim();
-  unsigned short iMarkerTP, iSpan, iDim, iStage;
+  unsigned short iMarkerTP, iSpan, iDim, iStage, iBlade;
 	unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
   FluidModel = solver_container->GetFluidModel();
@@ -207,7 +207,6 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
 
 	/*--- Compute performance for each stage ---*/
-
 	for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
 
 		EulerianWork[nBladesRow + nStages][iSpan]           = 0.0;
@@ -229,6 +228,28 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			MassFlowOut[nBladesRow + iStage][iSpan]           = MassFlowOut[iStage*2 + 1][iSpan];
 			EntropyGen[nBladesRow + iStage][iSpan]            = EntropyGen[iStage*2 + 1][iSpan] + EntropyGen[iStage*2][iSpan];
 
+		}
+	}
+
+	/*---Compute turbo performance for full machine---*/
+	for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
+		FluidModel->SetTDState_Ps(PressureOut[nBladesRow-1][iSpan], EntropyIn[0][iSpan]);
+		EnthalpyOutIs[nBladesRow + nStages][iSpan]          = FluidModel->GetStaticEnergy() + PressureOut[nBladesRow-1][iSpan]/FluidModel->GetDensity();
+		FluidModel->SetTDState_Prho(PressureOut[nBladesRow-1][iSpan], DensityOut[nBladesRow-1][iSpan]);
+		absVel2 = 0.0;
+		for (iDim = 0; iDim<nDim;iDim++) absVel2 += MachOut[nBladesRow-1][iSpan][iDim]*MachOut[nBladesRow-1][iSpan][iDim];
+		absVel2 *= FluidModel->GetSoundSpeed2();
+		TotalEnthalpyOutIs[nBladesRow + nStages][iSpan]     = EnthalpyOutIs[nBladesRow + nStages][iSpan] + 0.5*absVel2;
+
+		TotalTotalEfficiency[nBladesRow + nStages][iSpan]   = (TotalEnthalpyIn[0][iSpan] - TotalEnthalpyOut[nBladesRow-1][iSpan])/(TotalEnthalpyIn[0][iSpan] - TotalEnthalpyOutIs[nBladesRow + nStages][iSpan]);
+		TotalStaticEfficiency[nBladesRow +nStages][iSpan]   = (TotalEnthalpyIn[0][iSpan] - TotalEnthalpyOut[nBladesRow-1][iSpan])/(TotalEnthalpyIn[0][iSpan] - EnthalpyOutIs[nBladesRow + nStages][iSpan]);
+		PressureRatio[nBladesRow + nStages][iSpan]          = PressureRatio[0][iSpan]*PressureOut[0][iSpan]/PressureOut[nBladesRow-1][iSpan];
+		MassFlowIn[nBladesRow + nStages][iSpan]             = MassFlowIn[0][iSpan];
+		MassFlowOut[nBladesRow + nStages][iSpan]            = MassFlowOut[nBladesRow-1][iSpan];
+
+		EntropyGen[nBladesRow + nStages][iSpan]     = 0.0;
+		for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){
+			EntropyGen[nBladesRow + nStages][iSpan]  += EntropyGen[iBlade][iSpan];
 		}
 	}
 
