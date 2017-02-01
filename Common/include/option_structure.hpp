@@ -610,13 +610,13 @@ enum ENUM_LIMITER {
   VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
   BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
-  SOLID_WALL_DISTANCE = 3       /*!< \brief Slope limiter using wall distance. */
+  WALL_DIST = 3       /*!< \brief Slope limiter using wall distance. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES)
-("WALL_DISTANCE", SOLID_WALL_DISTANCE);
+("WALL_DIST", WALL_DIST);
 
 /*!
  * \brief types of turbulent models
@@ -1363,11 +1363,13 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
   INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+  DEF_WALL_DISTANCE = 2,			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+  WALL_DISTANCE = 3			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
 ("INVERSE_VOLUME", INVERSE_VOLUME)
+("DEF_WALL_DISTANCE", DEF_WALL_DISTANCE)
 ("WALL_DISTANCE", WALL_DISTANCE);
 
 /*!

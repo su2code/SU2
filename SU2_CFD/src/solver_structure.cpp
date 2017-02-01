@@ -1127,7 +1127,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   /*--- Sharp edges limiter ---*/
   
-  if (config->GetKind_SlopeLimit() == SOLID_WALL_DISTANCE) {
+  if (config->GetKind_SlopeLimit() == WALL_DIST) {
     
     /*-- Get limiter parameters from the configuration file ---*/
     
