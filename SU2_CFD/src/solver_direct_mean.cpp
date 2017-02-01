@@ -15287,6 +15287,12 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalMassVelocity[iDim] += Area*(Density*VelNormal )*Velocity[iDim];
+
+							  TotalAreaPressure += Area*Pressure;
+							  TotalAreaDensity  += Area*Density;
+							  for (iDim = 0; iDim < nDim; iDim++)
+								  TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+
                 break;
 
 
@@ -15380,10 +15386,18 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
               break;
 
             case MASSFLUX:
+            	if (abs(TotalFluxes[0])<(10.0e-9)*TotalAreaDensity) {
+            		AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
+            		AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
+            		for (iDim = 0; iDim < nDim; iDim++)
+            			AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+            	}else{
+
               AverageDensity[iMarker][iSpan] = TotalMassDensity / TotalFluxes[0];
               AveragePressure[iMarker][iSpan] = TotalMassPressure / TotalFluxes[0];
               for (iDim = 0; iDim < nDim; iDim++)
                 AverageVelocity[iMarker][iSpan][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
+            	}
               break;
 
             case MIXEDOUT:
@@ -15641,6 +15655,11 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalMassVelocity[iDim] += Area*(Density*VelNormal )*Velocity[iDim];
+
+                TotalAreaPressure += Area*Pressure;
+                TotalAreaDensity  += Area*Density;
+                for (iDim = 0; iDim < nDim; iDim++)
+                	TotalAreaVelocity[iDim] += Area*Velocity[iDim];
                 break;
 
 
@@ -15731,10 +15750,17 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
             break;
 
           case MASSFLUX:
-            AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalFluxes[0];
-            AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalFluxes[0];
-            for (iDim = 0; iDim < nDim; iDim++)
-              AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
+          	if (abs(TotalFluxes[0])<(10.0e-9)*TotalAreaDensity) {
+          		AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
+          		AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
+          		for (iDim = 0; iDim < nDim; iDim++)
+          			AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+          	}else{
+          		AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalFluxes[0];
+          		AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalFluxes[0];
+          		for (iDim = 0; iDim < nDim; iDim++)
+          			AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
+          	}
             break;
 
           case MIXEDOUT:
