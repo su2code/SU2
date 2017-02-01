@@ -601,12 +601,14 @@ void CDriver::Geometrical_Preprocessing() {
     geometry_container[iZone][MESH_0]->ComputeSurf_Curvature(config_container[iZone]);
 
     /*--- Create turbovertex structure ---*/
-		 if (config_container[iZone]->GetBoolTurbomachinery()){
-			geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
-			geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
-			geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
-			geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
-		 }
+    if (config_container[iZone]->GetBoolTurbomachinery()){
+      if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
+
+    	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
+    	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
+    	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
+    	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
+    }
 
 
     /*--- Check for periodicity and disable MG if necessary. ---*/
