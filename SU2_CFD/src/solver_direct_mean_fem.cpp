@@ -5688,6 +5688,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
                 of the basis functions. ---*/
+//#pragma simd private(l)
           for(unsigned short k=0; k<nDim; ++k) {
             derCar[k] = 0.0;
             for(unsigned short l=0; l<nDim; ++l)
@@ -5728,6 +5729,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
                 of the basis functions. ---*/
+//#pragma simd private(l)
           for(unsigned short k=0; k<nDim; ++k) {
             derCar[k] = 0.0;
             for(unsigned short l=0; l<nDim; ++l)
