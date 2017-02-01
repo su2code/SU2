@@ -180,7 +180,18 @@ public:
 	 * \param[in] Vertex_Target - Index of the target vertex.
 	 * \param[in] Point_Target - Index of the target point.
 	 */
-	virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone);
+	virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,  unsigned short donorZone);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 * \param[in] Marker_Target - Index of the target marker.
+	 * \param[in] Vertex_Target - Index of the target vertex.
+	 * \param[in] Point_Target - Index of the target point.
+	 */
+	virtual void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
 
 
 
@@ -206,9 +217,17 @@ public:
 	 * \param[in] donor_config - Definition of the problem at the donor mesh.
 	 * \param[in] target_config - Definition of the problem at the target mesh.
 	 */
-	void GatherAverageValues(CSolver *donor_solution, CSolver *target_solution,
-			   	   	   	   	   	  CGeometry *donor_geometry, CGeometry *target_geometry,
-			   	   	   	   	   	  CConfig *donor_config, CConfig *target_config, unsigned short donorZone);
+	void GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
+
+	/*!
+		 * \brief Exchange Average geometrical value beteween zones .
+		 * \param[in] donor_geometry - Geometry of the donor mesh.
+		 * \param[in] target_geometry - Geometry of the target mesh.
+		 * \param[in] donor_config - Definition of the problem at the donor mesh.
+		 * \param[in] target_config - Definition of the problem at the target mesh.
+		 */
+	void GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
+
 
 };
 
@@ -551,7 +570,15 @@ public:
 	 * \param[in] target_solution - Solution from the target mesh.
 	 * \param[in] donorZone       - counter of the donor solution
 	 */
-	void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone);
+	void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
+
+	/*!
+	 * \brief Store all the turboperformance in the solver in ZONE_0.
+	 * \param[in] donor_geometry  - Solution from the donor mesh.
+	 * \param[in] target_geometry - Solution from the target mesh.
+	 * \param[in] donorZone       - counter of the donor solution
+	 */
+	void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
 
 
 
