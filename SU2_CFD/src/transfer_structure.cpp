@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -76,11 +76,12 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
                                       CGeometry *donor_geometry, CGeometry *target_geometry,
                                       CConfig *donor_config, CConfig *target_config) {
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
+  int Target_check, Donor_check;
   
-  unsigned long iVertex;							// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                            // Variables for iteration over vertices and nodes
   
   unsigned short iVar;
   
@@ -89,20 +90,26 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   
   unsigned long Point_Donor, Point_Target;
   
+  bool fsi = donor_config->GetFSI_Simulation();
+  
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int *Buffer_Recv_mark=NULL, iRank;
+  
+  if (rank == MASTER_NODE) 
+    Buffer_Recv_mark = new int[size];
 #endif
   
-  unsigned long nLocalVertexDonor = 0, nLocalVertexTarget= 0;
+  unsigned long nLocalVertexDonor   = 0, nLocalVertexTarget   = 0;
   unsigned long MaxLocalVertexDonor = 0, MaxLocalVertexTarget = 0;
   
   unsigned long nBuffer_DonorVariables = 0, nBuffer_TargetVariables = 0;
-  unsigned long nBuffer_DonorIndices = 0, nBuffer_TargetIndices = 0;
-  
+  unsigned long nBuffer_DonorIndices   = 0, nBuffer_TargetIndices   = 0;
+
   unsigned long Processor_Target;
   
   int iProcessor, nProcessor = 0;
@@ -120,7 +127,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
     
-    Marker_Donor = -1;
+    Marker_Donor  = -1;
     Marker_Target = -1;
     
     /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
@@ -137,20 +144,9 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
       /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
       if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
-        /*--- We have identified the local index of the Donor marker ---*/
-        /*--- Store the number of local points that belong to Marker_Donor on each processor ---*/
-        /*--- This are the number of points that will be sent from this particular processor ---*/
-        /*--- This includes the halo nodes ---*/
-        nLocalVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
-        /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        nLocalVertexDonor = 0;
-        Marker_Donor = -1;
       }
     }
     
@@ -159,24 +155,65 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++) {
       /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
       if ( target_config->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ) {
-        /*--- We have identified the local index of the Flow marker ---*/
-        /*--- Store the number of local points that belong to Marker_Flow on each processor ---*/
-        /*--- This includes the halo nodes ---*/
-        nLocalVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
-        /*--- Store the identifier for the fluid marker ---*/
         Marker_Target = iMarkerTarget;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
       }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        nLocalVertexTarget = 0;
-        Marker_Target = -1;
+    }
+
+    #ifdef HAVE_MPI
+
+    Donor_check  = -1;
+    Target_check = -1;
+
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+
+    SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Donor_check = Buffer_Recv_mark[iRank];
+          break;
+        }       
       }
     }
-    
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
-    Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;							   // Retrieve total number of vertices on Target marker
+
+    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Target_check = Buffer_Recv_mark[iRank];
+          break;
+        }   
+      }
+    }
+
+    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    #else
+    Donor_check  = Marker_Donor;
+    Target_check = Marker_Target;   
+    #endif
+
+    if(Target_check == -1 || Donor_check == -1) {
+      continue;
+    }
+
+    nLocalVertexDonor  = 0;
+    nLocalVertexTarget = 0;
+
+    if( Marker_Donor != -1 )
+      nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+
+    if( Marker_Target != -1 )
+      nLocalVertexTarget = target_geometry->GetnVertex(Marker_Target);
+
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                               // Retrieve total number of vertices on Donor marker
+    Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;                             // Retrieve total number of vertices on Target marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     if (rank == MASTER_NODE) Buffer_Recv_nVertexTarget = new unsigned long[size];  // Allocate memory to receive how many vertices are on each rank on the fluid side
 #ifdef HAVE_MPI
@@ -243,38 +280,32 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
     for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
       Buffer_Send_DonorIndices[iVertex] = -1;
-    
-    if (Marker_Donor >= 0) {
-      
-      /*--- We have identified the local index of the FEA marker ---*/
-      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
-      
-      for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
-        
-        Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
-        
+     
+    /*--- We have identified the local index of the FEA marker ---*/
+    /*--- We loop over all the vertices in that marker and in that particular processor ---*/
+
+    for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
+
+      Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+
+      /*--- If this processor owns the node ---*/
+      if (donor_geometry->node[Point_Donor]->GetDomain()) {
         Point_Target = donor_geometry->vertex[Marker_Donor][iVertex]->GetDonorPoint();
-        
+
         Processor_Target = donor_geometry->vertex[Marker_Donor][iVertex]->GetDonorProcessor();
-        
+
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
+
+        for (iVar = 0; iVar < nVar; iVar++) 
           Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
-        }
-        /*--- If this processor owns the node ---*/
-        if (donor_geometry->node[Point_Donor]->GetDomain()) {
-          Buffer_Send_DonorIndices[2*iVertex]     = Point_Target;
-          Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Target;
-        }
-        else {
-          /*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
-          Buffer_Send_DonorIndices[2*iVertex]     = -1;
-          Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
-        }
-        
+
+
+        Buffer_Send_DonorIndices[2*iVertex]     = Point_Target;
+        Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Target;
       }
+
     }
+
     
 #ifdef HAVE_MPI
     /*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
@@ -376,7 +407,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       Buffer_Recv_TargetIndices[iVariable] = Buffer_Send_TargetIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check =0;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
@@ -394,7 +425,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
           
           Point_Target_Check = Buffer_Recv_TargetIndices[indexPoint_iVertex];
           
-          if (Point_Target_Check < 0) {
+          if (Point_Target_Check < 0 && fsi) {
             cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
             exit(EXIT_FAILURE);
           }
@@ -402,8 +433,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
           for (iVar = 0; iVar < nVar; iVar++)
             Target_Variable[iVar] = Buffer_Recv_TargetVariables[indexPoint_iVertex*nVar+iVar];
           
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
-          
+          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target); 
+    
         }
         
       }
@@ -427,6 +458,10 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     
   }
   
+  #ifdef HAVE_MPI
+  if (rank == MASTER_NODE) 
+    delete [] Buffer_Recv_mark;
+  #endif
   
 }
 
@@ -434,11 +469,12 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
                                                  CGeometry *donor_geometry, CGeometry *target_geometry,
                                                  CConfig *donor_config, CConfig *target_config) {
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
+  int Target_check, Donor_check;
   
-  unsigned long iVertex;								// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                                // Variables for iteration over vertices and nodes
   
   unsigned short iVar;
   
@@ -448,22 +484,28 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
   
+  bool fsi = donor_config->GetFSI_Simulation();
+  
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int *Buffer_Recv_mark=NULL, iRank;
+  
+  if (rank == MASTER_NODE) 
+    Buffer_Recv_mark = new int[size];
 #endif
   
-  unsigned long iLocalVertex = 0;
+  unsigned long iLocalVertex      = 0;
   unsigned long nLocalVertexDonor = 0, nLocalVertexDonorOwned = 0;
   
   unsigned long MaxLocalVertexDonor = 0;
-  unsigned long TotalVertexDonor = 0;
+  unsigned long TotalVertexDonor    = 0;
   
   unsigned long nBuffer_DonorVariables = 0;
-  unsigned long nBuffer_DonorIndices = 0;
+  unsigned long nBuffer_DonorIndices   = 0;
   
   unsigned long nBuffer_BcastVariables = 0, nBuffer_BcastIndices = 0;
   
@@ -471,7 +513,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   /*--- Number of markers on the FSI interface ---*/
   
-  nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = ( donor_config->GetMarker_n_FSIinterface() ) / 2;
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
   
@@ -482,45 +524,18 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
     
-    Marker_Donor = -1;
+    Marker_Donor  = -1;
     Marker_Target = -1;
     
     /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
     unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
     
-    /*--- The donor and target markers are tagged with the same index.
-     *--- This is independent of the MPI domain decomposition.
-     *--- We need to loop over all markers on both sides and get the number of nodes
-     *--- that belong to each FSI marker for each processor ---*/
-    
-    /*--- On the donor side ---*/
-    
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
       /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
       if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
-        /*--- We have identified the local index of the Donor marker ---*/
-        /*--- Now we are going to store the number of local points that belong to Marker_Donor on each processor ---*/
-        /*--- This are the number of points that will be sent from this particular processor ---*/
-        /*--- nLocalVertexDonorOwned WILL NOT include halo nodes ---*/
-        /*--- nLocalVertexDonor WILL include halo nodes ---*/
-        nLocalVertexDonorOwned = 0;
-        for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarkerDonor); iVertex++) {
-          Point_Donor = donor_geometry->vertex[iMarkerDonor][iVertex]->GetNode();
-          if (donor_geometry->node[Point_Donor]->GetDomain()) {
-            nLocalVertexDonorOwned++;
-          }
-        }
-        nLocalVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
-        /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        nLocalVertexDonor = 0;
-        nLocalVertexDonorOwned = 0;
-        Marker_Donor = -1;
       }
     }
     
@@ -534,15 +549,66 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
       }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        Marker_Target = -1;
-      }
     }
     
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
+    #ifdef HAVE_MPI
+
+    Donor_check  = -1;
+    Target_check = -1;
+
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+
+    SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Donor_check = Buffer_Recv_mark[iRank];
+          break;
+        }       
+      }
+    }
+
+    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Target_check = Buffer_Recv_mark[iRank];
+          break;
+        }   
+      }
+    }
+
+    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    #else
+    Donor_check  = Marker_Donor;
+    Target_check = Marker_Target;   
+    #endif
+
+    if(Target_check == -1 || Donor_check == -1) {
+      continue;
+    }
+
+    nLocalVertexDonorOwned = 0;
+    nLocalVertexDonor      = 0;
+
+    if( Marker_Donor != -1 ) {
+      nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+
+      for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
+        Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+        if (donor_geometry->node[Point_Donor]->GetDomain())
+          nLocalVertexDonorOwned++;
+        }
+    }
+
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                               // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
-    
+
 #ifdef HAVE_MPI
     /*--- We receive MaxLocalVertexDonor as the maximum number of vertices in one single processor on the donor side---*/
     SU2_MPI::Allreduce(&nLocalVertexDonor, &MaxLocalVertexDonor, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
@@ -592,30 +658,23 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
       Buffer_Send_DonorIndices[iVertex] = -1;
     
-    if (Marker_Donor >= 0) {
-      
-      for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
-        
-        Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+    for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
+
+      Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+
+      /*--- If this processor owns the node ---*/
+      if (donor_geometry->node[Point_Donor]->GetDomain()) {
         
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
+
+        for (iVar = 0; iVar < nVar; iVar++) 
           Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
-        }
-        
-        /*--- If this processor owns the node ---*/
-        if (donor_geometry->node[Point_Donor]->GetDomain()) {
-          Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
-          Buffer_Send_DonorIndices[iVertex]     = Point_Donor_Global;
-        }
-        else {
-          /*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
-          Buffer_Send_DonorIndices[iVertex]     = -1;
-        }
-        
+          
+        Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
+
+        Buffer_Send_DonorIndices[iVertex] = Point_Donor_Global;
       }
-      
+
     }
     
 #ifdef HAVE_MPI
@@ -665,8 +724,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
-    
+    long indexPoint_iVertex, Point_Target_Check=0;
+
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0) {
       
@@ -688,7 +747,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
           
           Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
           
-          if (Point_Target_Check < 0) {
+          if (Point_Target_Check < 0 && fsi) {
             cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
             exit(EXIT_FAILURE);
           }
@@ -696,7 +755,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
           for (iVar = 0; iVar < nVar; iVar++)
             Target_Variable[iVar] = Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
           
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+          if (Point_Target_Check >= 0)
+            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
           
         }
         
@@ -713,10 +773,13 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
       delete [] Buffer_Recv_nVertexDonor;
       delete [] Buffer_Recv_DonorVariables;
       delete [] Buffer_Recv_DonorIndices;
-    }
-    
-    
+    }  
   }
+  
+  #ifdef HAVE_MPI
+  if (rank == MASTER_NODE) 
+    delete [] Buffer_Recv_mark;
+  #endif
   
 }
 
@@ -725,11 +788,12 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
                                                     CConfig *donor_config, CConfig *target_config) {
   
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
-  int Marker_Donor = -1, Marker_Target = -1;
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
+  int Marker_Donor, Marker_Target;
+  int Target_check, Donor_check;
   
-  unsigned long iVertex;							// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                            // Variables for iteration over vertices and nodes
   
   unsigned short iVar;
   
@@ -742,11 +806,18 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
+  bool fsi = donor_config->GetFSI_Simulation();
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int *Buffer_Recv_mark=NULL, iRank;
+  
+  if (rank == MASTER_NODE) 
+    Buffer_Recv_mark = new int[size];
 #endif
   
+  unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor;
   unsigned long iLocalVertex = 0;
   unsigned long nLocalVertexDonor = 0, nLocalVertexDonorOwned = 0;
   
@@ -762,8 +833,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   /*--- Number of markers on the FSI interface ---*/
   
   nMarkerInt     = (donor_config->GetMarker_n_FSIinterface())/2;
-  nMarkerTarget  = target_geometry->GetnMarker();
-  nMarkerDonor   = donor_geometry->GetnMarker();
+  nMarkerTarget  = target_config->GetnMarker_All();
+  nMarkerDonor   = donor_config->GetnMarker_All();
   
   nProcessor = size;
   
@@ -772,12 +843,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
     
+    Buffer_Recv_nVertexDonor = NULL;
     
     Marker_Donor = -1;
     Marker_Target = -1;
-    
-    /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
-    unsigned long Buffer_Send_nVertexDonor[1], *Buffer_Recv_nVertexDonor = NULL;
     
     /*--- The donor and target markers are tagged with the same index.
      *--- This is independent of the MPI domain decomposition.
@@ -789,29 +858,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
       /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
       if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
-        /*--- We have identified the local index of the Donor marker ---*/
-        /*--- Now we are going to store the number of local points that belong to Marker_Donor on each processor ---*/
-        /*--- This are the number of points that will be sent from this particular processor ---*/
-        /*--- nLocalVertexDonorOwned WILL NOT include halo nodes ---*/
-        /*--- nLocalVertexDonor WILL include halo nodes ---*/
-        nLocalVertexDonorOwned = 0;
-        for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarkerDonor); iVertex++) {
-          Point_Donor = donor_geometry->vertex[iMarkerDonor][iVertex]->GetNode();
-          if (donor_geometry->node[Point_Donor]->GetDomain()) {
-            nLocalVertexDonorOwned++;
-          }
-        }
-        nLocalVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
         /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        nLocalVertexDonor = 0;
-        nLocalVertexDonorOwned = 0;
-        Marker_Donor = -1;
       }
     }
     
@@ -825,13 +875,64 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
       }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        Marker_Target = -1;
-      }
     }
     
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
+    #ifdef HAVE_MPI
+
+    Donor_check  = -1;
+    Target_check = -1;
+
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+
+    SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Donor_check = Buffer_Recv_mark[iRank];
+          break;
+        }       
+      }
+    }
+
+    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Target_check = Buffer_Recv_mark[iRank];
+          break;
+        }   
+      }
+    }
+
+    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    #else
+    Donor_check  = Marker_Donor;
+    Target_check = Marker_Target;   
+    #endif
+
+    if(Target_check == -1 || Donor_check == -1) {
+      continue;
+    }
+
+    nLocalVertexDonorOwned = 0;
+    nLocalVertexDonor      = 0;
+    
+    if( Marker_Donor != -1 ) {
+        nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+    
+        for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
+              Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
+              if (donor_geometry->node[Point_Donor]->GetDomain())
+                nLocalVertexDonorOwned++;
+            }
+    }
+    
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;                   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
 #ifdef HAVE_MPI
@@ -849,12 +950,12 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     
     /*--- We will be gathering the donor information into the master node ---*/
     nBuffer_DonorVariables = MaxLocalVertexDonor * nVar;
-    nBuffer_DonorIndices = MaxLocalVertexDonor;
+    nBuffer_DonorIndices   = MaxLocalVertexDonor;
     
     /*--- Then we will broadcasting it to all the processors so they can retrieve the info they need ---*/
     /*--- We only broadcast those nodes that we need ---*/
     nBuffer_BcastVariables = TotalVertexDonor * nVar;
-    nBuffer_BcastIndices = TotalVertexDonor;
+    nBuffer_BcastIndices   = TotalVertexDonor;
     
     /*--- Send and Recv buffers ---*/
     
@@ -883,32 +984,25 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
       Buffer_Send_DonorIndices[iVertex] = -1;
     
-    if (Marker_Donor >= 0) {
-      
-      for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
-        
-        Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
-        
-        GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
-        }
-        
-        /*--- If this processor owns the node ---*/
-        if (donor_geometry->node[Point_Donor]->GetDomain()) {
-          Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
-          Buffer_Send_DonorIndices[iVertex]     = Point_Donor_Global;
-        }
-        else {
-          /*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
-          Buffer_Send_DonorIndices[iVertex]     = -1;
-        }
-        
-      }
-      
-    }
+
+    for (iVertex = 0; iVertex < nLocalVertexDonor; iVertex++) {
+    Point_Donor = donor_geometry->vertex[Marker_Donor][iVertex]->GetNode();
     
+    /*--- If this processor owns the node ---*/
+        
+    if (donor_geometry->node[Point_Donor]->GetDomain()) {
+    
+        GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iVertex, Point_Donor);
+    
+        for (iVar = 0; iVar < nVar; iVar++) 
+            Buffer_Send_DonorVariables[iVertex*nVar+iVar] = Donor_Variable[iVar];
+        
+        Point_Donor_Global = donor_geometry->node[Point_Donor]->GetGlobalIndex();
+        Buffer_Send_DonorIndices[iVertex]     = Point_Donor_Global;
+    }
+
+    }
+      
 #ifdef HAVE_MPI
     /*--- Once all the messages have been prepared, we gather them all into the MASTER_NODE ---*/
     SU2_MPI::Gather(Buffer_Send_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, Buffer_Recv_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -924,30 +1018,30 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     /*--- Now we pack the information to send it over to the different processors ---*/
     
     if (rank == MASTER_NODE) {
+
+        /*--- For all the data we have received ---*/
+        /*--- We initialize a counter to determine the position in the broadcast vector ---*/
+        iLocalVertex = 0;
       
-      /*--- For all the data we have received ---*/
-      /*--- We initialize a counter to determine the position in the broadcast vector ---*/
-      iLocalVertex = 0;
-      
-      for (iVertex = 0; iVertex < nProcessor*nBuffer_DonorIndices; iVertex++) {
+        for (iVertex = 0; iVertex < nProcessor*nBuffer_DonorIndices; iVertex++) {
         
-        /*--- If the donor index is not -1 (this is, if the node is not originally a halo node) ---*/
-        if (Buffer_Recv_DonorIndices[iVertex] != -1) {
+            /*--- If the donor index is not -1 (this is, if the node is not originally a halo node) ---*/
+            if (Buffer_Recv_DonorIndices[iVertex] != -1) {
           
-          /*--- We set the donor index ---*/
-          Buffer_Bcast_Indices[iLocalVertex] = Buffer_Recv_DonorIndices[iVertex];
+                /*--- We set the donor index ---*/
+                Buffer_Bcast_Indices[iLocalVertex] = Buffer_Recv_DonorIndices[iVertex];
           
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Buffer_Bcast_Variables[iLocalVertex*nVar+iVar] = Buffer_Recv_DonorVariables[iVertex*nVar + iVar];
-          }
+                for (iVar = 0; iVar < nVar; iVar++)
+                    Buffer_Bcast_Variables[iLocalVertex*nVar+iVar] = Buffer_Recv_DonorVariables[iVertex*nVar + iVar];
+                
           
-          iLocalVertex++;
+                iLocalVertex++;
           
+            }
+        
+            if (iLocalVertex == TotalVertexDonor) break;
+        
         }
-        
-        if (iLocalVertex == TotalVertexDonor) break;
-        
-      }
       
     }
     
@@ -955,8 +1049,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     SU2_MPI::Bcast(Buffer_Bcast_Variables, nBuffer_BcastVariables, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
-    
-    long indexPoint_iVertex, Point_Target_Check;
+
+    long indexPoint_iVertex, Point_Target_Check=0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
@@ -969,10 +1063,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
       for (iVertex = 0; iVertex < target_geometry->GetnVertex(Marker_Target); iVertex++) {
         
         Point_Target = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
-        
+
         /*--- If this processor owns the node ---*/
         if (target_geometry->node[Point_Target]->GetDomain()) {
-          
+          TotalVertexDonor++;
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
           
           /*--- As we will be adding data, we need to set the variable to 0 ---*/
@@ -988,27 +1082,28 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
             
             /*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
+           
             indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
-            
+           
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
-            
-            if (Point_Target_Check < 0) {
+
+            if (Point_Target_Check < 0 && fsi) {
               cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
               exit(EXIT_FAILURE);
             }
-            
+
             for (iVar = 0; iVar < nVar; iVar++)
               Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
           }
-          
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
-          
+
+          if (Point_Target_Check >= 0)
+            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
         }
         
       }
       
     }
-    
+
     delete [] Buffer_Send_DonorVariables;
     delete [] Buffer_Send_DonorIndices;
     delete [] Buffer_Bcast_Variables;
@@ -1019,10 +1114,13 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
       delete [] Buffer_Recv_DonorVariables;
       delete [] Buffer_Recv_DonorIndices;
     }
-    
-    
+      
   }
   
+  #ifdef HAVE_MPI
+  if (rank == MASTER_NODE) 
+    delete [] Buffer_Recv_mark;
+  #endif
 }
 
 void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
@@ -1030,11 +1128,12 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
                                         CConfig *donor_config, CConfig *target_config) {
   
   
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;       // Number of markers on the interface, donor and target side
+  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;       // Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
+  int Target_check, Donor_check;
   
-  unsigned long iVertex;								// Variables for iteration over vertices and nodes
+  unsigned long iVertex;                                // Variables for iteration over vertices and nodes
   unsigned short iVar;
   
   GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
@@ -1043,12 +1142,18 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
   
+  bool fsi = donor_config->GetFSI_Simulation();
+  
   int size = SINGLE_NODE;
   
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+  int *Buffer_Recv_mark=NULL, iRank;
+  
+  if (rank == MASTER_NODE) 
+    Buffer_Recv_mark = new int[size];
 #endif
   
   unsigned long iLocalVertex = 0;
@@ -1091,26 +1196,10 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++) {
       /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
       if ( donor_config->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ) {
-        /*--- We have identified the local index of the Donor marker ---*/
-        /*--- Now we are going to store the number of local points that belong to Marker_Donor on each processor ---*/
-        /*--- This are the number of points that will be sent from this particular processor ---*/
-        /*--- nLocalVertexDonor WILL NOT include halo nodes ---*/
-        nLocalVertexDonor = 0;
-        for (iVertex = 0; iVertex < donor_geometry->GetnVertex(iMarkerDonor); iVertex++) {
-          Point_Donor = donor_geometry->vertex[iMarkerDonor][iVertex]->GetNode();
-          if (donor_geometry->node[Point_Donor]->GetDomain()) {
-            nLocalVertexDonor++;
-          }
-        }
         /*--- Store the identifier for the structural marker ---*/
         Marker_Donor = iMarkerDonor;
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        nLocalVertexDonor = 0;
-        Marker_Donor = -1;
       }
     }
     
@@ -1124,13 +1213,56 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
         /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
         break;
       }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        Marker_Target = -1;
-      }
     }
     
-    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
+    #ifdef HAVE_MPI
+
+    Donor_check  = -1;
+    Target_check = -1;
+
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+
+    SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Donor_check = Buffer_Recv_mark[iRank];
+          break;
+        }       
+      }
+    }
+
+    SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    if (rank == MASTER_NODE) {
+      for (iRank = 0; iRank < nProcessor; iRank++) {
+        if( Buffer_Recv_mark[iRank] != -1 ) {
+          Target_check = Buffer_Recv_mark[iRank];
+          break;
+        }   
+      }
+    }
+
+    SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    #else
+    Donor_check  = Marker_Donor;
+    Target_check = Marker_Target;   
+    #endif
+
+    if(Target_check == -1 || Donor_check == -1) {
+      continue;
+    }
+
+    nLocalVertexDonor  = 0;
+
+    if( Marker_Donor != -1 )
+        nLocalVertexDonor = donor_geometry->GetnVertex(Marker_Donor);
+    
+    Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;      // Retrieve total number of vertices on Donor marker
     Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
 #ifdef HAVE_MPI
@@ -1207,7 +1339,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
       Buffer_Recv_DonorIndices[iVariable] = Buffer_Send_DonorIndices[iVariable];
 #endif
     
-    long indexPoint_iVertex, Point_Target_Check;
+    long indexPoint_iVertex, Point_Target_Check = 0;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
@@ -1243,7 +1375,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
             
             Point_Target_Check = Buffer_Recv_DonorIndices[indexPoint_iVertex];
             
-            if (Point_Target_Check < 0) {
+            if (Point_Target_Check < 0 && fsi) {
               cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
               exit(EXIT_FAILURE);
             }
@@ -1252,7 +1384,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
               Target_Variable[iVar] += donorCoeff * Buffer_Recv_DonorVariables[indexPoint_iVertex*nVar+iVar];
           }
           
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+          if (Point_Target_Check >= 0)
+            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);          
           
         }
         
@@ -1269,6 +1402,10 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     delete [] Buffer_Recv_nVertexDonor;
     
   }
-  
+
+  #ifdef HAVE_MPI
+  if (rank == MASTER_NODE) 
+    delete [] Buffer_Recv_mark;
+  #endif
   
 }

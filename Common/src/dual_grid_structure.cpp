@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetUnsteady_Simulation() == NO){ 
+  if (config->GetUnsteady_Simulation() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -94,14 +94,14 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   color = 0;
 
   /*--- For smoothing the numerical grid coordinates ---*/
-  if ( config->GetSmoothNumGrid() ){
+  if ( config->GetSmoothNumGrid() ) {
     Coord_Old = new su2double[nDim];
     Coord_Sum = new su2double[nDim];
   }
 
   /*--- Storage of grid velocities for dynamic meshes ---*/
 
-  if ( config->GetGrid_Movement() ){
+  if ( config->GetGrid_Movement() ) {
     GridVel  = new su2double[nDim];
 
     for (iDim = 0; iDim < nDim; iDim++) 
@@ -110,7 +110,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
     /*--- Gradient of the grid velocity ---*/
     GridVel_Grad = new su2double*[nDim];
 
-    for (iDim = 0; iDim < nDim; iDim++){
+    for (iDim = 0; iDim < nDim; iDim++) {
       GridVel_Grad[iDim] = new su2double[nDim];
       for (jDim = 0; jDim < nDim; jDim++)
         GridVel_Grad[iDim][jDim] = 0.0;
@@ -118,7 +118,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
     /*--- Structures for storing old node coordinates for computing grid 
     velocities via finite differencing with dynamically deforming meshes. ---*/
-    if ( config->GetUnsteady_Simulation() != NO ){
+    if ( config->GetUnsteady_Simulation() != NO ) {
       Coord_p1 = new su2double[nDim];
       Coord_n  = new su2double[nDim];
       Coord_n1 = new su2double[nDim];
@@ -146,7 +146,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
-  if (config->GetUnsteady_Simulation() == NO){ 
+  if (config->GetUnsteady_Simulation() == NO) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -186,13 +186,13 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   GlobalIndex = val_globalindex;
 
   /*--- For smoothing the numerical grid coordinates ---*/
-  if ( config->GetSmoothNumGrid() ){
+  if ( config->GetSmoothNumGrid() ) {
     Coord_Old = new su2double[nDim];
     Coord_Sum = new su2double[nDim];
   }
 
   /*--- Storage of grid velocities for dynamic meshes ---*/
-  if ( config->GetGrid_Movement() ){
+  if ( config->GetGrid_Movement() ) {
     GridVel  = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       GridVel[iDim] = 0.0;
@@ -239,7 +239,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   GridVel = NULL;  GridVel_Grad = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
-  if ( config->GetUnsteady_Simulation() == NO ){ 
+  if ( config->GetUnsteady_Simulation() == NO ) { 
     Volume = new su2double[1]; 
     Volume[0] = 0.0; 
   }
@@ -347,7 +347,7 @@ void CPoint::SetPoint(unsigned long val_point) {
   /*--- Look for the point in the list ---*/
   new_point = true;
   for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
-  if (Point[iPoint] == val_point){
+  if (Point[iPoint] == val_point) {
     new_point = false; 
     break;
   }
