@@ -15446,35 +15446,6 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
             /* --- compute static averaged quantities ---*/
             ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
 
-
-//            if(grid_movement){
-//              AverageTangGridVelocity = geometry->GetAverageTangGridVel(iMarker,iSpan);
-//							RelTangVelocity = (AverageTurboVelocity[iMarker][iSpan][1] - AverageTangGridVelocity);
-//              if (nDim == 2){
-//                AverageMach[iMarker][iSpan] = sqrt(AverageTurboVelocity[iMarker][iSpan][0]*AverageTurboVelocity[iMarker][iSpan][0] + RelTangVelocity*RelTangVelocity);
-//              }
-//              else{
-//                AverageMach[iMarker][iSpan] = sqrt(AverageTurboVelocity[iMarker][iSpan][0]*AverageTurboVelocity[iMarker][iSpan][0] + RelTangVelocity*RelTangVelocity + AverageTurboVelocity[iMarker][iSpan][2]*AverageTurboVelocity[iMarker][iSpan][2]);
-//              }
-//              AverageMach[iMarker][iSpan] /= AverageSoundSpeed[iMarker][iSpan];
-//              AverageTurboMach[iMarker][iSpan][1] = (RelTangVelocity)/AverageSoundSpeed[iMarker][iSpan];
-//              SpanFlowAngle[iMarker][iSpan]= atan((RelTangVelocity)/AverageTurboVelocity[iMarker][iSpan][0]);
-//
-//            }else{
-//              AverageMach[iMarker][iSpan] = 0.0;
-//              for (iDim = 0; iDim < nDim; iDim++) {
-//                AverageMach[iMarker][iSpan] += AverageVelocity[iMarker][iSpan][iDim]*AverageVelocity[iMarker][iSpan][iDim];
-//              }
-//              AverageMach[iMarker][iSpan] = sqrt(AverageMach[iMarker][iSpan])/AverageSoundSpeed[iMarker][iSpan];
-//              AverageTurboMach[iMarker][iSpan][1] = AverageTurboVelocity[iMarker][iSpan][1]/AverageSoundSpeed[iMarker][iSpan];
-//
-//            }
-//
-//            AverageTurboMach[iMarker][iSpan][0] = AverageTurboVelocity[iMarker][iSpan][0]/AverageSoundSpeed[iMarker][iSpan];
-//
-//            if(nDim == 3){
-//              AverageTurboMach[iMarker][iSpan][2] = AverageTurboVelocity[iMarker][iSpan][2]/AverageSoundSpeed[iMarker][iSpan];
-//            }
           }
         }
       }
@@ -15827,35 +15798,6 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
           /* --- compute static averaged quantities ---*/
           ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
 
-
-//          if(grid_movement){
-//          	AverageTangGridVelocity = geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections);
-//          	RelTangVelocity = (AverageTurboVelocity[iMarker][nSpanWiseSections][1] - AverageTangGridVelocity);
-//          	if (nDim == 2){
-//          		AverageMach[iMarker][nSpanWiseSections] = sqrt(AverageTurboVelocity[iMarker][nSpanWiseSections][0]*AverageTurboVelocity[iMarker][nSpanWiseSections][0] + RelTangVelocity*RelTangVelocity);
-//          	}
-//          	else{
-//          		AverageMach[iMarker][nSpanWiseSections] = sqrt(AverageTurboVelocity[iMarker][nSpanWiseSections][0]*AverageTurboVelocity[iMarker][nSpanWiseSections][0] + RelTangVelocity*RelTangVelocity + AverageTurboVelocity[iMarker][nSpanWiseSections][2]*AverageTurboVelocity[iMarker][nSpanWiseSections][2]);
-//          	}
-//          	AverageMach[iMarker][nSpanWiseSections] /= AverageSoundSpeed[iMarker][nSpanWiseSections];
-//          	AverageTurboMach[iMarker][nSpanWiseSections][1] = (RelTangVelocity)/AverageSoundSpeed[iMarker][nSpanWiseSections];
-//          	SpanFlowAngle[iMarker][nSpanWiseSections]= atan((RelTangVelocity)/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
-//
-//          }else{
-//            AverageMach[iMarker][nSpanWiseSections] = 0.0;
-//            for (iDim = 0; iDim < nDim; iDim++) {
-//              AverageMach[iMarker][nSpanWiseSections] += AverageVelocity[iMarker][nSpanWiseSections][iDim]*AverageVelocity[iMarker][nSpanWiseSections][iDim];
-//            }
-//            AverageMach[iMarker][nSpanWiseSections] = sqrt(AverageMach[iMarker][nSpanWiseSections])/AverageSoundSpeed[iMarker][nSpanWiseSections];
-//            AverageTurboMach[iMarker][nSpanWiseSections][1] = AverageTurboVelocity[iMarker][nSpanWiseSections][1]/AverageSoundSpeed[iMarker][nSpanWiseSections];
-//
-//          }
-//
-//          AverageTurboMach[iMarker][nSpanWiseSections][0] = AverageTurboVelocity[iMarker][nSpanWiseSections][0]/AverageSoundSpeed[iMarker][nSpanWiseSections];
-//
-//          if(nDim == 3){
-//            AverageTurboMach[iMarker][nSpanWiseSections][2] = AverageTurboVelocity[iMarker][nSpanWiseSections][2]/AverageSoundSpeed[iMarker][nSpanWiseSections];
-//          }
         }
       }
     }
