@@ -34,6 +34,10 @@
 #include "../include/driver_structure.hpp"
 #include "../include/definition_structure.hpp"
 
+#ifdef VTUNEPROF
+#include "../include/ittnotify.h"
+#endif
+
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  unsigned short val_nDim,
@@ -2742,6 +2746,10 @@ void CDriver::Interface_Preprocessing() {
 
 void CDriver::StartSolver(){
 
+#ifdef VTUNEPROF
+  __itt_resume();
+#endif
+
   int rank = MASTER_NODE;
   su2double tick = 0.0;
 
@@ -2815,6 +2823,9 @@ void CDriver::StartSolver(){
     ExtIter++;
 
   }
+#ifdef VTUNEPROF
+  __itt_pause();
+#endif
 }
 
 void CDriver::PreprocessExtIter(unsigned long ExtIter) {
