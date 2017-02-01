@@ -545,6 +545,7 @@ private:
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
 	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
+  unsigned short Res_FEM_CRIT;  /*!< \brief Criteria to apply to the FEM convergence (absolute/relative). */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
   su2double Cauchy_Eps;	/*!< \brief Epsilon used for the convergence. */
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
@@ -4434,6 +4435,12 @@ public:
 	 */
   string GetObjFunc_Extension(string val_filename);
   
+  /*!
+   * \brief Get the criteria for structural residual (relative/absolute).
+   * \return Relative/Absolute criteria for structural convergence.
+   */
+  unsigned short GetResidual_Criteria_FEM(void);
+
         /*!
   	 * \brief Get functional that is going to be used to evaluate the residual flow convergence.
   	 * \return Functional that is going to be used to evaluate the residual flow convergence.

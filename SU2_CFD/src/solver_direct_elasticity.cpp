@@ -3049,9 +3049,25 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 
         Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);           // Norm of the solution vector
 
-        Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
-        Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
-        Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
+        switch (config->GetResidual_Criteria_FEM()) {
+          case RESFEM_RELATIVE:
+            Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
+            Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
+            Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
+            break;
+          case RESFEM_ABSOLUTE:
+            Conv_Check[0] = LinSysSol.norm();         // Norm of the delta-solution vector
+            Conv_Check[1] = LinSysRes.norm();         // Norm of the residual
+            Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
+            break;
+          default:
+            Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
+            Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
+            Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
+            break;
+        }
+
+
 
       }
 
