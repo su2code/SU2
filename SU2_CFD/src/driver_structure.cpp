@@ -693,7 +693,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
-  
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent = false;
@@ -708,7 +713,13 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
+
+  /*--- Check for restarts and use the LoadRestart() routines. ---*/
+
+  bool restart      = config->GetRestart();
+  bool restart_flow = config->GetRestart_Flow();
+  bool no_restart   = false;
+
   /*--- Assign booleans ---*/
   
   switch (config->GetKind_Solver()) {
@@ -831,7 +842,68 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
     }
   }
+
+  /*--- Load restarts for any of the active solver containers. Note that
+   these restart routines fill the fine grid and interpolate to all MG levels. ---*/
+
+  if (restart || restart_flow) {
+    if (euler || ns) {
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
+    }
+    if (turbulent) {
+      solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
+    }
+  }
+
+  if (restart) {
+    if (template_solver) {
+      no_restart = true;
+    }
+    if (poisson) {
+      no_restart = true;
+    }
+    if (wave) {
+      no_restart = true;
+    }
+    if (heat) {
+      no_restart = true;
+    }
+    if (fem) {
+      //solver_container[MESH_0][FEA_SOL]->LoadRestart(geometry, solver_container, config, 0);
+    }
+    if (adj_euler || adj_ns) {
+      //solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
+    }
+    if (adj_turb) {
+      //solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
+    }
+    if (disc_adj) {
+      //solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
+      //if (turbulent)
+      //  solver_container[iMGlevel][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
+    }
+    
+  }
+
+  /*--- Exit if a restart was requested for a solver that is not available. ---*/
+
+  if (no_restart) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "A restart capability has not been implemented yet for this solver. " << endl;
+      cout << "Please set RESTART_SOL= NO and try again." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Think about calls to pre / post-processing here, plus realizability checks. ---*/
   
+
 }
 
 void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry,
@@ -2669,7 +2741,7 @@ void CDriver::Output(unsigned long ExtIter) {
      surface solution, and surface comma-separated value files. ---*/
 
     output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
+    //output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
 
     /*--- Output a file with the forces breakdown. ---*/
     
