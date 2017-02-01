@@ -1,6 +1,6 @@
 /*!
  * \file output_physics.cpp
- * \brief Main subroutines for solver physical quantities output
+ * \brief Main subroutines to compute physical output quantities such as CL, CD, entropy generation, mass flow, ecc... .
  * \author S. Vitale
  * \version 5.0.0 "Raven"
  *
