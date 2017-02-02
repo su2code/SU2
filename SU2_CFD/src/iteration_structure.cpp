@@ -1716,6 +1716,17 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
+
+  for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
+    solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution());
+  }
+  if (turbulent) {
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
+      solver_container[val_iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
+    }
+  }
+
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
   if (config_container[val_iZone]->GetUnsteady_Simulation()) {

@@ -878,9 +878,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       no_restart = true;
     }
     if (disc_adj) {
-      //solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
-      //if (turbulent)
-      //  solver_container[iMGlevel][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
+      solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
+      if (turbulent)
+        solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
     }
     
   }
