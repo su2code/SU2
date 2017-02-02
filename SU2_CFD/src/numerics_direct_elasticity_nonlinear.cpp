@@ -167,14 +167,11 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
     /*--- Auxiliary vector for storing the electric field constant ---*/
 		unsigned short nElectric_Constant = config->GetnElectric_Constant();
 		ke_DE_i = new su2double[nElectric_Field];
-		if (nElectric_Field > 1){
-		    if (nElectric_Constant == nElectric_Field)
-		        for (iVar = 0; iVar < nElectric_Field; iVar++) ke_DE_i[iVar] = config->GetElectric_Constant(iVar);
-		    else
-		        for (iVar = 0; iVar < nElectric_Field; iVar++) ke_DE_i[iVar] = config->GetElectric_Constant(0);
 
-		}
-
+		if (nElectric_Constant == nElectric_Field)
+		  for (iVar = 0; iVar < nElectric_Field; iVar++) ke_DE_i[iVar] = config->GetElectric_Constant(iVar);
+		else
+		  for (iVar = 0; iVar < nElectric_Field; iVar++) ke_DE_i[iVar] = config->GetElectric_Constant(0);
 
 	  switch (config->GetDV_FEA()) {
 	    case YOUNG_MODULUS:
@@ -531,11 +528,12 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
   /*-----------------------------------------------------------*/
 
 	/*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
-
-	element->ComputeGrad_Pressure(); // Check if we can take this out!
+//  element->clearElement();          /*--- Restarts the element: avoids adding over previous results in other elements --*/
+                                      /*--- Not needed as Kk is set and not added --*/
+	element->ComputeGrad_NonLinear(); // Check if we can take this out!
 
 	/*--- nGauss is here the number of Gaussian Points for the pressure term ---*/
-	nGauss = element->GetnGaussPointsP();
+	nGauss = element->GetnGaussPoints();
 	nNode = element->GetnNodes();
 
 	/*--- Initialize the Gradient auxiliary Matrix ---*/
@@ -554,9 +552,9 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 
 	for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
-		Weight = element->GetWeight_P(iGauss);
-		Jac_X = element->GetJ_X_P(iGauss);
-		Jac_x = element->GetJ_x_P(iGauss);
+		Weight = element->GetWeight(iGauss);
+		Jac_X = element->GetJ_X(iGauss);
+		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
 		/*--- This avoids repeated operations ---*/
@@ -564,7 +562,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 		/*--- We compute the average gradient ---*/
 		for (iNode = 0; iNode < nNode; iNode++) {
 			for (iDim = 0; iDim < nDim; iDim++) {
-				GradNi_Mat_Term = element->GetGradNi_x_P(iNode,iGauss,iDim);
+				GradNi_Mat_Term = element->GetGradNi_x(iNode,iGauss,iDim);
 				GradNi_Curr_Mat[iNode][iDim] += Weight * GradNi_Mat_Term * Jac_x;
 			}
 		}
@@ -1623,8 +1621,6 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 	su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
 	su2double E_2 = 0.0;
 
-	unsigned short iRegion;
-
 	Compute_FmT_Mat();
 
 	for (iDim = 0; iDim < nDim; iDim++){
@@ -1633,8 +1629,6 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 			EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
 		}
 	}
-
-	iRegion = element->Get_iDe();
 
 	E0 = EFieldMod_Ref*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
 	E1 = EFieldMod_Ref*EField_Curr_Unit[1];					E1_2 = pow(E1,2);

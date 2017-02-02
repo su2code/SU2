@@ -125,7 +125,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
   /*--- Number of different terms for FEA ---*/
   nFEA_Terms = 1;
-  if (de_effects) nFEA_Terms++;
+  if (de_effects) nFEA_Terms++;       // The DE term is DE_TERM = 1
+  if (incompressible) nFEA_Terms = 3; // The incompressible term is INC_TERM = 2
 
   /*--- Here is where we assign the kind of each element ---*/
   
@@ -140,32 +141,67 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     }
   }
   
+//  if (nDim == 2) {
+//    if (incompressible) {
+//      element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+//      element_container[FEA_TERM][EL_QUAD] = new CQUAD4P1(nDim, config);
+//    }
+//    else {
+//      element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+//      element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+//    }
+//
+//    if (de_effects){
+//      element_container[DE_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+//      element_container[DE_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+//    }
+//
+//  }
+//  else if (nDim == 3) {
+//    if (incompressible) {
+//      element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+//      element_container[FEA_TERM][EL_HEXA] = new CHEXA8P1(nDim, config);
+//    }
+//    else {
+//      element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+//      element_container[FEA_TERM][EL_HEXA] = new CHEXA8(nDim, config);
+//    }
+//  }
   if (nDim == 2) {
-    if (incompressible) {
-      element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[FEA_TERM][EL_QUAD] = new CQUAD4P1(nDim, config);
-    }
-    else {
+
+      /*--- Basic terms ---*/
       element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
       element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
-    }
 
-    if (de_effects){
-      element_container[DE_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-      element_container[DE_TERM][EL_QUAD] = new CQUAD4(nDim, config);
-    }
+      if (de_effects){
+        element_container[DE_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+        element_container[DE_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+      }
+
+      if (incompressible){
+        element_container[INC_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+        element_container[INC_TERM][EL_QUAD] = new CQUAD1(nDim, config);
+      }
 
   }
   else if (nDim == 3) {
-    if (incompressible) {
-      element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
-      element_container[FEA_TERM][EL_HEXA] = new CHEXA8P1(nDim, config);
-    }
-    else {
+
       element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
       element_container[FEA_TERM][EL_HEXA] = new CHEXA8(nDim, config);
-    }
+
+      if (de_effects){
+        element_container[DE_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+        element_container[DE_TERM][EL_HEXA] = new CHEXA8(nDim, config);
+      }
+
+      if (incompressible) {
+        element_container[INC_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+        element_container[INC_TERM][EL_HEXA] = new CHEXA1(nDim, config);
+      }
+
+
   }
+
 
   node              = new CVariable*[nPoint];
 
@@ -2052,6 +2088,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     if (de_effects) element_container[DE_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
+    if (incompressible) element_container[INC_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     /*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
 
@@ -2066,7 +2103,6 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
     }
 
 //    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
-
     if (de_effects) numerics[DE_TERM]->Compute_Tangent_Matrix(element_container[DE_TERM][EL_KIND], config);
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
@@ -2082,7 +2118,6 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
       /*--- Retrieve the electric contribution to the Residual ---*/
       if (de_effects){
         Ta_DE = element_container[DE_TERM][EL_KIND]->Get_Kt_a(iNode);
-
         for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta_DE[iVar];
         LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
 
@@ -4969,6 +5004,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
   su2double CurrentTime=fea_config->GetCurrent_DynTime();
   su2double Static_Time=fea_config->GetStatic_Time();
   su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
+  su2double OutputVal;
 
   unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
 
