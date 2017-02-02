@@ -3759,6 +3759,10 @@ void CAdjIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **sol
   
 }
 
+void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+
+}
+
 CAdjIncNSSolver::CAdjIncNSSolver(void) : CAdjIncEulerSolver() { }
 
 CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CAdjIncEulerSolver() {
