@@ -5675,7 +5675,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
             points. The array gradSolInt is used to store these derivatives. ---*/
       unsigned int ii = 0;
       for(unsigned short j=0; j<nDOFsElem0; ++j) {
-        for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+        for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
 
           /* Easier storage of the derivatives of the basis function w.r.t. the
              parametric coordinates, the location where to store the Cartesian
@@ -5688,10 +5688,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
                 of the basis functions. ---*/
-//#pragma simd private(l)
-          for(unsigned short k=0; k<nDim; ++k) {
+#pragma simd private(l)
+          for(unsigned short k=0; k<ctc::nDim; ++k) {
             derCar[k] = 0.0;
-            for(unsigned short l=0; l<nDim; ++l)
+            for(unsigned short l=0; l<ctc::nDim; ++l)
               derCar[k] += derParam[l]*metricTerms[k+l*nDim];
           }
         }
@@ -5716,7 +5716,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
             points. The array gradSolInt is used to store these derivatives. ---*/
       ii = 0;
       for(unsigned short j=0; j<nDOFsElem1; ++j) {
-        for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+        for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
 
           /* Easier storage of the derivatives of the basis function w.r.t. the
              parametric coordinates, the location where to store the Cartesian
@@ -5729,10 +5729,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
                 of the basis functions. ---*/
-//#pragma simd private(l)
-          for(unsigned short k=0; k<nDim; ++k) {
+#pragma simd private(l)
+          for(unsigned short k=0; k<ctc::nDim; ++k) {
             derCar[k] = 0.0;
-            for(unsigned short l=0; l<nDim; ++l)
+            for(unsigned short l=0; l<ctc::nDim; ++l)
               derCar[k] += derParam[l]*metricTerms[k+l*nDim];
           }
         }
