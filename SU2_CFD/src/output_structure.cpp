@@ -7567,8 +7567,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
+        else SetTecplot_MeshASCII(config[iZone], geometry[iZone], false, new_file);
         
       }
       
@@ -7576,19 +7576,24 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
-        /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
-        
-        
+        /*--- Write a Paraview or Tecplot ASCII file ---*/
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
+        else SetTecplot_MeshASCII(config[iZone], geometry[iZone], true, new_file);
+
       }
       
-      if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
-      
       /*--- Write a .su2 ASCII file ---*/
-      
+
+      if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
+
       if (su2_file) SetSU2_MeshASCII(config[iZone], geometry[iZone]);
       
+      /*--- Write an stl surface file ---*/
+
+      if (rank == MASTER_NODE) cout <<"Writing .stl surface file." << endl;
+      
+      if (su2_file) SetSTL_MeshASCII(config[iZone], geometry[iZone]);
+
       /*--- Deallocate connectivity ---*/
       
       DeallocateConnectivity(config[iZone], geometry[iZone], true);

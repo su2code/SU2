@@ -391,12 +391,20 @@ public:
   void SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
-   * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
+   * \brief Write the nodal coordinates and connectivity to a Tecplot ASCII mesh file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  void SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+
+  /*!
+   * \brief Write the nodal coordinates and connectivity to a stl ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.

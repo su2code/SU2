@@ -440,10 +440,10 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   nVertex_DefWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
+        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
       nVertex_DefWall += geometry->GetnVertex(iMarker);
   
   /*--- Allocate an array to hold boundary node coordinates ---*/
@@ -457,10 +457,10 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   nVertex_DefWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
+        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -519,10 +519,10 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
    local partition. ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
+        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
       nLocalVertex_DefWall += geometry->GetnVertex(iMarker);
   
   /*--- Communicate to all processors the total number of deforming boundary
@@ -550,10 +550,10 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
   
   nVertex_DefWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+    if ((((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) &&
+        (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY))
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -624,7 +624,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
 
   if (rank == MASTER_NODE)
-    cout << "Computing distances to the nearest deforming surface." << endl;
+    cout << "Computing distances to the nearest surface (except internal surfaces)." << endl;
 
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
    deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
@@ -638,10 +638,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
 
   /*--- Allocate an array to hold boundary node coordinates ---*/
@@ -655,10 +653,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -717,10 +713,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
    local partition. ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
       nLocalVertex_SolidWall += geometry->GetnVertex(iMarker);
 
   /*--- Communicate to all processors the total number of deforming boundary
@@ -748,10 +742,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == EULER_WALL) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -1695,8 +1687,8 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
-      case DEF_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case WALL_DISTANCE: E = 1.0 / ElemDistance; break;
+      case DEF_WALL_DISTANCE: E = 1.0 / (ElemDistance*ElemDistance); break;
+      case WALL_DISTANCE: E = 1.0 / (ElemDistance*ElemDistance); break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     

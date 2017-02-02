@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
-  bool allmoving=true;
+  bool allmoving = true;
 
   /*--- MPI initialization ---*/
 
@@ -170,11 +170,7 @@ int main(int argc, char *argv[]) {
     if (config_container[ZONE_0]->GetVisualize_Deformation()) {
       
       output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, true, false);
-      
-      //    if (rank == MASTER_NODE) cout << "Writing an STL file of the surface mesh." << endl;
-      //    if (size > 1) SPRINTF (buffer_char, "_%d.stl", rank+1); else SPRINTF (buffer_char, ".stl");
-      //    strcpy (out_file, "Surface_Grid"); strcat(out_file, buffer_char); geometry[ZONE_0]->SetBoundSTL(out_file, true, config[ZONE_0]);
-      
+
     }
     
   }
@@ -260,7 +256,7 @@ int main(int argc, char *argv[]) {
   if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
   
   output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, NewFile, true);
-  
+
   if (config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
     
     /*--- Write the the free-form deformation boxes after deformation. ---*/

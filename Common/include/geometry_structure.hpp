@@ -441,15 +441,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
-  /*!
-	 * \brief A virtual member.
-   * \param[in] mesh_filename - Name of the file where the tecplot information is going to be stored.
-   * \param[in] new_file - Boolean to decide if aopen a new file or add to a old one
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
   
 	/*! 
 	 * \brief A virtual member.
@@ -1164,15 +1155,6 @@ public:
    * \param[in] new_file - Create a new file.
 	 */
 	void SetBoundTecPlot(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config);
-
-	/*! 
-	 * \brief Set the output file for boundaries in STL CAD format
-	 * \param[in] config - Definition of the particular problem.		 
-	 * \param[in] mesh_filename - Name of the file where the STL 
-	 *            information is going to be stored.
-   * \param[in] new_file - Create a new file.
-	 */
-	void SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool new_file, CConfig *config) ;
 
 	/*! 
 	 * \brief Check the volume element orientation.
