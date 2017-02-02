@@ -299,6 +299,12 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
         
         break;
         
+      case CONJUGATE_GRADIENT:
+
+        Tot_Iter = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+
+        break;
+
     }
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
@@ -9554,7 +9560,7 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
       IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, Screen_Output);
+      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = 0;
