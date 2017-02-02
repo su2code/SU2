@@ -200,7 +200,7 @@ void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2d
 }
 
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                           CPreconditioner & precond, su2double tol, unsigned long m, bool monitoring) {
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
 	
 int rank = 0;
 
@@ -267,7 +267,7 @@ int rank = 0;
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0)) WriteHistory(i+1, norm_r, norm0);
     
     precond(r, z);
     
@@ -302,6 +302,7 @@ int rank = 0;
 //    }
 //  }
 	
+  (*residual) = norm_r;
 	return (unsigned long) i;
   
 }
@@ -661,7 +662,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
       case CONJUGATE_GRADIENT:
-        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;
