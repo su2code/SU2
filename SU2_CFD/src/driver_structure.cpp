@@ -872,10 +872,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       //solver_container[MESH_0][FEA_SOL]->LoadRestart(geometry, solver_container, config, 0);
     }
     if (adj_euler || adj_ns) {
-      //solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
+      solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
     }
     if (adj_turb) {
-      //solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
+      no_restart = true;
     }
     if (disc_adj) {
       //solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
