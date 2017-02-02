@@ -227,6 +227,13 @@ public:
 	 */
 	unsigned short GetnMarker(void);
 
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	su2double GetSpanWiseValue(unsigned short val_marker, unsigned short val_span);
+
 	/*! 
 	 * \brief Get number of vertices.
 	 * \param[in] val_marker - Marker of the boundary.
@@ -240,6 +247,7 @@ public:
 	 * \return Number of span wise section.
 	 */
 	unsigned short GetnSpanWiseSections(unsigned short marker_flag);
+
 	/*!
 	 * \brief Get number of vertices.
 	 * \param[in] val_marker - Marker of the boundary.
