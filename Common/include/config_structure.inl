@@ -1228,7 +1228,7 @@ inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 
-inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; } 
+inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; }
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
@@ -1481,3 +1481,17 @@ inline bool CConfig::GetAD_Mode(void) { return AD_Mode;}
 inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
+
+inline unsigned long CConfig::GetWrt_Surf_Freq_DualTime(void) { return Wrt_Surf_Freq_DualTime; }
+
+inline unsigned short CConfig::GetKind_HybridRANSLES(void) {return Kind_HybridRANSLES; }
+
+inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss; }
+
+inline double CConfig::GetConst_DES(void) {return Const_DES; }
+
+inline double CConfig::GetZonal_Dist(void) {return Zonal_Dist;}
+
+inline bool CConfig::GetZonal_DES(void) {return Zonal_DES;}
+
+inline bool CConfig::GetQCR(void) {return QCR;}
