@@ -611,47 +611,6 @@ public:
 };
 
 /*!
- * \class CQUAD4P1
- * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
- * \author R. Sanchez
- * \version 5.0.0 "Raven"
- */
-
-class CQUAD4P1 : public CQUAD4 {
-
-protected:
-
-public:
-
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CQUAD4P1(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_fea - Values of the fea solution (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CQUAD4P1(unsigned short val_nDim, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CQUAD4P1(void);
-
-	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
-	 * \param[in] val_solution - Solution of the problem.
-	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-	 */
-	void ComputeGrad_Pressure(void);
-
-
-};
-
-/*!
  * \class CTETRA1
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
@@ -856,41 +815,61 @@ public:
 };
 
 /*!
- * \class CHEXA8P1
- * \brief Hexahedral element with 8 Gauss Points and 1 Gauss Point for pressure subintegration
+ * \class CHEXA1
+ * \brief Hexahedral element with 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
  * \version 5.0.0 "Raven"
  */
 
-class CHEXA8P1 : public CHEXA8 {
+class CHEXA1 : public CElement {
 
 protected:
 
 public:
 
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CHEXA8P1(void);
+  /*!
+   * \brief Constructor of the class.
+   */
+  CHEXA1(void);
 
-	/*!
-	 * \overload
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CHEXA8P1(unsigned short val_nDim, CConfig *config);
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHEXA1(unsigned short val_nDim, CConfig *config);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CHEXA8P1(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CHEXA1(void);
 
-	/*!
-	 * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
-	 * \param[in] val_solution - Solution of the problem.
-	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
-	 */
-	void ComputeGrad_Pressure(void);
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+   */
+  void ComputeGrad_Linear(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the current configuration.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
+   */
+  void ComputeGrad_NonLinear(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the current configuration on 1 Gauss Point.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+   */
+  void ComputeGrad_Pressure(void);
 
 
 };

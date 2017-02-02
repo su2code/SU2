@@ -392,6 +392,8 @@ const int MAT_NHINC   = 3;   /*!< \brief Position of the Neo-Hookean incompressi
 const int MAT_IDEALDE = 4;   /*!< \brief Position of the Ideal-DE material model. */
 const int MAT_KNOWLES = 5;   /*!< \brief Position of the Knowles material model. */
 
+const int INC_TERM = 2;      /*!< \brief Position of the incompressible term in the element container array. */
+
 const int FEA_ADJ = 6;     /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_ADJ = 7;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
 
