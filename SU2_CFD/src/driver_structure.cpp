@@ -853,6 +853,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (turbulent) {
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
     }
+    if (fem) {
+      solver_container[MESH_0][FEA_SOL]->LoadRestart(geometry, solver_container, config, 0);
+    }
   }
 
   if (restart) {
@@ -868,9 +871,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (heat) {
       no_restart = true;
     }
-    if (fem) {
-      //solver_container[MESH_0][FEA_SOL]->LoadRestart(geometry, solver_container, config, 0);
-    }
     if (adj_euler || adj_ns) {
       solver_container[MESH_0][ADJFLOW_SOL]->LoadRestart(geometry, solver_container, config, 0);
     }
@@ -882,7 +882,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (turbulent)
         solver_container[MESH_0][ADJTURB_SOL]->LoadRestart(geometry, solver_container, config, 0);
     }
-    
   }
 
   /*--- Exit if a restart was requested for a solver that is not available. ---*/
