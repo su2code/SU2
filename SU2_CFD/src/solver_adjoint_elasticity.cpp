@@ -2967,7 +2967,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
   }
 
-  Set_MPI_CrossTerm_Geometry(geometry, config);
+//  Set_MPI_CrossTerm_Geometry(geometry, config);
 
 }
 

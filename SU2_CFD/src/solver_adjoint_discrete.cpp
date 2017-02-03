@@ -1015,7 +1015,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     }
   }
 
-  Set_MPI_Solution(geometry, config);
+//  Set_MPI_Solution(geometry, config);
 
   /*--- Set the residuals ---*/
 
@@ -1095,7 +1095,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
   }
 
-  Set_MPI_Solution_Geometry(geometry, config);
+//  Set_MPI_Solution_Geometry(geometry, config);
 
 //  if (time_n_needed){
 //    for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -1152,7 +1152,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
   }
 
-  Set_MPI_CrossTerm(geometry, config);
+//  Set_MPI_CrossTerm(geometry, config);
 
 }
 
@@ -1172,7 +1172,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
   }
 
-  Set_MPI_CrossTerm_Geometry(geometry, config);
+//  Set_MPI_CrossTerm_Geometry(geometry, config);
 
 }
 
