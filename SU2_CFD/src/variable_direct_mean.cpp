@@ -101,7 +101,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   /*--- nPrimVar, nPrimVarGrad have been increased by 1 to account for passive scalar---*/
-  nPrimVar = nDim+10; nPrimVarGrad = nDim+5;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+10;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
   else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
 
