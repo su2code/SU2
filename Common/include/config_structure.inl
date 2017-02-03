@@ -953,6 +953,10 @@ inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWi
 
 inline unsigned short CConfig::GetnSpanWiseSections(void) { return nSpanWiseSections;}
 
+inline void CConfig::SetnSpanMaxAllZones(unsigned short val_nSpna_max) { nSpanMaxAllZones = val_nSpna_max;}
+
+inline unsigned short CConfig::GetnSpanMaxAllZones(void) { return nSpanMaxAllZones;}
+
 inline void CConfig::SetnSpanWiseSections(unsigned short nSpan) {nSpanWiseSections = nSpan;}
 
 inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) { return Marker_TurboBoundIn[index];}

@@ -162,7 +162,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long ExtIter_;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   unsigned short direct_diff = config->GetDirectDiff();
-
+  unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -859,12 +859,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-  	DensityIn               [iMarker] = new su2double [nSpanWiseSections + 1];
-  	PressureIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-  	TurboVelocityIn         [iMarker] = new su2double*[nSpanWiseSections + 1];
-  	DensityOut              [iMarker] = new su2double [nSpanWiseSections + 1];
-  	PressureOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-  	TurboVelocityOut        [iMarker] = new su2double*[nSpanWiseSections + 1];
+  	DensityIn               [iMarker] = new su2double [nSpanMax + 1];
+  	PressureIn              [iMarker] = new su2double [nSpanMax + 1];
+  	TurboVelocityIn         [iMarker] = new su2double*[nSpanMax + 1];
+  	DensityOut              [iMarker] = new su2double [nSpanMax + 1];
+  	PressureOut             [iMarker] = new su2double [nSpanMax + 1];
+  	TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
 
 
   	for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -16140,6 +16140,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned long ExtIter_;
 
   unsigned short direct_diff = config->GetDirectDiff();
+  unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 
   int rank = MASTER_NODE;
@@ -16836,12 +16837,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 	TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
 
 	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-		DensityIn               [iMarker] = new su2double [nSpanWiseSections + 1];
-		PressureIn              [iMarker] = new su2double [nSpanWiseSections + 1];
-		TurboVelocityIn         [iMarker] = new su2double*[nSpanWiseSections + 1];
-		DensityOut              [iMarker] = new su2double [nSpanWiseSections + 1];
-		PressureOut             [iMarker] = new su2double [nSpanWiseSections + 1];
-		TurboVelocityOut        [iMarker] = new su2double*[nSpanWiseSections + 1];
+		DensityIn               [iMarker] = new su2double [nSpanMax + 1];
+		PressureIn              [iMarker] = new su2double [nSpanMax + 1];
+		TurboVelocityIn         [iMarker] = new su2double*[nSpanMax + 1];
+		DensityOut              [iMarker] = new su2double [nSpanMax + 1];
+		PressureOut             [iMarker] = new su2double [nSpanMax + 1];
+		TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
 
 
 		for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){

@@ -533,6 +533,7 @@ void CDriver::Geometrical_Preprocessing() {
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   int rank = MASTER_NODE;
+  unsigned short nSpanMax = 0;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -606,10 +607,12 @@ void CDriver::Geometrical_Preprocessing() {
 
     	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
     	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
+    	if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
+    		nSpanMax = config_container[iZone]->GetnSpanWiseSections();
+    	}
     	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
     	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
     }
-
 
     /*--- Check for periodicity and disable MG if necessary. ---*/
 
@@ -619,6 +622,12 @@ void CDriver::Geometrical_Preprocessing() {
     if ((config_container[iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
       cout << "Setting the multigrid structure." << endl;
 
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+  	if (config_container[iZone]->GetBoolTurbomachinery()){
+  		config_container[iZone]->SetnSpanMaxAllZones(nSpanMax);
+  	}
   }
 
   /*--- Loop over all the new grid ---*/
@@ -3548,6 +3557,9 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
 		transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
 	}
 
+	for (iZone = 0; iZone < nZone; iZone++) {
+		if(mixingplane)PreprocessingMixingPlane(iZone);
+	}
 }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
@@ -3620,6 +3632,24 @@ void CTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
 		}
 	}
 }
+
+void CTurbomachineryDriver::PreprocessingMixingPlane(unsigned short donorZone){
+
+  unsigned short targetZone, nMarkerInt, iMarkerInt ;
+	nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+
+  /* --- transfer the average value from the donorZone to the targetZone*/
+	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+		for (targetZone = 0; targetZone < nZone; targetZone++) {
+			if (targetZone != donorZone){
+				transfer_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
+																																									config_container[donorZone], config_container[targetZone],
+																																									iMarkerInt, true );
+			}
+		}
+	}
+}
+
 
 void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 

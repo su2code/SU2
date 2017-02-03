@@ -232,7 +232,7 @@ public:
 	 * \param[in] val_marker - Marker of the boundary.
 	 * \return Number of vertices.
 	 */
-	su2double GetSpanWiseValue(unsigned short val_marker, unsigned short val_span);
+	su2double* GetSpanWiseValue(unsigned short val_marker);
 
 	/*! 
 	 * \brief Get number of vertices.

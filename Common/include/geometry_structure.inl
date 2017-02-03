@@ -153,7 +153,7 @@ inline void CGeometry::SetnElem(unsigned long val_nelem) { nElem = val_nelem; }
 
 inline void CGeometry::SetnDim(unsigned short val_nDim) { nDim = val_nDim; }
 
-inline su2double CGeometry::GetSpanWiseValue(unsigned short val_marker, unsigned short val_span) { return SpanWiseValue[val_marker][val_span]; }
+inline su2double* CGeometry::GetSpanWiseValue(unsigned short val_marker) { return SpanWiseValue[val_marker-1]; }
 
 inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return nVertex[val_marker]; }
 

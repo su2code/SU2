@@ -38,6 +38,8 @@ CTransfer::CTransfer(void) {
   Physical_Constants = NULL;
   Donor_Variable     = NULL;
   Target_Variable    = NULL;
+  SpanLevelDonor     = NULL;
+  SpanValueCoeffTarget = NULL;
   
   nVar = 0;
   
@@ -69,6 +71,10 @@ CTransfer::~CTransfer(void) {
   if (Physical_Constants   != NULL) delete [] Physical_Constants;
   if (Donor_Variable       != NULL) delete [] Donor_Variable;
   if (Target_Variable      != NULL) delete [] Target_Variable;
+
+	if (SpanValueCoeffTarget != NULL) delete[] SpanValueCoeffTarget;
+	if (SpanLevelDonor       != NULL) delete[] SpanLevelDonor;
+
   
 }
 
@@ -1411,6 +1417,95 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 }
 
 
+void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
+																 CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt, bool allocate){
+
+	unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+	unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+	unsigned short iSpan,jSpan, kSpan, nSpanDonor, nSpanTarget, Donor_Flag, Target_Flag;
+	int Marker_Donor = -1, Marker_Target = -1;
+
+	su2double *SpanValuesDonor, *SpanValuesTarget, dist, test;
+
+
+	nMarkerTarget  = target_geometry->GetnMarker();
+	nMarkerDonor   = donor_geometry->GetnMarker();
+	//TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
+	//TODO turbo initialization needed for the MPI routine should be place somewhere else.
+	nSpanDonor     = donor_config->GetnSpanWiseSections();
+	nSpanTarget		 = target_config->GetnSpanWiseSections();
+
+
+	SpanValueCoeffTarget = new su2double[nSpanTarget];
+	SpanLevelDonor       = new unsigned short[nSpanTarget];
+
+
+	for (iSpan = 0; iSpan < nSpanTarget;iSpan++){
+		SpanValueCoeffTarget[iSpan] = 0.0;
+		SpanLevelDonor[iSpan]       = 1;
+	}
+	/*--- On the donor side ---*/
+	for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+		/*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+		if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+			/*--- We have identified the local index of the Donor marker ---*/
+			/*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
+			/*--- Store the identifier for the structural marker ---*/
+			Marker_Donor = iMarkerDonor;
+			Donor_Flag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerDonor);
+			//				cout << " donor is "<< donor_config->GetMarker_All_TagBound(Marker_Donor)<<" in imarker interface "<< iMarkerInt <<endl;
+			/*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+			break;
+		}
+		else {
+			/*--- If the tag hasn't matched any tag within the donor markers ---*/
+			Marker_Donor = -1;
+		}
+	}
+
+	/*--- On the target side we have to identify the marker as well ---*/
+
+		for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+			/*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
+			if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+				/*--- Store the identifier for the fluid marker ---*/
+
+				// here i should then store it in the target zone
+
+				Marker_Target = iMarkerTarget;
+				Target_Flag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
+	//				cout << " target is "<< target_config->GetMarker_All_TagBound(Marker_Target) <<" in imarker interface "<< iMarkerInt <<endl;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the Flow markers ---*/
+				Marker_Target = -1;
+			}
+		}
+
+		if (Marker_Target != -1 && Marker_Donor != -1){
+			SpanValuesDonor  = donor_geometry->GetSpanWiseValue(Donor_Flag);
+			SpanValuesTarget = target_geometry->GetSpanWiseValue(Donor_Flag);
+
+
+			for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
+				dist = 10E+06;
+				for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
+					test = SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan];
+					if(test < dist && test > 0.0){
+						dist = test;
+						kSpan = jSpan;
+					}
+				}
+				SpanLevelDonor[iSpan]        = kSpan;
+				SpanValueCoeffTarget[iSpan]  = (SpanValuesTarget[iSpan] - SpanValuesDonor[kSpan])/(SpanValuesDonor[kSpan + 1] - SpanValuesDonor[kSpan]);
+			}
+			//compute the coefficient and span per each value execpt the 0 and n span
+		}
+
+}
+
 
 void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
 																 CGeometry *donor_geometry, CGeometry *target_geometry,
@@ -1440,7 +1535,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 //TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
 //TODO turbo initialization needed for the MPI routine should be place somewhere else.
 	nSpanDonor     = donor_config->GetnSpanWiseSections();
-	nSpanTarget		 = donor_config->GetnSpanWiseSections();
+	nSpanTarget		 = target_config->GetnSpanWiseSections();
+
 	// here the number of span should be already known
 	// so perhaps when this option would be different for boundary markers then this should be done after the loop
 	avgDensityDonor   		   =  new su2double[nSpanDonor];
@@ -1622,17 +1718,47 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		}
 	}
 
+
 	if (Marker_Target != -1 && Marker_Donor != -1){
-		/*--- here the interpolation span-wise should be implemented ---*/
-		for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
-			avgDensityTarget[iSpan]        = avgDensityDonor[iSpan];
-			avgPressureTarget[iSpan]       = avgPressureDonor[iSpan];
-			avgTotPressureTarget[iSpan]    = avgTotPressureDonor[iSpan];
-			avgTotTemperatureTarget[iSpan] = avgTotTemperatureDonor[iSpan];
-			avgNormalVelTarget[iSpan]      = avgNormalVelDonor[iSpan];
-			avgTangVelTarget[iSpan]        = avgTangVelDonor[iSpan];
-			avg3DVelTarget[iSpan]          = avg3DVelDonor[iSpan];
+
+		/*--- linear interpolation of the average value of for the internal span-wise levels ---*/
+		for(iSpan = 1; iSpan < nSpanTarget -1 ; iSpan++){
+			avgDensityTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgDensityDonor[SpanLevelDonor[iSpan] + 1] - avgDensityDonor[SpanLevelDonor[iSpan]]);
+			avgDensityTarget[iSpan]         += avgDensityDonor[SpanLevelDonor[iSpan]];
+			avgPressureTarget[iSpan]         = SpanValueCoeffTarget[iSpan]*(avgPressureDonor[SpanLevelDonor[iSpan] + 1] - avgPressureDonor[SpanLevelDonor[iSpan]]);
+			avgPressureTarget[iSpan]        += avgPressureDonor[SpanLevelDonor[iSpan]];
+			avgTotPressureTarget[iSpan]      = SpanValueCoeffTarget[iSpan]*(avgTotPressureDonor[SpanLevelDonor[iSpan] + 1] - avgTotPressureDonor[SpanLevelDonor[iSpan]]);
+			avgTotPressureTarget[iSpan]     += avgTotPressureDonor[SpanLevelDonor[iSpan]];
+			avgTotTemperatureTarget[iSpan]   = SpanValueCoeffTarget[iSpan]*(avgTotTemperatureDonor[SpanLevelDonor[iSpan] + 1] - avgTotTemperatureDonor[SpanLevelDonor[iSpan]]);
+			avgTotTemperatureTarget[iSpan]  += avgTotTemperatureDonor[SpanLevelDonor[iSpan]];
+			avgNormalVelTarget[iSpan]        = SpanValueCoeffTarget[iSpan]*(avgNormalVelDonor[SpanLevelDonor[iSpan] + 1] - avgNormalVelDonor[SpanLevelDonor[iSpan]]);
+			avgNormalVelTarget[iSpan]       += avgNormalVelDonor[SpanLevelDonor[iSpan]];
+			avgTangVelTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgTangVelDonor[SpanLevelDonor[iSpan] + 1] - avgTangVelDonor[SpanLevelDonor[iSpan] ]);
+			avgTangVelTarget[iSpan]         += avgTangVelDonor[SpanLevelDonor[iSpan]];
+			avg3DVelTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avg3DVelDonor[SpanLevelDonor[iSpan] + 1] - avg3DVelDonor[SpanLevelDonor[iSpan]]);
+			avg3DVelTarget[iSpan]           += avg3DVelDonor[SpanLevelDonor[iSpan]];
 		}
+
+		/*--- transfer values at the hub ---*/
+		avgDensityTarget[0]        = avgDensityDonor[0];
+		avgPressureTarget[0]       = avgPressureDonor[0];
+		avgTotPressureTarget[0]    = avgTotPressureDonor[0];
+		avgTotTemperatureTarget[0] = avgTotTemperatureDonor[0];
+		avgNormalVelTarget[0]      = avgNormalVelDonor[0];
+		avgTangVelTarget[0]        = avgTangVelDonor[0];
+		avg3DVelTarget[0]          = avg3DVelDonor[0];
+
+
+		/*--- transfer values at the shroud ---*/
+		avgDensityTarget[nSpanTarget - 1]        = avgDensityDonor[nSpanDonor - 1];
+		avgPressureTarget[nSpanTarget - 1]       = avgPressureDonor[nSpanDonor - 1];
+		avgTotPressureTarget[nSpanTarget - 1]    = avgTotPressureDonor[nSpanDonor - 1];
+		avgTotTemperatureTarget[nSpanTarget - 1] = avgTotTemperatureDonor[nSpanDonor - 1];
+		avgNormalVelTarget[nSpanTarget - 1]      = avgNormalVelDonor[nSpanDonor - 1];
+		avgTangVelTarget[nSpanTarget - 1]        = avgTangVelDonor[nSpanDonor - 1];
+		avg3DVelTarget[nSpanTarget - 1]          = avg3DVelDonor[nSpanDonor - 1];
+
+
 		/*--- after interpolating the average value span-wise is set in the target zone ---*/
 
 		for(iSpan = 0; iSpan < nSpanTarget ; iSpan++){

@@ -10978,7 +10978,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   int markerTP;
-  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+  unsigned short nSpanWiseSections = config->GetnSpanMaxAllZones();
 
   su2double tangGridVelIn, tangGridVelOut;
   su2double areaIn, areaOut;
