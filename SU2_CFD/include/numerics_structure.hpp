@@ -100,6 +100,8 @@ public:
   GravityForce_j;      /*!< \brief Gravity force at point j. */
   su2double Density_i,  /*!< \brief Density at point i. */
   Density_j;      /*!< \brief Density at point j. */
+  su2double PassiveScalar_i,
+  PassiveScalar_j;
   su2double DensityInc_i,  /*!< \brief Incompressible density at point i. */
   DensityInc_j;      /*!< \brief Incompressible density at point j. */
   su2double BetaInc2_i,  /*!< \brief Beta incompressible at point i. */
@@ -762,6 +764,14 @@ public:
                            su2double *val_pressure, su2double *val_enthalpy,
                            su2double *val_normal, su2double *val_Proj_Flux);
     
+  /*!
+    * \brief Overloaded method to account for passive scalar. This is a nasty trick and should eventually
+    *  change.
+   */
+  void GetInviscidProjFlux(su2double *val_density, su2double *val_velocity,
+                           su2double *val_pressure, su2double *val_enthalpy, su2double *val_passive_scalar,
+                           su2double *val_normal, su2double *val_Proj_Flux);
+
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.

@@ -826,6 +826,12 @@ public:
    * \return Value of the flow energy.
    */
   virtual su2double GetEnergy(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the passive scalar
+   */
+  virtual su2double GetPassiveScalar(void);
   
   /*!
    * \brief A virtual member.
@@ -2878,7 +2884,7 @@ public:
   /*!
    * \brief Set the value of the passive scalar
    */
-  vois SetPassiveScalar(void);
+  void SetPassiveScalar(void);
 
   /*!
    * \brief Set the value of the speed of the sound.
@@ -2890,6 +2896,8 @@ public:
    * \brief Set the value of the enthalpy.
    */
   void SetEnthalpy(void);
+
+
   
   /*!
    * \brief Set all the primitive variables for compressible flows.
@@ -3004,6 +3012,11 @@ public:
    */
   su2double GetEnergy(void);
   
+  /*!
+   * \brief Get the passive scalar.
+   * \return Value of the passive scalar.
+   */
+  su2double GetPassiveScalar(void);
   /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
