@@ -1792,6 +1792,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     			case KNOWLES:
     				switch (config->GetMaterialCompressibility()) {
     					case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
+              case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
     					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     				}
     				break;

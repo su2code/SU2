@@ -2072,15 +2072,23 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
         val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-        for (iTerm = 0; iTerm < nFEA_Terms; iTerm++) {
-          element_container[iTerm][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
-          if (prestretch_fem) {
-            val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
-            element_container[iTerm][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
-          }
-          else{
-            element_container[iTerm][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-          }
+
+        /*--- Set current coordinate ---*/
+        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (de_effects) element_container[DE_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (incompressible) element_container[INC_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+
+        /*--- Set reference coordinate ---*/
+        if (prestretch_fem) {
+          val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+          if (de_effects) element_container[DE_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+          if (incompressible) element_container[INC_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+        }
+        else{
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+          if (de_effects) element_container[DE_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+          if (incompressible) element_container[INC_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         }
       }
     }
@@ -2091,10 +2099,9 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
     if (incompressible) element_container[INC_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
     /*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
+    if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[INC_TERM][EL_KIND], config);
 
-    if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[FEA_TERM][EL_KIND], config);
-
-    /*--- Compute the components of the jacobian and the stress term ---*/
+    /*--- Compute the components of the Jacobian and the stress term for the material ---*/
     if (element_based){
       numerics[element_properties[iElem]->GetMat_Mod()]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
     }
@@ -2102,7 +2109,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
       numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
     }
 
-//    numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+    /*--- Compute the electric component of the Jacobian and the stress term ---*/
     if (de_effects) numerics[DE_TERM]->Compute_Tangent_Matrix(element_container[DE_TERM][EL_KIND], config);
 
     NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
@@ -2128,7 +2135,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
         /*--- Retrieve the values of the FEA term ---*/
         Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
         Ks_ab = element_container[FEA_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
-        if (incompressible) Kk_ab = element_container[FEA_TERM][EL_KIND]->Get_Kk_ab(iNode,jNode);
+        if (incompressible) Kk_ab = element_container[INC_TERM][EL_KIND]->Get_Kk_ab(iNode,jNode);
 
         for (iVar = 0; iVar < nVar; iVar++) {
           Jacobian_s_ij[iVar][iVar] = Ks_ab;
