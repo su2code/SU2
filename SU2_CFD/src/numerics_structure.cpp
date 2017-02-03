@@ -269,6 +269,65 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
 
 }
 
+/*--- Overloaded method to include passive scalar. I overloaded it so that I didn't have to change
+all the calls to this method. A very dirty hack that needs to be sorted out eventually ---*/
+void CNumerics::GetInviscidProjFlux(su2double *val_density,
+                                    su2double *val_velocity,
+                                    su2double *val_pressure,
+                                    su2double *val_enthalpy,
+                                    su2double *val_passive_scalar,
+                                    su2double *val_normal,
+                                    su2double *val_Proj_Flux) {
+
+    su2double rhou, rhov, rhow;
+  if (nDim == 2) {
+
+    rhou = (*val_density)*val_velocity[0];
+    rhov = (*val_density)*val_velocity[1];
+
+    val_Proj_Flux[0] = rhou*val_normal[0];
+    val_Proj_Flux[1] = (rhou*val_velocity[0]+(*val_pressure))*val_normal[0];
+    val_Proj_Flux[2] = rhou*val_velocity[1]*val_normal[0];
+        val_Proj_Flux[3] = rhou*(*val_passive_scalar)*val_normal[0];
+    val_Proj_Flux[4] = rhou*(*val_enthalpy)*val_normal[0];
+
+    val_Proj_Flux[0] += rhov*val_normal[1];
+    val_Proj_Flux[1] += rhov*val_velocity[0]*val_normal[1];
+    val_Proj_Flux[2] += (rhov*val_velocity[1]+(*val_pressure))*val_normal[1];
+        val_Proj_Flux[3] += rhov*(*val_passive_scalar)*val_normal[1];
+    val_Proj_Flux[4] += rhov*(*val_enthalpy)*val_normal[1];
+
+  }
+  else {
+
+    rhou = (*val_density)*val_velocity[0];
+    rhov = (*val_density)*val_velocity[1];
+    rhow = (*val_density)*val_velocity[2];
+
+    val_Proj_Flux[0] = rhou*val_normal[0];
+    val_Proj_Flux[1] = (rhou*val_velocity[0]+(*val_pressure))*val_normal[0];
+    val_Proj_Flux[2] = rhou*val_velocity[1]*val_normal[0];
+    val_Proj_Flux[3] = rhou*val_velocity[2]*val_normal[0];
+        val_Proj_Flux[4] = rhou*(*val_passive_scalar)*val_normal[0];
+    val_Proj_Flux[5] = rhou*(*val_enthalpy)*val_normal[0];
+
+    val_Proj_Flux[0] += rhov*val_normal[1];
+    val_Proj_Flux[1] += rhov*val_velocity[0]*val_normal[1];
+    val_Proj_Flux[2] += (rhov*val_velocity[1]+(*val_pressure))*val_normal[1];
+    val_Proj_Flux[3] += rhov*val_velocity[2]*val_normal[1];
+        val_Proj_Flux[4] += rhov*(*val_passive_scalar)*val_normal[1];
+    val_Proj_Flux[5] += rhov*(*val_enthalpy)*val_normal[1];
+
+    val_Proj_Flux[0] += rhow*val_normal[2];
+    val_Proj_Flux[1] += rhow*val_velocity[0]*val_normal[2];
+    val_Proj_Flux[2] += rhow*val_velocity[1]*val_normal[2];
+    val_Proj_Flux[3] += (rhow*val_velocity[2]+(*val_pressure))*val_normal[2];
+        val_Proj_Flux[4] += rhow*(*val_passive_scalar)*val_normal[2];
+    val_Proj_Flux[5] += rhow*(*val_enthalpy)*val_normal[2];
+
+  }
+}
+
 void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
                                            su2double *val_velocity,
                                            su2double *val_pressure,
@@ -1585,34 +1644,39 @@ void CNumerics::GetViscousFlux(su2double *val_primvar, su2double **val_gradprimv
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
     Flux_Tensor[3][0] = tau[0][2];
-    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
+    Flux_Tensor[4][0] = 0.0;
+    Flux_Tensor[5][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][0];
 
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
     Flux_Tensor[3][1] = tau[1][2];
-    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
+    Flux_Tensor[4][1] = 0.0;
+    Flux_Tensor[5][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][1];
 
     Flux_Tensor[0][2] = 0.0;
     Flux_Tensor[1][2] = tau[2][0];
     Flux_Tensor[2][2] = tau[2][1];
     Flux_Tensor[3][2] = tau[2][2];
-    Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
+    Flux_Tensor[4][2] = 0.0;
+    Flux_Tensor[5][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][2];
   }
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
-    Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
+    Flux_Tensor[3][0] = 0.0;
+    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
         heat_flux_factor*val_gradprimvar[0][0];
 
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
-    Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
+    Flux_Tensor[3][1] = 0.0;
+    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
         heat_flux_factor*val_gradprimvar[0][1];
   }
 }
@@ -1643,35 +1707,41 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
       - TWO3*total_viscosity*div_vel*delta[iDim][jDim]
                                                  - TWO3*Density*val_turb_ke*delta[iDim][jDim];
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+  /*--- Set the viscous flux of the passive scalar to zero ---*/
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
-    Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
+    Flux_Tensor[3][0] = 0.0;
+    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
         heat_flux_factor*val_gradprimvar[0][0];
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
-    Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
+    Flux_Tensor[3][0] = 0.0;
+    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
         heat_flux_factor*val_gradprimvar[0][1];
   } else {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
     Flux_Tensor[3][0] = tau[0][2];
-    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
+    Flux_Tensor[4][0] = 0.0;
+    Flux_Tensor[5][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][0];
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
     Flux_Tensor[3][1] = tau[1][2];
-    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
+    Flux_Tensor[4][1] = 0.0;
+    Flux_Tensor[5][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][1];
     Flux_Tensor[0][2] = 0.0;
     Flux_Tensor[1][2] = tau[2][0];
     Flux_Tensor[2][2] = tau[2][1];
     Flux_Tensor[3][2] = tau[2][2];
-    Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
+    Flux_Tensor[4][2] = 0.0;
+    Flux_Tensor[5][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][2];
   }
   for (iVar = 0; iVar < nVar; iVar++) {

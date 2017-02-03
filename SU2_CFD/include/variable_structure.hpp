@@ -2696,7 +2696,7 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
+  CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, su2double val_passive_scalar, unsigned short val_nDim,
                  unsigned short val_nvar, CConfig *config);
   
   /*!
@@ -2875,6 +2875,11 @@ public:
    */
   bool SetPressure(su2double Gamma);
   
+  /*!
+   * \brief Set the value of the passive scalar
+   */
+  vois SetPassiveScalar(void);
+
   /*!
    * \brief Set the value of the speed of the sound.
    * \param[in] Gamma - Value of Gamma.
@@ -3353,7 +3358,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CNSVariable(su2double val_density, su2double *val_velocity,
-              su2double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+              su2double val_energy, su2double val_passive_scalar, unsigned short val_nDim, 
+              unsigned short val_nvar, CConfig *config);
   
   /*!
    * \overload

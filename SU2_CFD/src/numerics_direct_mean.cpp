@@ -1011,12 +1011,14 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   Pressure_i = V_i[nDim+1];
   Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
+  PassiveScalar_i = V_i[nDim+9];
 
   /*--- Primitive variables at point j ---*/
   
   Pressure_j = V_j[nDim+1];
   Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
+  PassiveScalar_j = V_j[nDim+9];
 
 
   sq_vel_i = 0.0;
@@ -1126,6 +1128,7 @@ if (sM > 0.0) {
       val_residual[iDim+1] = sM * IntermediateState[iDim+1] + pStar * UnitNormal[iDim];
     val_residual[nVar-1] = sM * ( IntermediateState[nVar-1] + pStar ) + pStar * ProjInterfaceVel;
   }
+  val_residual[nDim+1] = PassiveScalar_i * val_residual[0];
   }
   else {
 
@@ -1155,6 +1158,7 @@ if (sM > 0.0) {
       val_residual[iDim+1] = sM * IntermediateState[iDim+1] + pStar * UnitNormal[iDim];
     val_residual[nVar-1] = sM * (IntermediateState[nVar-1] + pStar ) + pStar * ProjInterfaceVel;
   }
+  val_residual[nDim+1] = PassiveScalar_j * val_residual[0];
   }
 
 

@@ -942,7 +942,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     /*--- Restart the solution from the free-stream state ---*/
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+      node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, 0, nDim, nVar, config);
     
   } else {
         
@@ -1018,8 +1018,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
        on the restart file line is the global index, followed by the
        node coordinates, and then the conservative variables. ---*/
       
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> Solution[5];
 
         node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
@@ -10127,8 +10127,8 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
   unsigned long iPoint, iVertex;
   su2double *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3], *NormalArea,
   ProjGridVel = 0.0, turb_ke;
-  su2double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
-  su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
+  su2double Density_b, PassiveScalar_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
+  su2double Density_i, PassiveScalar_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
   su2double **Jacobian_b, **DubDu;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -10179,6 +10179,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       }
       Density_i = node[iPoint]->GetDensity();
       Energy_i = node[iPoint]->GetEnergy();
+      PassiveScalar_i = node[iPoint]->GetPassiveScalar();
 
       /*--- Compute the boundary state b ---*/
 
@@ -10204,14 +10205,14 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
       Density_b = Density_i;
       StaticEnergy_b = Energy_i - 0.5 * VelMagnitude2_i - turb_ke;
       Energy_b = StaticEnergy_b + 0.5 * VelMagnitude2_b + turb_ke;
-
+      PassiveScalar_b = PassiveScalar_i;
       FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
       Kappa_b = FluidModel->GetdPde_rho() / Density_b;
       Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
       Pressure_b = FluidModel->GetPressure();
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
 
-      numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, NormalArea, Residual);
+      numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, &PassiveScalar_b,NormalArea, Residual);
 
       /*--- Grid velocity correction to the energy term ---*/
       if (grid_movement) {
@@ -14796,9 +14797,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
    ---*/
   
   nDim = geometry->GetnDim();
-  
-  nVar = nDim+2;
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  /*--- nVar, nPrimVar, and nPrimVarGrad have been increased by 1 to account for passive scalar)
+  ---*/
+  nVar = nDim+3;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+10;
   nSecondaryVar = 8; nSecondaryVarGrad = 2;
 
   
@@ -15402,7 +15404,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     /*--- Restart the solution from the free-stream state ---*/
     
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
+      node[iPoint] = new CNSVariable(Density_Inf, Velocity_Inf, Energy_Inf, 0,nDim, nVar, config);
     
   }
   
@@ -15476,8 +15478,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         
         iPoint_Local = Global2Local[iPoint_Global];
         
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> Solution[5];
 
         node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
@@ -15533,7 +15535,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
 
-    StaticEnergy= node[iPoint]->GetSolution(nDim+1)/Density - 0.5*Velocity2;
+    StaticEnergy= node[iPoint]->GetSolution(nVar-1)/Density - 0.5*Velocity2;
 
     FluidModel->SetTDState_rhoe(Density, StaticEnergy);
     Pressure= FluidModel->GetPressure();
@@ -15545,7 +15547,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       Solution[0] = Density_Inf;
       for (iDim = 0; iDim < nDim; iDim++)
         Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
+      Solution[nVar-1] = Energy_Inf*Density_Inf;
       node[iPoint]->SetSolution(Solution);
       node[iPoint]->SetSolution_Old(Solution);
       counter_local++;

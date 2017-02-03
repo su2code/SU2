@@ -62,7 +62,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
  
 }
 
-CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
+CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, 
+                               su2double val_passive_scalar, unsigned short val_nDim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
     unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
@@ -99,7 +100,8 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Solution_New = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  /*--- nPrimVar, nPrimVarGrad have been increased by 1 to account for passive scalar---*/
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+5;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
   else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
 
@@ -161,6 +163,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   }
   Solution[nVar-1] = val_density*val_energy;
   Solution_Old[nVar-1] = val_density*val_energy;
+  Solution[nDim+1] = val_passive_scalar;
 
   /*--- New solution initialization for Classical RK4 ---*/
 
@@ -171,6 +174,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Solution_New[iDim+1] = val_density*val_velocity[iDim];
     }
     Solution_New[nVar-1] = val_density*val_energy;
+    Solution_New[nDim+1] = val_passive_scalar;
   }
 
     /*--- Allocate and initialize solution for dual time strategy ---*/
@@ -184,6 +188,9 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
     }
     Solution_time_n[nVar-1] = val_density*val_energy;
     Solution_time_n1[nVar-1] = val_density*val_energy;
+
+    Solution_time_n[nDim+1] = val_passive_scalar;
+    Solution_time_n1[nDim+1] = val_passive_scalar;
   }
 
   
@@ -264,7 +271,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Solution_New = NULL;
  
     /*--- Allocate and initialize the primitive variables and gradients ---*/
-  nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  nPrimVar = nDim+10; nPrimVarGrad = nDim+10;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
   else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
 
@@ -495,8 +502,9 @@ void CEulerVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 CNSVariable::CNSVariable(void) : CEulerVariable() { }
 
 CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2double val_energy,
-                         unsigned short val_nDim, unsigned short val_nvar,
-                         CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
+                         su2double val_passive_scalar, unsigned short val_nDim, unsigned short val_nvar,
+                         CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_passive_scalar,
+                          val_nDim, val_nvar, config) {
   
     Temperature_Ref = config->GetTemperature_Ref();
     Viscosity_Ref   = config->GetViscosity_Ref();

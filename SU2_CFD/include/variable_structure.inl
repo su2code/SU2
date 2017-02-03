@@ -243,6 +243,8 @@ inline su2double CVariable::GetDensity(unsigned short val_iSpecies) {  return 0;
 
 inline su2double CVariable::GetEnergy(void) { return 0; }
 
+inline su2double CVariable::GetPassiveScalar(void) { return 0; }
+
 inline su2double *CVariable::GetForceProj_Vector(void) { return NULL; }
 
 inline su2double *CVariable::GetObjFuncSource(void) { return NULL; }
@@ -584,6 +586,8 @@ inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline su2double CEulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution[0]; };
 
+inline su2double CEulerVariable::GetPassiveScalar(void){ return Solution[nDim+1]/Solution[0]; };
+
 inline su2double CEulerVariable::GetEnthalpy(void) { return Primitive[nDim+3]; }
 
 inline su2double CEulerVariable::GetPressure(void) { return Primitive[nDim+1]; }
@@ -617,6 +621,8 @@ inline void CEulerVariable::SetVelocity(void) {
 }
 
 inline void CEulerVariable::SetEnthalpy(void) { Primitive[nDim+3] = (Solution[nVar-1] + Primitive[nDim+1]) / Solution[0]; }
+
+inline void CEulerVariable::SetPassiveScalar(void) { Primitive[nDim+9] = (Solution[nDim+1]/Solution[0]);}
 
 inline bool CEulerVariable::SetSoundSpeed(su2double soundspeed2) {
   su2double radical = soundspeed2;
