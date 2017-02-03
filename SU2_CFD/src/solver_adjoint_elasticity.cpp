@@ -406,7 +406,7 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
   myfile_res.close();
 
   /*--- Perform the MPI communication of the solution ---*/
-  Set_MPI_Solution(geometry, config);
+//  Set_MPI_Solution(geometry, config);
 
 }
 
@@ -2720,7 +2720,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   }
 
   /*--- Set MPI solution ---*/
-  Set_MPI_Solution(geometry, config);
+//  Set_MPI_Solution(geometry, config);
 
 //  for (iPoint = 0; iPoint < nPoint; iPoint++){
 //
