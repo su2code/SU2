@@ -528,8 +528,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
   /*-----------------------------------------------------------*/
 
 	/*--- Under integration of the pressure term, if the calculations assume incompressibility or near incompressibility ---*/
-//  element->clearElement();          /*--- Restarts the element: avoids adding over previous results in other elements --*/
-                                      /*--- Not needed as Kk is set and not added --*/
+  element->clearElement();          /*--- Restarts the element: avoids adding over previous results in other elements --*/
 	element->ComputeGrad_NonLinear(); // Check if we can take this out!
 
 	/*--- nGauss is here the number of Gaussian Points for the pressure term ---*/
