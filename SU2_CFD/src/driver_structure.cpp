@@ -5323,23 +5323,30 @@ void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, uns
 
   geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
 
-  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-
-  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
+//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
   /*-----------------------------------------------------------------*/
   /*----------------- Iterate the flow solver -----------------------*/
   /*---- Sets all the cross dependencies for the flow variables -----*/
   /*-----------------------------------------------------------------*/
 
-  config_container[ZONE_FLOW]->SetExtIter(0);
+//  config_container[ZONE_FLOW]->SetExtIter(0);
+  config_container[ZONE_FLOW]->SetIntIter(0);
 
-  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_FLOW], solver_container[ZONE_FLOW],
-                                                                     config_container[ZONE_FLOW], ExtIter);
+//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_FLOW], solver_container[ZONE_FLOW],
+//                                                                     config_container[ZONE_FLOW], ExtIter);
 
   direct_iteration[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+  /*-----------------------------------------------------------------*/
+  /*--------------------- Set MPI Solution --------------------------*/
+  /*-----------------------------------------------------------------*/
+
+
+//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+
 
 }
 
@@ -5355,9 +5362,9 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW
 
   geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
 
-  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
 
-  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
   /*-----------------------------------------------------------------*/
   /*-------------------- Transfer Tractions -------------------------*/
@@ -5377,7 +5384,7 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW
   /*--------------------- Set MPI Solution --------------------------*/
   /*-----------------------------------------------------------------*/
 
-//  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
+  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
 
 
 }
@@ -5414,8 +5421,8 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, un
                                                    grid_movement, FFDBox, solver_container,
                                                    config_container, ZONE_FLOW, IntIter, ExtIter);
 
-//  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
-//  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
+  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
+  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
 
 
 }
@@ -5781,10 +5788,10 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(unsigned short ZONE_FLOW,
   /*--- We need to avoid setting it twice for the crossed terms  ---*/
 
   /*--- Register a flow-type objective function ---*/
-  if ((kind_recording == FLOW_VARIABLES) ||
-      (kind_recording == GEOMETRY_VARIABLES)){
-    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
-  }
+//  if ((kind_recording == FLOW_VARIABLES) ||
+//      (kind_recording == GEOMETRY_VARIABLES)){
+//    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+//  }
 
   /*--- Register a structural-type objective function ---*/
   if ((kind_recording == FEM_VARIABLES) ||
@@ -6150,7 +6157,7 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
 
     Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
 
-    /*--- Compute cross term (dM / dSv) ---*/
+    /*--- Compute cross term (dS / dMv) ---*/
 
     Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
 
