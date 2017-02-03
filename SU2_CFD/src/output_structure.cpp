@@ -4318,7 +4318,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     nVar_FEM = 0;
     
     /*--- Direct problem variables ---*/
-    /*---Increased nVar_Flow by 1 to account for passive scalar *---/
+    /*---Increased nVar_Flow by 1 to account for passive scalar ---*/
     if (compressible) nVar_Flow = nDim+3; else nVar_Flow = nDim+1;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {

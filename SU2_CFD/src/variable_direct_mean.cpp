@@ -485,7 +485,7 @@ bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   /*--- Set enthalpy ---*/
   
   SetEnthalpy();                                // Requires pressure computation.
-  
+  SetPassiveScalar(); 
   return RightVol;
   
 }
@@ -648,6 +648,8 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
   /*--- Set specific heat ---*/
 
   SetSpecificHeatCp(FluidModel->GetCp());
+
+  SetPassiveScalar();
   
   return RightVol;
   

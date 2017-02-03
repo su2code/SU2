@@ -1718,7 +1718,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
-    Flux_Tensor[3][0] = 0.0;
+    Flux_Tensor[3][1] = 0.0;
     Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
         heat_flux_factor*val_gradprimvar[0][1];
   } else {
@@ -1782,34 +1782,39 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
-    Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
+    Flux_Tensor[3][0] = 0.0;
+    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
         heat_flux_factor*val_gradprimvar[0][0];
 
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
-    Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
+    Flux_Tensor[3][1] = 0.0;
+    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
         heat_flux_factor*val_gradprimvar[0][1];
   } else {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
     Flux_Tensor[2][0] = tau[0][1];
     Flux_Tensor[3][0] = tau[0][2];
-    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
+    Flux_Tensor[4][0] = 0.0;
+    Flux_Tensor[5][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][0];
 
     Flux_Tensor[0][1] = 0.0;
     Flux_Tensor[1][1] = tau[1][0];
     Flux_Tensor[2][1] = tau[1][1];
     Flux_Tensor[3][1] = tau[1][2];
-    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
+    Flux_Tensor[4][1] = 0.0;
+    Flux_Tensor[5][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][1];
 
     Flux_Tensor[0][2] = 0.0;
     Flux_Tensor[1][2] = tau[2][0];
     Flux_Tensor[2][2] = tau[2][1];
     Flux_Tensor[3][2] = tau[2][2];
-    Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
+    Flux_Tensor[4][2] = 0.0;
+    Flux_Tensor[5][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][2];
   }
 
