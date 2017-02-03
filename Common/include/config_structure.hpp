@@ -836,6 +836,8 @@ private:
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
+  unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -3807,6 +3809,16 @@ public:
 	 */
 	unsigned short GetnSpanWiseSections(void);
 
+	/*!
+	 * \brief set number of maximum span-wise sections among all zones .
+	 */
+	void SetnSpanMaxAllZones(unsigned short val_nSpna_max);
+
+	/*!
+	 * \brief number span-wise sections to compute performance for turbomachinery.
+	 * \return number of max span-wise sections.
+	 */
+	unsigned short GetnSpanMaxAllZones(void);
 	/*!
 	 * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
 	 */

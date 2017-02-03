@@ -123,7 +123,7 @@ COutput::COutput(CConfig *config) {
 
   if(turbo){
   	/*--- Initializate quantities for turboperformace ---*/
-  	nSpanWiseSections = config->GetnSpanWiseSections();
+  	nSpanWiseSections = config->GetnSpanMaxAllZones();
   	nMarkerTurboPerf  = config->GetnMarker_TurboPerformance();
 
 

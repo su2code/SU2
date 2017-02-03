@@ -66,6 +66,14 @@ protected:
   su2double *Donor_Variable;
   su2double *Target_Variable;
 
+  /*--- Mixing Plane interface variable ---*/
+  su2double 	  *SpanValueCoeffTarget;
+  unsigned short *SpanLevelDonor;
+	unsigned short nSpanMaxAllZones;
+
+
+
+
   unsigned short nVar;
 
 public:
@@ -193,6 +201,16 @@ public:
 	 */
 	virtual void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
 
+
+	/*!
+	 * \brief Transfer pre-processing for the mixing plane inteface.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 */
+	void Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
+																	 CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt, bool allocate);
 
 
 	/*!
@@ -517,9 +535,6 @@ public:
 
 
 class CTransfer_MixingPlaneInterface : public CTransfer {
-
-protected:
-	unsigned short nSpanWiseSections;
 
 public:
 

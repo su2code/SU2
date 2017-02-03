@@ -357,8 +357,7 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short va
 		Target_Variable[iVar] = 0.0;
 	}
 
-	/*---Initilize span-wise section number---*/
-	nSpanWiseSections = config->GetnSpanWiseSections();
+	nSpanMaxAllZones = config->GetnSpanMaxAllZones();
 
 
 }
@@ -412,7 +411,7 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
   unsigned short iSpan;
 
-	for(iSpan = 0; iSpan<nSpanWiseSections +1; iSpan++){
+	for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
 		target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
 		target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
 		target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);
@@ -425,7 +424,7 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
 void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone){
   unsigned short iSpan;
 
-	for(iSpan = 0; iSpan<nSpanWiseSections +1; iSpan++){
+	for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
 		target_geometry->SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
 		target_geometry->SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
 		target_geometry->SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);
