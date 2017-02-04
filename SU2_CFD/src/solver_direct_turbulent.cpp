@@ -604,6 +604,52 @@ void CTurbSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_Riemann(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  case STATIC_PRESSURE:
+  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  }
+}
+
+void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_Riemann(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  case STATIC_PRESSURE:
+  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  }
+}
+
+
+void CTurbSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_NRBC(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT:case GLOBAL_TOTAL_CONDITIONS_PT: case MIXING_IN: case DENSITY_VELOCITY:
+  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  case STATIC_PRESSURE: case MIXING_OUT: case GLOBAL_STATIC_PRESSURE: case RADIAL_EQUILIBRIUM:
+  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  }
+}
+
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iVar;
@@ -718,6 +764,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   SetResidual_RMS(geometry, config);
   
 }
+
 
 void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
