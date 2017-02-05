@@ -1043,14 +1043,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker -
    */
-  void SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+  void SetClamped_Boundary(unsigned long *indexNode, unsigned short nNodes, CGeometry *geometry, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Set the boundary displacements to the imposed external value.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+  void SetMoving_Boundary(unsigned long* indexNode, unsigned short nNodes, CGeometry *geometry, CConfig *config, unsigned short val_marker);
 
   /*!
    * \brief Set the boundary displacements to the imposed external value.
@@ -1087,7 +1087,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
+  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Check the domain points vertex that are going to be moved.

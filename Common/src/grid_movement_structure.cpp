@@ -314,15 +314,41 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 
   unsigned short iMarker;
 
+  unsigned long iElem;
+  unsigned short iNode, nNodes = 0;
+  int EL_KIND = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  bool clamped = false, moving = false;
+
+
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (GetMoving_Boundary(config, iMarker)) {
-      SetMoving_Boundary(geometry, config, iMarker);
-    }
-    if (GetContraintMoving_Boundary(config, iMarker)) {
-      SetConstraintMoving_Boundary(geometry, config, iMarker);
-    }
-    if (GetClamped_Boundary(config, iMarker)) {
-      SetClamped_Boundary(geometry, config, iMarker);
+
+    clamped = GetClamped_Boundary(config, iMarker);
+    moving  = GetMoving_Boundary(config, iMarker);
+
+    if(clamped || moving){
+
+      /*--- Loops over all the elements ---*/
+
+      for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+        if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+        if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
+        if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
+        if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+        /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+        }
+
+        if (moving)  { SetMoving_Boundary(indexNode, nNodes, geometry, config, iMarker); }
+
+        if (clamped) { SetClamped_Boundary(indexNode, nNodes, geometry, config, iMarker);}
+      }
     }
   }
 
@@ -447,18 +473,18 @@ bool CVolumetricMovement::GetContraintMoving_Boundary(CConfig* config, unsigned 
 
 }
 
-void CVolumetricMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+void CVolumetricMovement::SetClamped_Boundary(unsigned long* indexNode, unsigned short nNodes, CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jNode;
+  unsigned long iNode, jNode, iVertex, iPoint, jPoint;
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    /*--- Get node index ---*/
+  for (iNode = 0; iNode < nNodes; iNode++) {
 
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+    iPoint = indexNode[iNode];
 
-    if (geometry->node[iNode]->GetDomain()) {
+    iVertex = geometry->node[iPoint]->GetVertex(val_marker);
+
+    if ((iVertex != -1) && geometry->node[iPoint]->GetDomain()){
 
       if (nDim == 2) {
         Solution[0] = 0.0;  Solution[1] = 0.0;
@@ -471,21 +497,22 @@ void CVolumetricMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
 
       /*--- Initialize the reaction vector ---*/
 
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
+      LinSysRes.SetBlock(iPoint, Residual);
+      LinSysSol.SetBlock(iPoint, Solution);
 
       /*--- STRONG ENFORCEMENT OF THE CLAMPED BOUNDARY CONDITION ---*/
 
-      StiffMatrix.SetBlock(iNode,iNode, matrixId);
+      StiffMatrix.SetBlock(iPoint, iPoint, matrixId);
 
       /*--- Delete the full column and row for node iNode ---*/
-      for (iPoint = 0; iPoint < geometry->node[iNode]->GetnNeighbor(); iPoint++){
+      for (jNode = 0; jNode < nNodes; jNode++){
 
-        jNode = geometry->node[iNode]->GetPoint(iPoint);
+        jPoint  = indexNode[jNode];
 
-        StiffMatrix.SetBlock(jNode, iNode, matrixZeros);
-        StiffMatrix.SetBlock(iNode, jNode, matrixZeros);
-
+        if (jPoint != iPoint){
+          StiffMatrix.SetBlock(jPoint, iPoint, matrixZeros);
+          StiffMatrix.SetBlock(iPoint, jPoint, matrixZeros);
+        }
       }
     }
   }
@@ -570,29 +597,30 @@ void CVolumetricMovement::SetConstraintMoving_Boundary(CGeometry *geometry, CCon
 
 }
 
-void CVolumetricMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+void CVolumetricMovement::SetMoving_Boundary(unsigned long* indexNode, unsigned short nNodes, CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
   unsigned short iDim, jDim;
 
   su2double *VarCoord;
 
-  unsigned long iNode, iVertex;
-  unsigned long iPoint, jNode;
+  unsigned long iNode, jNode, iVertex, iPoint, jPoint;
 
   su2double VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
   su2double* auxJacobian_ij;
 
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iNode = 0; iNode < nNodes; iNode++) {
 
-    /*--- Get node index ---*/
+    iPoint = indexNode[iNode];
 
-    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+    iVertex = geometry->node[iPoint]->GetVertex(val_marker);
 
-    /*--- Get the displ;acement on the vertex ---*/
+    if ((iVertex != -1) && geometry->node[iPoint]->GetDomain()){
 
-    VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
 
-    if (geometry->node[iNode]->GetDomain()) {
+
+      /*--- Get the displacement on the vertex ---*/
+
+      VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
 
       if (nDim == 2) {
         Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;
@@ -605,22 +633,22 @@ void CVolumetricMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 
       /*--- Initialize the reaction vector ---*/
 
-      LinSysRes.SetBlock(iNode, Residual);
-      LinSysSol.SetBlock(iNode, Solution);
+      LinSysRes.SetBlock(iPoint, Residual);
+      LinSysSol.SetBlock(iPoint, Solution);
 
       /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
 
-      StiffMatrix.SetBlock(iNode, iNode, matrixId);
+      StiffMatrix.SetBlock(iPoint, iPoint, matrixId);
 
       /*--- Delete the columns and rows for a particular node ---*/
 
-      for (iPoint = 0; iPoint < geometry->node[iNode]->GetnNeighbor(); iPoint++){
+      for (jNode = 0; jNode < nNodes; jNode++){
 
-        jNode = geometry->node[iNode]->GetPoint(iPoint);
+        jPoint = indexNode[jNode];
 
         /*--- Retrieve the Jacobian term ---*/
 
-        auxJacobian_ij = StiffMatrix.GetBlock(jNode, iNode);
+        auxJacobian_ij = StiffMatrix.GetBlock(iPoint, jPoint);
 
         /*--- Multiply by the imposed displacement ---*/
         for (iDim = 0; iDim < nDim; iDim++){
@@ -629,16 +657,20 @@ void CVolumetricMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
             Residual[iDim] += auxJacobian_ij[iDim*nDim+jDim] * VarCoord[jDim];
           }
         }
+
         /*--- The term is substracted from the residual (right hand side) ---*/
-        LinSysRes.SubtractBlock(jNode, Residual);
+        LinSysRes.SubtractBlock(jPoint, Residual);
 
-        /*--- The Jacobian term is now set to 0 ---*/
-        StiffMatrix.SetBlock(jNode, iNode, matrixZeros);
-        StiffMatrix.SetBlock(iNode, jNode, matrixZeros);
-
+        if (jPoint != iPoint){
+          /*--- The Jacobian term is now set to 0 ---*/
+          StiffMatrix.SetBlock(jPoint, iPoint, matrixZeros);
+          StiffMatrix.SetBlock(iPoint, jPoint, matrixZeros);
+        }
       }
     }
   }
+
+
 }
 
 su2double CVolumetricMovement::Get_Tangent2D(su2double* Normal, su2double* t1){
@@ -1148,7 +1180,7 @@ void CVolumetricMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *confi
 
     /*--- Set tangential/normal boundary conditions ---*/
 
-    SetTangential_BC(indexNode, element_container[EL_KIND], geometry, config);
+//    SetTangential_BC(indexNode, element_container[EL_KIND], geometry, config);
 
     /*--- Retrieve number of nodes ---*/
 
