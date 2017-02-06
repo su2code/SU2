@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
-  su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
+  su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps,
   **Plane_P0, **Plane_Normal,
   
   Wing_Volume = 0.0, Wing_MinMaxThickness = 0.0, Wing_MaxChord = 0.0, Wing_MinToC = 0.0, Wing_MaxToC = 0.0, Wing_ObjFun_MinToC = 0.0, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0, Wing_MaxDihedral = 0.0,
@@ -208,17 +208,13 @@ int main(int argc, char *argv[]) {
   /*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
+
   if (geometry_container[ZONE_0]->GetnDim() == 2) {
-    MinXCoord = -1E6; MaxXCoord = 1E6;
     Plane_Normal[0][0] = 0.0;   Plane_P0[0][0] = 0.0;
     Plane_Normal[0][1] = 1.0;   Plane_P0[0][1] = 0.0;
     Plane_Normal[0][2] = 0.0;   Plane_P0[0][2] = 0.0;
   }
   else if (geometry_container[ZONE_0]->GetnDim() == 3) {
-    
-    MinPlane = config_container[ZONE_0]->GetSection_WingBounds(0); MaxPlane = config_container[ZONE_0]->GetSection_WingBounds(1);
-    MinXCoord = -1E6; MaxXCoord = 1E6;
-        
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
         Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
         Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
@@ -263,7 +259,7 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
   
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
-    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
+    geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, NULL,
                                      Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
   }
   
@@ -571,7 +567,7 @@ int main(int argc, char *argv[]) {
         /*--- Create airfoil structure ---*/
         
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
-          geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
+          geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], -1E6, 1E6, NULL,
                                                              Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
         }
         

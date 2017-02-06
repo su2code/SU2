@@ -13363,7 +13363,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double MinPlane, MaxPlane, MinXCoord, MaxXCoord, dPlane, *Area, *MaxThickness, *ToC, *Chord, *Twist, *Curvature, *Dihedral, SemiSpan;
+  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *Twist, *Curvature, *Dihedral, SemiSpan;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
   
@@ -13405,7 +13405,6 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     Plane_Normal[iPlane] = new su2double[nDim];
   
   MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
-  MinXCoord = -1E6; MaxXCoord = 1E6;
   dPlane = fabs((MaxPlane - MinPlane)/su2double(nPlane-1));
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -13427,7 +13426,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane],
-                           MinXCoord, MaxXCoord, NULL, Xcoord_Airfoil[iPlane],
+                           -1E6, 1E6, NULL, Xcoord_Airfoil[iPlane],
                            Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane],
                            Variable_Airfoil[iPlane], original_surface, config);
   }
