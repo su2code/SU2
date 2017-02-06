@@ -683,6 +683,9 @@ inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_cont
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
                      CConfig *config, unsigned short val_marker) { }
 
+inline void CSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                     CConfig *config, unsigned short val_marker) { }
+
 inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
                       CConfig *config, unsigned short val_marker) { }
                       
@@ -915,6 +918,12 @@ inline su2double CSolver::GetAverageNu(unsigned short valMarker, unsigned short 
 inline su2double CSolver::GetAverageKei(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
 inline su2double CSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+
+inline su2double CSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+
+inline su2double CSolver::GetExtAverageKei(unsigned short valMarker, unsigned short valSpan){return 0.0;}
+
+inline su2double CSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
 inline void CSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ }
 
@@ -1306,6 +1315,12 @@ inline su2double CEulerSolver::GetAverageNu(unsigned short valMarker, unsigned s
 inline su2double CEulerSolver::GetAverageKei(unsigned short valMarker, unsigned short valSpan){return AverageKei[valMarker][valSpan];}
 
 inline su2double CEulerSolver::GetAverageOmega(unsigned short valMarker, unsigned short valSpan){return AverageOmega[valMarker][valSpan];}
+
+inline su2double CEulerSolver::GetExtAverageNu(unsigned short valMarker, unsigned short valSpan){return ExtAverageNu[valMarker][valSpan];}
+
+inline su2double CEulerSolver::GetExtAverageKei(unsigned short valMarker, unsigned short valSpan){return ExtAverageKei[valMarker][valSpan];}
+
+inline su2double CEulerSolver::GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan){return ExtAverageOmega[valMarker][valSpan];}
 
 inline void CEulerSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ExtAverageDensity[valMarker][valSpan] = valDensity;}
 
