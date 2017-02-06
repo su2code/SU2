@@ -372,6 +372,8 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 																														unsigned long iSpan, unsigned long rank) {
 
 	unsigned short nDim = nVar - 2;
+  bool turbulent = (donor_config->GetKind_Solver() == RANS);
+
 
 	Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
 	Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
@@ -384,6 +386,13 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
  		Donor_Variable[6] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[2];
  	}
 
+ 	if(turbulent){
+ 		Donor_Variable[7] = donor_solution->GetAverageNu(Marker_Donor, iSpan);
+ 		Donor_Variable[8] = donor_solution->GetAverageKei(Marker_Donor, iSpan);
+ 		Donor_Variable[9] = donor_solution->GetAverageOmega(Marker_Donor, iSpan);
+ 	}
+
+
 }
 
 
@@ -392,6 +401,8 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 										  unsigned long iSpan, unsigned long rank) {
 
 	unsigned short nDim = nVar - 2;
+  bool turbulent = (target_config->GetKind_Solver() == RANS);
+
 
 	target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);
 	target_solution->SetExtAveragePressure(Marker_Target, iSpan, Target_Variable[1]);
@@ -400,11 +411,15 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 0, Target_Variable[4]);
 	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 1, Target_Variable[5]);
 
-
   if(nDim == 3){
   	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 2, Target_Variable[6]);
   }
 
+ 	if(turbulent){
+ 		target_solution->SetExtAverageNu(Marker_Target, iSpan, Target_Variable[7]);
+ 		target_solution->SetExtAverageKei(Marker_Target, iSpan, Target_Variable[8]);
+ 		target_solution->SetExtAverageOmega(Marker_Target, iSpan,  Target_Variable[9]);
+ 	}
 
 }
 

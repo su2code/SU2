@@ -1517,15 +1517,19 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,
 						*avgTangVelDonor = NULL, *avgTotPressureDonor = NULL, *avgTotTemperatureDonor = NULL, *avg3DVelDonor = NULL;
 	su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL, *avg3DVelTarget = NULL,
-						*avgTangVelTarget = NULL, *avgTotPressureTarget = NULL, *avgTotTemperatureTarget = NULL;
+						*avgTangVelTarget = NULL, *avgTotPressureTarget = NULL, *avgTotTemperatureTarget = NULL,
+						*avgNuDonor = NULL, *avgOmegaDonor = NULL, *avgKeiDonor = NULL, *avgNuTarget = NULL, *avgOmegaTarget = NULL, *avgKeiTarget = NULL;
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE, iSize;
   unsigned short nDim = nVar - 2;
+  bool turbulent = (donor_config->GetKind_Solver() == RANS);
+
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
-    		      *BuffAvgTangVelDonor = NULL, *BuffAvgTotPressureDonor = NULL, *BuffAvgTotTemperatureDonor = NULL;
+    		      *BuffAvgTangVelDonor = NULL, *BuffAvgTotPressureDonor = NULL, *BuffAvgTotTemperatureDonor = NULL,
+							*BuffAvgNuDonor = NULL, *BuffAvgKeiDonor = NULL, *BuffAvgOmegaDonor = NULL;
     int nSpanSize, *BuffMarkerDonor;
 #endif
 
@@ -1546,6 +1550,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	avgNormalVelDonor 		   =  new su2double[nSpanDonor];
 	avgTangVelDonor   		   =  new su2double[nSpanDonor];
 	avg3DVelDonor						 =  new su2double[nSpanDonor];
+	avgNuDonor        		   =  new su2double[nSpanDonor];
+	avgKeiDonor   		       =  new su2double[nSpanDonor];
+	avgOmegaDonor						 =  new su2double[nSpanDonor];
 
 	for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
 		avgDensityDonor[iSpan]   			= -1.0;
@@ -1555,6 +1562,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		avgNormalVelDonor[iSpan] 			= -1.0;
 		avgTangVelDonor[iSpan]   			= -1.0;
 		avg3DVelDonor[iSpan]   			  = -1.0;
+		avgNuDonor[iSpan]        		  = -1.0;
+		avgKeiDonor[iSpan]   		      = -1.0;
+		avgOmegaDonor[iSpan]					= -1.0;
 	}
 
 	avgDensityTarget   				=  new su2double[nSpanTarget];
@@ -1564,6 +1574,10 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	avgNormalVelTarget 				=  new su2double[nSpanTarget];
 	avgTangVelTarget   				=  new su2double[nSpanTarget];
 	avg3DVelTarget						=  new su2double[nSpanTarget];
+	avgNuTarget        		    =  new su2double[nSpanTarget];
+	avgKeiTarget   		        =  new su2double[nSpanTarget];
+	avgOmegaTarget						=  new su2double[nSpanTarget];
+
 
 	for (iSpan = 0; iSpan < nSpanTarget; iSpan++){
 		avgDensityTarget[iSpan]        = -1.0;
@@ -1573,6 +1587,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		avgNormalVelTarget[iSpan]      = -1.0;
 	  avgTangVelTarget[iSpan]        = -1.0;
 	  avg3DVelTarget[iSpan]     		 = -1.0;
+		avgNuTarget[iSpan]        		 = -1.0;
+		avgKeiTarget[iSpan]   		     = -1.0;
+		avgOmegaTarget[iSpan]					 = -1.0;
 	}
 
 	/*--- Outer loop over the markers on the Mixing-Plane interface: compute one by one ---*/
@@ -1619,6 +1636,12 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			if (nDim == 3){
 				avg3DVelDonor[iSpan]				= Donor_Variable[6];
 			}
+			if (turbulent){
+				avgNuDonor[iSpan]        		= Donor_Variable[7];
+				avgKeiDonor[iSpan]   		    = Donor_Variable[8];
+				avgOmegaDonor[iSpan]				= Donor_Variable[9];
+
+			}
 		}
 	}
 
@@ -1632,6 +1655,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	BuffAvgNormalVelDonor  		 = new su2double[nSpanSize];
 	BuffAvgTangVelDonor        = new su2double[nSpanSize];
 	BuffAvg3DVelDonor          = new su2double[nSpanSize];
+	BuffAvgNuDonor  				   = new su2double[nSpanSize];
+	BuffAvgKeiDonor        		 = new su2double[nSpanSize];
+	BuffAvgOmegaDonor          = new su2double[nSpanSize];
 	BuffMarkerDonor						 = new int[size];
 
 	for (iSpan=0;iSpan<nSpanSize;iSpan++){
@@ -1642,6 +1668,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		BuffAvgNormalVelDonor[iSpan]      = -1.0;
 		BuffAvgTangVelDonor[iSpan]        = -1.0;
 		BuffAvg3DVelDonor[iSpan]          = -1.0;
+		BuffAvgNuDonor[iSpan]             = -1.0;
+		BuffAvgKeiDonor[iSpan]            = -1.0;
+		BuffAvgOmegaDonor[iSpan]          = -1.0;
 	}
 
 	for (iSize=0; iSize<size;iSize++){
@@ -1655,6 +1684,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	SU2_MPI::Allgather(avgNormalVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNormalVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
 	SU2_MPI::Allgather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
 	SU2_MPI::Allgather(avg3DVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvg3DVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgNuDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNuDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgKeiDonor, nSpanDonor , MPI_DOUBLE, BuffAvgKeiDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgOmegaDonor, nSpanDonor , MPI_DOUBLE, BuffAvgOmegaDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
 	SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
 
 
@@ -1667,6 +1699,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		avgNormalVelDonor[iSpan]      = -1.0;
 		avgTangVelDonor[iSpan]        = -1.0;
 		avg3DVelDonor[iSpan]          = -1.0;
+		avgNuDonor[iSpan]             = -1.0;
+		avgKeiDonor[iSpan]            = -1.0;
+		avgOmegaDonor[iSpan]          = -1.0;
 	}
 
 	Marker_Donor= -1;
@@ -1682,6 +1717,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 				avgNormalVelDonor[iSpan]      = BuffAvgNormalVelDonor[nSpanDonor*iSize + iSpan];
 				avgTangVelDonor[iSpan]        = BuffAvgTangVelDonor[nSpanDonor*iSize + iSpan];
 				avg3DVelDonor[iSpan]          = BuffAvg3DVelDonor[nSpanDonor*iSize + iSpan];
+				avgNuDonor[iSpan]             = BuffAvgNuDonor[nSpanDonor*iSize + iSpan];
+				avgKeiDonor[iSpan]            = BuffAvgKeiDonor[nSpanDonor*iSize + iSpan];
+				avgOmegaDonor[iSpan]          = BuffAvgOmegaDonor[nSpanDonor*iSize + iSpan];
 			}
 			Marker_Donor = BuffMarkerDonor[iSize];
 			break;
@@ -1694,6 +1732,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	delete [] BuffAvgNormalVelDonor;
 	delete [] BuffAvgTangVelDonor;
 	delete [] BuffAvg3DVelDonor;
+	delete [] BuffAvgNuDonor;
+	delete [] BuffAvgKeiDonor;
+	delete [] BuffAvgOmegaDonor;
 	delete [] BuffMarkerDonor;
 
 #endif
@@ -1737,6 +1778,14 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			avgTangVelTarget[iSpan]         += avgTangVelDonor[SpanLevelDonor[iSpan]];
 			avg3DVelTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avg3DVelDonor[SpanLevelDonor[iSpan] + 1] - avg3DVelDonor[SpanLevelDonor[iSpan]]);
 			avg3DVelTarget[iSpan]           += avg3DVelDonor[SpanLevelDonor[iSpan]];
+			if(turbulent){
+				avgTotTemperatureTarget[iSpan]   = SpanValueCoeffTarget[iSpan]*(avgNuDonor[SpanLevelDonor[iSpan] + 1] - avgNuDonor[SpanLevelDonor[iSpan]]);
+				avgTotTemperatureTarget[iSpan]  += avgNuDonor[SpanLevelDonor[iSpan]];
+				avgNormalVelTarget[iSpan]        = SpanValueCoeffTarget[iSpan]*(avgKeiDonor[SpanLevelDonor[iSpan] + 1] - avgKeiDonor[SpanLevelDonor[iSpan]]);
+				avgNormalVelTarget[iSpan]       += avgKeiDonor[SpanLevelDonor[iSpan]];
+				avgTangVelTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgOmegaDonor[SpanLevelDonor[iSpan] + 1] - avgOmegaDonor[SpanLevelDonor[iSpan] ]);
+				avgTangVelTarget[iSpan]         += avgOmegaDonor[SpanLevelDonor[iSpan]];
+			}
 		}
 
 		/*--- transfer values at the hub ---*/
@@ -1747,7 +1796,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		avgNormalVelTarget[0]      = avgNormalVelDonor[0];
 		avgTangVelTarget[0]        = avgTangVelDonor[0];
 		avg3DVelTarget[0]          = avg3DVelDonor[0];
-
+		avgNuTarget[0]             = avgNuDonor[0];
+		avgKeiTarget[0]            = avgKeiDonor[0];
+		avgOmegaTarget[0]          = avgOmegaDonor[0];
 
 		/*--- transfer values at the shroud ---*/
 		avgDensityTarget[nSpanTarget - 1]        = avgDensityDonor[nSpanDonor - 1];
@@ -1757,6 +1808,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		avgNormalVelTarget[nSpanTarget - 1]      = avgNormalVelDonor[nSpanDonor - 1];
 		avgTangVelTarget[nSpanTarget - 1]        = avgTangVelDonor[nSpanDonor - 1];
 		avg3DVelTarget[nSpanTarget - 1]          = avg3DVelDonor[nSpanDonor - 1];
+		avgNuTarget[nSpanTarget - 1]             = avgNuDonor[nSpanDonor - 1];
+		avgKeiTarget[nSpanTarget - 1]            = avgKeiDonor[nSpanDonor - 1];
+		avgOmegaTarget[nSpanTarget - 1]          = avgOmegaDonor[nSpanDonor - 1];
 
 
 		/*--- after interpolating the average value span-wise is set in the target zone ---*/
@@ -1771,6 +1825,12 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			if (nDim ==3){
 				Target_Variable[6] = avg3DVelTarget[iSpan];
 			}
+			if (turbulent){
+				Target_Variable[7] = avgNuTarget[iSpan];
+				Target_Variable[8] = avgKeiTarget[iSpan];
+				Target_Variable[9] = avgOmegaTarget[iSpan];
+			}
+
 			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iSpan, rank);
 		}
 	}
