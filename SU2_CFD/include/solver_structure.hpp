@@ -3269,7 +3269,7 @@ public:
      * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the average is evaluated.
 	 */
-	virtual void SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+	virtual void SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief virtual member.
@@ -3278,7 +3278,7 @@ public:
      * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the average is evaluated.
 	 */
-	virtual void AverageProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+	virtual void AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief virtual member.
@@ -3717,7 +3717,13 @@ protected:
 			**RadialEquilibriumPressure,
 		  **ExtAveragePressure,
 		  **AverageDensity,
-		  **ExtAverageDensity;
+		  **ExtAverageDensity,
+			**AverageNu,
+			**AverageKei,
+			**AverageOmega,
+			**ExtAverageNu,
+			**ExtAverageKei,
+			**ExtAverageOmega;
   
   su2double **DensityIn,
       **PressureIn,
@@ -5571,7 +5577,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  void SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  void SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
@@ -5580,7 +5586,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  void AverageProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  void AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
@@ -7963,7 +7969,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
   /*!
@@ -7974,7 +7980,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
   /*!
@@ -7985,7 +7991,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+  void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
   

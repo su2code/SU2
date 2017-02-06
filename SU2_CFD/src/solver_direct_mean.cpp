@@ -120,6 +120,12 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   ExtAveragePressure  		= NULL;
   AverageDensity   		= NULL;
   ExtAverageDensity   		= NULL;
+  AverageNu  = NULL;
+  AverageKei = NULL;
+	AverageOmega = NULL;
+	ExtAverageNu = NULL;
+	ExtAverageKei = NULL;
+	ExtAverageOmega = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -378,6 +384,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAveragePressure  							= NULL;
   AverageDensity   									= NULL;
   ExtAverageDensity   							= NULL;
+  AverageNu                         = NULL;
+  AverageKei                        = NULL;
+	AverageOmega                      = NULL;
+	ExtAverageNu                      = NULL;
+	ExtAverageKei                     = NULL;
+	ExtAverageOmega                   = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -809,6 +821,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAveragePressure  							= new su2double* [nMarker];
   AverageDensity   									= new su2double* [nMarker];
   ExtAverageDensity   							= new su2double* [nMarker];
+  AverageNu  												= new su2double* [nMarker];
+  AverageKei 												= new su2double* [nMarker];
+	AverageOmega 											= new su2double* [nMarker];
+	ExtAverageNu 											= new su2double* [nMarker];
+	ExtAverageKei 										= new su2double* [nMarker];
+	ExtAverageOmega 									= new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
   	AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
@@ -821,6 +839,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
   	AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
   	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
+    AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
+    AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
+  	AverageOmega[iMarker]   							    = new su2double [nSpanWiseSections + 1];
+  	ExtAverageNu[iMarker]   							    = new su2double [nSpanWiseSections + 1];
+  	ExtAverageKei[iMarker]   							    = new su2double [nSpanWiseSections + 1];
+  	ExtAverageOmega[iMarker]   							  = new su2double [nSpanWiseSections + 1];
 
   	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
   		AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
@@ -833,6 +857,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
   		AverageDensity[iMarker][iSpan]   												= 0.0;
   		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
+      AverageNu[iMarker][iSpan]   										        = 0.0;
+      AverageKei[iMarker][iSpan]   										        = 0.0;
+    	AverageOmega[iMarker][iSpan]   										      = 0.0;
+    	ExtAverageNu[iMarker][iSpan]   										      = 0.0;
+    	ExtAverageKei[iMarker][iSpan]   										    = 0.0;
+    	ExtAverageOmega[iMarker][iSpan]   										  = 0.0;
 
   		for (iDim = 0; iDim < nDim; iDim++) {
   			AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
@@ -15160,7 +15190,7 @@ void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
 }
 
 
-void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
+void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint, nVert;
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
@@ -15175,7 +15205,11 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
   bool grid_movement        = config->GetGrid_Movement();
   su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, AverageTangGridVelocity, avgVel2,
   avgTotalEnthaply, *TotalFluxes, RelTangVelocity;
-
+  su2double TotalNu, TotalOmega, TotalKei, TotalMassNu, TotalMassOmega, TotalMassKei, TotalAreaNu, TotalAreaOmega, TotalAreaKei;
+  su2double Nu, Kei, Omega;
+  bool turbulent = (config->GetKind_Solver() == RANS);
+  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
+  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   /*-- Variables declaration and allocation ---*/
@@ -15192,6 +15226,7 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
 #ifdef HAVE_MPI
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
   su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
+  su2double MyTotalNu, MyTotalKei, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKei, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKei, MyTotalMassOmega;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -15213,6 +15248,19 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
     TotalAreaDensity  = 0.0;
     TotalMassPressure = 0.0;
     TotalMassDensity  = 0.0;
+    TotalNu						= 0.0;
+    TotalOmega        = 0.0;
+    TotalKei          = 0.0;
+    TotalMassNu       = 0.0;
+    TotalMassOmega    = 0.0;
+    TotalMassKei      = 0.0;
+    TotalAreaNu       = 0.0;
+    TotalAreaOmega    = 0.0;
+    TotalAreaKei      = 0.0;
+
+    Nu    = 0.0;
+    Omega = 0.0;
+    Kei   = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
@@ -15301,6 +15349,37 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
                 exit(EXIT_FAILURE);
                 break;
               }
+              if(turbulent){
+              	if(menter_sst){
+              		Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+              		Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
+              	}
+              	if(spalart_allmaras){
+              		Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+              	}
+
+              	switch(average_process){
+              	case ALGEBRAIC:
+              		TotalKei   += Kei;
+              		TotalOmega += Omega;
+              		TotalNu     += Nu;
+              		break;
+
+              	case AREA:
+              		TotalAreaKei    += Area*Kei;
+              		TotalAreaOmega  += Area*Omega;
+              		TotalAreaNu     += Area*Nu;
+              	case MASSFLUX: case MIXEDOUT:
+              		TotalMassKei    += Area*(Density*VelNormal )*Kei;
+              		TotalMassOmega  += Area*(Density*VelNormal )*Omega;
+              		TotalMassNu    += Area*(Density*VelNormal )*Nu;
+
+              		TotalAreaKei    += Area*Kei;
+              		TotalAreaOmega  += Area*Omega;
+              		TotalAreaNu     += Area*Nu;
+              		break;
+              	}
+              }
             }
           }
         }
@@ -15317,6 +15396,17 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
     MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
     MyTotalMassDensity   = TotalMassDensity;          TotalMassDensity     = 0;
     MyTotalMassPressure  = TotalMassPressure;         TotalMassPressure    = 0;
+    MyTotalNu            = TotalNu; 	 								TotalNu              = 0;
+    MyTotalKei           = TotalKei; 	 								TotalKei             = 0;
+    MyTotalOmega         = TotalOmega; 	 							TotalOmega           = 0;
+    MyTotalAreaNu        = TotalAreaNu; 	 					  TotalAreaNu          = 0;
+    MyTotalAreaKei       = TotalAreaKei; 	 						TotalAreaKei         = 0;
+    MyTotalAreaOmega     = TotalAreaOmega; 	 					TotalAreaOmega       = 0;
+    MyTotalMassNu        = TotalMassNu; 	 					  TotalMassNu          = 0;
+    MyTotalMassKei       = TotalMassKei; 	 						TotalMassKei         = 0;
+    MyTotalMassOmega     = TotalMassOmega; 	 					TotalMassOmega       = 0;
+
+
 
 
     SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -15325,6 +15415,15 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
     SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalMassDensity, &TotalMassDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalMassPressure, &TotalMassPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalNu, &TotalNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalKei, &TotalKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalOmega, &TotalOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaNu, &TotalAreaNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaKei, &TotalAreaKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaOmega, &TotalAreaOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassNu, &TotalMassNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassKei, &TotalMassKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassOmega, &TotalMassOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 
     MyTotalFluxes					 = new su2double[nVar];
@@ -15460,6 +15559,35 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
             /* --- compute static averaged quantities ---*/
             ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
 
+            if(turbulent){
+            	switch(average_process){
+            	case ALGEBRAIC:
+            		AverageNu[iMarker][iSpan]            = TotalNu/nVert;
+            		AverageKei[iMarker][iSpan]           = TotalKei/nVert;
+            		AverageOmega[iMarker][iSpan]         = TotalOmega/nVert;
+            		break;
+            	case AREA:
+            		AverageNu[iMarker][iSpan]            = TotalAreaNu/TotalArea;
+            		AverageKei[iMarker][iSpan]           = TotalAreaKei/TotalArea;
+            		AverageOmega[iMarker][iSpan]         = TotalAreaOmega/TotalArea;
+            		break;
+            	case MASSFLUX: case MIXEDOUT:
+            		if (abs(TotalFluxes[0])<(10.0e-9)*TotalAreaDensity) {
+            			AverageNu[iMarker][iSpan]            = TotalAreaNu/TotalArea;
+            			AverageKei[iMarker][iSpan]           = TotalAreaKei/TotalArea;
+            			AverageOmega[iMarker][iSpan]         = TotalAreaOmega/TotalArea;
+            		}
+            		else{
+            			AverageNu[iMarker][iSpan]            = TotalMassNu/TotalFluxes[0];
+            			AverageKei[iMarker][iSpan]           = TotalMassKei/TotalFluxes[0];
+            			AverageOmega[iMarker][iSpan]         = TotalMassOmega/TotalFluxes[0];
+
+            		}
+            			break;
+
+
+            	}
+            }
           }
         }
       }
@@ -15528,7 +15656,7 @@ void CEulerSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, 
 
 
 
-void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
+void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint, nVert;
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
@@ -15543,6 +15671,11 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
   bool grid_movement        = config->GetGrid_Movement();
   su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, AverageTangGridVelocity, avgVel2,
   avgTotalEnthaply, *TotalFluxes, RelTangVelocity;
+  su2double TotalNu, TotalOmega, TotalKei, TotalMassNu, TotalMassOmega, TotalMassKei, TotalAreaNu, TotalAreaOmega, TotalAreaKei;
+  su2double Nu, Kei, Omega;
+  bool turbulent = (config->GetKind_Solver() == RANS);
+  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
+  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -15561,6 +15694,7 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
 #ifdef HAVE_MPI
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassDensity, MyTotalMassPressure, *MyTotalFluxes = NULL;
   su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
+  su2double MyTotalNu, MyTotalKei, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKei, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKei, MyTotalMassOmega;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -15580,6 +15714,19 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
   TotalAreaDensity=0.0;
   TotalMassPressure=0.0;
   TotalMassDensity=0.0;
+  TotalNu						= 0.0;
+  TotalOmega        = 0.0;
+  TotalKei          = 0.0;
+  TotalMassNu       = 0.0;
+  TotalMassOmega    = 0.0;
+  TotalMassKei      = 0.0;
+  TotalAreaNu       = 0.0;
+  TotalAreaOmega    = 0.0;
+  TotalAreaKei      = 0.0;
+
+  Nu    = 0.0;
+  Omega = 0.0;
+  Kei   = 0.0;
 
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
 
@@ -15668,6 +15815,37 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
                 exit(EXIT_FAILURE);
                 break;
               }
+              if(turbulent){
+              	if(menter_sst){
+              		Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+              		Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
+              	}
+              	if(spalart_allmaras){
+              		Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+              	}
+
+              	switch(average_process){
+              	case ALGEBRAIC:
+              		TotalKei   += Kei;
+              		TotalOmega += Omega;
+              		TotalNu     += Nu;
+              		break;
+
+              	case AREA:
+              		TotalAreaKei    += Area*Kei;
+              		TotalAreaOmega  += Area*Omega;
+              		TotalAreaNu     += Area*Nu;
+              	case MASSFLUX: case MIXEDOUT:
+              		TotalMassKei    += Area*(Density*VelNormal )*Kei;
+              		TotalMassOmega  += Area*(Density*VelNormal )*Omega;
+              		TotalMassNu    += Area*(Density*VelNormal )*Nu;
+
+              		TotalAreaKei    += Area*Kei;
+              		TotalAreaOmega  += Area*Omega;
+              		TotalAreaNu     += Area*Nu;
+              		break;
+              	}
+              }
             }
           }
         }
@@ -15685,6 +15863,16 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
   MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
   MyTotalMassDensity   = TotalMassDensity;          TotalMassDensity     = 0;
   MyTotalMassPressure  = TotalMassPressure;         TotalMassPressure    = 0;
+  MyTotalNu            = TotalNu; 	 								TotalNu              = 0;
+  MyTotalKei           = TotalKei; 	 								TotalKei             = 0;
+  MyTotalOmega         = TotalOmega; 	 							TotalOmega           = 0;
+  MyTotalAreaNu        = TotalAreaNu; 	 					  TotalAreaNu          = 0;
+  MyTotalAreaKei       = TotalAreaKei; 	 						TotalAreaKei         = 0;
+  MyTotalAreaOmega     = TotalAreaOmega; 	 					TotalAreaOmega       = 0;
+  MyTotalMassNu        = TotalMassNu; 	 					  TotalMassNu          = 0;
+  MyTotalMassKei       = TotalMassKei; 	 						TotalMassKei         = 0;
+  MyTotalMassOmega     = TotalMassOmega; 	 					TotalMassOmega       = 0;
+
 
 
   SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -15693,6 +15881,16 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
   SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotalMassDensity, &TotalMassDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotalMassPressure, &TotalMassPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalNu, &TotalNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalKei, &TotalKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalOmega, &TotalOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalAreaNu, &TotalAreaNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalAreaKei, &TotalAreaKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalAreaOmega, &TotalAreaOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalMassNu, &TotalMassNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalMassKei, &TotalMassKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalMassOmega, &TotalMassOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
 
 
   MyTotalFluxes					 = new su2double[nVar];
@@ -15823,7 +16021,34 @@ void CEulerSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsign
 
           /* --- compute static averaged quantities ---*/
           ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
+          if(turbulent){
+          	switch(average_process){
+          	case ALGEBRAIC:
+          		AverageNu[iMarker][nSpanWiseSections]            = TotalNu/nVert;
+          		AverageKei[iMarker][nSpanWiseSections]           = TotalKei/nVert;
+          		AverageOmega[iMarker][nSpanWiseSections]         = TotalOmega/nVert;
+          		break;
+          	case AREA:
+          		AverageNu[iMarker][nSpanWiseSections]            = TotalAreaNu/TotalArea;
+          		AverageKei[iMarker][nSpanWiseSections]           = TotalAreaKei/TotalArea;
+          		AverageOmega[iMarker][nSpanWiseSections]         = TotalAreaOmega/TotalArea;
+          		break;
+          	case MASSFLUX: case MIXEDOUT:
+          		if (abs(TotalFluxes[0])<(10.0e-9)*TotalAreaDensity) {
+          			AverageNu[iMarker][nSpanWiseSections]            = TotalAreaNu/TotalArea;
+          			AverageKei[iMarker][nSpanWiseSections]           = TotalAreaKei/TotalArea;
+          			AverageOmega[iMarker][nSpanWiseSections]         = TotalAreaOmega/TotalArea;
+          		}
+          		else{
+          			AverageNu[iMarker][nSpanWiseSections]            = TotalMassNu/TotalFluxes[0];
+          			AverageKei[iMarker][nSpanWiseSections]           = TotalMassKei/TotalFluxes[0];
+          			AverageOmega[iMarker][nSpanWiseSections]         = TotalMassOmega/TotalFluxes[0];
 
+          		}
+          		break;
+
+
+          	}
         }
       }
     }
@@ -16289,6 +16514,44 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
   CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
   
+  /*--- Initialize quantities for the average process for internal flow ---*/
+
+  AverageVelocity 									= NULL;
+  AverageTurboVelocity 							= NULL;
+  ExtAverageTurboVelocity 					= NULL;
+  AverageFlux 											= NULL;
+  SpanTotalFlux 										= NULL;
+  AveragePressure  									= NULL;
+  RadialEquilibriumPressure         = NULL;
+  ExtAveragePressure  							= NULL;
+  AverageDensity   									= NULL;
+  ExtAverageDensity   							= NULL;
+  AverageNu                         = NULL;
+  AverageKei                        = NULL;
+  AverageOmega                      = NULL;
+  ExtAverageNu                      = NULL;
+  ExtAverageKei                     = NULL;
+  ExtAverageOmega                   = NULL;
+
+
+  /*--- Initialize primitive quantities for turboperformace ---*/
+
+  DensityIn                     = NULL;
+  PressureIn                    = NULL;
+  TurboVelocityIn               = NULL;
+  DensityOut                    = NULL;
+  PressureOut                   = NULL;
+  TurboVelocityOut              = NULL;
+
+
+  /*--- Initialize quantities for NRBC ---*/
+
+  CkInflow				= NULL;
+  CkOutflow1			= NULL;
+  CkOutflow2			= NULL;
+
+
+
   /*--- Set the gamma value ---*/
 
   Gamma = config->GetGamma();
@@ -16787,6 +17050,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ExtAveragePressure  							= new su2double* [nMarker];
   AverageDensity   									= new su2double* [nMarker];
   ExtAverageDensity   							= new su2double* [nMarker];
+  AverageNu  												= new su2double* [nMarker];
+  AverageKei 												= new su2double* [nMarker];
+	AverageOmega 											= new su2double* [nMarker];
+	ExtAverageNu 											= new su2double* [nMarker];
+	ExtAverageKei 										= new su2double* [nMarker];
+	ExtAverageOmega 									= new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
   	AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
@@ -16799,6 +17068,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
   	AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
   	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
+    AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
+    AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
+  	AverageOmega[iMarker]   							    = new su2double [nSpanWiseSections + 1];
+  	ExtAverageNu[iMarker]   							    = new su2double [nSpanWiseSections + 1];
+  	ExtAverageKei[iMarker]   							    = new su2double [nSpanWiseSections + 1];
+  	ExtAverageOmega[iMarker]   							  = new su2double [nSpanWiseSections + 1];
 
   	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
   		AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
@@ -16811,6 +17086,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
   		AverageDensity[iMarker][iSpan]   												= 0.0;
   		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
+      AverageNu[iMarker][iSpan]   										        = 0.0;
+      AverageKei[iMarker][iSpan]   										        = 0.0;
+    	AverageOmega[iMarker][iSpan]   										      = 0.0;
+    	ExtAverageNu[iMarker][iSpan]   										      = 0.0;
+    	ExtAverageKei[iMarker][iSpan]   										    = 0.0;
+    	ExtAverageOmega[iMarker][iSpan]   										  = 0.0;
 
   		for (iDim = 0; iDim < nDim; iDim++) {
   			AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
@@ -16823,7 +17104,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   		}
   	}
   }
-
 
   /*--- Initialize primitive quantities for turboperformace ---*/
 

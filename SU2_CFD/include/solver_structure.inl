@@ -898,9 +898,9 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
 
-inline void CSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+inline void CSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
 
-inline void CSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+inline void CSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
 
 inline void CSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){ }
 
