@@ -897,7 +897,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   	TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
 
 
-  	for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+  	for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
   		DensityIn               [iMarker][iSpan] = 0.0;
   		PressureIn              [iMarker][iSpan] = 0.0;
   		TurboVelocityIn  [iMarker][iSpan]           = new su2double[nDim];
@@ -17125,7 +17125,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 		TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
 
 
-		for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+		for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
 			DensityIn               [iMarker][iSpan] = 0.0;
 			PressureIn              [iMarker][iSpan] = 0.0;
       TurboVelocityIn  [iMarker][iSpan]           = new su2double[3];
