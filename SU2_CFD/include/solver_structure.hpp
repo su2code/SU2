@@ -3311,6 +3311,27 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
+   * \return Value of the Average Nu on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageNu(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Kei on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageKei(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Omega on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageOmega(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
    * \return Value of the Average Density on the surface <i>val_marker</i>.
    */
   virtual void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
@@ -3328,6 +3349,27 @@ public:
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
   virtual void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Nu on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Kei on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageKei(unsigned short valMarker, unsigned short valSpan, su2double valKei);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Omega on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega);
 
   /*!
    * \brief A virtual member.
@@ -5653,16 +5695,39 @@ public:
   su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan);
 
   /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Nu on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageNu(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Kei on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageKei(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average turbulent Omega on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageOmega(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
    * \brief Set the external average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
-   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valDensity - value to set.
    */
   void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
 
   /*!
-   * \brief Set the external the average pressure at the boundary of interest.
+   * \brief Set the external average density at the boundary of interest.
    * \param[in] val_marker - bound marker.
-   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valPressure - value to set.
    */
   void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure);
 
@@ -5672,6 +5737,30 @@ public:
    * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
    */
   void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
+
+  /*!
+   * \brief Set the external average turbulent Nu at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valNu - value to set.
+   */
+  void SetExtAverageNu(unsigned short valMarker, unsigned short valSpan, su2double valNu);
+
+  /*!
+   * \brief Set the external average turbulent Kei at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valKei - value to set.
+   */
+  void SetExtAverageKei(unsigned short valMarker, unsigned short valSpan, su2double valKei);
+
+  /*!
+   * \brief Set the external average turbulent Omega at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \param[in] val_Span   - value of the Span.
+   * \param[in] valOmega - value to set.
+   */
+  void SetExtAverageOmega(unsigned short valMarker, unsigned short valSpan, su2double valOmega);
 
   /*!
    * \brief Provide the inlet density to check convergence of conservative mixing-plane.

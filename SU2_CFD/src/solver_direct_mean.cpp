@@ -16047,8 +16047,8 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
           		}
           		break;
 
-
           	}
+          }
         }
       }
     }
