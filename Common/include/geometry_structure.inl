@@ -219,8 +219,7 @@ inline su2double CGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2dou
                                               su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) { return 0; }
 
 inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC,
-                                    su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral) { }
+                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral) { }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 

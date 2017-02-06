@@ -90,10 +90,12 @@ def read_plot( filename ):
     # process header
     if '=' in line:
         line = line.split("=")[1].strip()
-    line = line.split(",")
+
+    line = line.rstrip().split(",")
+
     Variables = [ x.strip('" ') for x in line ]
     n_Vars = len(Variables)
-    
+
     # initialize plot data dictionary
     plot_data = ordered_bunch.fromkeys(Variables)
     # must default each value to avoid pointer problems
@@ -123,7 +125,7 @@ def read_plot( filename ):
         for i_Var in range(n_Vars):
             this_variable = Variables[i_Var] 
             plot_data[this_variable] = plot_data[this_variable] + [ line_data[i_Var] ]
-    
+
     #: for each line
 
     # check for number of zones
@@ -131,7 +133,8 @@ def read_plot( filename ):
         raise IOError , 'multiple zones not supported'
     
     # done
-    plot_file.close()              
+    plot_file.close()
+
     return plot_data
 
 
@@ -210,8 +213,10 @@ def get_headerMap():
                  "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "AeroCDrag"       : "AERO_DRAG"               ,
-                 "Radial_Distortion"      : "RADIAL_DISTORTION"              ,
-                 "Circumferential_Distortion"      : "CIRCUMFERENTIAL_DISTORTION"              ,
+                 "Radial_Distortion"           : "RADIAL_DISTORTION"              ,
+                 "Circumferential_Distortion"  : "CIRCUMFERENTIAL_DISTORTION"     ,
+                 "Linear_Solver_Iterations"    : "LINEAR_ITERATION"               ,
+                 "CFL_Number"      : "CFL_NUMBER"              ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CLift)"        : "D_LIFT"                  ,
                  "D(CDrag)"        : "D_DRAG"                  ,
@@ -276,68 +281,35 @@ optnames_stab = [ "D_LIFT_D_ALPHA"               ,
                 ]
 
 # Geometric Optimizer Function Names
-optnames_geo = [ "MAX_THICKNESS"      ,
-                 "1/4_THICKNESS"      ,
-                 "1/3_THICKNESS"      ,
-                 "1/2_THICKNESS"      ,
-                 "2/3_THICKNESS"      ,
-                 "3/4_THICKNESS"      ,
-                 "AREA"               ,
-                 "AOA"                ,
-                 "CHORD"              ,
-                 "WING_VOLUME"           ,
-                 "WING_MIN_MAXTHICKNESS" ,
-                 "WING_MAX_CHORD"        ,
-                 "WING_MIN_TOC"          ,
-                 "WING_MAX_TWIST"        ,
-                 "WING_MAX_CURVATURE"    ,
-                 "WING_MAX_DIHEDRAL"     ,
-                 "MAX_THICKNESS_SEC1" ,
-                 "MAX_THICKNESS_SEC2" ,
-                 "MAX_THICKNESS_SEC3" ,
-                 "MAX_THICKNESS_SEC4" ,
-                 "MAX_THICKNESS_SEC5" ,
-                 "1/4_THICKNESS_SEC1" ,
-                 "1/4_THICKNESS_SEC2" ,
-                 "1/4_THICKNESS_SEC3" ,
-                 "1/4_THICKNESS_SEC4" ,
-                 "1/4_THICKNESS_SEC5" ,
-                 "1/3_THICKNESS_SEC1" ,
-                 "1/3_THICKNESS_SEC2" ,
-                 "1/3_THICKNESS_SEC3" ,
-                 "1/3_THICKNESS_SEC4" ,
-                 "1/3_THICKNESS_SEC5" ,
-                 "1/2_THICKNESS_SEC1" ,
-                 "1/2_THICKNESS_SEC2" ,
-                 "1/2_THICKNESS_SEC3" ,
-                 "1/2_THICKNESS_SEC4" ,
-                 "1/2_THICKNESS_SEC5" ,
-                 "2/3_THICKNESS_SEC1" ,
-                 "2/3_THICKNESS_SEC2" ,
-                 "2/3_THICKNESS_SEC3" ,
-                 "2/3_THICKNESS_SEC4" ,
-                 "2/3_THICKNESS_SEC5" ,
-                 "3/4_THICKNESS_SEC1" ,
-                 "3/4_THICKNESS_SEC2" ,
-                 "3/4_THICKNESS_SEC3" ,
-                 "3/4_THICKNESS_SEC4" ,
-                 "3/4_THICKNESS_SEC5" ,
-                 "AREA_SEC1"          ,
-                 "AREA_SEC2"          ,
-                 "AREA_SEC3"          ,
-                 "AREA_SEC4"          ,
-                 "AREA_SEC5"          ,
-                 "AOA_SEC1"           ,
-                 "AOA_SEC2"           ,
-                 "AOA_SEC3"           ,
-                 "AOA_SEC4"           ,
-                 "AOA_SEC5"           ,
-                 "CHORD_SEC1"         ,
-                 "CHORD_SEC2"         ,
-                 "CHORD_SEC3"         ,
-                 "CHORD_SEC4"         ,
-                 "CHORD_SEC5"         ,
-                 "VOLUME"              ]
+optnames_geo = [ "AREA"                  ,
+                "MAX_THICKNESS"          ,
+                "CHORD"                  ,
+                "TOC"                    ,
+                "AOA"                    ,
+                "WING_VOLUME"            ,
+                "WING_MIN_MAXTHICKNESS"  ,
+                "WING_MAX_CHORD"         ,
+                "WING_MIN_TOC"           ,
+                "WING_MAX_TOC"           ,
+                "WING_OBJFUN_MIN_TOC"    ,
+                "WING_MAX_TWIST"         ,
+                "WING_MAX_CURVATURE"     ,
+                "WING_MAX_DIHEDRAL"      ,
+                "AREA_STATION1"          ,
+                "AREA_STATION2"          ,
+                "AREA_STATION3"          ,
+                "MAX_THICKNESS_STATION1" ,
+                "MAX_THICKNESS_STATION2" ,
+                "MAX_THICKNESS_STATION3" ,
+                "CHORD_STATION1"         ,
+                "CHORD_STATION2"         ,
+                "CHORD_STATION3"         ,
+                "TOC_STATION1"           ,
+                "TOC_STATION2"           ,
+                "TOC_STATION3"           ,
+                "TWIST_STATION1"         ,
+                "TWIST_STATION2"         ,
+                "TWIST_STATION3"         ]
 #: optnames_geo
 
 grad_names_directdiff = ["D_LIFT"                  ,

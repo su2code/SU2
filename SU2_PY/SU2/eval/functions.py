@@ -448,11 +448,11 @@ def geometry( func_name, config, state=None ):
         log_geom = None
     
     # ----------------------------------------------------
-    #  Update Mesh (check with Trent)
+    #  Update Mesh
     # ----------------------------------------------------
     
     # does decomposition and deformation
-    #info = update_mesh(config,state)
+    info = update_mesh(config,state)
 
 
     # ----------------------------------------------------    
