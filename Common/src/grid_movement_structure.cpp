@@ -572,7 +572,7 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
     dist = 1E20;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = 0.0;
+        dist2 = EPS*EPS;
         for (iDim = 0; iDim < nDim; iDim++)
           dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_DefWall+iVertex)*nDim+iDim])*
           (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_DefWall+iVertex)*nDim+iDim]);
@@ -616,94 +616,17 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   unsigned long iPoint, iVertex, nVertex_SolidWall;
 
   int rank = MASTER_NODE;
+  int iProcessor, nProcessor = SINGLE_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
+  unsigned short Kind_SU2 = config->GetKind_SU2();
 
   MaxDistance = -1E22; MinDistance = 1E22;
 
-
   if (rank == MASTER_NODE)
-    cout << "Computing distances to the nearest surface (except internal surfaces)." << endl;
-
-  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
-   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
-
-  unsigned short Kind_SU2 = config->GetKind_SU2();
-
-#ifndef HAVE_MPI
-
-  /*--- Compute the total number of nodes on deforming boundaries ---*/
-
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      nVertex_SolidWall += geometry->GetnVertex(iMarker);
-
-  /*--- Allocate an array to hold boundary node coordinates ---*/
-
-  su2double **Coord_bound;
-  Coord_bound = new su2double* [nVertex_SolidWall];
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    Coord_bound[iVertex] = new su2double [nDim];
-
-  /*--- Retrieve and store the coordinates of the deforming boundary nodes ---*/
-
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Coord_bound[nVertex_SolidWall][iDim] = geometry->node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
-  }
-
-  /*--- Loop over all interior mesh nodes and compute the distances to each
-   of the deforming boundary nodes. Store the minimum distance to the wall for
-   each interior mesh node. Store the global minimum distance. ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
-      dist2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim]-Coord_bound[iVertex][iDim]) *(coord[iDim]-Coord_bound[iVertex][iDim]);
-      if (dist2 < dist) dist = dist2;
-    }
-
-    MaxDistance = max(MaxDistance, sqrt(dist));
-    if (sqrt(dist)> EPS) MinDistance = min(MinDistance, sqrt(dist));
-
-    geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
-  }
-
-  /*--- Distance from  0 to 1 ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    dist = geometry->node[iPoint]->GetWall_Distance()/MaxDistance;
-    geometry->node[iPoint]->SetWall_Distance(dist);
-  }
-
-  /*--- Deallocate the vector of boundary coordinates. ---*/
-
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    delete[] Coord_bound[iVertex];
-  delete[] Coord_bound;
-
-
-#else
-
-  /*--- Variables and buffers needed for MPI ---*/
-
-  int iProcessor, nProcessor;
-
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    cout << "Computing distances to the nearest solid surface (except internal surfaces)." << endl;
 
   unsigned long nLocalVertex_SolidWall = 0, nGlobalVertex_SolidWall = 0, MaxLocalVertex_SolidWall = 0;
   unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
@@ -714,17 +637,24 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      nLocalVertex_SolidWall += geometry->GetnVertex(iMarker);
+    		config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    	nLocalVertex_SolidWall += geometry->GetnVertex(iMarker);
 
   /*--- Communicate to all processors the total number of deforming boundary
    nodes, the maximum number of deforming boundary nodes on any single
    partition, and the number of deforming nodes on each partition. ---*/
 
   Buffer_Send_nVertex[0] = nLocalVertex_SolidWall;
+#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nLocalVertex_SolidWall, &nGlobalVertex_SolidWall,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nLocalVertex_SolidWall, &MaxLocalVertex_SolidWall, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#else
+  nGlobalVertex_SolidWall = nLocalVertex_SolidWall;
+  MaxLocalVertex_SolidWall = nLocalVertex_SolidWall;
+  Buffer_Receive_nVertex[0] = Buffer_Send_nVertex[0];
+#endif
+
 
   /*--- Create and initialize to zero some buffers to hold the coordinates
    of the boundary nodes that are communicated from each partition (all-to-all). ---*/
@@ -743,15 +673,21 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
-        config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+    		config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = geometry->node[iPoint]->GetCoord(iDim);
         nVertex_SolidWall++;
       }
 
+#ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
+#else
+  for (iVertex = 0; iVertex < MaxLocalVertex_SolidWall; iVertex++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Buffer_Receive_Coord[iVertex*nDim+iDim] = Buffer_Send_Coord[iVertex*nDim+iDim];
+#endif
 
   /*--- Loop over all interior mesh nodes on the local partition and compute
    the distances to each of the deforming boundary nodes in the entire mesh.
@@ -762,7 +698,7 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
     dist = 1E20;
     for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
       for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-        dist2 = 0.0;
+        dist2 = EPS*EPS;
         for (iDim = 0; iDim < nDim; iDim++)
           dist2 += (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim])*
           (coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_SolidWall+iVertex)*nDim+iDim]);
@@ -774,12 +710,19 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
     if (sqrt(dist)> EPS)  MinDistance = min(MinDistance, sqrt(dist));
 
     geometry->node[iPoint]->SetWall_Distance(sqrt(dist));
+
   }
 
   su2double MaxDistance_Local = MaxDistance; MaxDistance = 0.0;
   su2double MinDistance_Local = MinDistance; MinDistance = 0.0;
+
+#ifdef HAVE_MPI
   SU2_MPI::Allreduce(&MaxDistance_Local, &MaxDistance, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MinDistance_Local, &MinDistance, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else
+  MaxDistance = MaxDistance_Local;
+  MinDistance = MinDistance_Local;
+#endif
 
   /*--- Distance from  0 to 1 ---*/
 
@@ -794,8 +737,6 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   delete[] Buffer_Receive_Coord;
   delete[] Buffer_Send_nVertex;
   delete[] Buffer_Receive_nVertex;
-
-#endif
 
 }
 
@@ -837,7 +778,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   /*--- Compute the distance to the nearest surface if needed
    as part of the stiffness calculation.. ---*/
 
-  if (config->GetDeform_Stiffness_Type() == WALL_DISTANCE) {
+  if (config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) {
     ComputeSolid_Wall_Distance(geometry, config, MinDistance, MaxDistance);
     if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
   }
@@ -865,7 +806,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
     ElemVolume = geometry->elem[iElem]->GetVolume();
     
     if ((config->GetDeform_Stiffness_Type() == DEF_WALL_DISTANCE) ||
-    		(config->GetDeform_Stiffness_Type() == WALL_DISTANCE)) {
+    		(config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE)) {
       ElemDistance = 0.0;
       for (iNodes = 0; iNodes < nNodes; iNodes++)
         ElemDistance += geometry->node[PointCorners[iNodes]]->GetWall_Distance();
@@ -1688,7 +1629,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *con
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
       case DEF_WALL_DISTANCE: E = 1.0 / (ElemDistance*ElemDistance); break;
-      case WALL_DISTANCE: E = 1.0 / (ElemDistance*ElemDistance); break;
+      case SOLID_WALL_DISTANCE: E = 1.0 / (ElemDistance*ElemDistance); break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     
@@ -1828,7 +1769,7 @@ void CVolumetricMovement::SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *con
     switch (config->GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME: E = 1.0 / ElemVolume; break;
       case DEF_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
-      case WALL_DISTANCE: E = 1.0 / ElemDistance; break;
+      case SOLID_WALL_DISTANCE: E = 1.0 / ElemDistance; break;
       case CONSTANT_STIFFNESS: E = 1.0 / EPS; break;
     }
     
