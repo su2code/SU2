@@ -13358,7 +13358,7 @@ su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_
 
 void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
                                      su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord,
-                                     su2double &Wing_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                     su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                                      su2double &Wing_MaxDihedral) {
 
   unsigned short iPlane, iDim, nPlane = 0;
@@ -13439,7 +13439,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     /*--- Write an output file---*/
 
     if (config->GetOutput_FileFormat() == PARAVIEW) {
-      Wing_File.open("Wing_Distribution.csv", ios::out);
+      Wing_File.open("wing_distribution.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
       else
@@ -13599,13 +13599,15 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     /*--- Evaluate Max and Min quantities ---*/
 
-    Wing_MinMaxThickness = 1E6; Wing_MaxChord = -1E6; Wing_MinToC = 1E6;
+    Wing_MinMaxThickness = 1E6; Wing_MaxChord = -1E6; Wing_MinToC = 1E6; Wing_MaxToC = -1E6;
     Wing_MaxTwist = -1E6; Wing_MaxCurvature = -1E6; Wing_MaxDihedral = -1E6;
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
       Wing_MaxChord = max(Wing_MaxChord, Chord[iPlane]);
       Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
+      Wing_MaxToC = max(Wing_MaxToC, ToC[iPlane]);
+      Wing_ObjFun_MinToC = sqrt((Wing_MinToC - 0.07)*(Wing_MinToC - 0.07));
       Wing_MaxTwist = max(Wing_MaxTwist, fabs(Twist[iPlane]));
       Wing_MaxCurvature = max(Wing_MaxCurvature, Curvature[iPlane]);
       Wing_MaxDihedral = max(Wing_MaxDihedral, fabs(Dihedral[iPlane]));
