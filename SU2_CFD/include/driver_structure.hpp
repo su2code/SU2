@@ -638,6 +638,12 @@ public:
    */
   void SetTurboPerformance(unsigned short targetZone);
 
+  /*!
+   * \brief Set all the turbo geometrical quantities.
+   */
+  void Preprocessing(void);
+
+
 };
 
 
