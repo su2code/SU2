@@ -5830,7 +5830,7 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
 }
 
-void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh;

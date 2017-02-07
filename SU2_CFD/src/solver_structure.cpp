@@ -2278,7 +2278,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -2403,7 +2403,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
       
-      if (grid_movement) {
+      if (grid_movement && val_update_geo) {
         
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
@@ -2448,7 +2448,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
-  if (grid_movement) {
+  if (grid_movement && val_update_geo) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     
