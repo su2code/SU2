@@ -469,6 +469,7 @@ void CConfig::SetPointersNull(void) {
   Marker_TurboBoundIn = NULL;
   Marker_TurboBoundOut = NULL;
   Marker_NRBC = NULL;
+  nSpan_iZones = NULL;
   
   /*--- Variable initialization ---*/
   
@@ -2202,7 +2203,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nSpanWiseSections =1;
   }
 
-
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery != 0){
+  	nSpan_iZones = new unsigned short[nZone];
+  }
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
@@ -5639,6 +5643,9 @@ CConfig::~CConfig(void) {
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
   if (Marker_NRBC != NULL) delete [] Marker_NRBC;
+
+  if (nSpan_iZones != NULL) delete [] nSpan_iZones;
+
  
 }
 
