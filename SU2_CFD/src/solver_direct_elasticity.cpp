@@ -200,7 +200,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
   }
-  
+
   bool prestretch_fem = config->GetPrestretch();
   if (prestretch_fem) Set_Prestretch(geometry, config);  
   
@@ -3973,20 +3973,19 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
   
 }
 
-void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  unsigned short iVar, iMesh, nSolVar;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  long Dyn_RestartIter;
+  unsigned short iVar, nSolVar;
+  unsigned long iPoint, index;
 
-  su2double Area_Children, Area_Parent, *Solution_Fine, dull_val;
+  su2double dull_val;
   ifstream restart_file;
   string restart_filename, filename, text_line;
 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[MESH_0]->GetnZone();
 
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
   if (dynamic) nSolVar = 3 * nVar;
   else nSolVar = nVar;
@@ -4003,14 +4002,12 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   filename = config->GetSolution_FEMFileName();
 
   /*--- If multizone, append zone name ---*/
+
   if (nZone > 1)
     filename = config->GetMultizone_FileName(filename, iZone);
 
   if (dynamic) {
-
-    Dyn_RestartIter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
-
-    filename = config->GetUnsteady_FileName(filename, (int)Dyn_RestartIter);
+    filename = config->GetUnsteady_FileName(filename, val_iter);
   }
 
   restart_file.open(filename.data(), ios::in);
