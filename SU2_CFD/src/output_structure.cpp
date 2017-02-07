@@ -10282,7 +10282,7 @@ void COutput::WriteTutboPerfConvHistory(CConfig *config){
 		cout << endl;
 		cout << endl << "-------------------------------------------------------------------------" << endl;
 		cout << endl;
-		if(iMarker_Monitoring > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1){
+		if(nZone > 0 && iMarker_Monitoring < config->GetnMarker_Turbomachinery() -1){
 			cout << endl << "---------- Mixing-Plane Interface between Blade " << iMarker_Monitoring + 1 << " and Blade " << iMarker_Monitoring + 2 << " -----------" << endl;
 			cout << endl;
 			inMarkerTag_Mix = config->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring + 1);
