@@ -1167,7 +1167,8 @@ enum ENUM_PARAM {
   CUSTOM = 24,               /*!< 'CUSTOM' for use in external python analysis. */
   NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
-  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
+  FFD_ANGLE_OF_ATTACK = 102,	 /*!< \brief Angle of attack for FFD problem. */
+  FFD_DIRECT_MANIPULATION = 26
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1197,7 +1198,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("SURFACE_FILE", SURFACE_FILE)
 ("CUSTOM", CUSTOM)
 ("NO_DEFORMATION", NO_DEFORMATION)
-("CST", CST);
+("CST", CST)
+("FFD_DIRECT_MANIPULATION", FFD_DIRECT_MANIPULATION);
 
 
 /*!
