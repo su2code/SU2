@@ -838,6 +838,7 @@ private:
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
+  bool turbMixingPlane;   /*!< \brief option for turbulent mixingplane */
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -3756,6 +3757,12 @@ public:
    */
 	bool GetBoolMixingPlaneInterface(void);
   
+	/*!
+	 * \brief Verify if there is mixing plane interface specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolTurbMixingPlane(void);
+
   /*!
    * \brief number mixing plane interface specified from config file.
    * \return number of bound.

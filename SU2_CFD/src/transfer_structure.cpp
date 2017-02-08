@@ -1774,17 +1774,17 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			avgTotTemperatureTarget[iSpan]  += avgTotTemperatureDonor[SpanLevelDonor[iSpan]];
 			avgNormalVelTarget[iSpan]        = SpanValueCoeffTarget[iSpan]*(avgNormalVelDonor[SpanLevelDonor[iSpan] + 1] - avgNormalVelDonor[SpanLevelDonor[iSpan]]);
 			avgNormalVelTarget[iSpan]       += avgNormalVelDonor[SpanLevelDonor[iSpan]];
-			avgTangVelTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgTangVelDonor[SpanLevelDonor[iSpan] + 1] - avgTangVelDonor[SpanLevelDonor[iSpan] ]);
+			avgTangVelTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgTangVelDonor[SpanLevelDonor[iSpan] + 1] - avgTangVelDonor[SpanLevelDonor[iSpan]]);
 			avgTangVelTarget[iSpan]         += avgTangVelDonor[SpanLevelDonor[iSpan]];
 			avg3DVelTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avg3DVelDonor[SpanLevelDonor[iSpan] + 1] - avg3DVelDonor[SpanLevelDonor[iSpan]]);
 			avg3DVelTarget[iSpan]           += avg3DVelDonor[SpanLevelDonor[iSpan]];
 			if(turbulent){
-				avgTotTemperatureTarget[iSpan]   = SpanValueCoeffTarget[iSpan]*(avgNuDonor[SpanLevelDonor[iSpan] + 1] - avgNuDonor[SpanLevelDonor[iSpan]]);
-				avgTotTemperatureTarget[iSpan]  += avgNuDonor[SpanLevelDonor[iSpan]];
-				avgNormalVelTarget[iSpan]        = SpanValueCoeffTarget[iSpan]*(avgKeiDonor[SpanLevelDonor[iSpan] + 1] - avgKeiDonor[SpanLevelDonor[iSpan]]);
-				avgNormalVelTarget[iSpan]       += avgKeiDonor[SpanLevelDonor[iSpan]];
-				avgTangVelTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgOmegaDonor[SpanLevelDonor[iSpan] + 1] - avgOmegaDonor[SpanLevelDonor[iSpan] ]);
-				avgTangVelTarget[iSpan]         += avgOmegaDonor[SpanLevelDonor[iSpan]];
+				avgNuTarget[iSpan]             = SpanValueCoeffTarget[iSpan]*(avgNuDonor[SpanLevelDonor[iSpan] + 1] - avgNuDonor[SpanLevelDonor[iSpan]]);
+				avgNuTarget[iSpan]            += avgNuDonor[SpanLevelDonor[iSpan]];
+				avgKeiTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avgKeiDonor[SpanLevelDonor[iSpan] + 1] - avgKeiDonor[SpanLevelDonor[iSpan]]);
+				avgKeiTarget[iSpan]           += avgKeiDonor[SpanLevelDonor[iSpan]];
+				avgOmegaTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgOmegaDonor[SpanLevelDonor[iSpan] + 1] - avgOmegaDonor[SpanLevelDonor[iSpan] ]);
+				avgOmegaTarget[iSpan]         += avgOmegaDonor[SpanLevelDonor[iSpan]];
 			}
 		}
 
