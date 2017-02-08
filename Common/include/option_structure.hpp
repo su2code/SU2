@@ -861,6 +861,19 @@ static const map<string, AVERAGEPROCESS_TYPE> AverageProcess_Map = CCreateMap<st
 ("MIXEDOUT",  MIXEDOUT)
 ("MASSFLUX", MASSFLUX);
 
+/*!
+ * \brief types of mixing process for averaging quantities at the boundaries.
+ */
+enum MIXINGPLANE_INTERFACE_TYPE {
+  MATCHING = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  NEAREST_SPAN = 2,           /*!< \brief an area average is computed at the boundary of interest. */
+  LINEAR_INTERPOLATION = 3		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
+};
+
+static const map<string, MIXINGPLANE_INTERFACE_TYPE> MixingPlaneInterface_Map = CCreateMap<string, MIXINGPLANE_INTERFACE_TYPE>
+("MATCHING", MATCHING)
+("NEAREST_SPAN",  NEAREST_SPAN)
+("LINEAR_INTERPOLATION", LINEAR_INTERPOLATION);
 
 /*!
  * \brief this option allow to compute the span-wise section in different ways.

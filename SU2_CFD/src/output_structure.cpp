@@ -4935,7 +4935,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (Unsteady) write_heads = (iIntIter == 0);
     else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
-    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*80)) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
+    bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
     
     /*--- Analogous for dynamic problems (as of now I separate the problems, it may be worthy to do all together later on ---*/
     bool write_heads_FEM;
