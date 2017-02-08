@@ -347,12 +347,12 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short va
 	nVar = val_nVar;
 
 
-	Donor_Variable     = new su2double[nVar + 2];
-	Target_Variable    = new su2double[nVar + 2];
+	Donor_Variable     = new su2double[nVar + 5];
+	Target_Variable    = new su2double[nVar + 5];
 
 
 
-	for (iVar = 0; iVar < nVar + 2; iVar++){
+	for (iVar = 0; iVar < nVar + 5; iVar++){
 		Donor_Variable[iVar]  = 0.0;
 		Target_Variable[iVar] = 0.0;
 	}

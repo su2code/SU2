@@ -12266,10 +12266,21 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2] + deltaprim[3];
         Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[4];
       }
+
       ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurbomachineryFlag(val_marker), config->GetKind_TurboMachinery(iZone));
       Velocity2_b = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
+      }
+
+      if(Pressure_b <= 0.0 || Density_b <= 0.0 ){
+      	Pressure_b = Pressure_i;
+      	Density_b = Density_i;
+      	Velocity2_b = 0.0;
+      	for (iDim = 0; iDim < nDim; iDim++) {
+      		Velocity_b[iDim] = Velocity_i[iDim];
+      		Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
+      	}
       }
 
       FluidModel->SetTDState_Prho(Pressure_b, Density_b);

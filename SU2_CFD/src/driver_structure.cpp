@@ -2438,6 +2438,7 @@ void CDriver::Interface_Preprocessing() {
 
       if (config_container[donorZone]->GetBoolMixingPlaneInterface()){
       	nVarTransfer = 0;
+      	nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
       	transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone]);
       	if (rank == MASTER_NODE) cout << "mixing-plane averages. "<< endl;
       }
