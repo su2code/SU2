@@ -3562,7 +3562,14 @@ public:
    * \brief Constructor of the class.
    */
   CBaselineSolver(void);
-  
+
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineSolver(CGeometry *geometry, CConfig *config);
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3571,14 +3578,12 @@ public:
    * \param[in] field_names - Vector of variable names.
    */
   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
-  
+
   /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Destructor of the class.
    */
-  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+  virtual ~CBaselineSolver(void);
+
   /*!
    * \brief Impose the send-receive boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3604,11 +3609,12 @@ public:
    * \param[in] val_iter - Current external iteration number.
    */
   void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
+
   /*!
-   * \brief Destructor of the class.
+   * \brief Set the number of variables and string names from the restart file.
+   * \param[in] config - Definition of the particular problem.
    */
-  virtual ~CBaselineSolver(void);
+  void SetOutputVariables(CGeometry *geometry, CConfig *config);
   
 };
 
@@ -3967,8 +3973,7 @@ public:
    * \return Value of the pressure at the infinity.
    */
   CFluidModel* GetFluidModel(void);
-  
-  
+
   /*!
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.

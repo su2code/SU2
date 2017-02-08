@@ -7737,7 +7737,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
   short iSection, nSection;
   unsigned long iVertex, iPoint;
-  su2double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
+  su2double *Plane_P0, *Plane_Normal, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
   MomentInviscid[3] = {0.0,0.0,0.0}, MomentDist[3] = {0.0,0.0,0.0}, RefDensity, RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv;
   vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
   string Marker_Tag, Slice_Filename, Slice_Ext;
@@ -7793,7 +7793,6 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       
       /*--- Read the values from the config file ---*/
       
-      MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
       MinXCoord = -1E6; MaxXCoord = 1E6;
       
       Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;

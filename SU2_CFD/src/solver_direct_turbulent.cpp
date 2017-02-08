@@ -993,13 +993,21 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
   string UnstExt, text_line;
   ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  /*--- Modify file name for multizone problems ---*/
+  if (nZone >1)
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
 
   /*--- Modify file name for an unsteady restart ---*/
   
