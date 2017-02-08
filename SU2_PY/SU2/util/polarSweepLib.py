@@ -2,7 +2,7 @@
 # \file polarSweepLib.py
 #  \brief Functions library for compute_polar.py script.
 #  \author E Arad
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -248,7 +248,7 @@ def setPolaraType(ctrl,nc,verbose):
 # Now let us find out which angles are specified in the control file, to figure out polarSweepType and polarVar
 #
     keyWordListAOA='angles of attack'
-    iListAOA = parLocator(keyWordListAoA,ctrl,nc,-1,verbose)
+    iListAOA = parLocator(keyWordListAOA,ctrl,nc,-1,verbose)
     keyWordListPhi='roll angles'
     iListPhi = parLocator(keyWordListPhi,ctrl,nc,-1,verbose)
     keyWordListBeta='side slip angle'
@@ -531,7 +531,7 @@ def updatedControlFile(ctrl,nc,parAngle,ctrlFile,verbose):
 # Now let us find out which angles are specified in the control file, to figure out polarSweepType and polarVar
 #
     keyWordListAOA='angles of attack'
-    iListAOA = parLocator(keyWordListAoA,ctrl,nc,-1,verbose)
+    iListAOA = parLocator(keyWordListAOA,ctrl,nc,-1,verbose)
     keyWordListPhi='roll angles'
     iListPhi = parLocator(keyWordListPhi,ctrl,nc,-1,verbose)
     keyWordListBeta='side slip angle'
