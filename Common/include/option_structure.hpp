@@ -2279,9 +2279,17 @@ public:
             nValueDV = 1;
           }
           break;
-        case FFD_CONTROL_POINT_2D: case FFD_DIRECT_MANIPULATION:
+        case FFD_CONTROL_POINT_2D:
           if((this->paramDV[iDV][3] == 0) &&
              (this->paramDV[iDV][4] == 0)) {
+            nValueDV = 2;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_DIRECT_MANIPULATION:
+          if((this->paramDV[iDV][2] == 0) &&
+             (this->paramDV[iDV][3] == 0)) {
             nValueDV = 2;
           } else {
             nValueDV = 1;

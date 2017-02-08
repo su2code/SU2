@@ -46,6 +46,11 @@
 #include "config_structure.hpp"
 #include "vector_structure.hpp"
 
+#ifdef HAVE_EIGEN
+#include <Eigen/Core>
+#include <Eigen/SVD>
+#endif
+
 /*!
  * \class CFreeFormBlending
  * \brief Class that defines the particular kind of blending function for the free form deformation.
@@ -96,12 +101,17 @@ public:
   /*!
    * \brief Returns the current order of the function.
    */
-  su2double GetOrder();
+  unsigned short GetOrder();
 
   /*!
    * \brief Returns the current degree of the function.
    */
-  su2double GetDegree();
+  unsigned short GetDegree();
+
+  /*!
+   * \brief Returns the number of control points.
+   */
+  unsigned short GetnControl();
 };
 
 /*!
@@ -919,6 +929,17 @@ public:
  * \version 5.0.0 "Raven"
  */
 class CSurfaceMovement {
+
+/*--- Typedefs of Eigen matrix, vector and SVD---*/
+
+#ifdef HAVE_EIGEN
+  typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix;
+
+  typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
+
+  typedef Eigen::JacobiSVD<EigenMatrix> EigenSVD;
+#endif
+
 protected:
   CFreeFormDefBox** FFDBox;	/*!< \brief Definition of the Free Form Deformation Box. */
   unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */

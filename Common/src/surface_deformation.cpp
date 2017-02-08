@@ -33,11 +33,6 @@
 
 #include "../include/surface_deformation.hpp"
 
-#ifdef HAVE_EIGEN
-#include <Core>
-#include <SVD>
-#endif
-
 CSurfaceMovement::CSurfaceMovement(void) {
   nFFDBox = 0;
   nLevel = 0;
@@ -2083,39 +2078,34 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
 void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, bool ResetDef) {
 
-
-  typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix; // Dynamic number of columns (heap allocation)
-
-  typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
-
-  unsigned short lDegree = FFDBox->BlendingFunction[0]->GetDegree();
-  unsigned short mDegree = FFDBox->BlendingFunction[1]->GetDegree();
-
-  EigenMatrix BlendingMatrix(config->GetnDV(), (lDegree+1)*(mDegree+1));
-  EigenVector ControlPointPositionsX((lDegree+1)*(mDegree+1));
-  EigenVector ControlPointPositionsY((lDegree+1)*(mDegree+1));
-  EigenVector DeltaX(config->GetnDV());
-  EigenVector DeltaY(config->GetnDV());
-  Eigen::JacobiSVD<EigenMatrix> BlendingMatrixSVD;
-
-  unsigned short iDV, iDegree, jDegree;
-
+  unsigned short iDV, iControl, jControl, nDV = config->GetnDV();
+  unsigned short lControl = FFDBox->BlendingFunction[0]->GetnControl();
+  unsigned short mControl = FFDBox->BlendingFunction[1]->GetnControl();
+  unsigned short nFixed = 1;
 
   su2double *ParamCoord;
-  EigenVector PilotPointCoordX(config->GetnDV());
-  EigenVector PilotPointCoordY(config->GetnDV());
-
   su2double Movement[3] = {0.0, 0.0, 0.0}, Ampl;
   su2double Scale = config->GetFFD_Scale();
   unsigned short index[3] = {0,0,0};
 
-  for (iDV = 0; iDV < config->GetnDV(); iDV++){
+  /*--- Set up necessary matrices and vectors ---*/
+
+  EigenMatrix BlendingMatrix(nDV + nFixed, lControl*mControl);
+  EigenVector ControlPointPositionsX(lControl*mControl);
+  EigenVector ControlPointPositionsY(lControl*mControl);
+  EigenVector DeltaX(nDV + nFixed);
+  EigenVector DeltaY(nDV + nFixed);
+  EigenVector PilotPointCoordX(nDV + nFixed);
+  EigenVector PilotPointCoordY(nDV + nFixed);
+  EigenSVD    BlendingMatrixSVD;
+
+
+  for (iDV = 0; iDV < nDV; iDV++){
 
     ParamCoord = FFDBox->Get_ParametricCoord((unsigned long)config->GetParamDV(iDV, 1));
 
-    /*--- Compute deformation ---*/
-
-    /*--- If we have only design value, than this value is the amplitude,
+    /*--- Get the pilot point coordinates X, Y.
+     * If we have only design value, then this value is the amplitude,
      * otherwise we have a general movement. ---*/
 
     if (config->GetnDV_Value(iDV) == 1) {
@@ -2132,29 +2122,51 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
     }
 
-    for (iDegree = 0; iDegree <= lDegree; iDegree++)
-      for (jDegree = 0; jDegree <= mDegree; jDegree++)
-        BlendingMatrix(iDV, iDegree*mDegree + jDegree) = FFDBox->BlendingFunction[0]->GetBasis(iDegree,ParamCoord[0])*
-                                                       FFDBox->BlendingFunction[1]->GetBasis(jDegree,ParamCoord[1]);
+    /*--- Construct the blending matrix B ---*/
 
+    for (iControl = 0; iControl < lControl; iControl++){
+      for (jControl = 0; jControl < mControl; jControl++){
+        BlendingMatrix(iDV, iControl*mControl + jControl) = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
+                                                         FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+      }
+    }
   }
+
+  PilotPointCoordX(nDV) = 0.0;
+  PilotPointCoordY(nDV) = 0.0;
+
+  ParamCoord = FFDBox->Get_ParametricCoord(0);
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
+      BlendingMatrix(nDV, iControl*mControl + jControl) = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
+                                                           FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+    }
+  }
+
+  /*--- Construct the SVD of the blending matrix ---*/
 
   BlendingMatrixSVD = BlendingMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
 
+  /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
+
   ControlPointPositionsX = BlendingMatrixSVD.solve(PilotPointCoordX);
   ControlPointPositionsY = BlendingMatrixSVD.solve(PilotPointCoordY);
+
+  /*--- Compute the residual  DX = X - B^* P_x, DY = Y - B^* P_y
+   * (measures how well the pilot point positions can be represented by the FFD box )--- */
 
   DeltaX = PilotPointCoordX - BlendingMatrix*ControlPointPositionsX;
   DeltaY = PilotPointCoordY - BlendingMatrix*ControlPointPositionsY;
 
   cout << "Max. Diff. in Pilot Point Position: ( " << DeltaX.norm() << ", " << DeltaY.norm() << " )" <<endl;
 
-  for (iDegree = 0; iDegree <= lDegree; iDegree++){
-    for (jDegree = 0; jDegree <= mDegree; jDegree++){
-      Movement[0] = ControlPointPositionsX(iDegree*mDegree + jDegree);
-      Movement[1] = ControlPointPositionsY(iDegree*mDegree + jDegree);
-      index[0] = iDegree;
-      index[1] = jDegree;
+  /*--- Set the computed control point positions --- */
+
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
+      Movement[0] = ControlPointPositionsX(iControl*mControl + jControl);
+      Movement[1] = ControlPointPositionsY(iControl*mControl + jControl);
+      index[0] = iControl; index[1] = jControl;
       FFDBox->SetControlPoints(index, Movement);
     }
   }

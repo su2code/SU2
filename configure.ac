@@ -470,7 +470,7 @@ AC_SUBST([LAPACK_LD])
 ##########################
 
 # check for lib
-Eigenheader=Eigen/Eigen
+Eigenheader=Eigen
 have_Eigen="no"
 
 
@@ -490,7 +490,7 @@ fi
 
 if test "$have_Eigen" != "no"
 then
-  CXX=$CXX" -DHAVE_EIGEN -I"$with_eigen_include/Eigen""
+  CXX=$CXX" -DHAVE_EIGEN -I"$with_eigen_include""
 fi
 ###########################
 # Determine what versions of the code to build

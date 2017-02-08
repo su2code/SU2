@@ -219,6 +219,10 @@ inline su2double CFreeFormBlending::GetDerivative(short val_i, su2double val_t, 
 
 inline void CFreeFormBlending::SetOrder(short Order, short n_controlpoints){}
 
-inline su2double CFreeFormBlending::GetOrder(){return Order;}
+inline unsigned short CFreeFormBlending::GetOrder(){return Order;}
 
-inline su2double CFreeFormBlending::GetDegree(){return Degree;}
+inline unsigned short CFreeFormBlending::GetDegree(){return Degree;}
+
+inline unsigned short CFreeFormBlending::GetnControl(){return nControl;}
+
+
