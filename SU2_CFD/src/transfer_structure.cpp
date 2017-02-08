@@ -1498,8 +1498,25 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 						kSpan = jSpan;
 					}
 				}
-				SpanLevelDonor[iSpan]        = kSpan;
-				SpanValueCoeffTarget[iSpan]  = (SpanValuesTarget[iSpan] - SpanValuesDonor[kSpan])/(SpanValuesDonor[kSpan + 1] - SpanValuesDonor[kSpan]);
+				switch(donor_config->GetKind_MixingPlaneInterface()){
+				case MATCHING:
+					SpanLevelDonor[iSpan]        = iSpan;
+					SpanValueCoeffTarget[iSpan]  = 0.0;
+					break;
+				case NEAREST_SPAN:
+					SpanLevelDonor[iSpan]        = kSpan;
+					SpanValueCoeffTarget[iSpan]  = 0.0;
+					break;
+				case LINEAR_INTERPOLATION:
+					SpanLevelDonor[iSpan]        = kSpan;
+					SpanValueCoeffTarget[iSpan]  = (SpanValuesTarget[iSpan] - SpanValuesDonor[kSpan])/(SpanValuesDonor[kSpan + 1] - SpanValuesDonor[kSpan]);
+					break;
+				default:
+					cout << "MixinPlane interface option not implemented yet" << endl;
+					exit(EXIT_FAILURE);
+					break;
+
+				}
 			}
 			//compute the coefficient and span per each value execpt the 0 and n span
 		}
