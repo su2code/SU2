@@ -33,6 +33,11 @@
 
 #include "../include/surface_deformation.hpp"
 
+#ifdef HAVE_EIGEN
+#include <Core>
+#include <SVD>
+#endif
+
 CSurfaceMovement::CSurfaceMovement(void) {
   nFFDBox = 0;
   nLevel = 0;
@@ -170,7 +175,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       (config->GetDesign_Variable(0) == FFD_CONTROL_SURFACE) ||
       (config->GetDesign_Variable(0) == FFD_CAMBER) ||
       (config->GetDesign_Variable(0) == FFD_THICKNESS) ||
-      (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK)) {
+      (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK) ||
+      (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION)) {
 
     /*--- Definition of the FFD deformation class ---*/
 
@@ -298,6 +304,10 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
                 case FFD_ANGLE_OF_ATTACK :  SetFFDAngleOfAttack(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, false); break;
               }
             }
+
+            if (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION)
+              SetFFDDirect(geometry, config, FFDBox[iFFDBox], FFDBox, false);
+
 
             /*--- Recompute cartesian coordinates using the new control point location ---*/
 
@@ -2069,6 +2079,85 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
   return true;
 
+}
+
+void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, bool ResetDef) {
+
+
+  typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix; // Dynamic number of columns (heap allocation)
+
+  typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
+
+  unsigned short lDegree = FFDBox->BlendingFunction[0]->GetDegree();
+  unsigned short mDegree = FFDBox->BlendingFunction[1]->GetDegree();
+
+  EigenMatrix BlendingMatrix(config->GetnDV(), (lDegree+1)*(mDegree+1));
+  EigenVector ControlPointPositionsX((lDegree+1)*(mDegree+1));
+  EigenVector ControlPointPositionsY((lDegree+1)*(mDegree+1));
+  EigenVector DeltaX(config->GetnDV());
+  EigenVector DeltaY(config->GetnDV());
+  Eigen::JacobiSVD<EigenMatrix> BlendingMatrixSVD;
+
+  unsigned short iDV, iDegree, jDegree;
+
+
+  su2double *ParamCoord;
+  EigenVector PilotPointCoordX(config->GetnDV());
+  EigenVector PilotPointCoordY(config->GetnDV());
+
+  su2double Movement[3] = {0.0, 0.0, 0.0}, Ampl;
+  su2double Scale = config->GetFFD_Scale();
+  unsigned short index[3] = {0,0,0};
+
+  for (iDV = 0; iDV < config->GetnDV(); iDV++){
+
+    ParamCoord = FFDBox->Get_ParametricCoord((unsigned long)config->GetParamDV(iDV, 1));
+
+    /*--- Compute deformation ---*/
+
+    /*--- If we have only design value, than this value is the amplitude,
+     * otherwise we have a general movement. ---*/
+
+    if (config->GetnDV_Value(iDV) == 1) {
+
+      Ampl = config->GetDV_Value(iDV)*Scale;
+
+      PilotPointCoordX(iDV) = config->GetParamDV(iDV, 2)*Ampl;
+      PilotPointCoordY(iDV) = config->GetParamDV(iDV, 3)*Ampl;
+
+    } else {
+
+      PilotPointCoordX(iDV) = config->GetDV_Value(iDV, 0);
+      PilotPointCoordY(iDV) = config->GetDV_Value(iDV, 1);
+
+    }
+
+    for (iDegree = 0; iDegree <= lDegree; iDegree++)
+      for (jDegree = 0; jDegree <= mDegree; jDegree++)
+        BlendingMatrix(iDV, iDegree*mDegree + jDegree) = FFDBox->BlendingFunction[0]->GetBasis(iDegree,ParamCoord[0])*
+                                                       FFDBox->BlendingFunction[1]->GetBasis(jDegree,ParamCoord[1]);
+
+  }
+
+  BlendingMatrixSVD = BlendingMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+  ControlPointPositionsX = BlendingMatrixSVD.solve(PilotPointCoordX);
+  ControlPointPositionsY = BlendingMatrixSVD.solve(PilotPointCoordY);
+
+  DeltaX = PilotPointCoordX - BlendingMatrix*ControlPointPositionsX;
+  DeltaY = PilotPointCoordY - BlendingMatrix*ControlPointPositionsY;
+
+  cout << "Max. Diff. in Pilot Point Position: ( " << DeltaX.norm() << ", " << DeltaY.norm() << " )" <<endl;
+
+  for (iDegree = 0; iDegree <= lDegree; iDegree++){
+    for (jDegree = 0; jDegree <= mDegree; jDegree++){
+      Movement[0] = ControlPointPositionsX(iDegree*mDegree + jDegree);
+      Movement[1] = ControlPointPositionsY(iDegree*mDegree + jDegree);
+      index[0] = iDegree;
+      index[1] = jDegree;
+      FFDBox->SetControlPoints(index, Movement);
+    }
+  }
 }
 
 void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
