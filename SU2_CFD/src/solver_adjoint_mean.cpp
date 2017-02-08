@@ -56,12 +56,12 @@ CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
 }
 
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val, myArea_Monitored, Area, *Normal;
+  su2double myArea_Monitored, Area, *Normal;
   su2double dCD_dCL_, dCD_dCM_;
   string::size_type position;
   unsigned long ExtIter_;
@@ -5990,7 +5990,7 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 CAdjNSSolver::CAdjNSSolver(void) : CAdjEulerSolver() { }
 
 CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CAdjEulerSolver() {
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
   su2double dCD_dCL_, dCD_dCM_;
@@ -6003,7 +6003,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   su2double RefDensity  = config->GetDensity_FreeStreamND();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double Mach_Motion     = config->GetMach_Motion();
-  su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
+  su2double Area=0.0, *Normal = NULL, myArea_Monitored;
   su2double RefVel2, Mach2Vel, Weight_ObjFunc, factor;
   su2double *Velocity_Inf;
 
