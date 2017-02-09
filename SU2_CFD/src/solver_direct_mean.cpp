@@ -163,24 +163,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
-  int Unst_RestartIter;
   ifstream restart_file;
-  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-    bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  bool metadata  = config->GetUpdate_Restart_Params();
+  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   su2double AoA_, AoS_, BCThrust_;
-  string filename = config->GetSolution_FlowFileName();
-  string filename_ = config->GetSolution_FlowFileName();
+  string meta_filename;
   string::size_type position;
   unsigned long ExtIter_;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -189,127 +184,96 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
   
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-    
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
-    
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
-    
-    /*--- Modify file name for a dual-time unsteady restart ---*/
-    
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
-    }
-    
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-    
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
-    }
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+
+    meta_filename = "restart.meta";
 
     /*--- Open the restart file, throw an error if this fails. ---*/
-    
-    restart_file.open(filename_.data(), ios::in);
+
+    restart_file.open(meta_filename.data(), ios::in);
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename_.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    unsigned long iPoint_Global = 0;
-    string text_line;
-    
-    /*--- The first line is the header (General description) ---*/
-    
-    getline (restart_file, text_line);
-    
-    /*--- Space for the solution ---*/
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      
-    }
-    
-    /*--- Space for extra info (if any) ---*/
-    
-    while (getline (restart_file, text_line)) {
-      
-      /*--- Angle of attack ---*/
-      
-      position = text_line.find ("AOA=",0);
-      if (position != string::npos) {
-        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-            cout.precision(6);
-            cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-            cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+      if (rank == MASTER_NODE) {
+        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
+        cout << " Computation will continue without updating metadata parameters." << endl;
+      }
+    } else {
+
+      string text_line;
+
+      /*--- Space for extra info (if any) ---*/
+
+      while (getline (restart_file, text_line)) {
+
+        /*--- Angle of attack ---*/
+
+        position = text_line.find ("AOA=",0);
+        if (position != string::npos) {
+          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+            }
+            config->SetAoA(AoA_ + config->GetAoA_Offset());
           }
-          config->SetAoA(AoA_ + config->GetAoA_Offset());
-        }
-        else {
-          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-        }
-      }
-      
-      /*--- Sideslip angle ---*/
-      
-      position = text_line.find ("SIDESLIP_ANGLE=",0);
-      if (position != string::npos) {
-        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-            cout.precision(6);
-            cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-            cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+          else {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
           }
-          config->SetAoS(AoS_ + config->GetAoS_Offset());
         }
-        else {
-          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+
+        /*--- Sideslip angle ---*/
+
+        position = text_line.find ("SIDESLIP_ANGLE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+            }
+            config->SetAoS(AoS_ + config->GetAoS_Offset());
+          }
+          else {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+          }
         }
+
+        /*--- BCThrust angle ---*/
+
+        position = text_line.find ("INITIAL_BCTHRUST=",0);
+        if (position != string::npos) {
+          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+            config->SetInitial_BCThrust(BCThrust_);
+          }
+          else {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+          }
+        }
+
+        /*--- External iteration ---*/
+
+        position = text_line.find ("EXT_ITER=",0);
+        if (position != string::npos) {
+          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+            config->SetExtIter_OffSet(ExtIter_);
+        }
+        
       }
       
-      /*--- BCThrust angle ---*/
+      /*--- Close the restart meta file. ---*/
       
-      position = text_line.find ("INITIAL_BCTHRUST=",0);
-      if (position != string::npos) {
-        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-          config->SetInitial_BCThrust(BCThrust_);
-        }
-        else {
-          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-        }
-      }
-      
-      /*--- External iteration ---*/
-      
-      position = text_line.find ("EXT_ITER=",0);
-      if (position != string::npos) {
-        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-        if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-          config->SetExtIter_OffSet(ExtIter_);
-      }
+      restart_file.close();
       
     }
-    
-    /*--- Close the restart file... we will open this file again... ---*/
-    
-    restart_file.close();
-    
   }
 
   /*--- Array initialization ---*/
@@ -14411,18 +14375,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
   su2double Density, Velocity2, Pressure, Temperature, StaticEnergy;
-  int Unst_RestartIter;
   ifstream restart_file;
-  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool restart    = (config->GetRestart() || config->GetRestart_Flow());
+  bool metadata   = config->GetUpdate_Restart_Params();
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename = config->GetSolution_FlowFileName();
-  string filename_ = config->GetSolution_FlowFileName();
+  string meta_filename;
   su2double AoA_, AoS_, BCThrust_;
   string::size_type position;
   unsigned long ExtIter_;
@@ -14438,128 +14396,97 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Check for a restart file to check if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
-  
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-    
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
-    
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
-    
-    /*--- Modify file name for a dual-time unsteady restart ---*/
-    
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
-    }
-    
-    /*--- Modify file name for a simple unsteady restart ---*/
-    
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
-    }
+
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+
+    meta_filename = "restart.meta";
 
     /*--- Open the restart file, throw an error if this fails. ---*/
-    
-    restart_file.open(filename_.data(), ios::in);
+
+    restart_file.open(meta_filename.data(), ios::in);
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename_.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    unsigned long iPoint_Global = 0;
-    string text_line;
-    
-    /*--- The first line is the header (General description) ---*/
-    
-    getline (restart_file, text_line);
-    
-    /*--- Space for the solution ---*/
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      
-    }
-    
-    /*--- Space for extra info (if any) ---*/
-    
-    while (getline (restart_file, text_line)) {
-      
-      /*--- Angle of attack ---*/
-      
-      position = text_line.find ("AOA=",0);
-      if (position != string::npos) {
-        text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-            cout.precision(6);
-            cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-            cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+      if (rank == MASTER_NODE) {
+        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
+        cout << " Computation will continue without updating metadata parameters." << endl;
+      }
+    } else {
+
+      string text_line;
+
+      /*--- Space for extra info (if any) ---*/
+
+      while (getline (restart_file, text_line)) {
+
+        /*--- Angle of attack ---*/
+
+        position = text_line.find ("AOA=",0);
+        if (position != string::npos) {
+          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+            }
+            config->SetAoA(AoA_ + config->GetAoA_Offset());
           }
-          config->SetAoA(AoA_ + config->GetAoA_Offset());
-        }
-        else {
-          if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-        }
-      }
-      
-      /*--- Sideslip angle ---*/
-      
-      position = text_line.find ("SIDESLIP_ANGLE=",0);
-      if (position != string::npos) {
-        text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-            cout.precision(6);
-            cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-            cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+          else {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
           }
-          config->SetAoS(AoS_ + config->GetAoS_Offset());
         }
-        else {
-          if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+
+        /*--- Sideslip angle ---*/
+
+        position = text_line.find ("SIDESLIP_ANGLE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+            }
+            config->SetAoS(AoS_ + config->GetAoS_Offset());
+          }
+          else {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+          }
         }
+
+        /*--- BCThrust angle ---*/
+
+        position = text_line.find ("INITIAL_BCTHRUST=",0);
+        if (position != string::npos) {
+          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+            config->SetInitial_BCThrust(BCThrust_);
+          }
+          else {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+          }
+        }
+
+        /*--- External iteration ---*/
+
+        position = text_line.find ("EXT_ITER=",0);
+        if (position != string::npos) {
+          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+            config->SetExtIter_OffSet(ExtIter_);
+        }
+        
       }
       
-      /*--- BCThrust angle ---*/
+      /*--- Close the restart metadata file. ---*/
       
-      position = text_line.find ("INITIAL_BCTHRUST=",0);
-      if (position != string::npos) {
-        text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-        if (config->GetDiscard_InFiles() == false) {
-          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-          config->SetInitial_BCThrust(BCThrust_);
-        }
-        else {
-          if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-            cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-        }
-      }
-      
-      /*--- External iteration ---*/
-      
-      position = text_line.find ("EXT_ITER=",0);
-      if (position != string::npos) {
-        text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-        if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-          config->SetExtIter_OffSet(ExtIter_);
-      }
+      restart_file.close();
       
     }
-    
-    /*--- Close the restart file... we will open this file again... ---*/
-    
-    restart_file.close();
-    
   }
 
   /*--- Array initialization ---*/

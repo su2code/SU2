@@ -3678,10 +3678,12 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   ofstream restart_file;
-  string filename;
+  ofstream meta_file;
+  string filename, meta_filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool wrt_metadata = config->GetUpdate_Restart_Params();
 
   /*--- Retrieve filename from config ---*/
   
@@ -3859,21 +3861,35 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     restart_file << "\n";
   }
-  
-  /*--- Write the general header and flow conditions ----*/
-  
-  restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-  restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-  restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-  restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-  if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-  if (dual_time)
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-  else
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-  
+
+  /*--- Close the data portion of the restart file. ---*/
+
   restart_file.close();
-  
+
+  /*--- Also create the filename for the restart metadata ---*/
+
+  if (wrt_metadata) {
+    meta_filename = "restart";
+    if (adjoint) meta_filename.append("_adj");
+    meta_filename.append(".meta");
+    meta_file.open(meta_filename.c_str(), ios::out);
+    meta_file.precision(15);
+
+    /*--- Write the general header and flow conditions ----*/
+
+    meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+    meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+    meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    if (adjoint) meta_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    if (dual_time)
+      meta_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+    else
+      meta_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+    
+    meta_file.close();
+  }
+
 }
 
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
@@ -14581,8 +14597,9 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  ofstream restart_file;
-  string filename;
+  bool wrt_metadata = config->GetUpdate_Restart_Params();
+  ofstream restart_file, meta_file;
+  string filename, meta_filename;
   
   int iProcessor;
   int rank = MASTER_NODE;
@@ -14679,24 +14696,35 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
 #endif
     
   }
-  
-  /*--- Write the general header and flow conditions (master rank alone) ----*/
-  
-  if (rank == MASTER_NODE) {
-    restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-    restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-    restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-    if (dual_time)
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-  }
-  
+
   /*--- All processors close the file. ---*/
-  
+
   restart_file.close();
+
+  /*--- Write the general header and flow conditions (master rank alone) ----*/
+
+  if (rank == MASTER_NODE && wrt_metadata) {
+
+    /*--- Also create the filename for the restart metadata ---*/
+
+    meta_filename = "restart";
+    if (adjoint) meta_filename.append("_adj");
+    meta_filename.append(".meta");
+    meta_file.open(meta_filename.c_str(), ios::out);
+    meta_file.precision(15);
+
+    meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+    meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+    meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    if (adjoint) meta_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    if (dual_time)
+      meta_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+    else
+      meta_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+
+    meta_file.close();
+  }
   
 }
 
