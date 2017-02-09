@@ -2084,7 +2084,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   unsigned short nFixed = 1;
 
   su2double *ParamCoord;
-  su2double Movement[3] = {0.0, 0.0, 0.0}, Ampl;
+  su2double Movement[3] = {0.0, 0.0, 0.0}, Ampl, Bij;
   su2double Scale = config->GetFFD_Scale();
   unsigned short index[3] = {0,0,0};
 
@@ -2126,8 +2126,9 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
     for (iControl = 0; iControl < lControl; iControl++){
       for (jControl = 0; jControl < mControl; jControl++){
-        BlendingMatrix(iDV, iControl*mControl + jControl) = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
-                                                         FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+        Bij = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
+              FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+        BlendingMatrix(iDV, iControl*mControl + jControl) = Bij;
       }
     }
   }
@@ -2138,8 +2139,9 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   ParamCoord = FFDBox->Get_ParametricCoord(0);
   for (iControl = 0; iControl < lControl; iControl++){
     for (jControl = 0; jControl < mControl; jControl++){
-      BlendingMatrix(nDV, iControl*mControl + jControl) = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
-                                                           FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+      Bij = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
+            FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+      BlendingMatrix(nDV, iControl*mControl + jControl) = Bij;
     }
   }
 
@@ -2158,7 +2160,13 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   DeltaX = PilotPointCoordX - BlendingMatrix*ControlPointPositionsX;
   DeltaY = PilotPointCoordY - BlendingMatrix*ControlPointPositionsY;
 
-  cout << "Max. Diff. in Pilot Point Position: ( " << DeltaX.norm() << ", " << DeltaY.norm() << " )" <<endl;
+
+  cout << "Difference in Pilot Point Position: ( "
+       << DeltaX.norm() << ", "
+       << DeltaY.norm() << " )" <<endl;
+  cout << "Control Point Movement:             ( "
+       << ControlPointPositionsX.norm() << ", "
+       << ControlPointPositionsY.norm() << " )" << endl;
 
   /*--- Set the computed control point positions --- */
 
@@ -6481,6 +6489,7 @@ void CBezierBlending::SetOrder(short val_order, short n_controlpoints){
   Order  = val_order;
   Degree = Order - 1;
   binomial.resize(Order+1, 0.0);
+  nControl = Order;
 }
 
 su2double CBezierBlending::GetBasis(short val_i, su2double val_t){
