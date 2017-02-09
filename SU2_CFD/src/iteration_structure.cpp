@@ -1839,11 +1839,11 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
     /*--- Register flow and turbulent variables as input ---*/
 
     if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
-      solver_container[iZone][MESH_0][FLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
 
     if ((Kind_Solver == DISC_ADJ_RANS)) {
-      solver_container[iZone][MESH_0][TURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+      solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
   if (kind_recording == MESH_COORDS){
