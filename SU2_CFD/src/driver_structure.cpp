@@ -2135,8 +2135,8 @@ void CDriver::Iteration_Preprocessing() {
 
     case EULER: case NAVIER_STOKES: case RANS:
     if (rank == MASTER_NODE)
-      cout << ": Euler/Navier-Stokes/RANS flow iteration." << endl;
-      iteration_container[iZone] = new CMeanFlowIteration(config_container[iZone]);
+      cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
     break;
 
   case WAVE_EQUATION:
@@ -2164,14 +2164,14 @@ void CDriver::Iteration_Preprocessing() {
     break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     if (rank == MASTER_NODE)
-      cout << ": adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
-      iteration_container[iZone] = new CAdjMeanFlowIteration(config_container[iZone]);
+      cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration_container[iZone] = new CAdjFluidIteration(config_container[iZone]);
     break;
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     if (rank == MASTER_NODE)
-        cout << ": discrete adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
-      iteration_container[iZone] = new CDiscAdjMeanFlowIteration(config_container[iZone]);
+        cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration_container[iZone] = new CDiscAdjFluidIteration(config_container[iZone]);
     break;
   }
 
@@ -2464,7 +2464,7 @@ void CDriver::StartSolver() {
 
       DynamicMeshUpdate(ExtIter);
 
-      /*--- Run a single iteration of the problem (mean flow, wave, heat, ...). ---*/
+      /*--- Run a single iteration of the problem (fluid, elasticty, wave, heat, ...). ---*/
 
       Run();
 

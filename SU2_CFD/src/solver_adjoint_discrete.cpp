@@ -304,7 +304,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned
     }
   }
 
-  /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
+  /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
    * when running the discrete adjoint solver. ---*/
 
   direct_solver->Jacobian.SetValZero();
@@ -464,8 +464,8 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     /*--- Template for new objective functions where TemplateObjFunction()
      *  is the routine that returns the obj. function value. The computation
      * must be done while the tape is active, i.e. between AD::StartRecording() and
-     * AD::StopRecording() in DiscAdjMeanFlowIteration::Iterate(). The best place is somewhere
-     * inside MeanFlowIteration::Iterate().
+     * AD::StopRecording() in DiscAdjFluidIteration::Iterate(). The best place is somewhere
+     * inside FluidIteration::Iterate().
      *
      * case TEMPLATE_OBJECTIVE:
      *    ObjFunc_Value = TemplateObjFunction();
