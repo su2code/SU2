@@ -4450,10 +4450,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Set the primitive variables ---*/
   
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
- 
-  /*--- Set the primitive variables ---*/
-
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   /*--- Compute the engine properties ---*/
 
