@@ -1422,14 +1422,23 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 
 	unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
 	unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
-	unsigned short iSpan,jSpan, kSpan, nSpanDonor, nSpanTarget, Donor_Flag, Target_Flag;
+	unsigned short iSpan,jSpan, tSpan,kSpan, nSpanDonor, nSpanTarget, Donor_Flag, Target_Flag;
 	int Marker_Donor = -1, Marker_Target = -1;
 
-	su2double *SpanValuesDonor, *SpanValuesTarget, dist, test;
+	su2double *SpanValuesDonor, *SpanValuesTarget, dist, test, dist2, test2;
+
+	int rank = MASTER_NODE;
+	int size = SINGLE_NODE, iSize;
+
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int *BuffMarkerDonor, *BuffDonorFlag;
+#endif
 
 
-	nMarkerTarget  = target_geometry->GetnMarker();
 	nMarkerDonor   = donor_geometry->GetnMarker();
+	nMarkerTarget  = target_geometry->GetnMarker();
 	//TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
 	//TODO turbo initialization needed for the MPI routine should be place somewhere else.
 	nSpanDonor     = donor_config->GetnSpanWiseSections();
@@ -1453,15 +1462,43 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 			/*--- Store the identifier for the structural marker ---*/
 			Marker_Donor = iMarkerDonor;
 			Donor_Flag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerDonor);
-			//				cout << " donor is "<< donor_config->GetMarker_All_TagBound(Marker_Donor)<<" in imarker interface "<< iMarkerInt <<endl;
+//							cout << " donor is "<< donor_config->GetMarker_All_TagBound(Marker_Donor)<<" in imarker interface "<< iMarkerInt <<endl;
 			/*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
 			break;
 		}
 		else {
 			/*--- If the tag hasn't matched any tag within the donor markers ---*/
 			Marker_Donor = -1;
+			Donor_Flag   = -1;
 		}
 	}
+
+#ifdef HAVE_MPI
+	BuffMarkerDonor						 = new int[size];
+	BuffDonorFlag            = new int[size];
+	for (iSize=0; iSize<size;iSize++){
+		BuffMarkerDonor[iSize]							= -1;
+		BuffDonorFlag[iSize]              = -1;
+	}
+
+	SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(&Donor_Flag, 1 , MPI_INT, BuffDonorFlag, 1, MPI_INT, MPI_COMM_WORLD);
+
+
+	Marker_Donor= -1;
+	Donor_Flag= -1;
+
+
+	for (iSize=0; iSize<size;iSize++){
+		if(BuffMarkerDonor[iSize] > 0.0){
+			Marker_Donor = BuffMarkerDonor[iSize];
+			Donor_Flag   = BuffDonorFlag[iSize];
+			break;
+		}
+	}
+	delete [] BuffMarkerDonor;
+	delete [] BuffDonorFlag;
+#endif
 
 	/*--- On the target side we have to identify the marker as well ---*/
 
@@ -1473,9 +1510,9 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 				// here i should then store it in the target zone
 
 				Marker_Target = iMarkerTarget;
-				Target_Flag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
-	//				cout << " target is "<< target_config->GetMarker_All_TagBound(Marker_Target) <<" in imarker interface "<< iMarkerInt <<endl;
-				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				Target_Flag = target_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
+//					cout << " target is "<< target_config->GetMarker_All_TagBound(Marker_Target) <<" in imarker interface "<< iMarkerInt <<endl;
+//				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
 				break;
 			}
 			else {
@@ -1486,17 +1523,24 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 
 		if (Marker_Target != -1 && Marker_Donor != -1){
 			SpanValuesDonor  = donor_geometry->GetSpanWiseValue(Donor_Flag);
-			SpanValuesTarget = target_geometry->GetSpanWiseValue(Donor_Flag);
+			SpanValuesTarget = target_geometry->GetSpanWiseValue(Target_Flag);
 
 
 			for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
-				dist = 10E+06;
+				dist  = 10E+06;
+				dist2 = 10E+06;
 				for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
-					test = SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan];
-					if(test < dist && test > 0.0){
+					test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
+					test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
+					if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){
 						dist = test;
 						kSpan = jSpan;
 					}
+					if(test2 < dist2){
+						dist2 = test2;
+						tSpan =jSpan;
+					}
+
 				}
 				switch(donor_config->GetKind_MixingPlaneInterface()){
 				case MATCHING:
@@ -1504,7 +1548,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 					SpanValueCoeffTarget[iSpan]  = 0.0;
 					break;
 				case NEAREST_SPAN:
-					SpanLevelDonor[iSpan]        = kSpan;
+					SpanLevelDonor[iSpan]        = tSpan;
 					SpanValueCoeffTarget[iSpan]  = 0.0;
 					break;
 				case LINEAR_INTERPOLATION:
@@ -1781,6 +1825,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
 		/*--- linear interpolation of the average value of for the internal span-wise levels ---*/
 		for(iSpan = 1; iSpan < nSpanTarget -1 ; iSpan++){
+//			cout << iSpan << " " << SpanLevelDonor[iSpan]<<endl;
 			avgDensityTarget[iSpan]          = SpanValueCoeffTarget[iSpan]*(avgDensityDonor[SpanLevelDonor[iSpan] + 1] - avgDensityDonor[SpanLevelDonor[iSpan]]);
 			avgDensityTarget[iSpan]         += avgDensityDonor[SpanLevelDonor[iSpan]];
 			avgPressureTarget[iSpan]         = SpanValueCoeffTarget[iSpan]*(avgPressureDonor[SpanLevelDonor[iSpan] + 1] - avgPressureDonor[SpanLevelDonor[iSpan]]);
@@ -1828,7 +1873,6 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		avgNuTarget[nSpanTarget - 1]             = avgNuDonor[nSpanDonor - 1];
 		avgKeiTarget[nSpanTarget - 1]            = avgKeiDonor[nSpanDonor - 1];
 		avgOmegaTarget[nSpanTarget - 1]          = avgOmegaDonor[nSpanDonor - 1];
-
 
 		/*--- after interpolating the average value span-wise is set in the target zone ---*/
 
