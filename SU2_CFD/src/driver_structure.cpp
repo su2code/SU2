@@ -3991,21 +3991,9 @@ CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nDim,
                                                            SU2_Comm MPICommunicator): CDiscAdjMultiZoneDriver(confFile, val_nZone, val_nDim, MPICommunicator){
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
-    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
-    geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
-
-  }
-
-	for (iZone = 1; iZone < nZone; iZone++) {
-		transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
-	}
-
+	mixingplane = (nZone > 1);
 
 }
-
-
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 
 }
@@ -4016,10 +4004,16 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
   unsigned short iZone = 0;
 
   int rank = MASTER_NODE;
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+
+  if(ExtIter == 0){
+  	Preprocessing();
+  }
 
   /* --- Set the mixing-plane interface ---*/
   if (config_container[ZONE_0]->GetBoolTurbomachinery()){
@@ -4028,7 +4022,7 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
       solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(solver_container[iZone][MESH_0],geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
       solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
       solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-      if (nZone > 1)
+      if (mixingplane)
         SetMixingPlane(iZone);
     }
   }
@@ -4102,6 +4096,43 @@ void CDiscAdjTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
 				transfer_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
 						geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 						config_container[donorZone], config_container[targetZone], iMarkerInt );
+			}
+		}
+	}
+}
+
+
+void CDiscAdjTurbomachineryDriver::Preprocessing(void){
+
+	for (iZone = 0; iZone < nZone; iZone++) {
+		geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
+		geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
+		geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
+
+	}
+
+	for (iZone = 1; iZone < nZone; iZone++) {
+		transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+	}
+
+	for (iZone = 0; iZone < nZone; iZone++) {
+		if(mixingplane)PreprocessingMixingPlane(iZone);
+	}
+
+}
+
+void CDiscAdjTurbomachineryDriver::PreprocessingMixingPlane(unsigned short donorZone){
+
+  unsigned short targetZone, nMarkerInt, iMarkerInt ;
+	nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+
+  /* --- transfer the average value from the donorZone to the targetZone*/
+	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+		for (targetZone = 0; targetZone < nZone; targetZone++) {
+			if (targetZone != donorZone){
+				transfer_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
+																																									config_container[donorZone], config_container[targetZone],
+																																									iMarkerInt, true );
 			}
 		}
 	}

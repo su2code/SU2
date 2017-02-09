@@ -739,9 +739,20 @@ public:
   void SetMixingPlane(unsigned short iZone);
 
   /*!
+   * \brief Preprocessing Mixing Plane interface.
+   */
+  void PreprocessingMixingPlane(unsigned short donorZone);
+
+  /*!
    * \brief Set Mixing Plane interface within multiple zones.
    */
   void SetTurboPerformance(unsigned short targetZone);
+
+  /*!
+   * \brief Set all the turbo geometrical quantities.
+   */
+  void Preprocessing(void);
+
 
 };
 
