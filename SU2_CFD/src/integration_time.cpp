@@ -45,13 +45,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                                                 unsigned long Iteration,
                                                 unsigned short iZone) {
 	
-	
-	int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-	
-	
 	unsigned short FinestMesh, iMGLevel;
   su2double monitor = 1.0;
   bool FullMG = false;
