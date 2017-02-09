@@ -44,7 +44,15 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned long Iteration,
                                                 unsigned short iZone) {
-  unsigned short FinestMesh, iMGLevel;
+	
+	
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+	
+	
+	unsigned short FinestMesh, iMGLevel;
   su2double monitor = 1.0;
   bool FullMG = false;
   
@@ -72,15 +80,152 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
     config[iZone]->SetFinestMesh(MESH_1);
   
   /*--- If restart, update multigrid levels at the first multigrid iteration ---*/
+	/*-- Since the restart takes care of this I dont think is required but re should check after the new restart routines are added ---*/
   
-  if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid) {
-    for (iMGLevel = 0; iMGLevel < config[iZone]->GetnMGLevels(); iMGLevel++) {
-      SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMGLevel][SolContainer_Position],
-                             solver_container[iZone][iMGLevel+1][SolContainer_Position],
-                             geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-    }
-  }
-  
+  if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid)
+	{
+		for (iMGLevel = 0; iMGLevel < config[iZone]->GetnMGLevels(); iMGLevel++) {
+
+			SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMGLevel][SolContainer_Position],
+														 solver_container[iZone][iMGLevel+1][SolContainer_Position],
+														 geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+			
+			SetRestricted_Solution(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+			
+			SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+			
+		}
+	}
+	
+	
+	
+	
+	
+	
+	/*--- Debug after the multigrid has been updated in the restart file ---*/
+	if (false)
+	{
+
+		/*--- Look into all the variables at a particular iteration ---*/
+		
+		//Compressible flow, primitive variables (T, vx, vy, vz, P, rho, h, c, lamMu, EddyMu, ThCond, Cp).
+		
+		//if (rank == MASTER_NODE && (Iteration == 501 || Iteration == 502 ))
+		if (rank == MASTER_NODE && (Iteration == 0 || Iteration == 1))
+		{
+			cout << "Exit Iteration = " << Iteration << endl;
+			for (int iMesh = 0; iMesh <= config[iZone]->GetnMGLevels(); iMesh++)
+			{
+				unsigned short nVar = solver_container[iZone][iMesh][FLOW_SOL]->GetnVar();
+				unsigned short nPrimVar = solver_container[iZone][iMesh][FLOW_SOL]->GetnPrimVar();
+				unsigned short nSecVar = solver_container[iZone][iMesh][FLOW_SOL]->GetnSecondaryVar();
+				unsigned short nTurbVar = solver_container[iZone][iMesh][TURB_SOL]->GetnVar();
+				
+				int iPoint = 275;
+				ofstream myfile;
+				char filename[16];
+				sprintf(filename, "variables_%lu_%d.txt", Iteration, iMesh);
+				myfile.open (filename);
+				myfile.precision(15);
+				myfile << "muT = " << solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetmuT();
+				myfile << "\n dPdU = " << solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetdPdU();
+				myfile << "\n dTdU = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetdTdU();
+				myfile << "\n Aux = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetAuxVar();
+				myfile << "\n dTvedU = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetdTvedU();
+				myfile << "\n Energy = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetEnergy();
+				myfile << "\n Lambda = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetLambda();
+				
+				for (unsigned short iVar=0; iVar < nVar; iVar++)
+				{
+					myfile << "\n UndLaplacian = " << solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetUndivided_Laplacian(iVar);
+				}
+				
+				myfile << "\n Dissipation Switch = " << solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSensor();
+				myfile << "\n Density = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetDensity();
+				myfile << "\n Limiter = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetLimiter();
+				myfile << "\n BetaInc2 = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetBetaInc2();
+				myfile << "\n Enthalpy = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetEnthalpy();
+				myfile << "\n Gradient = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetGradient();
+				myfile << "\n Pressure = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetPressure();
+				myfile << "\n RhoCv_tr = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetRhoCv_tr();
+				myfile << "\n RhoCv_ve = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetRhoCv_ve();
+				myfile << "\n Cross Diff = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetCrossDiff();
+				myfile << "\n Strain Mag = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetStrainMag();
+				myfile << "\n Velocity2 = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetVelocity2();
+				myfile << "\n SoundSpeed = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+				myfile << "\n Temperature = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetTemperature();
+				myfile << "\n EddyVisc = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+				
+				su2double *vort;
+				vort =solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetVorticity();
+				for (unsigned short i=0 ; i < 3 ; i++)
+				{
+					myfile << "\n Vorticity " << i << " = " << vort[i];
+				}
+				
+				
+				for (unsigned short iVar=0; iVar < nVar; iVar++)
+				{
+					myfile << "\n Solution "<< iVar << " = "<< solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+				}
+				
+				for (unsigned short iVar=0; iVar < nTurbVar; iVar++)
+				{
+					myfile << "\n Solution (turb) "<< iVar << " = "<< solver_container[iZone][iMesh][TURB_SOL]->node[iPoint]->GetSolution(iVar);
+				}
+				
+				
+				myfile <<"\n EddyVisc(turb) = " << solver_container[iZone][iMesh][TURB_SOL]->node[iPoint]->GetEddyViscosity();
+				myfile <<"\n muT(turb) = " << solver_container[iZone][iMesh][TURB_SOL]->node[iPoint]->GetmuT();
+				myfile <<"\n Pressure REF = " << config[iZone]->GetPressure_Ref();
+				myfile <<"\n Density REF = " << config[iZone]->GetDensity_Ref();
+				myfile <<"\n Temperature REF = " << config[iZone]->GetTemperature_Ref();
+				myfile <<"\n TKE EnergyND REF = "<< config[iZone]->GetEnergy_FreeStreamND();
+				
+				for (unsigned short iVar=0; iVar < nPrimVar; iVar++)
+				{
+					myfile << "\n Primitive " << iVar << " = " << solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetPrimitive(iVar);
+				}
+				
+				for (unsigned short iVar=0; iVar < nSecVar; iVar++)
+				{
+					myfile << "\n Secodary " << iVar << " = " << solver_container[iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSecondary(iVar);
+				}
+				myfile <<"\n XCoord = " << geometry[iZone][iMesh]->node[iPoint]->GetCoord(0);
+				myfile <<"\n YCoord = " << geometry[iZone][iMesh]->node[iPoint]->GetCoord(1);
+				
+				
+				myfile << endl;
+				myfile.close();
+				cout << "------------> Done with the variable file. Mesh " << iMesh << endl;
+				
+			}
+		}
+	}
+	//End of the variable output loop
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (config[iZone]->GetFinestMesh() != MESH_0 ))) {
@@ -94,8 +239,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Set the current finest grid (full multigrid strategy) ---*/
   
   FinestMesh = config[iZone]->GetFinestMesh();
-  
-  /*--- Perform the Full Approximation Scheme multigrid ---*/
+	
+	/*--- Perform the Full Approximation Scheme multigrid ---*/
   
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
@@ -116,7 +261,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Convergence strategy ---*/
   
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
-  
+	
 }
 
 void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
@@ -185,7 +330,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
   
   if ( (iMesh < config[iZone]->GetnMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
-    
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
     solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
@@ -810,9 +954,9 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
     for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
-      if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()) {
+      //if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()) {
         SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
-      }
+      //}
       SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     }
   }

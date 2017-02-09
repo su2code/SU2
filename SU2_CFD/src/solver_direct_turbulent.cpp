@@ -2718,8 +2718,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   su2double VelMag = 0;
   for (iDim = 0; iDim < nDim; iDim++)
-  VelMag += VelInf[iDim]*VelInf[iDim];
-  VelMag = sqrt(VelMag);
+		VelMag += VelInf[iDim]*VelInf[iDim];
+	
+	VelMag = sqrt(VelMag);
   
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
   omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);
