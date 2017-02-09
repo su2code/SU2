@@ -690,9 +690,9 @@ public:
 
   void SetSensitivity(unsigned short kind_sensitivity);
 
-  void DirectRun();
+  virtual void DirectRun();
 
-  void SetObjFunction();
+  virtual void SetObjFunction();
 
   void SetAdj_ObjFunction();
 };
