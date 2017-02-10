@@ -44,6 +44,15 @@ inline su2double CSGSModel::ComputeEddyViscosity(const unsigned short nDim,
   return 0.0;
 }
 
+inline void CSGSModel::ComputeGradEddyViscosity(const unsigned short nDim,
+                                                const su2double      rho,
+                                                const su2double      rhoGrad[3],
+                                                const su2double      velGrad[3][3],
+                                                const su2double      velHess[3][3][3],
+                                                const su2double      lenScale,
+                                                const su2double      distToWall,
+                                                      su2double      ViscosityTurbGrad[3]) {}
+
 inline CSmagorinskyModel::CSmagorinskyModel(void) : CSGSModel() {}
 inline CSmagorinskyModel::~CSmagorinskyModel(void){}
 
@@ -56,6 +65,18 @@ inline su2double CSmagorinskyModel::ComputeEddyViscosity(const unsigned short nD
   exit(1);
 }
 
+inline void CSmagorinskyModel::ComputeGradEddyViscosity(const unsigned short nDim,
+                                                        const su2double      rho,
+                                                        const su2double      rhoGrad[3],
+                                                        const su2double      velGrad[3][3],
+                                                        const su2double      velHess[3][3][3],
+                                                        const su2double      lenScale,
+                                                        const su2double      distToWall,
+                                                              su2double      ViscosityTurbGrad[3]) {
+  cout << "CSmagorinskyModel::ComputeGradEddyViscosity: Not implemented yet" << endl;
+  exit(1);
+}
+
 inline CWALEModel::CWALEModel(void) : CSGSModel() {}
 inline CWALEModel::~CWALEModel(void){}
 
@@ -65,5 +86,17 @@ inline su2double CWALEModel::ComputeEddyViscosity(const unsigned short nDim,
                                                   const su2double      lenScale,
                                                   const su2double      distToWall) {
   cout << "CWALEModel::ComputeEddyViscosity: Not implemented yet" << endl;
+  exit(1);
+}
+
+inline void CWALEModel::ComputeGradEddyViscosity(const unsigned short nDim,
+                                                 const su2double      rho,
+                                                 const su2double      rhoGrad[3],
+                                                 const su2double      velGrad[3][3],
+                                                 const su2double      velHess[3][3][3],
+                                                 const su2double      lenScale,
+                                                 const su2double      distToWall,
+                                                       su2double      ViscosityTurbGrad[3]) {
+  cout << "CWALEModel::ComputeGradEddyViscosity: Not implemented yet" << endl;
   exit(1);
 }

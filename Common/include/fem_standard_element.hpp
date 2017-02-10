@@ -789,6 +789,8 @@ private:
   vector<su2double> lagBasisIntegrationTrans;  /*!< \brief Transpose of lagBasisIntegration. It is stored such that
                                                            in the ADER-DG predictor step the residual is obtained
                                                            by one matrix multiplication. */
+  vector<su2double> lagBasisSolDOFs;       /*!< \brief Lagrangian basis functions in the solution DOFs. Only different
+                                                       from 1 if the polynomial degree of the grid and solution differs. */
 
   vector<su2double> drLagBasisIntegration; /*!< \brief r-derivatives of the Lagrangian basis functions in the integration points. */
   vector<su2double> dsLagBasisIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the integration points. */
@@ -872,7 +874,7 @@ public:
 
   /*!
   * \brief Function, which makes available the values of the basis functions in the integration points.
-  * \return The pointer to data, which stores the basis functions.
+  * \return The pointer to data, which stores the basis functions in the integration points.
   */
   su2double *GetBasisFunctionsIntegration(void);
 
@@ -881,6 +883,12 @@ public:
   * \return The pointer to data, which stores the transpose matrix of the basis functions.
   */
   const su2double *GetBasisFunctionsIntegrationTrans(void) const;
+
+  /*!
+  * \brief Function, which makes available the values of the basis functions in the solution DOFs.
+  * \return The pointer to data, which stores the basis functions in the solution DOFs.
+  */
+  const su2double *GetBasisFunctionsSolDOFs(void) const;
 
   /*!
   * \brief Function, which makes available the r-derivatives of the basis functions in the integration points.
@@ -1089,18 +1097,22 @@ private:
   void Copy(const FEMStandardElementClass &other);
 
   /*!
-  * \brief Function, which creates the matrix containing the derivatives of the
-           basis functions in the given location of the parametric coordinates.
+  * \brief Function, which creates the basis functions and the matrix containing
+           the derivatives of the basis functions in the given location of the
+           parametric coordinates.
   * \param[in]  rLoc         - r-locations of the given points.
   * \param[in]  sLoc         - s-locations of the given points.
   * \param[in]  tLoc         - t-locations of the given points, if relevant.
+  * \param[out] lagBasis     - Lagrangian basis functions in the given
+                               parametric locations.
   * \param[out] matDerBasis  - Matrix to store the derivatives of the basis
                                functions.
   */
-  void CreateMatrixDerivativesBasisFunctions(const vector<su2double> &rLoc,
-                                             const vector<su2double> &sLoc,
-                                             const vector<su2double> &tLoc,
-                                                   vector<su2double> &matDerBasis);
+  void CreateBasisFunctionsAndMatrixDerivatives(const vector<su2double> &rLoc,
+                                                const vector<su2double> &sLoc,
+                                                const vector<su2double> &tLoc,
+                                                      vector<su2double> &lagBasis,
+                                                      vector<su2double> &matDerBasis);
   /*!
   * \brief Function, which creates all the data for a line element.
   */

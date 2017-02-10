@@ -180,6 +180,9 @@ public:
   vector<su2double> coorIntegrationPoints;  /*!< \brief The coordinates of the integration points of this element. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
                                                         the integration points of this element. */
+  vector<su2double> wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
+                                                        the solution DOFs of this element. */
+
   /*!
    * \brief Constructor of the class. Initialize the pointers to NULL.
    */
