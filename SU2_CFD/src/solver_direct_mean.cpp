@@ -11897,7 +11897,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
       break;
 
-    case GLOBAL_TOTAL_CONDITIONS_PT:
+    case TOTAL_CONDITIONS_PT_1D:
 
       /*--- Retrieve the specified total conditions for this inlet. ---*/
       P_Total  = config->GetNRBC_Var1(Marker_Tag);
@@ -11978,6 +11978,32 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[val_marker][iSpan], deltaprim, c_avg);
       break;
 
+    case MIXING_IN_1D: case MIXING_OUT_1D:
+
+      /* --- Compute average jump of primitive at the mixing-plane interface--- */
+      deltaprim[0] = ExtAverageDensity[val_marker][nSpanWiseSections] - AverageDensity[val_marker][nSpanWiseSections];
+      deltaprim[1] = ExtAverageTurboVelocity[val_marker][nSpanWiseSections][0] - AverageTurboVelocity[val_marker][nSpanWiseSections][0];
+      deltaprim[2] = ExtAverageTurboVelocity[val_marker][nSpanWiseSections][1] - AverageTurboVelocity[val_marker][nSpanWiseSections][1];
+      if (nDim == 2){
+        deltaprim[3] = ExtAveragePressure[val_marker][nSpanWiseSections] - AveragePressure[val_marker][nSpanWiseSections];
+      }
+      else
+      {
+        deltaprim[3] = ExtAverageTurboVelocity[val_marker][nSpanWiseSections][2] - AverageTurboVelocity[val_marker][nSpanWiseSections][2];
+        deltaprim[4] = ExtAveragePressure[val_marker][nSpanWiseSections] - AveragePressure[val_marker][nSpanWiseSections];
+      }
+
+      if((config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL) && (nDim ==2) && (config->GetKind_Data_NRBC(Marker_Tag) == MIXING_IN)){
+      	deltaprim[2] -= config->GetNRBC_Var1(Marker_Tag)/config->GetVelocity_Ref();
+      }
+
+      /* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
+      FluidModel->SetTDState_Prho(AveragePressure[val_marker][nSpanWiseSections], AverageDensity[val_marker][nSpanWiseSections]);
+      AverageSoundSpeed = FluidModel->GetSoundSpeed();
+      conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[val_marker][nSpanWiseSections], deltaprim, c_avg);
+      break;
+
+
     case STATIC_PRESSURE:
       Pressure_e = config->GetNRBC_Var1(Marker_Tag);
       Pressure_e /= config->GetPressure_Ref();
@@ -11992,7 +12018,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
       break;
 
-    case GLOBAL_STATIC_PRESSURE:
+    case STATIC_PRESSURE_1D:
       Pressure_e = config->GetNRBC_Var1(Marker_Tag);
       Pressure_e /= config->GetPressure_Ref();
 
@@ -12098,7 +12124,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
 
-      case TOTAL_CONDITIONS_PT: case MIXING_IN:case GLOBAL_TOTAL_CONDITIONS_PT:
+      case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
 
         if (AvgMach < 1.000){
           Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
@@ -12158,7 +12184,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         break;
 
 
-      case STATIC_PRESSURE:case GLOBAL_STATIC_PRESSURE:case MIXING_OUT:case RADIAL_EQUILIBRIUM:
+      case STATIC_PRESSURE:case STATIC_PRESSURE_1D:case MIXING_OUT:case RADIAL_EQUILIBRIUM:case MIXING_OUT_1D:
 
         /* --- implementation of NRBC ---*/
         if (AvgMach >= 1.000){

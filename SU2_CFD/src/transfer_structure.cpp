@@ -1599,8 +1599,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	nMarkerDonor   = donor_geometry->GetnMarker();
 //TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
 //TODO turbo initialization needed for the MPI routine should be place somewhere else.
-	nSpanDonor     = donor_config->GetnSpanWiseSections();
-	nSpanTarget		 = target_config->GetnSpanWiseSections();
+	nSpanDonor     = donor_config->GetnSpanWiseSections() +1;
+	nSpanTarget		 = target_config->GetnSpanWiseSections() +1;
 
 	// here the number of span should be already known
 	// so perhaps when this option would be different for boundary markers then this should be done after the loop
@@ -1686,7 +1686,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	/*--- Here we want to make available the quantities for all the processors and collect them in a buffer
 	 * for each span of the donor the span-wise height vector also so that then we can interpolate on the target side  ---*/
 	if (Marker_Donor != -1){
-		for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
+		for(iSpan = 0; iSpan < nSpanDonor; iSpan++){
 			GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iSpan, rank);
 			avgDensityDonor[iSpan]  	 		= Donor_Variable[0];
 			avgPressureDonor[iSpan]  			= Donor_Variable[1];
@@ -1873,6 +1873,19 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		avgNuTarget[nSpanTarget - 1]             = avgNuDonor[nSpanDonor - 1];
 		avgKeiTarget[nSpanTarget - 1]            = avgKeiDonor[nSpanDonor - 1];
 		avgOmegaTarget[nSpanTarget - 1]          = avgOmegaDonor[nSpanDonor - 1];
+
+		/*--- transfer 1D values ---*/
+		avgDensityTarget[nSpanTarget]        = avgDensityDonor[nSpanDonor];
+		avgPressureTarget[nSpanTarget]       = avgPressureDonor[nSpanDonor];
+		avgTotPressureTarget[nSpanTarget]    = avgTotPressureDonor[nSpanDonor];
+		avgTotTemperatureTarget[nSpanTarget] = avgTotTemperatureDonor[nSpanDonor];
+		avgNormalVelTarget[nSpanTarget]      = avgNormalVelDonor[nSpanDonor];
+		avgTangVelTarget[nSpanTarget]        = avgTangVelDonor[nSpanDonor];
+		avg3DVelTarget[nSpanTarget]          = avg3DVelDonor[nSpanDonor];
+		avgNuTarget[nSpanTarget]             = avgNuDonor[nSpanDonor];
+		avgKeiTarget[nSpanTarget]            = avgKeiDonor[nSpanDonor];
+		avgOmegaTarget[nSpanTarget]          = avgOmegaDonor[nSpanDonor];
+
 
 		/*--- after interpolating the average value span-wise is set in the target zone ---*/
 
