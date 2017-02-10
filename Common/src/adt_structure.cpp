@@ -253,7 +253,7 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
         Allgather until we add Allgatherv to the SU2_MPI wrapper. ---*/
   
   int rank, iProcessor, nProcessor;
-  unsigned long  iVertex, nBuffer;
+  unsigned long  iVertex, nBuffer, ii =0;
   unsigned short iDim;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -284,9 +284,11 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   
   localPointIDs.resize(nGlobalVertex);
   
+  ii = 0;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
     for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
-      localPointIDs.push_back( Buffer_Recv[iProcessor*MaxLocalVertex + iVertex] );
+      localPointIDs[ii++] = Buffer_Recv[iProcessor*MaxLocalVertex + iVertex];
+
 
   /*--- Now gather the ranks for all points ---*/
   
@@ -300,9 +302,10 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   
   ranksOfPoints.resize(nGlobalVertex);
 
+  ii = 0;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
     for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
-      ranksOfPoints.push_back( Buffer_Recv[iProcessor*MaxLocalVertex + iVertex] );
+      ranksOfPoints[ii++] = Buffer_Recv[iProcessor*MaxLocalVertex + iVertex];
   
   delete [] Buffer_Send;  delete [] Buffer_Recv;
   
@@ -324,10 +327,11 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   
   coorPoints.resize(nDim*nGlobalVertex);
   
+  ii = 0;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
     for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++)
       for (iDim = 0; iDim < nDim; iDim++)
-      coorPoints.push_back( Buffer_Recv_Coord[iProcessor*MaxLocalVertex*nDim + iVertex*nDim + iDim] );
+      coorPoints[ii++] = Buffer_Recv_Coord[iProcessor*MaxLocalVertex*nDim + iVertex*nDim + iDim];
   
   delete [] Buffer_Send_Coord;   delete [] Buffer_Recv_Coord;
   delete [] Buffer_Send_nVertex; delete [] Buffer_Receive_nVertex;

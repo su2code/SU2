@@ -45,6 +45,7 @@
 #include "geometry_structure.hpp"
 #include "config_structure.hpp"
 #include "vector_structure.hpp"
+#include "adt_structure.hpp"
 
 #ifdef HAVE_EIGEN
 #include <Eigen/Core>
@@ -281,6 +282,9 @@ public:
   vector<unsigned short> Fix_IPlane;  /*!< \brief Fix FFD I plane. */
   vector<unsigned short> Fix_JPlane;  /*!< \brief Fix FFD J plane. */
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
+
+  vector<string> PilotGroupNames;
+  vector<vector<unsigned long>> PilotPoints;
 
   CFreeFormBlending** BlendingFunction;
 
@@ -1432,6 +1436,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
+
+  void ReadPilotPoints(CGeometry *geometry, CConfig *config);
 };
 
 #include "surface_deformation.inl"

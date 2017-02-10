@@ -385,6 +385,7 @@ private:
   nMG_PostSmooth,                             /*!< \brief Number of MG post-smooth parameters found in config file. */
   nMG_CorrecSmooth;                           /*!< \brief Number of MG correct-smooth parameters found in config file. */
   short *FFD_Fix_IDir, *FFD_Fix_JDir, *FFD_Fix_KDir;	/*!< \brief Exact sections. */
+  string PilotPointFile;
   unsigned short *MG_PreSmooth,	/*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,					/*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;					/*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
@@ -6778,6 +6779,8 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  string GetPilotPointFile();
 };
 
 #include "config_structure.inl"

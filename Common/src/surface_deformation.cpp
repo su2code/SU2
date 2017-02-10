@@ -130,6 +130,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
           FFDBox[iFFDBox]->SetSphe2Cart_ControlPoints(config);
         }
 
+        ReadPilotPoints(geometry, config);
+
+
         /*--- Output original FFD FFDBox ---*/
 
         if (rank == MASTER_NODE) {
@@ -197,14 +200,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
       /* --- Check if the FFD boxes referenced in the design variable definition can be found --- */
 
-      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-        if (!CheckFFDBoxDefinition(config, iDV)) {
-          cout << endl << "There is no FFD box with tag \"" << config->GetFFDTag(iDV)
-          << "\" defined in the mesh file." << endl;
-          cout << "Check the definition of the design variables and/or the FFD settings !!" << endl;
-          exit(EXIT_FAILURE);
-        }
-      }
+//      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+//        if (!CheckFFDBoxDefinition(config, iDV)) {
+//          cout << endl << "There is no FFD box with tag \"" << config->GetFFDTag(iDV)
+//          << "\" defined in the mesh file." << endl;
+//          cout << "Check the definition of the design variables and/or the FFD settings !!" << endl;
+//          exit(EXIT_FAILURE);
+//        }
+//      }
 
       /*--- Output original FFD FFDBox ---*/
 
@@ -2079,74 +2082,158 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, bool ResetDef) {
 
   unsigned short iDV, iControl, jControl, nDV = config->GetnDV();
-  unsigned short lControl = FFDBox->BlendingFunction[0]->GetnControl();
-  unsigned short mControl = FFDBox->BlendingFunction[1]->GetnControl();
-  unsigned short nFixed = 1;
+  const unsigned short lControl = FFDBox->BlendingFunction[0]->GetnControl();
+  const unsigned short mControl = FFDBox->BlendingFunction[1]->GetnControl();
 
   su2double *ParamCoord;
   su2double Movement[3] = {0.0, 0.0, 0.0}, Ampl, Bij;
   su2double Scale = config->GetFFD_Scale();
   unsigned short index[3] = {0,0,0};
+  unsigned long nPilot = 0, iPilot = 0;
 
+  /*--- Count the number of pilot points --- */
+
+  for (iDV = 0; iDV < nDV; iDV++){
+    for (unsigned short iGroup = 0; iGroup < FFDBox->PilotGroupNames.size(); iGroup++){
+      if (config->GetFFDTag(iDV) == FFDBox->PilotGroupNames[iGroup]){
+        nPilot += FFDBox->PilotPoints[iGroup].size();
+      }
+    }
+  }
   /*--- Set up necessary matrices and vectors ---*/
 
-  EigenMatrix BlendingMatrix(nDV + nFixed, lControl*mControl);
+  EigenMatrix BlendingMatrix(nPilot, lControl*mControl);
   EigenVector ControlPointPositionsX(lControl*mControl);
   EigenVector ControlPointPositionsY(lControl*mControl);
-  EigenVector DeltaX(nDV + nFixed);
-  EigenVector DeltaY(nDV + nFixed);
-  EigenVector PilotPointCoordX(nDV + nFixed);
-  EigenVector PilotPointCoordY(nDV + nFixed);
+  EigenVector DeltaX(nPilot);
+  EigenVector DeltaY(nPilot);
+  EigenVector PilotPointCoordX(nPilot);
+  EigenVector PilotPointCoordY(nPilot);
   EigenSVD    BlendingMatrixSVD;
 
 
   for (iDV = 0; iDV < nDV; iDV++){
 
-    ParamCoord = FFDBox->Get_ParametricCoord((unsigned long)config->GetParamDV(iDV, 1));
+    for (unsigned short iGroup = 0; iGroup < FFDBox->PilotGroupNames.size(); iGroup++){
 
-    /*--- Get the pilot point coordinates X, Y.
-     * If we have only design value, then this value is the amplitude,
-     * otherwise we have a general movement. ---*/
+      if (config->GetFFDTag(iDV) == FFDBox->PilotGroupNames[iGroup]){
 
-    if (config->GetnDV_Value(iDV) == 1) {
+        for (unsigned long iPilotPoint = 0; iPilotPoint < FFDBox->PilotPoints[iGroup].size(); iPilotPoint++){
+          cout << iGroup << " " << FFDBox->PilotGroupNames[iGroup] << " " << FFDBox->PilotPoints[iGroup][iPilotPoint] << endl;
+          ParamCoord = FFDBox->Get_ParametricCoord(FFDBox->PilotPoints[iGroup][iPilotPoint]);
 
-      Ampl = config->GetDV_Value(iDV)*Scale;
+          /*--- Get the pilot point coordinates X, Y.
+          * If we have only design value, then this value is the amplitude,
+          * otherwise we have a general movement. ---*/
 
-      PilotPointCoordX(iDV) = config->GetParamDV(iDV, 2)*Ampl;
-      PilotPointCoordY(iDV) = config->GetParamDV(iDV, 3)*Ampl;
+          if (config->GetnDV_Value(iDV) == 1) {
 
-    } else {
+            Ampl = config->GetDV_Value(iDV)*Scale;
 
-      PilotPointCoordX(iDV) = config->GetDV_Value(iDV, 0);
-      PilotPointCoordY(iDV) = config->GetDV_Value(iDV, 1);
+            PilotPointCoordX(iPilot) = config->GetParamDV(iDV, 2)*Ampl;
+            PilotPointCoordY(iPilot) = config->GetParamDV(iDV, 3)*Ampl;
 
-    }
+          } else {
 
-    /*--- Construct the blending matrix B ---*/
+            PilotPointCoordX(iPilot) = config->GetDV_Value(iDV, 0);
+            PilotPointCoordY(iPilot) = config->GetDV_Value(iDV, 1);
 
-    for (iControl = 0; iControl < lControl; iControl++){
-      for (jControl = 0; jControl < mControl; jControl++){
-        Bij = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
-              FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
-        BlendingMatrix(iDV, iControl*mControl + jControl) = Bij;
+          }
+
+          /*--- Construct the blending matrix B ---*/
+          for (iControl = 0; iControl < lControl; iControl++){
+            for (jControl = 0; jControl < mControl; jControl++){
+              Bij = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
+                  FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+              BlendingMatrix(iPilot, iControl*mControl + jControl) = Bij;
+            }
+          }
+          iPilot++;
+        }
       }
     }
   }
 
-  PilotPointCoordX(nDV) = 0.0;
-  PilotPointCoordY(nDV) = 0.0;
+#ifdef HAVE_MPI
+  int rank, iProcessor, nProcessor;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 
-  ParamCoord = FFDBox->Get_ParametricCoord(0);
-  for (iControl = 0; iControl < lControl; iControl++){
-    for (jControl = 0; jControl < mControl; jControl++){
-      Bij = FFDBox->BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
-            FFDBox->BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
-      BlendingMatrix(nDV, iControl*mControl + jControl) = Bij;
+  unsigned long nLocalPilot= nPilot, nGlobalPilot= 0, MaxLocalPilot = 0, ii = 0;
+
+  unsigned long *Buffer_Send_nPilot    = new unsigned long [1];
+  unsigned long *Buffer_Receive_nPilot = new unsigned long [nProcessor];
+
+  Buffer_Send_nPilot[0] = nLocalPilot;
+  SU2_MPI::Allreduce(&nLocalPilot, &nGlobalPilot, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalPilot, &MaxLocalPilot, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nPilot, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nPilot, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
+  unsigned long *Buffer_Send = new unsigned long[MaxLocalPilot*lControl*mControl];
+  unsigned long *Buffer_Recv = new unsigned long[nProcessor*MaxLocalPilot*lControl*mControl];
+
+  for (iPilot = 0; iPilot < nPilot; iPilot++){
+    for (iControl = 0; iControl < lControl*mControl; iControl++){
+      Buffer_Send[iPilot*lControl*mControl + iControl] = BlendingMatrix(iPilot, iControl);
     }
   }
 
-  /*--- Construct the SVD of the blending matrix ---*/
+  SU2_MPI::Allgather(Buffer_Send, MaxLocalPilot*lControl*mControl, MPI_UNSIGNED_LONG, Buffer_Recv, MaxLocalPilot*lControl*mControl, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
+  BlendingMatrix.resize(nGlobalPilot, lControl*mControl);
+
+  ii = 0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+    for (iPilot = 0; iPilot < Buffer_Receive_nPilot[iProcessor]; iPilot++){
+      for (iControl = 0; iControl < lControl*mControl; iControl++){
+        BlendingMatrix(ii, iControl) = Buffer_Recv[iProcessor*MaxLocalPilot * lControl*mControl + iPilot*lControl*mControl + iControl];
+      }
+      ii++;
+    }
+  }
+
+  su2double *Buffer_Send_Coord = new su2double [MaxLocalPilot];
+  su2double *Buffer_Recv_Coord = new su2double [nProcessor*MaxLocalPilot];
+
+  for (iPilot = 0; iPilot < nPilot; iPilot++){
+    Buffer_Send_Coord[iPilot] = PilotPointCoordX(iPilot);
+  }
+
+  SU2_MPI::Allgather(Buffer_Send_Coord, MaxLocalPilot, MPI_DOUBLE, Buffer_Recv_Coord, MaxLocalPilot, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  PilotPointCoordX.resize(nGlobalPilot);
+
+  ii = 0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+    for (iPilot = 0; iPilot < Buffer_Receive_nPilot[iProcessor]; iPilot++)
+      PilotPointCoordX(ii++) = Buffer_Recv_Coord[iProcessor*MaxLocalPilot + iPilot];
+
+  for (iPilot = 0; iPilot < nPilot; iPilot++){
+    Buffer_Send_Coord[iPilot] = PilotPointCoordY(iPilot);
+  }
+
+  SU2_MPI::Allgather(Buffer_Send_Coord, MaxLocalPilot, MPI_DOUBLE, Buffer_Recv_Coord, MaxLocalPilot, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  PilotPointCoordY.resize(nGlobalPilot);
+
+  ii = 0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+    for (iPilot = 0; iPilot < Buffer_Receive_nPilot[iProcessor]; iPilot++)
+      PilotPointCoordY(ii++) = Buffer_Recv_Coord[iProcessor*MaxLocalPilot + iPilot];
+
+  DeltaX.resize(nGlobalPilot);
+  DeltaY.resize(nGlobalPilot);
+
+  delete [] Buffer_Send_Coord; delete [] Buffer_Recv_Coord;
+  delete [] Buffer_Send_nPilot; delete [] Buffer_Receive_nPilot;
+  delete [] Buffer_Send; delete [] Buffer_Recv;
+#endif
+
+  cout << "Solve SVD " << endl;
+  /*--- TODO: Add fixed points ---*/
+
+  /*--- Construct the SVD of the blending matrix ---*/
+  cout << BlendingMatrix << endl;
   BlendingMatrixSVD = BlendingMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
@@ -4811,6 +4898,36 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
         if (rank == MASTER_NODE) cout << "Surface points: " << nSurfPoints <<"."<< endl;
 #endif
 
+        getline(mesh_file, text_line);
+
+        text_line.erase(0,17); unsigned short nPilotGroups = atoi(text_line.c_str());
+        unsigned short nPilotPoints = 0;
+        FFDBox[iFFDBox]->PilotPoints.resize(nPilotGroups);
+
+        for (unsigned short iGroup = 0; iGroup < nPilotGroups; iGroup++){
+          getline(mesh_file, text_line);
+          text_line.erase(0, 7); iTag = text_line.c_str();
+          FFDBox[iFFDBox]->PilotGroupNames.push_back(iTag);
+          getline(mesh_file, text_line);
+          text_line.erase(0, 14); nPilotPoints = atoi(text_line.c_str());
+          if (rank == MASTER_NODE){
+            cout << "Group " << iTag << " with " << nPilotPoints << " pilot point(s)." << endl;
+          }
+          for (unsigned long iPilotPoint = 0; iPilotPoint < nPilotPoints; iPilotPoint++){
+            getline(mesh_file, text_line); istringstream Pilot_line(text_line);
+
+            Pilot_line >> iTag; Pilot_line >> iPoint;
+            if (config->GetMarker_All_TagBound(iTag) != -1) {
+              iMarker = config->GetMarker_All_TagBound(iTag);
+              for (iSurfacePoints = 0; iSurfacePoints < nSurfacePoints[iFFDBox]; iSurfacePoints++){
+                if ((FFDBox[iFFDBox]->Get_MarkerIndex(iSurfacePoints) == iMarker) &&
+                    (geometry->node[FFDBox[iFFDBox]->Get_PointIndex(iSurfacePoints)]->GetGlobalIndex() == iPoint)){
+                  FFDBox[iFFDBox]->PilotPoints[iGroup].push_back(iSurfacePoints);
+                }
+              }
+            }
+          }
+        }
       }
 
       delete [] nCornerPoints;
@@ -5303,12 +5420,145 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
 
       }
 
+      output_file << "FFD_PILOT_GROUPS= " << FFDBox[iFFDBox]->PilotGroupNames.size() << endl;
+
+      for (unsigned short iGroup = 0; iGroup < FFDBox[iFFDBox]->PilotPoints.size(); iGroup++){
+        output_file << "GROUP= " << FFDBox[iFFDBox]->PilotGroupNames[iGroup] << endl;
+        output_file << "NPILOTPOINTS= " << FFDBox[iFFDBox]->PilotPoints[iGroup].size() << endl;
+        for (unsigned short iPilotPoints = 0; iPilotPoints < FFDBox[iFFDBox]->PilotPoints[iGroup].size(); iPilotPoints++){
+          for (iSurfacePoints = 0; iSurfacePoints < GlobalTag[iFFDBox].size(); iSurfacePoints++) {
+            if (GlobalPoint[iFFDBox][iSurfacePoints] == FFDBox[iFFDBox]->PilotPoints[iGroup][iPilotPoints]){
+              output_file << GlobalTag[iFFDBox][iSurfacePoints] << "\t" << FFDBox[iFFDBox]->PilotPoints[iGroup][iPilotPoints] << endl;
+            }
+          }
+        }
+      }
     }
 
     output_file.close();
 
   }
 
+}
+
+void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config){
+
+  string PilotFileName = config->GetPilotPointFile();
+  ifstream PilotFile;
+  string text_line;
+  PilotFile.open(PilotFileName, ios::in);
+  string Token;
+  vector<vector<su2double>> PilotXCoord;
+  vector<vector<su2double>> PilotYCoord;
+  vector<vector<su2double>> PilotZCoord;
+  unsigned short nGroups = 0, iGroup;
+  vector<string> PilotGroupNames;
+  vector<string> PilotFFD;
+  su2double Coord[] = {0,0,0};
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  unsigned short nPilotPoints, iPilotPoint;
+
+  cout << "Reading pilot points from file." << endl;
+
+  if (PilotFile.fail()){
+    cout << "Pilot Point file " << PilotFileName <<" not found.!!" << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  while(getline(PilotFile, text_line)){
+    istringstream line(text_line);
+    line >> Token;
+    if (Token == "GROUP"){
+      line >> std::skipws >> Token;
+      PilotGroupNames.push_back(Token);
+      getline(PilotFile, text_line);
+      line = istringstream(text_line);
+      line >> Token;
+      if (Token != "FFD_BOX"){
+        cout <<"FFD_BOX missing in pilot point file." << endl;
+        exit(EXIT_FAILURE);
+      }
+      line >> std::skipws >> Token;
+      PilotFFD.push_back(Token);
+
+      getline(PilotFile, text_line);
+      line = istringstream(text_line);
+      line >> Token;
+      if (Token != "NPOINTS"){
+        cout <<"NPOINTS missing in pilot point file." << endl;
+        exit(EXIT_FAILURE);
+      }
+      line >> nPilotPoints;
+      PilotXCoord.push_back(vector<su2double>(nPilotPoints));
+      PilotYCoord.push_back(vector<su2double>(nPilotPoints));
+      PilotZCoord.push_back(vector<su2double>(nPilotPoints));
+      for (iPilotPoint = 0; iPilotPoint < nPilotPoints; iPilotPoint++){
+        getline(PilotFile, text_line);
+        line = istringstream(text_line);
+        line >> PilotXCoord[nGroups][iPilotPoint]
+             >> PilotYCoord[nGroups][iPilotPoint]
+             >> PilotZCoord[nGroups][iPilotPoint];
+      }
+      nGroups++;
+    }
+  }
+
+  /*--- Build an ADT for each FFD Box and search the pilot points on the FFD surface ---*/
+
+  unsigned short iFFD = 0, iDim = 0;
+  unsigned long iSurfacePoint = 0, ii = 0, jj = 0;
+
+  for (iFFD = 0; iFFD < nFFDBox; iFFD++){
+
+    vector<su2double>     Coord_bound(geometry->GetnDim()*FFDBox[iFFD]->GetnSurfacePoint());
+    vector<unsigned long> PointIDs(FFDBox[iFFD]->GetnSurfacePoint());
+
+    ii = 0, jj = 0;
+    for(iSurfacePoint=0; iSurfacePoint< FFDBox[iFFD]->GetnSurfacePoint();iSurfacePoint++) {
+      PointIDs[jj++] = geometry->node[FFDBox[iFFD]->Get_PointIndex(iSurfacePoint)]->GetGlobalIndex();
+      for(iDim=0; iDim< geometry->GetnDim(); ++iDim){
+        Coord_bound[ii++] = FFDBox[iFFD]->Get_CartesianCoord(iSurfacePoint)[iDim];
+      }
+    }
+
+    su2_adtPointsOnlyClass WallADT(geometry->GetnDim(), FFDBox[iFFD]->GetnSurfacePoint(), Coord_bound.data(), PointIDs.data());
+
+    for (iGroup = 0; iGroup < nGroups; iGroup++){
+
+      if (PilotFFD[iGroup] == FFDBox[iFFD]->GetTag()){
+
+        FFDBox[iFFD]->PilotGroupNames.push_back(PilotGroupNames[iGroup]);
+        FFDBox[iFFD]->PilotPoints.push_back(vector<unsigned long>(PilotXCoord[iGroup].size()));
+
+        cout << "Group " <<  PilotGroupNames[iGroup]
+             << " in FFD Box " << PilotFFD[iGroup]
+             << ": " << PilotXCoord[iGroup].size()
+             << " pilot point(s)."<< endl;
+
+        for (iPilotPoint = 0; iPilotPoint < PilotXCoord[iGroup].size(); iPilotPoint++){
+          su2double dist;
+          unsigned long pointID;
+          int rankID;
+
+          Coord[0] = PilotXCoord[iGroup][iPilotPoint];
+          Coord[1] = PilotYCoord[iGroup][iPilotPoint];
+          Coord[2] = PilotZCoord[iGroup][iPilotPoint];
+
+          WallADT.DetermineNearestNode(Coord, dist, pointID, rankID);
+
+          FFDBox[iFFD]->PilotPoints[iGroup][iPilotPoint] = pointID;
+          if (rank == MASTER_NODE)
+            cout << "  Pilot point " << iPilotPoint << " attached to point " << pointID << ". " << "Max. diff.: " << dist << endl;
+        }
+      }
+    }
+  }
 }
 
 CFreeFormDefBox::CFreeFormDefBox(void) { }
