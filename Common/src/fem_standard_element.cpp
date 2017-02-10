@@ -2055,7 +2055,7 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   }
 
   /*--------------------------------------------------------------------------*/
-  /*--- Create the data of the derivatives of the basis functions  in the  ---*/
+  /*--- Create the data of the derivatives of the basis functions in the   ---*/
   /*--- solution DOFs of the element.                                      ---*/
   /*--------------------------------------------------------------------------*/
 
@@ -2065,10 +2065,10 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   const vector<su2double> sSolDOFs = sLocSolDOFs ? *sLocSolDOFs : sDOFs;
   const vector<su2double> tSolDOFs = tLocSolDOFs ? *tLocSolDOFs : tDOFs;
 
-  /* Create the matrix to store the derivatives in the basis functions
-     in the solution DOFs. */
-  CreateMatrixDerivativesBasisFunctions(rSolDOFs, sSolDOFs, tSolDOFs,
-                                        matDerBasisSolDOFs);
+  /* Create the basis functions and the matrix to store the derivatives in
+     the basis functions in the solution DOFs. */
+  CreateBasisFunctionsAndMatrixDerivatives(rSolDOFs, sSolDOFs, tSolDOFs,
+                                           lagBasisSolDOFs, matDerBasisSolDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Create the data of the derivatives of the basis functions  in the  ---*/
@@ -2077,7 +2077,9 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   /*--- when the grid DOFs do not coincide with the solution DOFs.         ---*/
   /*--------------------------------------------------------------------------*/
 
-  CreateMatrixDerivativesBasisFunctions(rDOFs, sDOFs, tDOFs, matDerBasisOwnDOFs);
+  vector<su2double> dummyLagBasis;
+  CreateBasisFunctionsAndMatrixDerivatives(rDOFs, sDOFs, tDOFs, dummyLagBasis,
+                                           matDerBasisOwnDOFs);
 }
 
 bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
@@ -2110,6 +2112,7 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
 
   lagBasisIntegration      = other.lagBasisIntegration;
   lagBasisIntegrationTrans = other.lagBasisIntegrationTrans;
+  lagBasisSolDOFs          = other.lagBasisSolDOFs;
 
   drLagBasisIntegration = other.drLagBasisIntegration;
   dsLagBasisIntegration = other.dsLagBasisIntegration;
@@ -2131,35 +2134,34 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   matDerBasisOwnDOFs  = other.matDerBasisOwnDOFs;
 }
 
-void FEMStandardElementClass::CreateMatrixDerivativesBasisFunctions(
+void FEMStandardElementClass::CreateBasisFunctionsAndMatrixDerivatives(
                                        const vector<su2double> &rLoc,
                                        const vector<su2double> &sLoc,
                                        const vector<su2double> &tLoc,
+                                             vector<su2double> &lagBasis,
                                              vector<su2double> &matDerBasis) {
 
   /* Define the variables, such that the general functions to compute
      the gradients of the basis functions can be used. Note that some
      of these variables are dummy variables. */
   unsigned short    nDOFsDummy;
-  vector<su2double> rDOFsDummy, sDOFsDummy, tDOFsDummy, lagBasisDummy;
+  vector<su2double> rDOFsDummy, sDOFsDummy, tDOFsDummy;
   vector<su2double> drLagBasisLoc, dsLagBasisLoc, dtLagBasisLoc;
 
-  /*--- Determine the element type and compute the gradients of the
-        basis functions in the solution DOFs. ---*/
+  /*--- Determine the element type and compute the basis functions and the
+        gradients of the basis functions in the given DOFs. ---*/
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPoly,      rLoc,
                                                 nDOFsDummy, rDOFsDummy,
-                                                lagBasisDummy,
-                                                drLagBasisLoc);
+                                                lagBasis,   drLagBasisLoc);
       break;
 
     case TRIANGLE:
       LagrangianBasisFunctionAndDerivativesTriangle(nPoly,      rLoc,
                                                     sLoc,       nDOFsDummy,
                                                     rDOFsDummy, sDOFsDummy,
-                                                    lagBasisDummy,
-                                                    drLagBasisLoc,
+                                                    lagBasis,   drLagBasisLoc,
                                                     dsLagBasisLoc);
       break;
 
@@ -2167,8 +2169,7 @@ void FEMStandardElementClass::CreateMatrixDerivativesBasisFunctions(
       LagrangianBasisFunctionAndDerivativesQuadrilateral(nPoly,      rLoc,
                                                          sLoc,       nDOFsDummy,
                                                          rDOFsDummy, sDOFsDummy, 
-                                                         lagBasisDummy,
-                                                         drLagBasisLoc,
+                                                         lagBasis,   drLagBasisLoc,
                                                          dsLagBasisLoc);
       break;
 
@@ -2177,8 +2178,7 @@ void FEMStandardElementClass::CreateMatrixDerivativesBasisFunctions(
                                                        sLoc,       tLoc,
                                                        nDOFsDummy, rDOFsDummy,
                                                        sDOFsDummy, tDOFsDummy,
-                                                       lagBasisDummy,
-                                                       drLagBasisLoc,
+                                                       lagBasis,   drLagBasisLoc,
                                                        dsLagBasisLoc,
                                                        dtLagBasisLoc);
       break;
@@ -2188,8 +2188,7 @@ void FEMStandardElementClass::CreateMatrixDerivativesBasisFunctions(
                                                    sLoc,       tLoc,
                                                    nDOFsDummy, rDOFsDummy,
                                                    sDOFsDummy, tDOFsDummy,
-                                                   lagBasisDummy,
-                                                   drLagBasisLoc,
+                                                   lagBasis,   drLagBasisLoc,
                                                    dsLagBasisLoc,
                                                    dtLagBasisLoc);
       break;
@@ -2199,8 +2198,7 @@ void FEMStandardElementClass::CreateMatrixDerivativesBasisFunctions(
                                                  sLoc,       tLoc,
                                                  nDOFsDummy, rDOFsDummy,
                                                  sDOFsDummy, tDOFsDummy,
-                                                 lagBasisDummy,
-                                                 drLagBasisLoc,
+                                                 lagBasis,   drLagBasisLoc,
                                                  dsLagBasisLoc,
                                                  dtLagBasisLoc);
       break;
@@ -2210,15 +2208,17 @@ void FEMStandardElementClass::CreateMatrixDerivativesBasisFunctions(
                                                       sLoc,       tLoc,
                                                       nDOFsDummy, rDOFsDummy,
                                                       sDOFsDummy, tDOFsDummy,
-                                                      lagBasisDummy,
-                                                      drLagBasisLoc,
+                                                      lagBasis,   drLagBasisLoc,
                                                       dsLagBasisLoc,
                                                       dtLagBasisLoc);
       break;
   }
 
-  /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
+  /*--- Check the sum of the Lagrangian basis functions and the
+        derivatives of the Lagrangian basis functions. ---*/
   const unsigned short nLoc = rLoc.size();
+
+  CheckSumLagrangianBasisFunctions(nLoc, nDOFs, lagBasis);
 
   if( !drLagBasisLoc.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nLoc, nDOFs,

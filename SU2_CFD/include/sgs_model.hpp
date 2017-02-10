@@ -75,6 +75,29 @@ public:
                                          const su2double      velGrad[3][3],
                                          const su2double      lenScale,
                                          const su2double      distToWall);
+
+  /*!
+   * \brief Virtual function to determine the gradients of the eddy viscosity
+            for the given function arguments.
+   * \param[in]  nDim              - Number of dimensions of the problem.
+   * \param[in]  rho               - Density.
+   * \param[in]  rhoGrad           - Cartesian gradients of the density.
+   * \param[in]  velGrad           - Cartesian gradients of the velocity components.
+                                     valGrad[i][j] = du_i/dx_j.
+   * \param[in]  velHess           - Cartesian Hessian of the velocity components.
+                                     valHess[i][j][k] = d2u_i/(dx_j dx_k).
+   * \param[in]  lenScale          - Length scale of the corresponding element.
+   * \param[in]  distToWall        - Distance to the nearest wall.
+   * \param[out] ViscosityTurbGrad - Cartesian gradient of the turbulent viscosity.
+   */
+  virtual void ComputeGradEddyViscosity(const unsigned short nDim,
+                                        const su2double      rho,
+                                        const su2double      rhoGrad[3],
+                                        const su2double      velGrad[3][3],
+                                        const su2double      velHess[3][3][3],
+                                        const su2double      lenScale,
+                                        const su2double      distToWall,
+                                              su2double      ViscosityTurbGrad[3]);
 };
 
 /*!
@@ -112,6 +135,29 @@ public:
                                  const su2double      velGrad[3][3],
                                  const su2double      lenScale,
                                  const su2double      distToWall);
+
+  /*!
+   * \brief Function to determine the gradients of the eddy viscosity
+            for the given function arguments.
+   * \param[in]  nDim              - Number of dimensions of the problem.
+   * \param[in]  rho               - Density.
+   * \param[in]  rhoGrad           - Cartesian gradients of the density.
+   * \param[in]  velGrad           - Cartesian gradients of the velocity components.
+                                     valGrad[i][j] = du_i/dx_j.
+   * \param[in]  velHess           - Cartesian Hessian of the velocity components.
+                                     valHess[i][j][k] = d2u_i/(dx_j dx_k).
+   * \param[in]  lenScale          - Length scale of the corresponding element.
+   * \param[in]  distToWall        - Distance to the nearest wall.
+   * \param[out] ViscosityTurbGrad - Cartesian gradient of the turbulent viscosity.
+   */
+  void ComputeGradEddyViscosity(const unsigned short nDim,
+                                const su2double      rho,
+                                const su2double      rhoGrad[3],
+                                const su2double      velGrad[3][3],
+                                const su2double      velHess[3][3][3],
+                                const su2double      lenScale,
+                                const su2double      distToWall,
+                                      su2double      ViscosityTurbGrad[3]);
 };
 
 /*!
@@ -149,6 +195,29 @@ public:
                                  const su2double      velGrad[3][3],
                                  const su2double      lenScale,
                                  const su2double      distToWall);
+
+  /*!
+   * \brief Function to determine the gradients of the eddy viscosity
+            for the given function arguments.
+   * \param[in]  nDim              - Number of dimensions of the problem.
+   * \param[in]  rho               - Density.
+   * \param[in]  rhoGrad           - Cartesian gradients of the density.
+   * \param[in]  velGrad           - Cartesian gradients of the velocity components.
+                                     valGrad[i][j] = du_i/dx_j.
+   * \param[in]  velHess           - Cartesian Hessian of the velocity components.
+                                     valHess[i][j][k] = d2u_i/(dx_j dx_k).
+   * \param[in]  lenScale          - Length scale of the corresponding element.
+   * \param[in]  distToWall        - Distance to the nearest wall.
+   * \param[out] ViscosityTurbGrad - Cartesian gradient of the turbulent viscosity.
+   */
+  void ComputeGradEddyViscosity(const unsigned short nDim,
+                                const su2double      rho,
+                                const su2double      rhoGrad[3],
+                                const su2double      velGrad[3][3],
+                                const su2double      velHess[3][3][3],
+                                const su2double      lenScale,
+                                const su2double      distToWall,
+                                      su2double      ViscosityTurbGrad[3]);
 };
 
 #include "sgs_model.inl"

@@ -2643,7 +2643,7 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
         solution is used, such that the metric terms are computed in the correct
         integration points in case the polynomial order of the solution differs
         from that of the grid. ---*/
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
 
     /* Check the existing standard elements in the list. */
     unsigned long j;

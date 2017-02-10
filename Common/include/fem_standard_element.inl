@@ -55,6 +55,8 @@ inline su2double* FEMStandardElementClass::GetBasisFunctionsIntegration(void){re
 
 inline const su2double* FEMStandardElementClass::GetBasisFunctionsIntegrationTrans(void) const {return lagBasisIntegrationTrans.data();}
 
+inline const su2double* FEMStandardElementClass::GetBasisFunctionsSolDOFs(void) const {return lagBasisSolDOFs.data();}
+
 inline su2double* FEMStandardElementClass::GetDrBasisFunctionsIntegration(void){return drLagBasisIntegration.data();}
 
 inline su2double* FEMStandardElementClass::GetDsBasisFunctionsIntegration(void){return dsLagBasisIntegration.data();}
