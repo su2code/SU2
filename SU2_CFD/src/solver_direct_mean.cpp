@@ -14333,6 +14333,304 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   
 }
 
+void CEulerSolver::LoadRestart_Binary(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+  unsigned short iDim, iVar, iMesh, iMeshFine;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  bool grid_movement  = config->GetGrid_Movement();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool steady_restart = config->GetSteadyRestart();
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
+  string UnstExt, text_line;
+  ifstream restart_file;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[iZone]->GetnZone();
+
+  string restart_filename = config->GetSolution_FlowFileName();
+
+  Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  int nVar_Restart = 0, counter = 0;
+  su2double *buf = NULL;
+
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
+  /*--- Modify file name for an unsteady restart ---*/
+
+  if (dual_time || time_stepping)
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+
+  /*--- For now, append an extra suffix for the parallel restart. ---*/
+
+  restart_filename.append(".bin");
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+#ifndef HAVE_MPI
+
+  // Serial read version here.
+
+#else
+
+  /*--- Parallel binary input using MPI I/O. ---*/
+
+  MPI_File fhw;
+  MPI_Status status;
+  MPI_Datatype etype, filetype;
+  MPI_Offset disp;
+
+  /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+  etype = MPI_DOUBLE;
+
+  /*--- We need to ignore the 2 ints describing the nVar_Restart and nPoints. ---*/
+
+  disp  = 2*sizeof(int);
+
+  /*--- All ranks open the file using MPI. ---*/
+
+  MPI_File_open(MPI_COMM_WORLD, restart_filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+  /*--- First, read the number of variables and points (i.e., columns and rows),
+   which we will need in order to read the file later. Eventually, we'll add back
+   in the header here for a fixed string length * nVar. ---*/
+
+  int var_buf_size = 2;
+  int var_buf[2];
+  if (rank == MASTER_NODE)
+    MPI_File_read(fhw, var_buf, var_buf_size, MPI_INT, MPI_STATUS_IGNORE);
+
+  /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
+
+  SU2_MPI::Bcast(var_buf, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  nVar_Restart = var_buf[0];
+
+  /*--- Define a derived datatype for this rank's set of non-contiguous data
+   that will be placed in the restart. Here, we are collecting each one of the
+   points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
+
+  int *blocklen = new int[nPointDomain];
+  int *displace = new int[nPointDomain];
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+      blocklen[counter] = nVar_Restart;
+      displace[counter] = iPoint_Global*nVar_Restart;
+      counter++;
+    }
+  }
+  MPI_Type_indexed(nPointDomain, blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_commit(&filetype);
+
+  /*--- Set the view for the MPI file write, i.e., describe the location in
+   the file that this rank "sees" for writing its piece of the restart file. ---*/
+
+  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+
+  /*--- For now, create a temp 1D buffer to load up the data for writing.
+   This will be replaced with a derived data type most likely. ---*/
+
+  buf = new su2double[nVar_Restart*nPointDomain];
+
+  /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+
+  MPI_File_read_all(fhw, buf, nVar_Restart*nPointDomain, MPI_DOUBLE, &status);
+
+  /*--- All ranks close the file after writing. ---*/
+
+  MPI_File_close(&fhw);
+
+  /*--- Free the derived datatype and release temp memory. ---*/
+
+  MPI_Type_free(&filetype);
+  delete [] blocklen;
+  delete [] displace;
+
+#endif
+
+  /*--- Load data from the binary restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+
+      iPoint_Local = Global2Local[iPoint_Global];
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*nVar_Restart + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = buf[index+iVar];
+      node[iPoint_Local]->SetSolution(Solution);
+      iPoint_Global_Local++;
+
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
+
+      if (grid_movement && val_update_geo) {
+
+        /*--- First, remove any variables for the turbulence model that
+         appear in the restart file before the grid velocities. ---*/
+
+        if (turb_model == SA || turb_model == SA_NEG) {
+          index++;
+        } else if (turb_model == SST) {
+          index+=2;
+        }
+
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+
+        su2double GridVel[3] = {0.0,0.0,0.0};
+        if (!steady_restart) {
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*nVar_Restart;
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = buf[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*nVar_Restart + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = buf[index+iDim]; }
+        }
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+      }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We alo call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
+
+  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
+
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+
+  if (grid_movement && val_update_geo) {
+
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+
+    geometry[MESH_0]->Set_MPI_Coord(config);
+    geometry[MESH_0]->Set_MPI_GridVel(config);
+
+    /*--- Recompute the edges and dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+    }
+  }
+  
+  delete [] Coord;
+#ifdef HAVE_MPI
+  delete [] buf;
+#endif
+  
+}
+
 void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
 
   unsigned long iPoint;

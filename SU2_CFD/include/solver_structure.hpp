@@ -3279,6 +3279,17 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  virtual void LoadRestart_Binary(CGeometry **geometry, CSolver ***solver,
+                           CConfig *config, int val_iter, bool val_update_geo);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
    */
   virtual void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver,
                                CConfig *config, int val_iter);
@@ -5953,7 +5964,17 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-  
+
+  /*!
+   * \brief Load a solution from a binary restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart_Binary(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
  /*!
    * \brief Set the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index

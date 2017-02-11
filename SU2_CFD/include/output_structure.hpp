@@ -318,6 +318,7 @@ public:
    * \brief Write a native SU2 restart file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
   void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
@@ -326,10 +327,20 @@ public:
    * \brief Write a native SU2 restart file (ASCII) in parallel.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
   void SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
+
+  /*!
+   * \brief Write a native SU2 restart file (binary) in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
   /*!
    * \brief Write the x, y, & z coordinates to a CGNS output file.
    * \param[in] config - Definition of the particular problem.
