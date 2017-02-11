@@ -882,6 +882,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   if (restart || restart_flow) {
     if (euler || ns) {
       solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+      //solver_container[MESH_0][FLOW_SOL]->LoadRestart_Binary(geometry, solver_container, config, val_iter, update_geo);
     }
     if (turbulent) {
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
@@ -2774,7 +2775,7 @@ void CDriver::Output(unsigned long ExtIter) {
      surface solution, and surface comma-separated value files. ---*/
 
     output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-    //output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
 
     /*--- Output a file with the forces breakdown. ---*/
     
