@@ -295,7 +295,7 @@ def main():
     fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
     fem_ns_cylinder.cfg_file  = "fem_Cylinder_reg.cfg"
     fem_ns_cylinder.test_iter = 10
-    fem_ns_cylinder.test_vals = [0.447673,0.975592,-0.000020,61.594121] #last 4 columns
+    fem_ns_cylinder.test_vals = [0.447673,0.975592,-0.000020,61.594120] #last 4 columns
     fem_ns_cylinder.su2_exec  = "SU2_CFD"
     fem_ns_cylinder.timeout   = 1600
     fem_ns_cylinder.tol       = 0.00001

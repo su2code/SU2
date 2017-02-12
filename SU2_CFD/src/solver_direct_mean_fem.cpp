@@ -6364,7 +6364,7 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
     /* Compute the kinematic viscosities of both sides. Multiply it by
        ConstPenFace and divide by the length scale. */
     const su2double nu0 = ConstPenFace*viscosityInt0[i]/(lenScale0*sol0[0]);
-    const su2double nu1 = ConstPenFace*viscosityInt1[i]/(lenScale0*sol1[0]);
+    const su2double nu1 = ConstPenFace*viscosityInt1[i]/(lenScale1*sol1[0]);
 
     /* Compute the penalty parameter of this face as the maximum of the
        penalty parameter from both sides. Multiply by the area to obtain the
