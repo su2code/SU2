@@ -2167,10 +2167,11 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   Buffer_Send_nPilot[0] = nLocalPilot;
   SU2_MPI::Allreduce(&nLocalPilot, &nGlobalPilot, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&nLocalPilot, &MaxLocalPilot, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nPilot, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nPilot, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send_nPilot, 1, MPI_UNSIGNED_LONG,
+                     Buffer_Receive_nPilot, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
-  unsigned long *Buffer_Send = new unsigned long[MaxLocalPilot*lControl*mControl];
-  unsigned long *Buffer_Recv = new unsigned long[nProcessor*MaxLocalPilot*lControl*mControl];
+  su2double *Buffer_Send = new su2double[MaxLocalPilot*lControl*mControl];
+  su2double *Buffer_Recv = new su2double[nProcessor*MaxLocalPilot*lControl*mControl];
 
   for (iPilot = 0; iPilot < nPilot; iPilot++){
     for (iControl = 0; iControl < lControl*mControl; iControl++){
@@ -2178,7 +2179,8 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     }
   }
 
-  SU2_MPI::Allgather(Buffer_Send, MaxLocalPilot*lControl*mControl, MPI_UNSIGNED_LONG, Buffer_Recv, MaxLocalPilot*lControl*mControl, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send, MaxLocalPilot*lControl*mControl, MPI_DOUBLE,
+                     Buffer_Recv, MaxLocalPilot*lControl*mControl, MPI_DOUBLE, MPI_COMM_WORLD);
 
   BlendingMatrix.resize(nGlobalPilot, lControl*mControl);
 
@@ -2192,50 +2194,47 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     }
   }
 
-  su2double *Buffer_Send_Coord = new su2double [MaxLocalPilot];
-  su2double *Buffer_Recv_Coord = new su2double [nProcessor*MaxLocalPilot];
-
   for (iPilot = 0; iPilot < nPilot; iPilot++){
-    Buffer_Send_Coord[iPilot] = PilotPointCoordX(iPilot);
+    Buffer_Send[iPilot] = PilotPointCoordX(iPilot);
   }
 
-  SU2_MPI::Allgather(Buffer_Send_Coord, MaxLocalPilot, MPI_DOUBLE, Buffer_Recv_Coord, MaxLocalPilot, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send, MaxLocalPilot, MPI_DOUBLE,
+                     Buffer_Recv, MaxLocalPilot, MPI_DOUBLE, MPI_COMM_WORLD);
 
   PilotPointCoordX.resize(nGlobalPilot);
 
   ii = 0;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
     for (iPilot = 0; iPilot < Buffer_Receive_nPilot[iProcessor]; iPilot++)
-      PilotPointCoordX(ii++) = Buffer_Recv_Coord[iProcessor*MaxLocalPilot + iPilot];
+      PilotPointCoordX(ii++) = Buffer_Recv[iProcessor*MaxLocalPilot + iPilot];
 
   for (iPilot = 0; iPilot < nPilot; iPilot++){
-    Buffer_Send_Coord[iPilot] = PilotPointCoordY(iPilot);
+    Buffer_Send[iPilot] = PilotPointCoordY(iPilot);
   }
 
-  SU2_MPI::Allgather(Buffer_Send_Coord, MaxLocalPilot, MPI_DOUBLE, Buffer_Recv_Coord, MaxLocalPilot, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(Buffer_Send, MaxLocalPilot, MPI_DOUBLE,
+                     Buffer_Recv, MaxLocalPilot, MPI_DOUBLE, MPI_COMM_WORLD);
 
   PilotPointCoordY.resize(nGlobalPilot);
 
   ii = 0;
   for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
     for (iPilot = 0; iPilot < Buffer_Receive_nPilot[iProcessor]; iPilot++)
-      PilotPointCoordY(ii++) = Buffer_Recv_Coord[iProcessor*MaxLocalPilot + iPilot];
+      PilotPointCoordY(ii++) = Buffer_Recv[iProcessor*MaxLocalPilot + iPilot];
 
   DeltaX.resize(nGlobalPilot);
   DeltaY.resize(nGlobalPilot);
 
-  delete [] Buffer_Send_Coord; delete [] Buffer_Recv_Coord;
   delete [] Buffer_Send_nPilot; delete [] Buffer_Receive_nPilot;
   delete [] Buffer_Send; delete [] Buffer_Recv;
 #endif
 
-  cout << "Solve SVD " << endl;
   /*--- TODO: Add fixed points ---*/
 
   /*--- Construct the SVD of the blending matrix ---*/
-  cout << BlendingMatrix << endl;
   BlendingMatrixSVD = BlendingMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
 
+  cout << BlendingMatrixSVD.rank() << endl ;
   /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
 
   ControlPointPositionsX = BlendingMatrixSVD.solve(PilotPointCoordX);
