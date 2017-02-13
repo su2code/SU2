@@ -813,13 +813,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   AverageVelocity 									= new su2double** [nMarker];
   AverageTurboVelocity 							= new su2double** [nMarker];
+  OldAverageTurboVelocity 					= new su2double** [nMarker];
   ExtAverageTurboVelocity 					= new su2double** [nMarker];
   AverageFlux 											= new su2double** [nMarker];
   SpanTotalFlux 										= new su2double** [nMarker];
   AveragePressure  									= new su2double* [nMarker];
+  OldAveragePressure  							= new su2double* [nMarker];
   RadialEquilibriumPressure         = new su2double* [nMarker];
   ExtAveragePressure  							= new su2double* [nMarker];
   AverageDensity   									= new su2double* [nMarker];
+  OldAverageDensity   							= new su2double* [nMarker];
   ExtAverageDensity   							= new su2double* [nMarker];
   AverageNu  												= new su2double* [nMarker];
   AverageKei 												= new su2double* [nMarker];
@@ -831,13 +834,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
   	AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
   	AverageTurboVelocity[iMarker] 						= new su2double* [nSpanWiseSections + 1];
+  	OldAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
   	ExtAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
   	AverageFlux[iMarker] 											= new su2double* [nSpanWiseSections + 1];
   	SpanTotalFlux[iMarker] 										= new su2double* [nSpanWiseSections + 1];
   	AveragePressure[iMarker]  								= new su2double [nSpanWiseSections + 1];
+  	OldAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
   	RadialEquilibriumPressure[iMarker]  			= new su2double [nSpanWiseSections + 1];
   	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
   	AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
+  	OldAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
   	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
     AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
     AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
@@ -849,13 +855,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
   		AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
   		AverageTurboVelocity[iMarker][iSpan] 										= new su2double [nDim];
+  		OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
   		ExtAverageTurboVelocity[iMarker][iSpan] 								= new su2double [nDim];
   		AverageFlux[iMarker][iSpan] 														= new su2double [nVar];
   		SpanTotalFlux[iMarker][iSpan] 													= new su2double [nVar];
   		AveragePressure[iMarker][iSpan]  												= 0.0;
+  		OldAveragePressure[iMarker][iSpan]  										= config->GetPressure_FreeStreamND();
   		RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
   		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
   		AverageDensity[iMarker][iSpan]   												= 0.0;
+  		OldAverageDensity[iMarker][iSpan]   									  = config->GetDensity_FreeStreamND();
   		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
       AverageNu[iMarker][iSpan]   										        = 0.0;
       AverageKei[iMarker][iSpan]   										        = 0.0;
@@ -867,8 +876,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   		for (iDim = 0; iDim < nDim; iDim++) {
   			AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
   			AverageTurboVelocity[iMarker][iSpan][iDim] 									= 0.0;
+  			OldAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
   			ExtAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
   		}
+
+  		OldAverageTurboVelocity[iMarker][iSpan][0]                 = config->GetModVel_FreeStreamND();
+
   		for (iVar = 0; iVar < nVar; iVar++) {
   			AverageFlux[iMarker][iSpan][iVar] 													= 0.0;
   			SpanTotalFlux[iMarker][iSpan][iVar] 												= 0.0;
@@ -15112,6 +15125,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+
   /*-- Variables declaration and allocation ---*/
   Velocity 							= new su2double[nDim];
   UnitNormal 						= new su2double[nDim];
@@ -15122,7 +15136,6 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
   TotalMassVelocity     = new su2double[nDim];
   TotalFluxes 					= new su2double[nVar];
   cartVelocity 					= new su2double[nDim];
-
 
 #ifdef HAVE_MPI
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
@@ -15167,6 +15180,8 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+
+          	/*--- Retrieve Old Solution ---*/
 
             /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
             for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
@@ -15383,50 +15398,45 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
 
     					}else {
     						MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
-#ifdef HAVE_MPI
-    						if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]){
-    							if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-    							else cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-    							AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
-    							AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
-    						}
-#else
-    						if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]){
-    							cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-    							AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
-    							AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
-    						}
-#endif
-
-    						if (AverageDensity[iMarker][iSpan] < 0.0){
-#ifdef HAVE_MPI
-    							if(size > 1 && rank == MASTER_NODE)cout << " density in mixedout routine negative : " << endl;
-    							else cout << " density in mixedout routine negative : " << endl;
-
-#else
-    							cout << " density in mixedout routine negative : " << endl;
-#endif
-    							AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
-    							AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
-
-    						}
     						AverageTurboVelocity[iMarker][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - AveragePressure[iMarker][iSpan]) / AverageFlux[iMarker][iSpan][0];
     						for (iDim = 2; iDim < nDim +1;iDim++)
     							AverageTurboVelocity[iMarker][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
     						ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
     					}
-
-    					break;
-
+  						break;
 
     				default:
-    					cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
+    					cout << "Warning! Invalid AVERAGE PROCESS input!" << endl;
     					exit(EXIT_FAILURE);
     					break;
     				}
 
     				/* --- compute static averaged quantities ---*/
     				ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+
+    				/* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
+    				if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan] || AveragePressure[iMarker][iSpan]!= AveragePressure[iMarker][iSpan]){
+    					cout<<"nan in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
+    					AverageDensity[iMarker][iSpan] = OldAverageDensity[iMarker][iSpan];
+    					AveragePressure[iMarker][iSpan] = OldAveragePressure[iMarker][iSpan];
+    					for(iDim = 0; iDim < nDim;iDim++)
+    						AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
+    				}
+
+
+    				if (AverageDensity[iMarker][iSpan] < 0.0 || AveragePressure[iMarker][iSpan] < 0.0){
+    					cout << " negative density or pressure in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
+    					AverageDensity[iMarker][iSpan] = OldAverageDensity[iMarker][iSpan];
+    					AveragePressure[iMarker][iSpan] = OldAveragePressure[iMarker][iSpan];
+    					for(iDim = 0; iDim < nDim;iDim++)
+    						AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
+    				}
+
+
+    				OldAverageDensity[iMarker][iSpan] = AverageDensity[iMarker][iSpan];
+    				OldAveragePressure[iMarker][iSpan] = AveragePressure[iMarker][iSpan];
+    				for(iDim = 0; iDim < nDim;iDim++)
+    					OldAverageTurboVelocity[iMarker][iSpan][iDim] = AverageTurboVelocity[iMarker][iSpan][iDim];
 
 
     				if(turbulent){
@@ -15547,9 +15557,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
     							TurboVelocityIn[iMarkerTP -1][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - PressureIn[iMarkerTP -1][iSpan]) / AverageFlux[iMarker][iSpan][0];
     							for (iDim = 2; iDim < nDim +1;iDim++)
     								TurboVelocityIn[iMarkerTP -1][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-    							ComputeBackVelocity(TurboVelocityIn[iMarkerTP -1][iSpan], AverageTurboNormal , cartVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
     						}
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
     					}
     					else{
     						if (abs(AverageFlux[iMarker][iSpan][0])<(10.0e-9)*TotalAreaDensity) {
@@ -15563,9 +15571,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
     							TurboVelocityOut[iMarkerTP -1][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - PressureOut[iMarkerTP - 1][iSpan]) / AverageFlux[iMarker][iSpan][0];
     							for (iDim = 2; iDim < nDim +1;iDim++)
     								TurboVelocityOut[iMarkerTP -1][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-    							ComputeBackVelocity(TurboVelocityOut[iMarkerTP -1][iSpan], AverageTurboNormal , cartVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
     						}
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
     					}
     					break;
 
@@ -15640,6 +15646,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
   delete [] TotalFluxes;
   delete [] TotalMassVelocity;
   delete [] cartVelocity;
+
 }
 
 
@@ -15939,42 +15946,12 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
 
              }else {
                MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, AveragePressure[iMarker][nSpanWiseSections], AverageDensity[iMarker][nSpanWiseSections]);
-#ifdef HAVE_MPI
-								if (AverageDensity[iMarker][nSpanWiseSections]!= AverageDensity[iMarker][nSpanWiseSections]){
-									if(rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-									else cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-									AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-									AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-								}
-#else
-								if (AverageDensity[iMarker][nSpanWiseSections]!= AverageDensity[iMarker][nSpanWiseSections]){
-									cout <<" nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-									AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-									AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-								}
-#endif
-
-								if (AverageDensity[iMarker][nSpanWiseSections] < 0.0){
-#ifdef HAVE_MPI
-									if(size > 1 && rank == MASTER_NODE)cout << " density in mixedout routine negative : " << endl;
-									else cout << " density in mixedout routine negative : " << endl;
-
-#else
-									cout << " density in mixedout routine negative : " << endl;
-#endif
-									AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-                 AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-
-               }
                AverageTurboVelocity[iMarker][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - AveragePressure[iMarker][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
                for (iDim = 2; iDim < nDim +1;iDim++)
                  AverageTurboVelocity[iMarker][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
              ComputeBackVelocity(AverageTurboVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-
              }
-
              break;
-
 
           default:
             cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
@@ -15984,7 +15961,32 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
 
           /* --- compute static averaged quantities ---*/
           ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-          if(turbulent){
+
+  				/* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
+  				if (AverageDensity[iMarker][nSpanWiseSections]!= AverageDensity[iMarker][nSpanWiseSections] || AveragePressure[iMarker][nSpanWiseSections]!= AveragePressure[iMarker][nSpanWiseSections]){
+  					cout<<"nan in mixing process routine 1D in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
+  					AverageDensity[iMarker][nSpanWiseSections] = OldAverageDensity[iMarker][nSpanWiseSections];
+  					AveragePressure[iMarker][nSpanWiseSections] = OldAveragePressure[iMarker][nSpanWiseSections];
+  					for(iDim = 0; iDim < nDim;iDim++)
+  						AverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
+  				}
+
+
+  				if (AverageDensity[iMarker][nSpanWiseSections] < 0.0 || AveragePressure[iMarker][nSpanWiseSections] < 0.0){
+  					cout << " negative density or pressure in mixing process 1D in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
+  					AverageDensity[iMarker][nSpanWiseSections] = OldAverageDensity[iMarker][nSpanWiseSections];
+  					AveragePressure[iMarker][nSpanWiseSections] = OldAveragePressure[iMarker][nSpanWiseSections];
+  					for(iDim = 0; iDim < nDim;iDim++)
+  						AverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
+  				}
+
+  				OldAverageDensity[iMarker][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections];
+  				OldAveragePressure[iMarker][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections];
+  				for(iDim = 0; iDim < nDim;iDim++)
+  					OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
+
+
+  				if(turbulent){
           	switch(average_process){
           	case ALGEBRAIC:
           		AverageNu[iMarker][nSpanWiseSections]            = TotalNu/nVert;
@@ -16102,9 +16104,7 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
           			TurboVelocityIn[iMarkerTP -1][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - PressureIn[iMarkerTP -1][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
           			for (iDim = 2; iDim < nDim +1;iDim++)
           				TurboVelocityIn[iMarkerTP -1][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-          			ComputeBackVelocity(TurboVelocityIn[iMarkerTP -1][nSpanWiseSections], AverageTurboNormal ,cartVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
           		}
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
           	}
           	else{
           		if (abs(AverageFlux[iMarker][nSpanWiseSections][0])<(10.0e-9)*TotalAreaDensity) {
@@ -16118,9 +16118,7 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
           			TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - PressureOut[iMarkerTP -1][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
           			for (iDim = 2; iDim < nDim +1;iDim++)
           				TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-          			ComputeBackVelocity(TurboVelocityOut[iMarkerTP -1][nSpanWiseSections], AverageTurboNormal , cartVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
           		}
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
           	}
           	break;
 
@@ -16153,10 +16151,14 @@ void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val
     su2double& pressure_mix, su2double& density_mix) {
 
 
-  su2double x1,x2,xmid, dx, fx1, fx2, f, fmid, rtb;;
+	int rank = MASTER_NODE;
+	su2double x1,x2,xmid, dx, fx1, fx2, f, fmid, rtb;;
   su2double FACTOR=0.2, toll = 1.0e-05;
   unsigned short count=0, j, NTRY=10, ITMAX=100;
 
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   pressure_mix = val_init_pressure;
 
@@ -16195,7 +16197,7 @@ void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val
   	count++;
   }while(abs(fmid/val_init_pressure) > toll && count<ITMAX);
   pressure_mix = xmid;
-  if (count==ITMAX) {
+  if (count==ITMAX && rank == MASTER_NODE) {
   	cout <<"Too many bisections in mixedout" << endl;
   }
 
@@ -17126,13 +17128,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   AverageVelocity 									= new su2double** [nMarker];
   AverageTurboVelocity 							= new su2double** [nMarker];
+  OldAverageTurboVelocity 					= new su2double** [nMarker];
   ExtAverageTurboVelocity 					= new su2double** [nMarker];
   AverageFlux 											= new su2double** [nMarker];
   SpanTotalFlux 										= new su2double** [nMarker];
   AveragePressure  									= new su2double* [nMarker];
+  OldAveragePressure  							= new su2double* [nMarker];
   RadialEquilibriumPressure         = new su2double* [nMarker];
   ExtAveragePressure  							= new su2double* [nMarker];
   AverageDensity   									= new su2double* [nMarker];
+  OldAverageDensity   							= new su2double* [nMarker];
   ExtAverageDensity   							= new su2double* [nMarker];
   AverageNu  												= new su2double* [nMarker];
   AverageKei 												= new su2double* [nMarker];
@@ -17144,13 +17149,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
   	AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
   	AverageTurboVelocity[iMarker] 						= new su2double* [nSpanWiseSections + 1];
+  	OldAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
   	ExtAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
   	AverageFlux[iMarker] 											= new su2double* [nSpanWiseSections + 1];
   	SpanTotalFlux[iMarker] 										= new su2double* [nSpanWiseSections + 1];
   	AveragePressure[iMarker]  								= new su2double [nSpanWiseSections + 1];
+  	OldAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
   	RadialEquilibriumPressure[iMarker]  			= new su2double [nSpanWiseSections + 1];
   	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
   	AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
+  	OldAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
   	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
     AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
     AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
@@ -17162,13 +17170,16 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
   		AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
   		AverageTurboVelocity[iMarker][iSpan] 										= new su2double [nDim];
+  		OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
   		ExtAverageTurboVelocity[iMarker][iSpan] 								= new su2double [nDim];
   		AverageFlux[iMarker][iSpan] 														= new su2double [nVar];
   		SpanTotalFlux[iMarker][iSpan] 													= new su2double [nVar];
   		AveragePressure[iMarker][iSpan]  												= 0.0;
+  		OldAveragePressure[iMarker][iSpan]  										= config->GetPressure_FreeStreamND();
   		RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
   		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
   		AverageDensity[iMarker][iSpan]   												= 0.0;
+  		OldAverageDensity[iMarker][iSpan]   									  = config->GetDensity_FreeStreamND();
   		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
       AverageNu[iMarker][iSpan]   										        = 0.0;
       AverageKei[iMarker][iSpan]   										        = 0.0;
@@ -17180,14 +17191,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   		for (iDim = 0; iDim < nDim; iDim++) {
   			AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
   			AverageTurboVelocity[iMarker][iSpan][iDim] 									= 0.0;
+  			OldAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
   			ExtAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
   		}
+
+  		OldAverageTurboVelocity[iMarker][iSpan][0]                 = config->GetModVel_FreeStreamND();
+
   		for (iVar = 0; iVar < nVar; iVar++) {
   			AverageFlux[iMarker][iSpan][iVar] 													= 0.0;
   			SpanTotalFlux[iMarker][iSpan][iVar] 												= 0.0;
   		}
   	}
   }
+
 
   /*--- Initialize primitive quantities for turboperformace ---*/
 
