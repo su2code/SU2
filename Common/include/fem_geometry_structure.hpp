@@ -286,12 +286,12 @@ public:
                                                        integration points of the face. */
   vector<su2double> metricCoorDerivFace1;  /*!< \brief The terms dxdr, dydr, etc. of side 1 in the
                                                        integration points of the face. */
-  vector<su2double> metricElemSide0;       /*!< \brief The metric terms of the adjacent element on
-                                                       side 0 in the integration points of the face.
-                                                       Needed for the SIP term. */
-  vector<su2double> metricElemSide1;       /*!< \brief The metric terms of the adjacent element on
-                                                       side 1 in the integration points of the face.
-                                                       Needed for the SIP term. */
+  vector<su2double> metricElemSide0;       /*!< \brief The Cartesian gradients of the basis function of the
+                                                       adjacent element on side 0 in the integration points
+                                                       of the face. Needed for the SIP term. */
+  vector<su2double> metricElemSide1;       /*!< \brief The Cartesian gradients of the basis function of the
+                                                       adjacent element on side 1 in the integration points
+                                                       of the face. Needed for the SIP term. */
 
   vector<su2double> coorIntegrationPoints;  /*!< \brief Coordinates for the integration points of this face. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
@@ -342,8 +342,9 @@ public:
                                                        The normals point out of the adjacent element. */
   vector<su2double> metricCoorDerivFace;   /*!< \brief The terms drdx, dsdx, etc. in the integration
                                                        points of the face. */
-  vector<su2double> metricElem;            /*!< \brief The metric terms of the adjacent element in the
-                                                       integration points of the face. Needed for the SIP term. */
+  vector<su2double> metricElem;            /*!< \brief The Cartesian gradients of the basis function of the
+                                                       adjacent element in the integration points of the
+                                                       face. Needed for the SIP term. */
   vector<su2double> coorIntegrationPoints; /*!< \brief The coordinates of the integration points of the face. */
   vector<su2double> wallDistance;          /*!< \brief The wall distances of the integration points
                                                        of the face. */
@@ -616,25 +617,20 @@ protected:
   * \brief Function, which computes the metric terms needed for the SIP
            treatment of the viscous terms. This is a dot product between the
            Cartesian gradients of the basis functions and the normal.
-  * \param[in]  nIntegration - Number of integration points on the face.
-  * \param[in]  nDOFs        - Number of DOFs of the grid associated with the
-                               neighboring element.
-  * \param[in]  dr           - r-derivatives of the basis functions of the element.
-  * \param[in]  ds           - s-derivatives of the basis functions of the element.
-  * \param[in]  dt           - t-derivatives of the basis functions of the element.
-                               Only for 3D computations.
-  * \param[in]  normals      - Array, which contains the normals.
-  * \param[in]  derivCoor    - Array, which contains the derivatives of the
-                               parametric coordinates w.r.t. the Cartesian ones.
-  * \param[out] metricSIP    - Storage for the metrics of the SIP term in the
-                               integration points.
+  * \param[in]  nIntegration      - Number of integration points on the face.
+  * \param[in]  nDOFs             - Number of DOFs of the grid associated with the
+                                    neighboring element.
+  * \param[in]  derBasisElemTrans - Matrix, which contains derivatives of the basis
+                                    functions of the element w.r.t. the parametric
+                                    coordinates.
+  * \param[in]  derivCoor         - Array, which contains the derivatives of the
+                                    parametric coordinates w.r.t. the Cartesian ones.
+  * \param[out] metricSIP         - Storage for the metrics of the SIP term in the
+                                    integration points.
   */
   void ComputeMetricTermsSIP(const unsigned short nIntegration,
                              const unsigned short nDOFs,
-                             const su2double      *dr,
-                             const su2double      *ds,
-                             const su2double      *dt,
-                             const su2double      *normals,
+                             const su2double      *derBasisElemTrans,
                              const su2double      *derivCoor,
                              su2double            *metricSIP);
   /*!
@@ -660,8 +656,10 @@ protected:
            physical boundary.
   * \param[inout] boundary - Boundary for whose faces the boundary metric
                              terms must be computed.
+  * \param[in]    config   - Definition of the particular problem.
   */
-  void MetricTermsBoundaryFaces(CBoundaryFEM *boundary);
+  void MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
+                                CConfig      *config);
 };
 
 /*!
@@ -804,8 +802,9 @@ public:
  /*!
   * \brief Function, which computes the metric terms of the surface
            elements, both internal faces and physical boundary faces.
+  * \param[in] config - Definition of the particular problem.
   */
-  void MetricTermsSurfaceElements(void);
+  void MetricTermsSurfaceElements(CConfig *config);
 
  /*!
   * \brief Function, which computes the metric terms of the
@@ -1084,8 +1083,9 @@ private:
   /*!
   * \brief Function, which computes the metric terms for internal
            matching faces.
+  * \param[in] config - Definition of the particular problem.
   */
-  void MetricTermsMatchingFaces(void);
+  void MetricTermsMatchingFaces(CConfig *config);
 
   /*!
   * \brief Function, which computes the time coefficients in the iteration matrix

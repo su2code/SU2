@@ -798,7 +798,7 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
     
     /*--- Compute the metric terms of the surface elements. ---*/
     if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
-    DGMesh->MetricTermsSurfaceElements();
+    DGMesh->MetricTermsSurfaceElements(config_container[iZone]);
     
     /*--- Compute a length scale of the volume elements. ---*/
     if (rank == MASTER_NODE) cout << "Computing length scale volume elements." << endl;
