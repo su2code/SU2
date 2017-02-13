@@ -15520,7 +15520,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
     							AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
     					}else {
-    						MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, &AveragePressure[iMarker][iSpan], &AverageDensity[iMarker][iSpan]);
+    						MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
 #ifdef HAVE_MPI
     						if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]){
     							if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
@@ -15681,7 +15681,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
     								cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
     						}else {
-    							MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, &PressureIn[iMarkerTP -1][iSpan], &DensityIn[iMarkerTP -1][iSpan]);
+    							MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, PressureIn[iMarkerTP -1][iSpan], DensityIn[iMarkerTP -1][iSpan]);
     							TurboVelocityIn[iMarkerTP -1][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - PressureIn[iMarkerTP -1][iSpan]) / AverageFlux[iMarker][iSpan][0];
     							for (iDim = 2; iDim < nDim +1;iDim++)
     								TurboVelocityIn[iMarkerTP -1][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
@@ -15697,7 +15697,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
     								cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
     						}else {
-    							MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, &PressureOut[iMarkerTP - 1][iSpan], &DensityOut[iMarkerTP -1][iSpan]);
+    							MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, PressureOut[iMarkerTP - 1][iSpan], DensityOut[iMarkerTP -1][iSpan]);
     							TurboVelocityOut[iMarkerTP -1][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - PressureOut[iMarkerTP - 1][iSpan]) / AverageFlux[iMarker][iSpan][0];
     							for (iDim = 2; iDim < nDim +1;iDim++)
     								TurboVelocityOut[iMarkerTP -1][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
@@ -16076,7 +16076,7 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
                  AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
              }else {
-               MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, &AveragePressure[iMarker][nSpanWiseSections], &AverageDensity[iMarker][nSpanWiseSections]);
+               MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, AveragePressure[iMarker][nSpanWiseSections], AverageDensity[iMarker][nSpanWiseSections]);
 #ifdef HAVE_MPI
 								if (AverageDensity[iMarker][nSpanWiseSections]!= AverageDensity[iMarker][nSpanWiseSections]){
 									if(rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
@@ -16236,7 +16236,7 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
           				cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
           		}else {
-          			MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, &PressureIn[iMarkerTP -1][nSpanWiseSections], &DensityIn[iMarkerTP -1][nSpanWiseSections]);
+          			MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, PressureIn[iMarkerTP -1][nSpanWiseSections], DensityIn[iMarkerTP -1][nSpanWiseSections]);
           			TurboVelocityIn[iMarkerTP -1][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - PressureIn[iMarkerTP -1][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
           			for (iDim = 2; iDim < nDim +1;iDim++)
           				TurboVelocityIn[iMarkerTP -1][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
@@ -16252,7 +16252,7 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
           				cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
           		}else {
-          			MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, &PressureOut[iMarkerTP -1][nSpanWiseSections], &DensityOut[iMarkerTP -1][nSpanWiseSections]);
+          			MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, PressureOut[iMarkerTP -1][nSpanWiseSections], DensityOut[iMarkerTP -1][nSpanWiseSections]);
           			TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - PressureOut[iMarkerTP -1][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
           			for (iDim = 2; iDim < nDim +1;iDim++)
           				TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
@@ -16288,68 +16288,71 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
 
 
 void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal,
-    su2double *pressure_mix, su2double *density_mix) {
+    su2double& pressure_mix, su2double& density_mix) {
 
-  unsigned short maxiter = 15;
-  unsigned short iter = 0;
-  su2double toll = 1.0e-07;
-  su2double resdl = 0.0;
 
-  su2double *val_func = new su2double, *val_right_func = new su2double, *val_left_func = new su2double;
-  su2double deltaP, *p_mix = new su2double, *p_mix_right = new su2double, *p_mix_left = new su2double;
-  su2double epsilon = 1.0e-06;
-  su2double relax_factor = 1;
+  su2double x1,x2,xmid, dx, fx1, fx2, f, fmid, rtb;;
+  su2double FACTOR=0.2, toll = 1.0e-05;
+  unsigned short count=0, j, NTRY=10, ITMAX=100;
 
-  *pressure_mix = val_init_pressure;
 
-  /*--- Newton-Raphson's method with central difference formula ---*/
+  pressure_mix = val_init_pressure;
 
-  while ( iter <= maxiter ) {
-    deltaP = 2*epsilon*(*pressure_mix);
-    *p_mix_right = *pressure_mix+deltaP/2;
-    *p_mix_left = *pressure_mix-deltaP/2;
-    *p_mix = *pressure_mix;
-    MixedOut_Root_Function(p_mix_right,val_Averaged_Flux,val_normal,val_right_func,density_mix);
-    MixedOut_Root_Function(p_mix_left,val_Averaged_Flux,val_normal,val_left_func,density_mix);
-    MixedOut_Root_Function(p_mix,val_Averaged_Flux,val_normal,val_func,density_mix);
-    su2double der_func = (*val_right_func-*val_left_func) / deltaP;
-    deltaP = -*val_func/der_func;
-    resdl = deltaP/val_init_pressure;
-    *pressure_mix += relax_factor*(deltaP);
+  x1 = 0.7*val_init_pressure;
+  x2 = 1.3*val_init_pressure;
 
-    iter += 1;
-    if ( abs(resdl) <= toll ) {
-      break;
+  MixedOut_Root_Function(x1,val_Averaged_Flux,val_normal,fx1,density_mix);
+  MixedOut_Root_Function(x2,val_Averaged_Flux,val_normal,fx2,density_mix);
+
+  // zbrac algorithm NR
+
+  for (j=1; j<=NTRY; j++) {
+    if (fx1*fx2 > 0.0) {
+      if (fabs(fx1) < fabs(fx2)) {
+        x1 += FACTOR*(x1-x2);
+        MixedOut_Root_Function(x1,val_Averaged_Flux,val_normal,fx1,density_mix);
+
+      } else {
+        x2 += FACTOR*(x2-x1);
+        MixedOut_Root_Function(x2,val_Averaged_Flux,val_normal,fx2,density_mix);
+      }
     }
-
   }
 
-  MixedOut_Root_Function(pressure_mix,val_Averaged_Flux,val_normal,val_func,density_mix);
+  f=fx1;
+  fmid=fx2;
+  if (f*fmid >= 0.0) {
+  	cout<< "Root must be bracketed for bisection algorithm for the mixedout average"<< endl;
+  }
+  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  do{
+  	xmid=rtb+(dx *= 0.5);
+  	MixedOut_Root_Function(xmid,val_Averaged_Flux,val_normal,fmid,density_mix);
 
-  /*--- Free locally allocated memory ---*/
-  delete val_func;
-  delete val_right_func;
-  delete val_left_func;
-  delete p_mix;
-  delete p_mix_right;
-  delete p_mix_left;
+  	if (fmid <= 0.0) rtb=xmid;
+  	count++;
+  }while(abs(fmid/val_init_pressure) > toll && count<ITMAX);
+  pressure_mix = xmid;
+  if (count==ITMAX) {
+  	cout <<"Too many bisections in mixedout" << endl;
+  }
 
 }
 
-void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density) {
+void CEulerSolver::MixedOut_Root_Function(su2double pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& valfunc, su2double& density) {
 
   su2double velnormal, velsq;
 
   su2double *vel;
   vel = new su2double[nDim];
 
-  *valfunc = 0.0;
-  *density = 0.0;
+  valfunc = 0.0;
+  density = 0.0;
 
   velnormal = 0.0;
   velsq = 0.0;
 
-  vel[0]  = (val_Averaged_Flux[1] - (*pressure)) / val_Averaged_Flux[0];
+  vel[0]  = (val_Averaged_Flux[1] - (pressure)) / val_Averaged_Flux[0];
   for (unsigned short iDim = 1; iDim < nDim; iDim++) {
       vel[iDim]  = val_Averaged_Flux[iDim+1] / val_Averaged_Flux[0];
 
@@ -16360,10 +16363,10 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
   	velsq += vel[iDim]*vel[iDim];
   }
-  *density = val_Averaged_Flux[0] / velnormal;
-  FluidModel->SetTDState_Prho(*pressure, *density);
-  su2double enthalpy = FluidModel->GetStaticEnergy() + (*pressure)/(*density);
-  *valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
+  density = val_Averaged_Flux[0] / velnormal;
+  FluidModel->SetTDState_Prho(pressure, density);
+  su2double enthalpy = FluidModel->GetStaticEnergy() + (pressure)/(density);
+  valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
 
   /*--- Free locally allocated memory ---*/
   delete [] vel;
