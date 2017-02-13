@@ -5672,7 +5672,7 @@ public:
      * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
 	 * \param[in] density_miz - value of the mixed-out avaraged density.
 	 */
-	void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix);
+	void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
 
 	/*!
 	 * \brief it finds the root of an implicit equation that relates pressure and density.
@@ -5682,7 +5682,7 @@ public:
    * \param[in] valfunc - Description of the numerical method.
 	 * \param[in] density - value of the mixed-out avaraged density.
 	 */
-	void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
+	void MixedOut_Root_Function(su2double pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double &valfunc, su2double &density);
 
 	/*!
 	 * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
