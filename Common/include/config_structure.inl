@@ -929,6 +929,8 @@ inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
 
 inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_AverageProcess; }
 
+inline unsigned short CConfig::GetKind_PerformanceAverageProcess(void) { return Kind_PerformanceAverageProcess; }
+
 inline unsigned short CConfig::GetKind_MixingPlaneInterface(void) { return Kind_MixingPlaneInterface;}
 
 inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }
