@@ -320,6 +320,11 @@ public:
   void SetResolutionTensor(void);
 
   /*!
+   * \brief Smooths out sharp changes in the resolution across the dual mesh
+   */
+  void SmoothResolutionTensor(void);
+
+  /*!
    * \brief Computes the gradients of the resolution tensor for each control
    *        volume in the dual mesh.
    */
