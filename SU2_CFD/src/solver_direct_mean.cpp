@@ -11748,9 +11748,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
   su2double Pressure_e;
-  su2double ProjVelocity_i;
-  su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_b;
-  su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -11773,20 +11770,11 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double AverageSoundSpeed, *AverageTurboMach, AverageEntropy, AverageEnthalpy;
   AverageTurboMach = new su2double[nDim];
 
-  Lambda_i = new su2double[nVar];
 
-  u_b = new su2double[nVar];
-  dw = new su2double[nVar];
 
   S_boundary = new su2double[8];
 
-  P_Tensor = new su2double*[nVar];
-  invP_Tensor = new su2double*[nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
-  {
-    P_Tensor[iVar] = new su2double[nVar];
-    invP_Tensor[iVar] = new su2double[nVar];
-  }
+
 
   /*--- new declarations ---*/
 
@@ -11849,10 +11837,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       T_Total  = config->GetNRBC_Var2(Marker_Tag);
       FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
       alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
-      //TODO(Vicente) here a new angle should be define for 3D see how is defined
+
       gammaIn_BC = 0;
       if (nDim == 3){
-        // Review definition of angle
         gammaIn_BC = FlowDir[2]; //atan(FlowDir[2]/FlowDir[0]);
       }
 
@@ -11880,7 +11867,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         R[1] = -(AverageTurboVelocity[val_marker][iSpan][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
         R[2] = -(AverageEnthalpy + 0.5*avgVel2 - Enthalpy_BC);
       }
-      //TODO(Vicente) implement the 3D residual
+
       else{
         R[0] = -(AverageEntropy - Entropy_BC);
         R[1] = -(AverageTurboVelocity[val_marker][iSpan][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
@@ -11904,7 +11891,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       T_Total  = config->GetNRBC_Var2(Marker_Tag);
       FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
       alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
-      //TODO(Vicente) here a new angle should be define for 3D see how is defined
+
       gammaIn_BC = 0;
       if (nDim == 3){
         // Review definition of angle
@@ -11936,7 +11923,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         R[1] = -(AverageTurboVelocity[val_marker][nSpanWiseSections][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][nSpanWiseSections][0]);
         R[2] = -(AverageEnthalpy + 0.5*avgVel2 - Enthalpy_BC);
       }
-      //TODO(Vicente) implement the 3D residual
+
       else{
         R[0] = -(AverageEntropy - Entropy_BC);
         R[1] = -(AverageTurboVelocity[val_marker][nSpanWiseSections][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][nSpanWiseSections][0]);
@@ -12092,10 +12079,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Kappa_i = FluidModel->GetdPde_rho() / Density_i;
       Chi_i = FluidModel->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
 
-      ProjVelocity_i = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-
       ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
       if (nDim == 2){
         deltaprim[0] = Density_i - AverageDensity[val_marker][iSpan];
@@ -12120,9 +12103,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       //Done, generilize for 3D case
       //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
-      //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
-
-
 
       case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
 
@@ -12260,26 +12240,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           deltaprim[iVar] +=  R_Matrix[iVar][jVar]*delta_c[jVar];
         }
       }
-      /*--- Compute P (matrix of right eigenvectors) ---*/
-      conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
-
-      /*--- Compute inverse P (matrix of left eigenvectors)---*/
-      conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
-
-      /*--- eigenvalues contribution due to grid motion ---*/
-      if (grid_movement) {
-        gridVel = geometry->node[iPoint]->GetGridVel();
-        su2double ProjGridVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjGridVel   += gridVel[iDim]*UnitNormal[iDim];
-        ProjVelocity_i -= ProjGridVel;
-      }
-
-      /*--- Flow eigenvalues ---*/
-      for (iDim = 0; iDim < nDim; iDim++)
-        Lambda_i[iDim] = ProjVelocity_i;
-      Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
-      Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
 
       /*--- retrieve boundary variables ---*/
       Density_b = AverageDensity[val_marker][iSpan] + deltaprim[0];
@@ -12333,109 +12293,34 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       }
 
-      /*--- Compute the thermodynamic state in u_b ---*/
-      u_b[0]=Density_b;
-      u_b[1]=Density_b*Velocity_b[0];
-      u_b[2]=Density_b*Velocity_b[1];
-      if (nDim == 2){
-        u_b[3]=Energy_b*Density_b;
-      }
-      else{
-        u_b[3]=Density_b*Velocity_b[2];
-        u_b[4]=Energy_b*Density_b;
-      }
+      /*--- Primitive variables, using the derived quantities ---*/
+      V_boundary[0] = Temperature_b;
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_boundary[iDim+1] = Velocity_b[iDim];
+      V_boundary[nDim+1] = Pressure_b;
+      V_boundary[nDim+2] = Density_b;
+      V_boundary[nDim+3] = Enthalpy_b;
 
-      /*--- Compute the residuals ---*/
-      conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
+      /*--- Set various quantities in the solver class ---*/
 
-      /*--- Residual contribution due to grid motion ---*/
-      if (grid_movement) {
-        gridVel = geometry->node[iPoint]->GetGridVel();
-        su2double projVelocity = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          projVelocity +=  gridVel[iDim]*Normal[iDim];
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] -= projVelocity *(u_b[iVar]);
-      }
+      conv_numerics->SetPrimitive(V_domain, V_boundary);
 
-      if (implicit) {
-        /*--- Residual contribution due to grid motion ---*/
-        Jacobian_b = new su2double*[nVar];
-        DubDu = new su2double*[nVar];
-        for (iVar = 0; iVar < nVar; iVar++)
-        {
-          Jacobian_b[iVar] = new su2double[nVar];
-          DubDu[iVar] = new su2double[nVar];
-        }
+      if (grid_movement)
+      	conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
-        /*--- Initialize DubDu to unit matrix---*/
-        for (iVar = 0; iVar < nVar; iVar++)
-        {
-          for (jVar = 0; jVar < nVar; jVar++)
-            DubDu[iVar][jVar]= 0;
+      /*--- Compute the residual using an upwind scheme ---*/
 
-          DubDu[iVar][iVar]= 1;
-        }
-
-        /*--- Compute DubDu -= RNL---*/
-        for (iVar=0; iVar<nVar; iVar++)
-        {
-          for (jVar=0; jVar<nVar; jVar++)
-          {
-            for (kVar=0; kVar<nVar; kVar++)
-            {
-              if (Lambda_i[kVar]<0)
-                DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
-            }
-          }
-        }
-
-        /*--- Compute flux Jacobian in state b ---*/
-        conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
-
-        /*--- Jacobian contribution due to grid motion ---*/
-        if (grid_movement)
-        {
-          su2double projVelocity = 0.0;
-          gridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++)
-            projVelocity +=  gridVel[iDim]*Normal[iDim];
-          for (iVar = 0; iVar < nVar; iVar++) {
-            Residual[iVar] -= projVelocity *(u_b[iVar]);
-            Jacobian_b[iVar][iVar] -= projVelocity;
-          }
-
-        }
-
-        /*--- initiate Jacobian_i to zero matrix ---*/
-        for (iVar=0; iVar<nVar; iVar++)
-          for (jVar=0; jVar<nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
-        /*--- Compute numerical flux Jacobian at node i ---*/
-
-        for (iVar=0; iVar<nVar; iVar++) {
-          for (jVar=0; jVar<nVar; jVar++) {
-            for (kVar=0; kVar<nVar; kVar++) {
-              Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
-            }
-          }
-
-        }
-
-        for (iVar = 0; iVar < nVar; iVar++) {
-          delete [] Jacobian_b[iVar];
-          delete [] DubDu[iVar];
-        }
-        delete [] Jacobian_b;
-        delete [] DubDu;
-      }
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
       /*--- Update residual value ---*/
+
       LinSysRes.AddBlock(iPoint, Residual);
 
       /*--- Jacobian contribution for implicit integration ---*/
+
       if (implicit)
-        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      	Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
 
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
       if (config->GetKind_Upwind() == TURKEL)
@@ -12443,14 +12328,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Viscous contribution ---*/
       if (viscous) {
-
-        /*--- Primitive variables, using the derived quantities ---*/
-        V_boundary[0] = Temperature_b;
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_boundary[iDim+1] = Velocity_b[iDim];
-        V_boundary[nDim+1] = Pressure_b;
-        V_boundary[nDim+2] = Density_b;
-        V_boundary[nDim+3] = Enthalpy_b;
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
         V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
@@ -12511,22 +12388,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   delete [] Velocity_b;
   delete [] Velocity_i;
   delete [] AverageTurboMach;
-
   delete [] S_boundary;
-  delete [] Lambda_i;
-  delete [] u_b;
-  delete [] dw;
-
-
-  for (iVar = 0; iVar < nVar; iVar++)
-  {
-    delete [] P_Tensor[iVar];
-    delete [] invP_Tensor[iVar];
-  }
-  delete [] P_Tensor;
-  delete [] invP_Tensor;
-
-
   delete []	delta_c;
   delete []	deltaprim;
   delete []	cj;
