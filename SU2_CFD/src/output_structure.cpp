@@ -14879,6 +14879,8 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
   unsigned short iVar;
+  char fname[100];
+  strcpy(fname, filename.c_str());
 
   /*--- We're writing only su2doubles in the data portion of the file. ---*/
 
@@ -14892,14 +14894,14 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
 
   /*--- All ranks open the file using MPI. ---*/
 
-  MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
 
   /*--- First, write the number of variables and points (i.e., columns and rows),
    which we will need in order to read the file later. Eventually, we'll add back
    in the header here for a fixed string length * nVar. ---*/
 
   int var_buf_size = 2;
-  int var_buf[2] = {nVar_Par,nTotalPoint};
+  int var_buf[2] = {nVar_Par,(int)nTotalPoint};
   if (rank == MASTER_NODE)
     MPI_File_write(fhw, var_buf, var_buf_size, MPI_INT, MPI_STATUS_IGNORE);
 
