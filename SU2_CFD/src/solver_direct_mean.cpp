@@ -14411,6 +14411,8 @@ void CEulerSolver::LoadRestart_Binary(CGeometry **geometry, CSolver ***solver, C
   MPI_Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
+  char fname[100];
+  strcpy(fname, restart_filename.c_str());
 
   /*--- We're writing only su2doubles in the data portion of the file. ---*/
 
@@ -14422,7 +14424,7 @@ void CEulerSolver::LoadRestart_Binary(CGeometry **geometry, CSolver ***solver, C
 
   /*--- All ranks open the file using MPI. ---*/
 
-  MPI_File_open(MPI_COMM_WORLD, restart_filename.c_str(), MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
   /*--- First, read the number of variables and points (i.e., columns and rows),
    which we will need in order to read the file later. Eventually, we'll add back
@@ -14477,6 +14479,7 @@ void CEulerSolver::LoadRestart_Binary(CGeometry **geometry, CSolver ***solver, C
   /*--- Free the derived datatype and release temp memory. ---*/
 
   MPI_Type_free(&filetype);
+
   delete [] blocklen;
   delete [] displace;
 
