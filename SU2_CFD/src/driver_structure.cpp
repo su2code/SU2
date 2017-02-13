@@ -2582,6 +2582,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetExtIter(ExtIter);
   delete runtime;
+  double CFLmin = 10.0E+06;
   
   /*--- Update the convergence history file (serial and parallel computations). ---*/
   
@@ -2593,11 +2594,26 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   
   
   /*--- Evaluate the new CFL number (adaptive). ---*/
-  
   if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-    output->SetCFL_Number(solver_container, config_container, ZONE_0);
+  	for (iZone = 0; iZone < nZone; iZone++){
+  		output->SetCFL_Number(solver_container, config_container, iZone);
+  		for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+  			if(config_container[iZone]->GetCFL(iMesh) < CFLmin){
+  				CFLmin = config_container[iZone]->GetCFL(iMesh);
+  			}
+  		}
+  	}
+  	/*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
+  	if (!fsi && nZone > 1){
+  		for (iZone = 0; iZone < nZone; iZone++){
+  			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+  				config_container[iZone]->SetCFL(iMesh, CFLmin);
+  			}
+  		}
+  	}
   }
   
+
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
   
