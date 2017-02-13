@@ -1532,6 +1532,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("QUADRATURE_FACTOR_TIME_ADER_DG", Quadrature_Factor_Time_ADER_DG, 2.0);
   /* DESCRIPTION: Factor for the symmetrizing terms in the DG FEM discretization (1.0 by default) */
   addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
+  /* DESCRIPTION: Store the Cartesian gradients of the DGFEM basis functions (NO, YES) */
+  addBoolOption("STORE_CARTESIAN_GRADIENTS_BASIS_DGFEM", Store_Cart_Grad_BasisFunctions_DGFEM, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
   addBoolOption("BODY_FORCE", Body_Force, false);
   default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
@@ -4415,8 +4417,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case VAN_LEER:      cout << "Van Leer solver inviscid fluxes over the faces" << endl; break;
         }
 
-        if(Kind_Solver != FEM_EULER)
+        if(Kind_Solver != FEM_EULER) {
+          if(fabs(Theta_Interior_Penalty_DGFEM) > 1.e-8) {
+            if( Store_Cart_Grad_BasisFunctions_DGFEM )
+              cout << "Cartesian gradients of the basis functions are stored for the symmetrizing terms" << endl;
+            else
+              cout << "Cartesian gradients of the basis functions are recomputed for the symmetrizing terms" << endl;
+          }
+
           cout << "Theta symmetrizing terms interior penalty: " << Theta_Interior_Penalty_DGFEM << endl;
+        }
       }
 
       cout << "Quadrature factor for straight elements:   " << Quadrature_Factor_Straight << endl;

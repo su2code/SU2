@@ -5473,6 +5473,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
                                      const unsigned long indFaceBeg, const unsigned long indFaceEnd,
                                      unsigned long &indResFaces) {
 
+  /* Determine whether or not the Cartesian gradients of the basis functions
+     are stored. */
+  const bool CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
+
   /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
   su2double tick2 = 0.0;
@@ -5666,35 +5670,53 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
       /*---         adjacent elements, not only to the DOFs of the face.     ---*/
       /*------------------------------------------------------------------------*/
 
+      /* Easier storage of the number of DOFs for the adjacent elements. */
+      const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+
       config->Tick(&tick);
-      /* Get the element information of side 0 of the face. */
-      const unsigned short nDOFsElem0    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
-      const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
 
-      /*--- Create the Cartesian derivatives of the basis functions in the integration
-            points. The array gradSolInt is used to store these derivatives. ---*/
-      unsigned int ii = 0;
-      for(unsigned short j=0; j<nDOFsElem0; ++j) {
-        for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
+      /* The Cartesian gradients of the element basis functions of side 0
+         are needed. Check if this data is stored. */
+      const su2double *cartGrad;
+      if( CartGradBasisFunctionsStored )
+        cartGrad = matchingInternalFaces[l].metricElemSide0.data();
+      else {
 
-          /* Easier storage of the derivatives of the basis function w.r.t. the
-             parametric coordinates, the location where to store the Cartesian
-             derivatives of the basis functions, and the metric terms in this
-             integration point. */
-          const su2double *derParam    = derBasisElemTrans + ii;
-          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
-                                       + i*nDim*nDim;
-                su2double *derCar      = gradSolInt + ii;
+        /* The gradients are not stored. Use the array gradSolInt to store
+           these derivatives. Get the derivatives w.r.t. the parametric
+           coordinates of the element on side 0 of the face. */
+        const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
 
-          /*--- Loop over the dimensions to compute the Cartesian derivatives
-                of the basis functions. ---*/
+        /*--- Create the Cartesian derivatives of the basis functions
+              in the integration points. ---*/
+        unsigned int ii = 0;
+        for(unsigned short j=0; j<nDOFsElem0; ++j) {
+          for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
+
+            /* Easier storage of the derivatives of the basis function w.r.t. the
+               parametric coordinates, the location where to store the Cartesian
+               derivatives of the basis functions, and the metric terms in this
+               integration point. */
+            const su2double *derParam    = derBasisElemTrans + ii;
+            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0.data()
+                                         + i*ctc::nDim*ctc::nDim;
+                  su2double *derCar      = gradSolInt + ii;
+
+            /*--- Loop over the dimensions to compute the Cartesian derivatives
+                  of the basis functions. ---*/
 #pragma simd private(l)
-          for(unsigned short k=0; k<ctc::nDim; ++k) {
-            derCar[k] = 0.0;
-            for(unsigned short l=0; l<ctc::nDim; ++l)
-              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+            for(unsigned short k=0; k<ctc::nDim; ++k) {
+              derCar[k] = 0.0;
+              for(unsigned short l=0; l<ctc::nDim; ++l)
+                derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
+            }
           }
         }
+
+        /* Set the pointer of gradSolInt to cartGrad, such that the latter can
+           be used in the call to the matrix multiplication. */
+        cartGrad = gradSolInt;
       }
 
       /* Set the pointer where to store the current residual and update the
@@ -5705,37 +5727,48 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
       /* Call the general function to carry out the matrix product to compute
          the residual for side 0. */
       config->GEMM_Tick(&tick2);
-      DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
+      DenseMatrixProduct(nDOFsElem0, nVar, nInt*nDim, cartGrad, fluxes, resElem0);
       config->GEMM_Tock(tick2, "ResidualFaces3", nDOFsElem0, nVar, nInt*nDim);
 
-      /* Get the element information of side 1 of the face. */
-      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
-      derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
+      /* The Cartesian gradients of the element basis functions of side 1
+         are needed. Check if this data is stored. */
+      if( CartGradBasisFunctionsStored )
+        cartGrad = matchingInternalFaces[l].metricElemSide1.data();
+      else {
 
-      /*--- Create the Cartesian derivatives of the basis functions in the integration
-            points. The array gradSolInt is used to store these derivatives. ---*/
-      ii = 0;
-      for(unsigned short j=0; j<nDOFsElem1; ++j) {
-        for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
+        /* The Cartesian gradients must be computed. Get the derivatives w.r.t.
+           the parametric coordinates of the element on side 1 of the face. */
+        const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
 
-          /* Easier storage of the derivatives of the basis function w.r.t. the
-             parametric coordinates, the location where to store the Cartesian
-             derivatives of the basis functions, and the metric terms in this
-             integration point. */
-          const su2double *derParam    = derBasisElemTrans + ii;
-          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
-                                       + i*nDim*nDim;
-                su2double *derCar      = gradSolInt + ii;
+        /*--- Create the Cartesian derivatives of the basis functions in the
+              integration points. Use gradSolInt for storage. ---*/
+        unsigned int ii = 0;
+        for(unsigned short j=0; j<nDOFsElem1; ++j) {
+          for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
 
-          /*--- Loop over the dimensions to compute the Cartesian derivatives
-                of the basis functions. ---*/
+            /* Easier storage of the derivatives of the basis function w.r.t. the
+               parametric coordinates, the location where to store the Cartesian
+               derivatives of the basis functions, and the metric terms in this
+               integration point. */
+            const su2double *derParam    = derBasisElemTrans + ii;
+            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1.data()
+                                         + i*ctc::nDim*ctc::nDim;
+                  su2double *derCar      = gradSolInt + ii;
+
+            /*--- Loop over the dimensions to compute the Cartesian derivatives
+                  of the basis functions. ---*/
 #pragma simd private(l)
-          for(unsigned short k=0; k<ctc::nDim; ++k) {
-            derCar[k] = 0.0;
-            for(unsigned short l=0; l<ctc::nDim; ++l)
-              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+            for(unsigned short k=0; k<ctc::nDim; ++k) {
+              derCar[k] = 0.0;
+              for(unsigned short l=0; l<ctc::nDim; ++l)
+                derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
+            }
           }
         }
+
+        /* Set the pointer of gradSolInt to cartGrad, such that the latter can
+           be used in the call to the matrix multiplication. */
+        cartGrad = gradSolInt;
       }
 
       /* Set the pointer where to store the current residual and update the
@@ -5748,7 +5781,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
          be negated, because two minus signs enter the formulation for side 1,
          which cancel each other. */
       config->GEMM_Tick(&tick2);
-      DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
+      DenseMatrixProduct(nDOFsElem1, nVar, nInt*nDim, cartGrad, fluxes, resElem1);
       config->GEMM_Tock(tick2, "ResidualFaces4", nDOFsElem1, nVar, nInt*nDim);
     }
     config->Tock(tick, "ER_1_6", 4);
@@ -7014,6 +7047,10 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       unsigned long            &indResFaces) {
 
   su2double tick = 0.0;
+
+  /* Determine whether or not the Cartesian gradients of the basis functions
+     are stored. */
+  const bool CartGradBasisFunctionsStored = config->GetStore_Cart_Grad_BasisFunctions_DGFEM();
   
   /*--- Get the required information from the standard element. ---*/
   const unsigned short ind          = surfElem->indStandardElement;
@@ -7109,39 +7146,51 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
     su2double *resElem = resFaces + indResFaces*nVar;
     indResFaces       += nDOFsElem;
 
-    /* Get the correct form of the basis functions needed for the matrix
-       multiplication to compute the residual. */
-    const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
+    /* The Cartesian gradients of the basis functions of the adjacent element
+         are needed. Check if this data is stored. */
+    const su2double *cartGrad;
+    if( CartGradBasisFunctionsStored )
+      cartGrad = surfElem->metricElem.data();
+    else {
 
-    /*--- Create the Cartesian derivatives of the basis functions in the integration
-          points. The array gradSolInt is used to store these derivatives. ---*/
-    unsigned int ii = 0;
-    for(unsigned short j=0; j<nDOFsElem; ++j) {
-      for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+      /* Get the derivatives of the basis functions w.r.t. the parametric
+         coordinates of the element. */
+      const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
 
-        /* Easier storage of the derivatives of the basis function w.r.t. the
-           parametric coordinates, the location where to store the Cartesian
-           derivatives of the basis functions, and the metric terms in this
-           integration point. */
-        const su2double *derParam    = derBasisElemTrans + ii;
-        const su2double *metricTerms = surfElem->metricCoorDerivFace.data()
-                                     + i*nDim*nDim;
-              su2double *derCar      = gradSolInt + ii;
+      /*--- Create the Cartesian derivatives of the basis functions in the
+            integration points. Use gradSolInt for storage. ---*/
+      unsigned int ii = 0;
+      for(unsigned short j=0; j<nDOFsElem; ++j) {
+        for(unsigned short i=0; i<nInt; ++i, ii+=ctc::nDim) {
 
-        /*--- Loop over the dimensions to compute the Cartesian derivatives
-              of the basis functions. ---*/
-        for(unsigned short k=0; k<nDim; ++k) {
-          derCar[k] = 0.0;
-          for(unsigned short l=0; l<nDim; ++l)
-            derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+          /* Easier storage of the derivatives of the basis function w.r.t. the
+             parametric coordinates, the location where to store the Cartesian
+             derivatives of the basis functions, and the metric terms in this
+             integration point. */
+          const su2double *derParam    = derBasisElemTrans + ii;
+          const su2double *metricTerms = surfElem->metricCoorDerivFace.data()
+                                       + i*ctc::nDim*ctc::nDim;
+                su2double *derCar      = gradSolInt + ii;
+
+          /*--- Loop over the dimensions to compute the Cartesian derivatives
+                of the basis functions. ---*/
+          for(unsigned short k=0; k<ctc::nDim; ++k) {
+            derCar[k] = 0.0;
+            for(unsigned short l=0; l<ctc::nDim; ++l)
+              derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
+          }
         }
       }
+
+      /* Set the pointer of gradSolInt to cartGrad, such that the latter can
+           be used in the call to the matrix multiplication. */
+        cartGrad = gradSolInt;
     }
 
     /* Call the general function to carry out the matrix product to compute
        the residual. */
     config->GEMM_Tick(&tick);
-    DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
+    DenseMatrixProduct(nDOFsElem, nVar, nInt*nDim, cartGrad, fluxes, resElem);
     config->GEMM_Tock(tick, "ResidualViscousBoundaryFace2", nDOFsElem, nVar, nInt*nDim);
 
   }
