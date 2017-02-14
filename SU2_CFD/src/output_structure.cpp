@@ -10149,8 +10149,12 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     if (rank == MASTER_NODE)
       cout << "Writing SU2 native restart file." << endl;
-    SetRestart_Parallel(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-    SetRestart_Parallel_Binary(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+
+    if (config[iZone]->GetBinary_Restart()) {
+      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    } else {
+      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    }
 
     /*--- Get the file output format ---*/
     
@@ -14586,7 +14590,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
   /*--- Local variables ---*/
   
@@ -14729,11 +14733,11 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
   
 }
 
-void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
 
   /*--- Local variables ---*/
 
-  unsigned short nZone = geometry->GetnZone();
+  unsigned short iVar, nZone = geometry->GetnZone();
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
@@ -14777,7 +14781,12 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
 
   /*--- For now, append an extra suffix for the parallel restart. ---*/
 
+  unsigned short lastindex = filename.find_last_of(".");
+  filename = filename.substr(0, lastindex);
   filename.append(".bin");
+
+  char fname[100];
+  strcpy(fname, filename.c_str());
 
   /*--- These point offsets should be computed once and stored so that we don't
   repeat this code throughout. ---*/
@@ -14852,6 +14861,22 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
   }
   nPoint_Linear[size] = nTotalPoint;
 
+  /*--- Prepare the first two ints containing the counts. ---*/
+
+  int var_buf_size = 2;
+  int var_buf[2] = {nVar_Par,(int)nTotalPoint};
+
+  /*--- Prepare the 1D data buffer on this rank. ---*/
+
+  su2double *buf = new su2double[nParallel_Poin*nVar_Par];
+
+  /*--- For now, create a temp 1D buffer to load up the data for writing.
+   This will be replaced with a derived data type most likely. ---*/
+
+  for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
+    for (iVar = 0; iVar < nVar_Par; iVar++)
+      buf[iPoint*nVar_Par+iVar] = Parallel_Data[iVar][iPoint];
+
   /*--- Only the master node writes the header. ---*/
 
   // HACK: forget the header for a moment.. come back to this.
@@ -14868,7 +14893,24 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
 
 #ifndef HAVE_MPI
 
-  // Serial implementation of binary data dump here.
+  FILE* fhw;
+  fhw = fopen(fname, "wb");
+
+  /*--- First, write the number of variables and points. ---*/
+
+  fwrite(var_buf, var_buf_size, sizeof(int), fhw);
+
+  /*--- Eventually, header here. ---*/
+
+  // ...
+
+  /*--- Call to write the entire restart file data in binary in one shot. ---*/
+
+  fwrite(buf, nVar_Par*nParallel_Poin, sizeof(su2double), fhw);
+
+  /*--- Close the file. ---*/
+
+  fclose(fhw);
 
 #else
 
@@ -14878,9 +14920,6 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
   MPI_Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
-  unsigned short iVar;
-  char fname[100];
-  strcpy(fname, filename.c_str());
 
   /*--- We're writing only su2doubles in the data portion of the file. ---*/
 
@@ -14900,8 +14939,6 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
    which we will need in order to read the file later. Eventually, we'll add back
    in the header here for a fixed string length * nVar. ---*/
 
-  int var_buf_size = 2;
-  int var_buf[2] = {nVar_Par,(int)nTotalPoint};
   if (rank == MASTER_NODE)
     MPI_File_write(fhw, var_buf, var_buf_size, MPI_INT, MPI_STATUS_IGNORE);
 
@@ -14916,14 +14953,6 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
 
   MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
 
-  /*--- For now, create a temp 1D buffer to load up the data for writing.
-   This will be replaced with a derived data type most likely. ---*/
-
-  su2double *buf = new su2double[nParallel_Poin*nVar_Par];
-  for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
-    for (iVar = 0; iVar < nVar_Par; iVar++)
-      buf[iPoint*nVar_Par+iVar] = Parallel_Data[iVar][iPoint];
-
   /*--- Collective call for all ranks to write to their view simultaneously. ---*/
 
   MPI_File_write_all(fhw, buf, nVar_Par*nParallel_Poin, MPI_DOUBLE, &status);
@@ -14935,7 +14964,6 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
   /*--- Free the derived datatype and release temp memory. ---*/
 
   MPI_Type_free(&filetype);
-  delete [] buf;
 
 #endif
 
@@ -14963,7 +14991,11 @@ void COutput::SetRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, C
 
     meta_file.close();
   }
-  
+
+  /*--- Free temporary data buffer for writing the binary file. ---*/
+
+  delete [] buf;
+
 }
 
 void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {

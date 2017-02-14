@@ -969,6 +969,8 @@ inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Si
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
+inline bool CConfig::GetBinary_Restart(void) {	return Binary_Restart; }
+
 inline bool CConfig::GetUpdate_Restart_Params(void) {	return Update_Restart_Params; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
