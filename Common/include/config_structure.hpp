@@ -539,6 +539,7 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Binary_Restart,	/*!< \brief Read / write binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
   bool Update_Restart_Params;	/*!< \brief Read and write additional restart metadata for parameter updates.*/
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
@@ -3976,6 +3977,12 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void);
+
+  /*!
+   * \brief Flag for whether binary SU2 native restart files are used.
+   * \return Flag for whether binary SU2 native restart files are used., if <code>TRUE</code> then the code will use the binary restart files.
+   */
+  bool GetBinary_Restart(void);
 
   /*!
    * \brief Flag controlling whether restart parameter metadata is written/read.

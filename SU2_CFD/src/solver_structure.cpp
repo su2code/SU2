@@ -66,6 +66,8 @@ CSolver::CSolver(void) {
   Jacobian_jj        = NULL;
   Smatrix            = NULL;
   Cvector            = NULL;
+  Restart_Vars       = NULL;
+  Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
   
@@ -166,6 +168,9 @@ CSolver::~CSolver(void) {
       delete [] Cvector[iVar];
     delete [] Cvector;
   }
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
 
 }
 
@@ -1824,6 +1829,209 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   geometry->Set_MPI_OldCoord(config);
   
   delete [] Coord;
+
+}
+
+void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, string val_filename) {
+
+  ifstream restart_file;
+  string text_line, Tag;
+  unsigned short iVar;
+  long index, iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  int counter = 0;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  Restart_Vars = new int[2];
+
+  /*--- Open the restart file ---*/
+
+  restart_file.open(val_filename.data(), ios::in);
+
+  /*--- In case there is no restart file ---*/
+
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "SU2 ASCII solution file " << val_filename << " not found." << endl;
+
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+
+  }
+
+  /*--- Identify the number of fields (and names) in the restart file ---*/
+
+  getline (restart_file, text_line);
+
+  stringstream ss(text_line);
+  while (ss >> Tag) {
+    config->fields.push_back(Tag);
+    if (ss.peek() == ',') ss.ignore();
+  }
+
+  /*--- Set the number of variables, one per field in the
+   restart file (without including the PointID) ---*/
+
+  Restart_Vars[0] = (int)config->fields.size() - 1;
+
+  /*--- Allocate memory for the restart data. ---*/
+
+  Restart_Data = new su2double[Restart_Vars[0]*geometry->GetnPointDomain()];
+
+  /*--- Read all lines in the restart file and extract data. ---*/
+
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    getline (restart_file, text_line);
+
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- The PointID is not stored --*/
+
+      point_line >> index;
+
+      /*--- Store the solution (starting with node coordinates) --*/
+
+      for (iVar = 0; iVar < Restart_Vars[0]; iVar++)
+        point_line >> Restart_Data[counter*Restart_Vars[0] + iVar];
+
+      /*--- Increment our local point counter. ---*/
+
+      counter++;
+
+    }
+  }
+
+}
+
+
+void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename) {
+
+  char fname[100];
+  strcpy(fname, val_filename.c_str());
+
+  Restart_Vars = new int[2];
+
+#ifndef HAVE_MPI
+
+  /*--- Serial binary input. ---*/
+
+  FILE *fhw;
+  fhw = fopen(fname,"rb");
+
+  /*--- First, read the number of variables and points. ---*/
+
+  fread(Restart_Vars, sizeof(int), 2, fhw);
+
+  /*--- Eventually, header here. ---*/
+
+  // ...
+
+  /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+  Restart_Data = new su2double[Restart_Vars[0]*geometry->GetnPointDomain()];
+
+  /*--- Read in the data for the restart at all local points. ---*/
+
+  fread(Restart_Data, sizeof(su2double), Restart_Vars[0]*geometry->GetnPointDomain(), fhw);
+
+  /*--- Close the file. ---*/
+
+  fclose(fhw);
+
+#else
+
+  /*--- Parallel binary input using MPI I/O. ---*/
+
+  MPI_File fhw;
+  MPI_Status status;
+  MPI_Datatype etype, filetype;
+  MPI_Offset disp;
+  unsigned long iPoint_Global;
+
+  int rank = MASTER_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+  etype = MPI_DOUBLE;
+
+  /*--- We need to ignore the 2 ints describing the nVar_Restart and nPoints. ---*/
+
+  disp = 2*sizeof(int);
+
+  /*--- All ranks open the file using MPI. ---*/
+
+  MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+  /*--- First, read the number of variables and points (i.e., columns and rows),
+   which we will need in order to read the file later. Eventually, we'll add back
+   in the header here for a fixed string length * nVar. ---*/
+
+  if (rank == MASTER_NODE)
+    MPI_File_read(fhw, Restart_Vars, 2, MPI_INT, MPI_STATUS_IGNORE);
+
+  /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
+
+  SU2_MPI::Bcast(Restart_Vars, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*--- Define a derived datatype for this rank's set of non-contiguous data
+   that will be placed in the restart. Here, we are collecting each one of the
+   points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
+
+  int *blocklen = new int[nPointDomain];
+  int *displace = new int[nPointDomain];
+  int counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
+      blocklen[counter] = Restart_Vars[0];
+      displace[counter] = iPoint_Global*Restart_Vars[0];
+      counter++;
+    }
+  }
+  MPI_Type_indexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_commit(&filetype);
+
+  /*--- Set the view for the MPI file write, i.e., describe the location in
+   the file that this rank "sees" for writing its piece of the restart file. ---*/
+
+  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+
+  /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+  Restart_Data = new su2double[Restart_Vars[0]*geometry->GetnPointDomain()];
+
+  /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+
+  MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*geometry->GetnPointDomain(), MPI_DOUBLE, &status);
+
+  /*--- All ranks close the file after writing. ---*/
+
+  MPI_File_close(&fhw);
+
+  /*--- Free the derived datatype and release temp memory. ---*/
+
+  MPI_Type_free(&filetype);
+  
+  delete [] blocklen;
+  delete [] displace;
+  
+#endif
 
 }
 
