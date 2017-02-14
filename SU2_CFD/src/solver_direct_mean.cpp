@@ -16153,8 +16153,8 @@ void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val
 
 	int rank = MASTER_NODE;
 	su2double x1,x2,xmid, dx, fx1, fx2, f, fmid, rtb;;
-  su2double FACTOR=0.2, toll = 1.0e-05;
-  unsigned short count=0, j, NTRY=10, ITMAX=100;
+  su2double FACTOR=0.2, toll = 1.0e-07;
+  unsigned short count=0, j, NTRY=10, ITMAX=1000;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -16162,8 +16162,8 @@ void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val
 
   pressure_mix = val_init_pressure;
 
-  x1 = 0.7*val_init_pressure;
-  x2 = 1.3*val_init_pressure;
+  x1 = 0.95*val_init_pressure;
+  x2 = 1.05*val_init_pressure;
 
   MixedOut_Root_Function(x1,val_Averaged_Flux,val_normal,fx1,density_mix);
   MixedOut_Root_Function(x2,val_Averaged_Flux,val_normal,fx2,density_mix);
@@ -16197,7 +16197,7 @@ void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val
   	count++;
   }while(abs(fmid/val_init_pressure) > toll && count<ITMAX);
   pressure_mix = xmid;
-  if (count==ITMAX && rank == MASTER_NODE) {
+  if (count==ITMAX) {
   	cout <<"Too many bisections in mixedout" << endl;
   }
 
