@@ -1483,3 +1483,7 @@ inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 
 inline string CConfig::GetPilotPointFile(){return PilotPointFile;}
+
+inline string CConfig::GetFFD_ConstraintGroup(unsigned short val_group){return FFD_ConstraintGroups[val_group];}
+
+inline unsigned short CConfig::GetnFFD_ConstraintGroups(){return nFFD_ConstraintGroups;}

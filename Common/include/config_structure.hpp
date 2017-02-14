@@ -499,6 +499,8 @@ private:
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
   bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
   bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
+  string *FFD_ConstraintGroups;
+  unsigned short nFFD_ConstraintGroups;
   su2double Mach;		/*!< \brief Mach number. */
   su2double Reynolds;	/*!< \brief Reynolds number. */
   su2double Froude;	/*!< \brief Froude number. */
@@ -2222,6 +2224,10 @@ public:
    * \return Name of the FFD box.
    */
   string GetTagFFDBox(unsigned short val_ffd);
+
+  unsigned short GetnFFD_ConstraintGroups();
+
+  string GetFFD_ConstraintGroup(unsigned short val_group);
   
   /*!
    * \brief Get the number of design variables.

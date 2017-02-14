@@ -1694,6 +1694,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   addStringOption("FFD_PILOT_POINT_FILE", PilotPointFile, "PilotPoints.dat");
 
+  addStringListOption("FFD_CONSTRAINT_GROUPS", nFFD_ConstraintGroups, FFD_ConstraintGroups);
+
   /*--- Options for the automatic differentiation methods ---*/
   /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
 

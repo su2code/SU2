@@ -2288,9 +2288,10 @@ public:
           }
           break;
         case FFD_DIRECT_MANIPULATION:
-          if((this->paramDV[iDV][2] == 0) &&
+          if((this->paramDV[iDV][1] == 0) &&
+             (this->paramDV[iDV][2] == 0) &&
              (this->paramDV[iDV][3] == 0)) {
-            nValueDV = 2;
+            nValueDV = 3;
           } else {
             nValueDV = 1;
           }

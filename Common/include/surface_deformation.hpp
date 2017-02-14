@@ -52,6 +52,14 @@
 #include <Eigen/SVD>
 #endif
 
+/*--- Typedefs of Eigen matrix, vector and SVD---*/
+
+#ifdef HAVE_EIGEN
+  typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix;
+  typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
+  typedef Eigen::JacobiSVD<EigenMatrix> EigenSVD;
+#endif
+
 /*!
  * \class CFreeFormBlending
  * \brief Class that defines the particular kind of blending function for the free form deformation.
@@ -284,8 +292,11 @@ public:
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
 
   vector<string> PilotGroupNames;
-  vector<vector<unsigned long>> PilotPoints;
-
+  vector<vector<su2double>> PilotPointsX;
+  vector<vector<su2double>> PilotPointsY;
+  vector<vector<su2double>> PilotPointsZ;
+  vector<unsigned short> PilotGroupType;
+  vector<bool> isPilotDV;
   CFreeFormBlending** BlendingFunction;
 
 
@@ -923,6 +934,14 @@ public:
   su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11,
                          su2double A12, su2double A20, su2double A21, su2double A22);
 
+  void GetRelativeGroupBlock(EigenMatrix &Systemmatrix, unsigned short iGroup);
+
+  void GetAbsoluteGroupBlock(EigenMatrix &Systemmatrix, unsigned short iGroup);
+
+  void GetRelativeGroupRHS(Eigenvector &RHS, unsigned short iGroup, unsigned short iDim, CConfig *config);
+
+  void GetAbsoluteGroupRHS(Eigenvector &RHS, unsigned short iGroup, unsigned short iDim, CConfig *config);
+
 };
 
 
@@ -934,16 +953,6 @@ public:
  */
 class CSurfaceMovement {
 
-/*--- Typedefs of Eigen matrix, vector and SVD---*/
-
-#ifdef HAVE_EIGEN
-  typedef Eigen::Matrix<su2double, Eigen::Dynamic, Eigen::Dynamic> EigenMatrix;
-
-  typedef Eigen::Matrix<su2double, Eigen::Dynamic, 1> EigenVector;
-
-  typedef Eigen::JacobiSVD<EigenMatrix> EigenSVD;
-#endif
-
 protected:
   CFreeFormDefBox** FFDBox;	/*!< \brief Definition of the Free Form Deformation Box. */
   unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
@@ -954,6 +963,11 @@ protected:
   vector<su2double> GlobalCoordZ[MAX_NUMBER_FFD];
   vector<string> GlobalTag[MAX_NUMBER_FFD];
   vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
+
+  enum PILOT_GROUP_TYPES{
+    ABSOLUTE = 0,
+    RELATIVE = 1
+  };
 
 public:
 
