@@ -4635,7 +4635,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
             /*--- Set the value of the second viscosity and compute the divergence
                   term in the viscous normal stresses. ---*/
-            const su2double lambda     = -2.0*ViscosityLam/3.0;
+            const su2double lambda     = -TWO3*ViscosityLam;
             const su2double lamDivTerm =  lambda*divVel;
 
             /*--- Compute the viscous stress tensor and the normal flux. Note that
@@ -4841,7 +4841,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /* Constant ratio of the second viscosity and the viscosity itself. */
-  const su2double lambdaOverMu = -2.0/3.0;
+  const su2double lambdaOverMu = -TWO3;
 
   /* The eigenvalues of the viscous Jacobian, scaled by the kinematic viscosity,
      are 1.0, 2.0 + lambdaOverMu and kOverCv/Mu. The last is variable due to the
@@ -5190,7 +5190,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
 
     /*--- Set the value of the second viscosity and compute the divergence
           term in the viscous normal stresses. ---*/
-    const su2double lambda     = -2.0*Viscosity/3.0;
+    const su2double lambda     = -TWO3*Viscosity;
     const su2double lamDivTerm =  lambda*divVel;
 
     /*--- Compute the viscous stress tensor. ---*/
@@ -5292,11 +5292,11 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
 
   /* Constant factor present in the heat flux vector, the inverse of
      the specific heat at constant volume and ratio lambdaOverMu. */
-  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
-  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
-  const su2double Gas_Constant      = config->GetGas_ConstantND();
-  const su2double CvInv             = Gamma_Minus_One/Gas_Constant;
-  const su2double lambdaOverMu      = -2.0/3.0;
+  const su2double factHeatFlux_Lam  =  Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb =  Gamma/Prandtl_Turb;
+  const su2double Gas_Constant      =  config->GetGas_ConstantND();
+  const su2double CvInv             =  Gamma_Minus_One/Gas_Constant;
+  const su2double lambdaOverMu      = -TWO3;
 
   /*--- Get the necessary information from the standard element. ---*/
   const unsigned short ind                = elem->indStandardElement;
@@ -5745,7 +5745,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- Set the value of the second viscosity and compute the divergence
             term in the viscous normal stresses. ---*/
-      const su2double lambda     = -2.0*Viscosity/3.0;
+      const su2double lambda     = -TWO3*Viscosity;
       const su2double lamDivTerm =  lambda*divVel;
 
       /*--- Compute the viscous stress tensor. ---*/
@@ -6274,7 +6274,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
 
   /*--- Set the value of the second viscosity and compute the divergence
         term in the viscous normal stresses. ---*/
-  const su2double lambda     = -2.0*Viscosity/3.0;
+  const su2double lambda     = -TWO3*Viscosity;
   const su2double lamDivTerm =  lambda*divVel;
 
   /*--- Compute the viscous stress tensor. ---*/
@@ -6336,7 +6336,7 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
                                                   su2double      *penaltyFluxes) {
 
   /* Constant ratio of the second viscosity and the viscosity itself. */
-  const su2double lambdaOverMu = -2.0/3.0;
+  const su2double lambdaOverMu = -TWO3;
 
   /* The eigenvalues of the viscous Jacobian, scaled by the kinematic viscosity,
      are 1.0, 2.0 + lambdaOverMu and kOverCv/Mu. The last is variable due to the
@@ -6393,7 +6393,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
                                                     su2double      *symmFluxes) {
 
   /* Constant ratio of the second viscosity and the viscosity itself. */
-  const su2double lambdaOverMu = -2.0/3.0;
+  const su2double lambdaOverMu = -TWO3;
 
   /*--- Set two factors such that either the original or the transposed diffusion
         tensor is taken in the symmetrizing fluxes. ---*/
