@@ -331,15 +331,17 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
  
-       unsigned long iPeriodic_Index;
-       bool periodic_rotation, periodic_translation;
+ 
+//------------------------------------------------------------------------------------------------------------------------------
+unsigned long iPeriodic_Index;
+bool periodic_rotation, periodic_translation;
 su2double *angles, *transl, *centre; 
  int iMarker, j, nPeriodicModes;
 su2double theta, cosTheta, sinTheta;
 su2double phi, cosPhi, sinPhi;
 su2double psi, cosPsi, sinPsi;
 su2double rotMatrix[3][3], RotAxis[3];
-su2double dTmp[3], translRotation[3], Angle, Target_Angle, Donor_Angle, Target_Angle_O, Donor_Angle_O, delta_alpha;
+su2double dTmp[3], translRotation[3], Angle, Target_Angle, Donor_Angle, Target_Angle_O, Donor_Angle_O, delta_alpha, m;
 int jDim;
   
   periodic_rotation    = false;
@@ -347,70 +349,72 @@ int jDim;
   
   nPeriodicModes = 0;
 
-  for (iMarker = 0; iMarker < config[targetZone]->GetnMarker_All(); iMarker++){
-    if (config[targetZone]->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) { 
-
+  if ( ( config[targetZone]->GetnPeriodicIndex() - 1 ) / 2 > 0 ){
+    
+    for (iMarker = 0; iMarker < config[targetZone]->GetnMarker_All(); iMarker++){
       //cout << iMarker << "  " << config[targetZone]->GetMarker_All_TagBound(iMarker) << endl;
       
-      angles = config[targetZone]->GetPeriodicRotAngles(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
-      centre = config[targetZone]->GetPeriodicRotCenter(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
-      transl = config[targetZone]->GetPeriodicTranslation( config[targetZone]->GetMarker_All_TagBound(iMarker) );
+      if (config[targetZone]->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) { 
 
-      /*--- Store angles separately for clarity. ---*/
-      theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-      cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-      sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-      /*--- Compute the rotation matrix. Note that the implicit
-      ordering is rotation about the x-axis, y-axis,
-      then z-axis. Note that this is the transpose of the matrix
-      used during the preprocessing stage. ---*/
-      rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-      rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-      rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-      RotAxis[0] = rotMatrix[2][1] - rotMatrix[1][2];
-      RotAxis[1] = rotMatrix[0][2] - rotMatrix[2][0];
-      RotAxis[2] = rotMatrix[1][0] - rotMatrix[0][1];
       
-      Angle = 0;
-      for (iDim = 0; iDim < 3; iDim++)
-        Angle += RotAxis[iDim] * RotAxis[iDim];
-        
-       Angle = asin(sqrt(Angle)/2);
-       
-      /*
-      for (iDim = 0; iDim < 3; iDim++)
-        cout << angles[iDim] << "  ";
-      cout << endl;
+        angles = config[targetZone]->GetPeriodicRotAngles(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
+        centre = config[targetZone]->GetPeriodicRotCenter(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
+        transl = config[targetZone]->GetPeriodicTranslation( config[targetZone]->GetMarker_All_TagBound(iMarker) );
+
+        /*--- Store angles separately for clarity. ---*/
+        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+        ordering is rotation about the x-axis, y-axis,
+        then z-axis. Note that this is the transpose of the matrix
+        used during the preprocessing stage. ---*/
+        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+        RotAxis[0] = rotMatrix[2][1] - rotMatrix[1][2];
+        RotAxis[1] = rotMatrix[0][2] - rotMatrix[2][0];
+        RotAxis[2] = rotMatrix[1][0] - rotMatrix[0][1];
       
-      for (iDim = 0; iDim < 3; iDim++)
-        cout << transl[iDim] << "  ";
-      cout << endl;
-      * 
-      cout << "Angle " << Angle << endl;getchar();
-      */
-      if ( Angle != 0 ) {
-        periodic_rotation = true;
+        m = 0;
         for (iDim = 0; iDim < 3; iDim++)
-          RotAxis[iDim] /= Angle;
-      }
-      
-      for (jDim = 0; jDim < 3; jDim++)
-        if ( transl[jDim] != 0 ){
-          periodic_translation = true;
-          break;
-        } 
+          m += RotAxis[iDim] * RotAxis[iDim];
         
-      nPeriodicModes++;
+        m = sqrt(m);
+        Angle = asin(m/2);
+       
+        if ( Angle != 0 ) {
+          periodic_rotation = true;
+          for (iDim = 0; iDim < 3; iDim++)
+            RotAxis[iDim] /= m;
+        }
       
+        for (jDim = 0; jDim < 3; jDim++)
+          if ( transl[jDim] != 0 ){
+            periodic_translation = true;
+            break;
+          } 
+        
+        nPeriodicModes++;
+      }
+    }
+    if ( nPeriodicModes > 2 ) {
+      cout << "Fatal error in CNearestNeighbor::Set_TransferCoeff: more than 1 periodicity found!" << endl;
+      exit(1);
     }
   }
-  
-  if ( nPeriodicModes > 2 ) {
-    cout << "Fatal error in CNearestNeighbor::Set_TransferCoeff: more than 1 periodicity found!" << endl;
-    exit(1);
-  }
+  //getchar();
+
+  //cout << "nperiod  " << config[targetZone]->GetnPeriodicIndex() << "  " << Angle << "  " << nPeriodicModes << endl;
+  /*
+  cout << transl[0]  << "  " << transl[1]  << "  " << transl[2]  << endl;
+  cout << angles[0]  << "  " << angles[1]  << "  " << angles[2]  << endl;
+  cout << RotAxis[0] << "  " << RotAxis[1] << "  " << RotAxis[2] << endl;
+  * */
+//------------------------------------------------------------------------------------------------------------------------------  
+
 
   /*--- Cycle over nMarkersInt interface to determine communication pattern ---*/
 
@@ -620,6 +624,7 @@ int jDim;
         target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorPoint(iDonor, pGlobalPoint);
         target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorProcessor(iDonor, pProcessor);
         target_geometry->vertex[markTarget][iVertexTarget]->SetDonorCoeff(iDonor, 1.0);
+        target_geometry->vertex[markTarget][iVertexTarget]->SetDonorPeriodicity(iDonor, delta_alpha);
       }
     }
 
@@ -1662,6 +1667,102 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   /*--- Number of markers on the FSI interface ---*/
   nMarkerInt    = (int)( config[ donorZone ]->GetMarker_n_ZoneInterface() ) / 2;
+  
+  
+  
+  
+  
+  
+  //------------------------------------------------------------------------------------------------------------------------------
+unsigned long iPeriodic_Index;
+bool periodic_rotation, periodic_translation;
+su2double *angles, *transl, *centre; 
+ int iMarker, j, nPeriodicModes;
+su2double theta, cosTheta, sinTheta;
+su2double phi, cosPhi, sinPhi;
+su2double psi, cosPsi, sinPsi;
+su2double rotMatrix[3][3], RotAxis[3];
+su2double dTmp[3], translRotation[3], Angle, Target_Angle, Donor_Angle, Target_Angle_O, Donor_Angle_O, delta_alpha, m;
+int jDim;
+  
+  periodic_rotation    = false;
+  periodic_translation = false;
+  
+  nPeriodicModes = 0;
+
+  if ( ( config[targetZone]->GetnPeriodicIndex() - 1 ) / 2 > 0 ){
+    
+    for (iMarker = 0; iMarker < config[targetZone]->GetnMarker_All(); iMarker++){
+      //cout << iMarker << "  " << config[targetZone]->GetMarker_All_TagBound(iMarker) << endl;
+      
+      if (config[targetZone]->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) { 
+
+      
+        angles = config[targetZone]->GetPeriodicRotAngles(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
+        centre = config[targetZone]->GetPeriodicRotCenter(   config[targetZone]->GetMarker_All_TagBound(iMarker) );
+        transl = config[targetZone]->GetPeriodicTranslation( config[targetZone]->GetMarker_All_TagBound(iMarker) );
+
+        /*--- Store angles separately for clarity. ---*/
+        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+        ordering is rotation about the x-axis, y-axis,
+        then z-axis. Note that this is the transpose of the matrix
+        used during the preprocessing stage. ---*/
+        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+        RotAxis[0] = rotMatrix[2][1] - rotMatrix[1][2];
+        RotAxis[1] = rotMatrix[0][2] - rotMatrix[2][0];
+        RotAxis[2] = rotMatrix[1][0] - rotMatrix[0][1];
+      
+        m = 0;
+        for (iDim = 0; iDim < 3; iDim++)
+          m += RotAxis[iDim] * RotAxis[iDim];
+        
+        m = sqrt(m);
+        Angle = asin(m/2);
+       
+        if ( Angle != 0 ) {
+          periodic_rotation = true;
+          for (iDim = 0; iDim < 3; iDim++)
+            RotAxis[iDim] /= m;
+        }
+      
+        for (jDim = 0; jDim < 3; jDim++)
+          if ( transl[jDim] != 0 ){
+            periodic_translation = true;
+            break;
+          } 
+        
+        nPeriodicModes++;
+      }
+    }
+    if ( nPeriodicModes > 2 ) {
+      cout << "Fatal error in CNearestNeighbor::Set_TransferCoeff: more than 1 periodicity found!" << endl;
+      exit(1);
+    }
+    nPeriodicModes /= 2;
+  }
+  //getchar();
+/*
+  cout << "nperiod  " << config[targetZone]->GetnPeriodicIndex() << "  " << Angle << "  " << nPeriodicModes << endl;
+  
+  cout << transl[0]  << "  " << transl[1]  << "  " << transl[2]  << endl;
+  cout << angles[0]  << "  " << angles[1]  << "  " << angles[2]  << endl;
+  cout << RotAxis[0] << "  " << RotAxis[1] << "  " << RotAxis[2] << endl;
+  
+  getchar();
+  * */
+//------------------------------------------------------------------------------------------------------------------------------  
+
+
+
+
+
 
   /*--- For the number of markers on the interface... ---*/
   for ( iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++ ){
@@ -1810,6 +1911,34 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     }
     delete [] Aux_Send_Map; Aux_Send_Map = NULL;
 
+    
+    if(periodic_translation){
+      /*--- Periodic translation ---*/
+      for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++){
+        for (iDim = 0; iDim < nDim; iDim++)
+          if (transl[iDim] != 0 )
+            Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] = Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] - (int)(Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] / transl[iDim]) * transl[iDim];
+      }
+    }
+    
+su2double xx,yy,zz;
+    if(periodic_rotation){
+      /*--- Periodic rotation ---*/
+      for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++){
+      
+        Target_Angle   = atan2(Buffer_Send_Target_Coord[ nDim * iVertexTarget + 1 ], Buffer_Send_Target_Coord[ nDim * iVertexTarget + 0 ]);
+        Target_Angle_O = ((int)(Target_Angle/Angle)) * Angle;
+          
+        xx = Buffer_Send_Target_Coord[ nDim * iVertexTarget + 0 ] * cos(-Target_Angle_O) - Buffer_Send_Target_Coord[ nDim * iVertexTarget + 1 ] * sin(-Target_Angle_O);
+        yy = Buffer_Send_Target_Coord[ nDim * iVertexTarget + 1 ] * cos(-Target_Angle_O) + Buffer_Send_Target_Coord[ nDim * iVertexTarget + 0 ] * sin(-Target_Angle_O);
+        
+        Buffer_Send_Target_Coord[ nDim * iVertexTarget + 0 ] = xx;
+        Buffer_Send_Target_Coord[ nDim * iVertexTarget + 1 ] = yy;
+        
+      }
+    }
+
+
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&nLocalVertex_Target, &nGlobalVertex_Target, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nLocalLinkedNodes  , &nGlobalLinkedNodes  , 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1904,7 +2033,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
             }
           }
           
-          if( count != (jVertexTarget+1) ){
+          if( count != (jVertexTarget+1) && !periodic_translation){
             for (kVertexTarget = jVertexTarget; kVertexTarget < Target_nLinkedNodes[iVertexTarget]-1; kVertexTarget++){
               uptr[ kVertexTarget ] = uptr[ kVertexTarget + 1];
             }
@@ -1990,8 +2119,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
           else
             dPoint = donor_geometry->edge[EdgeIndex]->GetNode(0);                
 
-          if ( donor_geometry->node[dPoint]->GetVertex(markDonor) != -1 ){    
-            Aux_Send_Map[nLocalVertex_Donor][nNodes] = donor_geometry->node[dPoint]->GetGlobalIndex();
+          if ( donor_geometry->node[dPoint]->GetVertex(markDonor) != -1 ){   
+            Aux_Send_Map[nLocalVertex_Donor][nNodes] = dPoint;
             nNodes++;
           }
         }
@@ -2003,14 +2132,17 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
 
     nLocalLinkedNodes = 0;
-
+//cout << donor_geometry->node[dPoint]->GetGlobalIndex() << "  " << donor_geometry->node[dPoint]->GetDomain() << endl;
     for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
       for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertexDonor]; jEdge++){
-        Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertexDonor][jEdge];
+        dPoint = Aux_Send_Map[iVertexDonor][jEdge];
+        Buffer_Send_LinkedNodes[nLocalLinkedNodes] = donor_geometry->node[ dPoint ]->GetGlobalIndex();
+        if( !donor_geometry->node[dPoint]->GetDomain() )
+          cout << donor_geometry->node[dPoint]->GetGlobalIndex() << "  " << donor_geometry->node[dPoint]->GetDomain() << endl;
         nLocalLinkedNodes++;
       }
     }
-    
+getchar();    
     if(Aux_Send_Map != NULL){
       for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++){
         if( Aux_Send_Map[iVertexDonor] != NULL )
@@ -2034,6 +2166,30 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex_Donor ];
     Buffer_Receive_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes  ];
     Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex_Donor ];
+    
+    if(periodic_translation){
+      /*--- Periodic translation ---*/
+      for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+        for (iDim = 0; iDim < nDim; iDim++)
+          if (transl[iDim] != 0 )
+            Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] - (int)(Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] / transl[iDim]) * transl[iDim];
+      }
+    }
+    
+    if(periodic_rotation){
+      /*--- Periodic rotation ---*/
+      for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+      
+        Donor_Angle   = atan2(Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ], Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ]);
+        Donor_Angle_O = ((int)(Donor_Angle/Angle)) * Angle;
+          
+        xx = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] * cos(-Donor_Angle_O) - Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] * sin(-Donor_Angle_O);
+        yy = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] * cos(-Donor_Angle_O) + Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] * sin(-Donor_Angle_O);
+        
+        Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] = xx;
+        Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] = yy;
+      }
+    }
 
 #ifdef HAVE_MPI
     if (rank == MASTER_NODE){
@@ -2118,7 +2274,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
             }
           }
           
-          if( count != (jVertexDonor+1) ){
+          if( count != (jVertexDonor+1) && !periodic_translation){
             for (kVertexDonor = jVertexDonor; kVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]-1; kVertexDonor++){
               uptr[ kVertexDonor ] = uptr[ kVertexDonor + 1];
             }
@@ -2144,8 +2300,139 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
     if( Buffer_Send_nLinkedNodes      != NULL) {delete [] Buffer_Send_nLinkedNodes;      Buffer_Send_nLinkedNodes      = NULL;}
     if( Buffer_Send_StartLinkedNodes  != NULL) {delete [] Buffer_Send_StartLinkedNodes;  Buffer_Send_StartLinkedNodes  = NULL;}
     if( Buffer_Send_Donor_GlobalPoint != NULL) {delete [] Buffer_Send_Donor_GlobalPoint; Buffer_Send_Donor_GlobalPoint = NULL;}
+    
+    
+/*    
+    for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++)
+      cout << Buffer_Receive_nLinkedNodes[iVertexDonor] << endl;
+*/
 
+/*
+    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
+      cout << Target_nLinkedNodes[iVertexTarget] << "  " << Buffer_Receive_StartLinkedNodes[iVertexTarget] << "  ";
+      for (int ii=0; ii<Target_nLinkedNodes[iVertexTarget]; ii++)
+        cout << Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] +ii ] << "  ";
+      cout << endl;
+    }
+*/
 
+cout << "AAAAAAAAAAAAAA " << nVertexTarget << "  " << nGlobalVertex_Target << endl;
+
+    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++){
+      target_iPoint = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+      if (target_geometry->node[target_iPoint]->GetDomain()){
+      cout << target_geometry->node[target_iPoint]->GetCoord(1) << "  " << target_geometry->node[target_iPoint]->GetGlobalIndex() << "  ";
+      nEdges = target_geometry->node[target_iPoint]->GetnPoint();
+        
+        for (jEdge = 0; jEdge < nEdges; jEdge++){
+          EdgeIndex = target_geometry->node[target_iPoint]->GetEdge(jEdge);
+
+          if( target_iPoint == target_geometry->edge[EdgeIndex]->GetNode(0) )
+            dPoint = target_geometry->edge[EdgeIndex]->GetNode(1);
+          else
+            dPoint = target_geometry->edge[EdgeIndex]->GetNode(0);
+
+          if ( target_geometry->node[dPoint]->GetVertex(markTarget) != -1 )
+            cout << "a" << target_geometry->node[dPoint]->GetGlobalIndex() << "  ";
+        }
+      cout << endl;
+    }
+    }
+cout << "BBBBBBBBBBBBBBBBB " << endl;      
+    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
+      cout << Target_GlobalPoint[iVertexTarget] << "  ";
+      cout << Target_nLinkedNodes[iVertexTarget] << "  ";
+      cout << TargetPoint_Coord[nDim*iVertexTarget + 1] << "  ";
+      for (int ii=0; ii<Target_nLinkedNodes[iVertexTarget]; ii++)
+        cout << Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] +ii ] << "  ";
+      cout << endl;
+    }
+ /*   
+    int *iiitmp = new int[nGlobalVertex_Target];
+    
+    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++)
+      iiitmp[iVertexTarget] = Target_GlobalPoint[iVertexTarget];
+    
+    delete [] Target_GlobalPoint;
+    
+    Target_GlobalPoint= new unsigned long[nGlobalVertex_Target+2];
+    
+    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++)
+      Target_GlobalPoint[iVertexTarget] = iiitmp[iVertexTarget];   
+    
+    Target_GlobalPoint[iVertexTarget+0] = 
+    Target_GlobalPoint[iVertexTarget+1]
+    
+    
+  getchar();
+ */
+ /*
+  if(periodic_translation){
+    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
+      if(Target_nLinkedNodes[iVertexTarget] == 1)
+        for (kVertexTarget = iVertexTarget+1; kVertexTarget < nGlobalVertex_Target; kVertexTarget++){
+          if(Target_nLinkedNodes[kVertexTarget] == 1){
+            iTmp = Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] + 1 ];
+            Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] + 1 ] = kVertexTarget;
+            Target_LinkedNodes[ Target_StartLinkedNodes[kVertexTarget] + 1 ] = iTmp;
+          }
+        }
+     }
+  }
+  */
+    
+
+unsigned long iPeriodic;
+//cout << "PERIODDDDDDDDDDDDDDDIC  " << nPeriodicModes << "  " << Angle << "  " << transl[0] << "  " << transl[1] << "  " << transl[2] << "  " << endl;
+
+    for( iPeriodic = 0; iPeriodic < (2*nPeriodicModes)+1; iPeriodic++){
+      switch(iPeriodic){
+        case '1':
+          if(periodic_translation){
+            /*--- Periodic translation ---*/
+            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+              for (iDim = 0; iDim < nDim; iDim++)
+                if (transl[iDim] != 0 )
+                  DonorPoint_Coord[ nDim * iVertexDonor + iDim ] += transl[iDim];
+            }
+          }
+          if(periodic_rotation){
+            /*--- Periodic translation ---*/
+            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+                xx = DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * cos(Angle) - DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * sin(Angle);
+                yy = DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * cos(Angle) + DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * sin(Angle);
+                
+                DonorPoint_Coord[ nDim * iVertexDonor + 0 ] = xx;
+                DonorPoint_Coord[ nDim * iVertexDonor + 1 ] = yy;
+            }
+          }
+          break;
+        
+        case '2':
+          if(periodic_translation){
+            /*--- Periodic translation ---*/
+            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+              for (iDim = 0; iDim < nDim; iDim++)
+                if (transl[iDim] != 0 )
+                  DonorPoint_Coord[ nDim * iVertexDonor + iDim ] -= 2*transl[iDim];
+            }
+          }
+          if(periodic_rotation){
+            /*--- Periodic translation ---*/
+            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+                xx = DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * cos(-2*Angle) - DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * sin(-2*Angle);
+                yy = DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * cos(-2*Angle) + DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * sin(-2*Angle);
+                
+                DonorPoint_Coord[ nDim * iVertexDonor + 0 ] = xx;
+                DonorPoint_Coord[ nDim * iVertexDonor + 1 ] = yy;                
+            }
+          }
+          break;
+        
+        default: break;
+      }
+      
+      
     if(nDim == 2){
         
       target_iMidEdge_point = new su2double[nDim];
@@ -2169,6 +2456,11 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
         if (target_geometry->node[target_iPoint]->GetDomain()){
 
           Coord_i = target_geometry->node[target_iPoint]->GetCoord();
+          
+          if(periodic_rotation)
+            Target_Angle = atan2(Coord_i[1], Coord_i[0]);
+          else
+            Target_Angle = 0;
 
           /*--- Brute force to find the closest donor_node ---*/
 
@@ -2399,10 +2691,17 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
           target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
    
-          for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
+          for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
+            
+            if(periodic_rotation)
+              Donor_Angle = atan2( DonorPoint_Coord[ Donor_Vect[iDonor] * nDim + 1 ], DonorPoint_Coord[ Donor_Vect[iDonor] * nDim + 0 ]);
+            else
+              Donor_Angle = 0;
+            
             target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(          iDonor, Coeff_Vect[iDonor]);
             target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(    iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ]);
             target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+            target_geometry->vertex[markTarget][iVertex]->SetDonorPeriodicity(iDonor, Target_Angle-Donor_Angle);// da sistemare qua e anche nelle altre fnziono
           }
         }
       }    
@@ -2688,6 +2987,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
             target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
             target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ] );
             target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
+            target_geometry->vertex[markTarget][iVertex]->SetDonorPeriodicity(iDonor, 0.0);// da sistemare qua e anche nelle altre fnziono
             //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;               
           }
 
@@ -2701,7 +3001,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
         }
       }
     }
-
+    }
 
     delete [] TargetPoint_Coord;
     delete [] Target_GlobalPoint;

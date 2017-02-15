@@ -565,10 +565,11 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
 
   /*--- Set to NULL donor arrays for interpolation ---*/
   
-  Donor_Points  = NULL;
-  Donor_Proc    = NULL;
-  Donor_Coeff   = NULL;
-  nDonor_Points = 1;
+  Donor_Points   = NULL;
+  Donor_Proc     = NULL;
+  Donor_Coeff    = NULL;
+  Donor_Periodic = NULL;
+  nDonor_Points  = 1;
 
 }
 
@@ -579,10 +580,11 @@ CVertex::~CVertex() {
 
   /*---  donor arrays for interpolation ---*/
   
-  if (VarRot       != NULL) delete[] VarRot;
-  if (Donor_Coeff  != NULL) delete[] Donor_Coeff;
-  if (Donor_Proc   != NULL) delete[] Donor_Proc;
-  if (Donor_Points != NULL) delete[] Donor_Points;
+  if (VarRot         != NULL) delete[] VarRot;
+  if (Donor_Coeff    != NULL) delete[] Donor_Coeff;
+  if (Donor_Proc     != NULL) delete[] Donor_Proc;
+  if (Donor_Points   != NULL) delete[] Donor_Points;
+  if (Donor_Periodic != NULL) delete[] Donor_Periodic;
 
 }
 
@@ -645,12 +647,14 @@ void CVertex::AddNormal(su2double *val_face_normal) {
 
 void CVertex::Allocate_DonorInfo(void){
   
-  if( Donor_Points != NULL )  delete [] Donor_Points;
-  if( Donor_Proc   != NULL )  delete [] Donor_Proc;
-  if( Donor_Coeff  != NULL )  delete [] Donor_Coeff;  
+  if( Donor_Points   != NULL )  delete [] Donor_Points;
+  if( Donor_Proc     != NULL )  delete [] Donor_Proc;
+  if( Donor_Coeff    != NULL )  delete [] Donor_Coeff;  
+  if( Donor_Periodic != NULL )  delete [] Donor_Periodic;
   
-  Donor_Points = new unsigned long[nDonor_Points];
-  Donor_Proc   = new unsigned long[nDonor_Points];
-  Donor_Coeff  = new su2double[nDonor_Points];
+  Donor_Points    = new unsigned long[nDonor_Points];
+  Donor_Proc      = new unsigned long[nDonor_Points];
+  Donor_Coeff     = new su2double[nDonor_Points];
+  Donor_Periodic  = new su2double[nDonor_Points];
 }
 

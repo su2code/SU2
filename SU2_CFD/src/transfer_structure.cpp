@@ -1097,6 +1097,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             /*--- We need to get the donor coefficient in a way like this: ---*/
             donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
             
+            su2double angle = target_geometry->vertex[Marker_Target][iVertex]->GetDonorPeriodicity(iDonorPoint);
+            
+            
             /*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
            
             indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
@@ -1113,6 +1116,15 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
                 for (iVar = 0; iVar < nVar; iVar++)
                     Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
                     
+                //to fix
+                su2double vx, vy;
+                
+                vx = Target_Variable[1] * cos(angle) - Target_Variable[2] * sin(angle);
+                vy = Target_Variable[2] * cos(angle) + Target_Variable[1] * sin(angle);
+                
+                Target_Variable[1] = vx;
+                Target_Variable[2] = vy;
+                
                 Target_Variable[nVar] = donorCoeff;
                 
                 SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);  

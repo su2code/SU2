@@ -899,6 +899,7 @@ private:
   unsigned short Donor_Face;  /*!<\brief Store the donor face (w/in donor element) for interpolation across zones */
   su2double Basis_Function[3]; /*!< \brief Basis function values for interpolation across zones. */
   su2double *Donor_Coeff; /*!\brief Store a list of coefficients corresponding to the donor points. */
+  su2double *Donor_Periodic; /*!\brief Store a list of angles corresponding to the angular periodicity. */
   unsigned short nDonor_Points; /*!\brief Number of points in Donor_Points; at least there will be one donor point (if the mesh is matching)*/
   
 public:
@@ -1199,6 +1200,20 @@ public:
    */
     su2double GetDonorCoeff(unsigned short iDonor);
 
+    /*!
+   * \brief Set the periodicity of a donor point.
+   * \param[in] iDonor - Index of the donor point.
+   * \param[in] val  - Value of the coefficent for point iDonor.
+   */
+    void SetDonorPeriodicity(unsigned short iDonor, su2double val);
+
+    /*!
+   * \brief Get the coefficient value of a donor point.
+   * \param[in] iDonor - Index of the donor point.
+   * \return  - Value of the coefficent for point iDonor.
+   */
+   su2double GetDonorPeriodicity(unsigned short iDonor);
+    
   /*!
    * \brief Set the donor point of a vertex for interpolation across zones.
    * \param[in] val_donorpoint- donor face index (w/in donor elem).

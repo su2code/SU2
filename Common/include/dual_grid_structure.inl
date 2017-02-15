@@ -393,6 +393,10 @@ inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val) { Donor
 
 inline su2double CVertex::GetDonorCoeff(unsigned short iDonor) { return Donor_Coeff[iDonor];}
 
+inline void CVertex::SetDonorPeriodicity(unsigned short iDonor, su2double val) { Donor_Periodic[iDonor] = val; }
+
+inline su2double CVertex::GetDonorPeriodicity(unsigned short iDonor) { return Donor_Periodic[iDonor];}
+
 inline unsigned short CVertex::GetnDonorPoints(void) { return nDonor_Points;}
 
 inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
