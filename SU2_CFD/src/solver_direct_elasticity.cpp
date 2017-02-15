@@ -3966,7 +3966,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   unsigned short iVar, nSolVar;
   unsigned long index;
 
-  su2double dull_val;
   ifstream restart_file;
   string restart_filename, filename, text_line;
 
@@ -3985,6 +3984,10 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Restart the solution from file information ---*/
 
   filename = config->GetSolution_FEMFileName();
@@ -3998,29 +4001,27 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
     filename = config->GetUnsteady_FileName(filename, val_iter);
   }
 
-  restart_file.open(filename.data(), ios::in);
-
-  /*--- In case there is no file ---*/
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
-  }
-
   /*--- Read all lines in the restart file ---*/
 
+  int counter = 0;
   long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-  /*--- The first line is the header ---*/
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  getline (restart_file, text_line);
+  if (config->GetBinary_Restart()) {
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
+    filename.append(".bin");
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+  }
 
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-    getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -4029,14 +4030,11 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
     if (iPoint_Local > -1) {
 
-      if (dynamic) {
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Sol[0] >> Sol[1] >> Sol[2] >> Sol[3] >> Sol[4] >> Sol[5];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Sol[0] >> Sol[1] >> Sol[2] >> Sol[3] >> Sol[4] >> Sol[5] >> Sol[6] >> Sol[7] >> Sol[8];
-      }
-      else {
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Sol[0] >> Sol[1];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Sol[0] >> Sol[1] >> Sol[2];
-      }
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nSolVar; iVar++) Sol[iVar] = Restart_Data[index+iVar];
 
       for (iVar = 0; iVar < nVar; iVar++) {
         node[iPoint_Local]->SetSolution(iVar, Sol[iVar]);
@@ -4052,8 +4050,10 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
           }
         }
       }
-      
       iPoint_Global_Local++;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
     
   }
@@ -4080,16 +4080,17 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 #endif
   }
 
-  /*--- Close the restart file ---*/
-
-  restart_file.close();
-
   /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
 
   solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   if (dynamic) solver[MESH_0][FEA_SOL]->Set_MPI_Solution_Old(geometry[MESH_0], config);
 
-
   delete [] Sol;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
   
 }
