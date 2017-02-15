@@ -846,7 +846,6 @@ void CFEM_ElasticitySolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConf
 
 void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   
-  unsigned long iPoint;
   unsigned long index;
   
   unsigned short iVar;
@@ -881,16 +880,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
       cout << "There is no FEM prestretch reference file!!" << endl;
     exit(EXIT_FAILURE);
   }
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
   
   /*--- Read all lines in the restart file ---*/
   
@@ -907,11 +896,10 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
     
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
+
+    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
       
       if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> index;
       if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> index;
@@ -3976,7 +3964,7 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
 void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   unsigned short iVar, nSolVar;
-  unsigned long iPoint, index;
+  unsigned long index;
 
   su2double dull_val;
   ifstream restart_file;
@@ -4019,18 +4007,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
     exit(EXIT_FAILURE);
   }
 
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-
   /*--- Read all lines in the restart file ---*/
 
   long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
@@ -4049,10 +4025,9 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-      iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local > -1) {
 
       if (dynamic) {
         if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Sol[0] >> Sol[1] >> Sol[2] >> Sol[3] >> Sol[4] >> Sol[5];
