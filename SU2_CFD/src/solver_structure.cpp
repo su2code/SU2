@@ -1922,9 +1922,10 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename) {
 
-  char fname[100];
+  char str_buf[CGNS_STRING_SIZE], fname[100];
+  unsigned short iVar;
   strcpy(fname, val_filename.c_str());
-
+  vector<string> Variable_Names;
   Restart_Vars = new int[2];
 
 #ifndef HAVE_MPI
@@ -1938,9 +1939,14 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   fread(Restart_Vars, sizeof(int), 2, fhw);
 
-  /*--- Eventually, header here. ---*/
+  /*--- Read the variable names from the file. Note that we are adopting a
+   fixed length of 33 for the string length to match with CGNS. This is
+   needed for when we read the strings later. ---*/
 
-  // ...
+  for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+    fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    Variable_Names.push_back(str_buf);
+  }
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
@@ -1967,28 +1973,40 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  /*--- We're writing only su2doubles in the data portion of the file. ---*/
-
-  etype = MPI_DOUBLE;
-
-  /*--- We need to ignore the 2 ints describing the nVar_Restart and nPoints. ---*/
-
-  disp = 2*sizeof(int);
-
   /*--- All ranks open the file using MPI. ---*/
 
   MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
 
-  /*--- First, read the number of variables and points (i.e., columns and rows),
-   which we will need in order to read the file later. Eventually, we'll add back
-   in the header here for a fixed string length * nVar. ---*/
+  /*--- First, read the number of variables and points (i.e., cols and rows),
+   which we will need in order to read the file later. Also, read the
+   variable string names here. Only the master rank reads the header. ---*/
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE) {
     MPI_File_read(fhw, Restart_Vars, 2, MPI_INT, MPI_STATUS_IGNORE);
 
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+
+    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+      disp = 2*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
+      MPI_File_read_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
+      Variable_Names.push_back(str_buf);
+    }
+  }
+  
   /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
   SU2_MPI::Bcast(Restart_Vars, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+  etype = MPI_DOUBLE;
+
+  /*--- We need to ignore the 2 ints describing the nVar_Restart and nPoints,
+   along with the string names of the variables. ---*/
+
+  disp = 2*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
 
   /*--- Define a derived datatype for this rank's set of non-contiguous data
    that will be placed in the restart. Here, we are collecting each one of the

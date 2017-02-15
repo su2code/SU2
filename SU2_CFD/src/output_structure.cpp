@@ -14747,6 +14747,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   bool wrt_metadata = config->GetUpdate_Restart_Params();
   ofstream restart_file, meta_file;
   string filename, meta_filename;
+  char str_buf[CGNS_STRING_SIZE], fname[100];
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -14784,8 +14785,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   unsigned short lastindex = filename.find_last_of(".");
   filename = filename.substr(0, lastindex);
   filename.append(".bin");
-
-  char fname[100];
   strcpy(fname, filename.c_str());
 
   /*--- These point offsets should be computed once and stored so that we don't
@@ -14877,20 +14876,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     for (iVar = 0; iVar < nVar_Par; iVar++)
       buf[iPoint*nVar_Par+iVar] = Parallel_Data[iVar][iPoint];
 
-  /*--- Only the master node writes the header. ---*/
-
-  // HACK: forget the header for a moment.. come back to this.
-
-//  if (rank == MASTER_NODE) {
-//    restart_file.open(filename.c_str(), ios::out);
-//    restart_file.precision(15);
-//    restart_file << "\"PointID\"";
-//    for (iVar = 0; iVar < Variable_Names.size()-1; iVar++)
-//      restart_file << "\t\"" << Variable_Names[iVar] << "\"";
-//    restart_file << "\t\"" << Variable_Names[Variable_Names.size()-1] << "\"" << endl;
-//    restart_file.close();
-//  }
-
 #ifndef HAVE_MPI
 
   FILE* fhw;
@@ -14900,9 +14885,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   fwrite(var_buf, var_buf_size, sizeof(int), fhw);
 
-  /*--- Eventually, header here. ---*/
+  /*--- Write the variable names to the file. Note that we are adopting a
+   fixed length of 33 for the string length to match with CGNS. This is 
+   needed for when we read the strings later. ---*/
 
-  // ...
+  for (iVar = 0; iVar < nVar_Par; iVar++) {
+    strcpy(str_buf, Variable_Names[iVar].c_str());
+    fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
+  }
 
   /*--- Call to write the entire restart file data in binary in one shot. ---*/
 
@@ -14935,18 +14925,30 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
 
-  /*--- First, write the number of variables and points (i.e., columns and rows),
-   which we will need in order to read the file later. Eventually, we'll add back
-   in the header here for a fixed string length * nVar. ---*/
+  /*--- First, write the number of variables and points (i.e., cols and rows),
+   which we will need in order to read the file later. Also, write the 
+   variable string names here. Only the master rank writes the header. ---*/
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE) {
     MPI_File_write(fhw, var_buf, var_buf_size, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Write the variable names to the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+
+    for (iVar = 0; iVar < nVar_Par; iVar++) {
+      disp = 2*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
+      strcpy(str_buf, Variable_Names[iVar].c_str());
+      MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+  }
 
   /*--- Compute the offset for this rank's linear partition of the data in bytes.
    After the calculations above, we have the partition sizes store in nPoint_Linear
    in cumulative storage format. ---*/
 
-  disp = var_buf_size*sizeof(int) + nVar_Par*nPoint_Linear[rank]*sizeof(su2double);
+  disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
+          nVar_Par*nPoint_Linear[rank]*sizeof(su2double));
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
