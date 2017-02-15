@@ -2368,7 +2368,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned long index;
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
-  unsigned short iField, iDim;
+  unsigned short iDim, iVar;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
@@ -2377,12 +2377,15 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double dull_val;
-  
+
   su2double *Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
-  
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Retrieve filename from config ---*/
 
   if (adjoint) {
@@ -2407,43 +2410,36 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
-  /*--- Open the restart file ---*/
-
-  solution_file.open(filename.data(), ios::in);
-
-  /*--- In case there is no file ---*/
-
-  if (solution_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no SU2 restart file!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
   /*--- Output the file name to the console. ---*/
 
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename
     << "." << endl;
 
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetBinary_Restart()) {
+    unsigned short lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
+    filename.append(".bin");
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+  }
+
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
 
-  nVar = config->fields.size() - 1;
+  nVar = Restart_Vars[0];
   su2double *Solution = new su2double[nVar];
 
-  /*--- Read all lines in the restart file ---*/
-
+  int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
-  /*--- The first line is the header ---*/
+  /*--- Load data from the restart into correct containers. ---*/
 
-  getline (solution_file, text_line);
-
+  counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
-    getline (solution_file, text_line);
-    
-    istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -2452,29 +2448,25 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
     if (iPoint_Local > -1) {
       
-      /*--- The PointID is not stored --*/
-      
-      point_line >> index;
-      
-      /*--- Store the solution (starting with node coordinates) --*/
-      
-      for (iField = 0; iField < nVar; iField++)
-        point_line >> Solution[iField];
-      
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0];
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
      
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
       
       if (grid_movement && val_update_geo) {
-        
+
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
-        
+
         if (turb_model == SA || turb_model == SA_NEG) {
-          point_line >> dull_val;
+          index++;
         } else if (turb_model == SST) {
-          point_line >> dull_val >> dull_val;
+          index+=2;
         }
         
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
@@ -2483,23 +2475,27 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         
         su2double GridVel[3] = {0.0,0.0,0.0};
         if (!steady_restart) {
-          if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-          else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[0];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[0] + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
-        
+
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[iZone]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[iZone]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
-        
       }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
     
   }
-
-  /*--- Close the restart file ---*/
-
-  solution_file.close();
   
   /*--- Free memory needed for the transformation ---*/
   
@@ -2521,7 +2517,13 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   delete [] Coord;
-  
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
 }
 
 void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) {

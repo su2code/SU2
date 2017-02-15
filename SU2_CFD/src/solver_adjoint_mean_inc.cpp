@@ -3725,6 +3725,10 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -3735,36 +3739,28 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-  /*--- Open the restart file, and throw an error if this fails. ---*/
-
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no adjoint restart file!! " << restart_filename.data() << "."<< endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
   /*--- Read all lines in the restart file ---*/
 
+  int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-  /*--- The first line is the header ---*/
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  getline (restart_file, text_line);
+  if (config->GetBinary_Restart()) {
+    unsigned short lastindex = restart_filename.find_last_of(".");
+    restart_filename = restart_filename.substr(0, lastindex);
+    restart_filename.append(".bin");
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
 
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-    getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -3773,12 +3769,16 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
 
     if (iPoint_Local > -1) {
 
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
 
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
   }
 
@@ -3804,10 +3804,6 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
     MPI_Finalize();
 #endif
   }
-
-  /*--- Close the restart file ---*/
-
-  restart_file.close();
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We also call the preprocessing routine
@@ -3837,6 +3833,12 @@ void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CC
   }
 
   delete [] Coord;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
 
 }
 
