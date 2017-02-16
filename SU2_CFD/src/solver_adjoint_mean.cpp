@@ -5881,9 +5881,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetBinary_Restart()) {
-    unsigned short lastindex = restart_filename.find_last_of(".");
-    restart_filename = restart_filename.substr(0, lastindex);
-    restart_filename.append(".bin");
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);

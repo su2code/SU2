@@ -1901,7 +1901,6 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   char str_buf[CGNS_STRING_SIZE], fname[100];
   unsigned short iVar;
   strcpy(fname, val_filename.c_str());
-  vector<string> Variable_Names;
   Restart_Vars = new int[2];
 
 #ifndef HAVE_MPI
@@ -1917,11 +1916,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
-   needed for when we read the strings later. ---*/
+   needed for when we read the strings later. We pad the beginning of the
+   variable string vector with the Point_ID tag that wasn't written. ---*/
 
+  config->fields.push_back("Point_ID");
   for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
     fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
-    Variable_Names.push_back(str_buf);
+    config->fields.push_back(str_buf);
   }
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
@@ -1964,13 +1965,14 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
      fixed length of 33 for the string length to match with CGNS. This is
      needed for when we read the strings later. ---*/
 
+    config->fields.push_back("Point_ID");
     for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
       disp = 2*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
       MPI_File_read_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
-      Variable_Names.push_back(str_buf);
+      config->fields.push_back(str_buf);
     }
   }
-  
+
   /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
   SU2_MPI::Bcast(Restart_Vars, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
@@ -2024,7 +2026,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   
   delete [] blocklen;
   delete [] displace;
-  
+
 #endif
 
 }
@@ -2129,44 +2131,110 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
-  /*--- Open the restart file ---*/
+  /*--- Read only the number of variables in the restart file. ---*/
 
-  restart_file.open(filename.data(), ios::in);
+  if (config->GetBinary_Restart()) {
 
-  /*--- In case there is no restart file ---*/
-
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "SU2 solution file " << filename << " not found." << endl;
+    char fname[100];
+    strcpy(fname, filename.c_str());
+    int var_buf[2];
 
 #ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- First, read the number of variables and points. ---*/
+
+    fread(var_buf, sizeof(int), 2, fhw);
+
+    /*--- Close the file. ---*/
+
+    fclose(fhw);
+
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+
+    int rank = MASTER_NODE;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+
+    if (rank == MASTER_NODE) {
+      MPI_File_read(fhw, var_buf, 2, MPI_INT, MPI_STATUS_IGNORE);
+    }
+
+    /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
+
+    SU2_MPI::Bcast(var_buf, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+
 #endif
 
+    /*--- Set the number of variables, one per field in the
+     restart file (without including the PointID) ---*/
+
+    nVar = var_buf[0];
+
+  } else {
+
+    /*--- Open the restart file ---*/
+
+    restart_file.open(filename.data(), ios::in);
+
+    /*--- In case there is no restart file ---*/
+
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "SU2 solution file " << filename << " not found." << endl;
+
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+
+    /*--- Identify the number of fields (and names) in the restart file ---*/
+
+    getline (restart_file, text_line);
+
+    stringstream ss(text_line);
+    while (ss >> Tag) {
+      config->fields.push_back(Tag);
+      if (ss.peek() == ',') ss.ignore();
+    }
+
+    /*--- Close the file (the solution date is read later). ---*/
+    
+    restart_file.close();
+
+    /*--- Set the number of variables, one per field in the
+     restart file (without including the PointID) ---*/
+
+    nVar = config->fields.size() - 1;
+
+    /*--- Clear the fields vector since we'll read it again. ---*/
+
+    config->fields.clear();
+
   }
-
-  /*--- Identify the number of fields (and names) in the restart file ---*/
-
-  getline (restart_file, text_line);
-
-  stringstream ss(text_line);
-  while (ss >> Tag) {
-    config->fields.push_back(Tag);
-    if (ss.peek() == ',') ss.ignore();
-  }
-
-  /*--- Close the file (the solution date is read later). ---*/
-
-  restart_file.close();
-
-  /*--- Set the number of variables, one per field in the
-   restart file (without including the PointID) ---*/
-
-  nVar = config->fields.size() - 1;
 
 }
 
@@ -2419,26 +2487,16 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetBinary_Restart()) {
-    unsigned short lastindex = filename.find_last_of(".");
-    filename = filename.substr(0, lastindex);
-    filename.append(".bin");
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
-
-  /*--- Set the number of variables, one per field in the
-   restart file (without including the PointID) ---*/
-
-  nVar = Restart_Vars[0];
-  su2double *Solution = new su2double[nVar];
 
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives
@@ -2496,11 +2554,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     }
     
   }
-  
-  /*--- Free memory needed for the transformation ---*/
-  
-  delete [] Solution;
-  
+
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry[iZone], config);

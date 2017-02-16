@@ -1738,6 +1738,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
     }
     
     delete [] ShareFromZone;
+
     wrote_base_file = true;
     
     err = TECEND112();
@@ -2656,6 +2657,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     delete [] ShareFromZone;
     delete [] LocalIndex;
     delete [] SurfacePoint;
+    
     wrote_surf_file = true;
     
     err = TECEND112();

@@ -4010,9 +4010,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetBinary_Restart()) {
-    unsigned short lastindex = filename.find_last_of(".");
-    filename = filename.substr(0, lastindex);
-    filename.append(".bin");
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
