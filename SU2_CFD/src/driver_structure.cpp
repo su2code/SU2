@@ -49,6 +49,13 @@ CDriver::CDriver(char* confFile,
   MPI_Comm_rank(MPICommunicator, &rank);
 #endif
 
+  /*--- Start timer to track preprocessing for benchmarking. ---*/
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
    heirarchy over all zones, multigrid levels, equation sets, and equation
