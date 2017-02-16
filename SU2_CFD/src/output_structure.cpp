@@ -8500,10 +8500,6 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
           if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
           SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][MESH_0], iZone);
           SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
-          if (!wrote_base_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-          if (!wrote_surf_file)
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], wrote_surf_file);
         }
       }
       
@@ -8551,6 +8547,7 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
               SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
               break;
               
             case FIELDVIEW_BINARY:
@@ -8596,6 +8593,7 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
               
               if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
               SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
               break;
               
             case PARAVIEW:
