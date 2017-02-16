@@ -10078,6 +10078,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int size = SINGLE_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -10091,10 +10092,22 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
           available. SU2_SOL will remain intact for writing files
           until this capability is completed. ---*/
     
-    bool Wrt_Vol = true;
-    bool Wrt_Srf = true;
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
-    
+
+#ifdef HAVE_MPI
+    /*--- Do not merge the connectivity or write the visualization files
+     if we are running in parallel. Force the use of SU2_SOL to merge and
+     write the viz. files in this case to save overhead. ---*/
+
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (size > SINGLE_NODE) {
+      Wrt_Vol = false;
+      Wrt_Srf = false;
+    }
+#endif
+
     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
     
     if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
@@ -10144,15 +10157,13 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       cout << "Sorting output data across all ranks." << endl;
     SortOutputData(config[iZone], geometry[iZone][MESH_0]);
     
-    /*--- Write parallel ASCII restart files. This will be replaced with
-     a binary alternative with MPI-IO soon. ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << "Writing SU2 native restart file." << endl;
+    /*--- Write either a binary or ASCII restart file in parallel. ---*/
 
-    if (config[iZone]->GetBinary_Restart()) {
+    if (config[iZone]->GetWrt_Binary_Restart()) {
+      if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
       WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
     } else {
+      if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
       WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
     }
 
@@ -10160,41 +10171,44 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    /*--- If requested, write Tecplot ASCII solution files in parallel. ---*/
-    
-    if ((Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT)) {
-      
+    /*--- Write the solution files iff they are requested and we are executing
+     with a single rank (all data on one proc and no comm. overhead). Once we
+     have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
+     can allow the write of the viz. files as well. ---*/
+
+    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT)) {
+
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
-      
+
       if (rank == MASTER_NODE)
         cout << "Preparing element connectivity across all ranks." << endl;
       SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
-      
+
       /*--- Sort the surface data and renumber if for writing. ---*/
-      
+
       SortOutputData_Surface(config[iZone], geometry[iZone][MESH_0]);
-      
+
       /*--- Write Tecplot ASCII files for the volume and/or surface solutions. ---*/
-      
+
       if (Wrt_Vol) {
         if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
         SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
                                  solver_container[iZone][MESH_0], iZone, val_nZone, false);
       }
-      
+
       if (Wrt_Srf) {
         if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
         SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
                                  solver_container[iZone][MESH_0], iZone, val_nZone, true);
       }
-      
+
       /*--- Clean up the connectivity data that was allocated for output. ---*/
-      
+
       DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
       DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], true);
-      
+
       /*--- Clean up the surface data that was only needed for output. ---*/
-      
+
       DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][MESH_0]);
       
     }

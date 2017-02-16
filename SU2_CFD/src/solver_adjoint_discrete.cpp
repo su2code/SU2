@@ -639,7 +639,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  if (config->GetBinary_Restart()) {
+  if (config->GetRead_Binary_Restart()) {
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);

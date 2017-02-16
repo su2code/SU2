@@ -1962,7 +1962,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   if (rank == MASTER_NODE)
     MPI_File_read(fhw, Restart_Vars, 2, MPI_INT, MPI_STATUS_IGNORE);
 
-  /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
+  /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
   SU2_MPI::Bcast(Restart_Vars, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
@@ -1973,12 +1973,14 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
   if (rank == MASTER_NODE) {
     disp = 2*sizeof(int);
-    MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
+    MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
+                     MPI_CHAR, MPI_STATUS_IGNORE);
   }
 
   /*--- Broadcast the string names of the variables. ---*/
 
-  SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR,
+                 MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Now parse the string names and load into the config class in case
    we need them for writing visualization files (SU2_SOL). ---*/
@@ -2156,7 +2158,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
   /*--- Read only the number of variables in the restart file. ---*/
 
-  if (config->GetBinary_Restart()) {
+  if (config->GetRead_Binary_Restart()) {
 
     char fname[100];
     strcpy(fname, filename.c_str());
@@ -2509,7 +2511,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  if (config->GetBinary_Restart()) {
+  if (config->GetRead_Binary_Restart()) {
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
