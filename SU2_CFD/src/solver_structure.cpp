@@ -1990,8 +1990,8 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    that will be placed in the restart. Here, we are collecting each one of the
    points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
 
-  int *blocklen = new int[nPointDomain];
-  int *displace = new int[nPointDomain];
+  int *blocklen = new int[geometry->GetnPointDomain()];
+  int *displace = new int[geometry->GetnPointDomain()];
   int counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
