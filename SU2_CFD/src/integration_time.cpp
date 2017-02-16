@@ -44,8 +44,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned long Iteration,
                                                 unsigned short iZone) {
-	
-	unsigned short FinestMesh, iMGLevel;
+  unsigned short FinestMesh, iMGLevel;
   su2double monitor = 1.0;
   bool FullMG = false;
   
@@ -814,15 +813,14 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
   
-  /*--- If turbulence model, copy the turbulence bariables to the coarse levels ---*/
+  /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
   
-	if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-		for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
-			SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
-			SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
-		}
-	}
-	
+  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
+    for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
+      SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+      SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+    }
+  }
 }
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
