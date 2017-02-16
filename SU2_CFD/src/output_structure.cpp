@@ -14780,11 +14780,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
-  /*--- For now, append an extra suffix for the parallel restart. ---*/
-
-  unsigned short lastindex = filename.find_last_of(".");
-  filename = filename.substr(0, lastindex);
-  filename.append(".bin");
   strcpy(fname, filename.c_str());
 
   /*--- These point offsets should be computed once and stored so that we don't

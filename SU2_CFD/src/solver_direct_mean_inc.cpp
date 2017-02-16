@@ -5554,7 +5554,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -5599,9 +5599,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetBinary_Restart()) {
-    unsigned short lastindex = restart_filename.find_last_of(".");
-    restart_filename = restart_filename.substr(0, lastindex);
-    restart_filename.append(".bin");
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);

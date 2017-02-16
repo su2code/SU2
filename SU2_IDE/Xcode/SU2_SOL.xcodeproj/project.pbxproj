@@ -27,6 +27,7 @@
 		05E6DC6E17EB658F00FA1F7E /* output_tecplot.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC6A17EB658F00FA1F7E /* output_tecplot.cpp */; };
 		E941BC0D1B71DC05005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BC0A1B71DC05005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BC0E1B71DC05005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BC0B1B71DC05005C6C06 /* mpi_structure.cpp */; };
+		E99D2D5B1E555FFD00C626AD /* adt_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E99D2D5A1E555FFD00C626AD /* adt_structure.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -105,6 +106,9 @@
 		E941BC1E1B71DC4C005C6C06 /* primitive_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; path = primitive_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC1F1B71DC4C005C6C06 /* linear_solvers_structure_b.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = linear_solvers_structure_b.hpp; path = ../../Common/include/linear_solvers_structure_b.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BC201B71DC4C005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E99D2D5A1E555FFD00C626AD /* adt_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = adt_structure.cpp; path = ../../Common/src/adt_structure.cpp; sourceTree = "<group>"; };
+		E99D2D5C1E55601600C626AD /* adt_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = adt_structure.hpp; path = ../../Common/include/adt_structure.hpp; sourceTree = "<group>"; };
+		E99D2D5D1E55601600C626AD /* adt_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = adt_structure.inl; path = ../../Common/include/adt_structure.inl; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +161,7 @@
 				E941BC111B71DC4C005C6C06 /* datatype_structure.hpp */,
 				E941BC121B71DC4C005C6C06 /* datatypes */,
 				E941BC201B71DC4C005C6C06 /* mpi_structure.hpp */,
+				E99D2D5C1E55601600C626AD /* adt_structure.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -177,6 +182,7 @@
 				05E6DAB017EB605C00FA1F7E /* vector_structure.inl */,
 				E941BC0F1B71DC2F005C6C06 /* datatype_structure.inl */,
 				E941BC101B71DC2F005C6C06 /* mpi_structure.inl */,
+				E99D2D5D1E55601600C626AD /* adt_structure.inl */,
 			);
 			name = InLine;
 			sourceTree = "<group>";
@@ -204,6 +210,7 @@
 				05E6DBA217EB61EC00FA1F7E /* primal_grid_structure.cpp */,
 				05E6DBA317EB61EC00FA1F7E /* vector_structure.cpp */,
 				E941BC0B1B71DC05005C6C06 /* mpi_structure.cpp */,
+				E99D2D5A1E555FFD00C626AD /* adt_structure.cpp */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -295,6 +302,7 @@
 				05E6DC6617EB657B00FA1F7E /* variable_structure.cpp in Sources */,
 				05E6DC6B17EB658F00FA1F7E /* output_cgns.cpp in Sources */,
 				05E6DC6C17EB658F00FA1F7E /* output_paraview.cpp in Sources */,
+				E99D2D5B1E555FFD00C626AD /* adt_structure.cpp in Sources */,
 				0506980C1AA61B4500FF4F07 /* output_fieldview.cpp in Sources */,
 				05E6DC6D17EB658F00FA1F7E /* output_structure.cpp in Sources */,
 				05755F0C1A54B2AF00600019 /* output_su2.cpp in Sources */,
