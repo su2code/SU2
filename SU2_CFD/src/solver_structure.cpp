@@ -1945,7 +1945,8 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   MPI_Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
-  unsigned long iPoint_Global;
+  unsigned long iPoint_Global, index, iChar;
+  string field_buf;
 
   int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1958,24 +1959,46 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    which we will need in order to read the file later. Also, read the
    variable string names here. Only the master rank reads the header. ---*/
 
-  if (rank == MASTER_NODE) {
+  if (rank == MASTER_NODE)
     MPI_File_read(fhw, Restart_Vars, 2, MPI_INT, MPI_STATUS_IGNORE);
-
-    /*--- Read the variable names from the file. Note that we are adopting a
-     fixed length of 33 for the string length to match with CGNS. This is
-     needed for when we read the strings later. ---*/
-
-    config->fields.push_back("Point_ID");
-    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
-      disp = 2*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
-      MPI_File_read_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
-      config->fields.push_back(str_buf);
-    }
-  }
 
   /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
   SU2_MPI::Bcast(Restart_Vars, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*--- Read the variable names from the file. Note that we are adopting a
+   fixed length of 33 for the string length to match with CGNS. This is
+   needed for when we read the strings later. ---*/
+
+  char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
+  if (rank == MASTER_NODE) {
+    disp = 2*sizeof(int);
+    MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
+  }
+
+  /*--- Broadcast the string names of the variables. ---*/
+
+  SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*--- Now parse the string names and load into the config class in case
+   we need them for writing visualization files (SU2_SOL). ---*/
+
+  config->fields.push_back("Point_ID");
+  for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+    index = iVar*CGNS_STRING_SIZE;
+    field_buf.append("\"");
+    for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+      str_buf[iChar] = mpi_str_buf[index + iChar];
+    }
+    field_buf.append(str_buf);
+    field_buf.append("\"");
+    config->fields.push_back(field_buf.c_str());
+    field_buf.clear();
+  }
+
+  /*--- Free string buffer memory. ---*/
+
+  delete [] mpi_str_buf;
 
   /*--- We're writing only su2doubles in the data portion of the file. ---*/
 
@@ -2023,12 +2046,12 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   /*--- Free the derived datatype and release temp memory. ---*/
 
   MPI_Type_free(&filetype);
-  
+
   delete [] blocklen;
   delete [] displace;
-
+  
 #endif
-
+  
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
