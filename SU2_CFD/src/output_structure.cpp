@@ -14651,10 +14651,6 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   } else if ((fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
-
-  /*--- For now, append an extra suffix for the parallel restart. ---*/
-
-  filename.append(".parallel");
   
   /*--- Only the master node writes the header. ---*/
   
