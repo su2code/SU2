@@ -836,13 +836,14 @@ private:
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
   *default_body_force;        /*!< \brief Default body force vector for the COption class. */
-  unsigned short Riemann_Solver_FEM;        /*!< \brief Riemann solver chosen for the DG method. */
-  su2double Quadrature_Factor_Straight;     /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
-  su2double Quadrature_Factor_Curved;       /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
-  su2double Quadrature_Factor_Time_ADER_DG; /*!< \brief Factor applied during quadrature in time for ADER-DG. */
-  su2double Theta_Interior_Penalty_DGFEM;   /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
-  bool Body_Force;  			                  /*!< \brief Flag to know if a body force is incuded in the formulation. */
-  su2double *Body_Force_Vector;             /*!< \brief Values of the prescribed body force vector. */
+  unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
+  su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
+  su2double Quadrature_Factor_Curved;        /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
+  su2double Quadrature_Factor_Time_ADER_DG;  /*!< \brief Factor applied during quadrature in time for ADER-DG. */
+  su2double Theta_Interior_Penalty_DGFEM;    /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
+  bool Store_Cart_Grad_BasisFunctions_DGFEM; /*!< \brief Flag to know if the Cartesian gradients of the DGFEM basis functions are stored. */
+  bool Body_Force;  			     /*!< \brief Flag to know if a body force is included in the formulation. */
+  su2double *Body_Force_Vector;              /*!< \brief Values of the prescribed body force vector. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -6946,6 +6947,13 @@ public:
    * \return The specified factor for the DG discretization.
    */
   su2double GetTheta_Interior_Penalty_DGFEM(void);
+
+  /*!
+   * \brief Function to make available whether or not the Cartesian gradients
+            of the DGFEM basis functions are stored.
+   * \return The boolean whether or not the gradients are stored.
+   */
+  bool GetStore_Cart_Grad_BasisFunctions_DGFEM(void);
 
   /*!
    * \brief Get the interpolation method used for matching between zones.
