@@ -1911,6 +1911,13 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   FILE *fhw;
   fhw = fopen(fname,"rb");
 
+  /*--- Error check for opening the file. ---*/
+
+  if (!fhw) {
+    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    exit(EXIT_FAILURE);
+  }
+
   /*--- First, read the number of variables and points. ---*/
 
   fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
@@ -1949,12 +1956,22 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   unsigned long iPoint_Global, index, iChar;
   string field_buf;
 
-  int rank = MASTER_NODE;
+  int rank = MASTER_NODE, ierr;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   /*--- All ranks open the file using MPI. ---*/
 
-  MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+  /*--- Error check opening the file. ---*/
+
+  if (ierr) {
+    if (rank == MASTER_NODE)
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+  }
 
   /*--- First, read the number of variables and points (i.e., cols and rows),
    which we will need in order to read the file later. Also, read the
@@ -2090,6 +2107,13 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
     FILE *fhw;
     fhw = fopen(fname,"rb");
 
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+
     /*--- First, read the number of variables and points. ---*/
 
     fread(var_buf, sizeof(int), nVar_Buf, fhw);
@@ -2116,12 +2140,22 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
 
     MPI_File fhw;
     MPI_Offset disp;
-    int rank = MASTER_NODE;
+    int rank = MASTER_NODE, ierr;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
-    MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
 
     /*--- First, read the number of variables and points (i.e., cols and rows),
      which we will need in order to read the file later. Also, read the
@@ -2450,6 +2484,13 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     FILE *fhw;
     fhw = fopen(fname,"rb");
 
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+    
     /*--- First, read the number of variables and points. ---*/
 
     fread(var_buf, sizeof(int), nVar_Buf, fhw);
@@ -2463,13 +2504,22 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     /*--- Parallel binary input using MPI I/O. ---*/
 
     MPI_File fhw;
-
-    int rank = MASTER_NODE;
+    int rank = MASTER_NODE, ierr;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /*--- All ranks open the file using MPI. ---*/
 
-    MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
 
     /*--- First, read the number of variables and points (i.e., cols and rows),
      which we will need in order to read the file later. Also, read the
