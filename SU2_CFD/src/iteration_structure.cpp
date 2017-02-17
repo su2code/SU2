@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -461,9 +461,9 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This must be done only in the first subiteration ---*/
-  if( fsi  && ( FSIIter == 0 ) )
-   solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
-
+  if( fsi  && ( FSIIter == 0 ) ){
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+  }
   
   /*--- Apply a Wind Gust ---*/
   
@@ -493,7 +493,6 @@ void CMeanFlowIteration::Iterate(COutput *output,
                                  CVolumetricMovement **grid_movement,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) {
-  
   unsigned long IntIter, ExtIter;
   
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
@@ -505,7 +504,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
   
   if ( !unsteady ) IntIter = ExtIter;
   else IntIter = config_container[val_iZone]->GetIntIter();
-  
+	
   /*--- Update global parameters ---*/
   
   switch( config_container[val_iZone]->GetKind_Solver() ) {
@@ -567,7 +566,6 @@ void CMeanFlowIteration::Iterate(COutput *output,
   /*--- Write the convergence history (only screen output) ---*/
     
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-  
 }
 
 void CMeanFlowIteration::Update(COutput *output,

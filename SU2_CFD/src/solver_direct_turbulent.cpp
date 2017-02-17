@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2718,7 +2718,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   su2double VelMag = 0;
   for (iDim = 0; iDim < nDim; iDim++)
-  VelMag += VelInf[iDim]*VelInf[iDim];
+    VelMag += VelInf[iDim]*VelInf[iDim];
+  
   VelMag = sqrt(VelMag);
   
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
@@ -2733,7 +2734,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     node[iPoint] = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nDim, nVar, constants, config);
   }
   else {
-    
     /*--- Restart the solution from file information ---*/
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();

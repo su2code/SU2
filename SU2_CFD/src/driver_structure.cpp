@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ CDriver::CDriver(char* confFile,
 
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
-   heirarchy over all zones, multigrid levels, equation sets, and equation
+   hierarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
 
   iteration_container           = NULL;
@@ -785,6 +785,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       if (transition) {
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
@@ -2593,10 +2594,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 void CDriver::Output(unsigned long ExtIter) {
   
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
   
   /*--- Solution output. Determine whether a solution needs to be written
@@ -3331,14 +3330,13 @@ void CFluidDriver::Run() {
     /*--- At each pseudo time-step updates transfer data ---*/
     for (iZone = 0; iZone < nZone; iZone++)   
       for (jZone = 0; jZone < nZone; jZone++)
-      if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
           Transfer_Data(iZone, jZone);
 
     /*--- For each zone runs one single iteration ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetIntIter(IntIter);
-
       iteration_container[iZone]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
     }
 
