@@ -241,7 +241,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 600
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-6.486616, -4.653908, 1.155000, -0.007453, 0.079029] #last 5 columns
+    turb_naca0012_sst_restart_mg.test_vals = [-6.482396, -4.653908, 1.155000, -0.006296, 0.078747] #last 5 columns
     turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
