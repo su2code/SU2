@@ -5350,11 +5350,12 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
             multiplication with JacInv takes places, because the metric terms
             are scaled by the Jacobian. ---*/
       su2double solGradCart[5][3];
-      for(unsigned short k=0; k<nDim; ++k) {
+#pragma simd
+      for(unsigned short k=0; k<ctc::nDim; ++k) {
         for(unsigned short j=0; j<nVar; ++j) {
           solGradCart[j][k] = 0.0;
-          for(unsigned short l=0; l<nDim; ++l)
-            solGradCart[j][k] += sol[j+(l+1)*offDeriv]*metricTerms[k+l*nDim];
+          for(unsigned short l=0; l<ctc::nDim; ++l)
+            solGradCart[j][k] += sol[j+(l+1)*offDeriv]*metricTerms[k+l*ctc::nDim];
           solGradCart[j][k] *= JacInv;
         }
       }
@@ -5428,20 +5429,26 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- Loop over the number of dimensions to compute the fluxes in the
             direction of the parametric coordinates. ---*/
-      for(unsigned short k=0; k<nDim; ++k) {
+
+      for(unsigned short k=0; k<ctc::nDim; ++k) {
 
         /* Pointer to the metric terms for this direction. */
-        const su2double *metric = metricTerms + k*nDim;
+        const su2double *metric = metricTerms + k*ctc::nDim;
 
         /*--- Loop over the number of variables in the flux vector.
               Note that also the counter ll must be updated here. ---*/
-        for(unsigned short j=0; j<nVar; ++j, ++ll) {
+        unsigned short ll_offset = i*ctc::nDim*nVar + k*nVar;
+
+        //for(unsigned short j=0; j<nVar; ++j, ++ll) {
+#pragma simd private(ll)
+        for(unsigned short j=0; j<nVar; ++j) {
+          ll = ll_offset + j;
 
           /* Carry out the dot product of the Cartesian fluxes and the
              metric terms to obtain the correct flux vector in this
              parametric direction. */
           fluxes[ll] = 0.0;
-          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          for(unsigned short iDim=0; iDim<ctc::nDim; ++iDim)
             fluxes[ll] += fluxCart[j][iDim]*metric[iDim];
 
           /* Multiply the flux by minus the integration weight to obtain the
@@ -5688,11 +5695,11 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
                 of the basis functions. ---*/
-#pragma simd private(l)
+#pragma simd 
           for(unsigned short k=0; k<ctc::nDim; ++k) {
             derCar[k] = 0.0;
             for(unsigned short l=0; l<ctc::nDim; ++l)
-              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+              derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
           }
         }
       }
@@ -5729,11 +5736,11 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
                 of the basis functions. ---*/
-#pragma simd private(l)
+#pragma simd 
           for(unsigned short k=0; k<ctc::nDim; ++k) {
             derCar[k] = 0.0;
             for(unsigned short l=0; l<ctc::nDim; ++l)
-              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+              derCar[k] += derParam[l]*metricTerms[k+l*ctc::nDim];
           }
         }
       }
