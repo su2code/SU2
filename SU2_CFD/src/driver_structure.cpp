@@ -2582,7 +2582,6 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetExtIter(ExtIter);
   delete runtime;
-  double CFLmin = 10.0E+06;
   
   /*--- Update the convergence history file (serial and parallel computations). ---*/
   
@@ -2592,27 +2591,12 @@ bool CDriver::Monitor(unsigned long ExtIter) {
     
   }
   
-  
+
   /*--- Evaluate the new CFL number (adaptive). ---*/
-  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
-  	for (iZone = 0; iZone < nZone; iZone++){
-  		output->SetCFL_Number(solver_container, config_container, iZone);
-  		for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
-  			if(config_container[iZone]->GetCFL(iMesh) < CFLmin){
-  				CFLmin = config_container[iZone]->GetCFL(iMesh);
-  			}
-  		}
-  	}
-  	/*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
-  	if (!fsi && nZone > 1){
-  		for (iZone = 0; iZone < nZone; iZone++){
-  			for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
-  				config_container[iZone]->SetCFL(iMesh, CFLmin);
-  			}
-  		}
-  	}
+
+  if (config_container[ZONE_0]->GetCFL_Adapt() == YES){
+  	output->SetCFL_Number(solver_container, config_container, ZONE_0);
   }
-  
 
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
@@ -3576,7 +3560,6 @@ CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 void CTurbomachineryDriver::Run() {
 
 
-  unsigned short iZone =0;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
   int rank = MASTER_NODE;
@@ -3685,7 +3668,8 @@ void CTurbomachineryDriver::Preprocessing(void){
 		geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
 		geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
 		geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
-
+		solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+		solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[iZone][MESH_0], geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 	}
 
 	for (iZone = 1; iZone < nZone; iZone++) {
@@ -3697,6 +3681,70 @@ void CTurbomachineryDriver::Preprocessing(void){
 	}
 
 }
+
+bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
+
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+
+  UsedTime = (StopTime - StartTime);
+
+
+  /*--- Check if there is any change in the runtime parameters ---*/
+
+  CConfig *runtime = NULL;
+  strcpy(runtime_file_name, "runtime.dat");
+  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+  runtime->SetExtIter(ExtIter);
+  delete runtime;
+  double CFL;
+
+  /*--- Update the convergence history file (serial and parallel computations). ---*/
+
+  output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+                                config_container, integration_container, false, UsedTime, ZONE_0);
+
+
+
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+  	if(mixingplane){
+  	CFL = 0;
+  	for (iZone = 0; iZone < nZone; iZone++){
+  		output->SetCFL_Number(solver_container, config_container, iZone);
+  		CFL += config_container[iZone]->GetCFL(MESH_0);
+  		}
+  	/*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
+  		for (iZone = 0; iZone < nZone; iZone++){
+  			config_container[iZone]->SetCFL(MESH_0, CFL/nZone);
+  		}
+  	}
+  	else{
+  		output->SetCFL_Number(solver_container, config_container, ZONE_0);
+  	}
+  }
+
+
+  /*--- Check whether the current simulation has reached the specified
+   convergence criteria, and set StopCalc to true, if so. ---*/
+
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+  }
+
+  return StopCalc;
+
+}
+
 
 CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
                                                  unsigned short val_nZone,

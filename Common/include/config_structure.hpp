@@ -828,7 +828,8 @@ private:
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+	*default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
+	*default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -841,6 +842,9 @@ private:
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
   bool turbMixingPlane;   /*!< \brief option for turbulent mixingplane */
+  su2double *Mixedout_Coeff; /*!< \brief option for turbulent mixingplane */
+  su2double AverageMachLimit; /*!< \brief option for turbulent mixingplane */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -3746,6 +3750,20 @@ public:
    * \return Kind of mixing process.
    */
 	unsigned short GetKind_PerformanceAverageProcess(void);
+
+
+	/*!
+	 * \brief Get mixedout coefficients.
+	 * \return mixedout coefficient.
+	 */
+	su2double GetMixedout_Coeff(unsigned short iCoeff);
+
+	/*!
+	 * \brief Get mach limit for average massflow-based procedure .
+	 * \return mach limit.
+	 */
+	su2double GetAverageMachLimit(void);
+
 
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
