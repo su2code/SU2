@@ -14878,6 +14878,13 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   FILE* fhw;
   fhw = fopen(fname, "wb");
 
+  /*--- Error check for opening the file. ---*/
+
+  if (!fhw) {
+    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    exit(EXIT_FAILURE);
+  }
+
   /*--- First, write the number of variables and points. ---*/
 
   fwrite(var_buf, var_buf_size, sizeof(int), fhw);
@@ -14915,6 +14922,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   MPI_Status status;
   MPI_Datatype etype, filetype;
   MPI_Offset disp;
+  int ierr;
 
   /*--- We're writing only su2doubles in the data portion of the file. ---*/
 
@@ -14928,7 +14936,17 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- All ranks open the file using MPI. ---*/
 
-  MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+
+  /*--- Error check opening the file. ---*/
+
+  if (ierr) {
+    if (rank == MASTER_NODE)
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+  }
 
   /*--- First, write the number of variables and points (i.e., cols and rows),
    which we will need in order to read the file later. Also, write the 
