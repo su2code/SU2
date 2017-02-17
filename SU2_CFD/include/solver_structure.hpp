@@ -113,6 +113,8 @@ protected:
   **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
   int *Restart_Vars;       /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
+  int Restart_ExtIter;     /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
+  su2double *Restart_Meta; /*!< \brief Auxiliary structure for holding metadata from a restart. */
   su2double *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
   
@@ -3290,6 +3292,14 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename);
 
   /*!
    * \brief A virtual member.

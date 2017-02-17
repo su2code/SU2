@@ -62,12 +62,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   string filename, AdjExt;
   su2double myArea_Monitored, Area, *Normal;
-  su2double dCD_dCL_, dCD_dCM_;
-  string::size_type position;
-  unsigned long ExtIter_;
 
   bool restart  = config->GetRestart();
-  bool metadata = config->GetUpdate_Restart_Params();
 
   bool axisymmetric = config->GetAxisymmetric();
   
@@ -300,65 +296,12 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CAdjEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
 
-  if (restart && (iMesh == MESH_0) && metadata) {
+  /*--- Read the restart metadata. ---*/
 
-    /*--- Restart the solution from file information ---*/
-
-    filename = "restart_adj.meta";
-
-    restart_file.open(filename.data(), ios::in);
-
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no adjoint restart metadata file (" << filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
-
-      while (getline (restart_file, text_line)) {
-
-
-        if (config->GetEval_dCD_dCX() == true) {
-
-          /*--- dCD_dCL coefficient ---*/
-
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
-            config->SetdCD_dCL(dCD_dCL_);
-          }
-
-          /*--- dCD_dCM coefficient ---*/
-
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
-            config->SetdCD_dCM(dCD_dCM_);
-          }
-
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          config->SetExtIter_OffSet(ExtIter_);
-        }
-
-      }
-      
-      /*--- Close the restart file ---*/
-      
-      restart_file.close();
-      
-    }
-    
+  if (restart && (iMesh == MESH_0)) {
+    mesh_filename = config->GetSolution_AdjFileName();
+    filename      = config->GetObjFunc_Extension(mesh_filename);
+    Read_SU2_Restart_Metadata(geometry, config, filename);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
@@ -5982,11 +5925,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
-  su2double dCD_dCL_, dCD_dCM_;
   ifstream restart_file;
   string filename, AdjExt;
-  string::size_type position;
-  unsigned long ExtIter_;
 
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
@@ -6186,62 +6126,12 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CAdjNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
 
+  /*--- Read the restart metadata. ---*/
 
-  if (restart && (iMesh == MESH_0))  {
-
-    /*--- Restart the solution from file information ---*/
-
-    filename = "restart_adj.meta";
-
-    restart_file.open(filename.data(), ios::in);
-
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no adjoint restart metadata file (" << filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
-
-      while (getline (restart_file, text_line)) {
-
-        if (config->GetEval_dCD_dCX() ==  true) {
-
-          /*--- dCD_dCL coefficient ---*/
-
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
-            config->SetdCD_dCL(dCD_dCL_);
-          }
-
-          /*--- dCD_dCM coefficient ---*/
-
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjointsolution file: " << dCD_dCM_ << " ." << endl;
-            config->SetdCD_dCM(dCD_dCM_);
-          }
-
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          config->SetExtIter_OffSet(ExtIter_);
-        }
-
-      }
-
-      /*--- Close the restart file ---*/
-      restart_file.close();
-      
-    }
+  if (restart && (iMesh == MESH_0)) {
+    mesh_filename = config->GetSolution_AdjFileName();
+    filename      = config->GetObjFunc_Extension(mesh_filename);
+    Read_SU2_Restart_Metadata(geometry, config, filename);
   }
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/

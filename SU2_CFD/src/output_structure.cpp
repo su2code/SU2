@@ -3683,7 +3683,6 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool wrt_metadata = config->GetUpdate_Restart_Params();
 
   /*--- Retrieve filename from config ---*/
   
@@ -3862,33 +3861,21 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     restart_file << "\n";
   }
 
+  /*--- Write the general header and flow conditions ----*/
+
+  if (dual_time)
+    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+  else
+    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+  restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+  restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+  restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+  restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+  if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
   /*--- Close the data portion of the restart file. ---*/
 
   restart_file.close();
-
-  /*--- Also create the filename for the restart metadata ---*/
-
-  if (wrt_metadata) {
-    meta_filename = "restart";
-    if (adjoint) meta_filename.append("_adj");
-    meta_filename.append(".meta");
-    meta_file.open(meta_filename.c_str(), ios::out);
-    meta_file.precision(15);
-
-    /*--- Write the general header and flow conditions ----*/
-
-    meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-    meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-    meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-    if (adjoint) meta_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-    if (dual_time)
-      meta_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      meta_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-    
-    meta_file.close();
-  }
 
 }
 
@@ -14616,9 +14603,8 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool wrt_metadata = config->GetUpdate_Restart_Params();
-  ofstream restart_file, meta_file;
-  string filename, meta_filename;
+  ofstream restart_file;
+  string filename;
   
   int iProcessor;
   int rank = MASTER_NODE;
@@ -14712,34 +14698,23 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     
   }
 
+  /*--- Write the metadata (master rank alone) ----*/
+
+  if (rank == MASTER_NODE) {
+    if (dual_time)
+      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+    else
+      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
+    restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
+    restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
+    restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
+    restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
+    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+  }
+
   /*--- All processors close the file. ---*/
 
   restart_file.close();
-
-  /*--- Write the general header and flow conditions (master rank alone) ----*/
-
-  if (rank == MASTER_NODE && wrt_metadata) {
-
-    /*--- Also create the filename for the restart metadata ---*/
-
-    meta_filename = "restart";
-    if (adjoint) meta_filename.append("_adj");
-    meta_filename.append(".meta");
-    meta_file.open(meta_filename.c_str(), ios::out);
-    meta_file.precision(15);
-
-    meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-    meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-    meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-    if (adjoint) meta_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-    if (dual_time)
-      meta_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      meta_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-
-    meta_file.close();
-  }
   
 }
 
@@ -14754,14 +14729,13 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
                     config->GetDiscrete_Adjoint());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool wrt_metadata = config->GetUpdate_Restart_Params();
-  ofstream restart_file, meta_file;
-  string filename, meta_filename;
+  ofstream restart_file;
+  string filename;
   char str_buf[CGNS_STRING_SIZE], fname[100];
 
-  int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -14865,10 +14839,11 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   }
   nPoint_Linear[size] = nTotalPoint;
 
-  /*--- Prepare the first two ints containing the counts. ---*/
+  /*--- Prepare the first four ints containing the counts. The last two values
+   are for metadata: one int for ExtIter and 5 su2doubles. ---*/
 
-  int var_buf_size = 2;
-  int var_buf[2] = {nVar_Par,(int)nTotalPoint};
+  int var_buf_size = 4;
+  int var_buf[4] = {nVar_Par, (int)nTotalPoint, 1, 5};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
@@ -14880,6 +14855,23 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
     for (iVar = 0; iVar < nVar_Par; iVar++)
       buf[iPoint*nVar_Par+iVar] = Parallel_Data[iVar][iPoint];
+
+  /*--- Prepare metadata. ---*/
+
+  int Restart_ExtIter;
+  if (dual_time)
+    Restart_ExtIter= (int)config->GetExtIter() + 1;
+  else
+    Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
+
+  su2double Restart_Metadata[5] = {
+    config->GetAoA() - config->GetAoA_Offset(),
+    config->GetAoS() - config->GetAoS_Offset(),
+    config->GetInitial_BCThrust(),
+    config->GetdCD_dCL(),
+    0.0
+  };
+  if (adjoint) Restart_Metadata[4] = solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
 
 #ifndef HAVE_MPI
 
@@ -14902,6 +14894,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Call to write the entire restart file data in binary in one shot. ---*/
 
   fwrite(buf, nVar_Par*nParallel_Poin, sizeof(su2double), fhw);
+
+  /*--- Write the external iteration. ---*/
+
+  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
+
+  /*--- Write the metadata. ---*/
+
+  fwrite(Restart_Metadata, 5, sizeof(su2double), fhw);
 
   /*--- Close the file. ---*/
 
@@ -14942,7 +14942,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
      needed for when we read the strings later. ---*/
 
     for (iVar = 0; iVar < nVar_Par; iVar++) {
-      disp = 2*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
+      disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
       strcpy(str_buf, Variable_Names[iVar].c_str());
       MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
     }
@@ -14964,40 +14964,37 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   MPI_File_write_all(fhw, buf, nVar_Par*nParallel_Poin, MPI_DOUBLE, &status);
 
+  /*--- Free the derived datatype. ---*/
+
+  MPI_Type_free(&filetype);
+
+  /*--- Reset the file view before writing the metadata. ---*/
+
+  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+
+  /*--- Finally, the master rank writes the metadata. ---*/
+
+  if (rank == MASTER_NODE) {
+
+    /*--- External iteration. ---*/
+
+    disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
+            nVar_Par*nTotalPoint*sizeof(su2double));
+    MPI_File_write_at(fhw, disp, &Restart_ExtIter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Additional doubles for AoA, AoS, etc. ---*/
+
+    disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
+            nVar_Par*nTotalPoint*sizeof(su2double) + 1*sizeof(int));
+    MPI_File_write_at(fhw, disp, Restart_Metadata, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+  }
+
   /*--- All ranks close the file after writing. ---*/
 
   MPI_File_close(&fhw);
 
-  /*--- Free the derived datatype and release temp memory. ---*/
-
-  MPI_Type_free(&filetype);
-
 #endif
-
-  /*--- Write the general header and flow conditions (master rank alone) ----*/
-
-  if (rank == MASTER_NODE && wrt_metadata) {
-
-    /*--- Also create the filename for the restart metadata ---*/
-
-    meta_filename = "restart";
-    if (adjoint) meta_filename.append("_adj");
-    meta_filename.append(".meta");
-    meta_file.open(meta_filename.c_str(), ios::out);
-    meta_file.precision(15);
-
-    meta_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
-    meta_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
-    meta_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
-    meta_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
-    if (adjoint) meta_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-    if (dual_time)
-      meta_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      meta_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-
-    meta_file.close();
-  }
 
   /*--- Free temporary data buffer for writing the binary file. ---*/
 

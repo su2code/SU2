@@ -1821,7 +1821,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  Restart_Vars = new int[2];
+  Restart_Vars = new int[4];
 
   /*--- Open the restart file ---*/
 
@@ -1901,7 +1901,8 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   char str_buf[CGNS_STRING_SIZE], fname[100];
   unsigned short iVar;
   strcpy(fname, val_filename.c_str());
-  Restart_Vars = new int[2];
+  int nRestart_Vars = 4;
+  Restart_Vars = new int[4];
 
 #ifndef HAVE_MPI
 
@@ -1912,7 +1913,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- First, read the number of variables and points. ---*/
 
-  fread(Restart_Vars, sizeof(int), 2, fhw);
+  fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -1960,11 +1961,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
    variable string names here. Only the master rank reads the header. ---*/
 
   if (rank == MASTER_NODE)
-    MPI_File_read(fhw, Restart_Vars, 2, MPI_INT, MPI_STATUS_IGNORE);
+    MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
 
   /*--- Broadcast the number of variables to all procs and store clearly. ---*/
 
-  SU2_MPI::Bcast(Restart_Vars, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 
   /*--- Read the variable names from the file. Note that we are adopting a
    fixed length of 33 for the string length to match with CGNS. This is
@@ -1972,7 +1973,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
   if (rank == MASTER_NODE) {
-    disp = 2*sizeof(int);
+    disp = nRestart_Vars*sizeof(int);
     MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
                      MPI_CHAR, MPI_STATUS_IGNORE);
   }
@@ -2006,10 +2007,10 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   etype = MPI_DOUBLE;
 
-  /*--- We need to ignore the 2 ints describing the nVar_Restart and nPoints,
+  /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
    along with the string names of the variables. ---*/
 
-  disp = 2*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
+  disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
 
   /*--- Define a derived datatype for this rank's set of non-contiguous data
    that will be placed in the restart. Here, we are collecting each one of the
@@ -2053,6 +2054,283 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   delete [] displace;
   
 #endif
+  
+}
+
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename) {
+
+  su2double AoA_ = config->GetAoA();
+  su2double AoS_ = config->GetAoS();
+  su2double BCThrust_ = config->GetInitial_BCThrust();
+  su2double dCD_dCL_ = config->GetdCD_dCL();
+  su2double dCD_dCM_ = config->GetdCD_dCM();
+  string::size_type position;
+  unsigned long ExtIter_ = 0;
+  ifstream restart_file;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (config->GetRead_Binary_Restart()) {
+
+    char fname[100];
+    strcpy(fname, val_filename.c_str());
+    int nVar_Buf = 4;
+    int var_buf[4];
+    int Restart_Iter = 0;
+    su2double Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+
+#ifndef HAVE_MPI
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- First, read the number of variables and points. ---*/
+
+    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+
+    /*--- Compute (negative) displacements and grab the metadata. ---*/
+
+    fseek(fhw,-(sizeof(int) + 5*sizeof(su2double)), SEEK_END);
+
+    /*--- Read the external iteration. ---*/
+
+    fread(&Restart_Iter, 1, sizeof(int), fhw);
+
+    /*--- Read the metadata. ---*/
+
+    fread(Restart_Meta, 5, sizeof(su2double), fhw);
+
+    /*--- Close the file. ---*/
+
+    fclose(fhw);
+
+#else
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    MPI_Offset disp;
+    int rank = MASTER_NODE;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+
+    if (rank == MASTER_NODE)
+      MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Access the metadata. ---*/
+
+    if (rank == MASTER_NODE) {
+
+      /*--- External iteration. ---*/
+      disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
+              var_buf[0]*var_buf[1]*sizeof(su2double));
+      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+      /*--- Additional doubles for AoA, AoS, etc. ---*/
+
+      disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
+              var_buf[0]*var_buf[1]*sizeof(su2double) + 1*sizeof(int));
+      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+    }
+
+    /*--- Communicate metadata. ---*/
+
+    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- All ranks close the file after writing. ---*/
+
+    MPI_File_close(&fhw);
+
+#endif
+
+    /*--- Store intermediate vals from file I/O in correct variables. ---*/
+
+    ExtIter_  = Restart_Iter;
+    AoA_      = Restart_Meta[0];
+    AoS_      = Restart_Meta[1];
+    BCThrust_ = Restart_Meta[2];
+    dCD_dCL_  = Restart_Meta[3];
+
+  } else {
+
+    /*--- Open the restart file, throw an error if this fails. ---*/
+
+    restart_file.open(val_filename.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE) {
+        cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
+        cout << " Computation will continue without updating metadata parameters." << endl;
+      }
+    } else {
+
+      unsigned long iPoint_Global = 0;
+      string text_line;
+
+      /*--- The first line is the header (General description) ---*/
+
+      getline (restart_file, text_line);
+
+      /*--- Space for the solution ---*/
+
+      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+        getline (restart_file, text_line);
+
+      }
+
+      /*--- Space for extra info (if any) ---*/
+
+      while (getline (restart_file, text_line)) {
+
+        /*--- External iteration ---*/
+
+        position = text_line.find ("EXT_ITER=",0);
+        if (position != string::npos) {
+          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        }
+
+        if (adjoint) {
+
+          if (config->GetEval_dCD_dCX() == true) {
+
+            /*--- dCD_dCL coefficient ---*/
+
+            position = text_line.find ("DCD_DCL_VALUE=",0);
+            if (position != string::npos) {
+              text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+            }
+
+            /*--- dCD_dCM coefficient ---*/
+
+            position = text_line.find ("DCD_DCM_VALUE=",0);
+            if (position != string::npos) {
+              text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+            }
+
+          }
+
+        } else {
+
+          /*--- Angle of attack ---*/
+
+          position = text_line.find ("AOA=",0);
+          if (position != string::npos) {
+            text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+          }
+
+          /*--- Sideslip angle ---*/
+
+          position = text_line.find ("SIDESLIP_ANGLE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+          }
+
+          /*--- BCThrust angle ---*/
+
+          position = text_line.find ("INITIAL_BCTHRUST=",0);
+          if (position != string::npos) {
+            text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+          }
+
+        }
+
+        /*--- Close the restart meta file. ---*/
+
+        restart_file.close();
+
+      }
+    }
+  }
+
+  /*--- Load the metadata. ---*/
+
+  if (adjoint) {
+
+    if (config->GetEval_dCD_dCX() == true) {
+
+      /*--- dCD_dCL coefficient ---*/
+
+      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+      config->SetdCD_dCL(dCD_dCL_);
+
+      /*--- dCD_dCM coefficient ---*/
+
+      if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
+      config->SetdCD_dCM(dCD_dCM_);
+
+    }
+
+  } else {
+
+    /*--- Angle of attack ---*/
+
+    if (config->GetDiscard_InFiles() == false) {
+      if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+        cout.precision(6);
+        cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+        cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+      }
+      config->SetAoA(AoA_ + config->GetAoA_Offset());
+    }
+    else {
+      if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+    }
+
+    /*--- Sideslip angle ---*/
+
+    if (config->GetDiscard_InFiles() == false) {
+      if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+        cout.precision(6);
+        cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+        cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+      }
+      config->SetAoS(AoS_ + config->GetAoS_Offset());
+    }
+    else {
+      if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+    }
+
+    /*--- BCThrust angle ---*/
+
+    if (config->GetDiscard_InFiles() == false) {
+      if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+      config->SetInitial_BCThrust(BCThrust_);
+    }
+    else {
+      if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+    }
+    
+  }
+  
+  /*--- External iteration ---*/
+  
+  if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+    config->SetExtIter_OffSet(ExtIter_);
   
 }
 
@@ -2162,7 +2440,8 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     char fname[100];
     strcpy(fname, filename.c_str());
-    int var_buf[2];
+    int nVar_Buf = 4;
+    int var_buf[4];
 
 #ifndef HAVE_MPI
 
@@ -2173,7 +2452,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
     /*--- First, read the number of variables and points. ---*/
 
-    fread(var_buf, sizeof(int), 2, fhw);
+    fread(var_buf, sizeof(int), nVar_Buf, fhw);
 
     /*--- Close the file. ---*/
 
@@ -2197,12 +2476,12 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
      variable string names here. Only the master rank reads the header. ---*/
 
     if (rank == MASTER_NODE) {
-      MPI_File_read(fhw, var_buf, 2, MPI_INT, MPI_STATUS_IGNORE);
+      MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
     }
 
     /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
 
-    SU2_MPI::Bcast(var_buf, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
     
     /*--- All ranks close the file after writing. ---*/
     
