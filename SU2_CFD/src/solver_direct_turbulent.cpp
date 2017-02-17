@@ -2569,7 +2569,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
 }
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CTurbSolver() {
-	unsigned short iVar, iDim, nLineLets;
+  unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint, index;
   su2double dull_val;
   ifstream restart_file;
@@ -2718,9 +2718,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   su2double VelMag = 0;
   for (iDim = 0; iDim < nDim; iDim++)
-		VelMag += VelInf[iDim]*VelInf[iDim];
-	
-	VelMag = sqrt(VelMag);
+    VelMag += VelInf[iDim]*VelInf[iDim];
+  
+  VelMag = sqrt(VelMag);
   
   kine_Inf  = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
   omega_Inf = rhoInf*kine_Inf/(muLamInf*viscRatio);

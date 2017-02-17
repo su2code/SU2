@@ -247,7 +247,6 @@ def main():
     test_list.append(turb_naca0012_sst_restart_mg)
 
 
-
     #############################
     ### Incompressible Euler  ###
     #############################
