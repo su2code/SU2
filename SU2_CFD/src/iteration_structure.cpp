@@ -454,16 +454,16 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
-	
+  
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
   unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
 
   
   /*--- Set the initial condition for FSI problems with subiterations ---*/
   /*--- This must be done only in the first subiteration ---*/
-	if( fsi  && ( FSIIter == 0 ) ){
-		solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
-	}
+  if( fsi  && ( FSIIter == 0 ) ){
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+  }
   
   /*--- Apply a Wind Gust ---*/
   
@@ -481,13 +481,6 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   
   if(config_container[val_iZone]->GetBoolTurboPerf())
     SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
-
-
-
-	
-
-
-
 }
 
 void CMeanFlowIteration::Iterate(COutput *output,
@@ -500,14 +493,12 @@ void CMeanFlowIteration::Iterate(COutput *output,
                                  CVolumetricMovement **grid_movement,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone) {
+  unsigned long IntIter, ExtIter;
   
-
-	unsigned long IntIter, ExtIter;
-	
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
   ExtIter = config_container[val_iZone]->GetExtIter();
-	
+  
   /* --- Setting up iteration values depending on if this is a
    steady or an unsteady simulaiton */
   
@@ -522,7 +513,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
       config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
       
     case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
-			config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+      config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
       
     case RANS: case DISC_ADJ_RANS:
       config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;
@@ -543,8 +534,8 @@ void CMeanFlowIteration::Iterate(COutput *output,
     config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TURB_SYS, ExtIter);
     integration_container[val_iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                      config_container, RUNTIME_TURB_SYS, IntIter, val_iZone);
-		
-		/*--- Solve transition model ---*/
+    
+    /*--- Solve transition model ---*/
     
     if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {
       config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_TRANS_SYS, ExtIter);
@@ -575,9 +566,6 @@ void CMeanFlowIteration::Iterate(COutput *output,
   /*--- Write the convergence history (only screen output) ---*/
     
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-	
-	
-	
 }
 
 void CMeanFlowIteration::Update(COutput *output,

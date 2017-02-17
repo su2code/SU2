@@ -75,19 +75,19 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
 	/*-- Since the restart takes care of this I dont think is required, but we should check after the new restart routines are added ---*/
   
   if ((restart && (Iteration == config[iZone]->GetnStartUpIter())) || startup_multigrid)
-	{
-		for (iMGLevel = 0; iMGLevel < config[iZone]->GetnMGLevels(); iMGLevel++) {
-
-			SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMGLevel][SolContainer_Position],
-														 solver_container[iZone][iMGLevel+1][SolContainer_Position],
-														 geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-			
-			SetRestricted_Solution(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-			
-			SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-			
-		}
-	}
+  {
+    for (iMGLevel = 0; iMGLevel < config[iZone]->GetnMGLevels(); iMGLevel++) {
+      
+      SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMGLevel][SolContainer_Position],
+                             solver_container[iZone][iMGLevel+1][SolContainer_Position],
+                             geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+      
+      SetRestricted_Solution(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+      
+      SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iMGLevel][SolContainer_Position], solver_container[iZone][iMGLevel+1][SolContainer_Position], geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+      
+    }
+  }
 	
   /*--- Full multigrid strategy and start up with fine grid only works with the direct problem ---*/
 
@@ -102,8 +102,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Set the current finest grid (full multigrid strategy) ---*/
   
   FinestMesh = config[iZone]->GetFinestMesh();
-	
-	/*--- Perform the Full Approximation Scheme multigrid ---*/
+
+  /*--- Perform the Full Approximation Scheme multigrid ---*/
   
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
@@ -124,7 +124,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   /*--- Convergence strategy ---*/
   
   Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
-	
 }
 
 void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
