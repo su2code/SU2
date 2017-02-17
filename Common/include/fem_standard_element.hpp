@@ -239,6 +239,7 @@ protected:
   * \param[out] nDOFs            - Number of DOFs of the triangle.
   * \param[out] rDOFs            - r-coordinates of the DOFs of the triangle.
   * \param[out] sDOFs            - s-coordinates of the DOFs of the triangle.
+  * \param[out] matVandermondeInv- Values of inverse matrix of Vandermonde matrix
   * \param[out] lagBasisPoints   - Values of the Lagrangian interpolation
                                    functions in the given points.
   * \param[out] drLagBasisPoints - Values of the r-derivatives of the Lagrangian
@@ -252,6 +253,7 @@ protected:
                                                      unsigned short          &nDOFs,
                                                      vector<su2double>       &rDOFs,
                                                      vector<su2double>       &sDOFs,
+                                                     vector<su2double>       &matVandermondeInv,
                                                      vector<su2double>       &lagBasisPoints,
                                                      vector<su2double>       &drLagBasisPoints,
                                                      vector<su2double>       &dsLagBasisPoints);
@@ -796,6 +798,9 @@ private:
   vector<su2double> dsLagBasisIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the integration points. */
   vector<su2double> dtLagBasisIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the integration points. */
 
+  vector<su2double> matVandermondeInv;    /*!< \brief Inverse matrix of Vandermonde matrix in the solution DOFs for this standard element.
+                                                      This data is needed for the computation of shock sensing. */
+
   vector<su2double> matBasisIntegration;  /*!< \brief Matrix of lagBasisIntegration, drLagBasisIntegration, dsLagBasisIntegration
                                                       and dtLagBasisIntegration combined for efficiency when using BLAS routines. */
   vector<su2double> matDerBasisIntTrans;  /*!< \brief Matrix of the transpose of the derivative part of matBasisIntegration. It is
@@ -1111,6 +1116,7 @@ private:
   void CreateBasisFunctionsAndMatrixDerivatives(const vector<su2double> &rLoc,
                                                 const vector<su2double> &sLoc,
                                                 const vector<su2double> &tLoc,
+                                                      vector<su2double> &matVandermondeInv,
                                                       vector<su2double> &lagBasis,
                                                       vector<su2double> &matDerBasis);
   /*!
