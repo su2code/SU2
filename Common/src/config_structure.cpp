@@ -443,6 +443,7 @@ void CConfig::SetPointersNull(void) {
   default_eng_val       = NULL;
   default_cfl_adapt     = NULL;
   default_ad_coeff_flow = NULL;
+  default_mixedout_coeff = NULL;
   default_ad_coeff_adj  = NULL;
   default_obj_coeff     = NULL;
   default_geo_loc       = NULL;
@@ -510,6 +511,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_eng_val       = new su2double[5];
   default_cfl_adapt     = new su2double[4];
   default_ad_coeff_flow = new su2double[3];
+  default_mixedout_coeff = new su2double[5];
   default_ad_coeff_adj  = new su2double[3];
   default_obj_coeff     = new su2double[5];
   default_geo_loc       = new su2double[2];
@@ -798,6 +800,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PERFORMANCE_AVERAGE_PROCESS_KIND \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries for performance computation.
       \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("PERFORMANCE_AVERAGE_PROCESS_KIND", Kind_PerformanceAverageProcess, AverageProcess_Map, AREA);
+  default_mixedout_coeff[0] = 0.05; default_mixedout_coeff[1] = 0.2; default_mixedout_coeff[2] = 1.0E-05;
+  default_mixedout_coeff[3] = 10.0; default_mixedout_coeff[4] = 1000.0;
+  /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is the expansion factor to initialize the braketing algorithm,
+   * the 2nd coeffic is the expansion factor for the braketing algorithm, 3rd coefficient is the tolerance
+   * for the bisection method, 4th coefficient is the maximum number of iteration for the bracketing algorithm, and
+   * the 5th coefficient is the maximum number of iteration for the bisection algorithm*/
+  addDoubleArrayOption("MIXEDOUT_COEFF", 5, Mixedout_Coeff, default_mixedout_coeff);
+  /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
+  addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
@@ -5628,6 +5639,7 @@ CConfig::~CConfig(void) {
   if (default_eng_val       != NULL) delete [] default_eng_val;
   if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
   if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
+  if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
   if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
   if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
   if (default_geo_loc       != NULL) delete [] default_geo_loc;

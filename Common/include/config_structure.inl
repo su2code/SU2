@@ -931,6 +931,10 @@ inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_Averag
 
 inline unsigned short CConfig::GetKind_PerformanceAverageProcess(void) { return Kind_PerformanceAverageProcess; }
 
+inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
+
+inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
+
 inline unsigned short CConfig::GetKind_MixingPlaneInterface(void) { return Kind_MixingPlaneInterface;}
 
 inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }

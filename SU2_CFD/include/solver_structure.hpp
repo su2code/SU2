@@ -3274,14 +3274,24 @@ public:
    */
   virtual void SetFreeStream_Solution(CConfig *config);
 
-/*!
-	 * \brief virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the average is evaluated.
-	 */
-	virtual void SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  /*!
+   * \brief virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the average is evaluated.
+   */
+  virtual void PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+
+  /*!
+   * \brief virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the average is evaluated.
+   */
+  virtual void SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief virtual member.
@@ -5649,6 +5659,16 @@ public:
    */
   void SetFreeStream_Solution(CConfig *config);
 
+
+  /*!
+   * \brief It computes average quantities along the span for turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  void PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5675,7 +5695,7 @@ public:
      * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
 	 * \param[in] density_miz - value of the mixed-out avaraged density.
 	 */
-	void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
+	void MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
 
 	/*!
 	 * \brief it finds the root of an implicit equation that relates pressure and density.

@@ -250,7 +250,7 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long ExtIter);
+  virtual bool Monitor(unsigned long ExtIter);
 
   /*!
    * \brief Output the solution in solution file.
@@ -642,6 +642,12 @@ public:
    * \brief Set all the turbo geometrical quantities.
    */
   void Preprocessing(void);
+
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
+
 
 
 };
