@@ -202,21 +202,17 @@ int main() {
   geometry->SetVertex(config);
   geometry->SetCoord_CG();
 
-  unsigned short nDim = 2;
-
   //---------------------------------------------------------------------------
   // Tests
   //---------------------------------------------------------------------------
 
   geometry->SetResolutionTensor();
 
-  unsigned short iPoint;
-
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    bool isBoundary = not(geometry->node[iPoint]->GetBoundary());
-    if(isBoundary) continue;
-
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+  unsigned short nElem = geometry->GetnElem();
+  unsigned short iElem;
+  for (iElem = 0; iElem<nElem; iElem++) {
+    CPrimalGrid* elem = geometry->elem[iElem];
+    vector<vector<su2double> > Mij = elem->GetResolutionTensor();
 
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct
@@ -229,15 +225,11 @@ int main() {
     if (not(entries_correct)) {
       std::cout << "ERROR: The resolution tensor for a quadrilateral was not correct."
           << std::endl;
-      std::cout << "The elements of the array for the cell #:" << iPoint;
-      std::cout << "were incorrect." << std::endl;
-      std::cout << "Array elements: [[";
-      std::cout << Mij[0][0] << "," << Mij[0][1] << "],[";
+      std::cout << "The elements of the array were incorrect." << std::endl;
+      std::cout << "Array elements: [[" << Mij[0][0] << "," << Mij[0][1] << "],[";
       std::cout << Mij[1][0] << "," << Mij[1][1] << "]]" << std::endl;
       return_flag = 1;
-      break;
     }
-    if (not(entries_correct)) break;
   }
 
   //---------------------------------------------------------------------------

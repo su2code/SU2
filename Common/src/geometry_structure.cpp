@@ -34,9 +34,6 @@
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-#include <iostream> // XXX: Take this out after debugging
-#include <cmath> // std::abs
-
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
@@ -1309,97 +1306,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   delete[] Buffer_Send_nVertex;
   delete[] Buffer_Receive_nVertex;
   
-}
-
-void CGeometry::GramSchmidt(std::vector<std::vector<su2double> > &w,
-                              std::vector<std::vector<su2double> > &v) {
-  unsigned short iDim, jDim;
-  const unsigned short nDim = w.size();
-
-  // Set the first basis vector to the first input vector
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    v[0][iDim] = w[0][iDim];
-  }
-
-  if (nDim > 1) {
-    // Compute the next orthogonal vector
-    for (iDim = 0; iDim < nDim; ++iDim) {
-      v[1][iDim] = w[1][iDim] -
-          inline_dot_prod(w[1],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim];
-    }
-  }
-
-  if (nDim > 2) {
-    // Compute the third orthogonal vector
-    for (iDim = 0; iDim < nDim; ++iDim) {
-      v[2][iDim] = w[2][iDim] -
-          inline_dot_prod(w[2],v[0])/inline_dot_prod(v[0],v[0])*v[0][iDim] -
-          inline_dot_prod(w[2],v[1])/inline_dot_prod(v[1],v[1])*v[1][iDim];
-    }
-  }
-
-  // Normalize results of the Gram-Schmidt
-  su2double mag;
-  for (iDim = 0; iDim < nDim; ++iDim) {
-    mag = inline_magnitude(v[iDim]);
-    for (jDim = 0; jDim < nDim; ++jDim) {
-      v[iDim][jDim] /= mag;
-    }
-  }
-}
-
-void CGeometry::SetResolutionTensor(void) {
-  unsigned short iDim, jDim, kDim, lDim;
-  unsigned short iFace;
-  unsigned long jGlobalIndex;
-  su2double* coord_max = new su2double[nDim];
-  su2double* coord_min = new su2double[nDim];
-  su2double* jCoord;
-
-  //  Internal variables
-  unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
-  unsigned short iMarker;
-
-  for (iPoint=0; iPoint<nPoint; iPoint++) {
-    // Initialize the maximum and minimum in each direction as the CV center
-    for (iDim = 0; iDim < nDim; iDim++) {
-      coord_max[iDim] = node[iPoint]->GetCoord()[iDim];
-      coord_min[iDim] = node[iPoint]->GetCoord()[iDim];
-    }
-    std::cout << "Point #" << iPoint << std::endl;
-    std::cout << "Center: ";
-    std::cout << coord_min[0] << ", " << coord_min[1] << std::endl;
-    std::cout << "Points:" << std::endl;
-    // Find the maximum and minimum x,y,z values:
-    for (jPoint = 0; jPoint<node[iPoint]->GetnPoint(); jPoint++) {
-      jGlobalIndex = node[iPoint]->GetPoint(jPoint);
-      jCoord = node[jGlobalIndex]->GetCoord();
-      std::cout << jCoord[0] << ", " << jCoord[1] << std::endl;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        if (jCoord[iDim] > coord_max[iDim]) {
-          coord_max[iDim] = jCoord[iDim];
-        } else if (jCoord[iDim] < coord_min[iDim]) {
-          coord_min[iDim] = jCoord[iDim];
-        }
-      }
-    }
-    std::cout << "Max and min:" << std::endl;
-    std::cout << coord_max[0] << ", " << coord_max[1] << std::endl;
-    std::cout << coord_min[0] << ", " << coord_min[1] << std::endl;
-    std::cout << "Center: ";
-    std::cout << node[iPoint]->GetCoord()[0] << ", ";
-    std::cout << node[iPoint]->GetCoord()[1] << std::endl;
-
-    // Set the elements of the resolution tensor
-    for (iDim = 0; iDim < nDim; iDim++) {
-      for (jDim = 0; jDim < nDim; jDim++) {
-        if (iDim == jDim) node[iPoint]->SetResolutionTensor(iDim,jDim,
-            0.5*(coord_max[iDim] - coord_min[iDim]));
-      }
-    }
-  }
-  delete[] coord_max;
-  delete[] coord_min;
 }
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
@@ -8579,6 +8485,14 @@ void CPhysicalGeometry::SetCoord_CG(void) {
     for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
     if (Coord != NULL) delete[] Coord;
+  }
+}
+
+void CPhysicalGeometry::SetResolutionTensor(void) {
+  unsigned long iElem;
+
+  for (iElem = 0; iElem<nElem; iElem++) {
+    elem[iElem]->SetResolutionTensor();
   }
 }
 
