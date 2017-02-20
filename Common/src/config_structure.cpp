@@ -33,6 +33,8 @@
 
 #include "../include/config_structure.hpp"
 
+#include "../include/ad_structure.hpp"
+
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
@@ -1701,6 +1703,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Automatic differentiation mode (reverse) */
   addBoolOption("AUTO_DIFF", AD_Mode, NO);
 
+  /* DESCRIPTION: Preaccumulation in the AD mode. */
+  addBoolOption("PREACC", AD_Preaccumulation, YES);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 
@@ -3035,6 +3040,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
 #if defined CODI_REVERSE_TYPE
   AD_Mode = YES;
+
+  AD::PreaccEnabled = AD_Preaccumulation;
+
 #else
   if (AD_Mode == YES) {
     cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
