@@ -2075,7 +2075,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording) {
   
   
-  if (kind_recording == FLOW_VARIABLES) {
+  if ((kind_recording == FLOW_VARIABLES) || (kind_recording == ALL_VARIABLES)) {
     
     /*--- Register flow and turbulent variables as input ---*/
     
@@ -2087,7 +2087,7 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
-  if (kind_recording == GEOMETRY_VARIABLES) {
+  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)) {
     
     /*--- Register node coordinates as input ---*/
     
