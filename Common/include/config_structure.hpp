@@ -829,6 +829,7 @@ private:
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
 	*default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
+	*default_rampRotFrame_coeff,/*!< \brief Default default ramp rotating frame coeff coefficients for the COption class. */
 	*default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -3754,6 +3755,18 @@ public:
    * \return Kind of mixing process.
    */
 	unsigned short GetKind_PerformanceAverageProcess(void);
+
+  /*!
+   * \brief Set the kind of mixing process for averaging quantities at the boundaries.
+   * \return Kind of mixing process.
+   */
+	void SetKind_AverageProcess(unsigned short new_AverageProcess);
+
+  /*!
+   * \brief Set the kind of mixing process for averaging quantities at the boundaries.
+   * \return Kind of mixing process.
+   */
+	void SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess);
 
   /*!
    * \brief Get coeff for Rotating Frame Ramp.
