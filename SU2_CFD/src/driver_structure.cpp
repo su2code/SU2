@@ -3684,6 +3684,10 @@ void CTurbomachineryDriver::Preprocessing(void){
 
 bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
+  double CFL;
+  double rot_z_ini, rot_z_final ,rot_z;
+  unsigned long rampFreq, finalRamp_Iter;
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
 
@@ -3697,16 +3701,17 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
 
   /*--- Check if there is any change in the runtime parameters ---*/
-
   CConfig *runtime = NULL;
   strcpy(runtime_file_name, "runtime.dat");
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetExtIter(ExtIter);
   delete runtime;
-  double CFL;
 
-  double rot_z_ini, rot_z_final ,rot_z;
-  unsigned long rampFreq, finalRamp_Iter;
+  /*--- Update average process runtime in each zone---*/
+//  for (iZone = 0; iZone < nZone; iZone++){
+//  	config_container[iZone]->SetKind_AverageProcess(config_container[ZONE_0]->GetKind_AverageProcess());
+//  	config_container[iZone]->SetKind_PerformanceAverageProcess(config_container[ZONE_0]->GetKind_PerformanceAverageProcess());
+//  }
 
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
@@ -3734,7 +3739,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   }
 
 
-  /*--- Evaluate the new CFL number (adaptive). ---*/
+  /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
   if (config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetRampRotatingFrame()) {
   	rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
   	finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
@@ -3747,9 +3752,6 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   			if(rot_z_final > 0.0){
   				rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
   				config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
-
-  				/*--- ROTATING_FRAME ramp update ---*/
-//  				iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
 
   				geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
   				geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);

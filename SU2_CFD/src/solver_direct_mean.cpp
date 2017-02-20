@@ -16359,7 +16359,6 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
   su2double toll = config->GetMixedout_Coeff(2);
   unsigned short maxiter = SU2_TYPE::Int(config->GetMixedout_Coeff(3));
 
-
   unsigned short iter = 0;
   su2double resdl = 0.0;
 

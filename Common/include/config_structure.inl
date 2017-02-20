@@ -935,6 +935,10 @@ inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_Averag
 
 inline unsigned short CConfig::GetKind_PerformanceAverageProcess(void) { return Kind_PerformanceAverageProcess; }
 
+inline void CConfig::SetKind_AverageProcess(unsigned short new_AverageProcess) {Kind_AverageProcess = new_AverageProcess; }
+
+inline void CConfig::SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess) {Kind_PerformanceAverageProcess = new_AverageProcess; }
+
 inline su2double CConfig::GetRampRotatingFrame_Coeff(unsigned short iCoeff) { return RampRotatingFrame_Coeff[iCoeff];}
 
 inline bool CConfig::GetRampRotatingFrame(void) { return RampRotatingFrame;}
