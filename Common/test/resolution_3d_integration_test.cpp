@@ -265,13 +265,11 @@ int main() {
 
   geometry->SetResolutionTensor();
 
-  unsigned short iPoint;
-
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    bool isBoundary = not(geometry->node[iPoint]->GetBoundary());
-    if(isBoundary) continue;
-
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+  unsigned short nElem = geometry->GetnElem();
+  unsigned short iElem;
+  for (iElem = 0; iElem<nElem; iElem++) {
+    CPrimalGrid* elem = geometry->elem[iElem];
+    vector<vector<su2double> > Mij = elem->GetResolutionTensor();
 
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct
@@ -299,7 +297,6 @@ int main() {
       return_flag = 1;
       break;
     }
-    if (not(entries_correct)) break;
   }
 
   //---------------------------------------------------------------------------
