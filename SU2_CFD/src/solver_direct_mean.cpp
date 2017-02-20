@@ -12067,6 +12067,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       /*--- Retrieve solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
 
+      /*--- Retrieve domain Secondary variables ---*/
+      S_domain = node[iPoint]->GetSecondary();
+
+
       /*--- Compute the internal state u_i ---*/
       Velocity2_i = 0;
       for (iDim = 0; iDim < nDim; iDim++)
@@ -12312,9 +12316,16 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       V_boundary[nDim+2] = Density_b;
       V_boundary[nDim+3] = Enthalpy_b;
 
+      S_boundary[0]= FluidModel->GetdPdrho_e();
+      S_boundary[1]= FluidModel->GetdPde_rho();
+
+
+
       /*--- Set various quantities in the solver class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_boundary);
+      conv_numerics->SetSecondary(S_domain, S_boundary);
+
 
       if (grid_movement)
       	conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
@@ -12354,8 +12365,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         visc_numerics->SetPrimitive(V_domain, V_boundary);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
 
-        /*--- Secondary variables ---*/
-        S_domain = node[iPoint]->GetSecondary();
 
         /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
