@@ -1544,48 +1544,304 @@ void CGeometry::SetResolutionGradient(void) {
 }
 
 void CGeometry::SetResolutionTensor(void) {
-  unsigned short iDim, jDim, kDim, lDim;
-  unsigned short iFace;
-  unsigned long jGlobalIndex;
-  su2double* coord_max = new su2double[nDim];
-  su2double* coord_min = new su2double[nDim];
-  su2double* jCoord;
+  unsigned short nPoints;
 
   //  Internal variables
-  unsigned long Point = 0, iPoint = 0, jPoint = 0;
+  unsigned long iPoint;
 
   for (iPoint=0; iPoint<nPoint; iPoint++) {
-    // Initialize the maximum and minimum in each direction as the CV center
-    for (iDim = 0; iDim < nDim; iDim++) {
-      coord_max[iDim] = node[iPoint]->GetCoord()[iDim];
-      coord_min[iDim] = node[iPoint]->GetCoord()[iDim];
+    nPoints = node[iPoint]->GetnPoint();
+    if (nDim == 2 and nPoints == 4) {
+      GetQuadResolutionTensor(iPoint);
+    } else if (nDim == 3 and nPoints == 6) {
+      GetHexResolutionTensor(iPoint);
+    } else {
+      GetArbitraryResolutionTensor(iPoint);
     }
+  }
 
-    // Find the maximum and minimum x,y,z values:
-    for (jPoint = 0; jPoint<node[iPoint]->GetnPoint(); jPoint++) {
-      jGlobalIndex = node[iPoint]->GetPoint(jPoint);
-      jCoord = node[jGlobalIndex]->GetCoord();
-      for (iDim = 0; iDim < nDim; iDim++) {
-        if (jCoord[iDim] > coord_max[iDim]) {
-          coord_max[iDim] = jCoord[iDim];
-        } else if (jCoord[iDim] < coord_min[iDim]) {
-          coord_min[iDim] = jCoord[iDim];
-        }
-      }
+  SetResolutionGradient();
+}
+
+// TODO: This function is incorrect for shear.
+void CGeometry::GetQuadResolutionTensor(unsigned long iPoint) {
+  unsigned long jPoint;
+  unsigned long iGlobalIndex, jGlobalIndex;
+  su2double *iCoord, *jCoord;
+  unsigned short iDim, jDim, kDim, lDim;
+  unsigned short iFace;
+  const unsigned short nFaces = 4;
+  unsigned short* paired_faces;
+  vector<vector<su2double> > eigvecs(nDim, vector<su2double>(nDim));
+  // paired_faces is used to sort the faces into matching pairs.
+  // The code will look for pairs of faces that are mostly opposite, then
+  // sort them so that the face indices in paired_faces[0] and paired_faces[1]
+  // match, then paired_faces[2] and paired_faces[3] match, etc.
+
+  paired_faces = new unsigned short [nFaces];
+
+  // Create cell center to face vectors
+  vector<vector<su2double> > center2face(nFaces, vector<su2double>(nDim));
+  iCoord = node[iPoint]->GetCoord();
+  for (jPoint = 0; jPoint < node[iPoint]->GetnPoint(); jPoint++) {
+    jGlobalIndex = node[iPoint]->GetPoint(jPoint);
+    jCoord = node[jGlobalIndex]->GetCoord();
+    for (iDim = 0; iDim < nDim; ++iDim)
+      // We have to use 1/2 here due to dual grid medians being the edges
+      center2face[jPoint][iDim] = 0.5*(jCoord[iDim] - iCoord[iDim]);
+  }
+
+  // First vector
+  paired_faces[0] = 0; // Choose vector 1 as our first vector to pair up
+  // Find vector mostly parallel to first
+  su2double min_dp = 1.0;
+  su2double current_dp;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    // NOTE: You cannot use nDim in the template functions for the array size;
+    // nDim is not const
+    current_dp = inline_dot_prod(center2face[0],center2face[iFace])
+              /(inline_magnitude(center2face[0])*
+                  inline_magnitude(center2face[iFace]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[1] = iFace;
     }
+  }
 
-    // Set the elements of the resolution tensor
-    for (iDim = 0; iDim < nDim; iDim++) {
-      for (jDim = 0; jDim < nDim; jDim++) {
-        if (iDim == jDim) node[iPoint]->SetResolutionTensor(iDim,jDim,
-            0.5*(coord_max[iDim] - coord_min[iDim]));
+  // Compute the distance between faces.
+  iGlobalIndex = node[iPoint]->GetPoint(0);
+  iCoord = node[iGlobalIndex]->GetCoord();
+  jGlobalIndex = node[iPoint]->GetPoint(paired_faces[1]);
+  jCoord = node[jGlobalIndex]->GetCoord();
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    eigvecs[0][iDim] = 0.5*(jCoord[iDim] - iCoord[iDim]);
+  }
+
+  // Second vector
+  paired_faces[2] = 0;
+  paired_faces[3] = 0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1]) {
+      if (paired_faces[2] == 0) {
+        paired_faces[2] = iFace;
+      } else {
+        paired_faces[3] = iFace;
       }
     }
   }
+
+  // Compute the distance between faces.
+  iGlobalIndex = node[iPoint]->GetPoint(paired_faces[2]);
+  iCoord = node[iGlobalIndex]->GetCoord();
+  jGlobalIndex = node[iPoint]->GetPoint(paired_faces[3]);
+  jCoord = node[jGlobalIndex]->GetCoord();
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    eigvecs[1][iDim] = 0.5*(jCoord[iDim] - iCoord[iDim]);
+  }
+
+  // Get magnitudes
+  su2double eigvalues[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvalues[iDim][jDim] = 0.0;
+    }
+    eigvalues[iDim][iDim] = inline_magnitude(eigvecs[iDim]);
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[iDim][jDim] /= eigvalues[iDim][iDim];
+    }
+  }
+  std::cout << "Eigenvectors:" << std::endl;
+  std::cout << "[[";
+  std::cout << eigvecs[0][0] << ", " << eigvecs[0][1] << "]" << std::endl;
+  std::cout << " [";
+  std::cout << eigvecs[1][0] << ", " << eigvecs[1][1] << "]]" << std::endl;
+
+  // Gram-Schmidt Process to make the vectors orthogonal
+  vector<vector<su2double> > temp_eigvecs = eigvecs;
+  GramSchmidt(temp_eigvecs, eigvecs);
+
+
+  std::cout << "Eigenvectors:" << std::endl;
+  std::cout << "[[";
+  std::cout << eigvecs[0][0] << ", " << eigvecs[0][1] << "]" << std::endl;
+  std::cout << " [";
+  std::cout << eigvecs[1][0] << ", " << eigvecs[1][1] << "]]" << std::endl;
+
+  // Perform matrix multiplication
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      su2double temp_value = 0;
+      for (kDim = 0; kDim < nDim; ++kDim) {
+        for (lDim = 0; lDim < nDim; ++lDim) {
+          temp_value += eigvecs[kDim][iDim]*
+              eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
+        }
+      }
+      node[iPoint]->SetResolutionTensor(iDim, jDim, temp_value);
+    }
+  }
+}
+
+void CGeometry::GetHexResolutionTensor(unsigned long iPoint) {
+  unsigned long jPoint;
+  unsigned long iGlobalIndex, jGlobalIndex;
+  su2double *iCoord, *jCoord;
+  unsigned short iDim, jDim, kDim, lDim;
+  unsigned short iFace;
+  const unsigned short nFaces = 6;
+  unsigned short* paired_faces;
+  // paired_faces is used to sort the faces into matching pairs.
+  // The code will look for pairs of faces that are mostly opposite, then
+  // sort them so that the face indices in paired_faces[0] and paired_faces[1]
+  // match, then paired_faces[2] and paired_faces[3] match, etc.
+
+  paired_faces = new unsigned short [nFaces];
+
+  vector<vector<su2double> > eigvecs(nDim, vector<su2double>(nDim));
+
+  // Create cell center to face vectors
+  vector<vector<su2double> > center2face(nFaces, vector<su2double>(nDim));
+  iCoord = node[iPoint]->GetCoord();
+  for (jPoint = 0; jPoint < node[iPoint]->GetnPoint(); jPoint++) {
+    jGlobalIndex = node[iPoint]->GetPoint(jPoint);
+    jCoord = node[jGlobalIndex]->GetCoord();
+    for (iDim = 0; iDim < nDim; ++iDim)
+      // We have to use 1/2 here due to dual grid medians being the edges
+      center2face[jPoint][iDim] = 0.5*(jCoord[iDim] - iCoord[iDim]);
+  }
+
+  //--------------------------------------------------------------------------
+  // First vector
+  paired_faces[0] = 0; // Choose vector 1 as our first vector to pair up
+  // Find vector mostly parallel to first
+  su2double min_dp = 1.0;
+  su2double current_dp;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    // NOTE: You cannot use nDim in the template functions for the array size;
+    // nDim is not const
+    current_dp = inline_dot_prod(center2face[0],center2face[iFace])
+        /(inline_magnitude(center2face[0])*inline_magnitude(center2face[iFace]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[1] = iFace;
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // Second vector
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1]) {
+      paired_faces[2] = iFace;
+      break;
+    }
+  }
+
+  min_dp = 1.0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    // NOTE: You cannot use nDim in the template functions for the array size;
+    // nDim is not const
+    if (iFace == paired_faces[1]) continue;
+    current_dp = inline_dot_prod(center2face[paired_faces[2]],center2face[iFace])
+        /(inline_magnitude(center2face[paired_faces[2]])
+            *inline_magnitude(center2face[1]));
+    if (current_dp < min_dp) {
+      min_dp = current_dp;
+      paired_faces[3] = iFace;
+    }
+  }
+
+  //--------------------------------------------------------------------------
+  // Third vector
+  paired_faces[4] = 0;
+  paired_faces[5] = 0;
+  for (iFace = 1; iFace < nFaces; ++iFace) {
+    if (iFace != paired_faces[1] &&
+        iFace != paired_faces[2] &&
+        iFace != paired_faces[3]) {
+      if (paired_faces[4] == 0) {
+        paired_faces[4] = iFace;
+      } else {
+        paired_faces[5] = iFace;
+      }
+    }
+  }
+
+  // Compute the distance between faces.
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    iGlobalIndex = node[iPoint]->GetPoint(paired_faces[iDim*2]);
+    iCoord = node[iGlobalIndex]->GetCoord();
+    jGlobalIndex = node[iPoint]->GetPoint(paired_faces[iDim*2+1]);
+    jCoord = node[jGlobalIndex]->GetCoord();
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvecs[iDim][jDim] = 0.5*(jCoord[jDim] - iCoord[jDim]);
+    }
+  }
+
+  // Get lengths of vectors
+  su2double eigvalues[nDim][nDim];
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      eigvalues[iDim][jDim] = 0.0;
+    }
+    eigvalues[iDim][iDim] = inline_magnitude(eigvecs[iDim]);
+  }
+
+  // Gram-Schmidt Process to make the vectors orthogonal
+  vector<vector<su2double> > temp_eigvecs = eigvecs;
+  GramSchmidt(temp_eigvecs, eigvecs);
+
+  // Perform matrix multiplication
+  for (iDim = 0; iDim < nDim; ++iDim) {
+    for (jDim = 0; jDim < nDim; ++jDim) {
+      su2double temp_value = 0;
+      for (kDim = 0; kDim < nDim; ++kDim) {
+        for (lDim = 0; lDim < nDim; ++lDim) {
+          temp_value += eigvecs[kDim][iDim]*
+              eigvalues[kDim][lDim]*eigvecs[lDim][jDim];
+        }
+      }
+      node[iPoint]->SetResolutionTensor(iDim, jDim, temp_value);
+    }
+  }
+}
+
+void CGeometry::GetArbitraryResolutionTensor(unsigned long iPoint) {
+  unsigned short iDim, jDim;
+  unsigned long jPoint;
+  unsigned long jGlobalIndex;
+  su2double* jCoord;
+  su2double* coord_max = new su2double[nDim];
+  su2double* coord_min = new su2double[nDim];
+
+  // Initialize the maximum and minimum in each direction as the CV center
+  for (iDim = 0; iDim < nDim; iDim++) {
+    coord_max[iDim] = node[iPoint]->GetCoord()[iDim];
+    coord_min[iDim] = node[iPoint]->GetCoord()[iDim];
+  }
+
+  // Find the maximum and minimum x,y,z values:
+  for (jPoint = 0; jPoint < node[iPoint]->GetnPoint(); jPoint++) {
+    jGlobalIndex = node[iPoint]->GetPoint(jPoint);
+    jCoord = node[jGlobalIndex]->GetCoord();
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (jCoord[iDim] > coord_max[iDim]) {
+        coord_max[iDim] = jCoord[iDim];
+      } else if (jCoord[iDim] < coord_min[iDim]) {
+        coord_min[iDim] = jCoord[iDim];
+      }
+    }
+  }
+
+  // Set the elements of the resolution tensor
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      if (iDim == jDim) node[iPoint]->SetResolutionTensor(iDim,jDim,
+          0.5*(coord_max[iDim] - coord_min[iDim]));
+    }
+  }
+
   delete[] coord_max;
   delete[] coord_min;
-
-  SetResolutionGradient();
 }
 
 void CGeometry::SmoothResolutionTensor(void) {

@@ -596,11 +596,6 @@ void CDriver::Geometrical_Preprocessing() {
     if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
     geometry_container[iZone][MESH_0]->SetCoord_CG();
 
-    /*--- Compute the resolution tensors ---*/
-
-    if (rank == MASTER_NODE) cout << "Computing cell resolution tensors." << endl;
-    geometry_container[iZone][MESH_0]->SetResolutionTensor();
-
     /*--- Create the control volume structures ---*/
 
     if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
@@ -612,6 +607,12 @@ void CDriver::Geometrical_Preprocessing() {
     if ((config_container[iZone]->GetVisualize_CV() >= 0) &&
         (config_container[iZone]->GetVisualize_CV() < (long)geometry_container[iZone][MESH_0]->GetnPointDomain()))
       geometry_container[iZone][MESH_0]->VisualizeControlVolume(config_container[iZone], UPDATE);
+
+    /*--- Compute the resolution tensors ---*/
+
+    if (rank == MASTER_NODE) cout << "Computing cell resolution tensors." << endl;
+    geometry_container[iZone][MESH_0]->SetResolutionTensor();
+    geometry_container[iZone][MESH_0]->SmoothResolutionTensor();
 
     /*--- Identify closest normal neighbor ---*/
 
