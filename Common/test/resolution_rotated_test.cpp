@@ -1,7 +1,7 @@
 /*!
- * \file resolution_tensor_test.cpp
+ * \file resolution_tensor_3D_test.cpp
  * \brief This test checks whether the resolution tensor is correctly set for a grid
- * of quadrilateral cells.
+ * of hexahedral cells.
  * \author C. Pederson
  * \version 4.3.0 "Cardinal"
  *
@@ -40,7 +40,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits> // used to find machine epsilon
-#include <cmath>  // std::abs, std::sin, and std::cos
+#include <cmath>  // std::abs
 
 #include "config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
@@ -48,114 +48,165 @@
 void WriteQuadMeshFile () {
   /*--- Local variables ---*/
     int KindElem, KindBound, nDim;
-    int iElem, iDim, jDim;
+    int iElem, iDim, jDim, kDim;
     int iNode, jNode, kNode;
     int iPoint;
     int num_Nodes;
-    su2double xSpacing, ySpacing;
+    double xSpacing, ySpacing, zSpacing;
+    double xFactor, yFactor, zFactor;
+    double xCoord[4] = {0, 1, 2, 3};
+    double yCoord[4] = {0, 1, 2, 3};
+    double zCoord[4] = {0, 1, 2, 3};
 
     std::ofstream Mesh_File;
 
     /*--- Set the VTK type for the interior elements and the boundary elements ---*/
-    nDim = 2;
-    KindElem  = 9; // Quadrilateral
-    KindBound = 3; // Line
+    nDim = 3;
+    KindElem  = 12; // Quadrilateral
+    KindBound = 9; // Quadrilateral
 
     /*--- Store the number of nodes in each direction ---*/
     iDim = 4;
     jDim = 4;
-
-    /*--- The grid spacing in each direction ---*/
-    xSpacing = std::sqrt(2);
-    ySpacing = std::sqrt(2);
-    const su2double angle = std::acos(-1)/4;
+    kDim = 4;
 
     /*--- Open .su2 grid file ---*/
-    Mesh_File.open("rotatedtestgrid.su2", ios::out);
+    Mesh_File.open("gradtestgrid.su2", ios::out);
     Mesh_File << fixed << setprecision(15);
 
     /*--- Write the dimension of the problem and the number of interior elements ---*/
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Problem dimension" << std::endl;
     Mesh_File << "%" << std::endl;
-    Mesh_File << "NDIME= 2" << std::endl; // TODO: Include nDim
+    Mesh_File << "NDIME= 3" << std::endl; // TODO: Include nDim
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Inner element connectivity" << std::endl;
     Mesh_File << "%" << std::endl;
-    Mesh_File << "NELEM= " <<  (iDim-1)*(jDim-1) << std::endl;
+    Mesh_File << "NELEM= " <<  (iDim-1)*(jDim-1)*(kDim-1) << std::endl;
 
     /*--- Write the element connectivity ---*/
     iElem = 0;
+    for (kNode = 0; kNode < kDim-1; kNode++) {
       for (jNode = 0; jNode < jDim-1; jNode++) {
         for (iNode = 0; iNode < iDim-1; iNode++) {
           Mesh_File << KindElem << "\t";
-          Mesh_File << iNode     + (jNode*jDim)     << "\t";
-          Mesh_File << (iNode+1) + (jNode*jDim)     << "\t";
-          // NOTE: Reverse ordering here is essential
-          Mesh_File << (iNode+1) + ((jNode+1)*jDim) << "\t";
-          Mesh_File << iNode     + ((jNode+1)*jDim) << "\t";
+          // Proper ordering here is essential.
+          // See VTK documentation for hexahedral cells for ordering.
+          Mesh_File << iNode     + (jNode*jDim)     + (kNode*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + (jNode*jDim)     + (kNode*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + ((jNode+1)*jDim) + (kNode*jDim*iDim) << "\t";
+          Mesh_File << iNode     + ((jNode+1)*jDim) + (kNode*jDim*iDim) << "\t";
+          Mesh_File << iNode     + (jNode*jDim)     + ((kNode+1)*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + (jNode*jDim)     + ((kNode+1)*jDim*iDim) << "\t";
+          Mesh_File << (iNode+1) + ((jNode+1)*jDim) + ((kNode+1)*jDim*iDim) << "\t";
+          Mesh_File << iNode     + ((jNode+1)*jDim) + ((kNode+1)*jDim*iDim) << "\t";
           Mesh_File << iElem << std::endl;
           iElem++;
         }
       }
+    }
 
 
     /*--- Compute the number of nodes and write the node coordinates ---*/
-    num_Nodes = iDim*jDim;
+    num_Nodes = iDim*jDim*kDim;
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Node coordinates" << std::endl;
     Mesh_File << "%" << std::endl;
     Mesh_File << "NPOIN= " << num_Nodes << std::endl;
     iPoint = 0;
+    for (kNode = 0; kNode < kDim; kNode++) {
       for (jNode = 0; jNode < jDim; jNode++) {
         for (iNode = 0; iNode < iDim; iNode++) {
-          Mesh_File << iNode*xSpacing*std::cos(angle)
-            - jNode*ySpacing*std::sin(angle) << "\t";
-          Mesh_File << iNode*xSpacing*std::sin(angle)
-            + jNode*ySpacing*std::cos(angle) << "\t";
+          Mesh_File << xCoord[iNode] << "\t";
+          Mesh_File << yCoord[jNode] << "\t";
+          Mesh_File << zCoord[kNode] << "\t";
           Mesh_File << iPoint << std::endl;
           iPoint++;
         }
       }
-
-
+    }
 
     /*--- Write the header information for the boundary markers ---*/
     Mesh_File << "%" << std::endl;
     Mesh_File << "% Boundary elements" << std::endl;
     Mesh_File << "%" << std::endl;
-    Mesh_File << "NMARK= 4" << std::endl;
+    Mesh_File << "NMARK= 6" << std::endl;
 
     /*--- Write the boundary information for each marker ---*/
-    Mesh_File << "MARKER_TAG= lower" << std::endl;
-    Mesh_File << "MARKER_ELEMS= "<< (iDim-1) << std::endl;
+    Mesh_File << "MARKER_TAG= bottom" << std::endl;
+    Mesh_File << "MARKER_ELEMS= "<< (iDim-1)*(jDim-1) << std::endl;
+    kNode = 0;
     for (iNode = 0; iNode < iDim-1; iNode++) {
-      Mesh_File << KindBound << "\t";
-      Mesh_File << iNode       << "\t";
-      Mesh_File << (iNode + 1) << std::endl;
+      for (jNode = 0; jNode < jDim-1; jNode++) {
+        Mesh_File << KindBound << "\t";
+        Mesh_File << iNode     + jNode*jDim     + kNode*(iDim*jDim) << "\t";
+        Mesh_File << (iNode+1) + jNode*jDim     + kNode*(iDim*jDim) << "\t";
+        Mesh_File << (iNode+1) + (jNode+1)*jDim + kNode*(iDim*jDim) << "\t";
+        Mesh_File << iNode     + (jNode+1)*jDim + kNode*(iDim*jDim) << std::endl;
+      }
     }
-    Mesh_File << "MARKER_TAG= right" << std::endl;
-    Mesh_File << "MARKER_ELEMS= "<< (jDim-1) << std::endl;
-    for (jNode = 0; jNode < jDim-1; jNode++) {
-      Mesh_File << KindBound << "\t";
-      Mesh_File << (jNode+1)*iDim - 1 << "\t";
-      Mesh_File << (jNode+2)*iDim - 1 << std::endl;
-    }
-    Mesh_File << "MARKER_TAG= upper" << std::endl;
-    Mesh_File << "MARKER_ELEMS= "<< (iDim-1) << std::endl;
-    for (iNode = jDim*(iDim-1); iNode < iDim*jDim-1; ++iNode) {
-      Mesh_File << KindBound << "\t";
-      Mesh_File << iNode       << "\t";
-      Mesh_File << (iNode + 1) << std::endl;
-    }
-    Mesh_File << "MARKER_TAG= left" << std::endl;
-    Mesh_File << "MARKER_ELEMS= "<< (jDim-1) << std::endl;
-    for (jNode = 0; jNode < jDim-1; ++jNode) {
-      Mesh_File << KindBound << "\t";
-      Mesh_File << (jNode  )*iDim << "\t";
-      Mesh_File << (jNode+1)*iDim << std::endl;
+    Mesh_File << "MARKER_TAG= top" << std::endl;
+    Mesh_File << "MARKER_ELEMS= " << (iDim-1)*(jDim-1) << std::endl;
+    kNode = kDim-1;
+    for (iNode = 0; iNode < iDim-1; iNode++) {
+      for (jNode = 0; jNode < jDim-1; jNode++) {
+        Mesh_File << KindBound << "\t";
+        Mesh_File << iNode     + jNode*jDim     + kNode*(iDim*jDim) << "\t";
+        Mesh_File << (iNode+1) + jNode*jDim     + kNode*(iDim*jDim) << "\t";
+        Mesh_File << (iNode+1) + (jNode+1)*jDim + kNode*(iDim*jDim) << "\t";
+        Mesh_File << iNode     + (jNode+1)*jDim + kNode*(iDim*jDim) << std::endl;
+      }
     }
 
+    Mesh_File << "MARKER_TAG= left" << std::endl;
+    Mesh_File << "MARKER_ELEMS= "<< (jDim-1)*(kDim-1) << std::endl;
+    iNode = 0;
+    for (jNode = 0; jNode < jDim-1; jNode++) {
+      for (kNode = 0; kNode < kDim-1; kNode++) {
+        Mesh_File << KindBound << "\t";
+        Mesh_File << iNode + jNode*jDim     + kNode*(iDim*jDim)     << "\t";
+        Mesh_File << iNode + jNode*jDim     + (kNode+1)*(iDim*jDim) << "\t";
+        Mesh_File << iNode + (jNode+1)*jDim + (kNode+1)*(iDim*jDim) << "\t";
+        Mesh_File << iNode + (jNode+1)*jDim + kNode*(iDim*jDim)     << std::endl;
+      }
+    }
+    Mesh_File << "MARKER_TAG= right" << std::endl;
+    Mesh_File << "MARKER_ELEMS= "<< (jDim-1)*(kDim-1) << std::endl;
+    iNode = iDim-1;
+    for (jNode = 0; jNode < jDim-1; jNode++) {
+      for (kNode = 0; kNode < kDim-1; kNode++) {
+        Mesh_File << KindBound << "\t";
+        Mesh_File << iNode + jNode*jDim     + kNode*(iDim*jDim)     << "\t";
+        Mesh_File << iNode + jNode*jDim     + (kNode+1)*(iDim*jDim) << "\t";
+        Mesh_File << iNode + (jNode+1)*jDim + (kNode+1)*(iDim*jDim) << "\t";
+        Mesh_File << iNode + (jNode+1)*jDim + kNode*(iDim*jDim)     << std::endl;
+      }
+    }
+
+    Mesh_File << "MARKER_TAG= front" << std::endl;
+    Mesh_File << "MARKER_ELEMS= "<< (iDim-1)*(kDim-1) << std::endl;
+    jNode = 0;
+    for (iNode = 0; iNode < iDim-1; iNode++) {
+      for (kNode = 0; kNode < kDim-1; kNode++) {
+        Mesh_File << KindBound << "\t";
+        Mesh_File << iNode     + jNode*jDim + kNode*(iDim*jDim)     << "\t";
+        Mesh_File << (iNode+1) + jNode*jDim + kNode*(iDim*jDim)     << "\t";
+        Mesh_File << (iNode+1) + jNode*jDim + (kNode+1)*(iDim*jDim) << "\t";
+        Mesh_File << iNode     + jNode*jDim + (kNode+1)*(iDim*jDim) << std::endl;
+      }
+    }
+    Mesh_File << "MARKER_TAG= back" << std::endl;
+    Mesh_File << "MARKER_ELEMS= "<< (iDim-1)*(kDim-1) << std::endl;
+    jNode = jDim-1;
+    for (iNode = 0; iNode < iDim-1; iNode++) {
+      for (kNode = 0; kNode < kDim-1; kNode++) {
+        Mesh_File << KindBound << "\t";
+        Mesh_File << iNode     + jNode*jDim + kNode*(iDim*jDim)     << "\t";
+        Mesh_File << (iNode+1) + jNode*jDim + kNode*(iDim*jDim)     << "\t";
+        Mesh_File << (iNode+1) + jNode*jDim + (kNode+1)*(iDim*jDim) << "\t";
+        Mesh_File << iNode     + jNode*jDim + (kNode+1)*(iDim*jDim) << std::endl;
+      }
+    }
     /*--- Close the mesh file and exit ---*/
     Mesh_File.close();
 }
@@ -163,10 +214,10 @@ void WriteQuadMeshFile () {
 void WriteCfgFile() {
   std::ofstream cfg_file;
 
-  cfg_file.open("rotatedtest.cfg", ios::out);
+  cfg_file.open("gradtest.cfg", ios::out);
   cfg_file << "PHYSICAL_PROBLEM= NAVIER_STOKES" << std::endl;
-  cfg_file << "MARKER_FAR= ( lower upper left right )"  << std::endl;
-  cfg_file << "MESH_FILENAME= rotatedtestgrid.su2" << std::endl;
+  cfg_file << "MARKER_FAR= ( top bottom back front left right )"  << std::endl;
+  cfg_file << "MESH_FILENAME= gradtestgrid.su2" << std::endl;
   cfg_file << "MESH_FORMAT= SU2" << std::endl;
 
   cfg_file.close();
@@ -189,7 +240,7 @@ int main() {
   WriteCfgFile();
 
   // The use of "geometry_aux" is necessary to mock a multigrid configuration
-  CConfig* config = new CConfig("rotatedtest.cfg", SU2_CFD, 0, 1, 2, VERB_NONE);
+  CConfig* config = new CConfig("gradtest.cfg", SU2_CFD, 0, 1, 2, VERB_NONE);
   CGeometry *geometry_aux = NULL;
   geometry_aux = new CPhysicalGeometry(config, 0, 1);
   CGeometry* geometry = new CGeometry();
@@ -209,43 +260,69 @@ int main() {
   geometry->SetControlVolume(config, ALLOCATE);
   geometry->SetBoundControlVolume(config, ALLOCATE);
 
-  unsigned short nDim = 2;
-
   //---------------------------------------------------------------------------
   // Tests
   //---------------------------------------------------------------------------
 
-  bool entries_correct = true;
+  /**
+   * Due to the way that the dual mesh is set up, the edge control volumes
+   * (the ones lying on the boundary) have a different size than the interior
+   * control volumes.  This means that the gradient in our test case is nonzero,
+   * even though the primal grid is set up to be uniform.
+   *
+   * If you calculate out what the derivative should be, it's either +.375 or
+   * -.375 for these interior nodes.
+   */
+
+  unsigned short iDim, nDim = 3;
+  unsigned short iPoint;
 
   geometry->SetResolutionTensor();
 
-  unsigned short iPoint;
+  bool entries_correct = true;
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     bool isBoundary = geometry->node[iPoint]->GetBoundary();
     if (isBoundary) continue;
 
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+    for (iDim = 0; iDim < nDim; iDim++) {
+      vector<vector<su2double> > dMsqdx = geometry->node[iPoint]->GetResolutionGradient(iDim);
 
-    // ---------------------------------------------------------------------------
-    // Check that the values of Mij are correct
-    if (std::abs(Mij[0][0] - std::sqrt(2)) > 1e-6 ) entries_correct = false;
-    if (std::abs(Mij[0][1]               ) > 1e-6 ) entries_correct = false;
-    if (std::abs(Mij[1][0]               ) > 1e-6 ) entries_correct = false;
-    if (std::abs(Mij[1][1] - std::sqrt(2)) > 1e-6 ) entries_correct = false;
+      // Entries of dMdx are indexed as d(M_ij)/dx = dMdx[i][j]
+      for (int i = 0; i<nDim; ++i) {
+        for (int j = 0; j<nDim; ++j) {
+          if (i==j and iDim==i) {
+            if(std::abs(std::abs(dMsqdx[i][j])-0.375) > 1e-6)
+              entries_correct = false;
+          } else if (dMsqdx[i][j] != 0) {
+            entries_correct = false;
+          }
+        }
+      }
 
-    if (not(entries_correct)) {
-      std::cout << "ERROR: The resolution tensor for a quadrilateral was not correct."
-          << std::endl;
-      std::cout << "The elements of the array for the cell #: " << iPoint;
-      std::cout << "were incorrect." << std::endl;
-      std::cout << "Array elements: [[";
-      std::cout << Mij[0][0] << "," << Mij[0][1] << "],[";
-      std::cout << Mij[1][0] << "," << Mij[1][1] << "]]" << std::endl;
-      return_flag = 1;
-      break;
+      if (not(entries_correct)) {
+        std::cout << "ERROR: The gradient of the resolution tensor was not correct."
+            << std::endl;
+        std::cout << "The elements of the array were incorrect for point: ";
+        std::cout << iPoint << std::endl;
+        std::cout << "And direction: " << iDim << std::endl;
+
+        std::cout << "Found:" << std::endl;
+        std::cout << "[[";
+        std::cout << dMsqdx[0][0] << "," << dMsqdx[0][1] << "," << dMsqdx[0][2];
+        std::cout << "]" << std::endl;
+        std::cout << " [";
+        std::cout << dMsqdx[1][0] << "," << dMsqdx[1][1] << "," << dMsqdx[1][2];
+        std::cout << "]" << std::endl;
+        std::cout << " [";
+        std::cout << dMsqdx[2][0] << "," << dMsqdx[2][1] << "," << dMsqdx[2][2];
+        std::cout << "]]" << std::endl;
+
+        return_flag = 1;
+//        break;
+      }
     }
-    if (not(entries_correct)) break;
+//    if (not(entries_correct)) break;
   }
 
   //---------------------------------------------------------------------------

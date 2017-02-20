@@ -105,9 +105,6 @@ protected:
 	nZone,								/*!< \brief Number of zones in the problem. */
 	nMarker;				/*!< \brief Number of different markers of the mesh. */
   unsigned long Max_GlobalPoint;  /*!< \brief Greater global point in the domain local structure. */
-  void GetQuadResolutionTensor(unsigned long iPoint);
-  void GetHexResolutionTensor(unsigned long iPoint);
-  void GetArbitraryResolutionTensor(unsigned long iPoint);
   void GramSchmidt(std::vector<std::vector<su2double> > &w,
                    std::vector<std::vector<su2double> > &v);
   su2double inline_dot_prod(vector<su2double> v, vector<su2double> w);

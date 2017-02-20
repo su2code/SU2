@@ -270,8 +270,8 @@ int main() {
    * control volumes.  This means that the gradient in our test case is nonzero,
    * even though the primal grid is set up to be uniform.
    *
-   * We want to ignore these boundary effects, and the algorithm should compute
-   * zero gradient everywhere.
+   * If you calculate out what the derivative should be, it's either +.375 or
+   * -.375 for these interior nodes.
    */
 
   unsigned short iDim, nDim = 3;
@@ -292,7 +292,7 @@ int main() {
       for (int i = 0; i<nDim; ++i) {
         for (int j = 0; j<nDim; ++j) {
           if (i==j and iDim==i) {
-            if(std::abs(std::abs(dMsqdx[i][j])) > 1e-6)
+            if(std::abs(std::abs(dMsqdx[i][j])-0.375) > 1e-6)
               entries_correct = false;
           } else if (dMsqdx[i][j] != 0) {
             entries_correct = false;
