@@ -251,17 +251,13 @@ int main() {
   delete geometry_aux;
 
   // Initialize the geometry
-  geometry->SetBoundaries(config);
+  geometry->SetPoint_Connectivity();
   geometry->SetPoint_Connectivity();
   geometry->SetElement_Connectivity();
-  geometry->SetBoundVolume();
   geometry->Check_IntElem_Orientation(config);
-  geometry->Check_BoundElem_Orientation(config);
   geometry->SetEdges();
   geometry->SetVertex(config);
   geometry->SetCoord_CG();
-  geometry->SetControlVolume(config, ALLOCATE);
-  geometry->SetBoundControlVolume(config, ALLOCATE);
 
   //---------------------------------------------------------------------------
   // Tests
@@ -272,8 +268,8 @@ int main() {
   unsigned short iPoint;
 
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    bool isBoundary = geometry->node[iPoint]->GetBoundary();
-    if (isBoundary) continue;
+    bool isBoundary = not(geometry->node[iPoint]->GetBoundary());
+    if(isBoundary) continue;
 
     vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
 

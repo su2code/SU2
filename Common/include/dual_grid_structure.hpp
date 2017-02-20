@@ -171,8 +171,7 @@ private:
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
-  su2double** ResolutionTensor;       /*!< \brief A rank-2 tensor representing separation distances across the CV */
-  su2double*** ResolutionTensorGradient; /*!< \brief A rank-3 tensor representing gradients in the resolution. */
+  su2double** ResolutionTensor;
 
 public:
 	
@@ -740,26 +739,10 @@ public:
 	void AddNormal(su2double *val_face_normal);
 
   /*!
-   * \brief Sets an element of the resolution tensor for the control volume.
-   *
-   * \param[in] iDim - The first array index of the entry to be set
-   * \param[in] jDim - The second array index of the entry to be set
-   * \param[in] tensor_value - The scalar value to be used for the entry
+   * \brief Sets the resolution tensor for the given control volume.
    */
 	void SetResolutionTensor(unsigned short iDim, unsigned short jDim,
 	                         su2double tensor_value);
-  /*!
-   * \brief Sets the gradient of the resolution tensor for the control volume.
-   *
-   * The format is dM_{jk}/dx_{i}
-   *
-   * \param[in] iDim - The direction for the gradient operator.
-   * \param[in] jDim - The first array index of the entry to be set.
-   * \param[in] kDim - The second array index of the entry to be set.
-   * \param[in] grad_value - The scalar value to be used for the entry.
-   */
-	void SetResolutionGradient(unsigned short iDim, unsigned short jDim,
-	                           unsigned short kDim, su2double grad_value);
 
   /*!
    * \brief Gets the resolution tensor for the given control volume
@@ -768,15 +751,6 @@ public:
    *         across the cell in the global coordinates.
    */
   vector<vector<su2double> > GetResolutionTensor(void);
-
-  /*!
-   * \brief Gets the resolution tensor for the given control volume
-   *
-   * \param[in] iDim - The direction in which to take the gradient
-   * \return A tensor representing the gradient of the separation distances
-   *         across the cell in the global coordinates.
-   */
-  vector<vector<su2double> > GetResolutionGradient(unsigned short iDim);
 };
 
 /*! 

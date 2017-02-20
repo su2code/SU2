@@ -314,16 +314,7 @@ public:
 	 */
 	unsigned long GetMax_GlobalPoint(void);
 
-	/*!
-	 * \brief Sets the resolution tensor for each control volume in the dual mesh.
-	 */
   void SetResolutionTensor(void);
-
-  /*!
-   * \brief Computes the gradients of the resolution tensor for each control
-   *        volume in the dual mesh.
-   */
-  void SetResolutionGradient(void);
 
 	/*! 
 	 * \brief A virtual function.
