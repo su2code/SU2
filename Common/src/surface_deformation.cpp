@@ -2111,11 +2111,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
   for (iGroup = 0; iGroup < nGroup; iGroup++){
     const unsigned long nPilotPoints = FFDBox->PilotPointsX[iGroup].size();
-    if (FFDBox->PilotGroupType[iGroup] == ABSOLUTE){
-      nParameter += nPilotPoints;
-    } else if (FFDBox->PilotGroupType[iGroup] == RELATIVE){
-      nParameter += (pow(nPilotPoints,2) - nPilotPoints)/2;
-    }
+    nParameter += nPilotPoints;
   }
 
   EigenMatrix SystemMatrix(nParameter, TotalControl);
@@ -2144,19 +2140,22 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     if (FFDBox->PilotGroupType[iGroup] == ABSOLUTE){
       FFDBox->GetAbsoluteGroupRHS(RhsX, iGroup, 0, config);
       FFDBox->GetAbsoluteGroupRHS(RhsY, iGroup, 1, config);
-      FFDBox->GetAbsoluteGroupRHS(RhsZ, iGroup, 2, config);
+      if (nDim == 3)
+        FFDBox->GetAbsoluteGroupRHS(RhsZ, iGroup, 2, config);
       FFDBox->GetAbsoluteGroupBlock(Block, iGroup);
     }
     if (FFDBox->PilotGroupType[iGroup] == RELATIVE){
       FFDBox->GetRelativeGroupRHS(RhsX, iGroup, 0, config);
       FFDBox->GetRelativeGroupRHS(RhsY, iGroup, 1, config);
-      FFDBox->GetRelativeGroupRHS(RhsZ, iGroup, 2, config);
+      if (nDim == 3)
+        FFDBox->GetRelativeGroupRHS(RhsZ, iGroup, 2, config);
       FFDBox->GetRelativeGroupBlock(Block, iGroup);
     }
 
     ParameterValuesX.block(displ, 0, RhsX.rows(),1) = RhsX;
     ParameterValuesY.block(displ, 0, RhsY.rows(),1) = RhsY;
-    ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
+    if (nDim == 3)
+      ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
 
     SystemMatrix.block(displ,0, Block.rows(), Block.cols()) = Block;
 
@@ -6564,22 +6563,22 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 }
 
 
-void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& Systemmatrix, unsigned short iGroup){
+void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup){
 
   EigenMatrix BlendingMatrix;
   EigenMatrix ProjectionMatrix;
-  EigenMatrix SystemMatrix;
   su2double Bijk = 0;
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
-  unsigned short iControl, jControl, kControl;
+  unsigned short iControl, jControl, kControl = 0;
   const unsigned short TotalControl = lControl*mControl*nControl;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
-  const unsigned long nParameters  = (pow(nPilotPoints,2) - nPilotPoints)/2;
+  const unsigned long nParameters  = nPilotPoints;
 
   unsigned long iPilotPoint = 0, jPilotPoint = 0, ii = 0;
 
+  SystemMatrix.resize(nPilotPoints, TotalControl);
   BlendingMatrix.resize(nPilotPoints, TotalControl);
   ProjectionMatrix.resize(nParameters, nPilotPoints);
 
@@ -6603,31 +6602,29 @@ void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& Systemmatrix, unsigned 
           Bijk = BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
                  BlendingFunction[1]->GetBasis(jControl,ParamCoord[1])*
                  BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
-          BlendingMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
+          SystemMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
         }
       }
     }
 
     /*--- Set projection matrix --- */
-
-    for (jPilotPoint = iPilotPoint + 1; jPilotPoint < nPilotPoints; jPilotPoint++){
-      ProjectionMatrix(ii, iPilotPoint) = 1.0;
-      ProjectionMatrix(ii, jPilotPoint) = -1.0;
-      ii++;
+    ProjectionMatrix(ii, iPilotPoint) = 1.0;
+    if (iPilotPoint != nPilotPoints-1){
+      ProjectionMatrix(ii, iPilotPoint+1) = -1.0;
+    } else {
+      ProjectionMatrix(ii, 0) = -1.0;
     }
+    ii++;
   }
 
   SystemMatrix = ProjectionMatrix*BlendingMatrix;
 
-  return SystemMatrix;
-
 }
 
-void CFreeFormDefBox::GetRelativeGroupRHS(Eigenvector& RHS, unsigned short iGroup, unsigned short iDim, CConfig *config){
+void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGroup, unsigned short iDim, CConfig *config){
 
-  EigenVector RHS;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
-  const unsigned long nParameters  = (pow(nPilotPoints,2) - nPilotPoints)/2;
+  const unsigned long nParameters = nPilotPoints;
   unsigned long iParameter = 0;
   unsigned short iDV = 0, iConstraint = 0;
   const unsigned short nConstraints = config->GetnFFD_ConstraintGroups();
@@ -6640,11 +6637,11 @@ void CFreeFormDefBox::GetRelativeGroupRHS(Eigenvector& RHS, unsigned short iGrou
   for (iDV = 0; iDV < config->GetnDV(); iDV ++){
     Ampl = config->GetDV_Value(iDV)*Scale;
     if (config->GetFFDTag(iDV) == PilotGroupNames[iGroup]){
-      if (nParameters > 1){
+      if (nParameters > 2){
         cout << "More than one parameter is currently not supported with group type RELATIVE." << endl;
         exit(EXIT_FAILURE);
       }
-      for (iParameter = 0; iParameter < nParameters; iParameter++){
+      for (iParameter = 0; iParameter < nParameters - 1; iParameter++){
         if (config->GetnDV_Value(iDV) == 1){
           RHS(iParameter) = config->GetParamDV(iDV, iDim+1)*Ampl;
         } else {
@@ -6661,24 +6658,21 @@ void CFreeFormDefBox::GetRelativeGroupRHS(Eigenvector& RHS, unsigned short iGrou
       RHS = EigenVector::Constant(nParameters, 0.0);
     }
   }
-
-  return RHS;
 }
 
-void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& Systemmatrix, unsigned short iGroup){
+void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup){
 
-  EigenMatrix BlendingMatrix;
   su2double Bijk = 0;
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
-  unsigned short iControl, jControl, kControl;
+  unsigned short iControl, jControl, kControl = 0;
   const unsigned short TotalControl = lControl*mControl*nControl;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
 
   unsigned long iPilotPoint = 0;
 
-  Systemmatrix.resize(nPilotPoints, TotalControl);
+  SystemMatrix.resize(nPilotPoints, TotalControl);
 
   /*--- Loop through all pilot points of the group --- */
 
@@ -6694,24 +6688,17 @@ void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& Systemmatrix, unsigned 
       for (jControl = 0; jControl < mControl; jControl++){
         for (kControl = 0; kControl < nControl; kControl++){
           Bijk = BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
-                 BlendingFunction[1]->GetBasis(jControl,ParamCoord[1])*
-                 BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
-          Systemmatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
+                 BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
+//                 BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
+          SystemMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
         }
       }
     }
   }
-
-  /*--- Note that the projection matrix is the identity matrix in this case, hence
-   * we can simply return the blending matrix itself. ---*/
-
-  return Systemmatrix;
-
 }
 
 void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGroup, unsigned short iDim, CConfig *config){
 
-  EigenVector RHS;
   const unsigned long nPilotPoints  = PilotPointsX[iGroup].size();
   const unsigned short nConstraints = config->GetnFFD_ConstraintGroups();
   unsigned long iPilotPoint = 0;
@@ -6741,9 +6728,6 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
       RHS = EigenVector::Constant(nPilotPoints, 0.0);
     }
   }
-
-  return RHS;
-
 }
 
 CFreeFormBlending::CFreeFormBlending(){}
