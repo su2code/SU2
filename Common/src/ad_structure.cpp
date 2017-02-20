@@ -48,6 +48,7 @@ namespace AD {
 
   bool Status = false;
   bool PreaccActive = false;
+  bool PreaccEnabled = true;
 
   void EndPreacc() {
 

@@ -453,6 +453,7 @@ private:
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
+  bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -6778,6 +6779,11 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+  /*!
+   * \brief Get if AD preaccumulation should be performed.
+   */
+  bool GetAD_Preaccumulation(void);
 };
 
 #include "config_structure.inl"

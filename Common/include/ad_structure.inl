@@ -55,6 +55,8 @@ namespace AD{
 
   extern bool PreaccActive;
 
+  extern bool PreaccEnabled;
+
   extern su2double::TapeType::Position StartPosition, EndPosition;
 
   extern std::vector<su2double::GradientData> localInputValues;
@@ -116,7 +118,7 @@ namespace AD{
   }
 
   inline void StartPreacc() {
-    if (globalTape.isActive()) {
+    if (globalTape.isActive() && PreaccEnabled) {
       StartPosition = globalTape.getPosition();
       PreaccActive = true;
     }
