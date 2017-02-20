@@ -3705,6 +3705,9 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   delete runtime;
   double CFL;
 
+  double rot_z_ini, rot_z_final ,rot_z;
+  unsigned long rampFreq, finalRamp_Iter;
+
   /*--- Update the convergence history file (serial and parallel computations). ---*/
 
   output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
@@ -3727,6 +3730,37 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   	}
   	else{
   		output->SetCFL_Number(solver_container, config_container, ZONE_0);
+  	}
+  }
+
+
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetRampRotatingFrame()) {
+  	rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
+  	finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
+		rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
+
+  	if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
+
+  		for (iZone = 0; iZone < nZone; iZone++) {
+  			rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
+  			if(rot_z_final > 0.0){
+  				rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
+  				config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+
+  				/*--- ROTATING_FRAME ramp update ---*/
+//  				iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
+
+  				geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
+  				geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
+  				geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
+  			}
+  		}
+
+  		for (iZone = 1; iZone < nZone; iZone++) {
+  			transfer_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+  		}
+
   	}
   }
 

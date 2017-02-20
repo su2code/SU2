@@ -842,8 +842,12 @@ private:
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
   bool turbMixingPlane;   /*!< \brief option for turbulent mixingplane */
-  su2double *Mixedout_Coeff; /*!< \brief option for turbulent mixingplane */
-  su2double AverageMachLimit; /*!< \brief option for turbulent mixingplane */
+  bool RampRotatingFrame;   /*!< \brief option for ramping up or down the Rotating Frame values */
+  su2double *Mixedout_Coeff; /*!< \brief coefficient for the  */
+  su2double *RampRotatingFrame_Coeff; /*!< \brief option for turbulent mixingplane */
+  su2double AverageMachLimit;       /*!< \brief option for turbulent mixingplane */
+  su2double *FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
+
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -3751,6 +3755,17 @@ public:
    */
 	unsigned short GetKind_PerformanceAverageProcess(void);
 
+  /*!
+   * \brief Get coeff for Rotating Frame Ramp.
+   * \return coeff Ramp Rotating Frame.
+   */
+	su2double GetRampRotatingFrame_Coeff(unsigned short iCoeff);
+
+  /*!
+   * \brief Get Rotating Frame Ramp option.
+   * \return Ramp Rotating Frame option.
+   */
+	bool GetRampRotatingFrame(void);
 
 	/*!
 	 * \brief Get mixedout coefficients.
@@ -4630,6 +4645,20 @@ public:
    */
   su2double GetRotation_Rate_Z(unsigned short val_iZone);
   
+  /*!
+   * \brief Get the angular velocity of the mesh about the z-axis.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \return Angular velocity of the mesh about the z-axis.
+   */
+  su2double GetFinalRotation_Rate_Z(unsigned short val_iZone);
+
+  /*!
+   * \brief Set the angular velocity of the mesh about the z-axis.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
+   */
+  su2double SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone);
+
   /*!
    * \brief Get the angular frequency of a mesh pitching about the x-axis.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).

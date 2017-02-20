@@ -727,6 +727,10 @@ inline su2double CConfig::GetRotation_Rate_Y(unsigned short val_iZone) { return 
 
 inline su2double CConfig::GetRotation_Rate_Z(unsigned short val_iZone) { return  Rotation_Rate_Z[val_iZone]; }
 
+inline su2double CConfig::GetFinalRotation_Rate_Z(unsigned short val_iZone) { return  FinalRotation_Rate_Z[val_iZone]; }
+
+inline su2double CConfig::SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone) { Rotation_Rate_Z[val_iZone] = newRotation_Rate_Z; }
+
 inline su2double CConfig::GetPitching_Omega_X(unsigned short val_iZone) { return  Pitching_Omega_X[val_iZone]; }
 
 inline su2double CConfig::GetPitching_Omega_Y(unsigned short val_iZone) { return  Pitching_Omega_Y[val_iZone]; }
@@ -930,6 +934,10 @@ inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
 inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_AverageProcess; }
 
 inline unsigned short CConfig::GetKind_PerformanceAverageProcess(void) { return Kind_PerformanceAverageProcess; }
+
+inline su2double CConfig::GetRampRotatingFrame_Coeff(unsigned short iCoeff) { return RampRotatingFrame_Coeff[iCoeff];}
+
+inline bool CConfig::GetRampRotatingFrame(void) { return RampRotatingFrame;}
 
 inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
 

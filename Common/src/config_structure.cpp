@@ -800,13 +800,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PERFORMANCE_AVERAGE_PROCESS_KIND \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries for performance computation.
       \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("PERFORMANCE_AVERAGE_PROCESS_KIND", Kind_PerformanceAverageProcess, AverageProcess_Map, AREA);
-  default_mixedout_coeff[0] = 0.05; default_mixedout_coeff[1] = 0.2; default_mixedout_coeff[2] = 1.0E-05;
-  default_mixedout_coeff[3] = 10.0; default_mixedout_coeff[4] = 1000.0;
-  /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is the expansion factor to initialize the braketing algorithm,
-   * the 2nd coeffic is the expansion factor for the braketing algorithm, 3rd coefficient is the tolerance
-   * for the bisection method, 4th coefficient is the maximum number of iteration for the bracketing algorithm, and
-   * the 5th coefficient is the maximum number of iteration for the bisection algorithm*/
-  addDoubleArrayOption("MIXEDOUT_COEFF", 5, Mixedout_Coeff, default_mixedout_coeff);
+  default_mixedout_coeff[0] = 1.0E-03; default_mixedout_coeff[1] = 1.0; default_mixedout_coeff[2] = 1.0E-05;
+  default_mixedout_coeff[3] = 15.0;
+  /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is the an expansion factor to estimate the derivative interval,
+   * the 2nd coeff is an under relaxation factor for the Newton method, 3rd coefficient is the tolerance
+   * for the Newton method, 4th coefficient is the maximum number of iteration for the Newton Method.*/
+  addDoubleArrayOption("MIXEDOUT_COEFF", 4, Mixedout_Coeff, default_mixedout_coeff);
+  /*!\brief RAMP_ROTATING_FRAME\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
+  addBoolOption("RAMP_ROTATING_FRAME", RampRotatingFrame, false);
+  default_mixedout_coeff[0] = 0; default_mixedout_coeff[1] = 1.0; default_mixedout_coeff[2] = 1000.0;
+      /*!\brief RAMP_ROTATING_FRAME_COEFF \n DESCRIPTION: the 1st coeff is the staring velocity,
+   * the 2nd coeff is the number of iterations for the update, 3rd is the number of iteration */
+  addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, RampRotatingFrame_Coeff, default_mixedout_coeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
   addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
@@ -2225,6 +2230,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Set number of TurboPerformance markers ---*/
   if(nMarker_Turbomachinery != 0){
   	nSpan_iZones = new unsigned short[nZone];
+  }
+
+  /*--- Set number of TurboPerformance markers ---*/
+  if(RampRotatingFrame){
+  	FinalRotation_Rate_Z = new su2double[nZone];
+  	for(iZone=0; iZone <nZone; iZone ++){
+  	 FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
+  	 Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
+  	}
   }
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
