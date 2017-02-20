@@ -97,7 +97,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
       /*--- Steadily rotating frame: set the grid velocities just once
        before the first iteration flow solver. ---*/
 
-      if (ExtIter == 0) {
+      if (ExtIter == 0 || (ExtIter%40 == 0 && config_container[val_iZone]->GetRampRotatingFrame())) {
 
         if (rank == MASTER_NODE) {
           cout << endl << " Setting rotating frame grid velocities";

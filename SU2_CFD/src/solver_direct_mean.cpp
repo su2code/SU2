@@ -16352,12 +16352,17 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
 
 
 	int rank = MASTER_NODE;
-	su2double x1,x2,xmid, dx, fx1, fx2, f, fmid, rtb, ftest;
-  su2double FACTOR = config->GetMixedout_Coeff(1);
-  su2double	toll   = config->GetMixedout_Coeff(2);
-  unsigned short count=0, j;
-  unsigned short NTRY  = SU2_TYPE::Int(config->GetMixedout_Coeff(3));
-	unsigned short ITMAX = SU2_TYPE::Int(config->GetMixedout_Coeff(4));
+	su2double x1,x2,xmid, dx, fx1, fx2, fmid, df;
+	unsigned short count=0, j;
+  su2double epsilon = config->GetMixedout_Coeff(0);
+  su2double relax_factor = config->GetMixedout_Coeff(1);
+  su2double toll = config->GetMixedout_Coeff(2);
+  unsigned short maxiter = SU2_TYPE::Int(config->GetMixedout_Coeff(3));
+
+
+  unsigned short iter = 0;
+  su2double resdl = 0.0;
+
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -16365,48 +16370,29 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
 
   pressure_mix = val_init_pressure;
 
-  x1 = (1.0 - config->GetMixedout_Coeff(0))*val_init_pressure;
-  x2 = (1.0 + config->GetMixedout_Coeff(0))*val_init_pressure;
+  /*--- Newton-Raphson's method with central difference formula ---*/
 
-  MixedOut_Root_Function(x1,val_Averaged_Flux,val_normal,fx1,density_mix);
-  MixedOut_Root_Function(x2,val_Averaged_Flux,val_normal,fx2,density_mix);
+  while ( iter <= maxiter ) {
+  	dx = 2*epsilon*(pressure_mix);
+    xmid = pressure_mix;
+    MixedOut_Root_Function(xmid + dx/2,val_Averaged_Flux,val_normal,fx2,density_mix);
+    MixedOut_Root_Function(xmid - dx/2,val_Averaged_Flux,val_normal,fx1,density_mix);
+    MixedOut_Root_Function(xmid,val_Averaged_Flux,val_normal,fmid,density_mix);
+    df = (fx2 - fx1) / dx;
+    dx = -fmid/df;
+    resdl = dx/val_init_pressure;
+    pressure_mix += relax_factor*(dx);
 
-  // zbrac algorithm NR
-
-  for (j=1; j<=NTRY; j++) {
-    if (fx1*fx2 > 0.0) {
-      if (fabs(fx1) < fabs(fx2)) {
-        x1 += FACTOR*(x1-x2);
-        MixedOut_Root_Function(x1,val_Averaged_Flux,val_normal,fx1,density_mix);
-
-      } else {
-        x2 += FACTOR*(x2-x1);
-        MixedOut_Root_Function(x2,val_Averaged_Flux,val_normal,fx2,density_mix);
-      }
+    iter += 1;
+    if ( abs(resdl) <= toll ) {
+      break;
     }
+
   }
 
-  f=fx1;
-  fmid=fx2;
-  if (f*fmid >= 0.0) {
-  	cout<< "Root must be bracketed for bisection algorithm for the mixedout average"<< endl;
-  	xmid = val_init_pressure;
-  	pressure_mix = xmid;
-  	MixedOut_Root_Function(xmid,val_Averaged_Flux,val_normal,fmid,density_mix);
-  }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
-  do{
-  	xmid=rtb+(dx *= 0.5);
-  	ftest = fmid;
-  	MixedOut_Root_Function(xmid,val_Averaged_Flux,val_normal,fmid,density_mix);
+  MixedOut_Root_Function(pressure_mix,val_Averaged_Flux,val_normal,fmid,density_mix);
 
-  	if (fmid <= 0.0) rtb=xmid;
-  	count++;
-  }while(abs((fmid - ftest)/ftest) > toll && count<ITMAX);
-  pressure_mix = xmid;
-  if (count==ITMAX) {
-  	cout <<"Too many bisections in mixedout" << endl;
-  }
+
 
 }
 
