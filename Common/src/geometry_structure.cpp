@@ -899,7 +899,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetResolutionTensor();
-    geometry_container[MESH_0]->SmoothResolutionTensor();
 
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++){
         /*--- Update the control volume structures ---*/
@@ -907,8 +906,6 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
         geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
         geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
         geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
-        geometry_container[MESH_0]->SetResolutionTensor();
-        geometry_container[MESH_0]->SmoothResolutionTensor();
 
     }
     if (config->GetKind_Solver() == DISC_ADJ_RANS)
@@ -1552,7 +1549,8 @@ void CGeometry::SetResolutionTensor(void) {
   su2double* jCoord;
 
   //  Internal variables
-  unsigned long Point = 0, iPoint = 0, jPoint = 0;
+  unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
+  unsigned short iMarker;
 
   for (iPoint=0; iPoint<nPoint; iPoint++) {
     // Initialize the maximum and minimum in each direction as the CV center
@@ -1585,78 +1583,6 @@ void CGeometry::SetResolutionTensor(void) {
   delete[] coord_max;
   delete[] coord_min;
 
-  SetResolutionGradient();
-}
-
-void CGeometry::SmoothResolutionTensor(void) {
-  unsigned short iDim, jDim, kDim, lDim;
-  unsigned short iFace;
-  unsigned long jGlobalIndex;
-  su2double*** M_temp;
-  vector<vector<su2double> > M(nDim, vector<su2double>(nDim));
-
-  //  Internal variables
-  unsigned long Point = 0, iPoint = 0, jPoint = 0;
-  unsigned short iMarker;
-
-  M_temp = new su2double** [nPoint];
-  for (iPoint=0; iPoint<nPoint; iPoint++) {
-    M_temp[iPoint] = new su2double* [nDim];
-    // Use the values of point 'i' in the average.
-    for (iDim = 0; iDim < nDim; iDim++) {
-      M_temp[iPoint][iDim] = new su2double [nDim];
-    }
-  }
-
-  // We have to loop over all points first, storing our results temporarily
-  for (iPoint=0; iPoint<nPoint; iPoint++) {
-    M = node[iPoint]->GetResolutionTensor();
-
-    // Use the values of point 'i' in the average.
-    for (iDim = 0; iDim < nDim; iDim++) {
-      for (jDim = 0; jDim < nDim; jDim++) {
-        M_temp[iPoint][iDim][jDim] = M[iDim][jDim];
-      }
-    }
-
-    // Use the values of all neighboring points in the average
-    for (jPoint = 0; jPoint<node[iPoint]->GetnPoint(); jPoint++) {
-      jGlobalIndex = node[iPoint]->GetPoint(jPoint);
-      M = node[jGlobalIndex]->GetResolutionTensor();
-      for (iDim = 0; iDim < nDim; iDim++) {
-        for (jDim = 0; jDim < nDim; jDim++) {
-          M_temp[iPoint][iDim][jDim] += M[iDim][jDim];
-        }
-      }
-    }
-
-    // Use the values of point 'i' in the average.
-    for (iDim = 0; iDim < nDim; iDim++) {
-      for (jDim = 0; jDim < nDim; jDim++) {
-        M_temp[iPoint][iDim][jDim] /= (1 + node[iPoint]->GetnPoint());
-      }
-    }
-  }
-
-  // Write our averaged quantities to the control volumes
-  for (iPoint=0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      for (jDim = 0; jDim < nDim; jDim++) {
-        node[iPoint]->SetResolutionTensor(iDim,jDim, M_temp[iPoint][iDim][jDim]);
-      }
-    }
-  }
-
-  // Free up our temporary array
-  for (iPoint=0; iPoint<nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      delete[] M_temp[iPoint][iDim];
-    }
-    delete[] M_temp[iPoint];
-  }
-  delete[] M_temp;
-
-  // Repeat calculation of the resolution gradient, with new smoothed values
   SetResolutionGradient();
 }
 
