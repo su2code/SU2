@@ -2609,6 +2609,16 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  if(rank == MASTER_NODE) {
+    cout << "Volume residual integration" << endl;
+    cout << "Number of owned elements: " << nVolElemOwned << endl;
+  }
+
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt = VecTmpMemory.data();
   su2double *fluxes = solInt + nIntegrationMax*nVar;
@@ -2693,6 +2703,22 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 
         fluxes[ll++] = -weights[i]*(sol[nDim+1] + Pressure)*vPar;
       }
+      if(rank == MASTER_NODE){
+    	if(l%30000 == 0){
+    		if(i%9 == 0){
+    			cout << "Volume element " << l << endl;
+    			cout << "Integration point " << i << endl;
+    			cout << "Density = " << sol[0] << endl;
+    			cout << "Velocities = " << vel[0] << ", " << vel[1] << ", " << vel[2] << endl;
+    			cout << "Pressure = " << Pressure << endl;
+    			cout << "Fluxes[0] = " << fluxes[0] << endl;
+    			cout << "Fluxes[1] = " << fluxes[1] << endl;
+    			cout << "Fluxes[2] = " << fluxes[2] << endl;
+    			cout << "Fluxes[3] = " << fluxes[3] << endl;
+    			cout << "Fluxes[4] = " << fluxes[4] << endl;
+    		}
+    	}
+      }
     }
 
     /*------------------------------------------------------------------------*/
@@ -2727,16 +2753,103 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
     su2double *body_force_vector = config->GetBody_Force_Vector();
 
     /*--- Source term integration goes here... dummy output for now. ---*/
-    
-    cout << " Applying a body force of (";
-    for( unsigned short iDim = 0; iDim < nDim; iDim++) {
-      cout << body_force_vector[iDim];
-      if (iDim < nDim-1) cout << ", ";
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     MPI_Barrier(MPI_COMM_WORLD);
+#endif
+//    if(rank == MASTER_NODE) {
+//      cout << " Applying a body force of (";
+//      for( unsigned short iDim = 0; iDim < nDim; iDim++) {
+//        cout << body_force_vector[iDim];
+//        if (iDim < nDim-1) cout << ", ";
+//      }
+//      cout << ")." << endl;
+//      cout << "Number of owned elements: " << nVolElemOwned << endl;
+//    }
+
+    /*--- Set the pointers for the local arrays. ---*/
+    su2double *solInt = VecTmpMemory.data();
+    su2double *fluxes = solInt + nIntegrationMax*nVar;
+    su2double tick = 0.0;
+
+    /* Store the number of metric points per integration point, which depends
+       on the number of dimensions. */
+    const unsigned short nMetricPerPoint = nDim*nDim + 1;
+
+    /*--- Loop over the owned volume elements to compute the contribution of the
+          volume integral in the DG FEM formulation to the residual.       ---*/
+    for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+      /* Get the data from the corresponding standard element. */
+      const unsigned short ind             = volElem[l].indStandardElement;
+      const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
+      const unsigned short nDOFs           = volElem[l].nDOFsSol;
+      const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+      const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+      const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+
+      /*------------------------------------------------------------------------*/
+      /*--- Step 1: Interpolate the density to the integration points of     ---*/
+      /*---         the element.                                             ---*/
+      /*------------------------------------------------------------------------*/
+
+      /* Easier storage of the solution variables for this element. */
+      su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+      /* Call the general function to carry out the matrix product. */
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
+      config->GEMM_Tock(tick, "Volume_Residual1", nInt, nVar, nDOFs);
+
+//      if(rank == MASTER_NODE){
+//    	  if(l%10000 == 0){
+//    		  cout << "Element " << l << " number of integration points: " << nInt << endl;
+//    	  }
+//      }
+      /* Loop over the integration points. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Create pointer to solution at integration points */
+    	const su2double *sol = solInt + nVar*i;
+
+    	/* Store density */
+        const su2double density = sol[0];
+
+        /* Easier storage of the metric terms in this integration point. The +1
+           is present, because the first element of the metric terms is the
+           Jacobian in the integration point. */
+        const su2double *metricTerms = volElem[l].metricTerms.data()
+                                     + i*nMetricPerPoint + 1;
+
+        /*--- Loop over the number of dimensions to compute the forces in the
+               direction of the parametric coordinates. ---*/
+        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+
+          /* Pointer to the metric terms for this direction. */
+          const su2double *metric = metricTerms + iDim*nDim;
+
+          /* Compute the gravity in the direction of the current parametric coordinate. */
+          su2double gravPar = 0.0;
+          for(unsigned short jDim=0; jDim<nDim; ++jDim)
+            gravPar += body_force_vector[jDim]*metric[jDim];
+
+          /* Multiply the gravity in the current parametric direction by the density. */
+          su2double gravForcePar = gravPar * density;
+
+        }
+//        if(rank == MASTER_NODE){
+//      	  if(l%10000 == 0){
+//      		if(i%9 == 0){
+//      		  cout << "Integration point " << i << endl;
+//
+//
+//      		}
+//      	  }
+//        }
+      }
     }
-    cout << ")." << endl;
-
   }
-
 }
 
 void CFEM_DG_EulerSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -5607,6 +5720,16 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  if(rank == MASTER_NODE) {
+    cout << "Volume residual integration" << endl;
+    cout << "Number of owned elements: " << nVolElemOwned << endl;
+  }
+
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -5802,6 +5925,17 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
              correct expression in the weak formulation. */
           fluxes[ll] *= -weights[i];
         }
+      }
+      if(rank == MASTER_NODE){
+    	if(l%30000 == 0){
+    		if(i%9 == 0){
+    			cout << "Volume element " << l << endl;
+    			cout << "Integration point " << i << endl;
+    			cout << "Density = " << sol[0] << endl;
+    			cout << "Velocities = " << vel[0] << ", " << vel[1] << ", " << vel[2] << endl;
+    			cout << "Pressure = " << Pressure << endl;
+    		}
+    	}
       }
     }
     config->Tock(tick, "IR_2_1", 4);
