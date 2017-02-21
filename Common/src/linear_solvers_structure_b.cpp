@@ -43,9 +43,15 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 
   su2double::GradientData *LinSysRes_Indices;
   su2double::GradientData *LinSysSol_Indices;
+#if CODI_PRIMAL_INDEX_TAPE
+  su2double::Real *oldValues;
+#endif
 
   data->getData(LinSysRes_Indices);
   data->getData(LinSysSol_Indices);
+#if CODI_PRIMAL_INDEX_TAPE
+  data->getData(oldValues);
+#endif
 
   unsigned long nBlk, nVar, nBlkDomain, size, i;
 
@@ -114,6 +120,13 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
     AD::globalTape.gradient(index) += SU2_TYPE::GetValue(LinSysSol_b[i]);
   }
 
+#if CODI_PRIMAL_INDEX_TAPE
+  /*--- Set the old values that have been overwritten ---*/
+  for (i = 0; i < size; i ++) {
+    AD::globalTape.setExternalValueChange(LinSysSol_Indices[i], oldValues[i]);
+  }
+#endif
+
   delete mat_vec;
   delete precond;
   delete solver;
@@ -124,12 +137,21 @@ void CSysSolve_b::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 
   su2double::GradientData *LinSysRes_Indices;
   su2double::GradientData *LinSysSol_Indices;
+#if CODI_PRIMAL_INDEX_TAPE
+  su2double::Real *oldValues;
+#endif
 
   data->getData(LinSysRes_Indices);
   data->getData(LinSysSol_Indices);
+#if CODI_PRIMAL_INDEX_TAPE
+  data->getData(oldValues);
+#endif
 
   delete [] LinSysRes_Indices;
   delete [] LinSysSol_Indices;
+#if CODI_PRIMAL_INDEX_TAPE
+  delete [] oldValues;
+#endif
 
   unsigned long nBlk, nVar, nBlkDomain, size;
 
