@@ -897,6 +897,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
     geometry_container[MESH_0]->SetResolutionTensor();
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry_container[MESH_0]->SetResolutionTensor();
 
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++){
         /*--- Update the control volume structures ---*/
@@ -904,6 +905,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
         geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
         geometry_container[iMesh]->SetBoundControlVolume(config,geometry_container[iMesh-1], UPDATE);
         geometry_container[iMesh]->SetCoord(geometry_container[iMesh-1]);
+        geometry_container[iMesh]->SetResolutionTensor();
 
     }
     if (config->GetKind_Solver() == DISC_ADJ_RANS)
@@ -8488,11 +8490,29 @@ void CPhysicalGeometry::SetCoord_CG(void) {
   }
 }
 
-void CPhysicalGeometry::SetResolutionTensor(void) {
-  unsigned long iElem;
+void CGeometry::SetResolutionTensor(void) {
+  unsigned long iElem, iElem_global, iPoint;
+  unsigned short iDim, jDim;
+  su2double temp_value;
+  vector<vector<su2double> > temp_tensor;
 
   for (iElem = 0; iElem<nElem; iElem++) {
     elem[iElem]->SetResolutionTensor();
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
+      iElem_global = node[iPoint]->GetElem(iElem);
+      temp_tensor = elem[iElem_global]->GetResolutionTensor();
+      for (iDim = 0; iDim < nDim; iDim++) {
+        for (jDim = 0; jDim < nDim; jDim++) {
+          std::cout << "Checkpoint: " << __FILE__ << " : " << __LINE__ << std::endl;
+          std::cout << "Size: " << temp_tensor[0].size() << std::endl;
+          temp_value = temp_tensor[iDim][jDim] / (node[iPoint]->GetnElem());
+          node[iPoint]->AddResolutionTensor(iDim, jDim, temp_value);
+        }
+      }
+    }
   }
 }
 

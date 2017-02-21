@@ -251,52 +251,60 @@ int main() {
   delete geometry_aux;
 
   // Initialize the geometry
-  geometry->SetPoint_Connectivity();
+  geometry->SetBoundaries(config);
   geometry->SetPoint_Connectivity();
   geometry->SetElement_Connectivity();
+  geometry->SetBoundVolume();
   geometry->Check_IntElem_Orientation(config);
+  geometry->Check_BoundElem_Orientation(config);
   geometry->SetEdges();
   geometry->SetVertex(config);
   geometry->SetCoord_CG();
+  geometry->SetControlVolume(config, ALLOCATE);
+  geometry->SetBoundControlVolume(config, ALLOCATE);
 
   //---------------------------------------------------------------------------
   // Tests
   //---------------------------------------------------------------------------
+  unsigned short iDim, nDim = 3;
+  unsigned short iPoint;
 
+  std::cout << "Checkpoint: " << __FILE__ << " : " << __LINE__ << std::endl;
   geometry->SetResolutionTensor();
+  std::cout << "Checkpoint: " << __FILE__ << " : " << __LINE__ << std::endl;
 
-  unsigned short nElem = geometry->GetnElem();
-  unsigned short iElem;
-  for (iElem = 0; iElem<nElem; iElem++) {
-    CPrimalGrid* elem = geometry->elem[iElem];
-    vector<vector<su2double> > Mij = elem->GetResolutionTensor();
+  bool entries_correct = true;
 
-    // ---------------------------------------------------------------------------
-    // Check that the values of Mij are correct
-    bool entries_correct = true;
-    if (Mij[0][0] != 3.0 ) entries_correct = false;
-    if (Mij[0][1] != 0.0 ) entries_correct = false;
-    if (Mij[0][1] != 0.0 ) entries_correct = false;
-    if (Mij[1][0] != 0.0 ) entries_correct = false;
-    if (Mij[1][1] != 2.0 ) entries_correct = false;
-    if (Mij[1][2] != 0.0 ) entries_correct = false;
-    if (Mij[2][0] != 0.0 ) entries_correct = false;
-    if (Mij[2][1] != 0.0 ) entries_correct = false;
-    if (Mij[2][2] != 1.0 ) entries_correct = false;
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
 
-    if (not(entries_correct)) {
-      std::cout << "ERROR: The resolution tensor for a hexahedron was not correct."
-          << std::endl;
-      std::cout << "The elements of the array were incorrect." << std::endl;
-      std::cout << "Computed array elements:" << std::endl;
-      std::cout << "[[";
-      std::cout << Mij[0][0] << "," << Mij[0][1] << "," << Mij[0][2] << "],[";
-      std::cout << Mij[1][0] << "," << Mij[1][1] << "," << Mij[1][2] << "],[";
-      std::cout << Mij[2][0] << "," << Mij[2][1] << "," << Mij[2][2] << "]]";
-      std::cout << std::endl;
-      return_flag = 1;
-      break;
-    }
+//    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+//
+//    // ---------------------------------------------------------------------------
+//    // Check that the values of Mij are correct
+//    bool entries_correct = true;
+//    if (Mij[0][0] != 3.0 ) entries_correct = false;
+//    if (Mij[0][1] != 0.0 ) entries_correct = false;
+//    if (Mij[0][1] != 0.0 ) entries_correct = false;
+//    if (Mij[1][0] != 0.0 ) entries_correct = false;
+//    if (Mij[1][1] != 2.0 ) entries_correct = false;
+//    if (Mij[1][2] != 0.0 ) entries_correct = false;
+//    if (Mij[2][0] != 0.0 ) entries_correct = false;
+//    if (Mij[2][1] != 0.0 ) entries_correct = false;
+//    if (Mij[2][2] != 1.0 ) entries_correct = false;
+//
+//    if (not(entries_correct)) {
+//      std::cout << "ERROR: The resolution tensor for a hexahedron was not correct."
+//          << std::endl;
+//      std::cout << "The elements of the array were incorrect." << std::endl;
+//      std::cout << "Computed array elements:" << std::endl;
+//      std::cout << "[[";
+//      std::cout << Mij[0][0] << "," << Mij[0][1] << "," << Mij[0][2] << "],[";
+//      std::cout << Mij[1][0] << "," << Mij[1][1] << "," << Mij[1][2] << "],[";
+//      std::cout << Mij[2][0] << "," << Mij[2][1] << "," << Mij[2][2] << "]]";
+//      std::cout << std::endl;
+//      return_flag = 1;
+//      break;
+//    }
   }
 
   //---------------------------------------------------------------------------

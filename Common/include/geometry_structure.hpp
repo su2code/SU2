@@ -380,9 +380,15 @@ public:
 	virtual void SetCoord_CG(void);
 
   /*!
-   * \brief A virtual member.
+   * \brief Sets the resolution tensor for each control volume in the dual mesh.
    */
-  virtual void SetResolutionTensor(void);
+  void SetResolutionTensor(void);
+
+  /*!
+   * \brief Computes the gradients of the resolution tensor for each control
+   *        volume in the dual mesh.
+   */
+  void SetResolutionGradient(void);
 
 	/*! 
 	 * \brief A virtual member.

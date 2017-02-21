@@ -194,25 +194,31 @@ int main() {
   delete geometry_aux;
 
   // Initialize the geometry
-  geometry->SetPoint_Connectivity();
+  geometry->SetBoundaries(config);
   geometry->SetPoint_Connectivity();
   geometry->SetElement_Connectivity();
+  geometry->SetBoundVolume();
   geometry->Check_IntElem_Orientation(config);
+  geometry->Check_BoundElem_Orientation(config);
   geometry->SetEdges();
   geometry->SetVertex(config);
   geometry->SetCoord_CG();
+  geometry->SetControlVolume(config, ALLOCATE);
+  geometry->SetBoundControlVolume(config, ALLOCATE);
 
   //---------------------------------------------------------------------------
   // Tests
   //---------------------------------------------------------------------------
+  unsigned short iDim, nDim = 2;
+  unsigned short iPoint;
 
   geometry->SetResolutionTensor();
 
-  unsigned short nElem = geometry->GetnElem();
-  unsigned short iElem;
-  for (iElem = 0; iElem<nElem; iElem++) {
-    CPrimalGrid* elem = geometry->elem[iElem];
-    vector<vector<su2double> > Mij = elem->GetResolutionTensor();
+  bool entries_correct = true;
+
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+
+    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
 
     // ---------------------------------------------------------------------------
     // Check that the values of Mij are correct

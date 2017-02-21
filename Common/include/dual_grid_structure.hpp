@@ -171,6 +171,7 @@ private:
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
+  su2double** ResolutionTensor;
 
 public:
 	
@@ -736,6 +737,26 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	void AddNormal(su2double *val_face_normal);
+
+  /*!
+   * \brief Sets the resolution tensor for the given control volume.
+   */
+  void SetResolutionTensor(unsigned short iDim, unsigned short jDim,
+                           su2double tensor_value);
+
+  /*!
+   * \brief Sets the resolution tensor for the given control volume.
+   */
+  void AddResolutionTensor(unsigned short iDim, unsigned short jDim,
+                           su2double tensor_value);
+
+  /*!
+   * \brief Gets the resolution tensor for the given control volume
+   *
+   * \return A tensor representing the separation distances
+   *         across the cell in the global coordinates.
+   */
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*! 

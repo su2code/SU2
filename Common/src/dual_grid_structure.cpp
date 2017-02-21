@@ -125,6 +125,15 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   
   Curvature = 0.0;
 
+  /*--- Initialize the grid resolution tensor ---*/
+
+  ResolutionTensor = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensor[iDim] = new su2double[nDim];
+    for (jDim = 0; jDim < nDim; jDim++)
+      ResolutionTensor[iDim][jDim] = 0.0;
+  }
+
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
@@ -218,6 +227,15 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   
   Curvature = 0.0;
   
+  /*--- Initialize the grid resolution tensor ---*/
+
+  ResolutionTensor = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensor[iDim] = new su2double[nDim];
+    for (jDim = 0; jDim < nDim; jDim++)
+      ResolutionTensor[iDim][jDim] = 0.0;
+  }
+
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
@@ -311,6 +329,15 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   
   Curvature = 0.0;
   
+  /*--- Initialize the grid resolution tensor ---*/
+
+  ResolutionTensor = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensor[iDim] = new su2double[nDim];
+    for (jDim = 0; jDim < nDim; jDim++)
+      ResolutionTensor[iDim][jDim] = 0.0;
+  }
+
 }
 
 CPoint::~CPoint() {
@@ -328,6 +355,11 @@ CPoint::~CPoint() {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
+  }
+  if (ResolutionTensor != NULL) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      delete [] ResolutionTensor[iDim];
+    delete [] ResolutionTensor;
   }
   
 }
@@ -369,6 +401,26 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
 	}
 	Boundary = true;
   
+}
+
+void CPoint::SetResolutionTensor(unsigned short iDim, unsigned short jDim,
+                                 su2double tensor_value) {
+  if (iDim < nDim && jDim < nDim) ResolutionTensor[iDim][jDim] = tensor_value;
+};
+
+void CPoint::AddResolutionTensor(unsigned short iDim, unsigned short jDim,
+                                 su2double tensor_value) {
+  if (iDim < nDim && jDim < nDim) ResolutionTensor[iDim][jDim] += tensor_value;
+};
+
+vector<vector<su2double> > CPoint::GetResolutionTensor(void) {
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      output[iDim][jDim] = ResolutionTensor[iDim][jDim];
+    }
+  }
+  return output;
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
