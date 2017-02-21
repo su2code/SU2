@@ -450,6 +450,7 @@ void CConfig::SetPointersNull(void) {
   default_ad_coeff_flow = NULL;
   default_mixedout_coeff = NULL;
   default_rampRotFrame_coeff = NULL;
+  default_rampOutPres_coeff = NULL;
   default_ad_coeff_adj  = NULL;
   default_obj_coeff     = NULL;
   default_geo_loc       = NULL;
@@ -519,6 +520,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_ad_coeff_flow = new su2double[3];
   default_mixedout_coeff = new su2double[4];
   default_rampRotFrame_coeff = new su2double[3];
+  default_rampOutPres_coeff = new su2double[3];
   default_ad_coeff_adj  = new su2double[3];
   default_obj_coeff     = new su2double[5];
   default_geo_loc       = new su2double[2];
@@ -821,6 +823,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("RAMP_ROTATING_FRAME_COEFF", 3, RampRotatingFrame_Coeff, default_rampRotFrame_coeff);
   /* DESCRIPTION: AVERAGE_MACH_LIMIT is a limit value for average procedure based on the mass flux. */
   addDoubleOption("AVERAGE_MACH_LIMIT", AverageMachLimit, 0.03);
+  /*!\brief RAMP_OUTLET_PRESSURE\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
+  addBoolOption("RAMP_OUTLET_PRESSURE", RampOutletPressure, false);
+  default_rampOutPres_coeff[0] = 100000.0; default_rampOutPres_coeff[1] = 1.0; default_rampOutPres_coeff[2] = 1000.0;
+  /*!\brief RAMP_OUTLET_PRESSURE_COEFF \n DESCRIPTION: the 1st coeff is the staring outlet pressure,
+   * the 2nd coeff is the number of iterations for the update, 3rd is the number of total iteration till reaching the final outlet pressure value */
+  addDoubleArrayOption("RAMP_OUTLET_PRESSURE_COEFF", 3, RampOutletPressure_Coeff, default_rampOutPres_coeff);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
@@ -2247,6 +2255,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	 Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
   	}
   }
+
+  if(RampOutletPressure){
+  	for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++){
+  		if (Kind_Data_NRBC[iMarker] == STATIC_PRESSURE || Kind_Data_NRBC[iMarker] == STATIC_PRESSURE_1D || Kind_Data_NRBC[iMarker] == RADIAL_EQUILIBRIUM ){
+  			FinalOutletPressure   = NRBC_Var1[iMarker];
+  			NRBC_Var1[iMarker] = RampOutletPressure_Coeff[0];
+  		}
+  	}
+  	for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++){
+  		if (Kind_Data_Riemann[iMarker] == STATIC_PRESSURE || Kind_Data_Riemann[iMarker] == RADIAL_EQUILIBRIUM){
+  			FinalOutletPressure      = Riemann_Var1[iMarker];
+  			Riemann_Var1[iMarker] = RampOutletPressure_Coeff[0];
+  		}
+  	}
+  }
+
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
@@ -5662,6 +5686,7 @@ CConfig::~CConfig(void) {
   if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
   if (default_mixedout_coeff!= NULL) delete [] default_mixedout_coeff;
   if (default_rampRotFrame_coeff!= NULL) delete [] default_rampRotFrame_coeff;
+  if (default_rampOutPres_coeff!= NULL) delete[] default_rampOutPres_coeff;
   if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
   if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
   if (default_geo_loc       != NULL) delete [] default_geo_loc;
@@ -6282,6 +6307,13 @@ su2double CConfig::GetNRBC_Var1(string val_marker) {
   for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
     if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
   return NRBC_Var1[iMarker_NRBC];
+}
+
+void CConfig::SetNRBC_Var1(su2double newVar1, string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  NRBC_Var1[iMarker_NRBC] = newVar1;
 }
 
 su2double CConfig::GetNRBC_Var2(string val_marker) {

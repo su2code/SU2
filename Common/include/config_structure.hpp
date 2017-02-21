@@ -829,7 +829,8 @@ private:
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
 	*default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
-	*default_rampRotFrame_coeff,/*!< \brief Default default ramp rotating frame coeff coefficients for the COption class. */
+	*default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
+	*default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
 	*default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -844,11 +845,14 @@ private:
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
   bool turbMixingPlane;   /*!< \brief option for turbulent mixingplane */
   bool RampRotatingFrame;   /*!< \brief option for ramping up or down the Rotating Frame values */
+  bool RampOutletPressure;  /*!< \brief option for ramping up or down the outlet pressure */
   su2double *Mixedout_Coeff; /*!< \brief coefficient for the  */
-  su2double *RampRotatingFrame_Coeff; /*!< \brief option for turbulent mixingplane */
+  su2double *RampRotatingFrame_Coeff; /*!< \brief coefficient for Rotating frame ramp */
+  su2double *RampOutletPressure_Coeff; /*!< \brief coefficient for outlet pressure ramp */
   su2double AverageMachLimit;       /*!< \brief option for turbulent mixingplane */
   su2double *FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
-
+  su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
+  su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -3781,6 +3785,35 @@ public:
 	bool GetRampRotatingFrame(void);
 
 	/*!
+	 * \brief Get coeff for Outlet Pressure Ramp.
+	 * \return coeff Ramp Outlet Pressure.
+	 */
+	su2double GetRampOutletPressure_Coeff(unsigned short iCoeff);
+
+	/*!
+	 * \brief Get final Outlet Pressure value for the ramp.
+	 * \return final Outlet Pressure value.
+	 */
+	su2double GetFinalOutletPressure(void);
+
+	/*!
+	 * \brief Get final Outlet Pressure value for the ramp.
+	 * \return Monitor Outlet Pressure value.
+	 */
+	su2double GetMonitorOutletPressure(void);
+
+	/*!
+	 * \brief Set Monitor Outlet Pressure value for the ramp.
+	 */
+	void SetMonitotOutletPressure(su2double newMonPres);
+
+	/*!
+	 * \brief Get Outlet Pressure Ramp option.
+	 * \return Ramp Outlet pressure option.
+	 */
+	bool GetRampOutletPressure(void);
+
+	/*!
 	 * \brief Get mixedout coefficients.
 	 * \return mixedout coefficient.
 	 */
@@ -5445,6 +5478,12 @@ public:
 	 * \return The var1
 	 */
 	su2double GetNRBC_Var1(string val_marker);
+
+	/*!
+	 * \brief Set the var 1 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 */
+	void SetNRBC_Var1(su2double newVar1, string val_marker);
 
 	/*!
 	 * \brief Get the var 2 at NRBC boundary.
