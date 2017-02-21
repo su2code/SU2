@@ -4177,7 +4177,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar, iDim;
   su2double Area_Children, Area_Parent,
@@ -4325,8 +4324,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
    all the multigrid levels, this is important with the dual time strategy ---*/
   
   if (restart && (ExtIter == 0)) {
-    
     Solution = new su2double[nVar];
+    solver_container[0][FLOW_SOL]->Set_MPI_Solution(geometry[0], config);
+    solver_container[0][FLOW_SOL]->Preprocessing(geometry[0], solver_container[0], config, 0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
         Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -4342,15 +4342,18 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
       }
       solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+      solver_container[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
     delete [] Solution;
     
     /*--- Interpolate the turblence variable also, if needed ---*/
     
     if (rans) {
-      
       unsigned short nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
       Solution = new su2double[nVar_Turb];
+      solver_container[0][TURB_SOL]->Set_MPI_Solution(geometry[0], config);
+      solver_container[0][FLOW_SOL]->Preprocessing(geometry[0], solver_container[0], config, 0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[0][TURB_SOL]->Postprocessing(geometry[0], solver_container[0], config, 0);
       for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
         for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
           Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -4366,7 +4369,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
         }
         solver_container[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        solver_container[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         solver_container[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh);
+        solver_container[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver_container[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       delete [] Solution;
     }
@@ -4446,10 +4451,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Set the primitive variables ---*/
   
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
- 
-  /*--- Set the primitive variables ---*/
-
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   /*--- Compute the engine properties ---*/
@@ -14567,7 +14568,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-    bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
@@ -14589,7 +14590,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
    before computing all the non-dimesional quantities. ---*/
   
   if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
-    
     /*--- Multizone problems require the number of the zone to be appended. ---*/
     
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
@@ -15421,6 +15421,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
         node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
+				
       }
 
     }
@@ -15594,7 +15595,7 @@ CNSSolver::~CNSSolver(void) {
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
     
