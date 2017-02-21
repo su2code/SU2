@@ -3758,7 +3758,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   		for (iZone = 0; iZone < nZone; iZone++) {
   			rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
-  			if(rot_z_final > 0.0){
+  			if(abs(rot_z_final) > 0.0){
   				rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
   				config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
 
