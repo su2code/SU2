@@ -39,6 +39,8 @@ namespace AD{
 
   typedef codi::DataStore CheckpointHandler;
 
+  typedef su2double::TapeType Tape;
+
   /*--- Stores the indices of the input variables (they might be overwritten) ---*/
 
   extern std::vector<su2double::GradientData> inputValues;

@@ -37,7 +37,7 @@
 #include "../include/matrix_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
-void CSysSolve_b::Solve_b(AD::CheckpointHandler* data) {
+void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   
   /*--- Extract data from the checkpoint handler ---*/
 
@@ -120,7 +120,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data) {
 }
 
 
-void CSysSolve_b::Delete_b(AD::CheckpointHandler* data) {
+void CSysSolve_b::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 
   su2double::GradientData *LinSysRes_Indices;
   su2double::GradientData *LinSysSol_Indices;
