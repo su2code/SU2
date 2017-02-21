@@ -2252,7 +2252,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	FinalRotation_Rate_Z = new su2double[nZone];
   	for(iZone=0; iZone <nZone; iZone ++){
   	 FinalRotation_Rate_Z[iZone] = Rotation_Rate_Z[iZone];
-  	 Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
+  	 if(abs(FinalRotation_Rate_Z[iZone]) > 0.0){
+  		 Rotation_Rate_Z[iZone] = RampRotatingFrame_Coeff[0];
+  	 }
   	}
   }
 
