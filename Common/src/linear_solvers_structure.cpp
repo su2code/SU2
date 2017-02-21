@@ -737,13 +737,21 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
   su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
+#if CODI_PRIMAL_INDEX_TAPE
+  su2double::Real *oldValues = new su2double::Real[size];
+#endif
 
   for (i = 0; i < size; i++) {
 
     /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
 
     if (!LinSysSol[i].isActive()) {
+      //TODO: Ask tim if this check is necessary. Usually every output shuld be registered
+#if CODI_PRIMAL_INDEX_TAPE
+      oldValues[i] = AD::globalTape.registerExtFunctionOutput(LinSysSol[i]);
+#else
       AD::globalTape.registerInput(LinSysSol[i]);
+#endif
     }
 
     /*--- Store the indices ---*/
@@ -758,6 +766,9 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   dataHandler->addData(LinSysRes_Indices);
   dataHandler->addData(LinSysSol_Indices);
+#if CODI_PRIMAL_INDEX_TAPE
+  dataHandler->addData(oldValues);
+#endif
   dataHandler->addData(size);
   dataHandler->addData(nBlk);
   dataHandler->addData(nVar);
