@@ -752,11 +752,11 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   for (unsigned short iGroup = 0; iGroup < FFDBox->PilotGroupNames.size(); iGroup++){
     for (unsigned long iPilotPoint = 0; iPilotPoint < FFDBox->PilotPointsX[iGroup].size(); iPilotPoint++){
 
-      Coord[0] = FFDBox->PilotPointsX[iGroup][iPilotPoint];
-      Coord[1] = FFDBox->PilotPointsY[iGroup][iPilotPoint];
-      Coord[2] = FFDBox->PilotPointsZ[iGroup][iPilotPoint];
+      CartCoord[0] = FFDBox->PilotPointsX[iGroup][iPilotPoint];
+      CartCoord[1] = FFDBox->PilotPointsY[iGroup][iPilotPoint];
+      CartCoord[2] = FFDBox->PilotPointsZ[iGroup][iPilotPoint];
 
-      ParamCoord = FFDBox->GetParametricCoord_Iterative(iPilotPoint, Coord, ParamCoordGuess, config);
+      ParamCoord = FFDBox->GetParametricCoord_Iterative(iPilotPoint, CartCoord, ParamCoordGuess, config);
 
       FFDBox->PilotPointsX[iGroup][iPilotPoint] = ParamCoord[0];
       FFDBox->PilotPointsY[iGroup][iPilotPoint] = ParamCoord[1];
@@ -6688,8 +6688,8 @@ void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned 
       for (jControl = 0; jControl < mControl; jControl++){
         for (kControl = 0; kControl < nControl; kControl++){
           Bijk = BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
-                 BlendingFunction[1]->GetBasis(jControl,ParamCoord[1]);
-//                 BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
+                 BlendingFunction[1]->GetBasis(jControl,ParamCoord[1])*
+                 BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
           SystemMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
         }
       }
