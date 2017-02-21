@@ -10978,7 +10978,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   int markerTP;
-  unsigned short nSpanWiseSections = config->GetnSpanMaxAllZones();
+  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+
 
   su2double tangGridVelIn, tangGridVelOut;
   su2double areaIn, areaOut;
@@ -10986,14 +10987,14 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig *config, bool allocate)
 
   if(allocate){
   	for (iMarkerTP=0; iMarkerTP < config->GetnMarker_TurboPerformance(); iMarkerTP++){
-      SpanAreaIn[iMarkerTP]       = new su2double[nSpanWiseSections +1];
-      TangGridVelIn[iMarkerTP]    = new su2double[nSpanWiseSections +1];
-      TurboRadiusIn[iMarkerTP]    = new su2double[nSpanWiseSections +1];
-      SpanAreaOut[iMarkerTP]      = new su2double[nSpanWiseSections +1];
-			TangGridVelOut[iMarkerTP]   = new su2double[nSpanWiseSections +1];
-		  TurboRadiusOut[iMarkerTP]   = new su2double[nSpanWiseSections +1];
+      SpanAreaIn[iMarkerTP]       = new su2double[config->GetnSpanMaxAllZones() +1];
+      TangGridVelIn[iMarkerTP]    = new su2double[config->GetnSpanMaxAllZones() +1];
+      TurboRadiusIn[iMarkerTP]    = new su2double[config->GetnSpanMaxAllZones() +1];
+      SpanAreaOut[iMarkerTP]      = new su2double[config->GetnSpanMaxAllZones() +1];
+			TangGridVelOut[iMarkerTP]   = new su2double[config->GetnSpanMaxAllZones() +1];
+		  TurboRadiusOut[iMarkerTP]   = new su2double[config->GetnSpanMaxAllZones() +1];
 
-		  for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
+		  for (iSpan= 0; iSpan < config->GetnSpanMaxAllZones() + 1 ; iSpan++){
 	      SpanAreaIn[iMarkerTP][iSpan]       = 0.0;
 	      TangGridVelIn[iMarkerTP][iSpan]    = 0.0;
 	      TurboRadiusIn[iMarkerTP][iSpan]     = 0.0;
