@@ -943,6 +943,16 @@ inline su2double CConfig::GetRampRotatingFrame_Coeff(unsigned short iCoeff) { re
 
 inline bool CConfig::GetRampRotatingFrame(void) { return RampRotatingFrame;}
 
+inline su2double CConfig::GetRampOutletPressure_Coeff(unsigned short iCoeff) { return RampOutletPressure_Coeff[iCoeff];}
+
+inline su2double CConfig::GetFinalOutletPressure(void) { return  FinalOutletPressure; }
+
+inline su2double CConfig::GetMonitorOutletPressure(void) { return MonitorOutletPressure; }
+
+inline void CConfig::SetMonitotOutletPressure(su2double newMonPres) {MonitorOutletPressure = newMonPres;}
+
+inline bool CConfig::GetRampOutletPressure(void) { return RampOutletPressure;}
+
 inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
 
 inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
