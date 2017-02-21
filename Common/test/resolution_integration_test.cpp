@@ -1,5 +1,5 @@
 /*!
- * \file resolution_tensor_test.cpp
+ * \file resolution_integration_test.cpp
  * \brief This test checks whether the resolution tensor is correctly set for a grid
  * of quadrilateral cells.
  * \author C. Pederson

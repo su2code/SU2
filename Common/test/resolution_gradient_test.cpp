@@ -1,7 +1,7 @@
 /*!
- * \file resolution_3D_integration_test.cpp
- * \brief This test checks whether the resolution tensor is correctly set for a grid
- * of hexahedral cells.
+ * \file resolution_gradient_test.cpp
+ * \brief This test checks whether the gradient of the resolution tensor is
+ *        calculated correctly for 3D hexahedra.
  * \author C. Pederson
  * \version 4.3.0 "Cardinal"
  *
@@ -53,6 +53,10 @@ void WriteQuadMeshFile () {
     int iPoint;
     int num_Nodes;
     double xSpacing, ySpacing, zSpacing;
+    double xFactor, yFactor, zFactor;
+    double xCoord[5] = {0, 1, 2, 5, 8}; // Variable gradient
+    double yCoord[5] = {0, 2, 4, 6, 8}; // Gradient of 0
+    double zCoord[5] = {0, 1, 2, 3, 4}; // Gradient of 0
 
     std::ofstream Mesh_File;
 
@@ -62,17 +66,12 @@ void WriteQuadMeshFile () {
     KindBound = 9; // Quadrilateral
 
     /*--- Store the number of nodes in each direction ---*/
-    iDim = 4;
-    jDim = 4;
-    kDim = 4;
-
-    /*--- The grid spacing in each direction ---*/
-    xSpacing = 3.0;
-    ySpacing = 2.0;
-    zSpacing = 1.0;
+    iDim = 5;
+    jDim = 5;
+    kDim = 5;
 
     /*--- Open .su2 grid file ---*/
-    Mesh_File.open("hextestgrid.su2", ios::out);
+    Mesh_File.open("gradtestgrid.su2", ios::out);
     Mesh_File << fixed << setprecision(15);
 
     /*--- Write the dimension of the problem and the number of interior elements ---*/
@@ -118,16 +117,14 @@ void WriteQuadMeshFile () {
     for (kNode = 0; kNode < kDim; kNode++) {
       for (jNode = 0; jNode < jDim; jNode++) {
         for (iNode = 0; iNode < iDim; iNode++) {
-          Mesh_File << iNode*xSpacing << "\t";
-          Mesh_File << jNode*ySpacing << "\t";
-          Mesh_File << kNode*zSpacing << "\t";
+          Mesh_File << xCoord[iNode] << "\t";
+          Mesh_File << yCoord[jNode] << "\t";
+          Mesh_File << zCoord[kNode] << "\t";
           Mesh_File << iPoint << std::endl;
           iPoint++;
         }
       }
     }
-
-
 
     /*--- Write the header information for the boundary markers ---*/
     Mesh_File << "%" << std::endl;
@@ -217,10 +214,10 @@ void WriteQuadMeshFile () {
 void WriteCfgFile() {
   std::ofstream cfg_file;
 
-  cfg_file.open("hextest.cfg", ios::out);
+  cfg_file.open("gradtest.cfg", ios::out);
   cfg_file << "PHYSICAL_PROBLEM= NAVIER_STOKES" << std::endl;
   cfg_file << "MARKER_FAR= ( top bottom back front left right )"  << std::endl;
-  cfg_file << "MESH_FILENAME= hextestgrid.su2" << std::endl;
+  cfg_file << "MESH_FILENAME= gradtestgrid.su2" << std::endl;
   cfg_file << "MESH_FORMAT= SU2" << std::endl;
 
   cfg_file.close();
@@ -243,7 +240,7 @@ int main() {
   WriteCfgFile();
 
   // The use of "geometry_aux" is necessary to mock a multigrid configuration
-  CConfig* config = new CConfig("hextest.cfg", SU2_CFD, 0, 1, 2, VERB_NONE);
+  CConfig* config = new CConfig("gradtest.cfg", SU2_CFD, 0, 1, 2, VERB_NONE);
   CGeometry *geometry_aux = NULL;
   geometry_aux = new CPhysicalGeometry(config, 0, 1);
   CGeometry* geometry = new CGeometry();
@@ -266,6 +263,15 @@ int main() {
   //---------------------------------------------------------------------------
   // Tests
   //---------------------------------------------------------------------------
+
+  /**
+   * Due to the way that the dual mesh is set up, the edge control volumes
+   * (the ones lying on the boundary) have a different size than the interior
+   * control volumes.
+   *
+   * The gradient correct should ignore these boundary artifacts.
+   */
+
   unsigned short iDim, nDim = 3;
   unsigned short iPoint;
 
@@ -273,36 +279,100 @@ int main() {
 
   bool entries_correct = true;
 
+  // These are hand-calculated numerical derivatives.
+  su2double correct_grads[5] = {0, 1.5, 7.0/3, 5.0/6, 0};
+
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+     vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+     su2double* coord;
+     coord = geometry->node[iPoint]->GetCoord();
 
-    vector<vector<su2double> > Mij = geometry->node[iPoint]->GetResolutionTensor();
+     std::cout << "The resolution tensor for point: ";
+     std::cout << iPoint << std::endl;
+     std::cout << "    at location: [";
+     std::cout << coord[0] << ", " << coord[1] << ", " << coord[2];
+     std::cout << "]" << std::endl;
+     std::cout << "    and direction: " << iDim << std::endl;
 
-    // ---------------------------------------------------------------------------
-    // Check that the values of Mij are correct
-    bool entries_correct = true;
-    if (Mij[0][0] != 3.0 ) entries_correct = false;
-    if (Mij[0][1] != 0.0 ) entries_correct = false;
-    if (Mij[0][1] != 0.0 ) entries_correct = false;
-    if (Mij[1][0] != 0.0 ) entries_correct = false;
-    if (Mij[1][1] != 2.0 ) entries_correct = false;
-    if (Mij[1][2] != 0.0 ) entries_correct = false;
-    if (Mij[2][0] != 0.0 ) entries_correct = false;
-    if (Mij[2][1] != 0.0 ) entries_correct = false;
-    if (Mij[2][2] != 1.0 ) entries_correct = false;
+     std::cout << "Is:" << std::endl;
+     std::cout << "    [[";
+     std::cout << Mij[0][0] << "," << Mij[0][1] << "," << Mij[0][2];
+     std::cout << "]" << std::endl;
+     std::cout << "     [";
+     std::cout << Mij[1][0] << "," << Mij[1][1] << "," << Mij[1][2];
+     std::cout << "]" << std::endl;
+     std::cout << "     [";
+     std::cout << Mij[2][0] << "," << Mij[2][1] << "," << Mij[2][2];
+     std::cout << "]]" << std::endl;
+  }
 
-    if (not(entries_correct)) {
-      std::cout << "ERROR: The resolution tensor for a hexahedron was not correct."
-          << std::endl;
-      std::cout << "The elements of the array were incorrect." << std::endl;
-      std::cout << "Computed array elements:" << std::endl;
-      std::cout << "[[";
-      std::cout << Mij[0][0] << "," << Mij[0][1] << "," << Mij[0][2] << "],[";
-      std::cout << Mij[1][0] << "," << Mij[1][1] << "," << Mij[1][2] << "],[";
-      std::cout << Mij[2][0] << "," << Mij[2][1] << "," << Mij[2][2] << "]]";
-      std::cout << std::endl;
-      return_flag = 1;
-      break;
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    entries_correct = true; // XXX: Take this out when done testing.
+    for (iDim = 0; iDim < nDim; iDim++) {
+      vector<vector<su2double> > dMsqdx = geometry->node[iPoint]->GetResolutionGradient(iDim);
+      su2double* coord;
+      coord = geometry->node[iPoint]->GetCoord();
+
+      // Entries of dMdx are indexed as d(M_ij)/dx = dMdx[i][j]
+      for (int i = 0; i<nDim; ++i) {
+        for (int j = 0; j<nDim; ++j) {
+          if (iDim == 0 and i==0 and j == 0) {
+            int index;
+            switch (int(coord[0])) {
+              case 0:
+                index = 0;
+                break;
+              case 1:
+                index = 1;
+                break;
+              case 2:
+                index = 2;
+                break;
+              case 5:
+                index = 3;
+                break;
+              case 8:
+                index = 4;
+                break;
+              default:
+                std::cout << "An error occurred in the test program at: ";
+                std::cout << __FILE__ << ", line # : " << __LINE__ << std::endl;
+                entries_correct = false;
+            }
+            if (std::abs(dMsqdx[i][j] - correct_grads[index]) > 1e-6)
+              entries_correct = false;
+          } else {
+            if (std::abs(dMsqdx[i][j]) > 1e-6) entries_correct = false;
+          }
+        }
+      }
+
+      if (not(entries_correct)) {
+        std::cout << "ERROR: The gradient of the resolution tensor was not correct."
+            << std::endl;
+        std::cout << "The elements of the array were incorrect for point: ";
+        std::cout << iPoint << std::endl;
+        std::cout << "    at location: [";
+        std::cout << coord[0] << ", " << coord[1] << ", " << coord[2];
+        std::cout << "]" << std::endl;
+        std::cout << "    and direction: " << iDim << std::endl;
+
+        std::cout << "    Found:" << std::endl;
+        std::cout << "    [[";
+        std::cout << dMsqdx[0][0] << "," << dMsqdx[0][1] << "," << dMsqdx[0][2];
+        std::cout << "]" << std::endl;
+        std::cout << "     [";
+        std::cout << dMsqdx[1][0] << "," << dMsqdx[1][1] << "," << dMsqdx[1][2];
+        std::cout << "]" << std::endl;
+        std::cout << "     [";
+        std::cout << dMsqdx[2][0] << "," << dMsqdx[2][1] << "," << dMsqdx[2][2];
+        std::cout << "]]" << std::endl;
+
+        return_flag = 1;
+//       break;
+      }
     }
+//    if (not(entries_correct)) break;
   }
 
   //---------------------------------------------------------------------------

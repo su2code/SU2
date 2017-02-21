@@ -1095,8 +1095,6 @@ public:
 	 */
 	void SetCoord_CG(void);
 
-	void SetResolutionTensor(void);
-
 	/*! 
 	 * \brief Set the edge structure of the control volume.
 	 * \param[in] config - Definition of the particular problem.

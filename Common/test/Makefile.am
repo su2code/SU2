@@ -37,6 +37,7 @@ check_PROGRAMS  =
 check_PROGRAMS += unit_test_config
 check_PROGRAMS += resolution_integration_test
 check_PROGRAMS += resolution_3d_integration_test
+check_PROGRAMS += resolution_gradient_test
 
 # Eventually these will likely be required
 AM_CPPFLAGS = -I$(top_srcdir)/Common/include
@@ -52,12 +53,14 @@ LDADD += @su2_externals_LIBS@
 unit_test_config_SOURCES = unit_test_config.cpp
 resolution_integration_test_SOURCES = resolution_integration_test.cpp
 resolution_3d_integration_test_SOURCES = resolution_3d_integration_test.cpp
+resolution_gradient_test_SOURCES = resolution_gradient_test.cpp
 
 # Tests to be run
 TESTS  =
 TESTS += unit_test_config
 TESTS += resolution_integration_test
 TESTS += resolution_3d_integration_test
+TESTS += resolution_gradient_test
 
 # Any of above we expect to fail?
 #XFAIL_TESTS =

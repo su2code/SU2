@@ -40,7 +40,7 @@ CDualGrid::CDualGrid(unsigned short val_nDim) { nDim = val_nDim;}
 CDualGrid::~CDualGrid() {}
 
 CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *config) : CDualGrid(val_nDim) {
-	unsigned short iDim, jDim;
+	unsigned short iDim, jDim, kDim;
 	
 	/*--- Element, point and edge structures initialization ---*/
   
@@ -134,10 +134,20 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
       ResolutionTensor[iDim][jDim] = 0.0;
   }
 
+  ResolutionTensorGradient = new su2double**[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensorGradient[iDim] = new su2double*[nDim];
+    for (jDim = 0; jDim < nDim; jDim++) {
+      ResolutionTensorGradient[iDim][jDim] = new su2double[nDim];
+      for (kDim = 0; kDim < nDim; kDim++)
+        ResolutionTensorGradient[iDim][jDim][kDim] = 0.0;
+    }
+  }
+
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_globalindex, CConfig *config) : CDualGrid(2) {
-	unsigned short iDim, jDim;
+	unsigned short iDim, jDim, kDim;
 
 	/*--- Element, point and edge structures initialization ---*/
   
@@ -236,10 +246,20 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
       ResolutionTensor[iDim][jDim] = 0.0;
   }
 
+  ResolutionTensorGradient = new su2double**[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensorGradient[iDim] = new su2double*[nDim];
+    for (jDim = 0; jDim < nDim; jDim++) {
+      ResolutionTensorGradient[iDim][jDim] = new su2double[nDim];
+      for (kDim = 0; kDim < nDim; kDim++)
+        ResolutionTensorGradient[iDim][jDim][kDim] = 0.0;
+    }
+  }
+
 }
 
 CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord_2, unsigned long val_globalindex, CConfig *config) : CDualGrid(3) {
-	unsigned short iDim, jDim;
+	unsigned short iDim, jDim, kDim;
 
 	/*--- Element, point and edge structures initialization ---*/
   
@@ -338,6 +358,16 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
       ResolutionTensor[iDim][jDim] = 0.0;
   }
 
+  ResolutionTensorGradient = new su2double**[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ResolutionTensorGradient[iDim] = new su2double*[nDim];
+    for (jDim = 0; jDim < nDim; jDim++) {
+      ResolutionTensorGradient[iDim][jDim] = new su2double[nDim];
+      for (kDim = 0; kDim < nDim; kDim++)
+        ResolutionTensorGradient[iDim][jDim][kDim] = 0.0;
+    }
+  }
+
 }
 
 CPoint::~CPoint() {
@@ -360,6 +390,15 @@ CPoint::~CPoint() {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       delete [] ResolutionTensor[iDim];
     delete [] ResolutionTensor;
+  }
+  if (ResolutionTensorGradient != NULL) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+        delete [] ResolutionTensorGradient[iDim][jDim];
+      }
+      delete [] ResolutionTensorGradient[iDim];
+    }
+    delete [] ResolutionTensorGradient;
   }
   
 }
@@ -418,6 +457,23 @@ vector<vector<su2double> > CPoint::GetResolutionTensor(void) {
   for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
     for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
       output[iDim][jDim] = ResolutionTensor[iDim][jDim];
+    }
+  }
+  return output;
+}
+
+void CPoint::SetResolutionGradient(unsigned short iDim, unsigned short jDim,
+                                   unsigned short kDim, su2double grad_value) {
+  if (iDim < nDim && jDim < nDim && kDim < nDim)
+    ResolutionTensorGradient[iDim][jDim][kDim] = grad_value;
+  // TODO: Add exception for out-of-bounds assignment.
+};
+
+vector<vector<su2double> > CPoint::GetResolutionGradient(unsigned short iDim) {
+  vector<vector<su2double> > output(nDim, vector<su2double>(nDim));
+  for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+    for (unsigned short kDim = 0; kDim < nDim; ++kDim) {
+      output[jDim][kDim] = ResolutionTensorGradient[iDim][jDim][kDim];
     }
   }
   return output;
