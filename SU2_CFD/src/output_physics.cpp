@@ -55,7 +55,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
   for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
   	for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP) + 1; iSpan++){
   		if(config->GetRampOutletPressure() && config->GetExtIter() > 0){
-  			PressureOut_BC          [iMarkerTP][iSpan] = config->GetMonitorOutletPressure();
+  			PressureOut_BC[iMarkerTP][iSpan] = config->GetMonitorOutletPressure()/config->GetPressure_Ref();
   		}
   		FluidModel->SetTDState_PT(config->GetTotalPressureIn_BC(), config->GetTotalTemperatureIn_BC());
   		TotalEnthalpyIn_BC[iMarkerTP][iSpan] = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();

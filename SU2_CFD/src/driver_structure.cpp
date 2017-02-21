@@ -3775,16 +3775,17 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   	}
   }
 
+
   /*--- Outlet Pressure Ramp: Compute the updated rotational velocity. ---*/
   if (config_container[ZONE_0]->GetRampOutletPressure()) {
-  	if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
-    	rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(1));
-    	finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(2));
-    	outPres_ini    = config_container[ZONE_0]->GetRampOutletPressure_Coeff(0);
-      outPres_final  = config_container[ZONE_0]->GetFinalOutletPressure();
-  		outPres = outPres_ini + ExtIter*(outPres_final - outPres_ini)/finalRamp_Iter;
+  	rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(1));
+		finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(2));
+		outPres_ini    = config_container[ZONE_0]->GetRampOutletPressure_Coeff(0);
+		outPres_final  = config_container[ZONE_0]->GetFinalOutletPressure();
 
-  		if(rank == MASTER_NODE) config_container[ZONE_0]->SetMonitotOutletPressure(outPres);
+  	if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
+    	outPres = outPres_ini + ExtIter*(outPres_final - outPres_ini)/finalRamp_Iter;
+    	if(rank == MASTER_NODE) config_container[ZONE_0]->SetMonitotOutletPressure(outPres);
 
   		for (iZone = 0; iZone < nZone; iZone++) {
   			for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
@@ -3797,7 +3798,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   				case NRBC_BOUNDARY:
   					Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
   					KindBCOption       = config_container[iZone]->GetKind_Data_NRBC(Marker_Tag);
-  					if(  KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D || KindBCOption == RADIAL_EQUILIBRIUM ){
+  					if(KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D || KindBCOption == RADIAL_EQUILIBRIUM ){
   						config_container[iZone]->SetNRBC_Var1(outPres, Marker_Tag);
   					}
   					break;
