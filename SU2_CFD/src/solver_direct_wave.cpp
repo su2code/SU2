@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author T. Economon, F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@ CWaveSolver::CWaveSolver(void) : CSolver() { }
 
 CWaveSolver::CWaveSolver(CGeometry *geometry, 
                              CConfig *config) : CSolver() {
-	unsigned short iDim, iVar, nLineLets;
+  unsigned short iDim, iVar, nLineLets;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -46,12 +46,12 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
   
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
-	nDim    = geometry->GetnDim();
-	node    = new CVariable*[nPoint];
-	nVar    = 2; // solve as a 2 eq. system		
+  nDim    = geometry->GetnDim();
+  node    = new CVariable*[nPoint];
+  nVar    = 2; // solve as a 2 eq. system    
   
-	Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
-	Solution     = new su2double[nVar];
+  Residual     = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+  Solution     = new su2double[nVar];
   Res_Sour     = new su2double[nVar];
   Residual_Max = new su2double[nVar];
   
@@ -64,21 +64,21 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
   
-	/*--- Point to point stiffness matrix (only for triangles)---*/
-	StiffMatrix_Elem = new su2double*[nDim+1];
-	for (iVar = 0; iVar < nDim+1; iVar++) {
-		StiffMatrix_Elem[iVar] = new su2double [nDim+1];
-	}
+  /*--- Point to point stiffness matrix (only for triangles)---*/
+  StiffMatrix_Elem = new su2double*[nDim+1];
+  for (iVar = 0; iVar < nDim+1; iVar++) {
+    StiffMatrix_Elem[iVar] = new su2double [nDim+1];
+  }
   
-	StiffMatrix_Node = new su2double*[nVar];
-	for (iVar = 0; iVar < nVar; iVar++) {
-		StiffMatrix_Node[iVar] = new su2double [nVar];
-	}
+  StiffMatrix_Node = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    StiffMatrix_Node[iVar] = new su2double [nVar];
+  }
   
-	/*--- Initialization of matrix structures ---*/
-	StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-	StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  /*--- Initialization of matrix structures ---*/
+  StiffMatrixSpace.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  StiffMatrixTime.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
       (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
@@ -97,16 +97,16 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
   
   /* Check for a restart (not really used), initialize from zero otherwise */
   
-	bool restart = (config->GetRestart());
-	if (!restart) {
+  bool restart = (config->GetRestart());
+  if (!restart) {
     
-		for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       
       /*--- Zero initial condition for testing source terms & forcing BCs ---*/
       Solution[0] = 0.0; 
       Solution[1] = 0.0;
       
-			node[iPoint] = new CWaveVariable(Solution, nDim, nVar, config);
+      node[iPoint] = new CWaveVariable(Solution, nDim, nVar, config);
       
       /* Copy solution to old containers if using dual time */
       
@@ -118,49 +118,49 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
       }
       
     }
-	} else {
+  } else {
     
     cout << "Wave restart file not currently configured!!" << endl;
     
-		string mesh_filename = config->GetSolution_FlowFileName();
-		ifstream restart_file;
+    string mesh_filename = config->GetSolution_FlowFileName();
+    ifstream restart_file;
     
-		char *cstr; cstr = new char [mesh_filename.size()+1];
-		strcpy (cstr, mesh_filename.c_str());
-		restart_file.open(cstr, ios::in);
+    char *cstr; cstr = new char [mesh_filename.size()+1];
+    strcpy (cstr, mesh_filename.c_str());
+    restart_file.open(cstr, ios::in);
         
-		if (restart_file.fail()) {
-		  if (rank == MASTER_NODE)
-		    cout << "There is no wave restart file!!" << endl;
-			exit(EXIT_FAILURE);
-		}
-		unsigned long index;
-		string text_line;
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "There is no wave restart file!!" << endl;
+      exit(EXIT_FAILURE);
+    }
+    unsigned long index;
+    string text_line;
     
-		for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-			getline(restart_file, text_line);
-			istringstream point_line(text_line);
-			point_line >> index >> Solution[0] >> Solution[1];
-			node[iPoint] = new CWaveVariable(Solution, nDim, nVar, config);
-		}
-		restart_file.close();
-	}
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      getline(restart_file, text_line);
+      istringstream point_line(text_line);
+      point_line >> index >> Solution[0] >> Solution[1];
+      node[iPoint] = new CWaveVariable(Solution, nDim, nVar, config);
+    }
+    restart_file.close();
+  }
   
 }
 
 CWaveSolver::~CWaveSolver(void) {
   
-	unsigned short iVar;
+  unsigned short iVar;
   
-	for (iVar = 0; iVar < nDim+1; iVar++)
-		delete [] StiffMatrix_Elem[iVar];
+  for (iVar = 0; iVar < nDim+1; iVar++)
+    delete [] StiffMatrix_Elem[iVar];
   
   
-	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] StiffMatrix_Node[iVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    delete [] StiffMatrix_Node[iVar];
   
-	delete [] StiffMatrix_Elem;
-	delete [] StiffMatrix_Node;
+  delete [] StiffMatrix_Elem;
+  delete [] StiffMatrix_Node;
   
 }
 
@@ -173,15 +173,15 @@ void CWaveSolver::Preprocessing(CGeometry *geometry,
   
   /* Set residuals and matrix entries to zero */
   
-	for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
     LinSysRes.SetBlock_Zero(iPoint);
-	}
-	
+  }
+  
   /* Zero out the entries in the various matrices */
   
-	StiffMatrixSpace.SetValZero();
-	StiffMatrixTime.SetValZero();
-	Jacobian.SetValZero();
+  StiffMatrixSpace.SetValZero();
+  StiffMatrixTime.SetValZero();
+  Jacobian.SetValZero();
   
 }
 
@@ -191,44 +191,44 @@ void CWaveSolver::Source_Residual(CGeometry *geometry,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
   
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
+  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
-	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	unsigned short iDim;
-	
+  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
+  unsigned short iDim;
+  
   /*--- Numerical time step. This system is unconditionally stable,
     so a very big step can be used. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_STEPPING) 
+  if (config->GetUnsteady_Simulation() == TIME_STEPPING) 
     Time_Num = config->GetDelta_UnstTimeND();
-	else Time_Num = 1E+30;
+  else Time_Num = 1E+30;
   
-	/* Loop through elements to compute contributions from the matrix     */
+  /* Loop through elements to compute contributions from the matrix     */
   /* blocks involving time. These contributions are also added to the   */
   /* Jacobian w/ the time step. Spatial source terms are also computed. */
   
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
     /* Get node numbers and their coordinate vectors */
     
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		
+    Point_0 = geometry->elem[iElem]->GetNode(0);
+    Point_1 = geometry->elem[iElem]->GetNode(1);
+    Point_2 = geometry->elem[iElem]->GetNode(2);
+    
     Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		
+    Coord_1 = geometry->node[Point_1]->GetCoord();
+    Coord_2 = geometry->node[Point_2]->GetCoord();
+    
     /* Compute triangle area (2-D) */
-		
+    
     for (iDim = 0; iDim < nDim; iDim++) {
-			a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-			b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-		}
-		Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-		
+      a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+      b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+    }
+    Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+    
     /*--- Block contributions to the Jacobian (includes time step) ---*/
     
-		StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
+    StiffMatrix_Node[0][0] = 1.0/Time_Num; StiffMatrix_Node[0][1] = 0.0;
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
     Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node);
     
@@ -264,7 +264,7 @@ void CWaveSolver::Source_Residual(CGeometry *geometry,
     StiffMatrix_Node[1][0] = 0.0;            StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local/Time_Num);
     Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
     
-	}
+  }
   
 }
 
@@ -283,26 +283,26 @@ void CWaveSolver::Viscous_Residual(CGeometry *geometry,
                                     CConfig   *config, 
                                     unsigned short iMesh, unsigned short iRKStep) {
   
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint, total_index;
-	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
-	unsigned short iVar;
-	
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint, total_index;
+  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
+  unsigned short iVar;
+  
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
+    Point_0 = geometry->elem[iElem]->GetNode(0);
+    Point_1 = geometry->elem[iElem]->GetNode(1);
+    Point_2 = geometry->elem[iElem]->GetNode(2);
     
-		Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
+    Coord_0 = geometry->node[Point_0]->GetCoord();
+    Coord_1 = geometry->node[Point_1]->GetCoord();
+    Coord_2 = geometry->node[Point_2]->GetCoord();
     
-		numerics->SetCoord(Coord_0, Coord_1, Coord_2);
+    numerics->SetCoord(Coord_0, Coord_1, Coord_2);
     
-		numerics->ComputeResidual(StiffMatrix_Elem, config);
+    numerics->ComputeResidual(StiffMatrix_Elem, config);
     
     /*--- Compute the square of the wave speed ---*/
-		wave_speed_2 = config->GetWaveSpeed()*config->GetWaveSpeed();
+    wave_speed_2 = config->GetWaveSpeed()*config->GetWaveSpeed();
     
     StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
@@ -340,26 +340,26 @@ void CWaveSolver::Viscous_Residual(CGeometry *geometry,
     StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
     StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
     
-	}
-	
+  }
+  
   /* Prepare solution vector for multiplication */
   
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			LinSysSol[total_index] = node[iPoint]->GetSolution(iVar);
-			LinSysRes[total_index] = 0.0;
-		}
-	
-	StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysRes);
-	
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = LinSysRes[total_index];
-		}
-		LinSysRes.SubtractBlock(iPoint, Residual);
-	}
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      LinSysSol[total_index] = node[iPoint]->GetSolution(iVar);
+      LinSysRes[total_index] = 0.0;
+    }
+  
+  StiffMatrixSpace.MatrixVectorProduct(LinSysSol, LinSysRes);
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      Residual[iVar] = LinSysRes[total_index];
+    }
+    LinSysRes.SubtractBlock(iPoint, Residual);
+  }
   
   
   
@@ -369,7 +369,7 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
                                   CSolver **solver_container, 
                                   CNumerics *numerics, 
                                   CConfig   *config, 
-																	unsigned short val_marker) {
+                                  unsigned short val_marker) {
   
   unsigned long iPoint, iVertex, total_index, iter;
   su2double deltaT, omega, time, ampl, *wave_sol;
@@ -395,23 +395,23 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
   wave_sol[1] = 0.0; //-ampl*cos(omega*time_new)*omega;
   
   /*--- Set the solution at the boundary nodes and zero the residual ---*/
-	
+  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
     for (iVar = 0; iVar < nVar; iVar++) {
-			Solution[iVar] = wave_sol[iVar];
-			Residual[iVar] = 0.0;
-		}
-		node[iPoint]->SetSolution(Solution);
-		node[iPoint]->SetSolution_Old(Solution);
+      Solution[iVar] = wave_sol[iVar];
+      Residual[iVar] = 0.0;
+    }
+    node[iPoint]->SetSolution(Solution);
+    node[iPoint]->SetSolution_Old(Solution);
     LinSysRes.SetBlock(iPoint, Residual);
-		LinSysRes.SetBlock(iPoint, Residual);
+    LinSysRes.SetBlock(iPoint, Residual);
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
       Jacobian.DeleteValsRowi(total_index);
     }
-	}
+  }
   
   delete [] wave_sol;
   
@@ -420,7 +420,7 @@ void CWaveSolver::BC_Euler_Wall(CGeometry *geometry,
 void CWaveSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                unsigned short val_marker) {
-	
+  
   /*--- Do nothing at the moment ---*/
   
 }
@@ -428,7 +428,7 @@ void CWaveSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 
 void CWaveSolver::Wave_Strength(CGeometry *geometry, CConfig *config) {
-	
+  
   unsigned long iPoint, iVertex;
   unsigned short iMarker, Boundary, Monitoring;
   su2double WaveSol, WaveStrength = 0.0, factor;
@@ -441,9 +441,9 @@ void CWaveSolver::Wave_Strength(CGeometry *geometry, CConfig *config) {
   Total_CWave = 0.0; AllBound_CWave = 0.0;
   
   /*--- Loop over the wave far-field markers ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		Boundary   = config->GetMarker_All_KindBC(iMarker);
-		Monitoring = config->GetMarker_All_Monitoring(iMarker);
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
     
     if (Boundary == FAR_FIELD) {
       
@@ -474,136 +474,136 @@ void CWaveSolver::Wave_Strength(CGeometry *geometry, CConfig *config) {
 
 void CWaveSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
                                         unsigned short iMesh, unsigned short RunTime_EqSystem) {
-	
-	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
-	su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
-	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
-	unsigned short iDim, iVar, jVar;
-	su2double TimeJac = 0.0;
-	
-	/*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
-	Time_Num = config->GetDelta_UnstTimeND();
-	
-	/*--- Loop through elements to compute contributions from the matrix
+  
+  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
+  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
+  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL;
+  unsigned short iDim, iVar, jVar;
+  su2double TimeJac = 0.0;
+  
+  /*--- Numerical time step (this system is uncoditional stable... a very big number can be used) ---*/
+  Time_Num = config->GetDelta_UnstTimeND();
+  
+  /*--- Loop through elements to compute contributions from the matrix
    blocks involving time. These contributions are also added to the 
    Jacobian w/ the time step. Spatial source terms are also computed. ---*/
   
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-		
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    
     /* Get node numbers and their coordinate vectors */
     
-		Point_0 = geometry->elem[iElem]->GetNode(0);
-		Point_1 = geometry->elem[iElem]->GetNode(1);
-		Point_2 = geometry->elem[iElem]->GetNode(2);
-		
+    Point_0 = geometry->elem[iElem]->GetNode(0);
+    Point_1 = geometry->elem[iElem]->GetNode(1);
+    Point_2 = geometry->elem[iElem]->GetNode(2);
+    
     Coord_0 = geometry->node[Point_0]->GetCoord();
-		Coord_1 = geometry->node[Point_1]->GetCoord();
-		Coord_2 = geometry->node[Point_2]->GetCoord();
-		
+    Coord_1 = geometry->node[Point_1]->GetCoord();
+    Coord_2 = geometry->node[Point_2]->GetCoord();
+    
     /* Compute triangle area (2-D) */
-		
+    
     for (iDim = 0; iDim < nDim; iDim++) {
-			a[iDim] = Coord_0[iDim]-Coord_2[iDim];
-			b[iDim] = Coord_1[iDim]-Coord_2[iDim];
-		}
-		Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
-
-		
-		/*----------------------------------------------------------------*/
-		/*--- Block contributions to the Jacobian (includes time step) ---*/
-		/*----------------------------------------------------------------*/
-		
-		for (iVar = 0; iVar < nVar; iVar++)
-			for (jVar = 0; jVar < nVar; jVar++)
-				StiffMatrix_Node[iVar][jVar] = 0.0;	
-		
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) TimeJac = 1.0/Time_Num;
-		if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) TimeJac = 3.0/(2.0*Time_Num);
-		
-		/*--- Diagonal value identity matrix ---*/
-			StiffMatrix_Node[0][0] = 1.0*TimeJac; 
-
-		
-		/*--- Diagonal value ---*/
-			StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local*TimeJac);
-
-    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
-		
-		/*--- Off Diagonal value ---*/
-			StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local*TimeJac);
-
-		Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
-		Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+      a[iDim] = Coord_0[iDim]-Coord_2[iDim];
+      b[iDim] = Coord_1[iDim]-Coord_2[iDim];
+    }
+    Area_Local = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
 
     
-	}
-	
-	unsigned long iPoint, total_index;
-	su2double *U_time_nM1, *U_time_n, *U_time_nP1;
-	
-	/*--- loop over points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
-		
-		/*--- Solution at time n-1, n and n+1 ---*/
-		U_time_nM1 = node[iPoint]->GetSolution_time_n1();
-		U_time_n   = node[iPoint]->GetSolution_time_n();
-		U_time_nP1 = node[iPoint]->GetSolution();
-		
-		/*--- Compute Residual ---*/
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			LinSysRes[total_index] = 0.0;
-			if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-				LinSysSol[total_index] = (U_time_nP1[iVar] - U_time_n[iVar]);
-			if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-				LinSysSol[total_index] = (U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] +  (1.0/3.0)*U_time_nM1[iVar]);
-		}
-	}
-	
-	StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysRes);
+    /*----------------------------------------------------------------*/
+    /*--- Block contributions to the Jacobian (includes time step) ---*/
+    /*----------------------------------------------------------------*/
+    
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        StiffMatrix_Node[iVar][jVar] = 0.0;  
+    
+    if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) TimeJac = 1.0/Time_Num;
+    if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) TimeJac = 3.0/(2.0*Time_Num);
+    
+    /*--- Diagonal value identity matrix ---*/
+      StiffMatrix_Node[0][0] = 1.0*TimeJac; 
+
+    
+    /*--- Diagonal value ---*/
+      StiffMatrix_Node[1][1] = (2.0/12.0)*(Area_Local*TimeJac);
+
+    Jacobian.AddBlock(Point_0, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_0, StiffMatrix_Node);
+    Jacobian.AddBlock(Point_1, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_1, StiffMatrix_Node);
+    Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_2, StiffMatrix_Node);
+    
+    /*--- Off Diagonal value ---*/
+      StiffMatrix_Node[1][1] = (1.0/12.0)*(Area_Local*TimeJac);
+
+    Jacobian.AddBlock(Point_0, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_1, StiffMatrix_Node);
+    Jacobian.AddBlock(Point_0, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_0, Point_2, StiffMatrix_Node);
+    Jacobian.AddBlock(Point_1, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_0, StiffMatrix_Node);
+    Jacobian.AddBlock(Point_1, Point_2, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_1, Point_2, StiffMatrix_Node);
+    Jacobian.AddBlock(Point_2, Point_0, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_0, StiffMatrix_Node);
+    Jacobian.AddBlock(Point_2, Point_1, StiffMatrix_Node); StiffMatrixTime.AddBlock(Point_2, Point_1, StiffMatrix_Node);
+
+    
+  }
   
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			Residual[iVar] = LinSysRes[total_index];
-		}
-		LinSysRes.SubtractBlock(iPoint, Residual);
-	}
-	
+  unsigned long iPoint, total_index;
+  su2double *U_time_nM1, *U_time_n, *U_time_nP1;
+  
+  /*--- loop over points ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) { 
+    
+    /*--- Solution at time n-1, n and n+1 ---*/
+    U_time_nM1 = node[iPoint]->GetSolution_time_n1();
+    U_time_n   = node[iPoint]->GetSolution_time_n();
+    U_time_nP1 = node[iPoint]->GetSolution();
+    
+    /*--- Compute Residual ---*/
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      LinSysRes[total_index] = 0.0;
+      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        LinSysSol[total_index] = (U_time_nP1[iVar] - U_time_n[iVar]);
+      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        LinSysSol[total_index] = (U_time_nP1[iVar] - (4.0/3.0)*U_time_n[iVar] +  (1.0/3.0)*U_time_nM1[iVar]);
+    }
+  }
+  
+  StiffMatrixTime.MatrixVectorProduct(LinSysSol, LinSysRes);
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      Residual[iVar] = LinSysRes[total_index];
+    }
+    LinSysRes.SubtractBlock(iPoint, Residual);
+  }
+  
 }
 
 
 void CWaveSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
-	
-  unsigned short iVar;
-	unsigned long iPoint, total_index;
-    
-	/*--- Set maximum residual to zero ---*/
   
-	for (iVar = 0; iVar < nVar; iVar++) {
-		SetRes_RMS(iVar, 0.0);
+  unsigned short iVar;
+  unsigned long iPoint, total_index;
+    
+  /*--- Set maximum residual to zero ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    SetRes_RMS(iVar, 0.0);
         SetRes_Max(iVar, 0.0, 0);
     }
-	
-	/*--- Build implicit system ---*/
   
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+  /*--- Build implicit system ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
         
-		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     
-		for (iVar = 0; iVar < nVar; iVar++) {
-			total_index = iPoint*nVar+iVar;
-			LinSysSol[total_index] = 0.0;
-			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
+    for (iVar = 0; iVar < nVar; iVar++) {
+      total_index = iPoint*nVar+iVar;
+      LinSysSol[total_index] = 0.0;
+      AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
             AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-		}
-	}
+    }
+  }
     
     /*--- Initialize residual and solution at the ghost points ---*/
   
@@ -614,20 +614,20 @@ void CWaveSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             LinSysSol[total_index] = 0.0;
         }
     }
-	
+  
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
   system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-	
-	/*--- Update solution (system written in terms of increments) ---*/
   
-	for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-		for (iVar = 0; iVar < nVar; iVar++) {
-			node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-		}
-	}
-	
+  /*--- Update solution (system written in terms of increments) ---*/
+  
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+    }
+  }
+  
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry, config);
@@ -644,26 +644,26 @@ void CWaveSolver::SetSpace_Matrix(CGeometry *geometry,
   
 //  /* Local variables and initialization */
 //  
-//	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint, total_index;
-//	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
-//	unsigned short iVar;
-//	
-//	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+//  unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint, total_index;
+//  su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;
+//  unsigned short iVar;
+//  
+//  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 //    
-//		Point_0 = geometry->elem[iElem]->GetNode(0);
-//		Point_1 = geometry->elem[iElem]->GetNode(1);
-//		Point_2 = geometry->elem[iElem]->GetNode(2);
+//    Point_0 = geometry->elem[iElem]->GetNode(0);
+//    Point_1 = geometry->elem[iElem]->GetNode(1);
+//    Point_2 = geometry->elem[iElem]->GetNode(2);
 //    
-//		Coord_0 = geometry->node[Point_0]->GetCoord();
-//		Coord_1 = geometry->node[Point_1]->GetCoord();
-//		Coord_2 = geometry->node[Point_2]->GetCoord();
+//    Coord_0 = geometry->node[Point_0]->GetCoord();
+//    Coord_1 = geometry->node[Point_1]->GetCoord();
+//    Coord_2 = geometry->node[Point_2]->GetCoord();
 //    
-//		numerics->SetCoord(Coord_0, Coord_1, Coord_2);
+//    numerics->SetCoord(Coord_0, Coord_1, Coord_2);
 //    
-//		numerics->ComputeResidual(StiffMatrix_Elem, config);
+//    numerics->ComputeResidual(StiffMatrix_Elem, config);
 //    
 //    /*--- Compute the square of the wave speed ---*/
-//		wave_speed_2 = config->GetWaveSpeed()*config->GetWaveSpeed();
+//    wave_speed_2 = config->GetWaveSpeed()*config->GetWaveSpeed();
 //    
 //    StiffMatrix_Node[0][0] = 0.0;                               StiffMatrix_Node[0][1] = -1.0;
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[0][0]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
@@ -701,19 +701,19 @@ void CWaveSolver::SetSpace_Matrix(CGeometry *geometry,
 //    StiffMatrix_Node[1][0] = StiffMatrix_Elem[2][2]*wave_speed_2; StiffMatrix_Node[1][1] = 0.0;
 //    StiffMatrixSpace.AddBlock(Point_2, Point_2, StiffMatrix_Node); Jacobian.AddBlock(Point_2, Point_2, StiffMatrix_Node);
 //    
-//	}
+//  }
   
 }
 
 
 void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
 
-	int rank;
+  int rank;
   
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #else
-	rank = MASTER_NODE;
+  rank = MASTER_NODE;
 #endif
   
   /*--- Restart the solution from file information ---*/
@@ -722,7 +722,8 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   char buffer[50];
   string UnstExt, text_line;
   ifstream restart_file;
-  
+  unsigned short iZone = config->GetiZone();
+
   /*--- For the unsteady adjoint, we integrate backwards through
    physical time, so load in the direct solution files in reverse. ---*/  
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
@@ -763,12 +764,41 @@ void CWaveSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     exit(EXIT_FAILURE);
   }
   
-  /*--- Read the restart file ---*/
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-    getline(restart_file, text_line);
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+  
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
+  
+  /*--- Now fill array with the transform values only for local points ---*/
+  
+  for (iPoint = 0; iPoint < geometry[iZone]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[iZone]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+  
+  /*--- Read all lines in the restart file ---*/
+  
+  unsigned long iPoint_Global = 0;
+  
+  /*--- The first line is the header ---*/
+  
+  getline (restart_file, text_line);
+  
+  for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (restart_file, text_line);
+    
     istringstream point_line(text_line);
-    point_line >> index >> Solution[0] >> Solution[1];
-    node[iPoint]->SetSolution_Direct(Solution);
+    
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+    
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+            
+      point_line >> index >> Solution[0] >> Solution[1];
+      node[iPoint]->SetSolution_Direct(Solution);
+    }
   }
   
   /*--- Close the restart file ---*/

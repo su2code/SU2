@@ -2,7 +2,7 @@
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, A. Bueno
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,7 +61,7 @@ void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Ja
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
   AD::SetPreaccIn(TurbVar_i[0]); AD::SetPreaccIn(TurbVar_j[0]);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement){
+  if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   
@@ -506,6 +506,7 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
   
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
+  transition = (config->GetKind_Trans_Model() == BC);
   
   /*--- Spalart-Allmaras closure constants ---*/
   
@@ -535,6 +536,10 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 //  AD::SetPreaccIn(TurbVar_Grad_i[0], nDim);
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
+//  BC Transition Model variables
+  su2double vmag, rey, re_theta, re_theta_t, re_v;
+  su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, gamma_BC, term1, term2, term_exponential;
+
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -549,6 +554,18 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
   Destruction     = 0.0;
   CrossProduction = 0.0;
   val_Jacobian_i[0][0] = 0.0;
+  
+  gamma_BC = 0.0;
+  vmag = 0.0;
+  tu   = config->GetTurbulenceIntensity_FreeStream();
+  rey  = config->GetReynolds();
+
+  if (nDim==2) {
+    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]);
+  }
+  else if (nDim==3) {
+    vmag = sqrt(V_i[1]*V_i[1]+V_i[2]*V_i[2]+V_i[3]*V_i[3]);
+  }
   
   /*--- Evaluate Omega ---*/
   
@@ -576,19 +593,41 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
-    
-    /*--- Production term ---*/;
 
 //    Original SA model
 //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
     
-    Production = cb1*Shat*TurbVar_i[0]*Volume;
+    if (transition) {
 
+//    BC model constants    
+      chi_1 = 0.002;
+      chi_2 = 5.0;
+
+      nu_t = (TurbVar_i[0]*fv1); //S-A variable
+      nu_cr = chi_2/rey;
+      nu_BC = (nu_t)/(vmag*dist_i);
+
+      re_v   = ((Density_i*pow(dist_i,2.))/(Laminar_Viscosity_i))*Omega;
+      re_theta = re_v/2.193;
+      re_theta_t = (803.73 * pow((tu + 0.6067),-1.027)); //MENTER correlation
+      //re_theta_t = 163.0 + exp(6.91-tu); //ABU-GHANNAM & SHAW correlation
+
+      term1 = sqrt(max(re_theta-re_theta_t,0.)/(chi_1*re_theta_t));
+      term2 = sqrt(max(nu_BC-nu_cr,0.)/(nu_cr));
+      term_exponential = (term1 + term2);
+      gamma_BC = 1.0 - exp(-term_exponential);
+
+      Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+    }
+    else {
+      Production = cb1*Shat*TurbVar_i[0]*Volume;
+    }
+    
     /*--- Destruction term ---*/
     
     r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
     g = r + cw2*(pow(r,6.0)-r);
-    g_6 =	pow(g,6.0);
+    g_6 =  pow(g,6.0);
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
     
@@ -613,7 +652,13 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
-    val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    
+    if (transition) {
+        val_Jacobian_i[0][0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    }
+    else {
+        val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+    }
     
     /*--- Implicit part, destruction term ---*/
     
@@ -621,7 +666,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     if (r == 10.0) dr = 0.0;
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
     
   }
 
@@ -721,7 +766,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
       
       r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
       g = r + cw2*(pow(r,6.0)-r);
-      g_6 =	pow(g,6.0);
+      g_6 =  pow(g,6.0);
       glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
       fw = g*glim;
       
@@ -754,7 +799,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
       if (r == 10.0) dr = 0.0;
       dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
       dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-      val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+      val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +  2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
       
     }
     
@@ -823,7 +868,7 @@ void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_J
   AD::SetPreaccIn(TurbVar_i,2);
   AD::SetPreaccIn(TurbVar_j,2);
   AD::SetPreaccIn(Normal, nDim);
-  if (grid_movement){
+  if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
   if (incompressible) {
@@ -864,11 +909,11 @@ void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_J
   val_residual[1] = a0*Density_i*TurbVar_i[1]+a1*Density_j*TurbVar_j[1];
   
   if (implicit) {
-    val_Jacobian_i[0][0] = a0;		val_Jacobian_i[0][1] = 0.0;
-    val_Jacobian_i[1][0] = 0.0;		val_Jacobian_i[1][1] = a0;
+    val_Jacobian_i[0][0] = a0;    val_Jacobian_i[0][1] = 0.0;
+    val_Jacobian_i[1][0] = 0.0;    val_Jacobian_i[1][1] = a0;
     
-    val_Jacobian_j[0][0] = a1;		val_Jacobian_j[0][1] = 0.0;
-    val_Jacobian_j[1][0] = 0.0;		val_Jacobian_j[1][1] = a1;
+    val_Jacobian_j[0][0] = a1;    val_Jacobian_j[0][1] = 0.0;
+    val_Jacobian_j[1][0] = 0.0;    val_Jacobian_j[1][1] = a1;
   }
 
   AD::SetPreaccOut(val_residual, nVar);
@@ -979,11 +1024,11 @@ void CAvgGrad_TurbSST::ComputeResidual(su2double *val_residual, su2double **Jaco
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
-    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;		Jacobian_i[0][1] = 0.0;
-    Jacobian_i[1][0] = 0.0;									    Jacobian_i[1][1] = -diff_omega*proj_vector_ij/Density_i;
+    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;                      Jacobian_i[1][1] = -diff_omega*proj_vector_ij/Density_i;
     
-    Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 		Jacobian_j[0][1] = 0.0;
-    Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
+    Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j;     Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;                      Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
   }
 
   AD::SetPreaccOut(val_residual, nVar);
@@ -1099,11 +1144,11 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(su2double *val_residual, su2doub
   
   /*--- For Jacobians -> Use of TSL approx. to compute derivatives of the gradients ---*/
   if (implicit) {
-    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;		Jacobian_i[0][1] = 0.0;
-    Jacobian_i[1][0] = 0.0;									    Jacobian_i[1][1] = -diff_omega*proj_vector_ij/Density_i;
+    Jacobian_i[0][0] = -diff_kine*proj_vector_ij/Density_i;    Jacobian_i[0][1] = 0.0;
+    Jacobian_i[1][0] = 0.0;                      Jacobian_i[1][1] = -diff_omega*proj_vector_ij/Density_i;
     
-    Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 		Jacobian_j[0][1] = 0.0;
-    Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
+    Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j;     Jacobian_j[0][1] = 0.0;
+    Jacobian_j[1][0] = 0.0;                      Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
   }
   
   AD::SetPreaccOut(val_residual, nVar);
@@ -1159,8 +1204,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   }
   
   val_residual[0] = 0.0;        val_residual[1] = 0.0;
-  val_Jacobian_i[0][0] = 0.0;		val_Jacobian_i[0][1] = 0.0;
-  val_Jacobian_i[1][0] = 0.0;		val_Jacobian_i[1][1] = 0.0;
+  val_Jacobian_i[0][0] = 0.0;    val_Jacobian_i[0][1] = 0.0;
+  val_Jacobian_i[1][0] = 0.0;    val_Jacobian_i[1][1] = 0.0;
   
   /*--- Computation of blended constants for the source terms---*/
   
@@ -1197,7 +1242,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
     /*--- Implicit part ---*/
     
-    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;		val_Jacobian_i[0][1] = 0.0;
+    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = 0.0;
     val_Jacobian_i[1][0] = 0.0;                               val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
   
