@@ -9485,13 +9485,6 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
   CPreconditioner* precond = NULL;
   CSysSolve *system  = new CSysSolve();
 
-  /*--- Communicate any prescribed boundary displacements via MPI,
-   so that all nodes have the same solution and r.h.s. entries
-   across all partitions. ---*/
-
-  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
-
   bool TapeActive = NO;
 
   if (config->GetDiscrete_Adjoint()){
