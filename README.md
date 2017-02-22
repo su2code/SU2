@@ -8,7 +8,7 @@ For an overview of the technical details in SU2, please see the following AIAA J
 
 "SU2: An open-source suite for multiphysics simulation and design," AIAA Journal, 54(3):828-846, 2016. http://arc.aiaa.org/doi/10.2514/1.J053813
 
-[![Build Status](https://travis-ci.org/su2code/SU2.svg?branch=develop)](https://travis-ci.org/su2code/SU2)
+[![Build Status](https://travis-ci.org/pecos-hybrid/SU2.svg?branch=pecos-dev)](https://travis-ci.org/pecos-hybrid/SU2)
 
 ----------------------------------------------------------
   SU2 INTRODUCTION 

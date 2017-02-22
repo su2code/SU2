@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - clarkp@utexas.edu
   
 branches:
     only:
-        - develop
+        - pecos-dev
 
 env:
     global:
