@@ -1860,7 +1860,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
 
   /*--- Allocate memory for the restart data. ---*/
 
-  Restart_Data = new su2double[Restart_Vars[0]*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
 
   /*--- Read all lines in the restart file and extract data. ---*/
 
@@ -1935,11 +1935,11 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new su2double[Restart_Vars[0]*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
 
   /*--- Read in the data for the restart at all local points. ---*/
 
-  fread(Restart_Data, sizeof(su2double), Restart_Vars[0]*geometry->GetnPointDomain(), fhw);
+  fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*geometry->GetnPointDomain(), fhw);
 
   /*--- Close the file. ---*/
 
@@ -2053,7 +2053,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
 
   /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-  Restart_Data = new su2double[Restart_Vars[0]*geometry->GetnPointDomain()];
+  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
 
   /*--- Collective call for all ranks to read from their view simultaneously. ---*/
 
@@ -2098,7 +2098,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
     int nVar_Buf = 4;
     int var_buf[4];
     int Restart_Iter = 0;
-    su2double Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
 
 #ifndef HAVE_MPI
 
@@ -2120,7 +2120,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-    fseek(fhw,-(sizeof(int) + 5*sizeof(su2double)), SEEK_END);
+    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
 
     /*--- Read the external iteration. ---*/
 
@@ -2128,7 +2128,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta, 5, sizeof(su2double), fhw);
+    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
 
     /*--- Close the file. ---*/
 
@@ -2174,13 +2174,13 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
 
       /*--- External iteration. ---*/
       disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[0]*var_buf[1]*sizeof(su2double));
+              var_buf[0]*var_buf[1]*sizeof(passivedouble));
       MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
 
       /*--- Additional doubles for AoA, AoS, etc. ---*/
 
       disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
-              var_buf[0]*var_buf[1]*sizeof(su2double) + 1*sizeof(int));
+              var_buf[0]*var_buf[1]*sizeof(passivedouble) + 1*sizeof(int));
       MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
     }

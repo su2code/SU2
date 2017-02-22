@@ -14847,14 +14847,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
-  su2double *buf = new su2double[nParallel_Poin*nVar_Par];
+  passivedouble *buf = new passivedouble[nParallel_Poin*nVar_Par];
 
   /*--- For now, create a temp 1D buffer to load up the data for writing.
    This will be replaced with a derived data type most likely. ---*/
 
   for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
     for (iVar = 0; iVar < nVar_Par; iVar++)
-      buf[iPoint*nVar_Par+iVar] = Parallel_Data[iVar][iPoint];
+      buf[iPoint*nVar_Par+iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
 
   /*--- Prepare metadata. ---*/
 
@@ -14864,14 +14864,14 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   else
     Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
 
-  su2double Restart_Metadata[5] = {
-    config->GetAoA() - config->GetAoA_Offset(),
-    config->GetAoS() - config->GetAoS_Offset(),
-    config->GetInitial_BCThrust(),
-    config->GetdCD_dCL(),
+  passivedouble Restart_Metadata[5] = {
+    SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),
+    SU2_TYPE::GetValue(config->GetAoS() - config->GetAoS_Offset()),
+    SU2_TYPE::GetValue(config->GetInitial_BCThrust()),
+    SU2_TYPE::GetValue(config->GetdCD_dCL()),
     0.0
   };
-  if (adjoint) Restart_Metadata[4] = solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
+  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
 
 #ifndef HAVE_MPI
 
@@ -14900,7 +14900,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Call to write the entire restart file data in binary in one shot. ---*/
 
-  fwrite(buf, nVar_Par*nParallel_Poin, sizeof(su2double), fhw);
+  fwrite(buf, nVar_Par*nParallel_Poin, sizeof(passivedouble), fhw);
 
   /*--- Write the external iteration. ---*/
 
@@ -14908,7 +14908,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Write the metadata. ---*/
 
-  fwrite(Restart_Metadata, 5, sizeof(su2double), fhw);
+  fwrite(Restart_Metadata, 5, sizeof(passivedouble), fhw);
 
   /*--- Close the file. ---*/
 
@@ -14979,7 +14979,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    in cumulative storage format. ---*/
 
   disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
-          nVar_Par*nPoint_Linear[rank]*sizeof(su2double));
+          nVar_Par*nPoint_Linear[rank]*sizeof(passivedouble));
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
@@ -15005,13 +15005,13 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     /*--- External iteration. ---*/
 
     disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
-            nVar_Par*nTotalPoint*sizeof(su2double));
+            nVar_Par*nTotalPoint*sizeof(passivedouble));
     MPI_File_write_at(fhw, disp, &Restart_ExtIter, 1, MPI_INT, MPI_STATUS_IGNORE);
 
     /*--- Additional doubles for AoA, AoS, etc. ---*/
 
     disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
-            nVar_Par*nTotalPoint*sizeof(su2double) + 1*sizeof(int));
+            nVar_Par*nTotalPoint*sizeof(passivedouble) + 1*sizeof(int));
     MPI_File_write_at(fhw, disp, Restart_Metadata, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
   }
