@@ -14934,9 +14934,17 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   MPI_Type_contiguous(nVar_Par*nParallel_Poin, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
-  /*--- All ranks open the file using MPI. ---*/
+  /*--- All ranks open the file using MPI. Here, we try to open the file with
+   exclusive so that an error is generated if the file exists. We always want
+   to write a fresh restart file, so we delete any existing files and create
+   a new one. ---*/
 
-  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  if (ierr != MPI_SUCCESS)  {
+    if (rank == 0)
+      MPI_File_delete(fname, MPI_INFO_NULL);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  }
 
   /*--- Error check opening the file. ---*/
 
