@@ -838,10 +838,10 @@ void CSysSolve::SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSys
 
   switch(config->GetKind_DiscAdj_Linear_Prec()){
     case ILU:
-      Jacobian.BuildILUPreconditioner(true);
+      Jacobian.BuildILUPreconditioner(false);
       break;
     case JACOBI:
-      Jacobian.BuildJacobiPreconditioner(true);
+      Jacobian.BuildJacobiPreconditioner(false);
       break;
     default:
       cout << "The specified preconditioner is not yet implemented for the discrete adjoint method." << endl;
