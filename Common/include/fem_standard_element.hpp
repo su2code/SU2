@@ -914,6 +914,12 @@ public:
   su2double *GetDtBasisFunctionsIntegration(void);
 
   /*!
+  * \brief Function, which makes available the matrix storage of the inverse of Vandermonde matrix of solution DOFs.
+  * \return  The pointer to matVandermondeInv.
+  */
+  const su2double *GetMatVandermondeInv(void) const;
+
+  /*!
   * \brief Function, which makes available the matrix storage of the basis functions in the integration points.
   * \return  The pointer to matBasisIntegration.
   */

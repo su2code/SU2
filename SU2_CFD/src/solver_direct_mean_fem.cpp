@@ -2603,6 +2603,119 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *con
   }
 }
 
+void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+  /*--- Set the pointers for the local arrays. ---*/
+  su2double *solInt = VecTmpMemory.data();
+  su2double tick = 0.0;
+  //su2double *fluxes = solInt + nIntegrationMax*nVar;
+
+  /*--- Dummy variable for storing shock sensor value temporarily ---*/
+  su2double sensorVal, machNorm, machMax;
+  su2double rho, u, v, w, p, a, T;
+  //su2double gamma = 1.4;
+  Gamma = config->GetGamma();
+
+  /* Store the number of conservative variables, which depends
+     on the number of dimensions. */
+  const unsigned short nConsVar = nVar;
+
+  /*--- Loop over the owned volume elements to sense the shock. If shock exists,
+        add artificial viscosity for DG FEM formulation to the residual.  ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    /* Get the data from the corresponding standard element. */
+    const unsigned short ind             = volElem[l].indStandardElement;
+    //const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
+    const unsigned short nDOFs           = volElem[l].nDOFsSol;
+    //const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+    //const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+    //const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+    const unsigned short nPoly           = standardElementsSol[ind].GetNPoly();
+    const su2double *matVanderInv        = standardElementsSol[ind].GetMatVandermondeInv();
+
+    /*---------------------------------------------------------------------*/
+    /*--- Step 1: Calculate the shock sensor value for this element.    ---*/
+    /*---------------------------------------------------------------------*/
+
+    /* Initialize dummy variable for this volume element */
+    sensorVal = 0;
+    machMax = -1;
+
+    /* Easier storage of the solution variables for this element. */
+    su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /* Temporary storage of mach number for DOFs in this element. */
+    vector<su2double> machSolDOFs, vecTemp;
+    machSolDOFs.resize(nDOFs);
+    vecTemp.resize(nDOFs);
+
+    /* Calculate primitive variables and mach number for DOFs in this element.
+       Also, track the maximum mach number in this element. */
+    for(unsigned short iInd=0; iInd<nDOFs; ++iInd) {
+        rho = solDOFs[0+iInd*nConsVar];
+        u = solDOFs[0+iInd*nConsVar+1]/rho;
+        v = solDOFs[0+iInd*nConsVar+2]/rho;      
+        p = (Gamma-1)*(solDOFs[0+iInd*nConsVar+3]-0.5*(solDOFs[0+iInd*nConsVar+1]*u + solDOFs[0+iInd*nConsVar+2]*v));
+        a = sqrt(Gamma*p/rho);
+        machSolDOFs[iInd] = sqrt((u*u+v*v))/a;
+        machMax = max(machSolDOFs[iInd],machMax);
+    }
+
+    /* Change the solution coefficients to modal form from nodal form */
+    for(unsigned short i=0; i<nDOFs; ++i) {
+        for (unsigned short j=0; j<nDOFs; ++j) {
+            vecTemp[i] += matVanderInv[i+j*nDOFs]*machSolDOFs[j];
+        }
+    }
+
+    /* Get the L2 norm of solution coefficients for the highest polynomial order.
+       Now this is just for triangle.
+    !!!!!Need to change the lower bound of this for loop for other elements. */
+    for(unsigned short i=nPoly*(nPoly+1)/2+1; i<nDOFs; ++i) {
+        sensorVal += vecTemp[i]*vecTemp[i];
+    }
+
+    /* If the maximum mach number is greater than 1.0, try to calculate the shockSensorValue.
+       Otherwise, assign default value. */
+    if ( machMax > 1.0) {
+        // !!!!!This threshold value for sensorVal should be further investigated
+        if(sensorVal > 1.e-15) {
+            machNorm = 0.0;
+            /*--- Get L2 norm square of vecTemp ---*/
+            for (unsigned short i=0; i<nDOFs; ++i) {
+                machNorm += vecTemp[i]*vecTemp[i];
+            }
+            if (machNorm < 1.e-15) {
+                // This should not happen
+                volElem[l].shockSensorValue = 1000.0;
+            }
+            else {
+                volElem[l].shockSensorValue = log(sensorVal/machNorm);
+            }
+        }
+        else {
+            // There is no shock in this element
+            volElem[l].shockSensorValue = -1000.0;
+        }
+    }
+    else {        
+        volElem[l].shockSensorValue = -1000.0;
+    }
+
+    /* Call the general function to carry out the matrix product. */
+    //config->GEMM_Tick(&tick);
+    //DenseMatrixProduct(nDOFs, nDOFs, 1, matVanderInv, denSolDOFs, solInt);
+    //config->GEMM_Tock(tick, "Shock_Capturing_DG1", nDOFs, nDOFs, 1);
+
+    /*---------------------------------------------------------------------*/
+    /*--- Step 2: Determine artificial viscosity for this element.      ---*/
+    /*---------------------------------------------------------------------*/
+
+
+  }
+}
+
 void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short iMesh, unsigned short iStep) {
 
