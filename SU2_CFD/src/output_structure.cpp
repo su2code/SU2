@@ -4454,12 +4454,6 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
       
       for(unsigned short iVar=0; iVar<nVar_Consv; ++iVar, ++i) {          
         DOFsSol.push_back(solDOFs[i]);
-        //  if ( iVar == nVar_Consv-1 ) {
-        //      DOFsSol.push_back(volElem[l].shockSensorValue);
-        //  }
-        //  else {
-        //      DOFsSol.push_back(solDOFs[i]);
-        //  }
       }
     }
   }
