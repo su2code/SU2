@@ -114,8 +114,7 @@ protected:
 
   int *Restart_Vars;       /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
   int Restart_ExtIter;     /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
-  su2double *Restart_Meta; /*!< \brief Auxiliary structure for holding metadata from a restart. */
-  su2double *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
+  passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
   
 public:

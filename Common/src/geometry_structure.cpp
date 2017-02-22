@@ -12961,9 +12961,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     strcpy(fname, filename.c_str());
     int nRestart_Vars = 4;
     int *Restart_Vars = new int[4];
-    su2double *Restart_Data = NULL;
+    passivedouble *Restart_Data = NULL;
     int Restart_Iter = 0;
-    su2double Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
 
 #ifndef HAVE_MPI
 
@@ -12996,15 +12996,15 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-    Restart_Data = new su2double[Restart_Vars[0]*GetnPointDomain()];
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
 
     /*--- Read in the data for the restart at all local points. ---*/
 
-    fread(Restart_Data, sizeof(su2double), Restart_Vars[0]*GetnPointDomain(), fhw);
+    fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*GetnPointDomain(), fhw);
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-    fseek(fhw,-(sizeof(int) + 5*sizeof(su2double)), SEEK_END);
+    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
 
     /*--- Read the external iteration. ---*/
 
@@ -13012,7 +13012,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Read the metadata. ---*/
 
-    fread(Restart_Meta, 5, sizeof(su2double), fhw);
+    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
     
     /*--- Close the file. ---*/
 
@@ -13126,7 +13126,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- For now, create a temp 1D buffer to read the data from file. ---*/
 
-    Restart_Data = new su2double[Restart_Vars[0]*GetnPointDomain()];
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
 
     /*--- Collective call for all ranks to read from their view simultaneously. ---*/
     
@@ -13138,13 +13138,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
       /*--- External iteration. ---*/
       disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
-              Restart_Vars[0]*Restart_Vars[1]*sizeof(su2double));
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble));
       MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
 
       /*--- Additional doubles for AoA, AoS, etc. ---*/
 
       disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
-              Restart_Vars[0]*Restart_Vars[1]*sizeof(su2double) + 1*sizeof(int));
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble) + 1*sizeof(int));
       MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
     }
