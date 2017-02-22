@@ -5714,6 +5714,16 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
+void CFEM_DG_NSSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+    /*--- Copy and paste CFEM_DG_EULERSolver::Shock_Capturing_DG later on! ---*/
+    for(unsigned long l=0; l<nVolElemOwned; ++l) {
+          volElem[l].shockSensorValue = -1000.0;
+    }
+
+}
+
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh, unsigned short iStep) {
 

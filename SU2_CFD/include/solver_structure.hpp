@@ -12735,6 +12735,19 @@ public:
                     unsigned short iMesh, unsigned long Iteration);
   
   /*!
+   * \brief Compute the artificial viscosity for shock capturing in DG.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
+   */
+  void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iStep);
+
+  /*!
    * \brief Compute the volume contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
