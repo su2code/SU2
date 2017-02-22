@@ -63,6 +63,8 @@ inline su2double* FEMStandardElementClass::GetDsBasisFunctionsIntegration(void){
 
 inline su2double* FEMStandardElementClass::GetDtBasisFunctionsIntegration(void){return dtLagBasisIntegration.data();}
 
+inline const su2double* FEMStandardElementClass::GetMatVandermondeInv(void) const {return matVandermondeInv.data();}
+
 inline const su2double* FEMStandardElementClass::GetMatBasisFunctionsIntegration(void) const {return matBasisIntegration.data();}
 
 inline const su2double* FEMStandardElementClass::GetDerMatBasisFunctionsIntTrans(void) const {return matDerBasisIntTrans.data();}
