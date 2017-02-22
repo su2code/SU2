@@ -5323,7 +5323,9 @@ void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, uns
 
   geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
 
-//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
   /*-----------------------------------------------------------------*/
   /*----------------- Iterate the flow solver -----------------------*/
@@ -5344,8 +5346,7 @@ void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, uns
   /*--------------------- Set MPI Solution --------------------------*/
   /*-----------------------------------------------------------------*/
 
-
-//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
 
 
 }
@@ -5359,6 +5360,10 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW
   /*-----------------------------------------------------------------*/
   /*---------- Set Dependencies on Geometry and Flow ----------------*/
   /*-----------------------------------------------------------------*/
+
+//  grid_movement[ZONE_FLOW]->UpdateDualGrid(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+
+  solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->Set_MPI_Solution(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
 
   geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
 
@@ -5399,7 +5404,10 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(unsigned short ZONE_FLOW, un
   /*-----------------------------------------------------------------*/
   /*--------------------- Set MPI Solution --------------------------*/
   /*-----------------------------------------------------------------*/
+
   geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
+
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
 
   solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
