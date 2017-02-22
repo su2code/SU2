@@ -2607,15 +2607,13 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
                                           CConfig *config, unsigned short iMesh, unsigned short iStep) {
 
   /*--- Set the pointers for the local arrays. ---*/
-  su2double *solInt = VecTmpMemory.data();
   su2double tick = 0.0;
-  //su2double *fluxes = solInt + nIntegrationMax*nVar;
 
   /*--- Dummy variable for storing shock sensor value temporarily ---*/
   su2double sensorVal, sensorLowerBound, machNorm, machMax;
-  su2double rho, u, v, w, p, a, T;
+  su2double rho, u, v, w, p, a;
   bool shockExist;
-  //su2double gamma = 1.4;
+  unsigned short nDOFsPm1;       // Number of DOFs up to polynomial degree p-1
   Gamma = config->GetGamma();
 
   /* Store the number of conservative variables, which depends
@@ -2627,16 +2625,38 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
     /* Get the data from the corresponding standard element. */
     const unsigned short ind             = volElem[l].indStandardElement;
-    //const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
     const unsigned short nDOFs           = volElem[l].nDOFsSol;
-    //const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
-    //const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
-    //const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+    const unsigned short VTK_TypeElem    = volElem[l].VTK_Type;
     const unsigned short nPoly           = standardElementsSol[ind].GetNPoly();
     const su2double *matVanderInv        = standardElementsSol[ind].GetMatVandermondeInv();
 
+    /*----------------------------------------------------------------------------*/
+    /*--- Step 1: Calculate the number of DOFs up to polynomial degree p-1.    ---*/
+    /*----------------------------------------------------------------------------*/
+
+    switch( VTK_TypeElem ) {
+      case TRIANGLE:
+        nDOFsPm1 = nPoly*(nPoly+1)/2;
+        break;
+      case QUADRILATERAL:
+        nDOFsPm1 = nPoly*nPoly;
+        break;
+      case TETRAHEDRON:
+        nDOFsPm1 = nPoly*(nPoly+1)*(nPoly+2)/6;
+        break;
+      case PYRAMID:
+        nDOFsPm1 = nPoly*(nPoly+1)*(2*nPoly+1)/6;
+        break;
+      case PRISM:
+        nDOFsPm1 = nPoly*nPoly*(nPoly+1)/2;
+        break;
+      case HEXAHEDRON:
+        nDOFsPm1 = nPoly*nPoly*nPoly;
+        break;
+    }
+
     /*---------------------------------------------------------------------*/
-    /*--- Step 1: Calculate the shock sensor value for this element.    ---*/
+    /*--- Step 2: Calculate the shock sensor value for this element.    ---*/
     /*---------------------------------------------------------------------*/
 
     /* Initialize dummy variable for this volume element */
@@ -2658,10 +2678,19 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
     for(unsigned short iInd=0; iInd<nDOFs; ++iInd) {
         rho = solDOFs[0+iInd*nConsVar];
         u = solDOFs[0+iInd*nConsVar+1]/rho;
-        v = solDOFs[0+iInd*nConsVar+2]/rho;      
-        p = (Gamma-1)*(solDOFs[0+iInd*nConsVar+3]-0.5*(solDOFs[0+iInd*nConsVar+1]*u + solDOFs[0+iInd*nConsVar+2]*v));
-        a = sqrt(Gamma*p/rho);
-        machSolDOFs[iInd] = sqrt((u*u+v*v))/a;
+        v = solDOFs[0+iInd*nConsVar+2]/rho;
+
+        if ( nDim == 2 ) {
+            p = (Gamma-1)*(solDOFs[0+iInd*nConsVar+3]-0.5*(solDOFs[0+iInd*nConsVar+1]*u + solDOFs[0+iInd*nConsVar+2]*v));
+            a = sqrt(Gamma*p/rho);
+            machSolDOFs[iInd] = sqrt((u*u+v*v))/a;
+        }
+        else if ( nDim == 3) {
+            w = solDOFs[0+iInd*nConsVar+3]/rho;
+            p = (Gamma-1)*(solDOFs[0+iInd*nConsVar+4]-0.5*(solDOFs[0+iInd*nConsVar+1]*u + solDOFs[0+iInd*nConsVar+2]*v + solDOFs[0+iInd*nConsVar+3]*w));
+            a = sqrt(Gamma*p/rho);
+            machSolDOFs[iInd] = sqrt((u*u+v*v+w*w))/a;
+        }
         machMax = max(machSolDOFs[iInd],machMax);
     }
 
@@ -2672,17 +2701,15 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
         }
     }
 
-    /* Get the L2 norm of solution coefficients for the highest polynomial order.
-       Now this is just for triangle.
-    !!!!!Need to change the lower bound of this for loop for other elements. */
-    for(unsigned short i=nPoly*(nPoly+1)/2+1; i<nDOFs; ++i) {
+    /* Get the L2 norm of solution coefficients for the highest polynomial order. */
+    for(unsigned short i=nDOFsPm1; i<nDOFs; ++i) {
         sensorVal += vecTemp[i]*vecTemp[i];
     }
 
     /* If the maximum mach number is greater than 1.0, try to calculate the shockSensorValue.
        Otherwise, assign default value. */
     if ( machMax > 1.0) {
-        // !!!!!This threshold value for sensorVal should be further investigated
+        // !!!!!Threshold value for sensorVal should be further investigated
         if(sensorVal > 1.e-15) {
             machNorm = 0.0;
             /*--- Get L2 norm square of vecTemp ---*/
@@ -2707,19 +2734,14 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
         volElem[l].shockSensorValue = -1000.0;
     }
 
-    /* Call the general function to carry out the matrix product. */
-    //config->GEMM_Tick(&tick);
-    //DenseMatrixProduct(nDOFs, nDOFs, 1, matVanderInv, denSolDOFs, solInt);
-    //config->GEMM_Tock(tick, "Shock_Capturing_DG1", nDOFs, nDOFs, 1);
-
     /*---------------------------------------------------------------------*/
-    /*--- Step 2: Determine artificial viscosity for this element.      ---*/
+    /*--- Step 3: Determine artificial viscosity for this element.      ---*/
     /*---------------------------------------------------------------------*/
     if (shockExist) {
         // Following if-else clause is purely empirical from NACA0012 case.
         // Need to develop thorough method for general problems
         if ( nPoly == 1) {
-            sensorLowerBound = -7.0;
+            sensorLowerBound = -6.0;
         }
         else if ( nPoly == 2 ) {
             sensorLowerBound = -12.0;
