@@ -49,7 +49,7 @@ CDriver::CDriver(char* confFile,
 
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
-   heirarchy over all zones, multigrid levels, equation sets, and equation
+   hierarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
 
   iteration_container           = NULL;
@@ -829,6 +829,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][TURB_SOL] = new CTurbSSTSolver(geometry[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
+        solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       if (transition) {
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
@@ -2240,8 +2241,8 @@ void CDriver::Iteration_Preprocessing() {
 
     case EULER: case NAVIER_STOKES: case RANS:
     if (rank == MASTER_NODE)
-      cout << ": Euler/Navier-Stokes/RANS flow iteration." << endl;
-      iteration_container[iZone] = new CMeanFlowIteration(config_container[iZone]);
+      cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
     break;
 
   case WAVE_EQUATION:
@@ -2269,14 +2270,14 @@ void CDriver::Iteration_Preprocessing() {
     break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     if (rank == MASTER_NODE)
-      cout << ": adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
-      iteration_container[iZone] = new CAdjMeanFlowIteration(config_container[iZone]);
+      cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration_container[iZone] = new CAdjFluidIteration(config_container[iZone]);
     break;
 
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     if (rank == MASTER_NODE)
-        cout << ": discrete adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
-      iteration_container[iZone] = new CDiscAdjMeanFlowIteration(config_container[iZone]);
+        cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration_container[iZone] = new CDiscAdjFluidIteration(config_container[iZone]);
     break;
   }
 
@@ -2569,7 +2570,7 @@ void CDriver::StartSolver() {
 
       DynamicMeshUpdate(ExtIter);
 
-      /*--- Run a single iteration of the problem (mean flow, wave, heat, ...). ---*/
+      /*--- Run a single iteration of the problem (fluid, elasticty, wave, heat, ...). ---*/
 
       Run();
 
@@ -3435,14 +3436,13 @@ void CFluidDriver::Run() {
     /*--- At each pseudo time-step updates transfer data ---*/
     for (iZone = 0; iZone < nZone; iZone++)   
       for (jZone = 0; jZone < nZone; jZone++)
-      if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+        if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
           Transfer_Data(iZone, jZone);
 
     /*--- For each zone runs one single iteration ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetIntIter(IntIter);
-
       iteration_container[iZone]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
     }
 

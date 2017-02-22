@@ -4013,9 +4013,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 }
 
 void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  
+
   unsigned long iPoint;
   unsigned short iMesh, iDim;
+
   su2double X0[3] = {0.0,0.0,0.0}, X1[3] = {0.0,0.0,0.0}, X2[3] = {0.0,0.0,0.0},
   X1_X0[3] = {0.0,0.0,0.0}, X2_X0[3] = {0.0,0.0,0.0}, X2_X1[3] = {0.0,0.0,0.0},
   CP[3] = {0.0,0.0,0.0}, Distance, DotCheck, Radius;
@@ -4230,10 +4231,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   /*--- Set the primitive variables ---*/
   
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
- 
-  /*--- Set the primitive variables ---*/
-
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
   /*--- Compute the engine properties ---*/
@@ -15248,7 +15245,7 @@ CNSSolver::~CNSSolver(void) {
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long iPoint, ErrorCounter = 0;
   su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
     

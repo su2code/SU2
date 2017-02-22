@@ -10391,30 +10391,50 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     nVar_Par += 3;
     Variable_Names.push_back("Temperature");
-    Variable_Names.push_back("Pressure_Coefficient");
+		if (config->GetOutput_FileFormat() == PARAVIEW){
+			Variable_Names.push_back("Pressure_Coefficient");
+		} else {
+			Variable_Names.push_back("C<sub>p</sub>");
+		}
     Variable_Names.push_back("Mach");
     
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-      nVar_Par += 2;
-      Variable_Names.push_back("Skin_Friction_Coefficient_X");
-      Variable_Names.push_back("Skin_Friction_Coefficient_Y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
-      }
-      nVar_Par += 2;
-      Variable_Names.push_back("Heat_Flux");
-      Variable_Names.push_back("Y_Plus");
+			if (config->GetOutput_FileFormat() == PARAVIEW){
+				nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
+				nVar_Par += 2;
+				Variable_Names.push_back("Skin_Friction_Coefficient_X");
+				Variable_Names.push_back("Skin_Friction_Coefficient_Y");
+				if (geometry->GetnDim() == 3) {
+					nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
+				}
+				nVar_Par += 2;
+				Variable_Names.push_back("Heat_Flux");
+				Variable_Names.push_back("Y_Plus");
+			} else {
+				nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
+				nVar_Par += 2;
+				Variable_Names.push_back("C<sub>f</sub>_x");
+				Variable_Names.push_back("C<sub>f</sub>_y");
+				if (geometry->GetnDim() == 3) {
+					nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
+				}
+				nVar_Par += 2;
+				Variable_Names.push_back("h");
+				Variable_Names.push_back("y<sup>+</sup>");
+			}
     }
     
     /*--- Add Eddy Viscosity. ---*/
     
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-      Variable_Names.push_back("Eddy_Viscosity");
-      
+			if (config->GetOutput_FileFormat() == PARAVIEW){
+				Variable_Names.push_back("Eddy_Viscosity");
+			} else {
+				Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
+			}
     }
     
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
