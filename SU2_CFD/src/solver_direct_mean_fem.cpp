@@ -2612,8 +2612,9 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
   //su2double *fluxes = solInt + nIntegrationMax*nVar;
 
   /*--- Dummy variable for storing shock sensor value temporarily ---*/
-  su2double sensorVal, machNorm, machMax;
+  su2double sensorVal, sensorLowerBound, machNorm, machMax;
   su2double rho, u, v, w, p, a, T;
+  bool shockExist;
   //su2double gamma = 1.4;
   Gamma = config->GetGamma();
 
@@ -2641,6 +2642,8 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
     /* Initialize dummy variable for this volume element */
     sensorVal = 0;
     machMax = -1;
+    shockExist = false;
+    sensorLowerBound = 1.e15;
 
     /* Easier storage of the solution variables for this element. */
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
@@ -2692,6 +2695,7 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
             }
             else {
                 volElem[l].shockSensorValue = log(sensorVal/machNorm);
+                shockExist = true;
             }
         }
         else {
@@ -2711,8 +2715,34 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solv
     /*---------------------------------------------------------------------*/
     /*--- Step 2: Determine artificial viscosity for this element.      ---*/
     /*---------------------------------------------------------------------*/
+    if (shockExist) {
+        // Following if-else clause is purely empirical from NACA0012 case.
+        // Need to develop thorough method for general problems
+        if ( nPoly == 1) {
+            sensorLowerBound = -7.0;
+        }
+        else if ( nPoly == 2 ) {
+            sensorLowerBound = -12.0;
+        }
+        else if ( nPoly == 3 ) {
+            sensorLowerBound = -12.0;
+        }
+        else if ( nPoly == 4 ) {
+            sensorLowerBound = -17.0;
+        }
 
-
+        // Assign artificial viscosity based on shockSensorValue
+        if ( volElem[l].shockSensorValue > sensorLowerBound ) {
+            // Following value is initial guess.
+            volElem[l].shockArtificialViscosity = 1.e-10;
+        }
+        else {
+            volElem[l].shockArtificialViscosity = 0.0;
+        }
+    }
+    else {
+        volElem[l].shockArtificialViscosity = 0.0;
+    }
   }
 }
 
