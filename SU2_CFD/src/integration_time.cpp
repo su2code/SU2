@@ -1078,7 +1078,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
   
     /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
     //config->Tick(&tick);
-    solver_container[MainSolver]->Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    //solver_container[MainSolver]->Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
     //config->Tock(tick,"Shock_Capturing",3);
 
     /*--- Compute the volume portion of the residual. ---*/
