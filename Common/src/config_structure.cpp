@@ -916,6 +916,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   // these options share nRKStep as their size, which is not a good idea in general
   /* DESCRIPTION: Runge-Kutta alpha coefficients */
   addDoubleListOption("RK_ALPHA_COEFF", nRKStep, RK_Alpha_Step);
+  /* DESCRIPTION: Number of time levels for time accurate local time stepping. */
+  addUnsignedShortOption("LEVELS_TIME_ACCURATE_LTS", nLevels_TimeAccurateLTS, 1);
   /* DESCRIPTION: Number of time DOFs used in the predictor step of ADER-DG. */
   addUnsignedShortOption("TIME_DOFS_ADER_DG", nTimeDOFsADER_DG, 2);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
@@ -2978,9 +2980,41 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
 
+  /* Correct the number of time levels for time accurate local time
+     stepping, if needed.  */
+  if (nLevels_TimeAccurateLTS == 0)  nLevels_TimeAccurateLTS =  1;
+  if (nLevels_TimeAccurateLTS  > 15) nLevels_TimeAccurateLTS = 15;
+
+  /* Check that no time accurate local time stepping is specified for time
+     integration schemes other than ADER. */
+  if (Kind_TimeIntScheme_FEM_Flow != ADER_DG && nLevels_TimeAccurateLTS != 1) {
+
+    if (rank==MASTER_NODE) {
+      cout << endl << "WARNING: "
+           << nLevels_TimeAccurateLTS << " levels specified for time accurate local time stepping." << endl
+           << "Time accurate local time stepping is only possible for ADER, hence this option is not used." << endl
+           << endl;
+    }
+
+    nLevels_TimeAccurateLTS = 1;
+  }
+
   if (Kind_TimeIntScheme_FEM_Flow == ADER_DG) {
 
     Unsteady_Simulation = TIME_STEPPING;  // Only time stepping for ADER.
+
+    /* If time accurate local time stepping is used, make sure that an unsteady
+       CFL is specified. If not, terminate. */
+    if (nLevels_TimeAccurateLTS != 1) {
+
+      if(Unst_CFL == 0.0) {
+        if (rank==MASTER_NODE) {
+          cout << "ERROR: Unsteady CFL not specified for time accurate "
+               << "local time stepping." << endl;
+          exit(EXIT_FAILURE);
+        }
+      }
+    }
 
     /* Determine the location of the ADER time DOFs, which are the Gauss-Legendre
        integration points corresponding to the number of time DOFs. */
@@ -4431,7 +4465,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 			cout << "Local time stepping (steady state simulation)." << endl; break;
 		  case TIME_STEPPING:
 			cout << "Unsteady simulation using a time stepping strategy."<< endl;
-			if (Unst_CFL != 0.0) cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+			if (Unst_CFL != 0.0) {
+                          cout << "Time step computed by the code. Unsteady CFL number: " << Unst_CFL <<"."<< endl;
+                          if (Delta_UnstTime != 0.0) {
+                            cout << "Synchronization time provided by the user (s): "<< Delta_UnstTime << "." << endl;
+                          }
+                        }
 			else cout << "Unsteady time step provided by the user (s): "<< Delta_UnstTime << "." << endl;
 			break;
 		  case DT_STEPPING_1ST: case DT_STEPPING_2ND:
@@ -4533,7 +4572,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           break;
 
         case ADER_DG:
-          cout << "ADER-DG, possibly with local time stepping, for the flow equations." << endl;
+          if(nLevels_TimeAccurateLTS == 1) 
+            cout << "ADER-DG for the flow equations with global time stepping." << endl;
+          else
+            cout << "ADER-DG for the flow equations with " << nLevels_TimeAccurateLTS 
+                 << " levels for time accurate local time stepping." << endl;
+          
           switch( Kind_ADER_Predictor ) {
             case ADER_ALIASED_PREDICTOR:
               cout << "An aliased approach is used in the predictor step. " << endl;

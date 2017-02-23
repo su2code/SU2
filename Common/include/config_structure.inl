@@ -608,6 +608,8 @@ inline unsigned short CConfig::GetFFD_CoordSystem(void) { return FFD_CoordSystem
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
+inline unsigned short CConfig::GetnLevels_TimeAccurateLTS(void) { return nLevels_TimeAccurateLTS; }
+
 inline unsigned short CConfig::GetnTimeDOFsADER_DG(void) { return nTimeDOFsADER_DG; }
 
 inline su2double *CConfig::GetTimeDOFsADER_DG(void) { return TimeDOFsADER_DG; }

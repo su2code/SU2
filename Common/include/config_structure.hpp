@@ -353,7 +353,8 @@ private:
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
-  long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
+  long Dyn_RestartIter;                         /*!< \brief Iteration number to restart a dynamic structural analysis. */
+  unsigned short nLevels_TimeAccurateLTS; /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;        /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
   su2double *TimeDOFsADER_DG;             /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
   unsigned short nTimeIntegrationADER_DG; /*!< \brief Number of time integration points ADER-DG. */ 
@@ -2298,6 +2299,12 @@ public:
    * \return Number of Runge-Kutta steps.
    */
   unsigned short GetnRKStep(void);
+
+  /*!
+   * \brief Get the number of time levels for time accurate local time stepping.
+   * \return Number of time levels.
+   */
+  unsigned short GetnLevels_TimeAccurateLTS(void);
 
   /*!
    * \brief Get the number time DOFs for ADER-DG.
