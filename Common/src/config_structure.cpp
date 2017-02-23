@@ -809,12 +809,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PERFORMANCE_AVERAGE_PROCESS_KIND \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries for performance computation.
       \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("PERFORMANCE_AVERAGE_PROCESS_KIND", Kind_PerformanceAverageProcess, AverageProcess_Map, AREA);
-  default_mixedout_coeff[0] = 1.0E-03; default_mixedout_coeff[1] = 1.0; default_mixedout_coeff[2] = 1.0E-05;
-  default_mixedout_coeff[3] = 15.0;
-  /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is the an expansion factor to estimate the derivative interval,
-   * the 2nd coeff is an under relaxation factor for the Newton method, 3rd coefficient is the tolerance
-   * for the Newton method, 4th coefficient is the maximum number of iteration for the Newton Method.*/
-  addDoubleArrayOption("MIXEDOUT_COEFF", 4, Mixedout_Coeff, default_mixedout_coeff);
+  default_mixedout_coeff[1] = 1.0; default_mixedout_coeff[2] = 1.0E-05; default_mixedout_coeff[3] = 15.0;
+  /*!\brief MIXEDOUT_COEFF \n DESCRIPTION: the 1st coeff is an under relaxation factor for the Newton method,
+   * the 2nd coefficient is the tolerance for the Newton method, 3rd coefficient is the maximum number of
+   * iteration for the Newton Method.*/
+  addDoubleArrayOption("MIXEDOUT_COEFF", 3, Mixedout_Coeff, default_mixedout_coeff);
   /*!\brief RAMP_ROTATING_FRAME\n DESCRIPTION: option to ramp up or down the rotating frame velocity value*/
   addBoolOption("RAMP_ROTATING_FRAME", RampRotatingFrame, false);
   default_rampRotFrame_coeff[0] = 0; default_rampRotFrame_coeff[1] = 1.0; default_rampRotFrame_coeff[2] = 1000.0;
