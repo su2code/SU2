@@ -2703,22 +2703,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 
         fluxes[ll++] = -weights[i]*(sol[nDim+1] + Pressure)*vPar;
       }
-      if(rank == MASTER_NODE){
-    	if(l%30000 == 0){
-    		if(i%9 == 0){
-    			cout << "Volume element " << l << endl;
-    			cout << "Integration point " << i << endl;
-    			cout << "Density = " << sol[0] << endl;
-    			cout << "Velocities = " << vel[0] << ", " << vel[1] << ", " << vel[2] << endl;
-    			cout << "Pressure = " << Pressure << endl;
-    			cout << "Fluxes[0] = " << fluxes[0] << endl;
-    			cout << "Fluxes[1] = " << fluxes[1] << endl;
-    			cout << "Fluxes[2] = " << fluxes[2] << endl;
-    			cout << "Fluxes[3] = " << fluxes[3] << endl;
-    			cout << "Fluxes[4] = " << fluxes[4] << endl;
-    		}
-    	}
-      }
     }
 
     /*------------------------------------------------------------------------*/
@@ -2733,7 +2717,20 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-    
+    if(rank == MASTER_NODE){
+      if(l%50000 == 0){
+	cout << "*************************" << endl;
+	cout << "Volume element " << l << endl;
+	cout << "Standard element index: " << ind << endl;
+	cout << "nDOFs = " << nDOFs << endl;
+	cout << "nVar = " << nVar << endl;
+	for(unsigned short var_iter=0; var_iter<nVar; ++var_iter){
+	  for(unsigned short dof_iter=0; dof_iter<nDOFs; ++dof_iter){
+	    cout << "Res[" << dof_iter << "][" << var_iter << "] = " << res[var_iter*nVar+dof_iter] << endl;
+	  }
+	}
+      }
+    }
   }
 }
 
@@ -2758,15 +2755,6 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
      MPI_Barrier(MPI_COMM_WORLD);
 #endif
-//    if(rank == MASTER_NODE) {
-//      cout << " Applying a body force of (";
-//      for( unsigned short iDim = 0; iDim < nDim; iDim++) {
-//        cout << body_force_vector[iDim];
-//        if (iDim < nDim-1) cout << ", ";
-//      }
-//      cout << ")." << endl;
-//      cout << "Number of owned elements: " << nVolElemOwned << endl;
-//    }
 
     /*--- Set the pointers for the local arrays. ---*/
     su2double *solInt = VecTmpMemory.data();
@@ -2802,11 +2790,6 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
       DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
       config->GEMM_Tock(tick, "Volume_Residual1", nInt, nVar, nDOFs);
 
-//      if(rank == MASTER_NODE){
-//    	  if(l%10000 == 0){
-//    		  cout << "Element " << l << " number of integration points: " << nInt << endl;
-//    	  }
-//      }
       /* Loop over the integration points. */
       for(unsigned short i=0; i<nInt; ++i) {
 
@@ -2838,15 +2821,6 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
           su2double gravForcePar = gravPar * density;
 
         }
-//        if(rank == MASTER_NODE){
-//      	  if(l%10000 == 0){
-//      		if(i%9 == 0){
-//      		  cout << "Integration point " << i << endl;
-//
-//
-//      		}
-//      	  }
-//        }
       }
     }
   }
@@ -5798,6 +5772,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
          in the metric terms, and afterwards update the metric terms by 1. */
       const su2double *metricTerms = volElem[l].metricTerms.data()
                                    + i*nMetricPerPoint;
+      const su2double *coordIntPoints = volElem[l].coorIntegrationPoints.data() + i*nDim;
       const su2double Jac          = metricTerms[0];
       const su2double JacInv       = 1.0/Jac;
       metricTerms                 += 1;
@@ -5926,17 +5901,22 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
           fluxes[ll] *= -weights[i];
         }
       }
-      if(rank == MASTER_NODE){
-    	if(l%30000 == 0){
-    		if(i%9 == 0){
-    			cout << "Volume element " << l << endl;
-    			cout << "Integration point " << i << endl;
-    			cout << "Density = " << sol[0] << endl;
-    			cout << "Velocities = " << vel[0] << ", " << vel[1] << ", " << vel[2] << endl;
-    			cout << "Pressure = " << Pressure << endl;
-    		}
-    	}
-      }
+//      if(rank == MASTER_NODE){
+//	if(l%50000 == 0){
+//	  if(i%15 == 0){
+//	    cout << "**************************************************************************************************" << endl;
+//	    cout << "Volume element " << l << endl;
+//	    cout << "Standard element index: " << ind << endl;
+//	    cout << "Number of integration points for this standard element = " << nInt << endl;
+//	    cout << "Number of degress of freedom for this volume element = " << nDOFs << endl;
+//	    cout << "Integration point " << i << endl;
+//	    cout << "Coords = " << coordIntPoints[0] << ", " << coordIntPoints[1] << ", " << coordIntPoints[2] << endl;
+//	    cout << "Density = " << sol[0] << endl;
+//	    cout << "Velocities = " << vel[0] << ", " << vel[1] << ", " << vel[2] << endl;
+//	    cout << "Pressure = " << Pressure << endl;
+//	  }
+//	}
+//      }
     }
     config->Tock(tick, "IR_2_1", 4);
 
@@ -5952,7 +5932,20 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-    
+    if(rank == MASTER_NODE){
+      if(l%50000 == 0){
+	cout << "*************************" << endl;
+	cout << "Volume element " << l << endl;
+	cout << "Standard element index: " << ind << endl;
+	cout << "nDOFs = " << nDOFs << endl;
+	cout << "nVar = " << nVar << endl;
+	for(unsigned short var_iter=0; var_iter<nVar; ++var_iter){
+	  for(unsigned short dof_iter=0; dof_iter<nDOFs; ++dof_iter){
+	    cout << "Res[" << dof_iter << "][" << var_iter << "] = " << res[var_iter*nVar+dof_iter] << endl;
+	  }
+	}
+      }
+    }
   }
 }
 
