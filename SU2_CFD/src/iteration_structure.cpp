@@ -1471,7 +1471,7 @@ void CAdjFluidIteration::Preprocess(COutput *output,
     int Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
     if (rank == MASTER_NODE && val_iZone == ZONE_0 && config_container[val_iZone]->GetUnsteady_Simulation())
       cout << endl << " Loading flow solution from direct iteration " << Direct_Iter << "." << endl;
-    solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], Direct_Iter);
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], Direct_Iter, true);
   }
   
   /*--- Continuous adjoint Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
@@ -1714,6 +1714,19 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
+
+  if (ExtIter == 0) {
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
+      solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution());
+    }
+    if (turbulent) {
+      for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
+        solver_container[val_iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
+      }
+    }
+  }
+
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
   if (config_container[val_iZone]->GetUnsteady_Simulation()) {
@@ -1831,10 +1844,10 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry ***geometry_contain
   if (val_DirectIter >= 0) {
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading flow solution from direct iteration " << val_DirectIter  << "." << endl;
-    solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, true);
     solver_container[val_iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0, val_DirectIter, RUNTIME_FLOW_SYS, false);
     if (turbulent) {
-      solver_container[val_iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
+      solver_container[val_iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter, false);
       solver_container[val_iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
     }
   } else {
