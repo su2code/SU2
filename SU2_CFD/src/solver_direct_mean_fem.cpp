@@ -5771,9 +5771,11 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_
 
     /*--- Run shock capturing algorithm ---*/
     switch( config->GetKind_FEM_DG_Shock() ) {
-        case NONE: break;
+        case NONE:
+            break;
         case PERSSON:
-            CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(geometry, solver_container, numerics, config, iMesh, iStep); break;
+            CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(geometry, solver_container, numerics, config, iMesh, iStep);
+            break;
     }
 
 }
@@ -5785,10 +5787,10 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
 
     /*--- Dummy variable for storing shock sensor value temporarily ---*/
     su2double sensorVal, sensorLowerBound, machNorm, machMax;
-    su2double rho, u, v, w, p, a;
+    su2double DensityInv, Velocity2, StaticEnergy, SoundSpeed2;
+
     bool shockExist;
     unsigned short nDOFsPm1;       // Number of DOFs up to polynomial degree p-1
-    Gamma = config->GetGamma();
 
     /* Store the number of conservative variables, which depends
        on the number of dimensions. */
@@ -5849,7 +5851,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
 
       /* Calculate primitive variables and mach number for DOFs in this element.
          Also, track the maximum mach number in this element. */
-      for(unsigned short iInd=0; iInd<nDOFs; ++iInd) {
+      /*for(unsigned short iInd=0; iInd<nDOFs; ++iInd) {
           rho = solDOFs[0+iInd*nConsVar];
           u = solDOFs[0+iInd*nConsVar+1]/rho;
           v = solDOFs[0+iInd*nConsVar+2]/rho;
@@ -5865,6 +5867,22 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
               a = sqrt(Gamma*p/rho);
               machSolDOFs[iInd] = sqrt((u*u+v*v+w*w))/a;
           }
+          machMax = max(machSolDOFs[iInd],machMax);
+      }*/
+
+      for(unsigned short iInd=0; iInd<nDOFs; ++iInd) {
+          DensityInv = 1.0/solDOFs[iInd*nConsVar];
+          Velocity2 = 0.0;
+          for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+              const su2double vel = solDOFs[0+iInd*nConsVar+iDim]*DensityInv;
+              Velocity2 += vel*vel;
+          }
+
+          StaticEnergy = solDOFs[0+iInd*nConsVar+nDim+1]*DensityInv - 0.5*Velocity2;
+
+          FluidModel->SetTDState_rhoe(solDOFs[iInd*nConsVar], StaticEnergy);
+          SoundSpeed2 = FluidModel->GetSoundSpeed2();
+          machSolDOFs[iInd] = sqrt( Velocity2/SoundSpeed2 );
           machMax = max(machSolDOFs[iInd],machMax);
       }
 
