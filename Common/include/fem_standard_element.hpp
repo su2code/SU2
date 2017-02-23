@@ -418,6 +418,7 @@ protected:
   * \param[out] rDOFs            - r-coordinates of the DOFs of the hexahedron.
   * \param[out] sDOFs            - s-coordinates of the DOFs of the hexahedron.
   * \param[out] tDOFs            - t-coordinates of the DOFs of the hexahedron.
+  * \param[out] matVandermondeInv- Values of the inverse matrix of Vandermonde matrix
   * \param[out] lagBasisPoints   - Values of the Lagrangian interpolation
                                    functions in the given points.
   * \param[out] drLagBasisPoints - Values of the r-derivatives of the Lagrangian
@@ -435,6 +436,7 @@ protected:
                                                        vector<su2double>       &rDOFs,
                                                        vector<su2double>       &sDOFs,
                                                        vector<su2double>       &tDOFs,
+                                                       vector<su2double>       &matVandermondeInv,
                                                        vector<su2double>       &lagBasisPoints,
                                                        vector<su2double>       &drLagBasisPoints,
                                                        vector<su2double>       &dsLagBasisPoints,
