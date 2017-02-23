@@ -471,6 +471,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
                                        const vector<su2double> &rPoints,
                                        unsigned short          &nDOFs,
                                        vector<su2double>       &rDOFs,
+                                       vector<su2double>       &matVandermondeInv,
                                        vector<su2double>       &lagBasisPoints,
                                        vector<su2double>       &drLagBasisPoints) {
 
@@ -489,9 +490,12 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the given points. ---*/
   vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  matVandermondeInv.resize(nDOFs*nDOFs);
 
-  Vandermonde1D(nDOFs, rDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
+  //Vandermonde1D(nDOFs, rDOFs, VInv);
+  //InverseMatrix(nDOFs, VInv);
+  Vandermonde1D(nDOFs, rDOFs, matVandermondeInv);
+  InverseMatrix(nDOFs, matVandermondeInv);
 
   Vandermonde1D(nDOFs, rPoints, V);
 
@@ -502,7 +506,8 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
         in row major order, because in this way the interpolation data for a
         point is contiguous in memory.        ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 1D Vandermonde matrix in the
         points. The vector V can be used to store the data.     ---*/
@@ -515,7 +520,8 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
         in row major order, because in this way the gradient data for a point
         is contiguous in memory.  ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
-  MatMulRowMajor(nDOFs, nPoints, V, VInv, drLagBasisPoints);
+  //MatMulRowMajor(nDOFs, nPoints, V, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, drLagBasisPoints);
 }
 
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
@@ -2166,6 +2172,7 @@ void FEMStandardElementClass::CreateBasisFunctionsAndMatrixDerivatives(
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPoly,      rLoc,
                                                 nDOFsDummy, rDOFsDummy,
+                                                matVandermondeInv,
                                                 lagBasis,   drLagBasisLoc);
       break;
 
@@ -2265,7 +2272,9 @@ void FEMStandardElementClass::DataStandardLine(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
+  vector<su2double> matVandermondeInvDummy;
   LagrangianBasisFunctionAndDerivativesLine(nPoly, rIntegration, nDOFs, rDOFs,
+                                            matVandermondeInvDummy,
                                             lagBasisIntegration,
                                             drLagBasisIntegration);
 
@@ -3420,10 +3429,12 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPolyElemSide0, rIntegration, nDOFsFaceSide0,
-                                                rDOFsFaceSide0, lagBasisFaceIntegrationSide0,
+                                                rDOFsFaceSide0, matVandermondeInvDummy,
+                                                lagBasisFaceIntegrationSide0,
                                                 drLagBasisFaceIntegrationSide0);
       LagrangianBasisFunctionAndDerivativesLine(nPolyElemSide1, rIntegration, nDOFsFaceSide1,
-                                                rDOFsFaceSide1, lagBasisFaceIntegrationSide1,
+                                                rDOFsFaceSide1, matVandermondeInvDummy,
+                                                lagBasisFaceIntegrationSide1,
                                                 drLagBasisFaceIntegrationSide1);
       break;
 
@@ -3707,7 +3718,8 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPolyElem, rIntegration, nDOFsFace,
-                                                rDOFsFace, lagBasisFaceIntegration,
+                                                rDOFsFace, matVandermondeInvDummy,
+                                                lagBasisFaceIntegration,
                                                 drLagBasisFaceIntegration);
       SubConnForPlottingLine(nPolyElem, subConnForPlotting);
       break;
