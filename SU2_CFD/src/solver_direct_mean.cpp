@@ -16361,16 +16361,15 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
 
 
 	int rank = MASTER_NODE;
-	su2double x1,x2,xmid, dx, fx1, fx2, fmid, df;
-	unsigned short count=0, j;
-  su2double epsilon = config->GetMixedout_Coeff(0);
-  su2double relax_factor = config->GetMixedout_Coeff(1);
-  su2double toll = config->GetMixedout_Coeff(2);
-  unsigned short maxiter = SU2_TYPE::Int(config->GetMixedout_Coeff(3));
+	su2double dx, f, df, resdl = 1.0E+05;
+	unsigned short iter = 0, iDim;
+  su2double relax_factor = config->GetMixedout_Coeff(0);
+  su2double toll = config->GetMixedout_Coeff(1);
+  unsigned short maxiter = SU2_TYPE::Int(config->GetMixedout_Coeff(2));
+  su2double dhdP, dhdrho, enthalpy_mix, velsq, *vel;
 
-  unsigned short iter = 0;
-  su2double resdl = 0.0;
 
+  vel = new su2double[nDim];
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -16381,15 +16380,29 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
   /*--- Newton-Raphson's method with central difference formula ---*/
 
   while ( iter <= maxiter ) {
-  	dx = 2*epsilon*(pressure_mix);
-    xmid = pressure_mix;
-    MixedOut_Root_Function(xmid + dx/2,val_Averaged_Flux,val_normal,fx2,density_mix);
-    MixedOut_Root_Function(xmid - dx/2,val_Averaged_Flux,val_normal,fx1,density_mix);
-    MixedOut_Root_Function(xmid,val_Averaged_Flux,val_normal,fmid,density_mix);
-    df = (fx2 - fx1) / dx;
-    dx = -fmid/df;
+
+  	density_mix = val_Averaged_Flux[0]*val_Averaged_Flux[0]/(val_Averaged_Flux[1] - pressure_mix);
+  	FluidModel->SetTDState_Prho(pressure_mix, density_mix);
+  	enthalpy_mix = FluidModel->GetStaticEnergy() + (pressure_mix)/(density_mix);
+
+  	FluidModel->ComputeDerivativeNRBC_Prho(pressure_mix, density_mix);
+  	dhdP   = FluidModel->GetdhdP_rho();
+  	dhdrho = FluidModel->Getdhdrho_P();
+
+  	vel[0]  = (val_Averaged_Flux[1] - pressure_mix) / val_Averaged_Flux[0];
+  	for (iDim = 1; iDim < nDim; iDim++) {
+  		vel[iDim]  = val_Averaged_Flux[iDim+1] / val_Averaged_Flux[0];
+  	}
+
+  	velsq = 0.0;
+  	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  		velsq += vel[iDim]*vel[iDim];
+  	}
+  	f = val_Averaged_Flux[nDim+1] - val_Averaged_Flux[0]*(enthalpy_mix + velsq/2);
+    df = -val_Averaged_Flux[0]*(dhdP - 1/density_mix) - dhdrho*density_mix*density_mix/val_Averaged_Flux[0];
+    dx = -f/df;
     resdl = dx/val_init_pressure;
-    pressure_mix += relax_factor*(dx);
+    pressure_mix += relax_factor*dx;
 
     iter += 1;
     if ( abs(resdl) <= toll ) {
@@ -16398,46 +16411,12 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
 
   }
 
-  MixedOut_Root_Function(pressure_mix,val_Averaged_Flux,val_normal,fmid,density_mix);
+  density_mix = val_Averaged_Flux[0]*val_Averaged_Flux[0]/(val_Averaged_Flux[1] - pressure_mix);
 
 
-
-}
-
-void CEulerSolver::MixedOut_Root_Function(su2double pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& valfunc, su2double& density) {
-
-  su2double velnormal, velsq;
-
-  su2double *vel;
-  vel = new su2double[nDim];
-
-  valfunc = 0.0;
-  density = 0.0;
-
-  velnormal = 0.0;
-  velsq = 0.0;
-
-  vel[0]  = (val_Averaged_Flux[1] - (pressure)) / val_Averaged_Flux[0];
-  for (unsigned short iDim = 1; iDim < nDim; iDim++) {
-      vel[iDim]  = val_Averaged_Flux[iDim+1] / val_Averaged_Flux[0];
-
-
-  }
-  velnormal = vel[0];
-
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  	velsq += vel[iDim]*vel[iDim];
-  }
-  density = val_Averaged_Flux[0] / velnormal;
-  FluidModel->SetTDState_Prho(pressure, density);
-  su2double enthalpy = FluidModel->GetStaticEnergy() + (pressure)/(density);
-  valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
-
-  /*--- Free locally allocated memory ---*/
   delete [] vel;
 
 }
-
 
 void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){
 
