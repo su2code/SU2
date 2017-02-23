@@ -12920,6 +12920,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+ 
+  if (rank == MASTER_NODE)
+    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   
   unsigned short skipVar = nDim, skipMult = 1;
 
@@ -13049,7 +13052,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- First, read the number of variables and points (i.e., cols and rows),
      which we will need in order to read the file later. Also, read the
      variable string names here. Only the master rank reads the header. ---*/
-
+    
     if (rank == MASTER_NODE)
       MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
 
@@ -13108,6 +13111,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     int *blocklen = new int[GetnPointDomain()];
     int *displace = new int[GetnPointDomain()];
+
     counter = 0;
     for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
       if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
@@ -13131,6 +13135,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- Collective call for all ranks to read from their view simultaneously. ---*/
     
     MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*GetnPointDomain(), MPI_DOUBLE, &status);
+
+    /*--- Free the derived datatype. ---*/
+
+    MPI_Type_free(&filetype);
+
+    /*--- Reset the file view before writing the metadata. ---*/
+
+    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
 
     /*--- Access the metadata. ---*/
 
@@ -13157,10 +13169,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     /*--- All ranks close the file after writing. ---*/
     
     MPI_File_close(&fhw);
-    
-    /*--- Free the derived datatype and release temp memory. ---*/
-    
-    MPI_Type_free(&filetype);
     
     delete [] blocklen;
     delete [] displace;
@@ -13194,7 +13202,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     config->SetAoA_Sens(Restart_Meta[4]);
 
-
   } else {
 
   restart_file.open(filename.data(), ios::in);
@@ -13203,8 +13210,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     exit(EXIT_FAILURE);
   }
   
-  if (rank == MASTER_NODE)
-    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   /*--- The first line is the header ---*/
   getline (restart_file, text_line);
   
