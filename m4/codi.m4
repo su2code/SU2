@@ -8,8 +8,7 @@ AC_DEFUN([CONFIGURE_CODI],
         [build_CODI_FORWARD="yes"], [build_CODI_FORWARD="no"])
 
         CODIheader=${srcdir}/externals/codi/include/codi.hpp
-        AMPIlib=${srcdir}/externals/adjointmpi/libAMPI.a
-        AMPIheader=${srcdir}/externals/adjointmpi/include/ampi.h
+        AMPIheader=${srcdir}/externals/medipack/include/medi/medi.hpp
 
         if test "$build_CODI_REVERSE" == "yes" || test "$build_CODI_FORWARD" == "yes"
         then
@@ -31,18 +30,12 @@ AC_DEFUN([CONFIGURE_CODI],
            REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
            if test "$enablempi" == "yes"
            then
-              AC_CHECK_FILE([$AMPIlib], [have_AMPIlib='yes'], [have_AMPIlib='no'])
               AC_CHECK_FILE([$AMPIheader], [have_AMPIheader='yes'], [have_AMPIheader='no'])
-              if test "$have_AMPIlib" == "no"
-              then
-                AC_MSG_ERROR([AMPI library not found in externals/adjointmpi. Use 'preconfigure.py --autodiff --enable-mpi' to download it.])
-              fi
               if test "$have_AMPIheader" == "no"
               then
-                AC_MSG_ERROR([AMPI header not found in externals/adjointmpi/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it.])
+                AC_MSG_ERROR([AMPI header not found in externals/medipack/include.  Use 'preconfigure.py --autodiff --enable-mpi' to download it.])
               fi
-              REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/adjointmpi/include"
-              REVERSE_LIBS="\$(top_srcdir)/externals/adjointmpi/libAMPI.a"
+              REVERSE_CXX=$REVERSE_CXX" -I\$(top_srcdir)/externals/medipack/include -I\$(top_srcdir)/externals/medipack/src"
            fi
            build_REVERSE=yes
            build_DIRECTDIFF=no
