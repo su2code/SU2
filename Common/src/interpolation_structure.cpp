@@ -1574,8 +1574,9 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   unsigned long *Buffer_Receive_nLinkedNodes, *Buffer_Receive_LinkedNodes, *Buffer_Receive_StartLinkedNodes;
 
   su2double dTMP;
-  su2double *Coeff_Vect, *tmp_Coeff_Vect;             
-  
+  su2double *Coeff_Vect, *tmp_Coeff_Vect, *dtmpVect;       
+  unsigned long *haloList;      
+  su2double **haloCoord;
 
   /* --- Geometrical variables --- */
 
@@ -1615,7 +1616,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
   su2double *donor_iMidEdge_point, *donor_jMidEdge_point;
   su2double **donor_element, *DonorPoint_Coord, *Buffer_Send_Donor_Coord;
-  unsigned long kVertexTarget, kVertexDonor, *uptr;
+  unsigned long kVertexTarget, kVertexDonor, *uptr, nHalo, iHalo, nHaloTot;
     
   /*  1 - Variable pre-processing - */
 
@@ -1684,7 +1685,7 @@ su2double psi, cosPsi, sinPsi;
 su2double rotMatrix[3][3], RotAxis[3];
 su2double dTmp[3], translRotation[3], Angle, Target_Angle, Donor_Angle, Target_Angle_O, Donor_Angle_O, delta_alpha, m;
 int jDim;
-  
+su2double xx,yy,zz;  
   periodic_rotation    = false;
   periodic_translation = false;
   
@@ -1840,6 +1841,7 @@ int jDim;
     nGlobalVertex_Target = 0;
     nLocalVertex_Target  = 0;
     nLocalLinkedNodes    = 0;
+    nHalo = 0;
   
     for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
       
@@ -1886,8 +1888,10 @@ int jDim;
             dPoint = target_geometry->edge[EdgeIndex]->GetNode(0);                
 
           if ( target_geometry->node[dPoint]->GetVertex(markTarget) != -1 ){    
-            Aux_Send_Map[nLocalVertex_Target][nNodes] = target_geometry->node[dPoint]->GetGlobalIndex();
+            Aux_Send_Map[nLocalVertex_Target][nNodes] = dPoint;
             nNodes++;
+            if( !target_geometry->node[dPoint]->GetDomain() )
+              nHalo++;
           }
         }  
         nLocalVertex_Target++;
@@ -1895,12 +1899,22 @@ int jDim;
     }
     
     Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
-
+    
+    tmpVect = new unsigned long [ nHalo ];
     nLocalLinkedNodes = 0;
+    nHalo = 0;
 
     for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++){
       for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertexTarget]; jEdge++){
-        Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Aux_Send_Map[iVertexTarget][jEdge];
+        dPoint = Aux_Send_Map[iVertexTarget][jEdge];
+        if( !target_geometry->node[dPoint]->GetDomain() ){
+          Buffer_Send_LinkedNodes[nLocalLinkedNodes] = dPoint;
+          tmpVect[nHalo] = dPoint;//target_geometry->node[ dPoint ]->GetGlobalIndex();
+          nHalo++;
+        }
+        else
+          Buffer_Send_LinkedNodes[nLocalLinkedNodes] = target_geometry->node[ dPoint ]->GetGlobalIndex();
+          
         nLocalLinkedNodes++;
       }
     }
@@ -1911,17 +1925,175 @@ int jDim;
     }
     delete [] Aux_Send_Map; Aux_Send_Map = NULL;
 
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&nHalo,              &nHaloTot,            1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+    haloList = new unsigned long [ nHaloTot ];
     
+    if (rank == MASTER_NODE){
+      for(iHalo = 0; iHalo < nHalo; iHalo++)
+        haloList[iHalo] = tmpVect[iHalo];
+      
+      for(iRank = 1; iRank < nProcessor; iRank++){
+        SU2_MPI::Recv(&iTmp,               1, MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        SU2_MPI::Recv(&haloList[iHalo], iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
+        iHalo += iTmp;
+      }
+    }
+    else{
+      SU2_MPI::Send( &nHalo,      1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD );
+      SU2_MPI::Send( tmpVect, nHalo, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
+    }
+    
+    SU2_MPI::Bcast( haloList, nHaloTot, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    
+#else
+    nHaloTot = nHalo;
+    haloList = new unsigned long [ nHaloTot ];
+    for(iHalo = 0; iHalo < nHaloTot; iHalo++)
+      haloList[iHalo] = tmpVect[iHalo];
+#endif 
+    
+    delete [] tmpVect;
+    
+haloCoord = new su2double*[nHaloTot];
+for(iHalo = 0; iHalo < nHaloTot; iHalo++){
+  haloCoord[iHalo] = new su2double[nDim];
+  for(iDim = 0; iDim < nDim; iDim++)
+    haloCoord[iHalo][iDim] = target_geometry->node[ haloList[iHalo] ]->GetCoord(iDim);
+}
+
+su2double t[3];
+int jj = nLocalVertex_Target;
+
     if(periodic_translation){
       /*--- Periodic translation ---*/
-      for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++){
+
+      for(iDim = 0; iDim < nDim; iDim++){
+        t[iDim] = 0;
+        if (transl[iDim] != 0 ){
+          iTmp = (int)(Buffer_Send_Target_Coord[iDim] / transl[iDim]);
+          t[iDim] = iTmp * transl[iDim];
+        }
+        //cout << t[iDim] << "  ";
+      }//cout << endl;
+
+      for(iHalo = 0; iHalo < nHaloTot; iHalo++)
+        for(iDim = 0; iDim < nDim; iDim++)
+          haloCoord[iHalo][iDim] -= t[iDim];
+          
+      for (iVertexTarget = 0; iVertexTarget < jj; iVertexTarget++){
+
         for (iDim = 0; iDim < nDim; iDim++)
-          if (transl[iDim] != 0 )
-            Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] = Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] - (int)(Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] / transl[iDim]) * transl[iDim];
+            Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] -= t[iDim];
+        
+        iTmp = -1;
+        
+   // nel parallelo da muovere dopo quando la lista è completa     
+        for(iHalo = 0; iHalo < nHaloTot; iHalo++){
+          dist = 0;
+          mindist = 1E6;
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist += pow(haloCoord[iHalo][iDim] - Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] + transl[iDim], 2);
+          
+          if (dist < mindist ){
+            mindist = dist;
+            iTmp = iVertexTarget;
+          }
+          
+          dist = 0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist += pow(haloCoord[iHalo][iDim] - Buffer_Send_Target_Coord[ nDim * iVertexTarget + iDim ] - transl[iDim], 2);
+          
+          if (dist < mindist ){
+            mindist = dist;
+            iTmp = iVertexTarget;
+          }
+         
+          if( mindist < 1e-8){ 
+            // rialloca 
+            tmpVect = new unsigned long[nLocalVertex_Target];
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target; jVertexTarget++)
+              tmpVect[jVertexTarget] = Buffer_Send_Target_GlobalPoint[jVertexTarget];
+ 
+            delete [] Buffer_Send_Target_GlobalPoint;
+            Buffer_Send_Target_GlobalPoint = new unsigned long[nLocalVertex_Target+1];
+
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target; jVertexTarget++)
+              Buffer_Send_Target_GlobalPoint[jVertexTarget] = tmpVect[jVertexTarget];            
+            Buffer_Send_Target_GlobalPoint[jVertexTarget] = haloList[iHalo];
+            
+            
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target; jVertexTarget++)
+              tmpVect[jVertexTarget] = Buffer_Send_StartLinkedNodes[jVertexTarget];
+              
+            delete [] Buffer_Send_StartLinkedNodes;
+            Buffer_Send_StartLinkedNodes = new unsigned long[nLocalVertex_Target+1];
+
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target; jVertexTarget++)
+              Buffer_Send_StartLinkedNodes[jVertexTarget] = tmpVect[jVertexTarget];            
+            Buffer_Send_StartLinkedNodes[jVertexTarget] = nLocalLinkedNodes;
+            
+            
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target; jVertexTarget++)
+              tmpVect[jVertexTarget] = Buffer_Send_nLinkedNodes[jVertexTarget];
+              
+            delete [] Buffer_Send_nLinkedNodes;
+            Buffer_Send_nLinkedNodes = new unsigned long[nLocalVertex_Target+1];
+
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target; jVertexTarget++)
+              Buffer_Send_nLinkedNodes[jVertexTarget] = tmpVect[jVertexTarget];            
+            Buffer_Send_nLinkedNodes[jVertexTarget] = 1;           
+
+
+            delete [] tmpVect;
+
+            
+            dtmpVect = new su2double[nLocalVertex_Target * nDim];
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target * nDim; jVertexTarget++)
+              dtmpVect[jVertexTarget] = Buffer_Send_Target_Coord[jVertexTarget];
+              
+            delete [] Buffer_Send_Target_Coord;
+            Buffer_Send_Target_Coord = new su2double[ ( nLocalVertex_Target + 1 ) * nDim ];              
+              
+            for (jVertexTarget = 0; jVertexTarget < nLocalVertex_Target * nDim; jVertexTarget++)
+              Buffer_Send_Target_Coord[jVertexTarget] = dtmpVect[jVertexTarget];
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Send_Target_Coord[jVertexTarget + iDim] = haloCoord[iHalo][iDim];
+            
+            delete [] dtmpVect;
+            
+            
+            tmpVect = new unsigned long[nLocalLinkedNodes];
+            
+            for (jVertexTarget = 0; jVertexTarget < nLocalLinkedNodes; jVertexTarget++)
+              tmpVect[jVertexTarget] = Buffer_Send_LinkedNodes[jVertexTarget];
+            
+            delete [] Buffer_Send_LinkedNodes;
+            Buffer_Send_LinkedNodes = new unsigned long[nLocalLinkedNodes + 1];
+            
+            for (jVertexTarget = 0; jVertexTarget < nLocalLinkedNodes; jVertexTarget++)
+              Buffer_Send_LinkedNodes[jVertexTarget] = tmpVect[jVertexTarget];
+            
+            for (jVertexTarget = 0; jVertexTarget < jj; jVertexTarget++)
+              for (kVertexTarget = 0; kVertexTarget < Buffer_Send_nLinkedNodes[jVertexTarget]; kVertexTarget++)
+                if( Buffer_Send_LinkedNodes[ Buffer_Send_StartLinkedNodes[jVertexTarget] + kVertexTarget ] == haloList[iHalo] ){
+                  Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Buffer_Send_Target_GlobalPoint[jVertexTarget];
+                  break;
+                }
+            
+            delete [] tmpVect;
+            
+            nLocalLinkedNodes++;//nel caso 3D sarà un casino perchè bisogna trovare tutti i nodi che ci son ocollegati, forse col getedge?
+            nLocalVertex_Target++;
+          }
+        }
       }
     }
     
-su2double xx,yy,zz;
+
     if(periodic_rotation){
       /*--- Periodic rotation ---*/
       for (iVertexTarget = 0; iVertexTarget < nLocalVertex_Target; iVertexTarget++){
@@ -1937,6 +2109,13 @@ su2double xx,yy,zz;
         
       }
     }
+    
+    for(iHalo = 0; iHalo < nHaloTot; iHalo++){
+      delete [] haloCoord[iHalo];
+    }
+    
+    delete [] haloList;
+    delete [] haloCoord;
 
 
 #ifdef HAVE_MPI
@@ -2017,8 +2196,10 @@ su2double xx,yy,zz;
     for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
       Target_LinkedNodes[iVertexTarget] = Buffer_Send_LinkedNodes[iVertexTarget];
 #endif 
-
+    
     if (rank == MASTER_NODE){
+      tmpVect = new unsigned long[nGlobalLinkedNodes];
+      
       for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
         count = 0;
         uptr = &Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] ];
@@ -2027,21 +2208,27 @@ su2double xx,yy,zz;
           iTmp = uptr[ jVertexTarget ];
           for (kVertexTarget = 0; kVertexTarget < nGlobalVertex_Target; kVertexTarget++){
             if( Target_GlobalPoint[kVertexTarget] == iTmp ){
-              uptr[ jVertexTarget ] = kVertexTarget;
+              tmpVect[ Target_StartLinkedNodes[iVertexTarget] + jVertexTarget ] = kVertexTarget; ///////cout << kVertexTarget << "  ";
               count++;
               break;
             }
           }
           
-          if( count != (jVertexTarget+1) && !periodic_translation){
+          if( count != (jVertexTarget+1) ){
             for (kVertexTarget = jVertexTarget; kVertexTarget < Target_nLinkedNodes[iVertexTarget]-1; kVertexTarget++){
               uptr[ kVertexTarget ] = uptr[ kVertexTarget + 1];
             }
             Target_nLinkedNodes[iVertexTarget]--;
             jVertexTarget--;   
+            nGlobalLinkedNodes--;
           }
-        }
+        }//cout << endl;
       }
+      
+      for (iVertexTarget = 0; iVertexTarget < nGlobalLinkedNodes; iVertexTarget++)
+        Target_LinkedNodes[iVertexTarget] = tmpVect[iVertexTarget];
+        
+      delete [] tmpVect;
     }
 
 #ifdef HAVE_MPI    
@@ -2074,7 +2261,8 @@ su2double xx,yy,zz;
     nGlobalVertex_Donor = 0;
     nLocalVertex_Donor  = 0;
     nLocalLinkedNodes   = 0;
-
+    nHalo = 0;
+    
     for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++) {
 
       Buffer_Send_nLinkedNodes[iVertexDonor] = 0;
@@ -2122,6 +2310,8 @@ su2double xx,yy,zz;
           if ( donor_geometry->node[dPoint]->GetVertex(markDonor) != -1 ){   
             Aux_Send_Map[nLocalVertex_Donor][nNodes] = dPoint;
             nNodes++;
+            if( !donor_geometry->node[dPoint]->GetDomain() )
+              nHalo++;
           }
         }
 
@@ -2131,18 +2321,25 @@ su2double xx,yy,zz;
 
     Buffer_Send_LinkedNodes = new unsigned long [ nLocalLinkedNodes ];
 
+    tmpVect = new unsigned long [ nHalo ];
     nLocalLinkedNodes = 0;
-//cout << donor_geometry->node[dPoint]->GetGlobalIndex() << "  " << donor_geometry->node[dPoint]->GetDomain() << endl;
+    nHalo = 0;
+    
     for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
       for (jEdge = 0; jEdge < Buffer_Send_nLinkedNodes[iVertexDonor]; jEdge++){
         dPoint = Aux_Send_Map[iVertexDonor][jEdge];
-        Buffer_Send_LinkedNodes[nLocalLinkedNodes] = donor_geometry->node[ dPoint ]->GetGlobalIndex();
-        if( !donor_geometry->node[dPoint]->GetDomain() )
-          cout << donor_geometry->node[dPoint]->GetGlobalIndex() << "  " << donor_geometry->node[dPoint]->GetDomain() << endl;
+        if( !donor_geometry->node[dPoint]->GetDomain() ){
+          Buffer_Send_LinkedNodes[nLocalLinkedNodes] = dPoint;
+          tmpVect[nHalo] = dPoint;//donor_geometry->node[ dPoint ]->GetGlobalIndex();
+          nHalo++;
+        }
+        else
+          Buffer_Send_LinkedNodes[nLocalLinkedNodes] = donor_geometry->node[ dPoint ]->GetGlobalIndex();
+          
         nLocalLinkedNodes++;
       }
     }
-getchar();    
+      
     if(Aux_Send_Map != NULL){
       for (iVertexDonor = 0; iVertexDonor < nVertexDonor; iVertexDonor++){
         if( Aux_Send_Map[iVertexDonor] != NULL )
@@ -2150,7 +2347,200 @@ getchar();
       }
       delete [] Aux_Send_Map; Aux_Send_Map = NULL;
     }
+    
 #ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&nHalo,              &nHaloTot,            1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+    haloList = new unsigned long [ nHaloTot ];
+    
+    if (rank == MASTER_NODE){
+      for(iHalo = 0; iHalo < nHalo; iHalo++)
+        haloList[iHalo] = tmpVect[iHalo];
+      
+      for(iRank = 1; iRank < nProcessor; iRank++){
+        SU2_MPI::Recv(&iTmp,               1, MPI_UNSIGNED_LONG, iRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        SU2_MPI::Recv(&haloList[iHalo], iTmp, MPI_UNSIGNED_LONG, iRank, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        iHalo += iTmp; 
+      }
+    }
+    else{
+      SU2_MPI::Send( &nHalo,      1, MPI_UNSIGNED_LONG, 0, 0, MPI_COMM_WORLD );
+      SU2_MPI::Send( tmpVect, nHalo, MPI_UNSIGNED_LONG, 0, 1, MPI_COMM_WORLD );
+    }
+    
+    SU2_MPI::Bcast( haloList, nHaloTot, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    
+#else
+    nHaloTot = nHalo;
+    haloList = new unsigned long [ nHaloTot ];
+    for(iHalo = 0; iHalo < nHaloTot; iHalo++)
+      haloList[iHalo] = tmpVect[iHalo];
+#endif 
+    
+    delete [] tmpVect;
+    
+haloCoord = new su2double*[nHaloTot];
+for(iHalo = 0; iHalo < nHaloTot; iHalo++){
+  haloCoord[iHalo] = new su2double[nDim];
+  for(iDim = 0; iDim < nDim; iDim++)
+    haloCoord[iHalo][iDim] = donor_geometry->node[ haloList[iHalo] ]->GetCoord(iDim);
+}
+
+jj = nLocalVertex_Donor;
+//cout << "pre  " << nLocalVertex_Donor << endl;    
+    if(periodic_translation){
+      /*--- Periodic translation ---*/
+      
+      for(iDim = 0; iDim < nDim; iDim++){
+        t[iDim] = 0;
+        if (transl[iDim] != 0 ){
+          iTmp = (int)(Buffer_Send_Donor_Coord[iDim] / transl[iDim]);
+          t[iDim] = iTmp * transl[iDim];
+        }
+        //cout << t[iDim] << "  ";
+      }//cout << endl;
+      //getchar();
+      for(iHalo = 0; iHalo < nHaloTot; iHalo++)//{cout << "halo " << haloCoord[iHalo][1] << "  ";
+        for(iDim = 0; iDim < nDim; iDim++)
+          haloCoord[iHalo][iDim] -= t[iDim];
+          //cout << haloCoord[iHalo][1] << endl;}
+          
+      for (iVertexDonor = 0; iVertexDonor < jj; iVertexDonor++){
+
+        for (iDim = 0; iDim < nDim; iDim++)
+            Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] -= t[iDim];
+         
+         iTmp = -1;
+         
+   // nel parallelo da muovere dopo quando la lista è completa     
+        for(iHalo = 0; iHalo < nHaloTot; iHalo++){
+          dist = 0;
+          mindist = 1E6;
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist += pow(haloCoord[iHalo][iDim] - Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] + transl[iDim], 2);
+          
+          if (dist < mindist ){
+            mindist = dist;
+            iTmp = iVertexDonor;
+          }
+          
+          dist = 0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            dist += pow(haloCoord[iHalo][iDim] - Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] - transl[iDim], 2);
+          
+          if (dist < mindist ){
+            mindist = dist;
+            iTmp = iVertexDonor;
+          }
+          
+          if( mindist < 1e-8 ){ 
+            // rialloca 
+            tmpVect = new unsigned long[nLocalVertex_Donor];
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor; jVertexDonor++)
+              tmpVect[jVertexDonor] = Buffer_Send_Donor_GlobalPoint[jVertexDonor];
+              
+            delete [] Buffer_Send_Donor_GlobalPoint;
+            Buffer_Send_Donor_GlobalPoint = new unsigned long[nLocalVertex_Donor+1];
+
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor; jVertexDonor++)
+              Buffer_Send_Donor_GlobalPoint[jVertexDonor] = tmpVect[jVertexDonor];            
+            Buffer_Send_Donor_GlobalPoint[jVertexDonor] = haloList[iHalo];
+            
+            
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor; jVertexDonor++)
+              tmpVect[jVertexDonor] = Buffer_Send_StartLinkedNodes[jVertexDonor];
+              
+            delete [] Buffer_Send_StartLinkedNodes;
+            Buffer_Send_StartLinkedNodes = new unsigned long[nLocalVertex_Donor+1];
+
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor; jVertexDonor++)
+              Buffer_Send_StartLinkedNodes[jVertexDonor] = tmpVect[jVertexDonor];            
+            Buffer_Send_StartLinkedNodes[jVertexDonor] = nLocalLinkedNodes;
+            
+            
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor; jVertexDonor++)
+              tmpVect[jVertexDonor] = Buffer_Send_nLinkedNodes[jVertexDonor];
+              
+            delete [] Buffer_Send_nLinkedNodes;
+            Buffer_Send_nLinkedNodes = new unsigned long[nLocalVertex_Donor+1];
+
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor; jVertexDonor++)
+              Buffer_Send_nLinkedNodes[jVertexDonor] = tmpVect[jVertexDonor];            
+            Buffer_Send_nLinkedNodes[jVertexDonor] = 1;           
+
+
+            delete [] tmpVect;
+
+            
+            dtmpVect = new su2double[nLocalVertex_Donor * nDim];
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor * nDim; jVertexDonor++)
+              dtmpVect[jVertexDonor] = Buffer_Send_Donor_Coord[jVertexDonor];
+              
+            delete [] Buffer_Send_Donor_Coord;
+            Buffer_Send_Donor_Coord = new su2double[ ( nLocalVertex_Donor + 1 ) * nDim ];              
+              
+            for (jVertexDonor = 0; jVertexDonor < nLocalVertex_Donor * nDim; jVertexDonor++)
+              Buffer_Send_Donor_Coord[jVertexDonor] = dtmpVect[jVertexDonor];
+              
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Send_Donor_Coord[jVertexDonor + iDim] = haloCoord[iHalo][iDim];
+            
+            delete [] dtmpVect;
+            
+            
+            tmpVect = new unsigned long[nLocalLinkedNodes];
+            
+            for (jVertexDonor = 0; jVertexDonor < nLocalLinkedNodes; jVertexDonor++)
+              tmpVect[jVertexDonor] = Buffer_Send_LinkedNodes[jVertexDonor];
+            
+            delete [] Buffer_Send_LinkedNodes;
+            Buffer_Send_LinkedNodes = new unsigned long[nLocalLinkedNodes + 1];
+            
+            for (jVertexDonor = 0; jVertexDonor < nLocalLinkedNodes; jVertexDonor++)
+              Buffer_Send_LinkedNodes[jVertexDonor] = tmpVect[jVertexDonor];
+            
+            for (jVertexDonor = 0; jVertexDonor < jj; jVertexDonor++)
+              for (kVertexDonor = 0; kVertexDonor < Buffer_Send_nLinkedNodes[jVertexDonor]; kVertexDonor++)
+                if( Buffer_Send_LinkedNodes[ Buffer_Send_StartLinkedNodes[jVertexDonor] + kVertexDonor ] == haloList[iHalo] ){
+                  Buffer_Send_LinkedNodes[nLocalLinkedNodes] = Buffer_Send_Donor_GlobalPoint[jVertexDonor];
+                  break;
+                }
+            
+            delete [] tmpVect;
+            
+            nLocalLinkedNodes++;//nel caso 3D sarà un casino perchè bisogna trovare tutti i nodi che ci son ocollegati, forse col getedge?
+            nLocalVertex_Donor++;
+          }
+        }
+      }
+    }
+//cout << "post  " << nLocalVertex_Donor << endl;
+    if(periodic_rotation){
+      /*--- Periodic rotation ---*/
+      for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+      
+        Donor_Angle   = atan2(Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ], Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ]);
+        Donor_Angle_O = ((int)(Donor_Angle/Angle)) * Angle;
+          
+        xx = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] * cos(-Donor_Angle_O) - Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] * sin(-Donor_Angle_O);
+        yy = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] * cos(-Donor_Angle_O) + Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] * sin(-Donor_Angle_O);
+        
+        Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] = xx;
+        Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] = yy;
+      }
+    }
+    
+    for(iHalo = 0; iHalo < nHaloTot; iHalo++){
+      delete [] haloCoord[iHalo];
+    }
+    
+    delete [] haloList;
+    delete [] haloCoord;
+ 
+    
+#ifdef HAVE_MPI
+
     SU2_MPI::Allreduce(&nLocalVertex_Donor, &nGlobalVertex_Donor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nLocalLinkedNodes,  &nGlobalLinkedNodes,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #else
@@ -2166,30 +2556,6 @@ getchar();
     Buffer_Receive_nLinkedNodes     = new unsigned long[ nGlobalVertex_Donor ];
     Buffer_Receive_LinkedNodes      = new unsigned long[ nGlobalLinkedNodes  ];
     Buffer_Receive_StartLinkedNodes = new unsigned long[ nGlobalVertex_Donor ];
-    
-    if(periodic_translation){
-      /*--- Periodic translation ---*/
-      for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
-        for (iDim = 0; iDim < nDim; iDim++)
-          if (transl[iDim] != 0 )
-            Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] - (int)(Buffer_Send_Donor_Coord[ nDim * iVertexDonor + iDim ] / transl[iDim]) * transl[iDim];
-      }
-    }
-    
-    if(periodic_rotation){
-      /*--- Periodic rotation ---*/
-      for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
-      
-        Donor_Angle   = atan2(Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ], Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ]);
-        Donor_Angle_O = ((int)(Donor_Angle/Angle)) * Angle;
-          
-        xx = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] * cos(-Donor_Angle_O) - Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] * sin(-Donor_Angle_O);
-        yy = Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] * cos(-Donor_Angle_O) + Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] * sin(-Donor_Angle_O);
-        
-        Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 0 ] = xx;
-        Buffer_Send_Donor_Coord[ nDim * iVertexDonor + 1 ] = yy;
-      }
-    }
 
 #ifdef HAVE_MPI
     if (rank == MASTER_NODE){
@@ -2260,6 +2626,8 @@ getchar();
 #endif 
 
     if (rank == MASTER_NODE){
+      tmpVect = new unsigned long[nGlobalLinkedNodes];
+      
       for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
         count = 0;
         uptr = &Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertexDonor] ];
@@ -2268,21 +2636,27 @@ getchar();
           iTmp = uptr[ jVertexDonor ];
           for (kVertexDonor = 0; kVertexDonor < nGlobalVertex_Donor; kVertexDonor++){
             if( Donor_GlobalPoint[kVertexDonor] == iTmp ){
-              uptr[ jVertexDonor ] = kVertexDonor;
+              tmpVect[ Buffer_Receive_StartLinkedNodes[iVertexDonor] + jVertexDonor ] = kVertexDonor; //cout << kVertexDonor << "  ";
               count++;
               break;
             }
           }
           
-          if( count != (jVertexDonor+1) && !periodic_translation){
+          if( count != (jVertexDonor+1) ){
             for (kVertexDonor = jVertexDonor; kVertexDonor < Buffer_Receive_nLinkedNodes[iVertexDonor]-1; kVertexDonor++){
               uptr[ kVertexDonor ] = uptr[ kVertexDonor + 1];
             }
             Buffer_Receive_nLinkedNodes[iVertexDonor]--;
             jVertexDonor--;   
+            nGlobalLinkedNodes--;
           }
-        }
+        }//cout << endl;
       }
+      
+      for (iVertexDonor = 0; iVertexDonor < nGlobalLinkedNodes; iVertexDonor++)
+        Buffer_Receive_LinkedNodes[iVertexDonor] = tmpVect[iVertexDonor];
+        
+      delete [] tmpVect;
     }
 
 #ifdef HAVE_MPI    
@@ -2301,52 +2675,40 @@ getchar();
     if( Buffer_Send_StartLinkedNodes  != NULL) {delete [] Buffer_Send_StartLinkedNodes;  Buffer_Send_StartLinkedNodes  = NULL;}
     if( Buffer_Send_Donor_GlobalPoint != NULL) {delete [] Buffer_Send_Donor_GlobalPoint; Buffer_Send_Donor_GlobalPoint = NULL;}
     
-    
 /*    
+cout << endl;    
     for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++)
-      cout << Buffer_Receive_nLinkedNodes[iVertexDonor] << endl;
+      cout << DonorPoint_Coord[ nDim * iVertexDonor + 0 ] << " a " << DonorPoint_Coord[ nDim * iVertexDonor + 1 ] << endl;
+cout << endl;
+*/
+/*
+    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
+      cout << Target_nLinkedNodes[iVertexTarget] << "  " << Target_GlobalPoint[iVertexTarget] << "  ";
+      for (int ii=0; ii<Target_nLinkedNodes[iVertexTarget]; ii++)
+        cout << Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] +ii ] << "  ";
+      cout << endl;
+    } 
 */
 
 /*
+cout << "AAAAAAAAAAAAAA " << nVertexDonor << "  " << nGlobalVertex_Donor << endl;
+    for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
+      cout << Donor_GlobalPoint[iVertexDonor] << "  ";
+      cout << DonorPoint_Coord[nDim*iVertexDonor + 1] << "  ";
+      cout << Buffer_Receive_nLinkedNodes[iVertexDonor] << "  ";
+      for (int ii=0; ii<Buffer_Receive_nLinkedNodes[iVertexDonor]; ii++)
+        cout << Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[iVertexDonor] +ii ] << "  ";
+      cout << endl;
+    }
+*/    
+
+//cout << "AAAAAAAAAAAAAA " << nVertexTarget << "  " << nGlobalVertex_Target << endl;
+/*
     for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
-      cout << Target_nLinkedNodes[iVertexTarget] << "  " << Buffer_Receive_StartLinkedNodes[iVertexTarget] << "  ";
-      for (int ii=0; ii<Target_nLinkedNodes[iVertexTarget]; ii++)
-        cout << Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] +ii ] << "  ";
+      cout << TargetPoint_Coord[nDim*iVertexTarget + 1] << "  ";
       cout << endl;
     }
 */
-
-cout << "AAAAAAAAAAAAAA " << nVertexTarget << "  " << nGlobalVertex_Target << endl;
-
-    for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++){
-      target_iPoint = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
-      if (target_geometry->node[target_iPoint]->GetDomain()){
-      cout << target_geometry->node[target_iPoint]->GetCoord(1) << "  " << target_geometry->node[target_iPoint]->GetGlobalIndex() << "  ";
-      nEdges = target_geometry->node[target_iPoint]->GetnPoint();
-        
-        for (jEdge = 0; jEdge < nEdges; jEdge++){
-          EdgeIndex = target_geometry->node[target_iPoint]->GetEdge(jEdge);
-
-          if( target_iPoint == target_geometry->edge[EdgeIndex]->GetNode(0) )
-            dPoint = target_geometry->edge[EdgeIndex]->GetNode(1);
-          else
-            dPoint = target_geometry->edge[EdgeIndex]->GetNode(0);
-
-          if ( target_geometry->node[dPoint]->GetVertex(markTarget) != -1 )
-            cout << "a" << target_geometry->node[dPoint]->GetGlobalIndex() << "  ";
-        }
-      cout << endl;
-    }
-    }
-cout << "BBBBBBBBBBBBBBBBB " << endl;      
-    for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
-      cout << Target_GlobalPoint[iVertexTarget] << "  ";
-      cout << Target_nLinkedNodes[iVertexTarget] << "  ";
-      cout << TargetPoint_Coord[nDim*iVertexTarget + 1] << "  ";
-      for (int ii=0; ii<Target_nLinkedNodes[iVertexTarget]; ii++)
-        cout << Target_LinkedNodes[ Target_StartLinkedNodes[iVertexTarget] +ii ] << "  ";
-      cout << endl;
-    }
  /*   
     int *iiitmp = new int[nGlobalVertex_Target];
     
@@ -2384,21 +2746,23 @@ cout << "BBBBBBBBBBBBBBBBB " << endl;
 
 unsigned long iPeriodic;
 //cout << "PERIODDDDDDDDDDDDDDDIC  " << nPeriodicModes << "  " << Angle << "  " << transl[0] << "  " << transl[1] << "  " << transl[2] << "  " << endl;
-
-    for( iPeriodic = 0; iPeriodic < (2*nPeriodicModes)+1; iPeriodic++){
+for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
+  target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(0);
+  
+  
+    for( iPeriodic = 0; iPeriodic < (2*nPeriodicModes)+1; iPeriodic++){//(2*nPeriodicModes)+
       switch(iPeriodic){
-        case '1':
+        case 1:
           if(periodic_translation){
             /*--- Periodic translation ---*/
-            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+            for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
               for (iDim = 0; iDim < nDim; iDim++)
-                if (transl[iDim] != 0 )
                   DonorPoint_Coord[ nDim * iVertexDonor + iDim ] += transl[iDim];
             }
           }
           if(periodic_rotation){
             /*--- Periodic translation ---*/
-            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+            for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
                 xx = DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * cos(Angle) - DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * sin(Angle);
                 yy = DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * cos(Angle) + DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * sin(Angle);
                 
@@ -2408,18 +2772,17 @@ unsigned long iPeriodic;
           }
           break;
         
-        case '2':
+        case 2:
           if(periodic_translation){
             /*--- Periodic translation ---*/
-            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+            for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
               for (iDim = 0; iDim < nDim; iDim++)
-                if (transl[iDim] != 0 )
                   DonorPoint_Coord[ nDim * iVertexDonor + iDim ] -= 2*transl[iDim];
             }
           }
           if(periodic_rotation){
             /*--- Periodic translation ---*/
-            for (iVertexDonor = 0; iVertexDonor < nLocalVertex_Donor; iVertexDonor++){
+            for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
                 xx = DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * cos(-2*Angle) - DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * sin(-2*Angle);
                 yy = DonorPoint_Coord[ nDim * iVertexDonor + 1 ] * cos(-2*Angle) + DonorPoint_Coord[ nDim * iVertexDonor + 0 ] * sin(-2*Angle);
                 
@@ -2431,7 +2794,22 @@ unsigned long iPeriodic;
         
         default: break;
       }
-      
+      /*
+      for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
+         for (iDim = 0; iDim < nDim; iDim++)
+            cout << TargetPoint_Coord[ nDim * iVertexTarget + iDim ] << "  ";
+         cout << endl;      
+      }
+      */
+ /*     
+      cout << endl;
+      for (iVertexDonor = 0; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++){
+         for (iDim = 0; iDim < nDim; iDim++)
+            cout << DonorPoint_Coord[ nDim * iVertexDonor + iDim ] << "  ";
+         cout << endl;
+      }
+   */   
+      //getchar();
       
     if(nDim == 2){
         
@@ -2454,8 +2832,47 @@ unsigned long iPeriodic;
         target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 
         if (target_geometry->node[target_iPoint]->GetDomain()){
+          
+          target_iPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
+          
+          for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++){
+            if(target_iPoint == Target_GlobalPoint[jVertexTarget] ){
+              Coord_i = &TargetPoint_Coord[ jVertexTarget * nDim ];
+              break;
+            }
+          }
+          
+          /*--- Contruct information regarding the target cell ---*/
+                              
+          if ( Target_nLinkedNodes[jVertexTarget] == 1 ){
+            target_segment[0] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] ];
+            target_segment[1] = jVertexTarget;
+          }
+          else{
+            target_segment[0] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] ];
+            target_segment[1] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] + 1];
+          }
+      /*    
+      cout << target_segment[0] << "  " << target_segment[1] << "  " << Target_nLinkedNodes[jVertexTarget] << "  " << jVertexTarget << endl;
+      cout << TargetPoint_Coord[ nDim * target_segment[0] + 1 ] << endl;
+      cout << target_geometry->node[target_iPoint]->GetCoord(1) << endl;
+      cout << TargetPoint_Coord[ nDim * target_segment[1] + 1 ] << endl;
+     */
+          dTMP = 0;
+          for(iDim = 0; iDim < nDim; iDim++){
+            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] + Coord_i[iDim] ) / 2;
+            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] + Coord_i[iDim] ) / 2;
 
-          Coord_i = target_geometry->node[target_iPoint]->GetCoord();
+            Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
+            dTMP += Direction[iDim] * Direction[iDim];
+          }
+
+          dTMP = sqrt(dTMP);
+          for(iDim = 0; iDim < nDim; iDim++)
+            Direction[iDim] /= dTMP;
+
+          length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
+
           
           if(periodic_rotation)
             Target_Angle = atan2(Coord_i[1], Coord_i[0]);
@@ -2467,7 +2884,7 @@ unsigned long iPeriodic;
           mindist = 1E6;
           donor_StartIndex = 0;
  
-          for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor; donor_iPoint++) {
+          for (donor_iPoint = 0; donor_iPoint < nGlobalVertex_Donor-nHaloTot; donor_iPoint++) {
         
             Coord_j = &DonorPoint_Coord[ donor_iPoint * nDim ];
 
@@ -2487,36 +2904,7 @@ unsigned long iPeriodic;
           donor_iPoint    = donor_StartIndex;
           donor_OldiPoint = donor_iPoint;
           
-          /*--- Contruct information regarding the target cell ---*/
-          
-          dPoint = target_geometry->node[target_iPoint]->GetGlobalIndex();
-          for (jVertexTarget = 0; jVertexTarget < nGlobalVertex_Target; jVertexTarget++)
-            if( dPoint == Target_GlobalPoint[jVertexTarget] )
-              break;
-            
-          if ( Target_nLinkedNodes[jVertexTarget] == 1 ){
-            target_segment[0] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] ];
-            target_segment[1] = jVertexTarget;
-          }
-          else{
-            target_segment[0] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] ];
-            target_segment[1] = Target_LinkedNodes[ Target_StartLinkedNodes[jVertexTarget] + 1];
-          }
-      
-          dTMP = 0;
-          for(iDim = 0; iDim < nDim; iDim++){
-            target_iMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[0] + iDim ] + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
-            target_jMidEdge_point[iDim] = ( TargetPoint_Coord[ nDim * target_segment[1] + iDim ] + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
-
-            Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
-            dTMP += Direction[iDim] * Direction[iDim];
-          }
-
-          dTMP = sqrt(dTMP);
-          for(iDim = 0; iDim < nDim; iDim++)
-            Direction[iDim] /= dTMP;
-
-          length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
+//if(target_iPoint == 2) cout << "donorrrrr   " << DonorPoint_Coord[ donor_iPoint * nDim + 1 ] << endl;    
 
           check = false;
 
@@ -2535,13 +2923,26 @@ unsigned long iPeriodic;
               donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
             }
             
-            for(iDim = 0; iDim < nDim; iDim++){
-              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
-              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
+            if(donor_iPoint >= nGlobalVertex_Donor-nHaloTot){
+              check = true;
+              continue;
             }
-
+//if(target_iPoint == 2) cout << DonorPoint_Coord[ donor_backward_point  * nDim +1] << "  " << DonorPoint_Coord[ donor_forward_point  * nDim + 1] << endl;            
+            for(iDim = 0; iDim < nDim; iDim++){
+              donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim ] ) / 2;
+              donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim ] ) / 2;
+            }
+//if(target_iPoint == 2) cout << donor_jMidEdge_point[1] << "  " << donor_iMidEdge_point[1] << endl;                        
+      //cout << donor_forward_point << "  " << donor_backward_point << "  " << Buffer_Receive_nLinkedNodes[jVertexTarget] << "  " << iVertex << endl;
+ /*     
+      cout << "a  ";
+      cout << Buffer_Receive_nLinkedNodes[donor_iPoint] << "  ";
+      cout << donor_iPoint << "  ";
+      cout << donor_backward_point << "  ";
+      cout << donor_forward_point << endl;            
+*/
             LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
-
+//if(target_iPoint == 2) cout << "length  " << LineIntersectionLength << endl; 
             if ( LineIntersectionLength == 0.0 ){
               check = true;
               continue;
@@ -2596,7 +2997,7 @@ unsigned long iPeriodic;
 
             nDonorPoints++;
           }
-             
+          
           if ( Buffer_Receive_nLinkedNodes[donor_StartIndex] == 2 ){
             check = false;
            
@@ -2622,6 +3023,11 @@ unsigned long iPeriodic;
               donor_forward_point  = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_OldiPoint    );
               donor_backward_point = FindNextNode_2D(&Buffer_Receive_LinkedNodes[ Buffer_Receive_StartLinkedNodes[donor_iPoint] ], donor_forward_point);
             }
+            
+            if(donor_iPoint >= nGlobalVertex_Donor-nHaloTot){
+              check = true;
+              continue;
+            }
 
             for(iDim = 0; iDim < nDim; iDim++){
               donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim] ) / 2;
@@ -2629,7 +3035,14 @@ unsigned long iPeriodic;
             }       
 
             LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
-
+/*
+      cout << "b  ";
+      cout << nGlobalVertex_Donor << "  " << "  " << nHaloTot << "  ";
+      cout << Buffer_Receive_nLinkedNodes[donor_iPoint] << "  ";
+      cout << donor_iPoint << "  ";
+      cout << donor_backward_point << "  ";
+      cout << donor_forward_point << endl;        
+*/
             if ( LineIntersectionLength == 0.0 ){
               check = true;
               continue;
@@ -2686,11 +3099,61 @@ unsigned long iPeriodic;
           }
                 
           /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
+          
+          iTmp = target_geometry->vertex[markTarget][iVertex]->GetnDonorPoints();
+          /*
+          cout << endl;
+          cout << nDonorPoints << "  " << target_geometry->vertex[markTarget][iVertex]->GetnDonorPoints() << "  " << iTmp << endl;
+          cout << endl;
+          */
+          Area = 0;
+//cout << iPeriodic << "  " << iTmp << "  " << nDonorPoints << " area  ";           
+          if ( iTmp > 0 ){
 
-          target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
+            tmp_Coeff_Vect = new     su2double[ iTmp ];
+            dtmpVect       = new     su2double[ iTmp ];
+            tmp_Donor_Vect = new unsigned long[ iTmp ];
+            tmp_storeProc  = new unsigned long[ iTmp ];
+            
+            for ( iDonor = 0; iDonor < iTmp; iDonor++ ){
+              tmp_Coeff_Vect[ iDonor ] = target_geometry->vertex[markTarget][iVertex]->GetDonorCoeff(iDonor);
+              dtmpVect[ iDonor ]       = target_geometry->vertex[markTarget][iVertex]->GetDonorPeriodicity(iDonor);
+              tmp_Donor_Vect[ iDonor ] = target_geometry->vertex[markTarget][iVertex]->GetInterpDonorPoint(iDonor);
+              tmp_storeProc[ iDonor ]  = target_geometry->vertex[markTarget][iVertex]->GetInterpDonorProcessor(iDonor);
+              Area += tmp_Coeff_Vect[ iDonor ];
+            }
+          }
+   
+          //nDonorPoints += iTmp;
+ //if(target_iPoint == 2) cout << "points  " << nDonorPoints << "  "  << iTmp << endl;
+          target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints( nDonorPoints + iTmp );
 
           target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
-   
+        
+          if ( iTmp > 0){
+            
+            for ( iDonor = 0; iDonor < iTmp; iDonor++ ){
+              target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(          iDonor, tmp_Coeff_Vect[ iDonor ]);
+              target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(    iDonor, tmp_Donor_Vect[ iDonor ]);
+              target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, tmp_storeProc[ iDonor ]);
+              target_geometry->vertex[markTarget][iVertex]->SetDonorPeriodicity(    iDonor, dtmpVect[ iDonor ]);// da sistemare qua e anche nelle altre fnziono
+              //cout << tmp_Coeff_Vect[ iDonor ] << "  ";
+            }
+            
+            if (tmp_Donor_Vect != NULL)
+              delete [] tmp_Donor_Vect;
+              
+            if (dtmpVect != NULL)
+              delete [] dtmpVect;
+  
+            if (tmp_Coeff_Vect != NULL)
+              delete [] tmp_Coeff_Vect;
+          
+            if (tmp_storeProc  != NULL)
+              delete [] tmp_storeProc;
+          }
+ 
+
           for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){
             
             if(periodic_rotation)
@@ -2698,14 +3161,24 @@ unsigned long iPeriodic;
             else
               Donor_Angle = 0;
             
-            target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(          iDonor, Coeff_Vect[iDonor]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(    iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ]);
-            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
-            target_geometry->vertex[markTarget][iVertex]->SetDonorPeriodicity(iDonor, Target_Angle-Donor_Angle);// da sistemare qua e anche nelle altre fnziono
+            target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(          iDonor+iTmp, Coeff_Vect[iDonor]);
+            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(    iDonor+iTmp, Donor_GlobalPoint[ Donor_Vect[iDonor] ]);
+            target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor+iTmp, storeProc[iDonor]);
+            target_geometry->vertex[markTarget][iVertex]->SetDonorPeriodicity(    iDonor+iTmp, Target_Angle-Donor_Angle);// da sistemare qua e anche nelle altre fnziono
+            Area += Coeff_Vect[ iDonor ];
+            //cout << Coeff_Vect[ iDonor ] << "  ";
           }
+          //cout << "  tot  " << Area << endl;
         }
+        /*
+        if(target_iPoint == 2 && Area < 1){
+          cout << target_iPoint << "  " << Coord_i[1] << "  " << jVertexTarget << "  tot  " << Area << endl;
+          cout << target_iMidEdge_point[1] << "  " << target_jMidEdge_point[1] << endl;
+        }
+        */
+        //cout << endl;
       }    
-      
+      //getchar();
       delete [] target_segment;
       
       delete [] target_iMidEdge_point;

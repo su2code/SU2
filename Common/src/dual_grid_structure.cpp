@@ -569,7 +569,7 @@ CVertex::CVertex(unsigned long val_point, unsigned short val_nDim) : CDualGrid(v
   Donor_Proc     = NULL;
   Donor_Coeff    = NULL;
   Donor_Periodic = NULL;
-  nDonor_Points  = 1;
+  nDonor_Points  = 0;
 
 }
 
