@@ -14033,8 +14033,8 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
               const vector<unsigned long>              &xadj_l,
               const vector<unsigned long>              &adjacency_l,
               const map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel,
-              vector<su2double>                        &vwgt,
-              vector<su2double>                        &adjwgt){
+                    vector<su2double>                  &vwgt,
+                    vector<su2double>                  &adjwgt){
   /*--- Determine my rank. ---*/
   int rank = MASTER_NODE;
 
@@ -14237,11 +14237,13 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
         and its edges. The map mapElemIDsToFaceInd is used to determine
         the corresponding index in localFaces.   ---*/
   for(unsigned long i=0; i<nElem; ++i) {
-    unsigned long elemID0 = starting_node[rank] + i;
+
+    const unsigned short timeLevelCur = elem[i]->GetTimeLevel();
+    const unsigned long  elemID0      = starting_node[rank] + i;
 
     for(unsigned long j=xadj_l[i]; j<xadj_l[i+1]; ++j) {
-      unsigned long e0 = min(elemID0, adjacency_l[j]);
-      unsigned long e1 = max(elemID0, adjacency_l[j]);
+      const unsigned long e0 = min(elemID0, adjacency_l[j]);
+      const unsigned long e1 = max(elemID0, adjacency_l[j]);
 
       /* Determine the index of this edge in localFaces. */
       unsignedLong2T elemIDs(e0, e1);
@@ -14258,9 +14260,33 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
 
       unsigned long ind = MI->second;
 
+      /* Determine the time level of the adjacent element. A distinction must be
+         made whether or not the element is currently stored on this rank. */
+      unsigned short timeLevelAdj;
+      if(adjacency_l[j] >= starting_node[rank] &&
+         adjacency_l[j] <  starting_node[rank]+nElem) {
+
+        unsigned long elemIDAdj = adjacency_l[j] - starting_node[rank];
+        timeLevelAdj = elem[elemIDAdj]->GetTimeLevel();
+      }
+      else {
+
+        map<unsigned long,unsigned short>::const_iterator MI;
+        MI = mapExternalElemIDToTimeLevel.find(adjacency_l[j]);
+        timeLevelAdj = MI->second;
+      }
+
+      /* Determine the difference of the maximum time level that occurs and
+         the minimum of the time level of the current and the adjacent element.
+         This value can only be nonzero when time accurate local time stepping
+         is employed. */
+      const unsigned short diffLevel = maxTimeLevel - min(timeLevelCur, timeLevelAdj);
+
       /* Set the edge weight. As ParMetis expects an undirected graph, set the edge weight
-         to the sum of the number of DOFs on both sides. */
-      adjwgt[j] = localFaces[ind].nDOFsElem0 + localFaces[ind].nDOFsElem1;
+         to the sum of the number of DOFs on both sides, multiplied by the weight factor
+         to account for different time levels. */
+      adjwgt[j] = pow(2, diffLevel)
+                * (localFaces[ind].nDOFsElem0 + localFaces[ind].nDOFsElem1);
     }
   }
 }
