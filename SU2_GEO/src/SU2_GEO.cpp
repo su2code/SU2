@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
-  su2double FanRadius_Diff_Grad, *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
+  su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal,
   
   Wing_Volume = 0.0, Wing_MinMaxThickness = 0.0, Wing_MaxChord = 0.0, Wing_MinToC = 0.0, Wing_MaxTwist = 0.0, Wing_MaxCurvature = 0.0, Wing_MaxDihedral = 0.0,
@@ -216,7 +216,6 @@ int main(int argc, char *argv[]) {
   }
   else if (geometry_container[ZONE_0]->GetnDim() == 3) {
     
-    MinPlane = config_container[ZONE_0]->GetSection_WingBounds(0); MaxPlane = config_container[ZONE_0]->GetSection_WingBounds(1);
     MinXCoord = -1E6; MaxXCoord = 1E6;
         
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -669,8 +668,7 @@ int main(int argc, char *argv[]) {
           Wing_MaxTwist_Grad = 0.0;
           Wing_MaxCurvature_Grad = 0.0;
           Wing_MaxDihedral_Grad = 0.0;
-          FanRadius_Diff_Grad = 0.0;
-          
+
           for (iPlane = 0; iPlane < nPlane; iPlane++) {
             Gradient[iPlane] = 0.0;
             Gradient[1*nPlane + iPlane] = 0.0;
