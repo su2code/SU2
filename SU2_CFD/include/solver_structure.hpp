@@ -3628,6 +3628,19 @@ public:
                                   CConfig *config, unsigned short iMesh, unsigned short iStep);
 
   /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
+   */
+  virtual void Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                  CConfig *config, unsigned short iMesh, unsigned short iStep);
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -12745,6 +12758,19 @@ public:
                         stepping algorithm, if appropriate.
    */
   void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iStep);
+
+  /*!
+   * \brief Per-Olof Persson's method for capturing shock in DG
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
+   */
+  void Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                        CConfig *config, unsigned short iMesh, unsigned short iStep);
 
   /*!
