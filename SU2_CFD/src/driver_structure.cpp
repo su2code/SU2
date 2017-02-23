@@ -838,7 +838,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj, fem_dg_flow;
+  template_solver, disc_adj, fem_dg_flow, fem_dg_shock;
   
   /*--- Initialize some useful booleans ---*/
   
@@ -852,7 +852,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   heat             = false;
   transition       = false;  fem_transition  = false;
   template_solver  = false;
-  fem_dg_flow      = false;
+  fem_dg_flow      = false;  fem_dg_shock    = false;
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -884,6 +884,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 
   switch( config->GetKind_FEM_Flow() ) {
     case DG: fem_dg_flow = true; break;
+  }
+
+  /*--- Determine the kind of shock capturing method for FEM DG solver. ---*/
+
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case PERSSON: fem_dg_shock = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
