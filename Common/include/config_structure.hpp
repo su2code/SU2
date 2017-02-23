@@ -462,6 +462,8 @@ private:
   SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
+  // Kind_FEM_DG_Shock is hard coded right now since it is not added in config option
+  unsigned short Kind_FEM_DG_Shock = 0; /*!< \brief Shock caputirng method for the FEM DG solver. */
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
@@ -3570,6 +3572,14 @@ public:
    * \return Kind of finite element convective numerical scheme for the flow equations.
    */
   unsigned short GetKind_FEM_Flow(void);
+
+  /*!
+   * \brief Get the kind of shock capturing method in FEM DG solver.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of shock capturing method in FEM DG solver.
+   */
+  unsigned short GetKind_FEM_DG_Shock(void);
 
   /*!
    * \brief Get the method for limiting the spatial gradients.
