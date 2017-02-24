@@ -297,24 +297,24 @@ public:
 };
 
 /*!
- * \class CFEMFlowIteration
+ * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
  * \version 4.0.2 "Cardinal"
  */
-class CFEMFlowIteration : public CIteration {
+class CFEMFluidIteration : public CIteration {
 public:
   
   /*!
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CFEMFlowIteration(CConfig *config);
+  CFEMFluidIteration(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEMFlowIteration(void);
+  ~CFEMFluidIteration(void);
   
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.

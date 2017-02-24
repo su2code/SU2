@@ -2580,7 +2580,7 @@ void CDriver::Iteration_Preprocessing() {
     case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
       if (rank == MASTER_NODE)
         cout << ": finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
-      iteration_container[iZone] = new CFEMFlowIteration(config_container[iZone]);
+      iteration_container[iZone] = new CFEMFluidIteration(config_container[iZone]);
       break;
 
     case WAVE_EQUATION:
