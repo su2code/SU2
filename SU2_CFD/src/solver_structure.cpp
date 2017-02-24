@@ -2242,130 +2242,125 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, st
           text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
         }
 
-        if (adjoint) {
+        /*--- Angle of attack ---*/
+
+        position = text_line.find ("AOA=",0);
+        if (position != string::npos) {
+          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+        }
+
+        /*--- Sideslip angle ---*/
+
+        position = text_line.find ("SIDESLIP_ANGLE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+        }
+
+        /*--- BCThrust angle ---*/
+
+        position = text_line.find ("INITIAL_BCTHRUST=",0);
+        if (position != string::npos) {
+          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+        }
+
+        if (adjoint && config->GetRestart()) {
 
           if (config->GetEval_dCD_dCX() == true) {
 
-            /*--- dCD_dCL coefficient ---*/
+          /*--- dCD_dCL coefficient ---*/
 
-            position = text_line.find ("DCD_DCL_VALUE=",0);
-            if (position != string::npos) {
-              text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-            }
-
-            /*--- dCD_dCM coefficient ---*/
-
-            position = text_line.find ("DCD_DCM_VALUE=",0);
-            if (position != string::npos) {
-              text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-            }
-
+          position = text_line.find ("DCD_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
           }
 
-        } else {
+          /*--- dCD_dCM coefficient ---*/
 
-          /*--- Angle of attack ---*/
-
-          position = text_line.find ("AOA=",0);
+          position = text_line.find ("DCD_DCM_VALUE=",0);
           if (position != string::npos) {
-            text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
           }
-
-          /*--- Sideslip angle ---*/
-
-          position = text_line.find ("SIDESLIP_ANGLE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-          }
-
-          /*--- BCThrust angle ---*/
-
-          position = text_line.find ("INITIAL_BCTHRUST=",0);
-          if (position != string::npos) {
-            text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
           }
 
         }
-
-        /*--- Close the restart meta file. ---*/
-
-        restart_file.close();
-
+        
       }
+
+
+      /*--- Close the restart meta file. ---*/
+
+      restart_file.close();
+
     }
   }
 
   /*--- Load the metadata. ---*/
 
-  if (adjoint) {
+  /*--- Angle of attack ---*/
 
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+      cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+    }
+    config->SetAoA(AoA_ + config->GetAoA_Offset());
+  }
+  else {
+    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+  }
+
+  /*--- Sideslip angle ---*/
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+      cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+    }
+    config->SetAoS(AoS_ + config->GetAoS_Offset());
+  }
+  else {
+    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+  }
+
+  /*--- BCThrust angle ---*/
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+    config->SetInitial_BCThrust(BCThrust_);
+  }
+  else {
+    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+  }
+
+  if (adjoint && config->GetRestart()) {
     if (config->GetEval_dCD_dCX() == true) {
 
       /*--- dCD_dCL coefficient ---*/
 
       if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+        cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
       config->SetdCD_dCL(dCD_dCL_);
 
       /*--- dCD_dCM coefficient ---*/
 
       if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
+        cout <<"WARNING: SU2 will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
       config->SetdCD_dCM(dCD_dCM_);
-
     }
-
-  } else {
-
-    /*--- Angle of attack ---*/
-
-    if (config->GetDiscard_InFiles() == false) {
-      if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-        cout.precision(6);
-        cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-        cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-      }
-      config->SetAoA(AoA_ + config->GetAoA_Offset());
-    }
-    else {
-      if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-    }
-
-    /*--- Sideslip angle ---*/
-
-    if (config->GetDiscard_InFiles() == false) {
-      if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-        cout.precision(6);
-        cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-        cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-      }
-      config->SetAoS(AoS_ + config->GetAoS_Offset());
-    }
-    else {
-      if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-    }
-
-    /*--- BCThrust angle ---*/
-
-    if (config->GetDiscard_InFiles() == false) {
-      if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-      config->SetInitial_BCThrust(BCThrust_);
-    }
-    else {
-      if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-        cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-    }
-    
   }
-  
+
   /*--- External iteration ---*/
-  
-  if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+
+  if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
+      (adjoint && config->GetRestart()))
     config->SetExtIter_OffSet(ExtIter_);
-  
+
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
