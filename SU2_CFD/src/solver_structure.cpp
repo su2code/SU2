@@ -2941,7 +2941,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned long index;
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
-  unsigned short iField;
+  unsigned short iVar;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
@@ -2970,39 +2970,29 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
-  /*--- Open the restart file ---*/
-  solution_file.open(filename.data(), ios::in);
-
-  /*--- In case there is no file ---*/
-  if (solution_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no SU2 restart file!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
   /*--- Output the file name to the console. ---*/
+
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename
     << "." << endl;
 
-  /*--- Set the number of variables, one per field in the
-   restart file (without including the PointID) ---*/
-  nVar = config->fields.size() - 1;
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  su2double *Solution = new su2double[nVar];
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry, config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry, config, filename);
+  }
 
-  /*--- Read all lines in the restart file ---*/
+  unsigned short nVar_Local = Restart_Vars[0];
+  su2double *Solution_Local = new su2double[nVar_Local];
+
+  int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  
-  /*--- The first line is the header ---*/
-  
-  getline (solution_file, text_line);
+
+  /*--- Load data from the restart into correct containers. ---*/
   
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
-    getline (solution_file, text_line);
-    
-    istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
@@ -3011,26 +3001,22 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 
     if (iPoint_Local > -1) {
 
-      /*--- The PointID is not stored --*/
-      point_line >> index;
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
 
-      /*--- Store the solution (starting with node coordinates) --*/
-      for (iField = 0; iField < nVar; iField++)
-        point_line >> Solution[iField];
-
+      index = counter*Restart_Vars[0];
+      for (iVar = 0; iVar < nVar_Local; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
 
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+
+      counter++;
 
     }
 
   }
 
-  /*--- Close the restart file ---*/
-  solution_file.close();
-
-  /*--- Free memory needed for the transformation ---*/
-
-  delete [] Solution;
+  delete [] Solution_Local;
 
 }
 
