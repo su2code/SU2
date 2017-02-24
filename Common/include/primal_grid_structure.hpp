@@ -70,8 +70,9 @@ protected:
   su2double Volume;    /*!< \brief Volume of the element. */
   bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
                                             constant in the transformation to the standard element. */
-  bool *ElementOwnsFace; /*!< \brief Whether or not the element owns the face. */
-  su2double LenScale;    /*!< \brief Length scale of the element. */
+  bool *ElementOwnsFace;    /*!< \brief Whether or not the element owns the face. */
+  su2double LenScale;       /*!< \brief Length scale of the element. */
+  unsigned short TimeLevel; /*!< \brief Time level of the element for time accurate local time stepping. */
 public:
 	
 	/*!
@@ -107,10 +108,28 @@ public:
   void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face);
 
   /*!
+   * \brief Make available the length scale of the element.
+   * \return The length scale of the element.
+   */
+  su2double GetLengthScale(void);
+
+  /*!
    * \brief Set the length scale of the element.
    * \param[in] val_lenScale - Length scale of the element.
    */
   void SetLengthScale(su2double val_lenScale);
+
+  /*!
+   * \brief Make available the time level of the element.
+   * \return The time level of the element.
+   */
+  unsigned short GetTimeLevel(void);
+
+  /*!
+   * \brief Set the time level of the element.
+   * \param[in] val_timeLevel - Time level of the element.
+   */
+  void SetTimeLevel(unsigned short val_timeLevel);
 
  /*!
   * \brief Get the boolean to indicate whether or not this element owns the face

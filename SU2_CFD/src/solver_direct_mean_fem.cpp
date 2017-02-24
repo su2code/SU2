@@ -2,7 +2,7 @@
  * \file solution_direct_mean_fem.cpp
  * \brief Main subroutines for solving finite element flow problems (Euler, Navier-Stokes, etc.).
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -171,7 +171,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
-    sizeVecTmp = 2*nIntegrationMax*(1 + nVar) + sizeFluxes + sizeGradSolInt
+    sizeVecTmp = 2*nIntegrationMax*(2 + nVar) + sizeFluxes + sizeGradSolInt
                + max(nIntegrationMax,nDOFsMax)*nVar;
   }
   else {
@@ -2004,9 +2004,6 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
 
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   
-  /* Easier storage whether or not a viscous computation is carried out. */
-  const bool viscous = config->GetViscous();
-
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
@@ -2037,9 +2034,9 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long i=0; i<nVolElemOwned; ++i) {
         
-        /*--- Loop over the DOFs of this element and determine the maximum wave speed
-         and the maximum value of the kinematic viscosity (if needed). ---*/
-        su2double charVel2Max = 0.0, nuMax = 0.0;
+        /*--- Loop over the DOFs of this element and determine
+              the maximum wave speed. ---*/
+        su2double charVel2Max = 0.0;
         for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
           const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
           
@@ -2067,12 +2064,6 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
           }
           
           charVel2Max = max(charVel2Max, charVel2);
-          
-          /* Update the kinematic viscosity, if a viscous computation is carried out. */
-          if( viscous ) {
-            const su2double nu = DensityInv*FluidModel->GetLaminarViscosity();
-            nuMax = max(nuMax, nu);
-          }
         }
         
         /*--- Compute the time step for the element and update the minimum and
@@ -2083,7 +2074,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         if(nPoly == 0) nPoly = 1;
         
         const su2double lenScaleInv = nPoly/volElem[i].lenScale;
-        const su2double dtInv       = lenScaleInv*(charVel2Max + nuMax*lenScaleInv);
+        const su2double dtInv       = lenScaleInv*charVel2Max;
         
         VecDeltaTime[i] = CFL/dtInv;
         
@@ -2136,7 +2127,6 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         VecDeltaTime[i] = Min_Delta_Time;
     }
   }
-  
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
@@ -2610,6 +2600,16 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *con
     const su2double *solPred = VecSolDOFsPredictorADER.data() + j*nVar*nDOFsLocOwned;
     for(unsigned long i=0; i<(nVar*nDOFsLocOwned); ++i)
        VecSolDOFs[i] += DOFToThisTimeInt[j]*solPred[i];
+  }
+}
+
+void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+  /*--- Run shock capturing algorithm ---*/
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case NONE:
+      break;
   }
 }
 
@@ -4301,6 +4301,10 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
   Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
   MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
+
+  /*--- Set the SGS model to NULL and indicate that no SGS model is used. ---*/
+  SGSModel     = NULL;
+  SGSModelUsed = false;
 }
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
@@ -4356,10 +4360,10 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   
   /*--- Init total coefficients ---*/
   
-  Total_CD   = 0.0;	Total_CL        = 0.0;  Total_CSF   = 0.0;
-  Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
-  Total_CEff    = 0.0;
-  Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
+  Total_CD   = 0.0; Total_CL  = 0.0; Total_CSF = 0.0;
+  Total_CMx  = 0.0; Total_CMy = 0.0; Total_CMz = 0.0;
+  Total_CEff = 0.0;
+  Total_CFx  = 0.0; Total_CFy = 0.0; Total_CFz = 0.0;
   
   /*--- Read farfield conditions from config ---*/
   
@@ -4367,6 +4371,49 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   Prandtl_Lam   = config->GetPrandtl_Lam();
   Prandtl_Turb  = config->GetPrandtl_Turb();
   Tke_Inf       = config->GetTke_FreeStreamND();
+
+  /*--- Set the SGS model in case an LES simulation is carried out ---*/
+
+  if(config->GetKind_Solver() == FEM_LES) {
+
+    /* Make a distinction between the SGS models used and set SGSModel and
+       SGSModelUsed accordingly. */
+    switch( config->GetKind_SGS_Model() ) {
+
+      case IMPLICIT_LES:
+        SGSModel     = NULL;
+        SGSModelUsed = false;
+        break;
+
+      case SMAGORINSKY:
+        SGSModel     = new CSmagorinskyModel;
+        SGSModelUsed = true;
+        break;
+
+      case WALE:
+        SGSModel     = new CWALEModel;
+        SGSModelUsed = true;
+        break;
+
+      default:
+        cout << "Unknown SGS model encountered" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+    }
+  }
+  else {
+
+    /* No LES, so no SGS model needed.
+       Set the pointer to NULL and the boolean to false. */
+    SGSModel     = NULL;
+    SGSModelUsed = false;
+  }
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
@@ -4374,28 +4421,28 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   
   if (CD_Visc != NULL)       delete [] CD_Visc;
   if (CL_Visc != NULL)       delete [] CL_Visc;
-  if (CSF_Visc != NULL)  delete [] CSF_Visc;
-  if (CMx_Visc != NULL)         delete [] CMx_Visc;
-  if (CMy_Visc != NULL)         delete [] CMy_Visc;
-  if (CMz_Visc != NULL)         delete [] CMz_Visc;
-  if (CFx_Visc != NULL)         delete [] CFx_Visc;
-  if (CFy_Visc != NULL)         delete [] CFy_Visc;
-  if (CFz_Visc != NULL)         delete [] CFz_Visc;
-  if (CEff_Visc != NULL)        delete [] CEff_Visc;
-  if (ForceViscous != NULL)     delete [] ForceViscous;
-  if (MomentViscous != NULL)    delete [] MomentViscous;
+  if (CSF_Visc != NULL)      delete [] CSF_Visc;
+  if (CMx_Visc != NULL)      delete [] CMx_Visc;
+  if (CMy_Visc != NULL)      delete [] CMy_Visc;
+  if (CMz_Visc != NULL)      delete [] CMz_Visc;
+  if (CFx_Visc != NULL)      delete [] CFx_Visc;
+  if (CFy_Visc != NULL)      delete [] CFy_Visc;
+  if (CFz_Visc != NULL)      delete [] CFz_Visc;
+  if (CEff_Visc != NULL)     delete [] CEff_Visc;
+  if (ForceViscous != NULL)  delete [] ForceViscous;
+  if (MomentViscous != NULL) delete [] MomentViscous;
   
   
-  if (Surface_CL_Visc != NULL)      delete [] Surface_CL_Visc;
-  if (Surface_CD_Visc != NULL)      delete [] Surface_CD_Visc;
-  if (Surface_CSF_Visc != NULL) delete [] Surface_CSF_Visc;
-  if (Surface_CEff_Visc != NULL)       delete [] Surface_CEff_Visc;
-  if (Surface_CFx_Visc != NULL)        delete [] Surface_CFx_Visc;
-  if (Surface_CFy_Visc != NULL)        delete [] Surface_CFy_Visc;
-  if (Surface_CFz_Visc != NULL)        delete [] Surface_CFz_Visc;
-  if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
-  if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
-  if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
+  if (Surface_CL_Visc != NULL)   delete [] Surface_CL_Visc;
+  if (Surface_CD_Visc != NULL)   delete [] Surface_CD_Visc;
+  if (Surface_CSF_Visc != NULL)  delete [] Surface_CSF_Visc;
+  if (Surface_CEff_Visc != NULL) delete [] Surface_CEff_Visc;
+  if (Surface_CFx_Visc != NULL)  delete [] Surface_CFx_Visc;
+  if (Surface_CFy_Visc != NULL)  delete [] Surface_CFy_Visc;
+  if (Surface_CFz_Visc != NULL)  delete [] Surface_CFz_Visc;
+  if (Surface_CMx_Visc != NULL)  delete [] Surface_CMx_Visc;
+  if (Surface_CMy_Visc != NULL)  delete [] Surface_CMy_Visc;
+  if (Surface_CMz_Visc != NULL)  delete [] Surface_CMz_Visc;
 
   if (Heat_Visc        != NULL)  delete [] Heat_Visc;
   if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
@@ -4408,12 +4455,20 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
     }
     delete [] CSkinFriction;
   }
+
+  if( SGSModel ) delete SGSModel;
 }
 
 void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
+  /*--------------------------------------------------------------------------*/
+  /*--- The assumption is made that the eddy viscosity is zero for viscous ---*/
+  /*--- walls. This is true for an integration to the wall, but is this    ---*/
+  /*--- also true when wall functions are used?                            ---*/
+  /*--------------------------------------------------------------------------*/
+
   /* Constant factor present in the heat flux vector. */
-  const su2double factHeatFlux = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Lam = Gamma/Prandtl_Lam;
   su2double tick = 0.0;
   
   /*--- Set the pointers for the local arrays. ---*/
@@ -4586,11 +4641,11 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
             /*--- Compute the laminar viscosity. ---*/
             FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-            const su2double Viscosity = FluidModel->GetLaminarViscosity();
+            const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
 
             /*--- Set the value of the second viscosity and compute the divergence
                   term in the viscous normal stresses. ---*/
-            const su2double lambda     = -2.0*Viscosity/3.0;
+            const su2double lambda     = -TWO3*ViscosityLam;
             const su2double lamDivTerm =  lambda*divVel;
 
             /*--- Compute the viscous stress tensor and the normal flux. Note that
@@ -4598,13 +4653,13 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
                   points into the geometry. ---*/
             su2double tauVis[3][3], qHeatNorm = 0.0;
             for(unsigned short k=0; k<nDim; ++k) {
-              tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
+              tauVis[k][k] = 2.0*ViscosityLam*velGrad[k][k] + lamDivTerm;    // Normal stress
               for(unsigned short j=(k+1); j<nDim; ++j) {
-                tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
+                tauVis[j][k] = ViscosityLam*(velGrad[j][k] + velGrad[k][j]); // Shear stress
                 tauVis[k][j] = tauVis[j][k];
               }
 
-              qHeatNorm += Viscosity*factHeatFlux*StaticEnergyGrad[k]*normals[k];
+              qHeatNorm += ViscosityLam*factHeatFlux_Lam*StaticEnergyGrad[k]*normals[k];
             }
 
             /*-- Compute the vector from the reference point to the integration
@@ -4785,6 +4840,233 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   }
 }
 
+void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                    unsigned short iMesh, unsigned long Iteration) {
+
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
+  /* Constant factor present in the heat flux vector, namely the ratio of
+     thermal conductivity and viscosity. */
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
+
+  /* Constant ratio of the second viscosity and the viscosity itself. */
+  const su2double lambdaOverMu = -TWO3;
+
+  /* The eigenvalues of the viscous Jacobian, scaled by the kinematic viscosity,
+     are 1.0, 2.0 + lambdaOverMu and kOverCv/Mu. The last is variable due to the
+     possible presence of an eddy viscosity, but the first two are constant and
+     the maximum can be determined. */
+  const su2double radOverNuTerm = max(1.0, 2.0+lambdaOverMu);
+
+  /* Store the number of metric points per DOF, which depends
+     on the number of dimensions. */
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+  
+  /* Initialize the minimum and maximum time step. */
+  Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
+
+  /* Easier storage of the CFL number. Note that if we are using explicit
+   time stepping, the regular CFL condition has been overwritten with the
+   unsteady CFL condition in the config post-processing (if non-zero). */
+  
+  const su2double CFL = config->GetCFL(iMesh);
+
+  /*--- Explicit time stepping with imposed time step (eventually will
+   allow for local time stepping with this value imposed as the time
+   for syncing the cells). If the unsteady CFL is set to zero (default), 
+   it uses the defined unsteady time step, otherwise it computes the time
+   step based on the provided unsteady CFL. Note that the regular CFL
+   option in the config is always ignored with time stepping. ---*/
+  
+  if (time_stepping && (config->GetUnst_CFL() == 0.0)) {
+    
+    /*--- Loop over the owned volume elements and set the fixed dt. ---*/
+    for(unsigned long i=0; i<nVolElemOwned; ++i)
+      VecDeltaTime[i] = config->GetDelta_UnstTimeND();
+    
+  } else {
+    
+    /*--- Check for a compressible solver. ---*/
+    if(config->GetKind_Regime() == COMPRESSIBLE) {
+      
+      /*--- Loop over the owned volume elements. ---*/
+      for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+        /* Determine the offset between the r-derivatives and s-derivatives, which is
+           also the offset between s- and t-derivatives, of the solution in the DOFs. */
+        const unsigned short offDerivSol = nVar*volElem[i].nDOFsSol;
+
+        /*--- Compute the length scale for this element. Note that in the
+              length scale the polynomial degree must be taken into account
+              for the high order element. ---*/
+        const unsigned short ind = volElem[i].indStandardElement;
+        unsigned short nPoly = standardElementsSol[ind].GetNPoly();
+        if(nPoly == 0) nPoly = 1;
+
+        const su2double lenScaleInv = nPoly/volElem[i].lenScale;
+        const su2double lenScale    = 1.0/lenScaleInv;
+
+        /*--- Compute the gradients of the conserved variables if a subgrid
+              scale model for LES is used. ---*/
+        su2double *gradSolDOFs = VecTmpMemory.data();
+        if( SGSModelUsed ) {
+          const unsigned short nDOFs          = volElem[i].nDOFsSol;
+          const su2double *matDerBasisSolDOFs = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
+          const su2double *sol                = VecSolDOFs.data() + nVar*volElem[i].offsetDOFsSolLocal;
+
+          DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
+        }
+        
+        /*--- Loop over the DOFs of this element and determine the maximum wave speed
+              and the maximum value of the viscous spectral radius. ---*/
+        su2double charVel2Max = 0.0, radViscMax = 0.0;
+        for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+          const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+
+          /* Compute the velocities. */
+          su2double velAbs[3], vel[3];
+          const su2double DensityInv = 1.0/solDOF[0];
+          su2double Velocity2 = 0.0;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+            vel[iDim]    = solDOF[iDim+1]*DensityInv;
+            velAbs[iDim] = fabs(vel[iDim]);
+            Velocity2 += vel[iDim]*vel[iDim];
+          }
+          
+          /*--- Compute the maximum value of the wave speed. This is a rather
+                conservative estimate. ---*/
+          const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
+          FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+          const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+          const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
+          
+          su2double charVel2 = 0.0;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+            const su2double rad = velAbs[iDim] + SoundSpeed;
+            charVel2 += rad*rad;
+          }
+          
+          charVel2Max = max(charVel2Max, charVel2);
+          
+          /* Compute the laminar kinematic viscosity and check if an eddy
+             viscosity must be determined. */
+          const su2double muLam = FluidModel->GetLaminarViscosity();
+          su2double muTurb      = 0.0;
+
+          if( SGSModelUsed ) {
+
+            /* Set the pointer gradSolDOF to the location where the gradients
+               of this DOF start. */
+            const su2double *gradSolDOF = gradSolDOFs + j*nVar;
+
+            /* Easier storage of the metric terms in this DOF. First compute the
+               inverse of the Jacobian, the Jacobian is the first entry in the metric
+               terms, and afterwards update the metric terms by 1. */
+            const su2double *metricTerms = volElem[i].metricTermsSolDOFs.data()
+                                         + j*nMetricPerPoint;
+            const su2double Jac          = metricTerms[0];
+            const su2double JacInv       = 1.0/Jac;
+            metricTerms                 += 1;
+
+            /*--- Compute the Cartesian gradients of the independent solution
+                  variables from the gradients in parametric coordinates and the metric
+                  terms in this DOF. Note that at the end a multiplication with JacInv
+                  takes places, because the metric terms are scaled by the Jacobian. ---*/
+            su2double solGradCart[5][3];
+            for(unsigned short k=0; k<nDim; ++k) {
+              for(unsigned short l=0; l<nVar; ++l) {
+                solGradCart[l][k] = 0.0;
+                for(unsigned short m=0; m<nDim; ++m)
+                  solGradCart[l][k] += gradSolDOF[l+m*offDerivSol]*metricTerms[k+m*nDim];
+                solGradCart[l][k] *= JacInv;
+              }
+            }
+
+            /* Compute the Cartesian gradients of the velocities in this DOF. */
+            su2double velGrad[3][3];
+            for(unsigned short k=0; k<nDim; ++k) {
+              for(unsigned short l=0; l<nDim; ++l) {
+                velGrad[l][k] = DensityInv*(solGradCart[l+1][k]
+                              -      vel[l]*solGradCart[0][k]);
+              }
+            }
+
+            /* Compute the eddy viscosity. */
+            const su2double dist = volElem[i].wallDistanceSolDOFs[j];
+            muTurb = SGSModel->ComputeEddyViscosity(nDim, solDOF[0], velGrad,
+                                                    lenScale, dist);
+          }
+
+          /*--- Determine the viscous spectral radius. ---*/
+          const su2double mu           = muLam + muTurb;
+          const su2double kOverCv      = muLam*factHeatFlux_Lam
+                                       + muTurb*factHeatFlux_Turb;
+          const su2double factHeatFlux = kOverCv/mu;
+
+          const su2double radVisc = DensityInv*mu*max(radOverNuTerm, factHeatFlux);
+
+          /* Update the maximum value of the viscous spectral radius. */
+          radViscMax = max(radViscMax, radVisc);
+        }
+        
+        /*--- Compute the time step for the element and update the minimum and
+              maximum value. ---*/
+        const su2double dtInv = lenScaleInv*(charVel2Max + radViscMax*lenScaleInv);
+        
+        VecDeltaTime[i] = CFL/dtInv;
+        
+        Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
+        Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
+      }
+    }
+    else {
+      
+      /*--- Incompressible solver. ---*/
+      
+      int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Barrier(MPI_COMM_WORLD);
+#endif
+      
+      if(rank == MASTER_NODE) {
+        cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
+        cout << "Incompressible solver not implemented yet" << endl;
+      }
+      
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#else
+      exit(EXIT_FAILURE);
+#endif
+      
+    }
+    
+    /*--- Compute the max and the min dt (in parallel). Note that we only
+     so this for steady calculations if the high verbosity is set, but we
+     always perform the reduction for unsteady calculations where the CFL
+     limit is used to set the global time step. ---*/
+    if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
+#ifdef HAVE_MPI
+      su2double rbuf_time = Min_Delta_Time;
+      SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      
+      rbuf_time = Max_Delta_Time;
+      SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+    }
+    /*--- For explicit time stepping with an unsteady CFL imposed, 
+     use the minimum delta time of the entire mesh. ---*/
+    if (time_stepping) {
+      for(unsigned long i=0; i<nVolElemOwned; ++i)
+        VecDeltaTime[i] = Min_Delta_Time;
+    }
+  }
+}
+
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *config,
                                                         CVolumeElementFEM *elem,
                                                         const su2double   *sol,
@@ -4792,7 +5074,8 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
                                                         su2double         *work) {
 
   /* Constant factor present in the heat flux vector. */
-  const su2double factHeatFlux = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Get the necessary information from the standard element. ---*/
   const unsigned short ind                = elem->indStandardElement;
@@ -4803,6 +5086,12 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
   const su2double *matDerBasisSolDOFs     = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
   const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
   const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  unsigned short nPoly = standardElementsSol[ind].GetNPoly();
+  if(nPoly == 0) nPoly = 1;
+
+  /* Compute the length scale of the current element for the LES. */
+  const su2double lenScale = elem->lenScale/nPoly;
 
   /* Set the pointers for fluxesDOF, gradFluxesInt, gradSolDOF and divFlux.
      Note that the same array can be used for the fluxesDOF and divFlux and
@@ -4892,12 +5181,26 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
 
     /*--- Compute the pressure and the laminar viscosity. ---*/
     FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-    const su2double Pressure  = FluidModel->GetPressure();
-    const su2double Viscosity = FluidModel->GetLaminarViscosity();
+    const su2double Pressure     = FluidModel->GetPressure();
+    const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+    /*--- Compute the eddy viscosity, if needed, and the total viscosity. ---*/
+    su2double ViscosityTurb = 0.0;
+    if( SGSModelUsed ) {
+      const su2double dist = elem->wallDistanceSolDOFs[i];
+      ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, solDOF[0], velGrad,
+                                                    lenScale, dist);
+    }
+
+    const su2double Viscosity = ViscosityLam + ViscosityTurb;
+
+    /* Compute the total thermal conductivity divided by Cv. */
+    const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
+                            + ViscosityTurb*factHeatFlux_Turb;
 
     /*--- Set the value of the second viscosity and compute the divergence
           term in the viscous normal stresses. ---*/
-    const su2double lambda     = -2.0*Viscosity/3.0;
+    const su2double lambda     = -TWO3*Viscosity;
     const su2double lamDivTerm =  lambda*divVel;
 
     /*--- Compute the viscous stress tensor. ---*/
@@ -4926,8 +5229,8 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual(CConfig           *confi
       ll += nDim;
 
       /* Energy flux for the current direction. */
-      fluxes[ll] = rH*vel[iDim]                                   // Inviscid part
-                 - Viscosity*factHeatFlux*StaticEnergyGrad[iDim]; // Heat flux part
+      fluxes[ll] = rH*vel[iDim]                         // Inviscid part
+                 - kOverCv*StaticEnergyGrad[iDim];      // Heat flux part
       for(unsigned short jDim=0; jDim<nDim; ++jDim)
         fluxes[ll] -= tauVis[jDim][iDim]*vel[jDim];     // Work of the viscous forces part
       ++ll;
@@ -4999,10 +5302,11 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
 
   /* Constant factor present in the heat flux vector, the inverse of
      the specific heat at constant volume and ratio lambdaOverMu. */
-  const su2double factHeatFlux = Gamma/Prandtl_Lam;
-  const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double CvInv        = Gamma_Minus_One/Gas_Constant;
-  const su2double lambdaOverMu = -2.0/3.0;
+  const su2double factHeatFlux_Lam  =  Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb =  Gamma/Prandtl_Turb;
+  const su2double Gas_Constant      =  config->GetGas_ConstantND();
+  const su2double CvInv             =  Gamma_Minus_One/Gas_Constant;
+  const su2double lambdaOverMu      = -TWO3;
 
   /*--- Get the necessary information from the standard element. ---*/
   const unsigned short ind                = elem->indStandardElement;
@@ -5013,6 +5317,12 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   const su2double *matDerBasisSolDOFs     = standardElementsSol[ind].GetMatDerBasisFunctionsSolDOFs();
   const su2double *basisFunctionsIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
   const su2double *weights                = standardElementsSol[ind].GetWeightsIntegration();
+
+  unsigned short nPoly = standardElementsSol[ind].GetNPoly();
+  if(nPoly == 0) nPoly = 1;
+
+  /* Compute the length scale of the current element for the LES. */
+  const su2double lenScale = elem->lenScale/nPoly;
 
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
      can be used for both help arrays. Set the pointer for the second
@@ -5099,13 +5409,13 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
     const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
     const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
 
-    /*--- Compute the viscosity, its derivative w.r.t. temperature,
+    /*--- Compute the laminar viscosity, its derivative w.r.t. temperature,
           pressure and the total enthalpy. ---*/
     FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-    const su2double Viscosity = FluidModel->GetLaminarViscosity();
-    const su2double dViscdT   = FluidModel->GetdmudT_rho();
-    const su2double Pressure  = FluidModel->GetPressure();
-    const su2double Htot      = (sol[nDim+1]+Pressure)*DensityInv;
+    const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+    const su2double dViscLamdT   = FluidModel->GetdmudT_rho();
+    const su2double Pressure     = FluidModel->GetPressure();
+    const su2double Htot         = (sol[nDim+1]+Pressure)*DensityInv;
 
     /* Easier storage of the metric terms in this integration point.  Store the
        Jacobian and its inverse for later purposes and update the pointer for
@@ -5176,7 +5486,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
 
     /*--- Compute the Cartesian gradients of the pressure, velocity components,
           static energy and dynamic viscosity. ---*/
-    su2double pGrad[3], velGrad[3][3], StaticEnergyGrad[3], ViscosityGrad[3];
+    su2double pGrad[3], velGrad[3][3], StaticEnergyGrad[3], ViscosityLamGrad[3];
     for(unsigned short k=0; k<nDim; ++k) {
       pGrad[k]            = solGradCart[nVar-1][k] + 0.5*Velocity2*solGradCart[0][k];
       StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
@@ -5189,7 +5499,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
       }
       pGrad[k] *= Gamma_Minus_One;
 
-      ViscosityGrad[k] = CvInv*StaticEnergyGrad[k]*dViscdT;
+      ViscosityLamGrad[k] = CvInv*StaticEnergyGrad[k]*dViscLamdT;
     }
 
     /*--- Compute the second derivatives of the velocity components. ---*/
@@ -5218,6 +5528,38 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
         StaticEnergy2ndDer[l] -= vel[k]*vel2ndDer[k][l][l] - velGrad[k][l]*velGrad[k][l];
     }
 
+    /*--- If an SGS model is used the eddy viscosity and its spatial
+          derivatives must be computed. ---*/
+    su2double ViscosityTurb = 0.0;
+    su2double ViscosityTurbGrad[] = {0.0, 0.0, 0.0};
+    
+    if( SGSModelUsed ) {
+      const su2double dist = elem->wallDistance[i];
+      ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
+                                                    lenScale, dist);
+
+      su2double densityGrad[3];
+      for(unsigned short l=0; l<nDim; ++l) densityGrad[l] = solGradCart[0][l];
+
+      SGSModel->ComputeGradEddyViscosity(nDim, sol[0], densityGrad, velGrad,
+                                         vel2ndDer, lenScale, dist,
+                                         ViscosityTurbGrad);
+    }
+
+    /*--- Compute the total viscosity, the total heat conductivity and their
+          gradients. Note that the heat conductivity is divided by the Cv,
+          because gradients of internal energy are computed and not temperature. ---*/
+    const su2double Viscosity = ViscosityLam + ViscosityTurb;
+    const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
+                            + ViscosityTurb*factHeatFlux_Turb;
+
+    su2double ViscosityGrad[3], kOverCvGrad[3];
+    for(unsigned short k=0; k<nDim; ++k) {
+      ViscosityGrad[k] = ViscosityLamGrad[k] + ViscosityTurbGrad[k];
+      kOverCvGrad[k]   = ViscosityLamGrad[k] *factHeatFlux_Lam
+                       + ViscosityTurbGrad[k]*factHeatFlux_Turb;
+    }
+
     /* Abbreviations, which make it easier to compute the divergence term. */
     su2double abv1 = 0.0, abv2 = 0.0, abv3 = 0.0, abv4 = 0.0;
     for(unsigned short k=0; k<nDim; ++k) {
@@ -5241,8 +5583,8 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
                           - lambdaOverMu*ViscosityGrad[k]*abv4;
       divFluxInt[nVar-1] -= abv4*lambdaOverMu*(Viscosity*velGrad[k][k]
                           +                    vel[k]*ViscosityGrad[k])
-                          + factHeatFlux*(ViscosityGrad[k]*StaticEnergyGrad[k]
-                          +               Viscosity*StaticEnergy2ndDer[k]);
+                          + kOverCvGrad[k]*StaticEnergyGrad[k]
+                          + kOverCv*StaticEnergy2ndDer[k];
 
       for(unsigned short l=0; l<nDim; ++l) {
         divFluxInt[k+1]    += vel[l]*solGradCart[k+1][l]
@@ -5269,6 +5611,177 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
 }
 
+void CFEM_DG_NSSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+  /*--- Run shock capturing algorithm ---*/
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case NONE:
+      break;
+    case PERSSON:
+      Shock_Capturing_DG_Persson(geometry, solver_container, numerics, config, iMesh, iStep);
+      break;
+  }
+
+}
+void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+  /*--- Dummy variable for storing shock sensor value temporarily ---*/
+  su2double sensorVal, sensorLowerBound, machNorm, machMax;
+  su2double DensityInv, Velocity2, StaticEnergy, SoundSpeed2;
+
+  bool shockExist;
+  unsigned short nDOFsPm1;       // Number of DOFs up to polynomial degree p-1
+
+  /*--- Loop over the owned volume elements to sense the shock. If shock exists,
+        add artificial viscosity for DG FEM formulation to the residual.  ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Get the data from the corresponding standard element. */
+    const unsigned short ind          = volElem[l].indStandardElement;
+    const unsigned short nDOFs        = volElem[l].nDOFsSol;
+    const unsigned short VTK_TypeElem = volElem[l].VTK_Type;
+    const unsigned short nPoly        = standardElementsSol[ind].GetNPoly();
+    const su2double *matVanderInv     = standardElementsSol[ind].GetMatVandermondeInv();
+
+    /*----------------------------------------------------------------------------*/
+    /*--- Step 1: Calculate the number of DOFs up to polynomial degree p-1.    ---*/
+    /*----------------------------------------------------------------------------*/
+
+    switch( VTK_TypeElem ) {
+      case TRIANGLE:
+        nDOFsPm1 = nPoly*(nPoly+1)/2;
+        break;
+      case QUADRILATERAL:
+        nDOFsPm1 = nPoly*nPoly;
+        break;
+      case TETRAHEDRON:
+        nDOFsPm1 = nPoly*(nPoly+1)*(nPoly+2)/6;
+        break;
+      case PYRAMID:
+        nDOFsPm1 = nPoly*(nPoly+1)*(2*nPoly+1)/6;
+        break;
+      case PRISM:
+        nDOFsPm1 = nPoly*nPoly*(nPoly+1)/2;
+        break;
+      case HEXAHEDRON:
+        nDOFsPm1 = nPoly*nPoly*nPoly;
+        break;
+    }
+
+    /*---------------------------------------------------------------------*/
+    /*--- Step 2: Calculate the shock sensor value for this element.    ---*/
+    /*---------------------------------------------------------------------*/
+
+    /* Initialize dummy variable for this volume element */
+    sensorVal = 0;
+    machMax = -1;
+    shockExist = false;
+    sensorLowerBound = 1.e15;
+
+    /* Easier storage of the solution variables for this element. */
+    const su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /* Temporary storage of mach number for DOFs in this element. */
+    su2double *machSolDOFs = VecTmpMemory.data();
+    su2double *vecTemp     = machSolDOFs + nDOFs;
+
+    /* Calculate primitive variables and mach number for DOFs in this element.
+       Also, track the maximum mach number in this element. */
+    for(unsigned short iInd=0; iInd<nDOFs; ++iInd) {
+
+      const su2double *sol = solDOFs + iInd*nVar;
+      DensityInv = 1.0/sol[0];
+      Velocity2 = 0.0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double vel = sol[iDim]*DensityInv;
+        Velocity2 += vel*vel;
+      }
+
+      StaticEnergy = sol[nDim+1]*DensityInv - 0.5*Velocity2;
+
+      FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+      SoundSpeed2 = FluidModel->GetSoundSpeed2();
+      machSolDOFs[iInd] = sqrt( Velocity2/SoundSpeed2 );
+      machMax = max(machSolDOFs[iInd],machMax);
+    }
+
+    /* Change the solution coefficients to modal form from nodal form */
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      for (unsigned short j=0; j<nDOFs; ++j)
+        vecTemp[i] += matVanderInv[i+j*nDOFs]*machSolDOFs[j];
+    }
+    
+    /* Get the L2 norm of solution coefficients for the highest polynomial order. */
+    for(unsigned short i=nDOFsPm1; i<nDOFs; ++i) {
+        sensorVal += vecTemp[i]*vecTemp[i];
+    }
+
+    /* If the maximum mach number is greater than 1.0, try to calculate the shockSensorValue.
+       Otherwise, assign default value. */
+    if ( machMax > 1.0) {
+      // !!!!!Threshold value for sensorVal should be further investigated
+      if(sensorVal > 1.e-15) {
+        machNorm = 0.0;
+
+        /*--- Get L2 norm square of vecTemp ---*/
+        for (unsigned short i=0; i<nDOFs; ++i) {
+          machNorm += vecTemp[i]*vecTemp[i];
+        }
+        if (machNorm < 1.e-15) {
+          // This should not happen
+          volElem[l].shockSensorValue = 1000.0;
+        }
+        else {
+          volElem[l].shockSensorValue = log(sensorVal/machNorm);
+          shockExist = true;
+        }
+      }
+      else {
+        // There is no shock in this element
+        volElem[l].shockSensorValue = -1000.0;
+      }
+    }
+    else {
+      volElem[l].shockSensorValue = -1000.0;
+    }
+
+    /*---------------------------------------------------------------------*/
+    /*--- Step 3: Determine artificial viscosity for this element.      ---*/
+    /*---------------------------------------------------------------------*/
+    if (shockExist) {
+      // Following if-else clause is purely empirical from NACA0012 case.
+      // Need to develop thorough method for general problems
+      if ( nPoly == 1) {
+        sensorLowerBound = -6.0;
+      }
+      else if ( nPoly == 2 ) {
+        sensorLowerBound = -12.0;
+      }
+      else if ( nPoly == 3 ) {
+        sensorLowerBound = -12.0;
+      }
+      else if ( nPoly == 4 ) {
+         sensorLowerBound = -17.0;
+      }
+
+      // Assign artificial viscosity based on shockSensorValue
+      if ( volElem[l].shockSensorValue > sensorLowerBound ) {
+        // Following value is initial guess.
+        volElem[l].shockArtificialViscosity = 1.e-10;
+      }
+      else {
+        volElem[l].shockArtificialViscosity = 0.0;
+      }
+    }
+    else {
+      volElem[l].shockArtificialViscosity = 0.0;
+    }
+  }
+
+}
+
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh, unsigned short iStep) {
 
@@ -5276,7 +5789,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
   Initiate_MPI_Communication();
 
   /* Constant factor present in the heat flux vector. */
-  const su2double factHeatFlux = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double tick = 0.0;
@@ -5299,6 +5813,12 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+
+    unsigned short nPoly = standardElementsSol[ind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    /* Compute the length scale of the current element for the LES. */
+    const su2double lenScale = volElem[l].lenScale/nPoly;
 
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Determine the solution variables and their gradients     ---*/
@@ -5387,12 +5907,27 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- Compute the pressure and the laminar viscosity. ---*/
       FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-      const su2double Pressure  = FluidModel->GetPressure();
-      const su2double Viscosity = FluidModel->GetLaminarViscosity();
+      const su2double Pressure     = FluidModel->GetPressure();
+      const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+      /*--- If an SGS model is used the eddy viscosity must be computed. ---*/
+      su2double ViscosityTurb = 0.0;
+      if( SGSModelUsed ) {
+        const su2double dist = volElem[l].wallDistance[i];
+        ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
+                                                       lenScale, dist);
+      }
+
+      /* Compute the total viscosity and heat conductivity. Note that the heat
+         conductivity is divided by the Cv, because gradients of internal energy
+         are computed and not temperature. */
+      const su2double Viscosity = ViscosityLam + ViscosityTurb;
+      const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
+                              + ViscosityTurb*factHeatFlux_Turb;
 
       /*--- Set the value of the second viscosity and compute the divergence
             term in the viscous normal stresses. ---*/
-      const su2double lambda     = -2.0*Viscosity/3.0;
+      const su2double lambda     = -TWO3*Viscosity;
       const su2double lamDivTerm =  lambda*divVel;
 
       /*--- Compute the viscous stress tensor. ---*/
@@ -5421,8 +5956,8 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
         fluxCart[k+1][k]  += Pressure;
 
         /* Energy flux vector. */
-        fluxCart[nDim+1][k] = rH*vel[k]                                   // Inviscid part
-                            - Viscosity*factHeatFlux*StaticEnergyGrad[k]; // Heat flux part
+        fluxCart[nDim+1][k] = rH*vel[k]                        // Inviscid part
+                            - kOverCv*StaticEnergyGrad[k];     // Heat flux part
         for(unsigned short j=0; j<nDim; ++j)
           fluxCart[nDim+1][k] -= tauVis[j][k]*vel[j];    // Work of the viscous forces part
       }
@@ -5496,8 +6031,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
   su2double *solIntL       = VecTmpMemory.data();
   su2double *solIntR       = solIntL       + nIntegrationMax*nVar;
   su2double *viscosityIntL = solIntR       + nIntegrationMax*nVar;
-  su2double *viscosityIntR = viscosityIntL + nIntegrationMax;
-  su2double *gradSolInt    = viscosityIntR + nIntegrationMax;
+  su2double *kOverCvIntL   = viscosityIntL + nIntegrationMax;
+  su2double *viscosityIntR = kOverCvIntL   + nIntegrationMax;
+  su2double *kOverCvIntR   = viscosityIntR + nIntegrationMax;
+  su2double *gradSolInt    = kOverCvIntR   + nIntegrationMax;
   su2double *fluxes        = gradSolInt    + sizeGradSolInt;
   su2double *viscFluxes    = fluxes        + sizeFluxes;
 
@@ -5529,13 +6066,25 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
           unsigned short nDOFsElem    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
     const su2double     *derBasisElem = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationSide0();
 
+    /* Get the length scales of the adjacent elements. */
+    const su2double lenScale0 = volElem[matchingInternalFaces[l].elemID0].lenScale;
+    const su2double lenScale1 = volElem[matchingInternalFaces[l].elemID1].lenScale;
+
+    /* Compute the length scale for the LES of the element of side 0. */
+    unsigned short iind  = volElem[matchingInternalFaces[l].elemID0].indStandardElement;
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale0_LES = lenScale0/nPoly;
+
     /* Call the general function to compute the viscous flux in normal
        direction for side 0. */
     ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntL,
                           matchingInternalFaces[l].DOFsSolElementSide0.data(),
                           matchingInternalFaces[l].metricCoorDerivFace0.data(),
                           matchingInternalFaces[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityIntL);
+                          matchingInternalFaces[l].wallDistance.data(), lenScale0_LES,
+                          gradSolInt, viscFluxes, viscosityIntL, kOverCvIntL);
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. The
           factor 0.5 comes from the fact that the average of the viscous fluxes
@@ -5547,13 +6096,21 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     nDOFsElem    = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
     derBasisElem = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationSide1();
 
+    /* Compute the length scale for the LES of the element of side 1. */
+    iind  = volElem[matchingInternalFaces[l].elemID1].indStandardElement;
+    nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale1_LES = lenScale1/nPoly;
+
     /* Call the general function to compute the viscous flux in normal
        direction for side 1. */
     ViscousNormalFluxFace(config, nInt, nDOFsElem, 0.0, false, derBasisElem, solIntR,
                           matchingInternalFaces[l].DOFsSolElementSide1.data(),
                           matchingInternalFaces[l].metricCoorDerivFace1.data(),
                           matchingInternalFaces[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityIntR);
+                          matchingInternalFaces[l].wallDistance.data(), lenScale1_LES,
+                          gradSolInt, viscFluxes, viscosityIntR, kOverCvIntR);
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
     for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
@@ -5567,15 +6124,13 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     /*------------------------------------------------------------------------*/
 
     config->Tick(&tick);
-    /* Get the required constants needed for the penalty terms. */
+    /* Get the required constant needed for the penalty terms. */
     const su2double ConstPenFace = standardMatchingFacesSol[ind].GetPenaltyConstant();
-    const su2double lenScale0    = volElem[matchingInternalFaces[l].elemID0].lenScale;
-    const su2double lenScale1    = volElem[matchingInternalFaces[l].elemID1].lenScale;
 
     /* Call the function PenaltyTermsFluxFace to compute the actual penalty
        terms. Use the array viscFluxes as storage. */
     PenaltyTermsFluxFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
-                         ConstPenFace, lenScale0, lenScale1,
+                         kOverCvIntL, kOverCvIntR, ConstPenFace, lenScale0, lenScale1,
                          matchingInternalFaces[l].metricNormalsFace.data(),
                          viscFluxes);
 
@@ -5652,13 +6207,14 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
       config->Tick(&tick);
       /* Compute the symmetrizing fluxes in the nDim directions. */
       SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
+                             kOverCvIntL, kOverCvIntR,
                              matchingInternalFaces[l].metricNormalsFace.data(),
                              fluxes);
 
       /*--- Multiply the fluxes just computed by their integration weights and
             -theta/2. The parameter theta is the parameter in the Interior Penalty
             formulation, the factor 1/2 comes in from the averaging and the minus
-            sign is from the convention that the viscous fluxes comes with a minus
+            sign is from the convention that the viscous fluxes come with a minus
             sign in this code. ---*/
       const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
@@ -5805,15 +6361,19 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
                                              const unsigned long  *DOFsElem,
                                              const su2double      *metricCoorDerivFace,
                                              const su2double      *metricNormalsFace,
-                                             su2double            *gradSolInt,
-                                             su2double            *viscNormFluxes,
-                                             su2double            *viscosityInt) {
+                                             const su2double      *wallDistanceInt,
+                                             const su2double      lenScale_LES,
+                                                   su2double      *gradSolInt,
+                                                   su2double      *viscNormFluxes,
+                                                   su2double      *viscosityInt,
+                                                   su2double      *kOverCvInt) {
 
   su2double tick = 0.0;
   
   /* Constant factor present in the heat flux vector. Set it to zero if the heat
      flux is prescribed, such that no if statements are needed in the loop. */
-  const su2double factHeatFlux = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = HeatFlux_Prescribed ? 0.0: Gamma/Prandtl_Turb;
 
   /* Set the value of the prescribed heat flux for the same reason. */
   const su2double HeatFlux = HeatFlux_Prescribed ? Wall_HeatFlux : 0.0;
@@ -5865,14 +6425,20 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
     }
 
     /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
-          actual normal viscous flux. The viscosity is stored for later use. ---*/
-    const su2double *normal = metricNormalsFace + i*(nDim+1); 
-    su2double *normalFlux   = viscNormFluxes + i*nVar;
-    su2double Viscosity;
+          actual normal viscous flux. The viscosity and thermal conductivity
+          are stored for later use. ---*/
+    const su2double *normal  = metricNormalsFace + i*(nDim+1); 
+    su2double *normalFlux    = viscNormFluxes + i*nVar;
+    const su2double wallDist = wallDistanceInt ? wallDistanceInt[i] : 0.0;
+
+    su2double Viscosity, kOverCv;
 
     ViscousNormalFluxIntegrationPoint(sol, solGradCart, normal, HeatFlux,
-                                      factHeatFlux, Viscosity, normalFlux);
+                                      factHeatFlux_Lam, factHeatFlux_Turb,
+                                      wallDist, lenScale_LES,
+                                      Viscosity, kOverCv, normalFlux);
     viscosityInt[i] = Viscosity;
+    kOverCvInt[i]   = kOverCv;
   }
 }
 
@@ -5880,8 +6446,12 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
                                                          const su2double solGradCart[5][3],
                                                          const su2double *normal,
                                                          const su2double HeatFlux,
-                                                         const su2double factHeatFlux,
+                                                         const su2double factHeatFlux_Lam,
+                                                         const su2double factHeatFlux_Turb,
+                                                         const su2double wallDist,
+                                                         const su2double lenScale_LES,
                                                                su2double &Viscosity,
+                                                               su2double &kOverCv,
                                                                su2double *normalFlux) {
 
   /*--- Compute the velocities and static energy in this integration point. ---*/
@@ -5911,11 +6481,23 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
 
   /*--- Compute the laminar viscosity. ---*/
   FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-  Viscosity = FluidModel->GetLaminarViscosity();
+  const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+  /*--- Compute the eddy viscosity, if needed. ---*/
+  su2double ViscosityTurb = 0.0;
+  if( SGSModelUsed )
+    ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
+                                                   lenScale_LES, wallDist);
+
+  /* Compute the total viscosity and heat conductivity. Note that the heat
+     conductivity is divided by the Cv, because gradients of internal energy
+     are computed and not temperature. */
+  Viscosity = ViscosityLam + ViscosityTurb;
+  kOverCv   = ViscosityLam*factHeatFlux_Lam + ViscosityTurb*factHeatFlux_Turb;
 
   /*--- Set the value of the second viscosity and compute the divergence
         term in the viscous normal stresses. ---*/
-  const su2double lambda     = -2.0*Viscosity/3.0;
+  const su2double lambda     = -TWO3*Viscosity;
   const su2double lamDivTerm =  lambda*divVel;
 
   /*--- Compute the viscous stress tensor. ---*/
@@ -5938,9 +6520,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
       fluxCart[j+1][k] = tauVis[j][k];
 
     /* Energy flux vector. */
-    fluxCart[nDim+1][k] = Viscosity*factHeatFlux*StaticEnergyGrad[k]; // Heat flux part
+    fluxCart[nDim+1][k] = kOverCv*StaticEnergyGrad[k]; // Heat flux part
     for(unsigned short j=0; j<nDim; ++j)
-      fluxCart[nDim+1][k] += tauVis[j][k]*vel[j];    // Work of the viscous forces part
+      fluxCart[nDim+1][k] += tauVis[j][k]*vel[j];      // Work of the viscous forces part
   }
 
   /*--- Initialize the fluxes to zero. ---*/
@@ -5968,20 +6550,22 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
                                             const su2double      *solInt1,
                                             const su2double      *viscosityInt0,
                                             const su2double      *viscosityInt1,
+                                            const su2double      *kOverCvInt0,
+                                            const su2double      *kOverCvInt1,
                                             const su2double      ConstPenFace,
                                             const su2double      lenScale0,
                                             const su2double      lenScale1,
                                             const su2double      *metricNormalsFace,
-                                            su2double            *penaltyFluxes) {
+                                                  su2double      *penaltyFluxes) {
 
-  /* Constant factor present in the heat flux vector and the ratio of the
-     second viscosity and the viscosity itself. */
-  const su2double factHeatFlux =  Gamma/Prandtl_Lam;
-  const su2double lambdaOverMu = -2.0/3.0;
+  /* Constant ratio of the second viscosity and the viscosity itself. */
+  const su2double lambdaOverMu = -TWO3;
 
-  /* Compute the maximum value of the scaled spectral radius of the viscous
-     operator. Scaled means divided by nu. Multiply it by ConstPenFace. */
-  const su2double radOverNu = ConstPenFace*max(2.0+lambdaOverMu, max(1.0,factHeatFlux));
+  /* The eigenvalues of the viscous Jacobian, scaled by the kinematic viscosity,
+     are 1.0, 2.0 + lambdaOverMu and kOverCv/Mu. The last is variable due to the
+     possible presence of an eddy viscosity, but the first two are constant and
+     the maximum can be determined. */
+  const su2double radOverNuTerm = max(1.0, 2.0+lambdaOverMu);
 
   /*--- Loop over the integration points to compute the penalty fluxes. ---*/
   for(unsigned short i=0; i<nInt; ++i) {
@@ -5992,11 +6576,24 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
     const su2double *normal = metricNormalsFace + i*(nDim+1);
     su2double       *flux   = penaltyFluxes + nVar*i;
 
+    /* Determine the ratio of kOverCv and mu for both sides and compute the
+       spectral radius of the viscous terms, scaled by kinematic viscosity. */
+    const su2double factHeatFlux0 = kOverCvInt0[i]/viscosityInt0[i];
+    const su2double factHeatFlux1 = kOverCvInt1[i]/viscosityInt1[i];
+
+    const su2double radOverNu0 = max(radOverNuTerm, factHeatFlux0);
+    const su2double radOverNu1 = max(radOverNuTerm, factHeatFlux1);
+
+    /* Compute the kinematic viscosities of both sides. Multiply it by
+       ConstPenFace and divide by the length scale. */
+    const su2double nu0 = ConstPenFace*viscosityInt0[i]/(lenScale0*sol0[0]);
+    const su2double nu1 = ConstPenFace*viscosityInt1[i]/(lenScale1*sol1[0]);
+
     /* Compute the penalty parameter of this face as the maximum of the
        penalty parameter from both sides. Multiply by the area to obtain the
        correct expression. */
-    const su2double pen0 = radOverNu*viscosityInt0[i]/(lenScale0*sol0[0]);
-    const su2double pen1 = radOverNu*viscosityInt1[i]/(lenScale1*sol1[0]);
+    const su2double pen0 = radOverNu0*nu0;
+    const su2double pen1 = radOverNu1*nu1;
 
     const su2double penFace = normal[nDim]*max(pen0, pen1);
 
@@ -6013,13 +6610,13 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
                                               const su2double      *solInt1,
                                               const su2double      *viscosityInt0,
                                               const su2double      *viscosityInt1,
+                                              const su2double      *kOverCvInt0,
+                                              const su2double      *kOverCvInt1,
                                               const su2double      *metricNormalsFace,
-                                              su2double            *symmFluxes) {
+                                                    su2double      *symmFluxes) {
 
-  /* Constant factor present in the heat flux vector and the ratio of the
-     second viscosity and the viscosity itself. */
-  const su2double factHeatFlux =  Gamma/Prandtl_Lam;
-  const su2double lambdaOverMu = -2.0/3.0;
+  /* Constant ratio of the second viscosity and the viscosity itself. */
+  const su2double lambdaOverMu = -TWO3;
 
   /*--- Set two factors such that either the original or the transposed diffusion
         tensor is taken in the symmetrizing fluxes. ---*/
@@ -6053,9 +6650,10 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
 
     /*--- Compute the terms that occur in the symmetrizing fluxes
           for state 0 and state 1. ---*/
-    const su2double DensityInv0 = 1.0/sol0[0],          DensityInv1 = 1.0/sol1[0];
-    const su2double Etot0 = DensityInv0*sol0[nDim+1],   Etot1 = DensityInv1*sol1[nDim+1];
-    const su2double nu0 = DensityInv0*viscosityInt0[i], nu1 = DensityInv1*viscosityInt1[i];
+    const su2double DensityInv0 = 1.0/sol0[0],           DensityInv1 = 1.0/sol1[0];
+    const su2double Etot0 = DensityInv0*sol0[nDim+1],    Etot1 = DensityInv1*sol1[nDim+1];
+    const su2double nu0 = DensityInv0*viscosityInt0[i],  nu1 = DensityInv1*viscosityInt1[i];
+    const su2double kScal0 = DensityInv0*kOverCvInt0[i], kScal1 = DensityInv1*kOverCvInt1[i];
 
     su2double velNorm0 = 0.0, velNorm1 = 0.0, velSquared0 = 0.0, velSquared1 = 0.0;
     su2double vel0[] = {0.0,0.0,0.0}, vel1[] = {0.0,0.0,0.0};
@@ -6075,28 +6673,32 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
           than the terms evaluated at the average state, because the viscous
           fluxes are also computed as the average of the fluxes and not the
           fluxes of the averaged state. ---*/
-    const su2double nuAvg = 0.5*(nu0 + nu1);
+    const su2double nuAvg    = 0.5*(nu0    + nu1);
+    const su2double kScalAvg = 0.5*(kScal0 + kScal1);
     const su2double nuVelSquaredAvg     = 0.5*(nu0*velSquared0 + nu1*velSquared1);
     const su2double nuVelNormAve        = 0.5*(nu0*velNorm0    + nu1*velNorm1);
-    const su2double nuEminVelSquaredAve = 0.5*(nu0*(Etot0-velSquared0)
-                                        +      nu1*(Etot1-velSquared1));
+    const su2double kScalEminVelSquaredAve = 0.5*(kScal0*(Etot0-velSquared0)
+                                           +      kScal1*(Etot1-velSquared1));
 
     su2double nuVelAvg[] = {0.0,0.0,0.0}, nuVelVelAvg[] = {0.0,0.0,0.0};
+    su2double kScalVelAvg[] = {0.0,0.0,0.0};
     for(unsigned short j=0; j<nDim; ++j) {
       nuVelAvg[j]    = 0.5*(nu0*vel0[j]          + nu1*vel1[j]);
+      kScalVelAvg[j] = 0.5*(kScal0*vel0[j]       + kScal1*vel1[j]);
       nuVelVelAvg[j] = 0.5*(nu0*vel0[j]*velNorm0 + nu1*vel1[j]*velNorm1);
     }
 
     /*--- Abbreviations to make the flux computations a bit more efficient. ---*/
-    su2double abv1 = 0.0, abv2 = 0.0;
+    su2double abv1 = 0.0, abv2 = 0.0, abv2kScal = 0.0;
     for(unsigned short j=0; j<nDim; ++j) {
-      abv1 += normal[j]  *dSol[j+1];
-      abv2 += nuVelAvg[j]*dSol[j+1];
+      abv1      += normal[j]     *dSol[j+1];
+      abv2      += nuVelAvg[j]   *dSol[j+1];
+      abv2kScal += kScalVelAvg[j]*dSol[j+1];
     }
 
     const su2double abv3 = beta*(nuAvg*abv1 - nuVelNormAve*dSol[0]);
-    const su2double abv4 = factHeatFlux*(nuAvg*dSol[nDim+1] - abv2
-                         -               nuEminVelSquaredAve*dSol[0]) + abv2;
+    const su2double abv4 = kScalAvg*dSol[nDim+1] - abv2kScal
+                         - kScalEminVelSquaredAve*dSol[0] + abv2;
 
     /*--- Loop over the dimensions to compute the symmetrizing fluxes.
           ll is the counter for flux. ---*/
@@ -6136,7 +6738,8 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
@@ -6168,6 +6771,15 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
         UR[j] = ConsVarFreeStream[j];
     }
 
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
+
     /* Call the general function to compute the viscous flux in normal
        direction for the face. */
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
@@ -6177,14 +6789,15 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityInt);
+                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                 solIntR, gradSolInt, fluxes, viscFluxes,
-                                viscosityInt, resFaces, indResFaces);
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -6194,12 +6807,12 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
                                     CNumerics *visc_numerics,
                                     CConfig *config,
                                     unsigned short val_marker) {
-
   su2double tick = 0.0;
   
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
-  const su2double factHeatFlux = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Set the pointers for the local arrays. ---*/
   unsigned int sizeFluxes = nIntegrationMax*nDim;
@@ -6210,7 +6823,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
@@ -6240,6 +6854,18 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
     const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
     const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
+
+    /* Easier storage of the wall distance array for this surface element. */
+    const su2double *wallDistance = surfElem[l].wallDistance.data();
 
     /* Determine the offset between r- and -s-derivatives, which is also the
        offset between s- and t-derivatives. */
@@ -6345,14 +6971,20 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 
       /*--- Compute the viscous fluxes of the left and right state and average
             them to compute the correct viscous flux for a symmetry boundary. ---*/
+      const su2double wallDist = wallDistance ? wallDistance[i] : 0.0;
       su2double viscFluxL[5], viscFluxR[5];
-      su2double Viscosity;
+      su2double Viscosity, kOverCv;
 
       ViscousNormalFluxIntegrationPoint(UR, URGradCart, normals, 0.0,
-                                        factHeatFlux, Viscosity, viscFluxR);
+                                        factHeatFlux_Lam, factHeatFlux_Turb,
+                                        wallDist, lenScale_LES, Viscosity,
+                                        kOverCv, viscFluxR);
       ViscousNormalFluxIntegrationPoint(UL, ULGradCart, normals, 0.0,
-                                        factHeatFlux, Viscosity, viscFluxL);
+                                        factHeatFlux_Lam, factHeatFlux_Turb,
+                                        wallDist, lenScale_LES, Viscosity,
+                                        kOverCv, viscFluxL);
       viscosityInt[i] = Viscosity;
+      kOverCvInt[i]   = kOverCv;
 
       su2double *viscNormalFlux = viscFluxes + i*nVar;
       for(unsigned short j=0; j<nVar; ++j)
@@ -6364,7 +6996,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                 solIntR, gradSolInt, fluxes, viscFluxes,
-                                viscosityInt, resFaces, indResFaces);
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -6379,7 +7011,8 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
@@ -6399,6 +7032,15 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /*--- Apply the inviscid wall boundary conditions to compute the right
           state in the integration points. There are two options. Either the
@@ -6457,14 +7099,15 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityInt);
+                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, numerics, &surfElem[l], solIntL, solIntR,
                                 gradSolInt, fluxes, viscFluxes, viscosityInt,
-                                resFaces, indResFaces);
+                                kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -6494,7 +7137,8 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
@@ -6513,6 +7157,15 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -6609,14 +7262,15 @@ void CFEM_DG_NSSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityInt);
+                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                 solIntR, gradSolInt, fluxes, viscFluxes,
-                                viscosityInt, resFaces, indResFaces);
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -6639,7 +7293,8 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
@@ -6658,6 +7313,15 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
     /* Compute the left states in the integration points of the face.
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /*--- Apply the subsonic inlet boundary conditions to compute the right
           state in the integration points. ---*/
@@ -6723,14 +7387,15 @@ void CFEM_DG_NSSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityInt);
+                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                 solIntR, gradSolInt, fluxes, viscFluxes,
-                                viscosityInt, resFaces, indResFaces);
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -6756,7 +7421,8 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
@@ -6776,6 +7442,15 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -6820,14 +7495,15 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityInt);
+                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                 solIntR, gradSolInt, fluxes, viscFluxes,
-                                viscosityInt, resFaces, indResFaces);
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -6858,7 +7534,8 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
   
@@ -6878,6 +7555,15 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -6917,14 +7603,15 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityInt);
+                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, conv_numerics, &surfElem[l], solIntL,
                                 solIntR, gradSolInt, fluxes, viscFluxes,
-                                viscosityInt, resFaces, indResFaces);
+                                viscosityInt, kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -6950,7 +7637,8 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
   su2double *viscosityInt = solIntR      + nIntegrationMax*nVar;
-  su2double *gradSolInt   = viscosityInt + nIntegrationMax;
+  su2double *kOverCvInt   = viscosityInt + nIntegrationMax;
+  su2double *gradSolInt   = kOverCvInt   + nIntegrationMax;
   su2double *fluxes       = gradSolInt   + sizeGradSolInt;
   su2double *viscFluxes   = fluxes       + sizeFluxes;
 
@@ -6970,6 +7658,15 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
        The array fluxes is used as temporary storage inside the function
        LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
+
+    /* Compute the length scale for the LES of the adjacent element. */
+    const unsigned long  elemID = surfElem[l].volElemID;
+    const unsigned short iind   = volElem[elemID].indStandardElement;
+
+    unsigned short nPoly = standardElementsSol[iind].GetNPoly();
+    if(nPoly == 0) nPoly = 1;
+
+    const su2double lenScale_LES = volElem[elemID].lenScale/nPoly;
 
     /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
@@ -7029,14 +7726,15 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
                           surfElem[l].DOFsSolElement.data(),
                           surfElem[l].metricCoorDerivFace.data(),
                           surfElem[l].metricNormalsFace.data(),
-                          gradSolInt, viscFluxes, viscosityInt);
+                          surfElem[l].wallDistance.data(), lenScale_LES,
+                          gradSolInt, viscFluxes, viscosityInt, kOverCvInt);
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualViscousBoundaryFace(config, numerics, &surfElem[l], solIntL, solIntR,
                                 gradSolInt, fluxes, viscFluxes, viscosityInt,
-                                resFaces, indResFaces);
+                                kOverCvInt, resFaces, indResFaces);
   }
 }
 
@@ -7050,6 +7748,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *fluxes,
                                       su2double                *viscFluxes,
                                       const su2double          *viscosityInt,
+                                      const su2double          *kOverCvInt,
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
@@ -7081,7 +7780,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   /* Call the function PenaltyTermsFluxFace to compute the actual penalty
      terms. Use the array viscFluxes as storage. */
   PenaltyTermsFluxFace(nInt, solInt0, solInt1, viscosityInt, viscosityInt,
-                       ConstPenFace, lenScale, lenScale,
+                       kOverCvInt, kOverCvInt, ConstPenFace, lenScale, lenScale,
                        surfElem->metricNormalsFace.data(), viscFluxes);
 
   /* Add the penalty fluxes to the earlier computed fluxes. */
@@ -7124,7 +7823,8 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   if( symmetrizingTermsPresent ) {
 
     /* Compute the symmetrizing fluxes in the nDim directions. */
-    SymmetrizingFluxesFace(nInt, solInt0, solInt1, viscosityInt, viscosityInt,
+    SymmetrizingFluxesFace(nInt, solInt0, solInt1, viscosityInt,
+                           viscosityInt, kOverCvInt, kOverCvInt,
                            surfElem->metricNormalsFace.data(), fluxes);
 
     /*--- Multiply the fluxes just computed by their integration weights and

@@ -49,7 +49,13 @@ inline unsigned long CPrimalGrid::GetDomainElement(void) { return DomainElement;
 
 inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) { Neighbor_Elements[val_face] = val_elem; }
 
+inline su2double CPrimalGrid::GetLengthScale(void) { return LenScale; }
+
 inline void CPrimalGrid::SetLengthScale(su2double val_lenScale) { LenScale = val_lenScale; }
+
+inline unsigned short CPrimalGrid::GetTimeLevel(void) { return TimeLevel; }
+
+inline void CPrimalGrid::SetTimeLevel(unsigned short val_timeLevel) { TimeLevel = val_timeLevel; }
 
 inline bool CPrimalGrid::GetOwnerFace(unsigned short val_face) { return ElementOwnsFace[val_face]; }
 
