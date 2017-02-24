@@ -5856,11 +5856,12 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
 
     /*--- Compute the Cartesian gradients of the solution. ---*/
     su2double solGradCart[5][3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      for(unsigned short j=0; j<nVar; ++j) {
+#pragma simd
+    for(unsigned short k=0; k<ctc::nDim; ++k) {
+      for(unsigned short j=0; j<ctc::nVar; ++j) {
         solGradCart[j][k] = 0.0;
-        for(unsigned short l=0; l<nDim; ++l)
-          solGradCart[j][k] += gradSol[j+l*offDeriv]*metricTerms[k+l*nDim];
+        for(unsigned short l=0; l<ctc::nDim; ++l)
+          solGradCart[j][k] += gradSol[j+l*offDeriv]*metricTerms[k+l*ctc::nDim];
       }
     }
 
