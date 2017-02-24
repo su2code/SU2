@@ -65,6 +65,7 @@ using namespace std;
 
 inline namespace ctc {
     const int nDim = 3;
+    const int nVar = 5;
 };
 
 /*!
