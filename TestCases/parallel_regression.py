@@ -230,6 +230,22 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
+    
+    #################################
+    ## Compressible RANS Restart  ###
+    #################################
+    
+    # NACA0012 SST Multigrid restart
+    turb_naca0012_sst_restart_mg           = TestCase('turb_naca0012_sst_restart_mg')
+    turb_naca0012_sst_restart_mg.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
+    turb_naca0012_sst_restart_mg.test_iter = 600
+    turb_naca0012_sst_restart_mg.ntest_vals = 5
+    turb_naca0012_sst_restart_mg.test_vals = [-6.482396, -4.653908, 1.155000, -0.006296, 0.078747] #last 5 columns
+    turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_restart_mg.timeout   = 3200
+    turb_naca0012_sst_restart_mg.tol       = 0.000001
+    test_list.append(turb_naca0012_sst_restart_mg)
 
     #############################
     ### Incompressible Euler  ###
@@ -285,7 +301,7 @@ def main():
     fem_ns_flatplate.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
     fem_ns_flatplate.cfg_file  = "lam_flatplate_reg.cfg"
     fem_ns_flatplate.test_iter = 25
-    fem_ns_flatplate.test_vals = [1.795979,3.833411,-0.074413,0.116077] #last 4 columns
+    fem_ns_flatplate.test_vals = [1.657622,3.744159,-0.058836,0.073999] #last 4 columns
     fem_ns_flatplate.su2_exec  = "mpirun -n 2 SU2_CFD"
     fem_ns_flatplate.timeout   = 1600
     fem_ns_flatplate.tol       = 0.00001
@@ -296,7 +312,7 @@ def main():
     fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
     fem_ns_cylinder.cfg_file  = "fem_Cylinder_reg.cfg"
     fem_ns_cylinder.test_iter = 10
-    fem_ns_cylinder.test_vals = [0.452562,0.976268,-0.000028,80.382342] #last 4 columns
+    fem_ns_cylinder.test_vals = [0.447673,0.975592,-0.000020,61.594120] #last 4 columns
     fem_ns_cylinder.su2_exec  = "mpirun -n 2 SU2_CFD"
     fem_ns_cylinder.timeout   = 1600
     fem_ns_cylinder.tol       = 0.00001
@@ -422,7 +438,7 @@ def main():
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
     contadj_rans_rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
     contadj_rans_rae2822.test_iter = 100
-    contadj_rans_rae2822.test_vals = [-5.380929, -10.886092, -0.212470, 0.005448] #last 4 columns
+    contadj_rans_rae2822.test_vals = [-5.380910, -10.886057, -0.212470, 0.005448] #last 4 columns
     contadj_rans_rae2822.su2_exec  = "parallel_computation.py -f"
     contadj_rans_rae2822.timeout   = 1600
     contadj_rans_rae2822.tol       = 0.00001

@@ -49,6 +49,7 @@
 
 #include "fluid_model.hpp"
 #include "numerics_structure.hpp"
+#include "sgs_model.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/gauss_structure.hpp"
 #include "../../Common/include/element_structure.hpp"
@@ -3329,10 +3330,11 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   virtual void LoadRestart(CGeometry **geometry, CSolver ***solver,
-                           CConfig *config, int val_iter);
-  
+                           CConfig *config, int val_iter, bool val_update_geo);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3618,6 +3620,19 @@ public:
                                                    unsigned short iTime);
   
   /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
+   */
+  virtual void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                  CConfig *config, unsigned short iMesh, unsigned short iStep);
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -3682,7 +3697,14 @@ public:
    * \brief Constructor of the class.
    */
   CBaselineSolver(void);
-  
+
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineSolver(CGeometry *geometry, CConfig *config);
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3691,14 +3713,12 @@ public:
    * \param[in] field_names - Vector of variable names.
    */
   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
-  
+
   /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Destructor of the class.
    */
-  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+  virtual ~CBaselineSolver(void);
+
   /*!
    * \brief Impose the send-receive boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3712,8 +3732,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
   /*!
    * \brief Load a FSI solution from a restart file.
@@ -3723,11 +3744,12 @@ public:
    * \param[in] val_iter - Current external iteration number.
    */
   void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
+
   /*!
-   * \brief Destructor of the class.
+   * \brief Set the number of variables and string names from the restart file.
+   * \param[in] config - Definition of the particular problem.
    */
-  virtual ~CBaselineSolver(void);
+  void SetOutputVariables(CGeometry *geometry, CConfig *config);
   
 };
 
@@ -4086,8 +4108,7 @@ public:
    * \return Value of the pressure at the infinity.
    */
   CFluidModel* GetFluidModel(void);
-  
-  
+
   /*!
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.
@@ -6064,8 +6085,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
  /*!
    * \brief Set the outer state for fluid interface nodes.
@@ -7395,8 +7417,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -8333,8 +8356,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
 };
 
@@ -9477,8 +9501,17 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 
 /*!
@@ -9908,8 +9941,17 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 
 /*!
@@ -10536,15 +10578,6 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
   /*!
    * \brief Compute the total wave strength coefficient.
@@ -11202,6 +11235,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 };
 
 /*!
@@ -11611,6 +11654,17 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 
 /*!
@@ -11924,7 +11978,7 @@ public:
   void Set_NewSolution(CGeometry *geometry);
   
   /*!
-   * \brief Compute the time step for solving the Euler or Navier-Stokes equations.
+   * \brief Function to compute the time step for solving the Euler equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -11952,6 +12006,19 @@ public:
    */
   void ADER_DG_TimeInterpolatePredictorSol(CConfig        *config,
                                            unsigned short iTime);
+
+  /*!
+   * \brief Compute the artificial viscosity for shock capturing in DG.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
+   */
+  void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iStep);
 
   /*!
    * \brief Compute the volume contributions to the spatial residual.
@@ -12633,6 +12700,9 @@ private:
   su2double Tke_Inf;       /*!< \brief Turbulent kinetic energy at the infinity. */
   su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb;            /*!< \brief Turbulent Prandtl number. */
+
+  CSGSModel *SGSModel;     /*!< \brief LES Subgrid Scale model. */
+  bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
   
   su2double
   *ForceViscous,         /*!< \brief Viscous force for each boundary. */
@@ -12696,7 +12766,44 @@ public:
    * \brief Destructor of the class.
    */
   ~CFEM_DG_NSSolver(void);
+
+  /*!
+   * \brief Function to compute the time step for solving the Navier-Stokes equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Value of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                    unsigned short iMesh, unsigned long Iteration);
   
+  /*!
+   * \brief Compute the artificial viscosity for shock capturing in DG.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
+   */
+  void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iStep);
+
+  /*!
+   * \brief Per-Olof Persson's method for capturing shock in DG
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iStep - Current step in the time accurate local time
+                        stepping algorithm, if appropriate.
+   */
+  void Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                       CConfig *config, unsigned short iMesh, unsigned short iStep);
+
   /*!
    * \brief Compute the volume contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -12957,11 +13064,15 @@ private:
    * \param[in]  solInt1             - Solution in the integration points of side 1.
    * \param[in]  viscosityInt0       - Viscosity in the integration points of side 0.
    * \param[in]  viscosityInt1       - Viscosity in the integration points of side 1.
+   * \param[in]  kOverCvInt0         - Heat conductivity divided by Cv in the
+                                       integration points of side 0.
+   * \param[in]  kOverCvInt1         - Heat conductivity divided by Cv in the
+                                       integration points of side 1.
    * \param[in]  ConstPenFace        - Penalty constant for this face.
    * \param[in]  lenScale0           - Length scale of the element of side 0.
    * \param[in]  lenScale1           - Length scale of the element of side 1.
    * \param[in]  metricNormalsFace   - Metric terms in the integration points, which
-   contain the normals.
+                                       contain the normals.
    * \param[out] penaltyFluxes       - Penalty fluxes in the integration points.
    */
   void PenaltyTermsFluxFace(const unsigned short nInt,
@@ -12969,12 +13080,14 @@ private:
                             const su2double      *solInt1,
                             const su2double      *viscosityInt0,
                             const su2double      *viscosityInt1,
+                            const su2double      *kOverCvInt0,
+                            const su2double      *kOverCvInt1,
                             const su2double      ConstPenFace,
                             const su2double      lenScale0,
                             const su2double      lenScale1,
                             const su2double      *metricNormalsFace,
-                            su2double            *penaltyFluxes);
-  
+                                  su2double      *penaltyFluxes);
+
   /*!
    * \brief Function, which computes the residual contribution from a boundary
    face in a viscous computation when the boundary conditions have
@@ -12982,21 +13095,23 @@ private:
    * \param[in]     config              - Definition of the particular problem.
    * \param[in]     conv_numerics       - Description of the numerical method.
    * \param[in]     surfElem            - Surface boundary element for which the
-   contribution to the residual must be computed.
+                                          contribution to the residual must be computed.
    * \param[in]     solInt0             - Solution in the integration points of side 0.
    * \param[in]     solInt1             - Solution in the integration points of side 1.
    * \param[out]    gradSolInt          - Array used for temporary storage.
    * \param[out]    fluxes              - Temporary storage for the fluxes in the
-   integration points.
+                                          integration points.
    * \param[in,out] viscFluxes          - On input this array contains the viscous fluxes
-   in the integration points. It is also used for
-   temporary storage.
+                                          in the integration points. It is also used for
+                                          temporary storage.
    * \param[in]     viscosityInt        - Temporary storage for the viscosity in the
-   integration points.
+                                          integration points.
+   * \param[in]     kOverCvInt          - Temporary storage for the thermal conductivity
+                                          over Cv in the integration points.
    * \param[out]    resFaces            - Array to store the residuals of the face.
    * \param[in,out] indResFaces         - Index in resFaces, where the current residual
-   should be stored. It is updated in the function
-   for the next boundary element.
+                                          should be stored. It is updated in the function
+                                          for the next boundary element.
    */
   void ResidualViscousBoundaryFace(CConfig                  *config,
                                    CNumerics                *conv_numerics,
@@ -13007,19 +13122,24 @@ private:
                                    su2double                *fluxes,
                                    su2double                *viscFluxes,
                                    const su2double          *viscosityInt,
+                                   const su2double          *kOverCvInt,
                                    su2double                *resFaces,
                                    unsigned long            &indResFaces);
   
   /*!
-   * \brief Function to compute the penalty terms in the integration
-   points of a face.
+   * \brief Function to compute the symmetrizing terms in the integration
+            points of a face.
    * \param[in]  nInt              - Number of integration points of the face.
    * \param[in]  solInt0           - Solution in the integration points of side 0.
    * \param[in]  solInt1           - Solution in the integration points of side 1.
    * \param[in]  viscosityInt0     - Viscosity in the integration points of side 0.
    * \param[in]  viscosityInt1     - Viscosity in the integration points of side 1.
+   * \param[in]  kOverCvInt0       - Heat conductivity divided by Cv in the
+                                     integration points of side 0.
+   * \param[in]  kOverCvInt1       - Heat conductivity divided by Cv in the
+                                     integration points of side 1.
    * \param[in]  metricNormalsFace - Metric terms in the integration points, which
-   contain the normals.
+                                     contain the normals.
    * \param[out] symmFluxes        - Penalty fluxes in the integration points.
    */
   void SymmetrizingFluxesFace(const unsigned short nInt,
@@ -13027,31 +13147,35 @@ private:
                               const su2double      *solInt1,
                               const su2double      *viscosityInt0,
                               const su2double      *viscosityInt1,
+                              const su2double      *kOverCvInt0,
+                              const su2double      *kOverCvInt1,
                               const su2double      *metricNormalsFace,
-                              su2double            *symmFluxes);
+                                    su2double      *symmFluxes);
   
   /*!
-   * \brief Function to compute the viscous normal fluxes in the integration
-   points of a face.
+   * \brief Function to compute the viscous normal fluxes in the integration points of a face.
    * \param[in]   nInt                - Number of integration points of the face.
    * \param[in]   nDOFsElem           - Number of DOFs of the adjacent element.
    * \param[in]   Wall_HeatFlux       - The value of the prescribed heat flux.
    * \param[in]   HeatFlux_Prescribed - Whether or not the heat flux is prescribed by
-   e.g. the boundary conditions.
+                                        e.g. the boundary conditions.
    * \param[in]   derBasisElem        - Derivatives w.r.t. the parametric coordinates
-   of the basis functions of the adjacent face.
+                                        of the basis functions of the adjacent face.
    * \param[in]   solInt              - Solution in the integration points.
    * \param[in]   metricCoorDerivFace - Metric terms in the integration points, which
-   contain the derivatives of the parametric
-   coordinates w.r.t. the Cartesian coordinates.
-   Needed to compute the Cartesian gradients.
+                                        contain the derivatives of the parametric
+                                        coordinates w.r.t. the Cartesian coordinates.
+                                        Needed to compute the Cartesian gradients.
    * \param[in]   metricNormalsFace   - Metric terms in the integration points, which
-   contain the normals.
-   * \param[out]  gradSolInt          - Gradient of the solution in the integration
-   points.
+                                        contain the normals.
+   * \param[in]   wallDistanceInt     - Wall distances in the integration points of the face.
+   * \param[in]   lenScale_LES        - LES length scale of the adjacent element.
+   * \param[out]  gradSolInt          - Gradient of the solution in the integration points.
    * \param[out]  viscNormFluxes      - Viscous normal fluxes in the integration points.
    * \param[out]  viscosityInt        - Viscosity in the integration points, which is
-   needed for other terms in the discretization.
+                                        needed for other terms in the discretization.
+   * \param[out]  kOverCvInt          - Thermal conductivity over Cv in the integration points,
+                                        which is needed for other terms in the discretization.
    */
   void ViscousNormalFluxFace(CConfig              *config,
                              const unsigned short nInt,
@@ -13063,30 +13187,43 @@ private:
                              const unsigned long  *DOFsElem,
                              const su2double      *metricCoorDerivFace,
                              const su2double      *metricNormalsFace,
-                             su2double            *gradSolInt,
-                             su2double            *viscNormFluxes,
-                             su2double            *viscosityInt);
+                             const su2double      *wallDistanceInt,
+                             const su2double      lenScale_LES,
+                                   su2double      *gradSolInt,
+                                   su2double      *viscNormFluxes,
+                                   su2double      *viscosityInt,
+                                   su2double      *kOverCvInt);
   
   /*!
    * \brief Function to compute the viscous normal flux in one integration point.
-   * \param[in]  sol          - Conservative variables.
-   * \param[in]  solGradCart  - Cartesian gradients of the conservative variables.
-   * \param[in]  normal       - Normal vector
-   * \param[in]  HeatFlux     - Value of the prescribed heat flux. If not
-   prescribed, this value should be zero.
-   * \param[in]  factHeatFlux - Thermal conductivity divided by viscosity, which
-   appears in the heat flux vector. If the heat flux
-   vector is prescribed, factHeatFlux must be zero.
-   * \param[out] Viscosity    - Laminar viscosity, to be computed.
-   * \param[out] normalFlux   - Viscous normal flux, to be computed.
+   * \param[in]  sol               - Conservative variables.
+   * \param[in]  solGradCart       - Cartesian gradients of the conservative variables.
+   * \param[in]  normal            - Normal vector
+   * \param[in]  HeatFlux          - Value of the prescribed heat flux. If not
+                                     prescribed, this value should be zero.
+   * \param[in]  factHeatFlux_Lam  - Laminar thermal conductivity divided by viscosity,
+                                     which appears in the heat flux vector. If the heat
+                                     flux vector is prescribed, factHeatFlux_Lam must be zero.
+   * \param[in]  factHeatFlux_Turb - Turbulent thermal conductivity divided by viscosity,
+                                     which appears in the heat flux vector. If the heat
+                                     flux vector is prescribed, factHeatFlux_Turb must be zero.
+   * \param[in]  wallDist          - Distance to the nearest viscous wall, if appropriate.
+   * \param[in   lenScale_LES      - LES length scale, if appropriate.
+   * \param[out] Viscosity         - Total viscosity, to be computed.
+   * \param[out] kOverCv           - Total thermal conductivity over Cv, to be computed.
+   * \param[out] normalFlux        - Viscous normal flux, to be computed.
    */
   void ViscousNormalFluxIntegrationPoint(const su2double *sol,
                                          const su2double solGradCart[5][3],
                                          const su2double *normal,
                                          const su2double HeatFlux,
-                                         const su2double factHeatFlux,
-                                         su2double &Viscosity,
-                                         su2double *normalFlux);
+                                         const su2double factHeatFlux_Lam,
+                                         const su2double factHeatFlux_Turb,
+                                         const su2double wallDist,
+                                         const su2double lenScale_LES,
+                                               su2double &Viscosity,
+                                               su2double &kOverCv,
+                                               su2double *normalFlux);
 };
   
 #include "solver_structure.inl"

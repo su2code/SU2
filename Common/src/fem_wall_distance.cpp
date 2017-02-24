@@ -158,7 +158,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     else {
 
       /*--- The tree is not empty. Loop over the integration points
-            and determine the wall distance. */
+            and determine the wall distance. ---*/
       for(unsigned short i=0; i<nInt; ++i) {
 
         const su2double *coor = volElem[l].coorIntegrationPoints.data() + i*nDim;
@@ -174,7 +174,65 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   }
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 4: Determine the wall distance of the integration points of   ---*/
+  /*--- Step 4: Determine the wall distance of the DOFs of locally owned   ---*/
+  /*---         volume elements.                                           ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop over the owned elements to compute the wall distance
+        in the integration points. ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Store the grid DOFs and the number of solDOFS a bit easier. */
+    const unsigned short nDOFsGrid = volElem[l].nDOFsGrid;
+    const unsigned short nDOFsSol  = volElem[l].nDOFsSol;
+    const unsigned long  *DOFsGrid = volElem[l].nodeIDsGrid.data();
+
+    /* Get the required data from the corresponding standard element. */
+    const unsigned short ind = volElem[l].indStandardElement;
+    const su2double     *lag = standardElementsGrid[ind].GetBasisFunctionsSolDOFs();
+
+    /* Allocate the memory for the wall distance of the solution DOFs. */
+    volElem[l].wallDistanceSolDOFs.resize(nDOFsSol);
+
+    /* Check for an empty tree. In that case the wall distance is set to zero. */
+    if( WallADT.IsEmpty() ) {
+
+      /* Empty tree, i.e. no viscous solid walls present. */
+      for(unsigned short i=0; i<nDOFsSol; ++i)
+        volElem[l].wallDistanceSolDOFs[i] = 0.0;
+    }
+    else {
+
+      /*--- The tree is not empty. Loop over the solution DOFs
+            and determine the wall distance. ---*/
+      for(unsigned short i=0; i<nDOFsSol; ++i) {
+
+        /* Interpolate the coordinates of the solution DOFs. Note that in case
+           the polynomial degree of the grid and solution is the same the grid
+           DOFs and solution DOFs coincide and the interpolation boils down
+           to a copy of the coordinates. */
+        su2double coor[3];
+        const unsigned short jj = i*nDOFsGrid;
+        for(unsigned short j=0; j<nDim; ++j) {
+          coor[j] = 0.0;
+          for(unsigned short k=0; k<nDOFsGrid; ++k)
+            coor[j] += lag[jj+k]*meshPoints[DOFsGrid[k]].coor[j];
+        }
+
+        /* Compute the distance to the wall. */
+        unsigned short markerID;
+        unsigned long  elemID;
+        int            rankID;
+        su2double      dist;
+        WallADT.DetermineNearestElement(coor, dist, markerID, elemID, rankID);
+
+        volElem[l].wallDistanceSolDOFs[i] = dist;
+      }
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 5: Determine the wall distance of the integration points of   ---*/
   /*---         the internal matching faces.                               ---*/
   /*--------------------------------------------------------------------------*/
 
@@ -214,7 +272,7 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   }
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 5: Determine the wall distance of the integration points of   ---*/
+  /*--- Step 6: Determine the wall distance of the integration points of   ---*/
   /*---         locally owned boundary faces.                              ---*/
   /*--------------------------------------------------------------------------*/
 
