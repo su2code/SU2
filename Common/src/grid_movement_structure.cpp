@@ -9501,6 +9501,13 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 #endif
   }
 
+  /*--- Communicate any prescribed boundary displacements via MPI,
+   so that all nodes have the same solution and r.h.s. entries
+   across all partitions. ---*/
+
+  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+
   /*--- Solve the linear system using a Krylov subspace method ---*/
 
   if (config->GetKind_Deform_Linear_Solver() == BCGSTAB ||
