@@ -453,6 +453,23 @@ void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
   
 }
 
+
+void CSysMatrix::AddVal2Diag_f(unsigned long block_i, su2double val_matrix) {
+  
+  unsigned long step = 0, iVar, index;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_i) {	// Only elements on the diagonal
+      for (iVar = 0; iVar < nVar-1; iVar++)
+        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += SU2_TYPE::GetValue(val_matrix);
+      break;
+    }
+  }
+  
+}
+
+
 void CSysMatrix::SetVal2Diag(unsigned long block_i, su2double val_matrix) {
   
   unsigned long step = 0, iVar, jVar, index;

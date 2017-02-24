@@ -588,7 +588,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     
     r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
     g = r + cw2*(pow(r,6.0)-r);
-    g_6 =	pow(g,6.0);
+    g_6 = pow(g,6.0);
     glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
     fw = g*glim;
     
@@ -621,7 +621,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     if (r == 10.0) dr = 0.0;
     dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
     dfw = dg*glim*(1.-g_6/(g_6+cw3_6));
-    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
+    val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] + 2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
     
   }
 
@@ -1172,7 +1172,6 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   if (dist_i > 1e-10) {
     
     /*--- Production ---*/
-    
     diverg = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       diverg += PrimVar_Grad_i[iDim+1][iDim];
@@ -1189,18 +1188,27 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     val_residual[1] += alfa_blended*Density_i*pw*Volume;
     
     /*--- Dissipation ---*/
-    
     val_residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
     val_residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
     
     /*--- Cross diffusion ---*/
-    
     val_residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
     
     /*--- Implicit part ---*/
-    
-    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume; //swh 0.0;
+
+    // original:
+    /*
+    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = 0.0;
     val_Jacobian_i[1][0] = 0.0;                               val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+    */
+
+
+    // swh:
+    val_Jacobian_i[0][0] = -beta_star*Density_i*TurbVar_i[1]*Volume;
+    val_Jacobian_i[0][1] = -beta_star*Density_i*TurbVar_i[0]*Volume;
+    val_Jacobian_i[1][0] = 0.0;
+    val_Jacobian_i[1][1] = -2.0*beta_blended*Density_i*TurbVar_i[1]*Volume;
+
   }
   
   AD::SetPreaccOut(val_residual, nVar);
@@ -1272,7 +1280,7 @@ void CUpwSca_TurbKE::ComputeResidual(su2double *val_residual, su2double **val_Ja
   val_residual[2] = a0*Density_i*TurbVar_i[2]+a1*Density_j*TurbVar_j[2];
   val_residual[3] = 0.0; // no convection in f scalar
 
-  // ? here  
+
   if (implicit) {
     val_Jacobian_i[0][0] = a0;   val_Jacobian_i[0][1] = 0.0;  val_Jacobian_i[0][2] = 0.0;  val_Jacobian_i[0][3] = 0.0;
     val_Jacobian_i[1][0] = 0.0;	 val_Jacobian_i[1][1] = a0;   val_Jacobian_i[1][2] = 0.0;  val_Jacobian_i[1][3] = 0.0;
@@ -1373,8 +1381,8 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
   diff_kine = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
-  diff_f = Lm_i*Lm_i; //here
-  //diff_f = 1.0;
+  //diff_f = Lm_i*Lm_i; //here
+  diff_f = 1.0;
   
   /*--- Compute vector going from iPoint to jPoint ---*/
   dist_ij_2 = 0; proj_vector_ij = 0;
@@ -1533,8 +1541,8 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
   diff_kine = 0.5*(diff_i_kine + diff_j_kine);    // Could instead use weighted average!
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
-  diff_f = Lm_i*Lm_i; //here
-  //diff_f = 1.0;
+  //  diff_f = Lm_i*Lm_i; //here
+  diff_f = 1.0;
   
   /*--- Compute vector going from iPoint to jPoint ---*/
   dist_ij_2 = 0.0; proj_vector_ij = 0.0;
@@ -1586,7 +1594,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
     Jacobian_i[3][0] = 0.0;
     Jacobian_i[3][1] = 0.0;
     Jacobian_i[3][2] = 0.0;
-    Jacobian_i[3][3] = -diff_f*proj_vector_ij;
+    Jacobian_i[3][3] = -diff_f*proj_vector_ij; // /Density_i;
 
 
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 
@@ -1607,7 +1615,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
     Jacobian_j[3][0] = 0.0;
     Jacobian_j[3][1] = 0.0;
     Jacobian_j[3][2] = 0.0;
-    Jacobian_j[3][3] = diff_f*proj_vector_ij;
+    Jacobian_j[3][3] = diff_f*proj_vector_ij; // /Density_j;
 
   }
   
@@ -1663,13 +1671,23 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   AD::SetPreaccIn(TurbVar_i, nVar);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
-  AD::SetPreaccIn(Lm_i); AD::SetPreaccIn(Tm_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(Lm_i); AD::SetPreaccIn(Tm_i);
 
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
-  su2double diverg, pk, pe, pz, pf;
-  su2double yplus, C_e2star, eta;
+  su2double diverg, pk, pe, pz, pf, pv2;
+  su2double dk, de, dz, df, dv2, S, Vol;
+  su2double T1, T2, T3, L1, L2, L3;
+  su2double yplus, C_e2star, eta, C_2f, C_e1;
+  su2double tke, tdr, zeta, v2, f, L, T, mu, nu, nuT, muT, rho;
+  su2double tke_d, tdr_d, zeta_d, v2_d, f_d;
+  su2double dTdrk, dTdre, dTdrz, dLdrk, dLdre, dLdrz;
+  su2double dTdk, dTde, dTdz, dLdk, dLde, dLdz, dCe1dz, dPedT, dPedC, dDzdz, dDzdT,
+    dDede, dDedT, dPzdf, dDzdk, dPfdT, dPfdL, dPfdz, dPfde, dDfdL, dDfdf, dDkde;
+  su2double dTdrv2, dLdrv2, dTdv2, dLdv2, dCe1dv2, dDv2dv2, dDv2dT, dPv2df, dDv2dk, 
+    dPfdv2, dCe1dk, dPv2dk, dPfdk, dDv2de;
+
 
   //yplus = CNSSolver.YPlus;
   
@@ -1683,12 +1701,63 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     Laminar_Viscosity_i = V_i[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];
   }
-  
-  val_residual[0] = 0.0;
-  val_residual[1] = 0.0;
-  val_residual[2] = 0.0;
-  val_residual[3] = 0.0;
 
+  // for readability...
+  tke  = TurbVar_i[0];
+  tdr  = TurbVar_i[1];
+  //  zeta = TurbVar_i[2];
+  f    = TurbVar_i[3];
+  mu   = Laminar_Viscosity_i;
+  muT  = Eddy_Viscosity_i;
+  rho  = Density_i;
+  S    = StrainMag_i; //*sqrt(2.0) already included
+  Vol  = Volume;
+  v2 = TurbVar_i[2];
+  //v2 = zeta*tke;
+  zeta = v2/tke;
+  nu = mu/rho;
+  nuT = muT/rho;
+
+  // limits?
+  tke  = max(tke,0.0);
+  //  tdr  = max(tdr,0.0);
+  zeta = min(zeta,2.0/3.0);
+  zeta = max(zeta,0.0);
+  v2 = min(v2,2.0/3.0*tke);
+  v2 = max(v2,0.0);
+  //  f  = max(f,0.0);
+
+  // from previous timestep
+  //  tke0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(5);
+  //  tdr0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(6);
+  //  zeta0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(7);
+  //  f0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(8);
+
+  // denominator floors
+  tke_d = max(tke,1.0E-10);
+  tdr_d = max(tdr,1.0E-10);
+  zeta_d = max(zeta,1.0E-6);
+  v2_d = max(v2,1.0E-12);
+  f_d = max(f,1.0E-10);
+
+  // must find T&L here due to Jacobian branching...
+  //L = Lm_i;
+  //T = Tm_i;
+
+  //--- Model time scale ---//
+  T1 = tke_d/tdr_d;
+  T2 = 0.6/(sqrt(6.0)*C_mu*S*zeta_d);
+  T3 = C_T*sqrt(nu/tdr_d);
+  T = max(min(T1,T2),T3); 
+
+  //--- Model length scale ---//
+  L1 = pow(tke_d,1.5)/tdr_d;
+  L2 = sqrt(tke_d)/(sqrt(6.0)*C_mu*S*zeta_d);
+  L3 = C_eta*pow(pow(nu,3.0)/tdr_d,0.25);
+  L = C_L * max(min(L1,L2),L3);
+
+
+  //--- Initial Jacobian ---//
   val_Jacobian_i[0][0] = 0.0;
   val_Jacobian_i[0][1] = 0.0;
   val_Jacobian_i[0][2] = 0.0;
@@ -1708,102 +1777,337 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   val_Jacobian_i[3][1] = 0.0;
   val_Jacobian_i[3][2] = 0.0;
   val_Jacobian_i[3][3] = 0.0;
-  
 
-  //cout<<" Lm_i: "<<Lm_i<<"\n";
-    
-    /*--- Production ---*/
+
+  /*
+    //--- zeta-f ---//
+    C_e1 = C_e1o*(1.0+0.012/zeta_d); // error in paper?
+    //  C_e1 = C_e1o*(1.0+0.012/sqrt(zeta_d));
+    //  C_e1 = C_e1o*(1.0+0.012/sqrt(2.0/3.0));
+
+    //--- divergence of velocity ---//
     diverg = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       diverg += PrimVar_Grad_i[iDim+1][iDim];
+ 
+    //--- Production ---// //<warp>//
+    //pk = muT*(S*S - 2.0/3.0*diverg*diverg) - 2.0/3.0*rho*tke*diverg;
+    pk = muT*S*S - 2.0/3.0*rho*tke*diverg;
+    pe = C_e1*pk/T;
+    pz = rho*f;
+    pf = (C_1-1.0 + C_2p*pk/(rho*tdr_d)) * (2.0/3.0-zeta) * rho/T * 1.0/(L*L);
 
-    //SST: pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-    //    pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg; //*sqrt(2.0) already included
-    pk = Eddy_Viscosity_i*(StrainMag_i*StrainMag_i - 2.0/3.0*diverg*diverg) - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-    //pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i; //testing...
     pk = max(pk,0.0);
-    
-    pe = C_e1o*(1.0+0.012/TurbVar_i[2])*pk * 1.0/Tm_i;
     pe = max(pe,0.0);
-
-    pz = Density_i*TurbVar_i[3];
     pz = max(pz,0.0);
-
-    pf = (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (2.0/3.0-TurbVar_i[2])/Tm_i;
-    //pf = pf/(Lm_i*Lm_i);
     pf = max(pf,0.0);
-    
-    val_residual[0] += pk * Volume;
-    val_residual[1] += pe * Volume;
-    val_residual[2] += pz * Volume;
-    val_residual[3] += pf * Volume;
-    
-    /*--- Dissipation ---*/
-    val_residual[0] -= Density_i*TurbVar_i[1]           * Volume;
-    val_residual[1] -= C_e2*Density_i*TurbVar_i[1]/Tm_i * Volume;
-    val_residual[2] -= TurbVar_i[2]/TurbVar_i[0]*pk     * Volume;
-    val_residual[3] -= TurbVar_i[3]                     * Volume;
-    //val_residual[3] -= TurbVar_i[3]/(Lm_i*Lm_i)*Volume;
+
+    //--- Dissipation ---//
+    dk = rho*tdr;
+    de = C_e2*rho*tdr/T;
+    dz = min(zeta,2.0/3.0)/tke_d*pk;
+    df = rho*f/(L*L);
+
+    //-- Store in residual --//
+    val_residual[0] = (pk-dk) * Vol;
+    val_residual[1] = (pe-de) * Vol;
+    val_residual[2] = (pz-dz) * Vol; // I HAZ STOOPID?
+    val_residual[3] = (pf-df) * Vol;
+
         
-    /*--- Implicit part ---*/
-    //SST: val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = 0.0;
-    //     val_Jacobian_i[1][0] = 0.0;                               val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
-    // not sure here... d/dphi(destruction)?
-    /*    val_Jacobian_i[0][0] = -2.0*Laminar_Viscosity_i/(Density_i*Density_i*dist_i*dist_i)*Volume;
-    val_Jacobian_i[0][1] = -1.0*Volume;
-    val_Jacobian_i[1][0] = C_e2*F2_i*TurbVar_i[1]/(TurbVar_i[0]*TurbVar_i[0])*Volume;
-    val_Jacobian_i[1][1] = -2.0*C_e2*F2_i*TurbVar_i[1]/TurbVar_i[0]*Volume -
-                            2.0*Laminar_Viscosity_i/(Density_i*Density_i*dist_i*dist_i) * exp(-YPlus/2.0) * Volume;*/
+    //--- Implicit part ---//
 
+    // precompute T&L portions of the jacobian
+    if (T==T3) {
 
-    // production portion
+      dTdk = 0.0;
+      dTde = -0.5*C_T*sqrt(nu)*pow(tdr_d,-1.5);
+      dTdz = 0.0;
+      dLdk = 0.0;
+      dLde = -C_L*0.25*C_eta*pow(nu,0.75)*pow(tdr_d,-5.0/4.0);
+      dLdz = 0.0;
+
+      dTdrk = 0.0;
+      dTdre = -0.5*C_T*sqrt(nu)*pow(rho*tdr_d,-1.5) * sqrt(rho) ;
+      dTdrz = 0.0;
+      dLdrk = 0.0;
+      dLdre = -C_L*0.25*C_eta*pow(nu,0.75)*pow(rho*tdr_d,-5.0/4.0) * pow(rho,0.25);
+      dLdrz = 0.0;
+
+    }
+    else if (T==T2) {
+
+      dTdk = 0.0;
+      dTde = 0.0;
+      dTdz = -0.6/(sqrt(6.0)*C_mu*S*zeta_d*zeta_d);
+      dLdk = C_L*0.5/(sqrt(6.0)*C_mu*S*zeta_d*sqrt(tke_d));
+      dLde = -C_L*sqrt(tke_d)/(sqrt(6.0)*C_mu*S*zeta_d*zeta_d);
+      dLdz = 0.0;
+
+      dTdrk = 0.0;
+      dTdre = 0.0;
+      dTdrz = -0.6/(sqrt(6.0)*C_mu*S*zeta_d*zeta_d*rho);
+      dLdrk = C_L*0.5/(sqrt(6.0)*C_mu*S*zeta_d*sqrt(rho*tke_d))*1.0/sqrt(rho) ;
+      dLdre = -C_L*sqrt(tke_d)/(sqrt(6.0)*C_mu*S*zeta_d*zeta_d*rho);
+      dLdrz = 0.0;
+
+    }
+    else {
+
+      dTdk = 1.0/tdr_d;
+      dTde = -tke/(tdr_d*tdr_d);
+      dTdz = 0.0;
+      dLdk = C_L*1.5*sqrt(tke_d)/tdr_d;
+      dLde = -C_L*pow(tke_d,1.5)/(tdr_d*tdr_d);
+      dLdz = 0.0;
+
+      dTdrk = 1.0/(rho*tdr_d);
+      dTdre = -tke/(tdr_d*tdr_d*rho);
+      dTdrz = 0.0;
+      dLdrk = C_L*1.5*sqrt(rho*tke_d)/tdr_d*1.0/pow(rho,1.3);
+      dLdre = -C_L*pow(tke_d,1.5)/(tdr_d*tdr_d*rho);
+      dLdrz = 0.0;
+
+    }
+
+    // other jacobian portions
+    dDkde = 1.0; //rho;
+    dCe1dz = -C_e1o*0.012/(zeta_d*zeta_d*rho); //-C_e1o*0.012/(zeta_d*zeta_d);
+    //    dCe1dz = -C_e1o*0.012/(pow(zeta_d,1.5)*rho);
+    dPedT = -C_e1*pk/(T*T);
+    dPedC = pk/T;
+    dDede = C_e2/T; //C_e2*rho/T;
+    dDedT = -C_e2*rho*tdr/(T*T);
+    dPzdf = 1.0; //rho;
+
+    dDzdk = -zeta*pk/(tke_d*tke_d*rho); //-zeta*pk/(tke_d*tke_d);
+    dDzdz = pk/(rho*tke_d); //pk/tke_d;
+
+    dPfdT = -(C_1-1.0+C_2p*pk/(rho*tdr_d)) * (2.0/3.0-zeta) * rho/(T*T) * 1.0/(L*L);
+    dPfdL = -(C_1-1.0+C_2p*pk/(rho*tdr_d)) * (2.0/3.0-zeta) * rho/T * 2.0/(L*L*L);
+    dPfde = -C_2p*pk/(rho*tdr_d*rho*tdr_d) * (2.0/3.0-zeta) * rho/T * 1.0/(L*L); //-C_2p*pk/(rho*tdr_d*tdr_d) * (2.0/3.0-zeta) * 1.0/T * 1.0/(L*L);
+    dPfdz = -(C_1-1.0+C_2p*pk/(rho*tdr_d)) * 1.0/T * 1.0/(L*L);
+    dDfdL = -2.0*rho*f/(L*L*L);
+    dDfdf = 1.0/(L*L);
+
+  */
+    // production...
+    /*
     val_Jacobian_i[0][0] += 0.0;
     val_Jacobian_i[0][1] += 0.0;
     val_Jacobian_i[0][2] += 0.0;
     val_Jacobian_i[0][3] += 0.0;
 
-    val_Jacobian_i[1][0] += 0.0;
-    val_Jacobian_i[1][1] += 0.0;
-    val_Jacobian_i[1][2] += 0.0;
+    val_Jacobian_i[1][0] += (dPedT*dTdrk) * Vol;
+    val_Jacobian_i[1][1] += (dPedT*dTdre) * Vol;
+    val_Jacobian_i[1][2] += (dPedC*dCe1dz + dPedT*dTdrz) * Vol;
     val_Jacobian_i[1][3] += 0.0;
 
     val_Jacobian_i[2][0] += 0.0;
     val_Jacobian_i[2][1] += 0.0;
-    val_Jacobian_i[2][2] += Volume;
-    val_Jacobian_i[2][3] += 0.0;
+    val_Jacobian_i[2][2] += 0.0;
+    val_Jacobian_i[2][3] += dPzdf*Vol;
 
-    /* no division by density in f ???
-    val_Jacobian_i[3][0] += 0.0;
-    val_Jacobian_i[3][1] += -C_2p*pk/pow(Density_i*TurbVar_i[1],2.0) * (2.0/3.0-TurbVar_i[2])/Tm_i * Volume;
-    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Density_i)/Tm_i * Volume;
+    val_Jacobian_i[3][0] += (dPfdT*dTdrk + dPfdL*dLdrk) * Vol;
+    val_Jacobian_i[3][1] += (dPfdT*dTdre + dPfdL*dLdre + dPfde) * Vol;
+    val_Jacobian_i[3][2] += (dPfdT*dTdrz + dPfdL*dLdrz + dPfdz) * Vol;
     val_Jacobian_i[3][3] += 0.0;
     */
 
-    val_Jacobian_i[3][0] += 0.0;
-    val_Jacobian_i[3][1] += -C_2p*pk/(Density_i*TurbVar_i[1]*TurbVar_i[1]) * (2.0/3.0-TurbVar_i[2])/Tm_i * Volume;// * 1.0/(Lm_i*Lm_i);
-    val_Jacobian_i[3][2] += (C_1-1.0+C_2p*pk/(Density_i*TurbVar_i[1])) * (-1.0/Tm_i) * Volume;// * 1.0/(Lm_i*Lm_i);
-    val_Jacobian_i[3][3] += 0.0;
-
-    // destruction portion
+    /*
+    // destruction...
     val_Jacobian_i[0][0] -= 0.0;
-    val_Jacobian_i[0][1] -= Volume;
+    val_Jacobian_i[0][1] -= dDkde * Vol;
     val_Jacobian_i[0][2] -= 0.0;
     val_Jacobian_i[0][3] -= 0.0;
 
-    val_Jacobian_i[1][0] -= 0.0;
-    val_Jacobian_i[1][1] -= C_e2/Tm_i * Volume;
-    val_Jacobian_i[1][2] -= 0.0;
+    val_Jacobian_i[1][0] -= dDedT*dTdrk * Vol;
+    val_Jacobian_i[1][1] -= (dDedT*dTdre + dDede) * Vol;
+    val_Jacobian_i[1][2] -= dDedT*dTdrz * Vol;
     val_Jacobian_i[1][3] -= 0.0;
 
-    val_Jacobian_i[2][0] -= -TurbVar_i[2]/(Density_i*TurbVar_i[0]*TurbVar_i[0])*pk*Volume;
+    val_Jacobian_i[2][0] -= dDzdk * Vol;
     val_Jacobian_i[2][1] -= 0.0;
-    val_Jacobian_i[2][2] -= pk/(TurbVar_i[0]*Density_i)*Volume; // no density in this term
+    val_Jacobian_i[2][2] -= dDzdz * Vol;
     val_Jacobian_i[2][3] -= 0.0;
 
-    val_Jacobian_i[3][0] -= 0.0;
-    val_Jacobian_i[3][1] -= 0.0;
-    val_Jacobian_i[3][2] -= 0.0;
-    val_Jacobian_i[3][3] -= Volume;// * 1.0/(Lm_i*Lm_i);  // *1.0/Density_i; don't think density should be included in the Jacobian as we are solving for f, not rho*f
+    val_Jacobian_i[3][0] -= dDfdL*dLdrk * Vol;
+    val_Jacobian_i[3][1] -= dDfdL*dLdre * Vol;
+    val_Jacobian_i[3][2] -= dDfdL*dLdrz * Vol;
+    val_Jacobian_i[3][3] -= dDfdf * Vol;
+  */
+
+
+    //--- v2-f ---//
+    C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2_d));
+
+    //--- divergence of velocity ---//
+    diverg = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      diverg += PrimVar_Grad_i[iDim+1][iDim];
+ 
+    //--- Production ---// //<warp>//
+    //pk = muT*(S*S - 2.0/3.0*diverg*diverg) - 2.0/3.0*rho*tke*diverg;
+    pk = muT*S*S - 2.0/3.0*rho*tke*diverg;
+    pk = max(pk,0.0);
+    pe = C_e1*pk/T;
+    pv2 = rho*tke*f;
+    pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2*tdr/tke_d);
+    //    pv2 = rho*f; //f=kf
+    //C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke_d-0.55)));
+    C_2f = C_2p;
+    pf = (C_2f*pk/tke_d - ((C_1-6.0)*min(v2/tke_d,2.0/3.0) - 2.0/3.0*(C_1-1.0))*rho/T) * 1.0/(L*L);
+    //    pf = (C_2f*pk - (v2*(C_1-6.0) - 2.0/3.0*tke*(C_1-1.0))*rho/T) * 1.0/(L*L); //f=kf
+
+    pe = max(pe,0.0);
+    pv2 = max(pv2,0.0);
+    pf = max(pf,0.0);
+
+    //--- Dissipation ---//
+    dk = rho*tdr;
+    de = C_e2*rho*tdr/T;
+    dv2 = 6.0*(v2/tke_d)*rho*tdr;
+    df = rho*f/(L*L);
+
+    //-- Store in residual --//
+    val_residual[0] = (pk-dk) * Vol;
+    val_residual[1] = (pe-de) * Vol;
+    val_residual[2] = (pv2-dv2) * Vol;
+    val_residual[3] = (pf-df) * Vol;
+
+        
+    //--- Implicit part ---//
+
+    // precompute T&L portions of the jacobian
+    if (T==T3) {
+
+      dTdk = 0.0;
+      dTde = -0.5*C_T*sqrt(nu)*pow(tdr_d,-1.5);
+      dTdv2 = 0.0;
+      dLdk = 0.0;
+      dLde = -C_L*0.25*C_eta*pow(nu,0.75)*pow(tdr_d,-5.0/4.0);
+      dLdv2 = 0.0;
+
+      dTdrk = 0.0;
+      dTdre = -0.5*C_T*sqrt(nu)*pow(rho*tdr_d,-1.5) * sqrt(rho) ;
+      dTdrv2 = 0.0;
+      dLdrk = 0.0;
+      dLdre = -C_L*0.25*C_eta*pow(nu,0.75)*pow(rho*tdr_d,-5.0/4.0) * pow(rho,0.25);
+      dLdrv2 = 0.0;
+
+    }
+    else if (T==T2) {
+
+      dTdk = 0.6/(sqrt(6.0)*C_mu*S*v2_d);
+      dTde = 0.0;
+      dTdv2 = -0.6*tke/(sqrt(6.0)*C_mu*S*v2_d*v2_d);
+      dLdk = C_L*1.5*sqrt(tke_d)/(sqrt(6.0)*C_mu*S*v2_d);
+      dLde = -C_L*pow(tke_d,1.5)/(sqrt(6.0)*C_mu*S*v2_d*v2_d);
+      dLdv2 = 0.0;
+
+      dTdrk = 0.6/(sqrt(6.0)*C_mu*S*v2_d*rho);
+      dTdre = 0.0;
+      dTdrv2 = -0.6/(sqrt(6.0)*C_mu*S*v2_d*v2_d*rho);
+      dLdrk = C_L*1.5*sqrt(rho*tke_d)/(sqrt(6.0)*C_mu*S*v2_d)*1.0/pow(rho,1.5) ;
+      dLdre = -C_L*pow(tke_d,1.5)/(sqrt(6.0)*C_mu*S*v2_d*v2_d*rho);
+      dLdrv2 = 0.0;
+
+    }
+    else {
+
+      dTdk = 1.0/tdr_d;
+      dTde = -tke/(tdr_d*tdr_d);
+      dTdv2 = 0.0;
+      dLdk = C_L*1.5*sqrt(tke_d)/tdr_d;
+      dLde = -C_L*pow(tke_d,1.5)/(tdr_d*tdr_d);
+      dLdv2 = 0.0;
+
+      dTdrk = 1.0/(rho*tdr_d);
+      dTdre = -tke/(tdr_d*tdr_d*rho);
+      dTdrv2 = 0.0;
+      dLdrk = C_L*1.5*sqrt(rho*tke_d)/tdr_d*1.0/pow(rho,1.3);
+      dLdre = -C_L*pow(tke_d,1.5)/(tdr_d*tdr_d*rho);
+      dLdrv2 = 0.0;
+
+    }
+
+    // other jacobian portions
+    dDkde = 1.0;
+
+    dCe1dk = C_e1o*0.045*0.5/sqrt(rho*tke_d*rho*v2_d);
+    dCe1dv2 = -C_e1o*0.045*0.5*sqrt(tke/(v2_d*v2_d*rho));
+    dPedT = -C_e1*pk/(T*T);
+    dPedC = pk/T;
+    dDede = C_e2/T;
+    dDedT = -C_e2*rho*tdr/(T*T);
+
+    dPv2dk = f;//    dPv2dk = 0.0;
+    dPv2df = tke;//    dPv2df = 1.0;
+    dDv2dk = -6.0*v2/(tke*tke*rho)*rho*tdr;
+    dDv2de = 6.0*v2/tke;
+    dDv2dv2 = 6.0/(tke*rho)*rho*tdr;
+
+    dPfdT = ((C_1-6.0)*v2/tke_d - 2.0/3.0*(C_1-1.0))*rho/(T*T) * 1.0/(L*L);
+    dPfdL = -(C_2f*pk/tke_d - ((C_1-6.0)*v2/tke_d - 2.0/3.0*(C_1-1.0))*rho/T) * 2.0/(L*L*L);
+    dPfdk = (-C_2f*pk/(tke_d*tke_d*rho) - (-(C_1-6.0)*v2/(tke_d*tke_d*rho))*rho/T) * 1.0/(L*L);
+    dPfde = 0.0;
+    dPfdv2 = -(C_1-6.0)*1.0/(rho*tke_d) * rho/T * 1.0/(L*L);
+    dDfdL = -2.0*rho*f/(L*L*L);
+    dDfdf = 1.0/(L*L);
+
+    /*
+    dPfdT = ((C_1-6.0)*v2 - 2.0/3.0*tke*(C_1-1.0))*rho/(T*T) * 1.0/(L*L);
+    dPfdL = -(C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*tke*(C_1-1.0))*rho/T) * 2.0/(L*L*L);
+    dPfdk = 2.0/3.0*(C_1-1.0)/T * 1.0/(L*L);
+    dPfde = 0.0;
+    dPfdv2 = -(C_1-6.0)/T * 1.0/(L*L);
+    dDfdL = -2.0*rho*f/(L*L*L);
+    dDfdf = 1.0/(L*L);
+    */
+
+    // production...
+    /*
+    val_Jacobian_i[0][0] += 0.0;
+    val_Jacobian_i[0][1] += 0.0;
+    val_Jacobian_i[0][2] += 0.0;
+    val_Jacobian_i[0][3] += 0.0;
+
+    val_Jacobian_i[1][0] += (dPedC*dCe1dk + dPedT*dTdrk) * Vol;
+    val_Jacobian_i[1][1] += (dPedT*dTdre) * Vol;
+    val_Jacobian_i[1][2] += (dPedC*dCe1dv2 + dPedT*dTdrv2) * Vol;
+    val_Jacobian_i[1][3] += 0.0;
+
+    val_Jacobian_i[2][0] += dPv2dk*Vol;
+    val_Jacobian_i[2][1] += 0.0;
+    val_Jacobian_i[2][2] += 0.0;
+    val_Jacobian_i[2][3] += dPv2df*Vol;
+
+    val_Jacobian_i[3][0] += (dPfdT*dTdrk + dPfdL*dLdrk + dPfdk) * Vol;
+    val_Jacobian_i[3][1] += (dPfdT*dTdre + dPfdL*dLdre + dPfde) * Vol;
+    val_Jacobian_i[3][2] += (dPfdT*dTdrv2 + dPfdL*dLdrv2 + dPfdv2) * Vol;
+    val_Jacobian_i[3][3] += 0.0;
+    */
+
+    // destruction...
+    val_Jacobian_i[0][0] -= 0.0;
+    val_Jacobian_i[0][1] -= dDkde * Vol;
+    val_Jacobian_i[0][2] -= 0.0;
+    val_Jacobian_i[0][3] -= 0.0;
+
+    val_Jacobian_i[1][0] -= 0.0; //dDedT*dTdrk * Vol;
+    val_Jacobian_i[1][1] -= dDede*Vol; // + dDedT*dTdre * Vol;
+    val_Jacobian_i[1][2] -= 0.0; //dDedT*dTdrv2 * Vol;
+    val_Jacobian_i[1][3] -= 0.0;
+
+    val_Jacobian_i[2][0] -= dDv2dk * Vol;
+    val_Jacobian_i[2][1] -= dDv2de * Vol;
+    val_Jacobian_i[2][2] -= dDv2dv2 * Vol;
+    val_Jacobian_i[2][3] -= 0.0;
+
+    val_Jacobian_i[3][0] -= 0.0; //dDfdL*dLdrk * Vol;
+    val_Jacobian_i[3][1] -= 0.0; //dDfdL*dLdre * Vol;
+    val_Jacobian_i[3][2] -= 0.0; //dDfdL*dLdrv2 * Vol;
+    val_Jacobian_i[3][3] -= dDfdf * Vol;
 
 
   AD::SetPreaccOut(val_residual, nVar);

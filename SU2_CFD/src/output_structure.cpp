@@ -4306,7 +4306,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+1;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA:	   nVar_Turb = 1; break;
+        case SA:     nVar_Turb = 1; break;
         case SA_NEG: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
         case KE:     nVar_Turb = 4; break;
@@ -4326,7 +4326,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+1;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA:	   nVar_AdjTurb = 1; break;
+        case SA:     nVar_AdjTurb = 1; break;
         case SA_NEG: nVar_AdjTurb = 1; break;
         case SST:    nVar_AdjTurb = 2; break;
         case KE:     nVar_AdjTurb = 4; break;
@@ -5321,7 +5321,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       if (!fem){
         if (!Unsteady) {
           cout.width(5); cout << iExtIter;
-          cout.width(11); cout << timeiter;
+          cout.width(11); cout << timeiter; //"time" being printed to the screen
           
         } else if (Unsteady && DualTime_Iteration) {
           cout.width(8); cout << iIntIter;
@@ -6561,11 +6561,11 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
 #ifdef HAVE_MPI
     /*--- Do not merge the volume solutions if we are running in parallel.
      Force the use of SU2_SOL to merge the volume sols in this case. ---*/
-    
+    //jump
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
-      Wrt_Vol = false;
-      Wrt_Srf = false;
+    //      Wrt_Vol = false;
+    //      Wrt_Srf = false;
     }
 #endif
     
@@ -6634,7 +6634,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
       SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-      
+      //cout << "Rank:" << rank << " Wrt_Vol:" << Wrt_Vol << endl;      
       if (Wrt_Vol) {
         
         switch (FileFormat) {

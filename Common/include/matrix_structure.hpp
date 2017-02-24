@@ -208,6 +208,8 @@ public:
 	 * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
 	 */
 	void AddVal2Diag(unsigned long block_i, su2double val_matrix);
+
+	void AddVal2Diag_f(unsigned long block_i, su2double val_matrix);
   
   /*!
    * \brief Sets the specified value to the diagonal of the (i, i) subblock
