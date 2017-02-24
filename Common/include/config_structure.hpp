@@ -453,6 +453,7 @@ private:
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_FEM,			/*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,			/*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_DG_Shock, /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
@@ -461,9 +462,7 @@ private:
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
-  // Kind_FEM_DG_Shock is hard coded right now since it is not added in config option
-  unsigned short Kind_FEM_DG_Shock = 0; /*!< \brief Shock caputirng method for the FEM DG solver. */
+  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/  
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
