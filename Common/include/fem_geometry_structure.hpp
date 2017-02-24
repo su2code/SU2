@@ -160,6 +160,9 @@ public:
 
   su2double lenScale;                /*!< \brief Length scale of the element. */
 
+  su2double shockSensorValue;               /*!< \brief Value for sensing a shock */
+  su2double shockArtificialViscosity;       /*!< \brief Artificial viscosity for a shock */
+
 
   vector<su2double> metricTerms;            /*!< \brief Vector of the metric terms in the
                                                         integration points of this element. */
@@ -180,6 +183,9 @@ public:
   vector<su2double> coorIntegrationPoints;  /*!< \brief The coordinates of the integration points of this element. */
   vector<su2double> wallDistance;           /*!< \brief The wall distance to the viscous walls for
                                                         the integration points of this element. */
+  vector<su2double> wallDistanceSolDOFs;    /*!< \brief The wall distance to the viscous walls for
+                                                        the solution DOFs of this element. */
+
   /*!
    * \brief Constructor of the class. Initialize the pointers to NULL.
    */

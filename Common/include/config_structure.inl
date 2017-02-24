@@ -608,6 +608,8 @@ inline unsigned short CConfig::GetFFD_CoordSystem(void) { return FFD_CoordSystem
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
+inline unsigned short CConfig::GetnLevels_TimeAccurateLTS(void) { return nLevels_TimeAccurateLTS; }
+
 inline unsigned short CConfig::GetnTimeDOFsADER_DG(void) { return nTimeDOFsADER_DG; }
 
 inline su2double *CConfig::GetTimeDOFsADER_DG(void) { return TimeDOFsADER_DG; }
@@ -901,6 +903,8 @@ inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Fl
 
 inline unsigned short CConfig::GetKind_FEM_Flow(void) { return Kind_FEM_Flow; }
 
+inline unsigned short CConfig::GetKind_FEM_DG_Shock(void) { return Kind_FEM_DG_Shock; }
+
 inline su2double CConfig::GetKappa_1st_Flow(void) { return Kappa_1st_Flow; }
 
 inline su2double CConfig::GetKappa_2nd_Flow(void) { return Kappa_2nd_Flow; }
@@ -984,6 +988,8 @@ inline unsigned short CConfig::GetKind_SensSmooth(void) { return Kind_SensSmooth
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
+
+inline bool CConfig::GetUpdate_Restart_Params(void) {	return Update_Restart_Params; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 

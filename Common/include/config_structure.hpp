@@ -353,7 +353,8 @@ private:
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
   long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
-  long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
+  long Dyn_RestartIter;                         /*!< \brief Iteration number to restart a dynamic structural analysis. */
+  unsigned short nLevels_TimeAccurateLTS; /*!< \brief Number of time levels for time accurate local time stepping. */
   unsigned short nTimeDOFsADER_DG;        /*!< \brief Number of time DOFs used in the predictor step of ADER-DG. */
   su2double *TimeDOFsADER_DG;             /*!< \brief The location of the ADER-DG time DOFs on the interval [-1,1]. */
   unsigned short nTimeIntegrationADER_DG; /*!< \brief Number of time integration points ADER-DG. */ 
@@ -452,6 +453,7 @@ private:
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_FEM,			/*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,			/*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM_DG_Shock, /*!< \brief Shock capturing method for the FEM DG solver. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
@@ -460,7 +462,7 @@ private:
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/  
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
@@ -551,6 +553,7 @@ private:
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool Update_Restart_Params;	/*!< \brief Read and write additional restart metadata for parameter updates.*/
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -2301,6 +2304,12 @@ public:
   unsigned short GetnRKStep(void);
 
   /*!
+   * \brief Get the number of time levels for time accurate local time stepping.
+   * \return Number of time levels.
+   */
+  unsigned short GetnLevels_TimeAccurateLTS(void);
+
+  /*!
    * \brief Get the number time DOFs for ADER-DG.
    * \return Number of time DOFs used in ADER-DG.
    */
@@ -3566,6 +3575,14 @@ public:
   unsigned short GetKind_FEM_Flow(void);
 
   /*!
+   * \brief Get the kind of shock capturing method in FEM DG solver.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of shock capturing method in FEM DG solver.
+   */
+  unsigned short GetKind_FEM_DG_Shock(void);
+
+  /*!
    * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients.
    */
@@ -4071,7 +4088,13 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void);
-  
+
+  /*!
+   * \brief Flag controlling whether restart parameter metadata is written/read.
+   * \return Restart metadata updates, if <code>TRUE</code> then the code will read/write restart metadata for parameter updates.
+   */
+  bool GetUpdate_Restart_Params(void);
+
   /*!
    * \brief Provides the number of varaibles.
    * \return Number of variables.
