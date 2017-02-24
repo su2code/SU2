@@ -250,18 +250,36 @@ void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2
         nu = val_viscosity/val_density;
 
         // move these, already in constants...
+        //--- zeta-f ---//
+	/*
         C_mu = 0.22;
         C_T = 6.0;
         C_L = 0.36;
         C_eta = 85.0;
 
-        /*--- Model time scale ---*/
+        //--- Model time scale ---//
         temp = min(val_kine/val_epsi,0.6/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
         Tm = max(temp,C_T*sqrt(nu/val_epsi));
 
-        /*--- Model length scale ---*/
+        //--- Model length scale ---//
 	temp = min(pow(val_kine,1.5)/val_epsi, sqrt(val_kine)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
         Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
+*/
+
+        //--- v2-f ---//
+        C_mu = 0.22;
+        C_T = 6.0;
+        C_L = 0.23;
+        C_eta = 70.0;
+
+        //--- Model time scale ---//
+        temp = min(val_kine/val_epsi,0.6*val_kine/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+        Tm = max(temp,C_T*sqrt(nu/val_epsi));
+
+        //--- Model length scale ---//
+	temp = min(pow(val_kine,1.5)/val_epsi, pow(val_kine,1.5)/(sqrt(6.0)*C_mu*StrainMag*val_zeta));
+        Lm = C_L * max(temp,C_eta*pow(pow(nu,3.0)/val_epsi,0.25));
+
 
 	// good here... cout<<" Lm in variable_direct: "<<Lm<<"\n";
   
