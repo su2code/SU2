@@ -5634,20 +5634,16 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
   bool shockExist;
   unsigned short nDOFsPm1;       // Number of DOFs up to polynomial degree p-1
 
-  /* Store the number of conservative variables, which depends
-     on the number of dimensions. */
-  const unsigned short nConsVar = nVar;
-
   /*--- Loop over the owned volume elements to sense the shock. If shock exists,
         add artificial viscosity for DG FEM formulation to the residual.  ---*/
   for(unsigned long l=0; l<nVolElemOwned; ++l) {
 
     /* Get the data from the corresponding standard element. */
-    const unsigned short ind             = volElem[l].indStandardElement;
-    const unsigned short nDOFs           = volElem[l].nDOFsSol;
-    const unsigned short VTK_TypeElem    = volElem[l].VTK_Type;
-    const unsigned short nPoly           = standardElementsSol[ind].GetNPoly();
-    const su2double *matVanderInv        = standardElementsSol[ind].GetMatVandermondeInv();
+    const unsigned short ind          = volElem[l].indStandardElement;
+    const unsigned short nDOFs        = volElem[l].nDOFsSol;
+    const unsigned short VTK_TypeElem = volElem[l].VTK_Type;
+    const unsigned short nPoly        = standardElementsSol[ind].GetNPoly();
+    const su2double *matVanderInv     = standardElementsSol[ind].GetMatVandermondeInv();
 
     /*----------------------------------------------------------------------------*/
     /*--- Step 1: Calculate the number of DOFs up to polynomial degree p-1.    ---*/

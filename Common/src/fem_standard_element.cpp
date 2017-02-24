@@ -496,11 +496,9 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
 
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the given points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  vector<su2double> V(nDOFs*nPoints);
   matVandermondeInv.resize(nDOFs*nDOFs);
 
-  //Vandermonde1D(nDOFs, rDOFs, VInv);
-  //InverseMatrix(nDOFs, VInv);
   Vandermonde1D(nDOFs, rDOFs, matVandermondeInv);
   InverseMatrix(nDOFs, matVandermondeInv);
 
@@ -513,7 +511,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
         in row major order, because in this way the interpolation data for a
         point is contiguous in memory.        ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 1D Vandermonde matrix in the
@@ -527,7 +524,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
         in row major order, because in this way the gradient data for a point
         is contiguous in memory.  ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, drLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, drLagBasisPoints);
 }
 
@@ -567,11 +563,9 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
 
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  vector<su2double> V(nDOFs*nPoints);
   matVandermondeInv.resize(nDOFs*nDOFs);
 
-  //Vandermonde2D_Triangle(nPoly, nDOFs, rDOFs, sDOFs, VInv);
-  //InverseMatrix(nDOFs, VInv);
   Vandermonde2D_Triangle(nPoly, nDOFs, rDOFs, sDOFs, matVandermondeInv);
   InverseMatrix(nDOFs, matVandermondeInv);
 
@@ -583,7 +577,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
         product V*Vinv. Note that the result is stored in row major order, because
         in this way the interpolation data for a point is contiguous in memory. ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 2D Vandermonde matrix in the points. ---*/
@@ -599,8 +592,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
 
-  //MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDr, matVandermondeInv, drLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
 }
@@ -642,11 +633,9 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilat
 
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  vector<su2double> V(nDOFs*nPoints);
   matVandermondeInv.resize(nDOFs*nDOFs);
 
-  //Vandermonde2D_Quadrilateral(nPoly, nDOFs, rDOFs, sDOFs, VInv);
-  //InverseMatrix(nDOFs, VInv);
   Vandermonde2D_Quadrilateral(nPoly, nDOFs, rDOFs, sDOFs, matVandermondeInv);
   InverseMatrix(nDOFs, matVandermondeInv);
 
@@ -658,7 +647,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilat
         product V*Vinv. Note that the result is stored in row major order, because
         in this way the interpolation data for a point is contiguous in memory. ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 2D Vandermonde matrix in the points. ---*/
@@ -674,8 +662,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilat
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
 
-  //MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDr, matVandermondeInv, drLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
 }
@@ -725,11 +711,9 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedr
 
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  vector<su2double> V(nDOFs*nPoints);
   matVandermondeInv.resize(nDOFs*nDOFs);
 
-  //Vandermonde3D_Tetrahedron(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
-  //InverseMatrix(nDOFs, VInv);
   Vandermonde3D_Tetrahedron(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, matVandermondeInv );
   InverseMatrix(nDOFs, matVandermondeInv);
 
@@ -741,7 +725,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedr
         product V*Vinv. Note that the result is stored in row major order, because
         in this way the interpolation data for a point is contiguous in memory. ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
@@ -759,9 +742,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedr
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  //MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDr, matVandermondeInv, drLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
@@ -825,11 +805,9 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
 
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  vector<su2double> V(nDOFs*nPoints);
   matVandermondeInv.resize(nDOFs*nDOFs);
 
-  //Vandermonde3D_Pyramid(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
-  //InverseMatrix(nDOFs, VInv);
   Vandermonde3D_Pyramid(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, matVandermondeInv);
   InverseMatrix(nDOFs, matVandermondeInv);
 
@@ -841,7 +819,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
         product V*Vinv. Note that the result is stored in row major order, because
         in this way the interpolation data for a point is contiguous in memory.  ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
@@ -858,9 +835,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  //MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDr, matVandermondeInv, drLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
@@ -913,11 +887,9 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
 
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  vector<su2double> V(nDOFs*nPoints);
   matVandermondeInv.resize(nDOFs*nDOFs);
 
-  //Vandermonde3D_Prism(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
-  //InverseMatrix(nDOFs, VInv);
   Vandermonde3D_Prism(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, matVandermondeInv);
   InverseMatrix(nDOFs, matVandermondeInv);
 
@@ -929,7 +901,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
         product V*Vinv. Note that the result is stored in row major order, because
         in this way the interpolation data for a point is contiguous in memory.  ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
@@ -946,9 +917,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  //MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDr, matVandermondeInv, drLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
@@ -999,11 +967,9 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
 
   /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
         compute the Vandermonde matrix in the points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+  vector<su2double> V(nDOFs*nPoints);
   matVandermondeInv.resize(nDOFs*nDOFs);
 
-  //Vandermonde3D_Hexahedron(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
-  //InverseMatrix(nDOFs, VInv);
   Vandermonde3D_Hexahedron(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, matVandermondeInv);
   InverseMatrix(nDOFs, matVandermondeInv);
 
@@ -1015,7 +981,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
         product V*Vinv. Note that the result is stored in row major order, because
         in this way the interpolation data for a point is contiguous in memory.  ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  //MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
@@ -1032,9 +997,6 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  //MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  //MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDr, matVandermondeInv, drLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
@@ -2189,7 +2151,7 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   subConn1ForPlotting = other.subConn1ForPlotting;
   subConn2ForPlotting = other.subConn2ForPlotting;
 
-  matVandermondeInv = other.matVandermondeInv;
+  matVandermondeInv   = other.matVandermondeInv;
   matBasisIntegration = other.matBasisIntegration;
   matDerBasisIntTrans = other.matDerBasisIntTrans;
   matDerBasisSolDOFs  = other.matDerBasisSolDOFs;
