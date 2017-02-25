@@ -39,7 +39,8 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
-  
+
+  nPrimVar = 2;
 }
 
 CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
@@ -52,6 +53,7 @@ CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
   lowerlimit    = NULL;
   upperlimit    = NULL;
   
+  nPrimVar = 2;
 }
 
 CTurbSolver::~CTurbSolver(void) {
