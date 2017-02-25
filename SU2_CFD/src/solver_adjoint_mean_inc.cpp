@@ -2814,7 +2814,7 @@ void CAdjIncEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **so
   
   int rank, jProcessor;
   MPI_Status send_stat[1], recv_stat[1];
-  MPI_Request send_req[1], recv_req[1];
+  SU2_MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
@@ -3062,7 +3062,7 @@ void CAdjIncEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **so
   int rank, jProcessor;
   MPI_Status status;
   //MPI_Status send_stat[1], recv_stat[1];
-  //MPI_Request send_req[1], recv_req[1];
+  //SU2_MPI_Request send_req[1], recv_req[1];
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   
   bool compute;
