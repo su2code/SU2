@@ -113,7 +113,9 @@ protected:
   **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
   
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
-  
+
+  su2double ***SlidingState; /*!< \brief Sliding State variables. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -8227,6 +8229,23 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+
 };
 
 /*!

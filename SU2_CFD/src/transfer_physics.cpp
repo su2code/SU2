@@ -363,6 +363,7 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   unsigned short iVar;
   su2double nVar = donor_solution->GetnPrimVar();
   bool turbulent = nVar == 2 ;
+
   /*--- Retrieve solution and set it as the donor variable ---*/
   if (turbulent){
     Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);

@@ -1890,6 +1890,10 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
+inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
+
+inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }
+
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetSolution(0, nu_tilde_Inf);
