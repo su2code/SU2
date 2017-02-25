@@ -621,7 +621,6 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
-  unsigned short Kind_SU2 = config->GetKind_SU2();
 
   MaxDistance = -1E22; MinDistance = 1E22;
 
@@ -659,9 +658,9 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   /*--- Create and initialize to zero some buffers to hold the coordinates
    of the boundary nodes that are communicated from each partition (all-to-all). ---*/
 
-  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_SolidWall*nDim];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_SolidWall*nDim];
   unsigned long nBuffer = MaxLocalVertex_SolidWall*nDim;
+  su2double *Buffer_Send_Coord    = new su2double [nBuffer];
+  su2double *Buffer_Receive_Coord = new su2double [nProcessor*nBuffer];
 
   for (iVertex = 0; iVertex < MaxLocalVertex_SolidWall; iVertex++)
     for (iDim = 0; iDim < nDim; iDim++)
