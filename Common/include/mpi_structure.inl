@@ -39,22 +39,42 @@ inline void CMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
 }
 
+inline MPI_Request* CMPIWrapper::convertRequest(SU2_MPI_Request* request) {
+#ifdef CODI_REVERSE_TYPE
+  return &request->request;
+#else
+  return request;
+#endif
+}
+
+inline void CMPIWrapper::Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count) {
+  MPI_Get_count(status, datatype, count);
+}
+
 inline void CMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
-                               int dest, int tag, MPI_Comm comm, MPI_Request *request) {
-  MPI_Isend(buf,count,datatype,dest,tag,comm,request);
+                               int dest, int tag, MPI_Comm comm, SU2_MPI_Request *request) {
+  MPI_Isend(buf,count,datatype,dest,tag,comm,convertRequest(request));
 }
 
 inline void CMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
-                               int dest, int tag, MPI_Comm comm, MPI_Request *request) {
-  MPI_Irecv(buf,count,datatype,dest,tag,comm,request);
+                               int dest, int tag, MPI_Comm comm, SU2_MPI_Request *request) {
+  MPI_Irecv(buf,count,datatype,dest,tag,comm,convertRequest(request));
 }
 
-inline void CMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
+inline void CMPIWrapper::Wait(SU2_MPI_Request *request, MPI_Status *status) {
+#ifdef CODI_REVERSE_TYPE
+  AMPI_Wait(request,status);
+#else
   MPI_Wait(request,status);
+#endif
 }
 
-inline void CMPIWrapper::Waitall(int nrequests, MPI_Request *request, MPI_Status *status) {
+inline void CMPIWrapper::Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status) {
+#ifdef CODI_REVERSE_TYPE
+  AMPI_Waitall(nrequests,request,status);
+#else
   MPI_Waitall(nrequests,request,status);
+#endif
 }
 
 inline void CMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
@@ -110,9 +130,13 @@ inline void CMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendt
   MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
 }
 
-inline void CMPIWrapper::Waitany(int nrequests, MPI_Request *request,
+inline void CMPIWrapper::Waitany(int nrequests, SU2_MPI_Request *request,
                                  int *index, MPI_Status *status) {
+#ifdef CODI_REVERSE_TYPE
+  AMPI_Waitany(nrequests, request, index, status);
+#else
   MPI_Waitany(nrequests, request, index, status);
+#endif
 }
   
 #if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
@@ -147,41 +171,79 @@ inline void CAuxMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype se
 
 #endif
 #ifdef CODI_REVERSE_TYPE
+
+
 inline void CAdjointMPIWrapper::Init(int *argc, char ***argv) {
   AMPI_Init(argc,argv);
 //  buff = new char[1000000];
 //  MPI_Buffer_attach(buff, 1000000);
+
+  MediTool::init();
+  AMPI_ADOUBLE = new AMPI_ADOUBLE_TYPE();
 }
 
-inline void CAdjointMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request) {
-  if (datatype != MPI_DOUBLE) {
-    MPI_Isend(buf,count,datatype,dest,tag,comm,request);
+inline AMPI_Comm CAdjointMPIWrapper::convertComm(MPI_Comm comm) {
+  return AMPI_COMM_WORLD;
+}
+
+inline AMPI_Status* CAdjointMPIWrapper::convertStatus(MPI_Status* status) {
+  return status;
+}
+
+inline AMPI_Op CAdjointMPIWrapper::convertOp(MPI_Op op) {
+  if(MPI_SUM == op) {
+    return MediTool::OP_SUM;
+  } else if(MPI_PROD == op) {
+    return MediTool::OP_PROD;
+  } else if(MPI_MIN == op) {
+    return MediTool::OP_MIN;
+  } else if(MPI_MAX == op) {
+    return MediTool::OP_MAX;
   } else {
-    AMPI_Isend(buf,count,datatype,dest,tag,comm,request);
+    std::cerr << "Implement conversion." << std::endl;
+    exit(-1);
+    return MediTool::OP_SUM;
   }
 }
 
-inline void CAdjointMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request) {
+inline void CAdjointMPIWrapper::Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count) {
   if (datatype != MPI_DOUBLE) {
-    MPI_Irecv(buf,count,datatype,dest,tag,comm,request);
+    MPI_Get_count(status, datatype, count);
   } else {
-    AMPI_Irecv(buf,count,datatype,dest,tag,comm,request);
+    AMPI_Get_count(status, AMPI_ADOUBLE, count);
   }
 }
 
-inline void CAdjointMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
-  AMPI_Wait(request,status);
+
+inline void CAdjointMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, SU2_MPI_Request *request) {
+  if (datatype != MPI_DOUBLE) {
+    MPI_Isend(buf,count,datatype,dest,tag,comm,convertRequest(request));
+  } else {
+    AMPI_Isend((su2double*)buf,count,AMPI_ADOUBLE,dest,tag,convertComm(comm),request);
+  }
 }
 
-inline void CAdjointMPIWrapper::Waitall(int nrequests, MPI_Request *request, MPI_Status *status) {
-  AMPI_Waitall(nrequests,request,status);
+inline void CAdjointMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, SU2_MPI_Request *request) {
+  if (datatype != MPI_DOUBLE) {
+    MPI_Irecv(buf,count,datatype,dest,tag,comm,convertRequest(request));
+  } else {
+    AMPI_Irecv((su2double*)buf,count,AMPI_ADOUBLE,dest,tag,convertComm(comm),request);
+  }
+}
+
+inline void CAdjointMPIWrapper::Wait(SU2_MPI_Request *request, MPI_Status *status) {
+  AMPI_Wait(request,convertStatus(status));
+}
+
+inline void CAdjointMPIWrapper::Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status) {
+  AMPI_Waitall(nrequests,request,convertStatus(status));
 }
 
 inline void CAdjointMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm) {
   if (datatype != MPI_DOUBLE) {
     MPI_Send(buf,count,datatype,dest,tag,comm);
   } else {
-    AMPI_Send(buf,count,datatype,dest,tag,comm);
+    AMPI_Send((su2double*)buf,count,AMPI_ADOUBLE,dest,tag,convertComm(comm));
   }
 }
 
@@ -189,7 +251,7 @@ inline void CAdjointMPIWrapper::Recv(void *buf, int count, MPI_Datatype datatype
   if (datatype != MPI_DOUBLE) {
     MPI_Recv(buf,count,datatype,dest,tag,comm,status);
   } else {
-    AMPI_Recv(buf,count,datatype,dest,tag,comm,status);
+    AMPI_Recv((su2double*)buf,count,AMPI_ADOUBLE,dest,tag,convertComm(comm),convertStatus(status));
   }
 }
 
@@ -197,7 +259,7 @@ inline void CAdjointMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatyp
   if (datatype != MPI_DOUBLE) {
     MPI_Bcast(buf,count,datatype,root,comm);
   } else {
-    AMPI_Bcast(buf,count,datatype,root,comm);
+    AMPI_Bcast((su2double*)buf,count,AMPI_ADOUBLE,root,convertComm(comm));
   }
 }
 
@@ -205,7 +267,7 @@ inline void CAdjointMPIWrapper::Bsend(void *buf, int count, MPI_Datatype datatyp
   if (datatype != MPI_DOUBLE) {
     MPI_Bsend(buf,count,datatype,dest,tag,comm);
   } else {
-    AMPI_Bsend(buf,count,datatype,dest,tag,comm);
+    AMPI_Bsend((su2double*)buf,count,AMPI_ADOUBLE,dest,tag,convertComm(comm));
   }
 }
 
@@ -213,7 +275,7 @@ inline void CAdjointMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count, 
   if (datatype != MPI_DOUBLE) {
     MPI_Reduce(sendbuf, recvbuf,count,datatype,op,root,comm);
   } else {
-    AMPI_Reduce(sendbuf,recvbuf,count,datatype,op,root,comm);
+    AMPI_Reduce((su2double*)sendbuf,(su2double*)recvbuf,count,AMPI_ADOUBLE,convertOp(op),root,convertComm(comm));
   }
 }
 
@@ -221,7 +283,7 @@ inline void CAdjointMPIWrapper::Allreduce(void *sendbuf, void *recvbuf, int coun
   if (datatype != MPI_DOUBLE) {
     MPI_Allreduce(sendbuf,recvbuf,count,datatype,op,comm);
   } else {
-    AMPI_Allreduce(sendbuf,recvbuf,count,datatype,op,comm);
+    AMPI_Allreduce((su2double*)sendbuf,(su2double*)recvbuf,count,AMPI_ADOUBLE,convertOp(op),convertComm(comm));
   }
 }
 
@@ -229,7 +291,7 @@ inline void CAdjointMPIWrapper::Gather(void *sendbuf, int sendcnt,MPI_Datatype s
   if (sendtype != MPI_DOUBLE) {
     MPI_Gather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,root,comm);
   } else {
-    AMPI_Gather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,root,comm);
+    AMPI_Gather((su2double*)sendbuf,sendcnt,AMPI_ADOUBLE,(su2double*)recvbuf,recvcnt,AMPI_ADOUBLE,root,convertComm(comm));
   }
 }
 
@@ -237,7 +299,7 @@ inline void CAdjointMPIWrapper::Scatter(void *sendbuf, int sendcnt,MPI_Datatype 
   if (sendtype != MPI_DOUBLE) {
     MPI_Scatter(sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm);
   }else {
-    AMPI_Scatter(sendbuf, sendcnt, sendtype, recvbuf, recvcnt, recvtype, root, comm);
+    AMPI_Scatter((su2double*)sendbuf, sendcnt, AMPI_ADOUBLE, (su2double*)recvbuf, recvcnt, AMPI_ADOUBLE, root, convertComm(comm));
   }
 }
 
@@ -245,10 +307,7 @@ inline void CAdjointMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Dataty
   if (sendtype != MPI_DOUBLE) {
     MPI_Allgather(sendbuf,sendcnt,sendtype, recvbuf, recvcnt, recvtype, comm);
   } else {
-    int size;
-    MPI_Comm_size(comm,&size);
-    AMPI_Gather(sendbuf,sendcnt,sendtype,recvbuf,recvcnt,recvtype,0,comm);
-    AMPI_Bcast(recvbuf,recvcnt*size,recvtype,0,comm);
+    AMPI_Allgather((su2double*)sendbuf,sendcnt,AMPI_ADOUBLE, (su2double*)recvbuf, recvcnt, AMPI_ADOUBLE, convertComm(comm));
   }
 }
 
@@ -256,13 +315,14 @@ inline void CAdjointMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatyp
   if(sendtype != MPI_DOUBLE) {
     MPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
   } else {
-    AMPI_Sendrecv(sendbuf,sendcnt,sendtype,dest,sendtag,recvbuf,recvcnt,recvtype,source,recvtag,comm,status);
+    AMPI_Sendrecv((su2double*)sendbuf,sendcnt,AMPI_ADOUBLE,dest,sendtag,(su2double*)recvbuf,recvcnt,AMPI_ADOUBLE,source,recvtag,convertComm(comm),convertStatus(status));
   }
 }
 
-inline void CAdjointMPIWrapper::Waitany(int nrequests, MPI_Request *request,
+inline void CAdjointMPIWrapper::Waitany(int nrequests, SU2_MPI_Request *request,
                                         int *index, MPI_Status *status) {
-  AMPI_Waitany(nrequests, request, index, status);
+
+  AMPI_Waitany(nrequests, request, index, convertStatus(status));
 }
 #endif
 #endif

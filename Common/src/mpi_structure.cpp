@@ -514,8 +514,11 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
 }
 #endif
 #ifdef CODI_REVERSE_TYPE
-#define AD_TYPE su2double
-#include "externals/ampi_interface_realreverse_old.cpp"
-#undef AD_TYPE
+AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
+#include <medi/medi.cpp>
+
+void MPIErrorHandler::convertToException( MPI_Comm *comm, int *err, ... ) {
+  throw Exception(std::string("MPI Error."));
+}
 #endif
 #endif

@@ -53,12 +53,29 @@ typedef MPI_Comm SU2_Comm;
     defined CODI_FORWARD_TYPE
 class CAuxMPIWrapper;
 typedef CAuxMPIWrapper SU2_MPI;
+typedef MPI_Request SU2_MPI_Request;
 #elif defined CODI_REVERSE_TYPE
+
+#include <medi/medi.hpp>
+#include <medi/codiMediPackTypes.hpp>
+
+using namespace medi;
+
 class CAdjointMPIWrapper;
 typedef CAdjointMPIWrapper SU2_MPI;
+typedef AMPI_Request SU2_MPI_Request;
+
+#if CODI_PRIMAL_INDEX_TAPE
+typedef CoDiPackToolPrimalRestore<su2double> MediTool;
+#else
+typedef CoDiPackTool<su2double> MediTool;
+#endif
+typedef medi::MpiTypeDefault<MediTool> AMPI_ADOUBLE_TYPE;
+extern AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
 #else
 class CMPIWrapper;
 typedef CMPIWrapper SU2_MPI;
+typedef MPI_Request SU2_MPI_Request;
 #endif
 
 /*!
@@ -73,17 +90,25 @@ class CMPIWrapper {
 public:
   static void Init(int *argc, char***argv);
 
+#ifdef CODI_REVERSE_TYPE
+  static inline MPI_Request* convertRequest(SU2_MPI_Request* request);
+#else
+  static inline MPI_Request* convertRequest(SU2_MPI_Request* request);
+#endif
+
+  static void Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count);
+
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
-                    int tag, MPI_Comm comm, MPI_Request* request);
+                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
 
   static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
-                    int tag, MPI_Comm comm, MPI_Request* request);
+                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
 
-  static void Wait(MPI_Request *request, MPI_Status *status);
+  static void Wait(SU2_MPI_Request *request, MPI_Status *status);
 
-  static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
+  static void Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status);
 
-  static void Waitany(int nrequests, MPI_Request *request,
+  static void Waitany(int nrequests, SU2_MPI_Request *request,
                       int *index, MPI_Status *status);
   
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
@@ -122,6 +147,11 @@ protected:
   static char* buff;
 
 };
+
+#if defined COMPLEX_TYPE || \
+    defined ADOLC_FORWARD_TYPE || \
+    defined CODI_FORWARD_TYPE
+
 /*!
  * \class CAuxMPIWrapper
  * \brief Class for defining the MPI wrapper routines for the simplest non-primitive data where a
@@ -129,23 +159,20 @@ protected:
  * \author T. Albring
  * \version 5.0.0 "Raven"
  */
-#if defined COMPLEX_TYPE || \
-    defined ADOLC_FORWARD_TYPE || \
-    defined CODI_FORWARD_TYPE
-
 class CAuxMPIWrapper : public CMPIWrapper{
 public:
+
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
-                    int tag, MPI_Comm comm, MPI_Request* request);
+                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
 
   static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
-                    int tag, MPI_Comm comm, MPI_Request* request);
+                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
 
-  static void Wait(MPI_Request *request, MPI_Status *status);
+  static void Wait(SU2_MPI_Request *request, MPI_Status *status);
 
-  static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
+  static void Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status);
 
-  static void Waitany(int nrequests, MPI_Request *request,
+  static void Waitany(int nrequests, SU2_MPI_Request *request,
                       int *index, MPI_Status *status);
 
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
@@ -189,7 +216,7 @@ private:
 
   struct CommInfo{
     CommType Type;
-    MPI_Request* RequestAux;
+    SU2_MPI_Request* RequestAux;
     double* ValueBuffer;
     double* AuxBuffer;
     su2double* su2doubleBuffer;
@@ -201,16 +228,15 @@ private:
     int rank;
   };
 
-  static std::map<MPI_Request*, CommInfo>::iterator CommInfoIterator;
+  static std::map<SU2_MPI_Request*, CommInfo>::iterator CommInfoIterator;
 
-  static std::map<MPI_Request*, CommInfo> CommInfoMap;
+  static std::map<SU2_MPI_Request*, CommInfo> CommInfoMap;
 
-  static void FinalizeCommunication(std::map<MPI_Request*, CommInfo>::iterator &CommInfo);
+  static void FinalizeCommunication(std::map<SU2_MPI_Request*, CommInfo>::iterator &CommInfo);
 
 };
-#endif
-#ifdef CODI_REVERSE_TYPE
-#include "ampi_tape.hpp"
+
+#elif defined CODI_REVERSE_TYPE
 
 /*!
  * \class CAdjointMPIWrapper
@@ -223,17 +249,25 @@ class CAdjointMPIWrapper: public CMPIWrapper {
 public:
   static void Init(int *argc, char***argv);
 
+  static AMPI_Comm convertComm(MPI_Comm comm);
+
+  static AMPI_Status* convertStatus(MPI_Status* status);
+
+  static AMPI_Op convertOp(MPI_Op op);
+
+  static void Get_count(const MPI_Status *status, MPI_Datatype datatype, int *count);
+
   static void Isend(void *buf, int count, MPI_Datatype datatype, int dest,
-                    int tag, MPI_Comm comm, MPI_Request* request);
+                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
 
   static void Irecv(void *buf, int count, MPI_Datatype datatype, int source,
-                    int tag, MPI_Comm comm, MPI_Request* request);
+                    int tag, MPI_Comm comm, SU2_MPI_Request* request);
 
-  static void Wait(MPI_Request *request, MPI_Status *status);
+  static void Wait(SU2_MPI_Request *request, MPI_Status *status);
 
-  static void Waitall(int nrequests, MPI_Request *request, MPI_Status *status);
+  static void Waitall(int nrequests, SU2_MPI_Request *request, MPI_Status *status);
 
-  static void Waitany(int nrequests, MPI_Request *request,
+  static void Waitany(int nrequests, SU2_MPI_Request *request,
                       int *index, MPI_Status *status);
 
   static void Send(void *buf, int count, MPI_Datatype datatype, int dest,
