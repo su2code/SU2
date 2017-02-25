@@ -1301,6 +1301,30 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
 
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+
+  unsigned long iMarker,  nMarker = config->GetnMarker_Fluid_InterfaceBound();
+
+  SlidingState = new su2double** [nMarker];
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    SlidingState[iMarker] = NULL;
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
+        SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+        for (iVar = 0; iVar < nVar; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = -1;
+      }
+    }
+    else
+      SlidingState[iMarker] = NULL;
+  }
+
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
@@ -2326,8 +2350,7 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
           /*--- Set the turbulent variable states ---*/
           //TODO Get from SlidingState the turbulent Solution for j
             Solution_i[0] = node[iPoint]->GetSolution(0);
-            Solution_j[0] = node[iPoint]->GetSolution(0);
-//            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
 
           conv_numerics->SetTurbVar(Solution_i, Solution_j);
           /*--- Set the normal vector ---*/
