@@ -11642,7 +11642,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
+  SU2_MPI_Request *send_req, *recv_req;
   MPI_Status status;
   int ind;
 #endif
@@ -12053,8 +12053,8 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI_Request[2*nSends];
+  recv_req = new SU2_MPI_Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -12240,7 +12240,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
+  SU2_MPI_Request *send_req, *recv_req;
   MPI_Status status;
   int ind;
 #endif
@@ -12654,8 +12654,8 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI_Request[2*nSends];
+  recv_req = new SU2_MPI_Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -12825,7 +12825,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
+  SU2_MPI_Request *send_req, *recv_req;
   MPI_Status status;
   int ind;
 #endif
@@ -13075,8 +13075,8 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the global IDs. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI_Request[2*nSends];
+  recv_req = new SU2_MPI_Request[2*nRecvs];
   
   unsigned long iMessage = 0;
   for (int ii=0; ii<size; ii++) {
@@ -13237,7 +13237,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Request *send_req, *recv_req;
+  SU2_MPI_Request *send_req, *recv_req;
   MPI_Status status;
   int ind;
 #endif
@@ -13616,8 +13616,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nSends];
-  recv_req = new MPI_Request[nRecvs];
+  send_req = new SU2_MPI_Request[nSends];
+  recv_req = new SU2_MPI_Request[nRecvs];
   
   /*--- Launch the non-blocking recv's for the global IDs. ---*/
   
@@ -14102,8 +14102,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[2*nSends];
-  recv_req = new MPI_Request[2*nRecvs];
+  send_req = new SU2_MPI_Request[2*nSends];
+  recv_req = new SU2_MPI_Request[2*nRecvs];
   
   /*--- Launch the non-blocking recv's for the global ID. ---*/
   
@@ -14426,8 +14426,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nSends];
-  recv_req = new MPI_Request[nRecvs];
+  send_req = new SU2_MPI_Request[nSends];
+  recv_req = new SU2_MPI_Request[nRecvs];
   
   /*--- Launch the non-blocking recv's for the connectivity. ---*/
   
@@ -14503,8 +14503,8 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   /*--- We need double the number of messages to send both the conn.
    and the flags for the halo cells. ---*/
   
-  send_req = new MPI_Request[nRecvs];
-  recv_req = new MPI_Request[nSends];
+  send_req = new SU2_MPI_Request[nRecvs];
+  recv_req = new SU2_MPI_Request[nSends];
   
   /*--- Launch the non-blocking sends of the connectivity. ---*/
   
