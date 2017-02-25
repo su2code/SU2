@@ -77,7 +77,7 @@ namespace AD {
         index_out = localOutputValues[iVarOut]->getGradientData();
 
         globalTape.setGradient(index_out, 1.0);
-        globalTape.evaluate(EndPosition, StartPosition);
+        globalTape.evaluatePreacc(EndPosition, StartPosition);
 
         for (iVarIn= 0; iVarIn < nVarIn; iVarIn++) {
           index_in =  localInputValues[iVarIn];
