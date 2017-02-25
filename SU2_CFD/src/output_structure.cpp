@@ -10163,7 +10163,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT)) {
+    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
 
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
@@ -10175,18 +10175,101 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
 
       SortOutputData_Surface(config[iZone], geometry[iZone][MESH_0]);
 
-      /*--- Write Tecplot ASCII files for the volume and/or surface solutions. ---*/
+      /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
       if (Wrt_Vol) {
-        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-        SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                 solver_container[iZone][MESH_0], iZone, val_nZone, false);
+
+        switch (FileFormat) {
+
+          case TECPLOT:
+
+            /*--- Write a Tecplot ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            break;
+
+          case FIELDVIEW:
+
+            /*--- We do not yet have a version of FieldView ASCII for new parallel output. ---*/
+
+            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
+
+            break;
+
+          case TECPLOT_BINARY:
+
+            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+
+            if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            break;
+
+          case FIELDVIEW_BINARY:
+
+            /*--- FieldView binary files not yet available for parallel output. ---*/
+
+            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
+            break;
+
+          case PARAVIEW:
+
+            /*--- Write a Paraview ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            break;
+
+          default:
+            break;
+        }
+
       }
 
       if (Wrt_Srf) {
-        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
-        SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                 solver_container[iZone][MESH_0], iZone, val_nZone, true);
+
+        switch (FileFormat) {
+
+          case TECPLOT:
+
+            /*--- Write a Tecplot ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            break;
+
+          case TECPLOT_BINARY:
+
+            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+
+            if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            break;
+
+          case PARAVIEW:
+
+            /*--- Write a Paraview ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                        solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            break;
+            
+          default:
+            break;
+        }
+        
       }
 
       /*--- Clean up the connectivity data that was allocated for output. ---*/
