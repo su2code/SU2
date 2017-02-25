@@ -39,7 +39,9 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
-
+  nVertex       = NULL;
+  nMarker       = 0;
+  /*--- Initialize the Primitive Variables ---*/
   nPrimVar = 2;
 }
 
@@ -52,8 +54,9 @@ CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
+  nVertex       = NULL;
+  nMarker       = 0;
   
-  nPrimVar = 2;
 }
 
 CTurbSolver::~CTurbSolver(void) {
@@ -1303,18 +1306,15 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
-  unsigned long iMarker,  nMarker = config->GetnMarker_Fluid_InterfaceBound();
+  unsigned long iMarker,  nMarker = config->GetnMarker_All();
 
+  SlidingState = NULL;
   SlidingState = new su2double** [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
     SlidingState[iMarker] = NULL;
-
     if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
-
       SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
-
       for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++) {
         SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
         for (iVar = 0; iVar < nVar; iVar++)
@@ -1329,6 +1329,20 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 CTurbSASolver::~CTurbSASolver(void) {
   
+  unsigned long iMarker, iVertex;
+
+  if ( SlidingState != NULL ) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if ( SlidingState[iMarker] != NULL ) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          delete [] SlidingState[iMarker][iVertex];
+
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+  }
+
 }
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {

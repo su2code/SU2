@@ -8107,7 +8107,8 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  
+  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
+  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
 public:
   
   /*!
@@ -8122,6 +8123,7 @@ public:
   
   /*!
    * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CConfig *config);
   
