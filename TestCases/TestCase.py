@@ -52,6 +52,7 @@ class TestCase:
 
         # The test condition. These must be set after initialization
         self.test_iter = 1
+        self.ntest_vals = 4
         self.test_vals = []  
 
         # These can be optionally varied 
@@ -122,7 +123,7 @@ class TestCase:
                         iter_number = int(raw_data[0])
                         if self.unsteady:
                             iter_number = int(raw_data[1])
-                        data        = raw_data[len(raw_data)-4:]    # Take the last 4 columns for comparison
+                        data        = raw_data[len(raw_data)-self.ntest_vals:]    # Take the last n columns for comparison, the default is 4
                     except ValueError:
                         continue
                     except IndexError:
