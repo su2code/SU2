@@ -4850,12 +4850,28 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool gravity        = (config->GetGravityForce() == YES);
   bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool windgust       = config->GetWind_Gust();
-  
+  bool body_force = config->GetBody_Force();
+
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-  
+
+  if (body_force) {
+
+    su2double *body_force_vector = config->GetBody_Force_Vector();
+
+    /*--- Source term integration goes here... dummy output for now. ---*/
+
+    cout << " Applying a body force of (";
+    for( unsigned short iDim = 0; iDim < nDim; iDim++) {
+      cout << body_force_vector[iDim];
+      if (iDim < nDim-1) cout << ", ";
+    }
+    cout << ")." << endl;
+
+  }
+
   if (rotating_frame) {
-    
+
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
