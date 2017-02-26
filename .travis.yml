@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - economon@stanford.edu
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_mpiio_restarts
+        - develop
 
 env:
     global:
