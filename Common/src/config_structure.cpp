@@ -4350,6 +4350,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
               break;
           }
           break;
+        case CLASSICAL_RK4_EXPLICIT:
+          cout << "Classical RK4 explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << 4 << endl;
+          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+          break;
       }
     }
 
