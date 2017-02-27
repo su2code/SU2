@@ -12900,7 +12900,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = config->GetKind_Turb_Model() == SA;
+  bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val, AoASens;
