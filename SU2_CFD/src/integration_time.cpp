@@ -147,8 +147,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     
     switch (config[iZone]->GetKind_TimeIntScheme()) {
       case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
+      case CLASSICAL_RK4_EXPLICIT: iRKLimit = 4; break;
       case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
-    
+
     /*--- Time and space integration ---*/
     
     for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
@@ -162,7 +163,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
         /*--- Set the old solution ---*/
         
         solver_container[iZone][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iMesh]);
-        
+
+        if (config[iZone]->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT)
+          solver_container[iZone][iMesh][SolContainer_Position]->Set_NewSolution(geometry[iZone][iMesh]);
+
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
         
         solver_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, Iteration);
@@ -229,14 +233,17 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
       
       switch (config[iZone]->GetKind_TimeIntScheme()) {
         case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
+        case CLASSICAL_RK4_EXPLICIT: iRKLimit = 4; break;
         case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
-      
+
       for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
         
         solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iRKStep, RunTime_EqSystem, false);
         
         if (iRKStep == 0) {
           solver_container[iZone][iMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][iMesh]);
+          if (config[iZone]->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT)
+            solver_container[iZone][iMesh][SolContainer_Position]->Set_NewSolution(geometry[iZone][iMesh]);
           solver_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, Iteration);
         }
         
