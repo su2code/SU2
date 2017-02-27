@@ -1815,7 +1815,8 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, strin
   unsigned short iVar;
   long index, iPoint_Local = 0; unsigned long iPoint_Global = 0;
   int counter = 0;
-
+  config->fields.clear();
+  
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1903,6 +1904,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, stri
   strcpy(fname, val_filename.c_str());
   int nRestart_Vars = 4;
   Restart_Vars = new int[4];
+  config->fields.clear();
 
 #ifndef HAVE_MPI
 
