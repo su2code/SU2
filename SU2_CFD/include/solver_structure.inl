@@ -336,6 +336,10 @@ inline su2double CSolver::GetTotal_IDR() { return 0; }
 
 inline su2double CSolver::GetTotal_DC60() { return 0; }
 
+inline su2double CSolver::GetTotal_EllipticDiff() { return 0; }
+
+inline su2double CSolver::GetTotal_MaxSecCL() { return 0; }
+
 inline su2double CSolver::GetTotal_Custom() { return 0; }
 
 inline su2double CSolver::GetTotal_CMx() { return 0; }
@@ -453,6 +457,10 @@ inline void CSolver::SetTotal_IDC_Mach(su2double val_Total_IDC_Mach) { }
 inline void CSolver::SetTotal_IDR(su2double val_Total_IDR) { }
 
 inline void CSolver::SetTotal_DC60(su2double val_Total_DC60) { }
+
+inline void CSolver::SetTotal_EllipticDiff(su2double val_Total_EllipticDiff) { }
+
+inline void CSolver::SetTotal_MaxSecCL(su2double val_Total_MaxSecCL) { }
 
 inline void CSolver::SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { }
 
@@ -786,6 +794,8 @@ inline void CSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_
 inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
 inline void CSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+
+inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                      CConfig *config, unsigned short iMesh, bool Output) { }
@@ -1152,6 +1162,10 @@ inline su2double CEulerSolver::GetTotal_IDR() { return Total_IDR; }
 
 inline su2double CEulerSolver::GetTotal_DC60() { return Total_DC60; }
 
+inline su2double CEulerSolver::GetTotal_EllipticDiff() { return Total_EllipticDiff; }
+
+inline su2double CEulerSolver::GetTotal_MaxSecCL() { return Total_MaxSecCL; }
+
 inline su2double CEulerSolver::GetTotal_Custom() { return Total_Custom; }
 
 inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
@@ -1247,6 +1261,10 @@ inline void CEulerSolver::SetTotal_IDC_Mach(su2double val_Total_IDC_Mach) { Tota
 inline void CEulerSolver::SetTotal_IDR(su2double val_Total_IDR) { Total_IDR = val_Total_IDR; }
 
 inline void CEulerSolver::SetTotal_DC60(su2double val_Total_DC60) { Total_DC60 = val_Total_DC60; }
+
+inline void CEulerSolver::SetTotal_EllipticDiff(su2double val_Total_EllipticDiff) { Total_EllipticDiff = val_Total_EllipticDiff; }
+
+inline void CEulerSolver::SetTotal_MaxSecCL(su2double val_Total_MaxSecCL) { Total_MaxSecCL = val_Total_MaxSecCL; }
 
 inline void CEulerSolver::SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff) { Total_Custom = val_Total_Custom*val_coeff; }
 

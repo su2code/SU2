@@ -2355,6 +2355,17 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
               exit(EXIT_FAILURE);
             }
             break;
+          case ELLIPTIC_SPANLOAD :
+            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
+              exit(EXIT_FAILURE);
+            }
+            break;
+          case MAX_SECTIONAL_CL :
+            if (rank == MASTER_NODE) {cout << "This functional is not possible in with the cont. adjoint!!" << endl;
+              exit(EXIT_FAILURE);
+            }
+            break;
+
           default :
             break;
         }

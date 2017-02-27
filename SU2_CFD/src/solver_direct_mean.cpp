@@ -7447,6 +7447,190 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
   
 }
 
+void CEulerSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) {
+  
+  short iSection, nSection;
+  unsigned long iVertex, iPoint, Trailing_Point;
+  su2double *Plane_P0, *Plane_Normal, *CPressure, Max_SecCL = 0.0,
+  Force[3], ForceInviscid[3], RefDensity,
+  RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel,
+  Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin,
+  RefLengthMoment, Alpha, Beta, CL_Inv, Xcoord_LeadingEdge = 0.0,
+  Ycoord_LeadingEdge = 0.0, Zcoord_LeadingEdge = 0.0,
+  TrailingEdge, MaxDistance, Distance, Chord, Aux;
+  
+  su2double B, Y, C_L, C_L0, Elliptic_Spanload, Spanload, Diff_Spanload = 0.0;
+  
+  vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+  CPressure_Airfoil;
+  string Marker_Tag, Slice_Filename, Slice_Ext;
+  ofstream Cp_File;
+  unsigned short iDim;
+  
+  bool grid_movement = config->GetGrid_Movement();
+  bool Evaluate_SpanLoad = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
+  
+  if (Evaluate_SpanLoad) {
+    
+    Plane_P0 = new su2double[3];
+    Plane_Normal = new su2double[3];
+    CPressure = new su2double[geometry->GetnPoint()];
+    
+    /*--- Compute some reference quantities and necessary values ---*/
+    
+    RefDensity = GetDensity_Inf();
+    RefPressure = GetPressure_Inf();
+    RefAreaCoeff = config->GetRefAreaCoeff();
+    Velocity_Inf = GetVelocity_Inf();
+    Gamma = config->GetGamma();
+    Origin = config->GetRefOriginMoment(0);
+    RefLengthMoment = config->GetRefLengthMoment();
+    Alpha = config->GetAoA() * PI_NUMBER / 180.0;
+    Beta = config->GetAoS() * PI_NUMBER / 180.0;
+    
+    if (grid_movement) {
+      Gas_Constant = config->GetGas_ConstantND();
+      Mach2Vel = sqrt(
+                      Gamma * Gas_Constant * config->GetTemperature_FreeStreamND());
+      Mach_Motion = config->GetMach_Motion();
+      RefVel2 = (Mach_Motion * Mach2Vel) * (Mach_Motion * Mach2Vel);
+    } else {
+      RefVel2 = 0.0;
+      for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+        RefVel2 += Velocity_Inf[iDim] * Velocity_Inf[iDim];
+    }
+    factor = 1.0 / (0.5 * RefDensity * RefAreaCoeff * RefVel2);
+    
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+    
+    if (geometry->GetnDim() == 3) {
+      
+      /*--- Copy the pressure to an auxiliar structure ---*/
+      
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        CPressure[iPoint] = (node[iPoint]->GetPressure()
+                             - RefPressure) * factor * RefAreaCoeff;
+      }
+      
+      nSection = config->GetnLocationStations();
+      
+      for (iSection = 0; iSection < nSection; iSection++) {
+        
+        /*--- Read the values from the config file ---*/
+        
+        Plane_Normal[0] = 0.0; Plane_P0[0] = 0.0;
+        Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
+        Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
+        
+        Plane_Normal[config->GetAxis_Stations()] = 1.0;
+        Plane_P0[config->GetAxis_Stations()] = config->GetLocationStations(iSection);
+        
+        
+        /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
+        
+        geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
+                                         1E6, CPressure, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+                                         CPressure_Airfoil, true, config);
+        
+        if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
+          cout << "Please check the config file, the section " << Plane_P0[config->GetAxis_Stations()]
+          << " has not been detected." << endl;
+        }
+        
+        /*--- Output the pressure on each section (tecplot format) ---*/
+        
+        if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
+          
+          /*--- Find leading and trailing edge ---*/
+          
+          Xcoord_LeadingEdge = 1E6; TrailingEdge = -1E6;
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            if (Xcoord_Airfoil[iVertex] < Xcoord_LeadingEdge) {
+              Xcoord_LeadingEdge = Xcoord_Airfoil[iVertex];
+              Ycoord_LeadingEdge = Ycoord_Airfoil[iVertex];
+              Zcoord_LeadingEdge = Zcoord_Airfoil[iVertex];
+            }
+            if (Xcoord_Airfoil[iVertex] > TrailingEdge) { TrailingEdge = Xcoord_Airfoil[iVertex]; }
+          }
+          
+          Chord = (TrailingEdge-Xcoord_LeadingEdge);
+          
+          /*--- Compute load distribution ---*/
+          
+          ForceInviscid[0] = 0.0; ForceInviscid[1] = 0.0; ForceInviscid[2] = 0.0;
+          
+          for (iVertex = 0; iVertex < Xcoord_Airfoil.size() - 1; iVertex++) {
+            
+            NDPressure = 0.5 * (CPressure_Airfoil[iVertex] + CPressure_Airfoil[iVertex + 1]);
+            
+            Force[0] = -(Zcoord_Airfoil[iVertex + 1] - Zcoord_Airfoil[iVertex]) * NDPressure;
+            Force[1] = 0.0;
+            Force[2] = (Xcoord_Airfoil[iVertex + 1] - Xcoord_Airfoil[iVertex]) * NDPressure;
+            
+            ForceInviscid[0] += Force[0];
+            ForceInviscid[1] += Force[1];
+            ForceInviscid[2] += Force[2];
+            
+          }
+          
+          /*--- Compute local chord, for the nondimensionalization  ---*/
+          
+          MaxDistance = 0.0; Trailing_Point = 0;
+          
+          for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+            
+            Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                            pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                            pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+            
+            if (MaxDistance < Distance) { MaxDistance = Distance; }
+            
+          }
+          
+          Chord = MaxDistance;
+          
+          CL_Inv = fabs( -ForceInviscid[0] * sin(Alpha) + ForceInviscid[2] * cos(Alpha))/ Chord;
+          
+          /*--- Compute sectional lift at the root ---*/
+          
+          B                  = 2.0*config->GetSemiSpan();
+          RefAreaCoeff       = config->GetRefAreaCoeff();
+          C_L                = GetTotal_CL();
+          C_L0               = 8.0*C_L*RefAreaCoeff/(B*PI_NUMBER);
+          Y                  = Ycoord_Airfoil[0];
+          Aux                = Y/(0.5*B);
+          Elliptic_Spanload  = (C_L0 / RefLengthMoment) * sqrt(fabs(1.0-Aux*Aux));
+          Spanload     = Chord*CL_Inv / RefLengthMoment;
+          Diff_Spanload     += (Elliptic_Spanload-Spanload)*(Elliptic_Spanload-Spanload);
+          
+          /*--- Compute the max sectional CL ---*/
+          
+          Max_SecCL = max(CL_Inv, Max_SecCL);
+          
+        }
+        
+      }
+      
+      Diff_Spanload = sqrt(Diff_Spanload);
+      
+    }
+    
+    /*--- Delete dynamically allocated memory ---*/
+    
+    delete[] Plane_P0;
+    delete[] Plane_Normal;
+    delete[] CPressure;
+    
+    SetTotal_EllipticDiff(Diff_Spanload);
+    SetTotal_MaxSecCL(Max_SecCL);
+
+  }
+  
+}
+
 void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
   
   unsigned short iMarker, iDim;
@@ -10025,6 +10209,12 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
       break;
     case CIRCUMFERENTIAL_DISTORTION:
       Total_ComboObj+=Weight_ObjFunc*Total_CircumferentialDistortion;
+      break;
+    case ELLIPTIC_SPANLOAD:
+      Total_ComboObj+=Weight_ObjFunc*Total_EllipticDiff;
+      break;
+    case MAX_SECTIONAL_CL:
+      Total_ComboObj+=Weight_ObjFunc*Total_MaxSecCL;
       break;
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;

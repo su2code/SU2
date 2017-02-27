@@ -199,7 +199,7 @@ def get_headerMap():
                  "CFy"             : "FORCE_Y"                 ,
                  "CFz"             : "FORCE_Z"                 ,
                  "CL/CD"           : "EFFICIENCY"              ,
-                 "CEff"            : "EFFICIENCY"              ,
+                 "AoA"             : "AOA"                     ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
@@ -216,6 +216,8 @@ def get_headerMap():
                  "Radial_Distortion"           : "RADIAL_DISTORTION"              ,
                  "Circumferential_Distortion"  : "CIRCUMFERENTIAL_DISTORTION"     ,
                  "Linear_Solver_Iterations"    : "LINEAR_ITERATION"               ,
+                 "Diff_Elliptic"   : "ELLIPTIC_SPANLOAD"       ,
+                 "Max_SecCLift"    : "MAX_SECTIONAL_CL"        ,
                  "CFL_Number"      : "CFL_NUMBER"              ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CLift)"        : "D_LIFT"                  ,
@@ -250,7 +252,6 @@ optnames_aero = [ "LIFT"                    ,
                   "FORCE_Y"                 ,
                   "FORCE_Z"                 ,
                   "EFFICIENCY"              ,
-                  "FREE_SURFACE"            ,
                   "FIGURE_OF_MERIT"         ,
                   "TORQUE"                  ,
                   "THRUST"                  ,
@@ -267,8 +268,10 @@ optnames_aero = [ "LIFT"                    ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ,
                   "AERO_DRAG"               ,
-                  "RADIAL_DISTORTION"              ,
-                  "CIRCUMFERENTIAL_DISTORTION"              ,
+                  "RADIAL_DISTORTION"            ,
+                  "CIRCUMFERENTIAL_DISTORTION"   ,
+                  "ELLIPTIC_SPANLOAD"       ,
+                  "MAX_SECTIONAL_CL"        ,
                   "COMBO"]
 #: optnames_aero
 
@@ -460,10 +463,11 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"     : "chn"       ,
-                 "FREE_SURFACE"            : "fs"        ,
                  "AERO_DRAG"               : "acd"       ,
                  "RADIAL_DISTORTION"              : "rdis"       ,
-                 "CIRCUMFERENTIAL_DISTORTION"              : "cdis"       ,
+                 "CIRCUMFERENTIAL_DISTORTION"     : "cdis"       ,
+                 "ELLIPTIC_SPANLOAD"       : "ellip"       ,
+                 "MAX_SECTIONAL_CL"        : "seccl"       ,
                  "COMBO"                   : "combo"}
     
     # if none or false, return map
@@ -785,8 +789,7 @@ def get_specialCases(config):
         specified in the config file, and set to 'yes'
     """
     
-    all_special_cases = [ 'FREE_SURFACE'                     ,
-                          'ROTATING_FRAME'                   ,
+    all_special_cases = [ 'ROTATING_FRAME'                   ,
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,

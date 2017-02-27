@@ -1645,6 +1645,18 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] val_Total_EllipticDiff - Value of the tdifference between the spanload and the elliptic.
+   */
+  virtual void SetTotal_EllipticDiff(su2double val_Total_EllipticDiff);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_Total_MaxSecCL - Value of the max sectional CL.
+   */
+  virtual void SetTotal_MaxSecCL(su2double val_Total_MaxSecCL);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
   virtual void SetTotal_Custom(su2double val_Total_Custom, su2double val_coeff);
@@ -2068,6 +2080,13 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  virtual void GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - current mesh level for the multigrid.
@@ -2397,6 +2416,18 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_IDR(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_EllipticDiff(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   */
+  virtual su2double GetTotal_MaxSecCL(void);
   
   /*!
    * \brief A virtual member.
@@ -3764,6 +3795,8 @@ protected:
   Total_IDC_Mach,        /*!< \brief Total IDC coefficient for all the boundaries. */
   Total_IDR,        /*!< \brief Total IDC coefficient for all the boundaries. */
   Total_DC60,        /*!< \brief Total IDC coefficient for all the boundaries. */
+  Total_EllipticDiff,  /*!< \brief Difference between the elliptic and the given spanload. */
+  Total_MaxSecCL,  /*!< \brief Value of the max sectional CL. */
   Total_MFR,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Prop_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_ByPassProp_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
@@ -4789,7 +4822,14 @@ public:
    * \param[in] solution - Container vector with all the solutions.
    */
   void GetSurface_Distortion(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-  
+
+  /*!
+   * \brief Compute the Fan face Mach number.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Container vector with all the solutions.
+   */
+  void GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5344,6 +5384,18 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
+  su2double GetTotal_EllipticDiff(void);
+  
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   */
+  su2double GetTotal_MaxSecCL(void);
+ 
+  /*!
+   * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
+   * \return Value of the drag coefficient (inviscid + viscous contribution).
+   */
   su2double GetTotal_DC60(void);
   
   /*!
@@ -5532,6 +5584,18 @@ public:
    */
   void SetTotal_DC60(su2double val_Total_DC60);
   
+  /*!
+   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
+   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   */
+  void SetTotal_EllipticDiff(su2double val_Total_EllipticDiff);
+  
+  /*!
+   * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
+   * \param[in] val_Total_CD - Value of the total drag coefficient.
+   */
+  void SetTotal_MaxSecCL(su2double val_Total_MaxSecCL);
+
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.

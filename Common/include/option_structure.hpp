@@ -954,7 +954,9 @@ enum ENUM_OBJECTIVE {
   OUTFLOW_GENERALIZED = 31,       /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
   AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
   RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
-  CIRCUMFERENTIAL_DISTORTION = 37  /*!< \brief Circumferential Distortion objective function definition. */
+  CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
+  ELLIPTIC_SPANLOAD = 38,           /*!< \brief Elliptic spanload objective function definition. */
+  MAX_SECTIONAL_CL = 39            /*!< \brief Maximum sectional CL objective function definition. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -990,7 +992,9 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
 ("AERO_DRAG", AERO_DRAG_COEFFICIENT)
 ("RADIAL_DISTORTION", RADIAL_DISTORTION)
-("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION);
+("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
+("ELLIPTIC_SPANLOAD", ELLIPTIC_SPANLOAD)
+("MAX_SECTIONAL_CL", MAX_SECTIONAL_CL);
 
 /*!
  * \brief types of residual criteria equations

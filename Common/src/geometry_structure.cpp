@@ -9059,7 +9059,9 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   unsigned short iMarker, Boundary, Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea;
+  su2double *Normal, PositiveXArea, PositiveYArea, PositiveZArea, WettedArea, CoordX = 0.0, CoordY = 0.0, CoordZ = 0.0, MinCoordX = 1E10, MinCoordY = 1E10,
+  MinCoordZ = 1E10, MaxCoordX = -1E10, MaxCoordY = -1E10, MaxCoordZ = -1E10, TotalMinCoordX = 1E10, TotalMinCoordY = 1E10,
+  TotalMinCoordZ = 1E10, TotalMaxCoordX = -1E10, TotalMaxCoordY = -1E10, TotalMaxCoordZ = -1E10;
   su2double TotalPositiveXArea = 0.0, TotalPositiveYArea = 0.0, TotalPositiveZArea = 0.0, TotalWettedArea = 0.0, AxiFactor;
 
   bool axisymmetric = config->GetAxisymmetric();
@@ -9089,6 +9091,9 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
 
         if (node[iPoint]->GetDomain()) {
           Normal = vertex[iMarker][iVertex]->GetNormal();
+          CoordX = node[iPoint]->GetCoord(0);
+          CoordY = node[iPoint]->GetCoord(1);
+          if (nDim == 3) CoordZ = node[iPoint]->GetCoord(2);
 
           if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*node[iPoint]->GetCoord(1);
           else AxiFactor = 1.0;
@@ -9099,7 +9104,18 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
           if (Normal[0] < 0) PositiveXArea -= Normal[0];
           if (Normal[1] < 0) PositiveYArea -= Normal[1];
           if ((nDim == 3) && (Normal[2] < 0)) PositiveZArea -= Normal[2];
+          
+          if (CoordX < MinCoordX) MinCoordX = CoordX;
+          if (CoordX > MaxCoordX) MaxCoordX = CoordX;
 
+          if (CoordY < MinCoordY) MinCoordY = CoordY;
+          if (CoordY > MaxCoordY) MaxCoordY = CoordY;
+
+          if (nDim == 3) {
+            if (CoordZ < MinCoordZ) MinCoordZ = CoordZ;
+            if (CoordZ > MaxCoordZ) MaxCoordZ = CoordZ;
+          }
+          
         }
       }
   }
@@ -9108,11 +9124,29 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   SU2_MPI::Allreduce(&PositiveXArea, &TotalPositiveXArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveYArea, &TotalPositiveYArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&PositiveZArea, &TotalPositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&MinCoordX, &TotalMinCoordX, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinCoordY, &TotalMinCoordY, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinCoordZ, &TotalMinCoordZ, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(&MaxCoordX, &TotalMaxCoordX, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxCoordY, &TotalMaxCoordY, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxCoordZ, &TotalMaxCoordZ, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
   SU2_MPI::Allreduce(&WettedArea, &TotalWettedArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
   TotalPositiveXArea = PositiveXArea;
   TotalPositiveYArea = PositiveYArea;
   TotalPositiveZArea = PositiveZArea;
+  
+  TotalMinCoordX = MinCoordX;
+  TotalMinCoordY = MinCoordY;
+  TotalMinCoordZ = MinCoordZ;
+
+  TotalMaxCoordX = MaxCoordX;
+  TotalMaxCoordY = MaxCoordY;
+  TotalMaxCoordZ = MaxCoordZ;
+
   TotalWettedArea    = WettedArea;
 #endif
     
@@ -9123,20 +9157,38 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
   
   if (rank == MASTER_NODE) {
 
-  	cout << "Wetted area = "<< TotalWettedArea;
+    cout << "Wetted area = "<< TotalWettedArea;
     if ((nDim == 3) || (axisymmetric)) { if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2." << endl; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
-
+    
     cout << "Area projection in the x-plane = "<< TotalPositiveXArea;
     if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,"; }
-
+    
     cout << " y-plane = "<< TotalPositiveYArea;
     if (nDim == 3) { if (config->GetSystemMeasurements() == SI) cout <<" m^2,"; else cout <<" ft^2,"; }
     else { if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft." << endl; }
-
+    
     if (nDim == 3) { cout << " z-plane = "<< TotalPositiveZArea;
-    if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+      if (config->GetSystemMeasurements() == SI) cout <<" m^2." << endl; else cout <<" ft^2."<< endl; }
+    
+    cout << "Max. coordinate in the x-direction = "<< TotalMaxCoordX;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
+    
+    cout << " y-direction = "<< TotalMaxCoordY;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
+    
+    if (nDim == 3) { cout << " z-direction = "<< TotalMaxCoordZ;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl; }
+    
+    cout << "Min coordinate in the x-direction = "<< TotalMinCoordX;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
+    
+    cout << " y-direction = "<< TotalMinCoordY;
+    if (config->GetSystemMeasurements() == SI) cout <<" m,"; else cout <<" ft,";
+    
+    if (nDim == 3) { cout << " z-direction = "<< TotalMinCoordZ;
+      if (config->GetSystemMeasurements() == SI) cout <<" m." << endl; else cout <<" ft."<< endl; }
 
   }
   

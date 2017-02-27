@@ -432,6 +432,12 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case CIRCUMFERENTIAL_DISTORTION:
       ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
       break;
+    case ELLIPTIC_SPANLOAD:
+      ObjFunc_Value = direct_solver->GetTotal_EllipticDiff();
+      break;
+    case MAX_SECTIONAL_CL:
+      ObjFunc_Value = direct_solver->GetTotal_MaxSecCL();
+      break;
     case SIDEFORCE_COEFFICIENT:
       ObjFunc_Value = direct_solver->GetTotal_CSF();
       break;

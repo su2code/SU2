@@ -703,6 +703,12 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
       
+      /*--- Evaluate the differente between the given spanload and the elliptic one ---*/
+      
+      if (config->GetPlot_Section_Forces()) {
+        solver_container[FinestMesh][FLOW_SOL]->GetEllipticSpanLoad_Diff(geometry[FinestMesh], config);
+      }
+      
       /*--- Evaluate convergence monitor ---*/
       
       if (config->GetConvCriteria() == CAUCHY) {
