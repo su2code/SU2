@@ -1087,18 +1087,19 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
                   }
 
                 } else {
-
-                  if (!IPlane_Intersect_A) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true;}
-                  }
-                  if (!IPlane_Intersect_B) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true;}
-                  }
-                  if (!JPlane_Intersect_A) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true;}
-                  }
-                  if (!JPlane_Intersect_B) {
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true;}
+                  if (FFDBox->GetPointFFD(geometry, config, iPoint)){
+                    if (!IPlane_Intersect_A) {
+                      if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true;}
+                    }
+                    if (!IPlane_Intersect_B) {
+                      if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true;}
+                    }
+                    if (!JPlane_Intersect_A) {
+                      if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true;}
+                    }
+                    if (!JPlane_Intersect_B) {
+                      if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true;}
+                    }
                   }
                 }
               }
