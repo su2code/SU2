@@ -150,6 +150,17 @@ def main():
     cylinder_lowmach.tol       = 0.00001
     test_list.append(cylinder_lowmach)
 
+    # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
+    poiseuille           = TestCase('poiseuille')
+    poiseuille.cfg_dir   = "navierstokes/poiseuille"
+    poiseuille.cfg_file  = "lam_poiseuille.cfg"
+    poiseuille.test_iter = 10
+    poiseuille.test_vals = [-12.000044,-3.326793,-0.000000,2.351005] #last 4 columns
+    poiseuille.su2_exec  = "parallel_computation.py -f"
+    poiseuille.timeout   = 1600
+    poiseuille.tol       = 0.00001
+    test_list.append(poiseuille)
+
     ##########################
     ### Compressible RANS  ###
     ##########################

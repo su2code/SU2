@@ -4844,30 +4844,37 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar;
   unsigned long iPoint;
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame = config->GetRotating_Frame();
-  bool axisymmetric   = config->GetAxisymmetric();
-  bool gravity        = (config->GetGravityForce() == YES);
-  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool windgust       = config->GetWind_Gust();
-  bool body_force = config->GetBody_Force();
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rotating_frame   = config->GetRotating_Frame();
+  bool axisymmetric     = config->GetAxisymmetric();
+  bool gravity          = (config->GetGravityForce() == YES);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool windgust         = config->GetWind_Gust();
+  bool body_force       = config->GetBody_Force();
 
   /*--- Initialize the source residual to zero ---*/
+
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
   if (body_force) {
 
-    su2double *body_force_vector = config->GetBody_Force_Vector();
+    /*--- Loop over all points ---*/
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Source term integration goes here... dummy output for now. ---*/
+      /*--- Load the conservative variables ---*/
+      numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
 
-    cout << " Applying a body force of (";
-    for( unsigned short iDim = 0; iDim < nDim; iDim++) {
-      cout << body_force_vector[iDim];
-      if (iDim < nDim-1) cout << ", ";
+      /*--- Load the volume of the dual mesh cell ---*/
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the rotating frame source residual ---*/
+      numerics->ComputeResidual(Residual, config);
+
+      /*--- Add the source residual to the total ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+      
     }
-    cout << ")." << endl;
-
   }
 
   if (rotating_frame) {
