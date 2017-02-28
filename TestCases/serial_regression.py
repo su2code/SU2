@@ -154,7 +154,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-12.263634,-3.326795,0.000001,2.351005] #last 4 columns
+    poiseuille.test_vals = [-12.272126, -3.335311, 0.000001, 2.351005] #last 4 columns
     poiseuille.su2_exec  = "SU2_CFD"
     poiseuille.timeout   = 1600
     poiseuille.tol       = 0.00001
