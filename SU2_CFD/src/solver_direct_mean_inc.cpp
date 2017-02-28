@@ -5589,6 +5589,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
   bool grid_movement  = config->GetGrid_Movement();
+  bool static_fsi = ((config->GetUnsteady_Simulation() == STEADY) &&
+                     (config->GetFSI_Simulation()));
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
@@ -5699,6 +5701,15 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         
       }
       
+      /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
+       grid coordinates for each node (but not the grid velocities, as there are none). ---*/
+
+      if (static_fsi) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+        }
+      }
+
     }
   }
   
@@ -5757,6 +5768,33 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     }
   }
   
+  /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
+
+  if (static_fsi) {
+
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+
+    geometry[MESH_0]->Set_MPI_Coord(config);
+
+    /*--- Recompute the edges and  dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+    }
+  }
+
   delete [] Coord;
   
 }
