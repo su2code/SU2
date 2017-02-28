@@ -292,9 +292,9 @@ public:
   vector<unsigned short> Fix_KPlane;  /*!< \brief Fix FFD K plane. */
 
   vector<string> PilotGroupNames;
-  vector<vector<su2double>> PilotPointsX;
-  vector<vector<su2double>> PilotPointsY;
-  vector<vector<su2double>> PilotPointsZ;
+  vector<vector<su2double> > PilotPointsX;
+  vector<vector<su2double> > PilotPointsY;
+  vector<vector<su2double> > PilotPointsZ;
   vector<unsigned short> PilotGroupType;
   vector<bool> isPilotDV;
   CFreeFormBlending** BlendingFunction;
@@ -1451,7 +1451,7 @@ public:
    */
   void SetSurface_Derivative(CGeometry *geometry, CConfig *config);
 
-  void ReadPilotPoints(CGeometry *geometry, CConfig *config);
+  void ReadPilotPoints(CGeometry *geometry, CConfig *config, CFreeFormDefBox* FFDBox);
 };
 
 #include "surface_deformation.inl"

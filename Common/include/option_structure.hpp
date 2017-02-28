@@ -2293,7 +2293,7 @@ public:
           if((this->paramDV[iDV][1] == 0) &&
              (this->paramDV[iDV][2] == 0) &&
              (this->paramDV[iDV][3] == 0)) {
-            nValueDV = 3;
+            nValueDV = 2;
           } else {
             nValueDV = 1;
           }

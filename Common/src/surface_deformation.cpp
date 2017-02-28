@@ -113,7 +113,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
         FFDBox_unitary.SetSupportCPChange(FFDBox[iFFDBox]);
 
-        ReadPilotPoints(geometry, config);
+        ReadPilotPoints(geometry, config, FFDBox[iFFDBox]);
 
         /*--- Compute the parametric coordinates, it also find the points in
          the FFDBox using the parametrics coordinates ---*/
@@ -2164,49 +2164,52 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
   }
 
-  /*--- Set up necessary matrices and vectors ---*/
+  if (nGroup > 0){
 
-  SystemMatrixSVD = SystemMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+    /*--- Set up necessary matrices and vectors ---*/
+
+    SystemMatrixSVD = SystemMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
 
 
-  /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
+    /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
 
-  ControlPointPositionsX = SystemMatrixSVD.solve(ParameterValuesX);
-  ControlPointPositionsY = SystemMatrixSVD.solve(ParameterValuesY);
-  if (nDim == 3)
-    ControlPointPositionsZ = SystemMatrixSVD.solve(ParameterValuesZ);
+    ControlPointPositionsX = SystemMatrixSVD.solve(ParameterValuesX);
+    ControlPointPositionsY = SystemMatrixSVD.solve(ParameterValuesY);
+    if (nDim == 3)
+      ControlPointPositionsZ = SystemMatrixSVD.solve(ParameterValuesZ);
 
-  /*--- Compute the residual  DX = X - B^* P_x, DY = Y - B^* P_y
+    /*--- Compute the residual  DX = X - B^* P_x, DY = Y - B^* P_y
      * (measures how well the pilot point positions can be represented by the FFD box )--- */
 
-  DeltaX = ParameterValuesX - SystemMatrix*ControlPointPositionsX;
-  DeltaY = ParameterValuesY - SystemMatrix*ControlPointPositionsY;
-  if (nDim == 3)
-    DeltaZ = ParameterValuesZ - SystemMatrix*ControlPointPositionsZ;
+    DeltaX = ParameterValuesX - SystemMatrix*ControlPointPositionsX;
+    DeltaY = ParameterValuesY - SystemMatrix*ControlPointPositionsY;
+    if (nDim == 3)
+      DeltaZ = ParameterValuesZ - SystemMatrix*ControlPointPositionsZ;
 
-  cout << "Difference in Pilot Point Position: ( "
-       << DeltaX.norm() << ", "
-       << DeltaY.norm();
-  if (nDim == 3){
-    cout << ", " << DeltaZ.norm();
-  }
-  cout << " )" <<endl;
-  cout << "Control Point Movement:             ( "
-       << ControlPointPositionsX.norm() << ", "
-       << ControlPointPositionsY.norm();
-  if (nDim == 3){
-    cout << ", " << ControlPointPositionsZ.norm();
-  }
-  cout << " )" << endl;
+    cout << "Difference in Pilot Point Position: ( "
+      << DeltaX.norm() << ", "
+      << DeltaY.norm();
+    if (nDim == 3){
+      cout << ", " << DeltaZ.norm();
+    }
+    cout << " )" <<endl;
+    cout << "Control Point Movement:             ( "
+      << ControlPointPositionsX.norm() << ", "
+      << ControlPointPositionsY.norm();
+    if (nDim == 3){
+      cout << ", " << ControlPointPositionsZ.norm();
+    }
+    cout << " )" << endl;
 
-  for (iControl = 0; iControl < lControl; iControl++){
-    for (jControl = 0; jControl < mControl; jControl++){
-      for (kControl = 0; kControl < nControl; kControl++){
-        Movement[0] = ControlPointPositionsX(iControl*mControl*nControl + jControl*nControl + kControl);
-        Movement[1] = ControlPointPositionsY(iControl*mControl*nControl + jControl*nControl + kControl);
-        Movement[2] = ControlPointPositionsZ(iControl*mControl*nControl + jControl*nControl + kControl);
-        index[0] = iControl; index[1] = jControl; index[2] = kControl;
-        FFDBox->SetControlPoints(index, Movement);
+    for (iControl = 0; iControl < lControl; iControl++){
+      for (jControl = 0; jControl < mControl; jControl++){
+        for (kControl = 0; kControl < nControl; kControl++){
+          Movement[0] = ControlPointPositionsX(iControl*mControl*nControl + jControl*nControl + kControl);
+          Movement[1] = ControlPointPositionsY(iControl*mControl*nControl + jControl*nControl + kControl);
+          Movement[2] = ControlPointPositionsZ(iControl*mControl*nControl + jControl*nControl + kControl);
+          index[0] = iControl; index[1] = jControl; index[2] = kControl;
+          FFDBox->SetControlPoints(index, Movement);
+        }
       }
     }
   }
@@ -5421,16 +5424,16 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config){
+void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox){
 
   string PilotFileName = config->GetPilotPointFile();
   ifstream PilotFile;
   string text_line;
-  PilotFile.open(PilotFileName, ios::in);
+  PilotFile.open(PilotFileName.c_str(), ios::in);
   string Token;
-  vector<vector<su2double>> PilotXCoord;
-  vector<vector<su2double>> PilotYCoord;
-  vector<vector<su2double>> PilotZCoord;
+  vector<vector<su2double> > PilotXCoord;
+  vector<vector<su2double> > PilotYCoord;
+  vector<vector<su2double> > PilotZCoord;
   vector<unsigned short> GroupTypes;
   unsigned short nGroups = 0, iGroup;
   vector<string> PilotGroupNames;
@@ -5444,73 +5447,70 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config){
 
   unsigned short nPilotPoints, iPilotPoint;
 
-  cout << "Reading pilot points from file." << endl;
 
-  if (PilotFile.fail()){
-    cout << "Pilot Point file " << PilotFileName <<" not found.!!" << endl;
-    exit(EXIT_FAILURE);
-  }
+  if (!PilotFile.fail()){
 
-  while(getline(PilotFile, text_line)){
-    istringstream line(text_line);
-    line >> Token;
-    if (Token == "GROUP"){
-      line >> std::skipws >> Token;
-      if (Token == "RELATIVE"){
-        GroupTypes.push_back(RELATIVE);
-      } else if (Token == "ABSOLUTE") {
-        GroupTypes.push_back(ABSOLUTE);
-      } else {
-        cout << "Group type " << Token  << " not a valid option." << endl;
-        exit(EXIT_FAILURE);
-      }
-      line >> std::skipws >> Token;
-      PilotGroupNames.push_back(Token);
-      getline(PilotFile, text_line);
-      line = istringstream(text_line);
+    cout << "Reading pilot points from file." << endl;
+
+    while(getline(PilotFile, text_line)){
+      istringstream line(text_line);
       line >> Token;
-      if (Token != "FFD_BOX"){
-        cout <<"FFD_BOX missing in pilot point file." << endl;
-        exit(EXIT_FAILURE);
-      }
-      line >> std::skipws >> Token;
-      PilotFFD.push_back(Token);
-
-      getline(PilotFile, text_line);
-      line = istringstream(text_line);
-      line >> Token;
-      if (Token != "NPOINTS"){
-        cout <<"NPOINTS missing in pilot point file." << endl;
-        exit(EXIT_FAILURE);
-      }
-      line >> nPilotPoints;
-      PilotXCoord.push_back(vector<su2double>(nPilotPoints));
-      PilotYCoord.push_back(vector<su2double>(nPilotPoints));
-      PilotZCoord.push_back(vector<su2double>(nPilotPoints));
-      for (iPilotPoint = 0; iPilotPoint < nPilotPoints; iPilotPoint++){
+      if (Token == "GROUP"){
+        line >> std::skipws >> Token;
+        if (Token == "RELATIVE"){
+          GroupTypes.push_back(RELATIVE);
+        } else if (Token == "ABSOLUTE") {
+          GroupTypes.push_back(ABSOLUTE);
+        } else {
+          cout << "Group type " << Token  << " not a valid option." << endl;
+          exit(EXIT_FAILURE);
+        }
+        line >> std::skipws >> Token;
+        PilotGroupNames.push_back(Token);
         getline(PilotFile, text_line);
-        line = istringstream(text_line);
-        line >> PilotXCoord[nGroups][iPilotPoint]
+        istringstream lineffd(text_line);
+        lineffd >> Token;
+        if (Token != "FFD_BOX"){
+          cout <<"FFD_BOX missing in pilot point file." << endl;
+          exit(EXIT_FAILURE);
+        }
+        lineffd >> std::skipws >> Token;
+        PilotFFD.push_back(Token);
+
+        getline(PilotFile, text_line);
+        istringstream linenpoints(text_line);
+        linenpoints >> Token;
+        if (Token != "NPOINTS"){
+          cout <<"NPOINTS missing in pilot point file." << endl;
+          exit(EXIT_FAILURE);
+        }
+        linenpoints >> nPilotPoints;
+        PilotXCoord.push_back(vector<su2double>(nPilotPoints));
+        PilotYCoord.push_back(vector<su2double>(nPilotPoints));
+        PilotZCoord.push_back(vector<su2double>(nPilotPoints));
+        for (iPilotPoint = 0; iPilotPoint < nPilotPoints; iPilotPoint++){
+          getline(PilotFile, text_line);
+          istringstream linepoints(text_line);
+          linepoints >> PilotXCoord[nGroups][iPilotPoint]
             >> PilotYCoord[nGroups][iPilotPoint]
             >> PilotZCoord[nGroups][iPilotPoint];
+        }
       }
+      nGroups++;
     }
-    nGroups++;
-  }
 
-  /* --- Save pilot point groups in the corresponding FFD box. ---*/
+    /* --- Save pilot point groups in the corresponding FFD box. ---*/
 
-  for (iFFD = 0; iFFD < nFFDBox; iFFD++){
     for (iGroup = 0; iGroup < PilotGroupNames.size(); iGroup++){
-      if (PilotFFD[iGroup] == FFDBox[iFFD]->GetTag()){
-        FFDBox[iFFD]->PilotGroupNames.push_back(PilotGroupNames[iGroup]);
-        FFDBox[iFFD]->PilotPointsX.push_back(PilotXCoord[iGroup]);
-        FFDBox[iFFD]->PilotPointsY.push_back(PilotYCoord[iGroup]);
-        FFDBox[iFFD]->PilotPointsZ.push_back(PilotZCoord[iGroup]);
-        FFDBox[iFFD]->PilotGroupType.push_back(GroupTypes[iGroup]);
+      if (PilotFFD[iGroup] == FFDBox->GetTag()){
+        FFDBox->PilotGroupNames.push_back(PilotGroupNames[iGroup]);
+        FFDBox->PilotPointsX.push_back(PilotXCoord[iGroup]);
+        FFDBox->PilotPointsY.push_back(PilotYCoord[iGroup]);
+        FFDBox->PilotPointsZ.push_back(PilotZCoord[iGroup]);
+        FFDBox->PilotGroupType.push_back(GroupTypes[iGroup]);
       }
     }
-  }
+  } 
 }
 
 CFreeFormDefBox::CFreeFormDefBox(void) { }
