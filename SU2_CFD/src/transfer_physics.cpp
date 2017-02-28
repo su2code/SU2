@@ -220,6 +220,8 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
   Pn = flow_solution->node[Point_Flow]->GetPressure();
 
+//  Pn = Pn * flow_config->GetPressure_Ref();
+
   // Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
   for (iVar = 0; iVar < nVar; iVar++) 
     Donor_Variable[iVar] = -(Pn-Pinf)*Normal_Flow[iVar];
@@ -229,16 +231,17 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
   if ((incompressible || compressible) && viscous_flow) {
 
     Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
+//    Viscosity = Viscosity * flow_config->GetViscosity_Ref();
 
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0 ; jVar < nVar; jVar++) {
         Grad_Vel[iVar][jVar] = flow_solution->node[Point_Flow]->GetGradient_Primitive(iVar+1, jVar);
+//        Grad_Vel[iVar][jVar] = Grad_Vel[iVar][jVar] * flow_config->GetVelocity_Ref();
       }
     }
 
 		// Divergence of the velocity
     div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_Vel[iVar][iVar];
-		if (incompressible) div_vel = 0.0;
 
 		for (iVar = 0; iVar < nVar; iVar++) {
 
@@ -257,6 +260,11 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Donor_Variable[iVar] = Donor_Variable[iVar] * Physical_Constants[0] * Physical_Constants[1];
 	}
+//  // Redimensionalize and take into account ramp transfer of the loads
+//  for (iVar = 0; iVar < nVar; iVar++) {
+//    Donor_Variable[iVar] = Donor_Variable[iVar] * Physical_Constants[1];
+//  }
+
 
 }
 

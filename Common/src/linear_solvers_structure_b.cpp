@@ -175,7 +175,7 @@ void CSysSolve_b::Solve_g(AD::CheckpointHandler* data){
       break;
   }
 
-  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProduct(*Jacobian, geometry, config);
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProductTransposed(*Jacobian, geometry, config);
 
   CSysSolve *solver = new CSysSolve;
 

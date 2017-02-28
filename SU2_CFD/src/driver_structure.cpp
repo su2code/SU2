@@ -641,13 +641,15 @@ void CDriver::Geometrical_Preprocessing() {
 
   }
 
-  /*--- Loop over all the new grid ---*/
 
-  for (iMGlevel = 1; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
 
-    /*--- Loop over all zones at each grid level. ---*/
+  /*--- Loop over all zones at each grid level. ---*/
 
-    for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Loop over all the new grid ---*/
+
+    for (iMGlevel = 1; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
 
       /*--- Create main agglomeration structure ---*/
 
