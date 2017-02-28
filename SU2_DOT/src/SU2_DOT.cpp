@@ -159,7 +159,12 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
   geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
-  
+
+  /*--- Store the global to local mapping after preprocessing. ---*/
+ 
+  if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+  geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
+ 
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
