@@ -2609,15 +2609,15 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-   MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  if(rank == MASTER_NODE) {
-    cout << "Volume residual integration" << endl;
-    cout << "Number of owned elements: " << nVolElemOwned << endl;
-  }
+//  int rank = MASTER_NODE;
+//#ifdef HAVE_MPI
+//   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//   MPI_Barrier(MPI_COMM_WORLD);
+//#endif
+//  if(rank == MASTER_NODE) {
+//    cout << "Volume residual integration" << endl;
+//    cout << "Number of owned elements: " << nVolElemOwned << endl;
+//  }
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt = VecTmpMemory.data();
@@ -2717,20 +2717,20 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-    if(rank == MASTER_NODE){
-      if(l%50000 == 0){
-	cout << "*************************" << endl;
-	cout << "Volume element " << l << endl;
-	cout << "Standard element index: " << ind << endl;
-	cout << "nDOFs = " << nDOFs << endl;
-	cout << "nVar = " << nVar << endl;
-	for(unsigned short var_iter=0; var_iter<nVar; ++var_iter){
-	  for(unsigned short dof_iter=0; dof_iter<nDOFs; ++dof_iter){
-	    cout << "Res[" << dof_iter << "][" << var_iter << "] = " << res[var_iter*nVar+dof_iter] << endl;
-	  }
-	}
-      }
-    }
+//    if(rank == MASTER_NODE){
+//      if(l%50000 == 0){
+//        cout << "*************************" << endl;
+//	    cout << "Volume element " << l << endl;
+//	    cout << "Standard element index: " << ind << endl;
+//	    cout << "nDOFs = " << nDOFs << endl;
+//	    cout << "nVar = " << nVar << endl;
+//	    for(unsigned short var_iter=0; var_iter<nVar; ++var_iter){
+//	      for(unsigned short dof_iter=0; dof_iter<nDOFs; ++dof_iter){
+//	        cout << "Res[" << dof_iter << "][" << var_iter << "] = " << res[var_iter*nVar+dof_iter] << endl;
+//	      }
+//	    }
+//     }
+//    }
   }
 }
 
@@ -2750,11 +2750,11 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
     su2double *body_force_vector = config->GetBody_Force_Vector();
 
     /*--- Source term integration goes here... dummy output for now. ---*/
-    int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-     MPI_Barrier(MPI_COMM_WORLD);
-#endif
+//    int rank = MASTER_NODE;
+//#ifdef HAVE_MPI
+//     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//     MPI_Barrier(MPI_COMM_WORLD);
+//#endif
 
     /*--- Set the pointers for the local arrays. ---*/
     su2double *solInt = VecTmpMemory.data();
@@ -2798,7 +2798,7 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
 
     	/* Store inverse of the density */
         const su2double DensityInv = 1.0/sol[0];
-        su2double vel[3] = 0.0;
+        su2double vel[3] = {0.0, 0.0, 0.0};
         for(unsigned short iDim=0; iDim<nDim; ++iDim){
           vel[iDim] = sol[iDim+1]*DensityInv;
         }
@@ -5718,15 +5718,15 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-   MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  if(rank == MASTER_NODE) {
-    cout << "Volume residual integration" << endl;
-    cout << "Number of owned elements: " << nVolElemOwned << endl;
-  }
+//  int rank = MASTER_NODE;
+//#ifdef HAVE_MPI
+//   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//   MPI_Barrier(MPI_COMM_WORLD);
+//#endif
+//  if(rank == MASTER_NODE) {
+//    cout << "Volume residual integration" << endl;
+//    cout << "Number of owned elements: " << nVolElemOwned << endl;
+//  }
 
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -5796,7 +5796,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
          in the metric terms, and afterwards update the metric terms by 1. */
       const su2double *metricTerms = volElem[l].metricTerms.data()
                                    + i*nMetricPerPoint;
-      const su2double *coordIntPoints = volElem[l].coorIntegrationPoints.data() + i*nDim;
+      //const su2double *coordIntPoints = volElem[l].coorIntegrationPoints.data() + i*nDim;
       const su2double Jac          = metricTerms[0];
       const su2double JacInv       = 1.0/Jac;
       metricTerms                 += 1;
@@ -5956,20 +5956,20 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-    if(rank == MASTER_NODE){
-      if(l%50000 == 0){
-	cout << "*************************" << endl;
-	cout << "Volume element " << l << endl;
-	cout << "Standard element index: " << ind << endl;
-	cout << "nDOFs = " << nDOFs << endl;
-	cout << "nVar = " << nVar << endl;
-	for(unsigned short var_iter=0; var_iter<nVar; ++var_iter){
-	  for(unsigned short dof_iter=0; dof_iter<nDOFs; ++dof_iter){
-	    cout << "Res[" << dof_iter << "][" << var_iter << "] = " << res[var_iter*nVar+dof_iter] << endl;
-	  }
-	}
-      }
-    }
+//    if(rank == MASTER_NODE){
+//      if(l%50000 == 0){
+//	cout << "*************************" << endl;
+//	cout << "Volume element " << l << endl;
+//	cout << "Standard element index: " << ind << endl;
+//	cout << "nDOFs = " << nDOFs << endl;
+//	cout << "nVar = " << nVar << endl;
+//	for(unsigned short var_iter=0; var_iter<nVar; ++var_iter){
+//	  for(unsigned short dof_iter=0; dof_iter<nDOFs; ++dof_iter){
+//	    cout << "Res[" << dof_iter << "][" << var_iter << "] = " << res[var_iter*nVar+dof_iter] << endl;
+//	  }
+//	}
+//      }
+//    }
   }
 }
 
