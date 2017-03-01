@@ -7801,7 +7801,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       Plane_Normal[2] = 0.0;    Plane_P0[2] = 0.0;
       
       Plane_Normal[config->GetAxis_Stations()] = 1.0;
-			Plane_P0[config->GetAxis_Stations()] = config->GetLocationStations(iSection);
+      Plane_P0[config->GetAxis_Stations()] = config->GetLocationStations(iSection);
       
       /*--- Compute the airfoil sections (note that we feed in the Cp) ---*/
       

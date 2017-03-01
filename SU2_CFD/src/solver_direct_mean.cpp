@@ -7395,7 +7395,7 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
 
   }
   
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*1)) == 0));
   
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
     
