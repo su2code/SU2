@@ -1486,6 +1486,10 @@ inline unsigned long CConfig::GetNumberIncrements(void) { return IncLoad_Nincrem
 
 inline su2double CConfig::GetIncLoad_Criteria(unsigned short val_var) { return IncLoad_Criteria[val_var]; }
 
+inline bool CConfig::GetEulerPersson(void) { return EulerPersson; }
+
+inline void CConfig::SetEulerPersson(bool val_EulerPersson) { EulerPersson = val_EulerPersson; }
+
 inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }

@@ -463,6 +463,7 @@ private:
   SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/  
+  bool EulerPersson;        /*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
@@ -6907,7 +6908,19 @@ public:
    * \return 	Order of predictor
    */
   unsigned short GetPredictorOrder(void);
-  
+
+  /*!
+   * \brief Get boolean for using Persson's shock capturing in Euler flow
+   * \return Boolean for using Persson's shock capturing in Euler flow
+   */
+  bool GetEulerPersson(void);
+
+  /*!
+   * \brief Set boolean for using Persson's shock capturing in Euler flow
+   * \param[in] val_EulerPersson - Boolean for using Persson's shock capturing in Euler flow
+   */
+  void SetEulerPersson(bool val_EulerPersson);
+
   /*!
    * \brief Check if the simulation we are running is a FSI simulation
    * \return Value of the physical time in an unsteady simulation.
