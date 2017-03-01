@@ -59,7 +59,7 @@ protected:
 	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
-  su2double **Resolution_Tensor; /*! < \brief A resolution tensor, representing separation distances in the global coordinate system. */
+  su2double **ResolutionTensor; /*! < \brief A resolution tensor, representing separation distances in the global coordinate system. */
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                  quadrilateral and edges. */
 	unsigned long DomainElement;	/*!< \brief Only for boundaries, in this variable the 3D elements which
@@ -286,13 +286,14 @@ public:
 
 	/*!
 	 * \brief Sets the resolution tensor for the given grid object.
+   * \param[in] val_coord - Coordinates of the element.
 	 */
-  virtual void SetResolutionTensor(void) = 0;
+  virtual void SetResolutionTensor(su2double **val_coord);
 
   /*!
    * \brief Gets the resolution tensor for the given grid object.
    */
-  virtual vector<vector<su2double> > GetResolutionTensor(void) = 0;
+  virtual vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -411,18 +412,6 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  void SetResolutionTensor(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -549,18 +538,6 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  void SetResolutionTensor(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -689,18 +666,6 @@ public:
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  void SetResolutionTensor(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -831,8 +796,9 @@ public:
 
   /*!
    * \brief Sets the resolution tensor for a quadrilateral element.
+   * \param[in] val_coord - Coordinates of the element.
    */
-  void SetResolutionTensor(void);
+  void SetResolutionTensor(su2double **val_coord);
 
   /*!
    * \brief Gets the resolution tensor for a quadrilateral element.
@@ -955,18 +921,6 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  void SetResolutionTensor(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -1091,9 +1045,10 @@ public:
 	void Change_Orientation(void);
 
   /*!
-   * \brief Sets the resolution tensor for the given hexahedral cell.
+   * \brief Sets the resolution tensor for a hexahedral element.
+   * \param[in] val_coord - Coordinates of the element.
    */
-  void SetResolutionTensor(void);
+  void SetResolutionTensor(su2double **val_coord);
 
   /*!
    * \brief Gets the resolution tensor for the given hexahedral cell.
@@ -1220,18 +1175,6 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  void SetResolutionTensor(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -1349,18 +1292,6 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  void SetResolutionTensor(void);
-
-  /*!
-   * \brief This function does nothing (it comes from a pure virtual function, that implies the
-   *        definition of the function in all the derived classes).
-   */
-  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 #include "primal_grid_structure.inl"

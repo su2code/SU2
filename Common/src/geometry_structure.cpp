@@ -9598,12 +9598,37 @@ void CPhysicalGeometry::SetCoord_CG(void) {
 void CGeometry::SetResolutionTensor(void) {
   unsigned long iElem, iElem_global, iPoint;
   unsigned short iDim, jDim;
+  unsigned short nNode, iNode;
+  unsigned long elem_poin;
   su2double temp_value;
   vector<vector<su2double> > temp_tensor;
+  su2double **Coord;
+
+  /*--- Compute the resolution tensor for primal mesh elements ---*/
 
   for (iElem = 0; iElem<nElem; iElem++) {
-    elem[iElem]->SetResolutionTensor();
+    nNode = elem[iElem]->GetnNodes();
+    Coord = new su2double* [nNode];
+
+    /*--- Store the coordinates for all the element nodes ---*/
+
+    for (iNode = 0; iNode < nNode; iNode++) {
+      elem_poin = elem[iElem]->GetNode(iNode);
+      Coord[iNode] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++)
+        Coord[iNode][iDim]=node[elem_poin]->GetCoord(iDim);
+    }
+
+    /*--- Compute the elemental resolution tensor coordinates ---*/
+
+    elem[iElem]->SetResolutionTensor(Coord);
+
+    for (iNode = 0; iNode < nNode; iNode++)
+      if (Coord[iNode] != NULL) delete[] Coord[iNode];
+    if (Coord != NULL) delete[] Coord;
   }
+
+  /*--- Use the primal mesh to create the CV Resolution Tensors ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iElem = 0; iElem < node[iPoint]->GetnElem(); iElem++) {
