@@ -5749,6 +5749,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver *
 
     /* Change the solution coefficients to modal form from nodal form */
     for(unsigned short i=0; i<nDOFs; ++i) {
+      vecTemp[i] = 0.0;
       for (unsigned short j=0; j<nDOFs; ++j)
         vecTemp[i] += matVanderInv[i+j*nDOFs]*machSolDOFs[j];
     }
