@@ -54,3 +54,5 @@ SU2_DIRECTDIFF/
 # ignore the bin/ directory
 bin/
 
+# Compiled tests
+*.trs
