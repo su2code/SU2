@@ -974,29 +974,61 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
     case ADER_DG: iLimit = 1; break;
     case EULER_EXPLICIT: case EULER_IMPLICIT: iLimit = 1; break; }
 
-  /*--- Time and space integration ---*/
-  for (iStep = 0; iStep < iLimit; iStep++) {
-    
-    /*--- Preprocessing ---*/
-    config[ZONE_0]->Tick(&tick);
-    solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iStep, RunTime_EqSystem, false);
-    config[ZONE_0]->Tock(tick,"Preprocessing",2);
+  /*--- In case an unsteady simulation is carried out, it is possible that a
+        synchronization time step is specified. If so, set the boolean
+        TimeSynSpecified to true, which leads to an outer loop in the
+        algorithm below. ---*/
+  bool TimeSyncSpecified   = false;
+  const su2double TimeSync = config[iZone]->GetDelta_UnstTimeND();
+  if(config[iZone]->GetUnsteady_Simulation() == TIME_STEPPING &&
+     config[iZone]->GetUnst_CFL()            != 0.0           &&
+     TimeSync                                != 0.0) TimeSyncSpecified = true;
 
-    /*--- Space integration ---*/
+  /*--- Outer loop, which is only active when a synchronization time has been
+        specified for an unsteady simulation. ---*/
+  bool syncTimeReached = false;
+  su2double timeEvolved = 0.0;
+  while( !syncTimeReached ) {
+
+    /* Compute the time step for stability. */
     config[ZONE_0]->Tick(&tick);
-    Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iStep, RunTime_EqSystem);
-    config[ZONE_0]->Tock(tick,"Space_Integration",2);
+    solver_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh],
+                                                                        solver_container[iZone][iMesh],
+                                                                        config[iZone], iMesh, Iteration);
+    config[ZONE_0]->Tock(tick,"SetTime_Step",3);
+
+    /* Possibly overrule the specified time step when a synchronization time was
+       specified and determine whether or not the time loop must be continued.
+       When TimeSyncSpecified is false, the loop is always terminated. */
+    if( TimeSyncSpecified )
+      solver_container[iZone][iMesh][SolContainer_Position]->CheckTimeSynchronization(TimeSync, timeEvolved,
+                                                                                      syncTimeReached);
+    else
+      syncTimeReached = true;
+
+    /*--- Time and space integration ---*/
+    for (iStep = 0; iStep < iLimit; iStep++) {
     
-    /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-    config[ZONE_0]->Tick(&tick);
-    Time_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iStep, RunTime_EqSystem, Iteration);
-    config[ZONE_0]->Tock(tick,"Time_Integration",2);
+      /*--- Preprocessing ---*/
+      config[ZONE_0]->Tick(&tick);
+      solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iStep, RunTime_EqSystem, false);
+      config[ZONE_0]->Tock(tick,"Preprocessing",2);
+
+      /*--- Space integration ---*/
+      config[ZONE_0]->Tick(&tick);
+      Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iStep, RunTime_EqSystem);
+      config[ZONE_0]->Tock(tick,"Space_Integration",2);
     
-    /*--- Postprocessing ---*/
-    config[ZONE_0]->Tick(&tick);
-    solver_container[iZone][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh);
-    config[ZONE_0]->Tock(tick,"Postprocessing",2);
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      config[ZONE_0]->Tick(&tick);
+      Time_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iStep, RunTime_EqSystem, Iteration);
+      config[ZONE_0]->Tock(tick,"Time_Integration",2);
     
+      /*--- Postprocessing ---*/
+      config[ZONE_0]->Tick(&tick);
+      solver_container[iZone][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh);
+      config[ZONE_0]->Tock(tick,"Postprocessing",2);
+    }
   }
   
   /*--- Calculate the inviscid and viscous forces ---*/
@@ -1022,7 +1054,6 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned short nTimeIntegrationPoints = 1;
-  unsigned long Iteration = 0;
   const su2double *timeIntegrationWeights = NULL;
   su2double tick = 0.0;
 
@@ -1036,10 +1067,6 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     config->Tick(&tick);
     solver_container[MainSolver]->Set_OldSolution(geometry);
     config->Tock(tick,"Set_OldSolution",3);
-
-    config->Tick(&tick);
-    solver_container[MainSolver]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
-    config->Tock(tick,"SetTime_Step",3);
 
     config->Tick(&tick);
     solver_container[MainSolver]->ADER_DG_PredictorStep(config, iStep);
@@ -1063,10 +1090,6 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->Set_NewSolution(geometry);
         config->Tock(tick,"Set_NewSolution",3);
       }
-    
-      config->Tick(&tick);
-      solver_container[MainSolver]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
-      config->Tock(tick,"SetTime_Step",3);
     }
   }
 

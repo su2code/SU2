@@ -2108,7 +2108,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     }
     
     /*--- Compute the max and the min dt (in parallel). Note that we only
-     so this for steady calculations if the high verbosity is set, but we
+     do this for steady calculations if the high verbosity is set, but we
      always perform the reduction for unsteady calculations where the CFL
      limit is used to set the global time step. ---*/
     if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
@@ -2127,6 +2127,46 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         VecDeltaTime[i] = Min_Delta_Time;
     }
   }
+}
+
+void CFEM_DG_EulerSolver::CheckTimeSynchronization(const su2double TimeSync,
+                                                         su2double &timeEvolved,
+                                                         bool      &syncTimeReached) {
+
+  /* Check if this is the first time this check is carried out
+     and determine the new time evolved. */
+  const bool firstTime = timeEvolved == 0.0;
+  timeEvolved         += Min_Delta_Time;
+
+  /*--- Check for a (too) small a value for the synchronization time and
+        print a warning if this happens. ---*/
+  if(firstTime && timeEvolved >= 1.5*TimeSync) {
+
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+    if(rank == MASTER_NODE) {
+      cout << endl << "              WARNING" << endl;
+      cout << "The specified synchronization time is " << timeEvolved/TimeSync
+           << " times smaller than the time step for stability" << endl;
+      cout << "This is inefficient!!!!!" << endl << endl;
+    }
+  }
+
+  /*--- If the current value of timeEvolved is larger or equal than the
+        synchronization time, syncTimeReached is set to true and a
+        correction to the time step is carried out. If the synchronization
+        time has not been reached yet, syncTimeReached is set to false. ---*/
+  if(timeEvolved >= TimeSync) {
+    syncTimeReached = true;
+    const su2double newDeltaTime = Min_Delta_Time + (TimeSync - timeEvolved);
+
+    for(unsigned long i=0; i<nVolElemOwned; ++i)
+      VecDeltaTime[i] = newDeltaTime;
+  }
+  else syncTimeReached = false;
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
