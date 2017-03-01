@@ -913,19 +913,19 @@ void CFluidIteration::SetTurboPerformance(CGeometry ***geometry_container, CSolv
       }
 }
 
-CFEMFlowIteration::CFEMFlowIteration(CConfig *config) : CIteration(config) { }
-CFEMFlowIteration::~CFEMFlowIteration(void) { }
+CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CIteration(config) { }
+CFEMFluidIteration::~CFEMFluidIteration(void) { }
 
-void CFEMFlowIteration::Preprocess(COutput *output,
-                                   CIntegration ***integration_container,
-                                   CGeometry ***geometry_container,
-                                   CSolver ****solver_container,
-                                   CNumerics *****numerics_container,
-                                   CConfig **config_container,
-                                   CSurfaceMovement **surface_movement,
-                                   CVolumetricMovement **grid_movement,
-                                   CFreeFormDefBox*** FFDBox,
-                                   unsigned short val_iZone) {
+void CFEMFluidIteration::Preprocess(COutput *output,
+                                    CIntegration ***integration_container,
+                                    CGeometry ***geometry_container,
+                                    CSolver ****solver_container,
+                                    CNumerics *****numerics_container,
+                                    CConfig **config_container,
+                                    CSurfaceMovement **surface_movement,
+                                    CVolumetricMovement **grid_movement,
+                                    CFreeFormDefBox*** FFDBox,
+                                    unsigned short val_iZone) {
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -941,16 +941,16 @@ void CFEMFlowIteration::Preprocess(COutput *output,
   
 }
 
-void CFEMFlowIteration::Iterate(COutput *output,
-                                CIntegration ***integration_container,
-                                CGeometry ***geometry_container,
-                                CSolver ****solver_container,
-                                CNumerics *****numerics_container,
-                                CConfig **config_container,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement **grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone) {
+void CFEMFluidIteration::Iterate(COutput *output,
+                                 CIntegration ***integration_container,
+                                 CGeometry ***geometry_container,
+                                 CSolver ****solver_container,
+                                 CNumerics *****numerics_container,
+                                 CConfig **config_container,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement **grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
+                                 unsigned short val_iZone) {
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -984,19 +984,19 @@ void CFEMFlowIteration::Iterate(COutput *output,
   
 }
 
-void CFEMFlowIteration::Update(COutput *output,
-                               CIntegration ***integration_container,
-                               CGeometry ***geometry_container,
-                               CSolver ****solver_container,
-                               CNumerics *****numerics_container,
-                               CConfig **config_container,
-                               CSurfaceMovement **surface_movement,
-                               CVolumetricMovement **grid_movement,
-                               CFreeFormDefBox*** FFDBox,
-                               unsigned short val_iZone)      { }
-void CFEMFlowIteration::Monitor()     { }
-void CFEMFlowIteration::Output()      { }
-void CFEMFlowIteration::Postprocess() { }
+void CFEMFluidIteration::Update(COutput *output,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox,
+                                unsigned short val_iZone)      { }
+void CFEMFluidIteration::Monitor()     { }
+void CFEMFluidIteration::Output()      { }
+void CFEMFluidIteration::Postprocess() { }
 
 CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
 CWaveIteration::~CWaveIteration(void) { }
