@@ -59,6 +59,7 @@ protected:
 	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
+  su2double **ResolutionTensor; /*! < \brief A resolution tensor, representing separation distances in the global coordinate system. */
 	static unsigned short nDim;		/*!< \brief Dimension of the element (2D or 3D) useful for triangles,
                                  quadrilateral and edges. */
 	unsigned long DomainElement;	/*!< \brief Only for boundaries, in this variable the 3D elements which
@@ -66,6 +67,20 @@ protected:
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
   su2double Volume;    /*!< \brief Volume of the element. */
+
+  /*!
+   * \brief Gram-Schmidt orthogonalization process
+   *
+   * This could be merged with the Gram-Schmidt implementation in the CSysSolve
+   * object, but in the current state ModGramSchmidt in CSysSolve is a private
+   * method, and would need to be exposed to be used here.
+   *
+   * @param[in]  w - The vectors to be made orthogonal
+   * @param[out] v - A set of orthonormal basis vectors, using the first vector
+   *                 a reference vector.
+   */
+  void GramSchmidt(std::vector<std::vector<su2double> > &w,
+                   std::vector<std::vector<su2double> > &v);
 
 public:
 	
@@ -268,6 +283,17 @@ public:
 	 * \return Local index of the nodes that are neighbor to <i>val_node</i>.
 	 */
 	virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) = 0;
+
+	/*!
+	 * \brief Sets the resolution tensor for the given grid object.
+   * \param[in] val_coord - Coordinates of the element.
+	 */
+  virtual void SetResolutionTensor(su2double **val_coord);
+
+  /*!
+   * \brief Gets the resolution tensor for the given grid object.
+   */
+  virtual vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -768,6 +794,19 @@ public:
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
+
+  /*!
+   * \brief Sets the resolution tensor for a quadrilateral element.
+   * \param[in] val_coord - Coordinates of the element.
+   */
+  void SetResolutionTensor(su2double **val_coord);
+
+  /*!
+   * \brief Gets the resolution tensor for a quadrilateral element.
+   * \return A 2x2 resolution tensor representing the separation distances
+   *         across the cell in the global coordinates.
+   */
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!
@@ -1005,6 +1044,20 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  /*!
+   * \brief Sets the resolution tensor for a hexahedral element.
+   * \param[in] val_coord - Coordinates of the element.
+   */
+  void SetResolutionTensor(su2double **val_coord);
+
+  /*!
+   * \brief Gets the resolution tensor for the given hexahedral cell.
+   *
+   * \return A 3x3 resolution tensor representing the separation distances
+   *         across the cell in the global coordinates.
+   */
+  vector<vector<su2double> > GetResolutionTensor(void);
 };
 
 /*!

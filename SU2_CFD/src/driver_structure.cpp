@@ -595,6 +595,11 @@ void CDriver::Geometrical_Preprocessing() {
         (config_container[iZone]->GetVisualize_CV() < (long)geometry_container[iZone][MESH_0]->GetnPointDomain()))
       geometry_container[iZone][MESH_0]->VisualizeControlVolume(config_container[iZone], UPDATE);
 
+    /*--- Compute cell center of gravity ---*/
+
+    if (rank == MASTER_NODE) cout << "Computing cell resolution tensors." << endl;
+    geometry_container[iZone][MESH_0]->SetResolutionTensor();
+
     /*--- Identify closest normal neighbor ---*/
 
     if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;

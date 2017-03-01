@@ -33,6 +33,19 @@
  
 #pragma once
 
+inline su2double inline_dot_prod(vector<su2double> v, vector<su2double> w) {
+  su2double dot_product = 0.0;
+  unsigned short nDim = v.size();
+  for (unsigned int iDim = 0; iDim < nDim; ++iDim) {
+    dot_product += v[iDim]*w[iDim];
+  }
+  return dot_product;
+}
+
+inline su2double inline_magnitude(vector<su2double> v) {
+  return std::sqrt(inline_dot_prod(v,v));
+}
+
 inline unsigned short CPrimalGrid::GetnNodesFace(unsigned short val_face) { return 0; }
 
 inline void CPrimalGrid::SetDomainElement(unsigned long val_domainelement) { DomainElement = val_domainelement; }
