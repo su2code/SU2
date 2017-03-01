@@ -966,7 +966,8 @@ protected:
 
   enum PILOT_GROUP_TYPES{
     ABSOLUTE = 0,
-    RELATIVE = 1
+    RELATIVE = 1,
+    SINGLE=    2
   };
 
 public:

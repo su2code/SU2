@@ -5450,9 +5450,9 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFr
 
 
   if (!PilotFile.fail()){
-
-    cout << "Reading pilot points from file." << endl;
-
+    if (rank == MASTER_NODE){
+      cout << "Reading pilot points from file." << endl;
+    }
     while(getline(PilotFile, text_line)){
       istringstream line(text_line);
       line >> Token;
@@ -5462,8 +5462,12 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFr
           GroupTypes.push_back(RELATIVE);
         } else if (Token == "ABSOLUTE") {
           GroupTypes.push_back(ABSOLUTE);
+        } else if (Token == "SINGLE"){
+          GroupTypes.push_back(SINGLE);
         } else {
-          cout << "Group type " << Token  << " not a valid option." << endl;
+          if (rank == MASTER_NODE){
+            cout << "Group type " << Token  << " not a valid option." << endl;
+          }
           exit(EXIT_FAILURE);
         }
         line >> std::skipws >> Token;
@@ -5472,7 +5476,9 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFr
         istringstream lineffd(text_line);
         lineffd >> Token;
         if (Token != "FFD_BOX"){
-          cout <<"FFD_BOX missing in pilot point file." << endl;
+          if (rank == MASTER_NODE){
+            cout <<"FFD_BOX missing in pilot point file." << endl;
+          }
           exit(EXIT_FAILURE);
         }
         lineffd >> std::skipws >> Token;
@@ -5482,7 +5488,9 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFr
         istringstream linenpoints(text_line);
         linenpoints >> Token;
         if (Token != "NPOINTS"){
-          cout <<"NPOINTS missing in pilot point file." << endl;
+          if (rank == MASTER_NODE){
+            cout <<"NPOINTS missing in pilot point file." << endl;
+          }
           exit(EXIT_FAILURE);
         }
         linenpoints >> nPilotPoints;
@@ -5504,11 +5512,23 @@ void CSurfaceMovement::ReadPilotPoints(CGeometry *geometry, CConfig *config, CFr
 
     for (iGroup = 0; iGroup < PilotGroupNames.size(); iGroup++){
       if (PilotFFD[iGroup] == FFDBox->GetTag()){
-        FFDBox->PilotGroupNames.push_back(PilotGroupNames[iGroup]);
-        FFDBox->PilotPointsX.push_back(PilotXCoord[iGroup]);
-        FFDBox->PilotPointsY.push_back(PilotYCoord[iGroup]);
-        FFDBox->PilotPointsZ.push_back(PilotZCoord[iGroup]);
-        FFDBox->PilotGroupType.push_back(GroupTypes[iGroup]);
+        if (GroupTypes[iGroup] == SINGLE){
+          for (iPilotPoint = 0; iPilotPoint < PilotXCoord[iGroup].size(); iPilotPoint++){
+            char index[10];
+            SPRINTF(index, "%d", iPilotPoint);
+            FFDBox->PilotGroupNames.push_back(PilotGroupNames[iGroup] + string("_") + string(index));
+            FFDBox->PilotPointsX.push_back(vector<su2double>(1,PilotXCoord[iGroup][iPilotPoint]));
+            FFDBox->PilotPointsY.push_back(vector<su2double>(1,PilotYCoord[iGroup][iPilotPoint]));
+            FFDBox->PilotPointsZ.push_back(vector<su2double>(1,PilotZCoord[iGroup][iPilotPoint]));
+            FFDBox->PilotGroupType.push_back(ABSOLUTE);
+          }
+        } else {
+          FFDBox->PilotGroupNames.push_back(PilotGroupNames[iGroup]);
+          FFDBox->PilotPointsX.push_back(PilotXCoord[iGroup]);
+          FFDBox->PilotPointsY.push_back(PilotYCoord[iGroup]);
+          FFDBox->PilotPointsZ.push_back(PilotZCoord[iGroup]);
+          FFDBox->PilotGroupType.push_back(GroupTypes[iGroup]);
+        }
       }
     }
   } 
