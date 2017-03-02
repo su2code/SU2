@@ -2186,21 +2186,23 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     DeltaY = ParameterValuesY - SystemMatrix*ControlPointPositionsY;
     if (nDim == 3)
       DeltaZ = ParameterValuesZ - SystemMatrix*ControlPointPositionsZ;
-
-    cout << "Difference in Pilot Point Position: ( "
-      << DeltaX.norm() << ", "
-      << DeltaY.norm();
-    if (nDim == 3){
-      cout << ", " << DeltaZ.norm();
+    
+    if (rank == MASTER_NODE){
+      cout << "Difference in Pilot Point Position: ( "
+        << DeltaX.norm() << ", "
+        << DeltaY.norm();
+      if (nDim == 3){
+        cout << ", " << DeltaZ.norm();
+      }
+      cout << " )" <<endl;
+      cout << "Control Point Movement:             ( "
+        << ControlPointPositionsX.norm() << ", "
+        << ControlPointPositionsY.norm();
+      if (nDim == 3){
+        cout << ", " << ControlPointPositionsZ.norm();
+      }
+      cout << " )" << endl;
     }
-    cout << " )" <<endl;
-    cout << "Control Point Movement:             ( "
-      << ControlPointPositionsX.norm() << ", "
-      << ControlPointPositionsY.norm();
-    if (nDim == 3){
-      cout << ", " << ControlPointPositionsZ.norm();
-    }
-    cout << " )" << endl;
 
     for (iControl = 0; iControl < lControl; iControl++){
       for (jControl = 0; jControl < mControl; jControl++){
