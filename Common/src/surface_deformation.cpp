@@ -2160,7 +2160,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
     SystemMatrix.block(displ,0, Block.rows(), Block.cols()) = Block;
 
-    displ += RhsX.rows();
+    displ += Block.rows();
 
 
   }
@@ -6623,7 +6623,7 @@ void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned 
           Bijk = BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
                  BlendingFunction[1]->GetBasis(jControl,ParamCoord[1])*
                  BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
-          SystemMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
+          BlendingMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
         }
       }
     }
