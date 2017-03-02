@@ -840,7 +840,7 @@ inline void CSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMar
 
 inline void CSolver::Friction_Forces(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Heat_Fluxes(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
