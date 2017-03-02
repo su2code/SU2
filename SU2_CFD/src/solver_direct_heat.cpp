@@ -75,75 +75,79 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
-    /*--- Define some auxiliar vector related with the residual ---*/
+  Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
+  Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+  Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
+  Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
+  Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+  Res_Conv      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
+  Res_Visc      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
 
-    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
-    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
-    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
-    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-    Res_Conv      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
-    Res_Visc      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
+  /*--- Define some structures for locating max residuals ---*/
 
-    /*--- Define some structures for locating max residuals ---*/
-
-    Point_Max = new unsigned long[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-    }
-
-    /*--- Define some auxiliar vector related with the solution ---*/
-
-    Solution = new su2double[nVar];
-    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
-
-    /*--- Define some auxiliar vector related with the geometry ---*/
-
-    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-
-    /*--- Jacobians and vector structures for implicit computations ---*/
-
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
-
-    /*--- Initialization of the structure of the whole Jacobian ---*/
-
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (heat equation)." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-
-    if (config->GetExtraOutput()) {
-      if (nDim == 2) { nOutputVariables = 13; }
-      else if (nDim == 3) { nOutputVariables = 19; }
-      OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
-      OutputHeadingNames = new string[nOutputVariables];
-    }
-
-    /*--- Computation of gradients by least squares ---*/
-
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-      Smatrix = new su2double* [nDim];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Smatrix[iDim] = new su2double [nDim];
-    }
-
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
   }
+
+  /*--- Define some auxiliar vector related with the solution ---*/
+
+  Solution = new su2double[nVar];
+  Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
+
+  /*--- Define some auxiliary vectors related to the geometry ---*/
+
+  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
+  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
+  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+
+  /*--- Define some auxiliary vectors related to the primitive flow solution ---*/
+
+  Primitive_Flow_i = new su2double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) Primitive_Flow_i[iVar] = 0.0;
+  Primitive_Flow_j = new su2double[nDim+1]; for (iVar = 0; iVar < nDim+1; iVar++) Primitive_Flow_j[iVar] = 0.0;
+
+  /*--- Jacobians and vector structures for implicit computations ---*/
+
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
+
+  /*--- Initialization of the structure of the whole Jacobian ---*/
+
+  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (heat equation) MG level: " << iMesh << "." << endl;
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+
+  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+  }
+
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  if (config->GetExtraOutput()) {
+    if (nDim == 2) { nOutputVariables = 13; }
+    else if (nDim == 3) { nOutputVariables = 19; }
+    OutputVariables.Initialize(nPoint, nPointDomain, nOutputVariables, 0.0);
+    OutputHeadingNames = new string[nOutputVariables];
+  }
+
+  /*--- Computation of gradients by least squares ---*/
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new su2double [nDim];
+  }
+
 
   Heat_Flux = new su2double[nMarker];
 
