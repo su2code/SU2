@@ -592,6 +592,18 @@ def main():
 #    pipe.unsteady  = True
 #    test_list.append(pipe)
 
+    # Bars_2D_SST
+    bars_2d_SST           = TestCase('bars_2d_SST')
+    bars_2d_SST.cfg_dir   = "sliding_interface/bars_2d_SST"
+    bars_2d_SST.cfg_file  = "bars.cfg"
+    bars_2d_SST.test_iter = 13
+    bars_2d_SST.test_vals = [-2.319112, 0.921516, 0.001250, 0.093059] #last 4 columns
+    bars_2d_SST.su2_exec  = "SU2_CFD"
+    bars_2d_SST.timeout   = 1600
+    bars_2d_SST.tol       = 0.00001
+    bars_2d_SST.unsteady  = True
+    test_list.append(bars_2d_SST)
+
     ##########################
     ### FEA - FSI          ###
     ##########################   
