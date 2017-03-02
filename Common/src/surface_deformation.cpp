@@ -2133,6 +2133,15 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   EigenVector ControlPointPositionsY(TotalControl);
   EigenVector ControlPointPositionsZ(TotalControl);
   EigenSVD   SystemMatrixSVD;
+  EigenMatrix EnergyMatrix(TotalControl, TotalControl);
+  EigenMatrix StencilMatrix(TotalControl, TotalControl);
+  EigenMatrix LinearSystemMatrix(TotalControl + nParameter, TotalControl + nParameter);
+  EigenVector LinearSystemSol(TotalControl + nParameter);
+  EigenVector LinearSystemRHS(TotalControl + nParameter);
+  StencilMatrix = EigenMatrix::Zero(TotalControl, TotalControl);
+  LinearSystemMatrix = EigenMatrix::Zero(TotalControl + nParameter, TotalControl + nParameter);
+  LinearSystemRHS = EigenVector::Zero(TotalControl + nParameter);
+  LinearSystemSol = EigenVector::Zero(TotalControl + nParameter);
 
   /*--- Loop through all groups of this ffd box ---*/
 
@@ -2172,35 +2181,120 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
   }
 
+
+
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
+      for (kControl = 0; kControl < nControl; kControl++){
+        unsigned long CIndex = iControl*mControl*nControl + jControl*nControl + kControl;
+
+        StencilMatrix(CIndex, CIndex) = -1.0;
+
+        if ((iControl == 0) && (jControl == 0)){
+          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 0.5;
+        }
+        else if ((iControl == lControl - 1) && (jControl == mControl - 1)){
+          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 0.5;
+        }
+        else if ((iControl == 0) && (jControl ==  mControl - 1)){
+          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 0.5;
+        }
+        else if ((iControl == lControl - 1) && (jControl == 0)){
+          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 0.5;
+        }
+
+        else if ((iControl = lControl -1)){
+          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 1.0/3.0;
+        }
+        else if ((jControl == mControl -1)){
+          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 1.0/3.0;
+        }
+        else if (iControl == 0){
+          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 1.0/3.0;
+        }
+        else if (jControl == 0){
+          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 1.0/3.0;
+        }
+        else {
+          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 0.25;
+          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 0.25;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 0.25;
+          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 0.25;
+        }
+      }
+    }
+  }
+
+
+
   if (nGroup > 0){
 
-    /*--- Set up necessary matrices and vectors ---*/
+    EnergyMatrix = StencilMatrix.transpose()*StencilMatrix;
 
-    SystemMatrixSVD = SystemMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+    LinearSystemMatrix.block(0, 0, EnergyMatrix.rows(), EnergyMatrix.cols()) = EnergyMatrix;
+
+    LinearSystemMatrix.block(0, TotalControl, TotalControl, nParameter) = SystemMatrix.transpose();
+
+    LinearSystemMatrix.block(TotalControl, 0, nParameter, TotalControl) = SystemMatrix;
+
+    cout << LinearSystemMatrix << endl;
+
+    Eigen::PartialPivLU<EigenMatrix> EigenQR;
+
+    EigenQR = LinearSystemMatrix.partialPivLu();
+
+    LinearSystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesX;
+
+    LinearSystemSol = EigenQR.solve(LinearSystemRHS);
+
+    ControlPointPositionsX = LinearSystemSol.block(0, 0, TotalControl, 1);
+
+    LinearSystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesY;
+
+    LinearSystemSol = EigenQR.solve(LinearSystemRHS);
+
+    ControlPointPositionsY = LinearSystemSol.block(0, 0, TotalControl, 1);
 
 
-    /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
+//    /*--- Set up necessary matrices and vectors ---*/
 
-    ControlPointPositionsX = SystemMatrixSVD.solve(ParameterValuesX);
-    ControlPointPositionsY = SystemMatrixSVD.solve(ParameterValuesY);
-    if (nDim == 3)
-      ControlPointPositionsZ = SystemMatrixSVD.solve(ParameterValuesZ);
+//    SystemMatrixSVD = SystemMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-    /*--- Compute the residual  DX = X - B^* P_x, DY = Y - B^* P_y
-     * (measures how well the pilot point positions can be represented by the FFD box )--- */
 
-    DeltaX = ParameterValuesX - SystemMatrix*ControlPointPositionsX;
-    DeltaY = ParameterValuesY - SystemMatrix*ControlPointPositionsY;
-    if (nDim == 3)
-      DeltaZ = ParameterValuesZ - SystemMatrix*ControlPointPositionsZ;
+//    /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
+
+//    ControlPointPositionsX = SystemMatrixSVD.solve(ParameterValuesX);
+//    ControlPointPositionsY = SystemMatrixSVD.solve(ParameterValuesY);
+//    if (nDim == 3)
+//      ControlPointPositionsZ = SystemMatrixSVD.solve(ParameterValuesZ);
+
+//    /*--- Compute the residual  DX = X - B^* P_x, DY = Y - B^* P_y
+//     * (measures how well the pilot point positions can be represented by the FFD box )--- */
+
+//    DeltaX = ParameterValuesX - SystemMatrix*ControlPointPositionsX;
+//    DeltaY = ParameterValuesY - SystemMatrix*ControlPointPositionsY;
+//    if (nDim == 3)
+//      DeltaZ = ParameterValuesZ - SystemMatrix*ControlPointPositionsZ;
     
-    if (rank == MASTER_NODE){
-      cout << "Difference in Pilot Point Position: ( "
-        << DeltaX.norm() << ", "
-        << DeltaY.norm();
-      if (nDim == 3){
-        cout << ", " << DeltaZ.norm();
-      }
+//    if (rank == MASTER_NODE){
+//      cout << "Difference in Pilot Point Position: ( "
+//        << DeltaX.norm() << ", "
+//        << DeltaY.norm();
+//      if (nDim == 3){
+//        cout << ", " << DeltaZ.norm();
+//      }
       cout << " )" <<endl;
       cout << "Control Point Movement:             ( "
         << ControlPointPositionsX.norm() << ", "
@@ -2209,7 +2303,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
         cout << ", " << ControlPointPositionsZ.norm();
       }
       cout << " )" << endl;
-    }
+//    }
 
     for (iControl = 0; iControl < lControl; iControl++){
       for (jControl = 0; jControl < mControl; jControl++){
