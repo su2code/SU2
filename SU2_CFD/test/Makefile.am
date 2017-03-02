@@ -36,6 +36,7 @@
 check_PROGRAMS  =
 check_PROGRAMS += noop
 check_PROGRAMS += CSourcePieceWise_TurbSST_unit
+check_PROGRAMS += aniso_viscous_flux_inc
 
 # Eventually these will likely be required
 AM_CPPFLAGS =
@@ -54,12 +55,14 @@ LDADD += @su2_externals_LIBS@
 # Test sources
 noop_SOURCES = noop.cpp
 CSourcePieceWise_TurbSST_unit_SOURCES = CSourcePieceWise_TurbSST_unit.cpp
+aniso_viscous_flux_inc_SOURCES = aniso_viscous_flux_inc.cpp
 
 
 # Tests to be run
 TESTS  =
 TESTS += noop
 TESTS += CSourcePieceWise_TurbSST_unit
+TESTS += aniso_viscous_flux_inc
 
 
 # Any of above we expect to fail?
