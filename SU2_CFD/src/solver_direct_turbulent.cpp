@@ -2325,16 +2325,11 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool viscous       = config->GetViscous();
   unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
-
-  su2double coeff;
-  su2double P_static, rho_static;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -2381,7 +2376,6 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
           LinSysRes.AddBlock(iPoint, Residual);
 
-          //          if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
           /*--- Set the normal vector and the coordinates ---*/
@@ -3296,16 +3290,12 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool viscous       = config->GetViscous();
   unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
 
-  su2double coeff;
-  su2double P_static, rho_static;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3354,7 +3344,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           LinSysRes.AddBlock(iPoint, Residual);
 
-          //          if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
           /*--- Set the normal vector and the coordinates ---*/
