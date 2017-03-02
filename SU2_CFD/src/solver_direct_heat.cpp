@@ -322,11 +322,64 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
         /*--- Primitive variables w/o reconstruction ---*/
         V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
         V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
-        numerics->SetPrimitive(V_i, V_j);
 
         Temp_i = node[iPoint]->GetSolution(0);
-        Temp_j = node[jPoint]->GetSolution(0);
-        numerics->SetTemperature(Temp_i, Temp_j);
+        Temp_j = node[jPoint]->GetSolution(0); 
+
+        /* Second order reconstruction */
+        if(true) {
+
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+              Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+            }
+
+            Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+            Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
+            Temp_i_Grad = node[iPoint]->GetGradient();
+            Temp_j_Grad = node[jPoint]->GetGradient();
+
+            /*Loop to correct the flow variables*/
+            for (iVar = 0; iVar < nVarFlow; iVar++) {
+
+                /*Apply the Gradient to get the right temperature value on the edge */
+                Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                    Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
+                    Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+                }
+
+                // Work for limiters to be done...
+                if(false) { }
+                else {
+                    Primitive_Flow_i[iVar] = V_i[iVar] + Project_Grad_i;
+                    Primitive_Flow_j[iVar] = V_j[iVar] + Project_Grad_j;
+                }
+            }
+
+            /* Correct the temperature variables */
+            Project_Temp_i_Grad = 0.0; Project_Temp_j_Grad = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+                Project_Temp_i_Grad += Vector_i[iDim]*Temp_i_Grad[0][iDim]*Non_Physical;
+                Project_Temp_j_Grad += Vector_j[iDim]*Temp_j_Grad[0][iDim]*Non_Physical;
+            }
+            // Work for temperature limiters to be done...
+            if(false) { }
+            else {
+                Temp_i_Corrected = Temp_i + Project_Temp_i_Grad;
+                Temp_j_Corrected = Temp_j + Project_Temp_j_Grad;
+            }
+
+            numerics->SetPrimitive(Primitive_Flow_i, Primitive_Flow_j);
+            numerics->SetTemperature(Temp_i_Corrected, Temp_j_Corrected);
+
+        }
+        else {
+
+            numerics->SetPrimitive(V_i, V_j);
+            numerics->SetTemperature(Temp_i, Temp_j);
+        }
+
 
         numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
