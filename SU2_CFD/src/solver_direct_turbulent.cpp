@@ -41,7 +41,7 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   upperlimit    = NULL;
   nVertex       = NULL;
   nMarker       = 0;
-  /*--- Initialize the Primitive Variables ---*/
+  /*--- Initialize the Primitive Variables (two by default for turbulent)---*/
   nPrimVar = 2;
 }
 
@@ -54,8 +54,6 @@ CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
   FlowPrimVar_j = NULL;
   lowerlimit    = NULL;
   upperlimit    = NULL;
-  nVertex       = NULL;
-  nMarker       = 0;
   
 }
 
@@ -65,6 +63,7 @@ CTurbSolver::~CTurbSolver(void) {
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   if (lowerlimit != NULL) delete [] lowerlimit;
   if (upperlimit != NULL) delete [] upperlimit;
+  if (nVertex != NULL) delete [] nVertex;
   
 }
 
