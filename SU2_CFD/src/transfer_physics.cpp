@@ -367,6 +367,7 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   bool turbulent = (nVar == 2) ;
 
   if (turbulent){
+
     /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
     Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
     Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);

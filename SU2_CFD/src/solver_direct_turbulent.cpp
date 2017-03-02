@@ -2350,14 +2350,13 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
             PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar);
           }
 
-
           /*--- Set primitive variables ---*/
 
           conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
           /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = node[iPoint]->GetSolution(0);
-            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+          Solution_i[0] = node[iPoint]->GetSolution(0);
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
 
           conv_numerics->SetTurbVar(Solution_i, Solution_j);
           /*--- Set the normal vector ---*/
@@ -2370,7 +2369,6 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
           /*--- Compute the convective residual using an upwind scheme ---*/
 
           conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
 
           /*--- Add Residuals and Jacobians ---*/
 
@@ -2413,7 +2411,6 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-
 
 }
 
@@ -3321,11 +3318,11 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
           /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = node[iPoint]->GetSolution(0);
-            Solution_i[1] = node[iPoint]->GetSolution(1);
+          Solution_i[0] = node[iPoint]->GetSolution(0);
+          Solution_i[1] = node[iPoint]->GetSolution(1);
 
-            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
-            Solution_j[1] = GetSlidingState(iMarker, iVertex, 1);
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+          Solution_j[1] = GetSlidingState(iMarker, iVertex, 1);
 
           conv_numerics->SetTurbVar(Solution_i, Solution_j);
           /*--- Set the normal vector ---*/
@@ -3381,7 +3378,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-
 
 }
 
