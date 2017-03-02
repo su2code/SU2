@@ -733,7 +733,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
         }
       }
 
-      if (config->GetHeat_Inc()) solver_container[MESH_0][HEAT_SOL]->Heat_Fluxes(geometry[MESH_0], config);
+      if (config->GetHeat_Inc()) solver_container[MESH_0][HEAT_SOL]->Heat_Fluxes(geometry[MESH_0], solver_container[MESH_0], config);
 
       break;
       
