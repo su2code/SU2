@@ -2,7 +2,7 @@
  * \file solution_direct_mean_inc.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -87,26 +89,119 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
-  su2double dull_val;
-  int Unst_RestartIter;
   ifstream restart_file;
-  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  bool metadata  = config->GetUpdate_Restart_Params();
   string filename = config->GetSolution_FlowFileName();
-  
+  su2double AoA_, AoS_, BCThrust_;
+  string meta_filename;
+  string::size_type position;
+  unsigned long ExtIter_;
+
   unsigned short direct_diff = config->GetDirectDiff();
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+
+    meta_filename = "restart.meta";
+
+    /*--- Open the restart file, throw an error if this fails. ---*/
+
+    restart_file.open(meta_filename.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE) {
+        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
+        cout << " Computation will continue without updating metadata parameters." << endl;
+      }
+    } else {
+
+      string text_line;
+
+      /*--- Space for extra info (if any) ---*/
+
+      while (getline (restart_file, text_line)) {
+
+        /*--- Angle of attack ---*/
+
+        position = text_line.find ("AOA=",0);
+        if (position != string::npos) {
+          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+            }
+            config->SetAoA(AoA_ + config->GetAoA_Offset());
+          }
+          else {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+          }
+        }
+
+        /*--- Sideslip angle ---*/
+
+        position = text_line.find ("SIDESLIP_ANGLE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+            }
+            config->SetAoS(AoS_ + config->GetAoS_Offset());
+          }
+          else {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+          }
+        }
+
+        /*--- BCThrust angle ---*/
+
+        position = text_line.find ("INITIAL_BCTHRUST=",0);
+        if (position != string::npos) {
+          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+            config->SetInitial_BCThrust(BCThrust_);
+          }
+          else {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+          }
+        }
+
+        /*--- External iteration ---*/
+
+        position = text_line.find ("EXT_ITER=",0);
+        if (position != string::npos) {
+          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+            config->SetExtIter_OffSet(ExtIter_);
+        }
+        
+      }
+      
+      /*--- Close the restart metadate file. ---*/
+      
+      restart_file.close();
+      
+    }
+  }
+
   /*--- Basic array initialization ---*/
 
   CD_Inv  = NULL; CL_Inv  = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
@@ -389,11 +484,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Init total coefficients ---*/
 
-  Total_CD      = 0.0;	Total_CL           = 0.0;  Total_CSF          = 0.0;
-  Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
+  Total_CD      = 0.0;  Total_CL           = 0.0;  Total_CSF          = 0.0;
+  Total_CMx     = 0.0;  Total_CMy          = 0.0;  Total_CMz          = 0.0;
   Total_CEff    = 0.0;
-  Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
-  Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
+  Total_CFx     = 0.0;  Total_CFy          = 0.0;  Total_CFz          = 0.0;
+  Total_CT      = 0.0;  Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
   Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
   
@@ -434,156 +529,30 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   }
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
-  
+
   if (config->GetFixed_CL_Mode())
     Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
-  
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-  
-  if (!restart || (iMesh != MESH_0)) {
-    
-    /*--- Restart the solution from the free-stream state ---*/
-    
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
-    
-  } else {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-    if (nZone > 1)
-	  filename = config->GetMultizone_FileName(filename, iZone);
-    
-    /*--- Modify file name for a dual-time unsteady restart ---*/
-    
-    if (dual_time) {
-      
-      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
-      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-    }
-    
-		/*--- Modify file name for a time stepping unsteady restart ---*/
-		
-		if (time_stepping) {
-			if (adjoint) {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-			} else {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-			}
-			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-		}
-		
-		
-		/*--- Open the restart file, throw an error if this fails. ---*/
-    
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CIncEulerVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncEulerVariable(Solution, nDim, nVar, config);
-    
-    /*--- Close the restart file ---*/
-    
-    restart_file.close();
-    
-  }
-  
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
+
   /*--- Define solver parameters needed for execution of destructor ---*/
-  
+
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
   else space_centered = false;
-  
+
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
   else euler_implicit = false;
-  
+
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-  
+
   /*--- Perform the MPI communication of the solution ---*/
-  
+
   Set_MPI_Solution(geometry, config);
-  
+
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
@@ -1933,7 +1902,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
     if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
     else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
     
-    cout << "Magnitude: "	<< config->GetModVel_FreeStream();
+    cout << "Magnitude: "  << config->GetModVel_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
     
@@ -2006,7 +1975,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
       cout << "Free-stream velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
       cout << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
     }
-    cout << "Magnitude: "	 << config->GetModVel_FreeStreamND() << endl;
+    cout << "Magnitude: "   << config->GetModVel_FreeStreamND() << endl;
     
     if (viscous) {
       cout << "Free-stream viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
@@ -2041,7 +2010,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   bool rans      = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
-	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool gravity   = (config->GetGravityForce() == YES);
   
@@ -2154,11 +2123,11 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
       
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1));
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), true);
       
       /*--- Load an additional restart file for the turbulence model ---*/
       if (rans)
-        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1));
+        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
       
       /*--- Push back this new solution to time level N. ---*/
       
@@ -2294,7 +2263,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-	bool time_steping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool time_steping  = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time     = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -2439,20 +2408,20 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     Global_Delta_Time = rbuf_time;
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-			
-			/*--- Sets the regular CFL equal to the unsteady CFL ---*/
       
-			config->SetCFL(iMesh,config->GetUnst_CFL());
-			
-			/*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
-			 it computes the time step based on the unsteady CFL ---*/
+      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
       
-			if (config->GetCFL(iMesh) == 0.0){
-				node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
-			} else {
-				node[iPoint]->SetDelta_Time(Global_Delta_Time);
-			}
-		}
+      config->SetCFL(iMesh,config->GetUnst_CFL());
+      
+      /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+       it computes the time step based on the unsteady CFL ---*/
+      
+      if (config->GetCFL(iMesh) == 0.0){
+        node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+      } else {
+        node[iPoint]->SetDelta_Time(Global_Delta_Time);
+      }
+    }
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
@@ -3481,7 +3450,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
           Coord = geometry->node[iPoint]->GetCoord();
-          Density 	= node[iPoint]->GetDensity();
+          Density   = node[iPoint]->GetDensity();
 
           /*--- Quadratic objective function for the near-field.
            This uses the infinity pressure regardless of Mach number. ---*/
@@ -3490,7 +3459,7 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
 
           Vel_Infty2 =0.0; MassFlow = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim] 	= node[iPoint]->GetVelocity(iDim);
+            Velocity[iDim]   = node[iPoint]->GetVelocity(iDim);
             MomentDist[iDim] = Coord[iDim] - Origin[iDim];
             MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
             Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
@@ -4459,7 +4428,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex;
 
-  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, UnitNormal[3], *NormalArea, turb_ke;
+  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
@@ -4488,7 +4457,6 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       
       for (iDim = 0; iDim < nDim; iDim++) {
         NormalArea[iDim] = -Normal[iDim];
-        UnitNormal[iDim] = -Normal[iDim]/Area;
       }
 
       /*--- Compute the residual ---*/
@@ -5067,7 +5035,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
     }
     
-    /*---	Loop over the boundary edges ---*/
+    /*---  Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -5210,325 +5178,325 @@ void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetri
 
     unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
 
-	unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
-	unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;		// Variables for iteration over markers
-
-	unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
-
-	unsigned long nBuffer_StructCoord = 0, nBuffer_FlowNewCoord = 0;
-	unsigned long nBuffer_DonorIndices = 0, nBuffer_SetIndex = 0;
-
-	unsigned long Point_Flow, Point_Struct;
-	long Point_Flow_Rcv, Processor_Flow_Rcv;
-	unsigned long Processor_Flow;
-
-	int Marker_Flow = -1, Marker_Struct = -1;
-
-	int iProcessor, nProcessor = 0;
-
-
-	su2double *Coord_Struct, *Displacement_Struct;
-
-	/*--- Number of markers on the FSI interface ---*/
-
-	nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
-	nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
-	nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
-
-	nProcessor = size;
-
-	/*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
-	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
-
-	for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++){
-
-		Marker_Struct = -1;
-		Marker_Flow = -1;
-
-		/*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
-		unsigned long Buffer_Send_nVertexStruct[1], *Buffer_Recv_nVertexStruct = NULL;
-		unsigned long Buffer_Send_nVertexFlow[1], *Buffer_Recv_nVertexFlow = NULL;
-
-		/*--- The markers on the fluid and structural side are tagged with the same index.
-		 *--- This is independent of the MPI domain decomposition.
-		 *--- We need to loop over all markers on structural side and get the number of nodes
-		 *--- that belong to each FSI marker for each processor ---*/
-
-		/*--- On the structural side ---*/
-
-		for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
-			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFEA) equals the index we are looping at ---*/
-			if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ){
-				/*--- We have identified the local index of the FEA marker ---*/
-				/*--- Store the number of local points that belong to markFEA on each processor ---*/
-				/*--- This includes the halo nodes ---*/
-				nLocalVertexStruct = fea_geometry[MESH_0]->GetnVertex(iMarkerStruct);
-				/*--- Store the identifier for the structural marker ---*/
-				Marker_Struct = iMarkerStruct;
-				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
-				break;
-			}
-			else {
-				/*--- If the tag hasn't matched any tag within the FEA markers ---*/
-				nLocalVertexStruct = 0;
-				Marker_Struct = -1;
-			}
-		}
+  unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;    // Number of markers on FSI problem, FEA and Flow side
+  unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;    // Variables for iteration over markers
+
+  unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
+
+  unsigned long nBuffer_StructCoord = 0, nBuffer_FlowNewCoord = 0;
+  unsigned long nBuffer_DonorIndices = 0, nBuffer_SetIndex = 0;
+
+  unsigned long Point_Flow, Point_Struct;
+  long Point_Flow_Rcv, Processor_Flow_Rcv;
+  unsigned long Processor_Flow;
+
+  int Marker_Flow = -1, Marker_Struct = -1;
+
+  int iProcessor, nProcessor = 0;
+
+
+  su2double *Coord_Struct, *Displacement_Struct;
+
+  /*--- Number of markers on the FSI interface ---*/
+
+  nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+  nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
+  nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
+
+  nProcessor = size;
+
+  /*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
+  /*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
+
+  for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++){
+
+    Marker_Struct = -1;
+    Marker_Flow = -1;
+
+    /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
+    unsigned long Buffer_Send_nVertexStruct[1], *Buffer_Recv_nVertexStruct = NULL;
+    unsigned long Buffer_Send_nVertexFlow[1], *Buffer_Recv_nVertexFlow = NULL;
+
+    /*--- The markers on the fluid and structural side are tagged with the same index.
+     *--- This is independent of the MPI domain decomposition.
+     *--- We need to loop over all markers on structural side and get the number of nodes
+     *--- that belong to each FSI marker for each processor ---*/
+
+    /*--- On the structural side ---*/
+
+    for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFEA) equals the index we are looping at ---*/
+      if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ){
+        /*--- We have identified the local index of the FEA marker ---*/
+        /*--- Store the number of local points that belong to markFEA on each processor ---*/
+        /*--- This includes the halo nodes ---*/
+        nLocalVertexStruct = fea_geometry[MESH_0]->GetnVertex(iMarkerStruct);
+        /*--- Store the identifier for the structural marker ---*/
+        Marker_Struct = iMarkerStruct;
+        /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+        break;
+      }
+      else {
+        /*--- If the tag hasn't matched any tag within the FEA markers ---*/
+        nLocalVertexStruct = 0;
+        Marker_Struct = -1;
+      }
+    }
 
-		/*--- On the fluid side ---*/
+    /*--- On the fluid side ---*/
 
-		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-			if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ){
-				/*--- We have identified the local index of the Flow marker ---*/
-				/*--- Store the number of local points that belong to markFlow on each processor ---*/
-				/*--- This includes the halo nodes ---*/
-				nLocalVertexFlow = flow_geometry[MESH_0]->GetnVertex(iMarkerFlow);
-				/*--- Store the identifier for the fluid marker ---*/
-				Marker_Flow = iMarkerFlow;
-				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
-				break;
-			}
-			else {
-				/*--- If the tag hasn't matched any tag within the Flow markers ---*/
-				nLocalVertexFlow = 0;
-				Marker_Flow = -1;
-			}
-		}
-
-		Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;								 // Retrieve total number of vertices on FEA marker
-		Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;								 // Retrieve total number of vertices on Flow marker
-		if (rank == MASTER_NODE) Buffer_Recv_nVertexStruct = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
-		if (rank == MASTER_NODE) Buffer_Recv_nVertexFlow = new unsigned long[size];  // Allocate memory to receive how many vertices are on each rank on the fluid side
-
-		/*--- We receive MaxLocalVertexFEA as the maximum number of vertices in one single processor on the structural side---*/
-		SU2_MPI::Allreduce(&nLocalVertexStruct, &MaxLocalVertexStruct, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-		/*--- We receive MaxLocalVertexFlow as the maximum number of vertices in one single processor on the fluid side ---*/
-		SU2_MPI::Allreduce(&nLocalVertexFlow, &MaxLocalVertexFlow, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+      if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ){
+        /*--- We have identified the local index of the Flow marker ---*/
+        /*--- Store the number of local points that belong to markFlow on each processor ---*/
+        /*--- This includes the halo nodes ---*/
+        nLocalVertexFlow = flow_geometry[MESH_0]->GetnVertex(iMarkerFlow);
+        /*--- Store the identifier for the fluid marker ---*/
+        Marker_Flow = iMarkerFlow;
+        /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+        break;
+      }
+      else {
+        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+        nLocalVertexFlow = 0;
+        Marker_Flow = -1;
+      }
+    }
+
+    Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;                 // Retrieve total number of vertices on FEA marker
+    Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;                 // Retrieve total number of vertices on Flow marker
+    if (rank == MASTER_NODE) Buffer_Recv_nVertexStruct = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
+    if (rank == MASTER_NODE) Buffer_Recv_nVertexFlow = new unsigned long[size];  // Allocate memory to receive how many vertices are on each rank on the fluid side
+
+    /*--- We receive MaxLocalVertexFEA as the maximum number of vertices in one single processor on the structural side---*/
+    SU2_MPI::Allreduce(&nLocalVertexStruct, &MaxLocalVertexStruct, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+    /*--- We receive MaxLocalVertexFlow as the maximum number of vertices in one single processor on the fluid side ---*/
+    SU2_MPI::Allreduce(&nLocalVertexFlow, &MaxLocalVertexFlow, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
 
-		/*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the structural side ---*/
-		SU2_MPI::Gather(&Buffer_Send_nVertexStruct, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexStruct, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-		/*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the fluid side ---*/
-		SU2_MPI::Gather(&Buffer_Send_nVertexFlow, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexFlow, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-		/*--- We will be gathering the structural coordinates into the master node ---*/
-		/*--- Then we will distribute them using a scatter operation into the appropriate fluid processor ---*/
-		nBuffer_StructCoord = MaxLocalVertexStruct * nDim;
-		nBuffer_FlowNewCoord = MaxLocalVertexFlow * nDim;
+    /*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the structural side ---*/
+    SU2_MPI::Gather(&Buffer_Send_nVertexStruct, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexStruct, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    /*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the fluid side ---*/
+    SU2_MPI::Gather(&Buffer_Send_nVertexFlow, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexFlow, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- We will be gathering the structural coordinates into the master node ---*/
+    /*--- Then we will distribute them using a scatter operation into the appropriate fluid processor ---*/
+    nBuffer_StructCoord = MaxLocalVertexStruct * nDim;
+    nBuffer_FlowNewCoord = MaxLocalVertexFlow * nDim;
 
-		/*--- We will be gathering donor index and donor processor (for structure -> donor = flow) ---*/
-		/*--- Then we will pass on to the fluid side the index (flow point) to the appropriate processor ---*/
-		nBuffer_DonorIndices = 2 * MaxLocalVertexStruct;
-		nBuffer_SetIndex = MaxLocalVertexFlow;
+    /*--- We will be gathering donor index and donor processor (for structure -> donor = flow) ---*/
+    /*--- Then we will pass on to the fluid side the index (flow point) to the appropriate processor ---*/
+    nBuffer_DonorIndices = 2 * MaxLocalVertexStruct;
+    nBuffer_SetIndex = MaxLocalVertexFlow;
 
-		/*--- Send and Recv buffers ---*/
+    /*--- Send and Recv buffers ---*/
 
-		/*--- Buffers to send and receive the structural coordinates ---*/
-		su2double *Buffer_Send_StructCoord = new su2double[nBuffer_StructCoord];
-		su2double *Buffer_Recv_StructCoord = NULL;
+    /*--- Buffers to send and receive the structural coordinates ---*/
+    su2double *Buffer_Send_StructCoord = new su2double[nBuffer_StructCoord];
+    su2double *Buffer_Recv_StructCoord = NULL;
 
-		/*--- Buffers to send and receive the donor index and processor ---*/
-		long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
-		long *Buffer_Recv_DonorIndices = NULL;
+    /*--- Buffers to send and receive the donor index and processor ---*/
+    long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
+    long *Buffer_Recv_DonorIndices = NULL;
 
-		/*--- Buffers to send and receive the new fluid coordinates ---*/
-		su2double *Buffer_Send_FlowNewCoord = NULL;
-		su2double *Buffer_Recv_FlowNewCoord = new su2double[nBuffer_FlowNewCoord];
+    /*--- Buffers to send and receive the new fluid coordinates ---*/
+    su2double *Buffer_Send_FlowNewCoord = NULL;
+    su2double *Buffer_Recv_FlowNewCoord = new su2double[nBuffer_FlowNewCoord];
 
-		/*--- Buffers to send and receive the fluid index ---*/
-		long *Buffer_Send_SetIndex = NULL;
-		long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
+    /*--- Buffers to send and receive the fluid index ---*/
+    long *Buffer_Send_SetIndex = NULL;
+    long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
 
-		/*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
+    /*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
 
-		if (rank == MASTER_NODE) {
-			Buffer_Recv_StructCoord  = new su2double[size*nBuffer_StructCoord];
-			Buffer_Recv_DonorIndices = new long[size*nBuffer_DonorIndices];
-			Buffer_Send_FlowNewCoord = new su2double[size*nBuffer_FlowNewCoord];
-			Buffer_Send_SetIndex     = new long[size*nBuffer_SetIndex];
-		}
-
-		/*--- On the structural side ---*/
-
-		/*--- If this processor owns the marker we are looping at on the structural side ---*/
-
-		/*--- First we initialize all of the indices and processors to -1 ---*/
-		/*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
-		for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
-			Buffer_Send_DonorIndices[iVertex] = -1;
-
-		if (Marker_Struct >= 0){
-
-			/*--- We have identified the local index of the FEA marker ---*/
-			/*--- We loop over all the vertices in that marker and in that particular processor ---*/
-
-			for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++){
-
-		        Point_Struct = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetNode();
-
-		        Point_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorPoint();
-
-		        Processor_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorProcessor();
+    if (rank == MASTER_NODE) {
+      Buffer_Recv_StructCoord  = new su2double[size*nBuffer_StructCoord];
+      Buffer_Recv_DonorIndices = new long[size*nBuffer_DonorIndices];
+      Buffer_Send_FlowNewCoord = new su2double[size*nBuffer_FlowNewCoord];
+      Buffer_Send_SetIndex     = new long[size*nBuffer_SetIndex];
+    }
+
+    /*--- On the structural side ---*/
+
+    /*--- If this processor owns the marker we are looping at on the structural side ---*/
+
+    /*--- First we initialize all of the indices and processors to -1 ---*/
+    /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+    for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
+      Buffer_Send_DonorIndices[iVertex] = -1;
+
+    if (Marker_Struct >= 0){
+
+      /*--- We have identified the local index of the FEA marker ---*/
+      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
+
+      for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++){
+
+            Point_Struct = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetNode();
+
+            Point_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorPoint();
+
+            Processor_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorProcessor();
 
-		        Coord_Struct = fea_geometry[MESH_0]->node[Point_Struct]->GetCoord();
+            Coord_Struct = fea_geometry[MESH_0]->node[Point_Struct]->GetCoord();
 
-		        /*--- The displacements come from the predicted solution ---*/
-		        Displacement_Struct = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred();
+            /*--- The displacements come from the predicted solution ---*/
+            Displacement_Struct = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred();
 
-				for (iDim = 0; iDim < nDim; iDim++){
-					Buffer_Send_StructCoord[iVertex*nDim+iDim] = Coord_Struct[iDim] + Displacement_Struct[iDim];
-				}
-				/*--- If this processor owns the node ---*/
-				if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()){
-					Buffer_Send_DonorIndices[2*iVertex]     = Point_Flow;
-					Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Flow;
-				}
-				else{
-					/*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
-					Buffer_Send_DonorIndices[2*iVertex]     = -1;
-					Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
-				}
+        for (iDim = 0; iDim < nDim; iDim++){
+          Buffer_Send_StructCoord[iVertex*nDim+iDim] = Coord_Struct[iDim] + Displacement_Struct[iDim];
+        }
+        /*--- If this processor owns the node ---*/
+        if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()){
+          Buffer_Send_DonorIndices[2*iVertex]     = Point_Flow;
+          Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Flow;
+        }
+        else{
+          /*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
+          Buffer_Send_DonorIndices[2*iVertex]     = -1;
+          Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
+        }
 
-			}
-		}
+      }
+    }
 
-		/*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
-		SU2_MPI::Gather(Buffer_Send_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, Buffer_Recv_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    /*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
+    SU2_MPI::Gather(Buffer_Send_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, Buffer_Recv_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
-		/*--- Counter to determine where in the array we have to set the information ---*/
-		long *Counter_Processor_Flow = NULL;
-		long iProcessor_Struct = 0, iIndex_Struct = 0;
-		long iProcessor_Flow = 0, iPoint_Flow = 0, iIndex_Flow = 0;
+    /*--- Counter to determine where in the array we have to set the information ---*/
+    long *Counter_Processor_Flow = NULL;
+    long iProcessor_Struct = 0, iIndex_Struct = 0;
+    long iProcessor_Flow = 0, iPoint_Flow = 0, iIndex_Flow = 0;
 
-		/*--- Now we pack the information to send it over to the different processors ---*/
+    /*--- Now we pack the information to send it over to the different processors ---*/
 
-		if (rank == MASTER_NODE){
+    if (rank == MASTER_NODE){
 
-			/*--- We set the counter to 0 ---*/
-			Counter_Processor_Flow = new long[nProcessor];
-			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-				Counter_Processor_Flow[iProcessor] = 0;
-			}
+      /*--- We set the counter to 0 ---*/
+      Counter_Processor_Flow = new long[nProcessor];
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+        Counter_Processor_Flow[iProcessor] = 0;
+      }
 
-			/*--- First we initialize the index vector to -1 ---*/
-			/*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
-			for (iVertex = 0; iVertex < nProcessor*nBuffer_SetIndex; iVertex++)
-				Buffer_Send_SetIndex[iVertex] = -2;
+      /*--- First we initialize the index vector to -1 ---*/
+      /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+      for (iVertex = 0; iVertex < nProcessor*nBuffer_SetIndex; iVertex++)
+        Buffer_Send_SetIndex[iVertex] = -2;
 
-			/*--- As of now we do the loop over the structural points ---*/
-			/*--- The number of points for flow and structure does not necessarily have to match ---*/
-			/*--- In fact, it's possible that a processor asks for nFlow nodes and there are only ---*/
-			/*--- nStruc < nFlow available; this is due to halo nodes ---*/
+      /*--- As of now we do the loop over the structural points ---*/
+      /*--- The number of points for flow and structure does not necessarily have to match ---*/
+      /*--- In fact, it's possible that a processor asks for nFlow nodes and there are only ---*/
+      /*--- nStruc < nFlow available; this is due to halo nodes ---*/
 
-			/*--- For every processor from which we have received information ---*/
-			/*--- (This is, for every processor on the structural side) ---*/
-			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+      /*--- For every processor from which we have received information ---*/
+      /*--- (This is, for every processor on the structural side) ---*/
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
 
-				/*--- This is the initial index on the coordinates buffer for that particular processor on the structural side ---*/
-				iProcessor_Struct = iProcessor*nBuffer_StructCoord;
-				/*--- This is the initial index on the donor index/processor buffer for that particular processor on the structural side ---*/
-				iIndex_Struct = iProcessor*nBuffer_DonorIndices;
+        /*--- This is the initial index on the coordinates buffer for that particular processor on the structural side ---*/
+        iProcessor_Struct = iProcessor*nBuffer_StructCoord;
+        /*--- This is the initial index on the donor index/processor buffer for that particular processor on the structural side ---*/
+        iIndex_Struct = iProcessor*nBuffer_DonorIndices;
 
-				/*--- For every vertex in the information retreived from iProcessor ---*/
-				for (iVertex = 0; iVertex < Buffer_Recv_nVertexStruct[iProcessor]; iVertex++) {
+        /*--- For every vertex in the information retreived from iProcessor ---*/
+        for (iVertex = 0; iVertex < Buffer_Recv_nVertexStruct[iProcessor]; iVertex++) {
 
-					/*--- The processor and index for the flow are: ---*/
-					Processor_Flow_Rcv = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2+1];
-					Point_Flow_Rcv     = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2];
+          /*--- The processor and index for the flow are: ---*/
+          Processor_Flow_Rcv = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2+1];
+          Point_Flow_Rcv     = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2];
 
-					/*--- Load the buffer at the appropriate position ---*/
-					/*--- This is determined on the fluid side by:
-					 *--- Processor_Flow*nBuffer_FlowNewCoord -> Initial position of the processor array (fluid side)
-					 *--- +
-					 *--- Counter_Processor_Flow*nDim -> Initial position of the nDim array for the particular point on the fluid side
-					 *--- +
-					 *--- iDim -> Position within the nDim array that corresponds to a point
-					 *---
-					 *--- While on the structural side is:
-					 *--- iProcessor*nBuffer_StructCoord -> Initial position on the processor array (structural side)
-					 *--- +
-					 *--- iVertex*nDim -> Initial position of the nDim array for the particular point on the structural side
-					 */
+          /*--- Load the buffer at the appropriate position ---*/
+          /*--- This is determined on the fluid side by:
+           *--- Processor_Flow*nBuffer_FlowNewCoord -> Initial position of the processor array (fluid side)
+           *--- +
+           *--- Counter_Processor_Flow*nDim -> Initial position of the nDim array for the particular point on the fluid side
+           *--- +
+           *--- iDim -> Position within the nDim array that corresponds to a point
+           *---
+           *--- While on the structural side is:
+           *--- iProcessor*nBuffer_StructCoord -> Initial position on the processor array (structural side)
+           *--- +
+           *--- iVertex*nDim -> Initial position of the nDim array for the particular point on the structural side
+           */
 
-					/*--- We check that we are not setting the value for a halo node ---*/
-					if (Point_Flow_Rcv != -1){
-						iProcessor_Flow = Processor_Flow_Rcv*nBuffer_FlowNewCoord;
-						iIndex_Flow = Processor_Flow_Rcv*nBuffer_SetIndex;
-						iPoint_Flow = Counter_Processor_Flow[Processor_Flow_Rcv]*nDim;
+          /*--- We check that we are not setting the value for a halo node ---*/
+          if (Point_Flow_Rcv != -1){
+            iProcessor_Flow = Processor_Flow_Rcv*nBuffer_FlowNewCoord;
+            iIndex_Flow = Processor_Flow_Rcv*nBuffer_SetIndex;
+            iPoint_Flow = Counter_Processor_Flow[Processor_Flow_Rcv]*nDim;
 
-						for (iDim = 0; iDim < nDim; iDim++)
-							Buffer_Send_FlowNewCoord[iProcessor_Flow + iPoint_Flow + iDim] = Buffer_Recv_StructCoord[iProcessor_Struct + iVertex*nDim + iDim];
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Send_FlowNewCoord[iProcessor_Flow + iPoint_Flow + iDim] = Buffer_Recv_StructCoord[iProcessor_Struct + iVertex*nDim + iDim];
 
-						/*--- We set the fluid index at an appropriate position matching the coordinates ---*/
-						Buffer_Send_SetIndex[iIndex_Flow + Counter_Processor_Flow[Processor_Flow_Rcv]] = Point_Flow_Rcv;
+            /*--- We set the fluid index at an appropriate position matching the coordinates ---*/
+            Buffer_Send_SetIndex[iIndex_Flow + Counter_Processor_Flow[Processor_Flow_Rcv]] = Point_Flow_Rcv;
 
-						Counter_Processor_Flow[Processor_Flow_Rcv]++;
-					}
+            Counter_Processor_Flow[Processor_Flow_Rcv]++;
+          }
 
-				}
+        }
 
-			}
+      }
 
-		}
+    }
 
-		/*--- Once all the messages have been prepared, we scatter them all from the MASTER_NODE ---*/
-		SU2_MPI::Scatter(Buffer_Send_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, Buffer_Recv_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		SU2_MPI::Scatter(Buffer_Send_SetIndex, nBuffer_SetIndex, MPI_LONG, Buffer_Recv_SetIndex, nBuffer_SetIndex, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    /*--- Once all the messages have been prepared, we scatter them all from the MASTER_NODE ---*/
+    SU2_MPI::Scatter(Buffer_Send_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, Buffer_Recv_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Scatter(Buffer_Send_SetIndex, nBuffer_SetIndex, MPI_LONG, Buffer_Recv_SetIndex, nBuffer_SetIndex, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
-		long indexPoint_iVertex, Point_Flow_Check;
+    long indexPoint_iVertex, Point_Flow_Check;
 
-		/*--- For the flow marker we are studying ---*/
-		if (Marker_Flow >= 0){
+    /*--- For the flow marker we are studying ---*/
+    if (Marker_Flow >= 0){
 
-			/*--- We have identified the local index of the Flow marker ---*/
-			/*--- We loop over all the vertices in that marker and in that particular processor ---*/
+      /*--- We have identified the local index of the Flow marker ---*/
+      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
 
-			for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++){
+      for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++){
 
-				Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
+        Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
 
-				if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()){
-					/*--- Find the index of the point Point_Flow in the buffer Buffer_Recv_SetIndex ---*/
-					indexPoint_iVertex = std::distance(Buffer_Recv_SetIndex, std::find(Buffer_Recv_SetIndex, Buffer_Recv_SetIndex + MaxLocalVertexFlow, Point_Flow));
+        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()){
+          /*--- Find the index of the point Point_Flow in the buffer Buffer_Recv_SetIndex ---*/
+          indexPoint_iVertex = std::distance(Buffer_Recv_SetIndex, std::find(Buffer_Recv_SetIndex, Buffer_Recv_SetIndex + MaxLocalVertexFlow, Point_Flow));
 
-					Point_Flow_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
+          Point_Flow_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
 
-					if (Point_Flow_Check < 0) {
-						cout << "WARNING: A nonphysical point is being considered for mesh deformation." << endl;
-						exit(EXIT_FAILURE);
-					}
+          if (Point_Flow_Check < 0) {
+            cout << "WARNING: A nonphysical point is being considered for mesh deformation." << endl;
+            exit(EXIT_FAILURE);
+          }
 
-					Coord = flow_geometry[MESH_0]->node[Point_Flow]->GetCoord();
+          Coord = flow_geometry[MESH_0]->node[Point_Flow]->GetCoord();
 
-					for (iDim = 0; iDim < nDim; iDim++)
-						VarCoord[iDim] = (Buffer_Recv_FlowNewCoord[indexPoint_iVertex*nDim+iDim])-Coord[iDim];
+          for (iDim = 0; iDim < nDim; iDim++)
+            VarCoord[iDim] = (Buffer_Recv_FlowNewCoord[indexPoint_iVertex*nDim+iDim])-Coord[iDim];
 
-					flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->SetVarCoord(VarCoord);
+          flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->SetVarCoord(VarCoord);
 
-				}
+        }
 
-			}
+      }
 
-		}
+    }
 
-		delete [] Buffer_Send_StructCoord;
-		delete [] Buffer_Send_DonorIndices;
-		delete [] Buffer_Recv_FlowNewCoord;
-		delete [] Buffer_Recv_SetIndex;
+    delete [] Buffer_Send_StructCoord;
+    delete [] Buffer_Send_DonorIndices;
+    delete [] Buffer_Recv_FlowNewCoord;
+    delete [] Buffer_Recv_SetIndex;
 
-		if (rank == MASTER_NODE) {
-			delete [] Buffer_Recv_nVertexStruct;
-			delete [] Buffer_Recv_nVertexFlow;
-			delete [] Buffer_Recv_StructCoord;
-			delete [] Buffer_Recv_DonorIndices;
-			delete [] Buffer_Send_FlowNewCoord;
-			delete [] Buffer_Send_SetIndex;
-			delete [] Counter_Processor_Flow;
-		}
+    if (rank == MASTER_NODE) {
+      delete [] Buffer_Recv_nVertexStruct;
+      delete [] Buffer_Recv_nVertexFlow;
+      delete [] Buffer_Recv_StructCoord;
+      delete [] Buffer_Recv_DonorIndices;
+      delete [] Buffer_Send_FlowNewCoord;
+      delete [] Buffer_Send_SetIndex;
+      delete [] Counter_Processor_Flow;
+    }
 
 
-	}
+  }
 
   #endif
 
@@ -5578,7 +5546,7 @@ void CIncEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolum
 
 }
 
-void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
   
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh, iMeshFine;
@@ -5610,7 +5578,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
-	restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+  restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
 
   /*--- Modify file name for an unsteady restart ---*/
   
@@ -5641,7 +5609,9 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read all lines in the restart file ---*/
   
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
   /*--- The first line is the header ---*/
   
   getline (restart_file, text_line);
@@ -5663,7 +5633,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2];
       if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
       node[iPoint_Local]->SetSolution(Solution);
-      
+       iPoint_Global_Local++;
+
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
       
@@ -5688,7 +5659,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
             else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
         }
 
-        
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
@@ -5698,15 +5668,42 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       
     }
   }
-  
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
   /*--- Close the restart file ---*/
   
   restart_file.close();
   
-  /*--- MPI solution ---*/
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We alo call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
   
   solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -5724,6 +5721,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
     solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
   }
   
   /*--- Update the geometry for flows on dynamic meshes ---*/
@@ -5795,27 +5794,119 @@ CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
   
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
-  su2double dull_val;
-  int Unst_RestartIter;
   ifstream restart_file;
-  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename = config->GetSolution_FlowFileName();
-  
+  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  bool metadata  = config->GetUpdate_Restart_Params();
+  string meta_filename;
+  su2double AoA_, AoS_, BCThrust_;
+  string::size_type position;
+  unsigned long ExtIter_;
+
   unsigned short direct_diff = config->GetDirectDiff();
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  /*--- Check for a restart file to check if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+
+    meta_filename = "restart.meta";
+
+    /*--- Open the restart file, throw an error if this fails. ---*/
+
+    restart_file.open(meta_filename.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE) {
+        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
+        cout << " Computation will continue without updating metadata parameters." << endl;
+      }
+    } else {
+
+      string text_line;
+
+      /*--- Space for extra info (if any) ---*/
+
+      while (getline (restart_file, text_line)) {
+
+        /*--- Angle of attack ---*/
+
+        position = text_line.find ("AOA=",0);
+        if (position != string::npos) {
+          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+            }
+            config->SetAoA(AoA_ + config->GetAoA_Offset());
+          }
+          else {
+            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+          }
+        }
+
+        /*--- Sideslip angle ---*/
+
+        position = text_line.find ("SIDESLIP_ANGLE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+              cout.precision(6);
+              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+            }
+            config->SetAoS(AoS_ + config->GetAoS_Offset());
+          }
+          else {
+            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+          }
+        }
+
+        /*--- BCThrust angle ---*/
+
+        position = text_line.find ("INITIAL_BCTHRUST=",0);
+        if (position != string::npos) {
+          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+          if (config->GetDiscard_InFiles() == false) {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+            config->SetInitial_BCThrust(BCThrust_);
+          }
+          else {
+            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+          }
+        }
+
+        /*--- External iteration ---*/
+
+        position = text_line.find ("EXT_ITER=",0);
+        if (position != string::npos) {
+          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+            config->SetExtIter_OffSet(ExtIter_);
+        }
+        
+      }
+      
+      /*--- Close the restart metadata file. ---*/
+      
+      restart_file.close();
+      
+    }
+  }
+
   /*--- Array initialization ---*/
   
   CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
@@ -6128,11 +6219,11 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Init total coefficients ---*/
   
-  Total_CD   = 0.0;	Total_CL        = 0.0;  Total_CSF   = 0.0;
-  Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
+  Total_CD   = 0.0;  Total_CL        = 0.0;  Total_CSF   = 0.0;
+  Total_CMx     = 0.0;  Total_CMy          = 0.0;  Total_CMz          = 0.0;
   Total_CEff    = 0.0;
-  Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
-  Total_CT      = 0.0;	Total_CQ           = 0.0;  Total_CMerit       = 0.0;
+  Total_CFx     = 0.0;  Total_CFy          = 0.0;  Total_CFz          = 0.0;
+  Total_CT      = 0.0;  Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;
   Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
   
@@ -6178,166 +6269,37 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
-  
+
   if (config->GetFixed_CL_Mode())
     Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
-  
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-  
-  if (!restart || (iMesh != MESH_0)) {
-    
-    /*--- Restart the solution from the free-stream state ---*/
-    
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
-    
-  }
-  
-  else {
-    
-    /*--- Modify file name for an unsteady restart ---*/
 
-    if (nZone >1)
-    	filename = config->GetMultizone_FileName(filename, iZone);
-    
-    if (dual_time) {
-      
-      if (adjoint) {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-      
-    }
-		
-		/*--- Modify file name for a simple unsteady restart ---*/
-		
-		if (time_stepping) {
-			if (adjoint) {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-			} else {
-				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-			}
-			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-		}
-    
-    /*--- Open the restart file, throw an error if this fails. ---*/
-    
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      istringstream point_line(text_line);
-      
-      if (iPoint_Global >= geometry->GetGlobal_nPointDomain()) { sbuf_NotMatching = 1; break; }
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CIncNSVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncNSVariable(Solution, nDim, nVar, config);
-    
-    /*--- Close the restart file ---*/
-    
-    restart_file.close();
-    
-  }
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
 
   /*--- For incompressible solver set the initial values for the density and viscosity ---*/
-  
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->SetDensity(Density_Inf);
     node[iPoint]->SetLaminarViscosity(Viscosity_Inf);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
-  
+
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) space_centered = true;
   else space_centered = false;
-  
+
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
   else euler_implicit = false;
-  
+
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-  
+
   /*--- Perform the MPI communication of the solution ---*/
-  
+
   Set_MPI_Solution(geometry, config);
-  
+
 }
 
 CIncNSSolver::~CIncNSSolver(void) {
@@ -6793,7 +6755,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   RefDensity, Density = 0.0, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
   Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, MaxNorm = 8.0,
-  Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
+  Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}},
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
 #ifdef HAVE_MPI
@@ -6892,7 +6854,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           for (jDim = 0 ; jDim < nDim; jDim++) {
             Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
           }
-          Grad_Temp[iDim] = node[iPoint]->GetGradient_Primitive(0, iDim);
         }
 
         Viscosity = node[iPoint]->GetLaminarViscosity();
@@ -7179,7 +7140,6 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned long iVertex, iPoint, total_index;
   
   su2double *GridVel, *Normal, Area;
-  su2double UnitNormal[3] = {0.0, 0.0, 0.0};
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -7205,10 +7165,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = -Normal[iDim]/Area;
-      
+
       /*--- Store the corrected velocity at the wall which will
        be zero (v = 0), unless there are moving walls (v = u_wall)---*/
       

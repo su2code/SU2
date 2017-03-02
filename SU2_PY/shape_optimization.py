@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 4.3.0 \"Cardinal\"                          |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 5.0.0 \"Raven\"                             |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
@@ -80,7 +80,7 @@ def main():
     sys.stdout.write('| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  |\n')
     sys.stdout.write('| - Prof. Rafael Palacios\' group at Imperial College London.            |\n')
     sys.stdout.write('-------------------------------------------------------------------------\n')
-    sys.stdout.write('| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |\n')
+    sys.stdout.write('| Copyright (C) 2012-2017 SU2, the open-source CFD code.                |\n')
     sys.stdout.write('|                                                                       |\n')
     sys.stdout.write('| SU2 is free software; you can redistribute it and/or                  |\n')
     sys.stdout.write('| modify it under the terms of the GNU Lesser General Public            |\n')

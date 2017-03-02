@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -17,7 +17,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,40 +51,40 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CVariable {
 protected:
   
-  su2double *Solution,		/*!< \brief Solution of the problem. */
-  *Solution_Old;			/*!< \brief Old solution of the problem R-K. */
-  bool Non_Physical;			/*!< \brief Non-physical points in the solution (force first order). */
-  su2double *Solution_time_n,	/*!< \brief Solution of the problem at time n for dual-time stepping technique. */
-  *Solution_time_n1;			/*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
-  su2double **Gradient;		/*!< \brief Gradient of the solution of the problem. */
-  su2double *Limiter;				/*!< \brief Limiter of the solution of the problem. */
-  su2double *Solution_Max;		/*!< \brief Max solution for limiter computation. */
-  su2double *Solution_Min;		/*!< \brief Min solution for limiter computation. */
-  su2double AuxVar;			/*!< \brief Auxiliar variable for gradient computation. */
-  su2double *Grad_AuxVar;	/*!< \brief Gradient of the auxiliar variable. */
-  su2double Delta_Time;	/*!< \brief Time step. */
-  su2double Max_Lambda,	/*!< \brief Maximun eingenvalue. */
-  Max_Lambda_Inv,		/*!< \brief Maximun inviscid eingenvalue. */
-  Max_Lambda_Visc,	/*!< \brief Maximun viscous eingenvalue. */
-  Lambda;				/*!< \brief Value of the eingenvalue. */
-  su2double Sensor;	/*!< \brief Pressure sensor for high order central scheme. */
-  su2double *Undivided_Laplacian;	/*!< \brief Undivided laplacian of the solution. */
-  su2double *Res_TruncError,	/*!< \brief Truncation error for multigrid cycle. */
-  *Residual_Old,		/*!< \brief Auxiliar structure for residual smoothing. */
-  *Residual_Sum;		/*!< \brief Auxiliar structure for residual smoothing. */
-  static unsigned short nDim;		/*!< \brief Number of dimension of the problem. */
-  unsigned short nVar;		/*!< \brief Number of variables of the problem,
+  su2double *Solution,    /*!< \brief Solution of the problem. */
+  *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
+  bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
+  su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
+  *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
+  su2double **Gradient;    /*!< \brief Gradient of the solution of the problem. */
+  su2double *Limiter;        /*!< \brief Limiter of the solution of the problem. */
+  su2double *Solution_Max;    /*!< \brief Max solution for limiter computation. */
+  su2double *Solution_Min;    /*!< \brief Min solution for limiter computation. */
+  su2double AuxVar;      /*!< \brief Auxiliar variable for gradient computation. */
+  su2double *Grad_AuxVar;  /*!< \brief Gradient of the auxiliar variable. */
+  su2double Delta_Time;  /*!< \brief Time step. */
+  su2double Max_Lambda,  /*!< \brief Maximun eingenvalue. */
+  Max_Lambda_Inv,    /*!< \brief Maximun inviscid eingenvalue. */
+  Max_Lambda_Visc,  /*!< \brief Maximun viscous eingenvalue. */
+  Lambda;        /*!< \brief Value of the eingenvalue. */
+  su2double Sensor;  /*!< \brief Pressure sensor for high order central scheme. */
+  su2double *Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
+  su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
+  *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
+  *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
+  static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
+  unsigned short nVar;    /*!< \brief Number of variables of the problem,
                            note that this variable cannnot be static, it is possible to
                            have different number of nVar in the same problem. */
-  unsigned short nPrimVar, nPrimVarGrad;		/*!< \brief Number of variables of the problem,
+  unsigned short nPrimVar, nPrimVarGrad;    /*!< \brief Number of variables of the problem,
                                              note that this variable cannnot be static, it is possible to
                                              have different number of nVar in the same problem. */
-  unsigned short nSecondaryVar, nSecondaryVarGrad;		/*!< \brief Number of variables of the problem,
+  unsigned short nSecondaryVar, nSecondaryVarGrad;    /*!< \brief Number of variables of the problem,
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
   
@@ -160,13 +160,13 @@ public:
    * \return Pointer to the old solution vector.
    */
   su2double GetSolution_Old(unsigned short val_var);
-  
+
   /*!
    * \brief Set the value of the old solution.
    * \param[in] val_solution_old - Pointer to the residual vector.
    */
   void SetSolution_Old(su2double *val_solution_old);
-  
+
   /*!
    * \overload
    * \param[in] val_var - Index of the variable.
@@ -178,12 +178,12 @@ public:
    * \brief Set old variables to the value of the current variables.
    */
   void Set_OldSolution(void);
-  
+
   /*!
    * \brief Set variables to the value of the old variables.
    */
   void Set_Solution(void);
-  
+
   /*!
    * \brief Set the variable solution at time n.
    */
@@ -242,7 +242,26 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   void AddSolution(unsigned short val_var, su2double val_solution);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  virtual su2double GetSolution_New(unsigned short val_var);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetSolution_New(void);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  virtual void AddSolution_New(unsigned short val_var, su2double val_solution);
+
   /*!
    * \brief Add a value to the solution, clipping the values.
    * \param[in] val_var - Index of the variable.
@@ -2016,7 +2035,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -2046,7 +2065,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CPotentialVariable : public CVariable {
   su2double *Charge_Density;
@@ -2090,7 +2109,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -2136,7 +2155,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -2187,30 +2206,30 @@ public:
 class CFEM_ElasVariable : public CVariable {
 protected:
   
-  bool dynamic_analysis;					/*!< \brief Bool which determines if the problem is dynamic. */
-  bool fsi_analysis;						/*!< \brief Bool which determines if the problem is FSI. */
+  bool dynamic_analysis;          /*!< \brief Bool which determines if the problem is dynamic. */
+  bool fsi_analysis;            /*!< \brief Bool which determines if the problem is FSI. */
   
-  su2double *Stress;  						/*!< \brief Stress tensor. */
-  su2double *FlowTraction;					/*!< \brief Traction from the fluid field. */
-  su2double *FlowTraction_n;					/*!< \brief Traction from the fluid field at time n. */
+  su2double *Stress;              /*!< \brief Stress tensor. */
+  su2double *FlowTraction;          /*!< \brief Traction from the fluid field. */
+  su2double *FlowTraction_n;          /*!< \brief Traction from the fluid field at time n. */
   
-  //	su2double *Residual_Int;					/*!< \brief Internal stress term for the calculation of the residual */
-  su2double *Residual_Ext_Surf;				/*!< \brief Term of the residual due to external forces */
-  su2double *Residual_Ext_Surf_n;				/*!< \brief Term of the residual due to external forces at time n */
-  su2double *Residual_Ext_Body;				/*!< \brief Term of the residual due to body forces */
+  //  su2double *Residual_Int;          /*!< \brief Internal stress term for the calculation of the residual */
+  su2double *Residual_Ext_Surf;        /*!< \brief Term of the residual due to external forces */
+  su2double *Residual_Ext_Surf_n;        /*!< \brief Term of the residual due to external forces at time n */
+  su2double *Residual_Ext_Body;        /*!< \brief Term of the residual due to body forces */
   
-  su2double VonMises_Stress; 				/*!< \brief Von Mises stress. */
+  su2double VonMises_Stress;         /*!< \brief Von Mises stress. */
   
-  su2double *Solution_time_n;				/*!< \brief Displacement at the nodes at time n */
+  su2double *Solution_time_n;        /*!< \brief Displacement at the nodes at time n */
   
-  su2double *Solution_Vel,					/*!< \brief Velocity of the nodes. */
-  *Solution_Vel_time_n;					/*!< \brief Velocity of the nodes at time n. */
+  su2double *Solution_Vel,          /*!< \brief Velocity of the nodes. */
+  *Solution_Vel_time_n;          /*!< \brief Velocity of the nodes at time n. */
   
-  su2double *Solution_Accel,					/*!< \brief Acceleration of the nodes. */
-  *Solution_Accel_time_n;					/*!< \brief Acceleration of the nodes at time n. */
+  su2double *Solution_Accel,          /*!< \brief Acceleration of the nodes. */
+  *Solution_Accel_time_n;          /*!< \brief Acceleration of the nodes at time n. */
   
-  su2double *Solution_Pred,					/*!< \brief Predictor of the solution for FSI purposes */
-  *Solution_Pred_Old;						/*!< \brief Predictor of the solution at time n for FSI purposes */
+  su2double *Solution_Pred,          /*!< \brief Predictor of the solution for FSI purposes */
+  *Solution_Pred_Old;            /*!< \brief Predictor of the solution at time n for FSI purposes */
   
   su2double *Prestretch;        /*!< \brief Prestretch geometry */
   
@@ -2635,11 +2654,11 @@ public:
  * \brief Main class for defining the variables of the compressible Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CEulerVariable : public CVariable {
 protected:
-  su2double  Velocity2;			/*!< \brief Square of the velocity vector. */
+  su2double  Velocity2;      /*!< \brief Square of the velocity vector. */
   su2double *HB_Source;     /*!< \brief harmonic balance source term. */
   su2double  Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
   su2double *WindGust;      /*! < \brief Wind gust value */
@@ -2647,15 +2666,19 @@ protected:
   
   /*--- Primitive variable definition ---*/
   
-  su2double *Primitive;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   
   /*--- Secondary variable definition ---*/
   
-  su2double *Secondary;	          /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Secondary;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Secondary;            /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  su2double **Gradient_Secondary;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Secondary;   /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
+
+  /*--- New solution container for Classical RK4 ---*/
+
+  su2double *Solution_New;
   
 public:
   
@@ -2689,7 +2712,26 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CEulerVariable(void);
-  
+
+  /*!
+   * \brief Get the new solution of the problem (Classical RK4).
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  su2double GetSolution_New(unsigned short val_var);
+
+  /*!
+   * \brief Set the new solution container for Classical RK4.
+   */
+  void SetSolution_New(void);
+
+  /*!
+   * \brief Add a value to the new solution container for Classical RK4.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  void AddSolution_New(unsigned short val_var, su2double val_solution);
+
   /*!
    * \brief Set to zero the gradient of the primitive variables.
    */
@@ -3045,19 +3087,19 @@ public:
  * \brief Main class for defining the variables of the incompressible Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CIncEulerVariable : public CVariable {
 protected:
-  su2double Velocity2;			/*!< \brief Square of the velocity vector. */
-  su2double Precond_Beta;	/*!< \brief Low Mach number preconditioner value, Beta. */
+  su2double Velocity2;      /*!< \brief Square of the velocity vector. */
+  su2double Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
   su2double *WindGust;           /*! < \brief Wind gust value */
   su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
   
   /*--- Primitive variable definition ---*/
   
-  su2double *Primitive;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
+  su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
+  su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   
 public:
@@ -3283,7 +3325,7 @@ public:
  * \brief Main class for defining the variables of the compressible Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -3447,7 +3489,7 @@ public:
  * \brief Main class for defining the variables of the incompressible Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CIncNSVariable : public CIncEulerVariable {
 private:
@@ -3548,12 +3590,12 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTurbVariable : public CVariable {
 protected:
   su2double muT;                /*!< \brief Eddy viscosity. */
-  su2double *HB_Source; 	       /*!< \brief Harmonic Balance source term. */
+  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
   
 public:
   /*!
@@ -3592,7 +3634,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -3639,7 +3681,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -3685,7 +3727,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -3738,15 +3780,15 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
 protected:
   su2double sigma_om2,
   beta_star;
-  su2double F1,		/*!< \brief Menter blending function for blending of k-w and k-eps. */
-  F2,		        /*!< \brief Menter blending function for stress limiter. */
+  su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
+  F2,            /*!< \brief Menter blending function for stress limiter. */
   CDkw;           /*!< \brief Cross-diffusion. */
   
 public:
@@ -3803,15 +3845,15 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
-  su2double *Psi;		/*!< \brief Vector of the adjoint variables. */
-  su2double *ForceProj_Vector;	/*!< \brief Vector d. */
+  su2double *Psi;    /*!< \brief Vector of the adjoint variables. */
+  su2double *ForceProj_Vector;  /*!< \brief Vector d. */
   su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
-  su2double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
-  su2double *HB_Source;		/*!< \brief Harmonic balance source term. */
+  su2double *IntBoundary_Jump;  /*!< \brief Interior boundary jump vector. */
+  su2double *HB_Source;    /*!< \brief Harmonic balance source term. */
   bool incompressible;
 public:
   
@@ -3912,14 +3954,14 @@ public:
  * \brief Main class for defining the variables of the adjoint incompressible Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjIncEulerVariable : public CVariable {
 protected:
-  su2double *Psi;		/*!< \brief Vector of the adjoint variables. */
-  su2double *ForceProj_Vector;	/*!< \brief Vector d. */
+  su2double *Psi;    /*!< \brief Vector of the adjoint variables. */
+  su2double *ForceProj_Vector;  /*!< \brief Vector d. */
   su2double *ObjFuncSource;    /*!< \brief Vector containing objective function sensitivity for discrete adjoint. */
-  su2double *IntBoundary_Jump;	/*!< \brief Interior boundary jump vector. */
+  su2double *IntBoundary_Jump;  /*!< \brief Interior boundary jump vector. */
   bool incompressible;
 public:
   
@@ -4020,16 +4062,16 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
-class CAdjNSVariable : public CAdjEulerVariable {	
+class CAdjNSVariable : public CAdjEulerVariable {  
 private:
   
 public:
   
   /*!
    * \brief Constructor of the class. 
-   */	
+   */  
   CAdjNSVariable(void);
   
   /*!
@@ -4037,10 +4079,10 @@ public:
    * \param[in] val_psirho - Value of the adjoint density (initialization value).
    * \param[in] val_phi - Value of the adjoint velocity (initialization value).
    * \param[in] val_psie - Value of the adjoint energy (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.		 
+   * \param[in] val_nDim - Number of dimensions of the problem.     
    * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.	 
-   */	
+   * \param[in] config - Definition of the particular problem.   
+   */  
   CAdjNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
@@ -4048,19 +4090,19 @@ public:
    * \param[in] val_solution - Pointer to the adjoint value (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.	 
+   * \param[in] config - Definition of the particular problem.   
    */
   CAdjNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class. 
-   */	
+   */  
   ~CAdjNSVariable(void);
   
   /*!
    * \brief Set the value of the adjoint velocity.
    * \param[in] val_phi - Value of the adjoint velocity.
-   */	
+   */  
   void SetPhi_Old(su2double *val_phi);
   
   /*!
@@ -4092,7 +4134,7 @@ public:
  * \brief Main class for defining the variables of the adjoint incompressible Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjIncNSVariable : public CAdjIncEulerVariable {
 private:
@@ -4164,14 +4206,14 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
   su2double *dmuT_dUTvar;       /*!< \brief Sensitivity of eddy viscosity to mean flow and turbulence vars. */
-  su2double **dRTstar_dUTvar; 	/*!< \brief Sensitivity of modified turbulence residual (no boundary flux)
+  su2double **dRTstar_dUTvar;   /*!< \brief Sensitivity of modified turbulence residual (no boundary flux)
                                  to mean flow and turbulence vars. */
-  su2double **dFT_dUTvar; 	/*!< \brief Sensitivity of boundary flux
+  su2double **dFT_dUTvar;   /*!< \brief Sensitivity of boundary flux
                              to mean flow and turbulence vars. */
   su2double *EddyViscSens;    /*!< \brief Eddy Viscosity Sensitivity. */
   
@@ -4179,7 +4221,7 @@ public:
   
   /*!
    * \brief Constructor of the class. 
-   */		
+   */    
   CAdjTurbVariable(void);
   
   /*!
@@ -4187,13 +4229,13 @@ public:
    * \param[in] val_psinu_inf - Value of the adjoint turbulence variable at the infinity (initialization value).
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.	 
-   */		
+   * \param[in] config - Definition of the particular problem.   
+   */    
   CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class. 
-   */		
+   */    
   ~CAdjTurbVariable(void);
   
   /*!
@@ -4214,7 +4256,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTemplateVariable : public CVariable {
 public:
@@ -4226,16 +4268,16 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_potential - Value of the potential solution (initialization value).		 
-   * \param[in] val_nDim - Number of dimensions of the problem.		 
+   * \param[in] val_potential - Value of the potential solution (initialization value).     
+   * \param[in] val_nDim - Number of dimensions of the problem.     
    * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.	 
-   */	
+   * \param[in] config - Definition of the particular problem.   
+   */  
   CTemplateVariable(su2double val_potential, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class. 
-   */	
+   */  
   ~CTemplateVariable(void);
 };
 
@@ -4244,7 +4286,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDiscAdjVariable : public CVariable {
 private:

@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.3.0 "Cardinal"
+#  \version 5.0.0 "Raven"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
 #                 Prof. Edwin van der Weide's group at the University of Twente.
 #                 Prof. Vincent Terrapon's group at the University of Liege.
 #
-# Copyright (C) 2012-2016 SU2, the open-source CFD code.
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -99,6 +99,18 @@ def main():
     fixedCL_naca0012.timeout   = 1600
     fixedCL_naca0012.tol       = 0.00001
     test_list.append(fixedCL_naca0012)
+    
+    # Polar sweep of the inviscid NACA0012
+    polar_naca0012           = TestCase('polar_naca0012')
+    polar_naca0012.cfg_dir   = "polar/naca0012"
+    polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
+    polar_naca0012.polar     = True
+    polar_naca0012.test_iter = 10
+    polar_naca0012.test_vals = [-1.298373, 4.139860, 0.010703, 0.008932] #last 4 columns
+    polar_naca0012.su2_exec  = "compute_polar.py -i 11"
+    polar_naca0012.timeout   = 1600
+    polar_naca0012.tol       = 0.00001
+    test_list.append(polar_naca0012)
 
     ##########################
     ###  Compressible N-S  ###
@@ -191,7 +203,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 10
-    turb_naca0012_sa.test_vals = [-12.000764, -9.145363, 1.070528, 0.019417] #last 4 columns
+    turb_naca0012_sa.test_vals = [-12.000763, -9.145363, 1.070528, 0.019417] #last 4 columns
     turb_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
@@ -218,6 +230,22 @@ def main():
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
     test_list.append(propeller)
+    
+    #################################
+    ## Compressible RANS Restart  ###
+    #################################
+    
+    # NACA0012 SST Multigrid restart
+    turb_naca0012_sst_restart_mg           = TestCase('turb_naca0012_sst_restart_mg')
+    turb_naca0012_sst_restart_mg.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
+    turb_naca0012_sst_restart_mg.test_iter = 600
+    turb_naca0012_sst_restart_mg.ntest_vals = 5
+    turb_naca0012_sst_restart_mg.test_vals = [-6.482396, -4.653908, 1.155000, -0.006296, 0.078747] #last 5 columns
+    turb_naca0012_sst_restart_mg.su2_exec  = "parallel_computation.py -f"
+    turb_naca0012_sst_restart_mg.timeout   = 3200
+    turb_naca0012_sst_restart_mg.tol       = 0.000001
+    test_list.append(turb_naca0012_sst_restart_mg)
 
     #############################
     ### Incompressible Euler  ###
@@ -369,7 +397,7 @@ def main():
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
     contadj_rans_rae2822.cfg_file  = "turb_SA_RAE2822.cfg"
     contadj_rans_rae2822.test_iter = 100
-    contadj_rans_rae2822.test_vals = [-5.380929, -10.886092, -0.212470, 0.005448] #last 4 columns
+    contadj_rans_rae2822.test_vals = [-5.380910, -10.886057, -0.212470, 0.005448] #last 4 columns
     contadj_rans_rae2822.su2_exec  = "parallel_computation.py -f"
     contadj_rans_rae2822.timeout   = 1600
     contadj_rans_rae2822.tol       = 0.00001
@@ -611,7 +639,7 @@ def main():
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
     pywrapper_naca0012.test_vals = [-6.237188, -5.641250, 0.334843, 0.022206] #last 4 columns
-    pywrapper_naca0012.su2_exec  = "mpirun -np 2 pyWrap_SU2_CFD.py -f"
+    pywrapper_naca0012.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
     test_list.append(pywrapper_naca0012)
@@ -622,7 +650,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals = [-15.039645, -7.220177, 1.059622, 0.019138] #last 4 columns
-    pywrapper_turb_naca0012_sst.su2_exec  = "mpirun -np 2 pyWrap_SU2_CFD.py -f"
+    pywrapper_turb_naca0012_sst.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
     test_list.append(pywrapper_turb_naca0012_sst)
@@ -633,7 +661,7 @@ def main():
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
     pywrapper_square_cylinder.test_vals = [-1.166422,0.076751,1.398549,2.197047] #last 4 columns
-    pywrapper_square_cylinder.su2_exec  = "mpirun -np 2 pyWrap_SU2_CFD.py -f"
+    pywrapper_square_cylinder.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
     pywrapper_square_cylinder.unsteady  = True
@@ -645,7 +673,7 @@ def main():
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
     pywrapper_aeroelastic.test_vals = [0.077169, 0.036452, -0.001685, -0.000113] #last 4 columns
-    pywrapper_aeroelastic.su2_exec  = "mpirun -np 2 pyWrap_SU2_CFD.py -f"
+    pywrapper_aeroelastic.su2_exec  = "mpirun -np 2 SU2_CFD.py --parallel -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.000001
     pywrapper_aeroelastic.unsteady  = True
@@ -657,7 +685,7 @@ def main():
     pywrapper_fsi2d.cfg_file  = "configFSI_2D.cfg"
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.777910, -1.139830] #last 4 columns
-    pywrapper_fsi2d.su2_exec  = "mpirun -np 2 pyWrap_SU2_CFD.py --nZone 2 --fsi True -f"
+    pywrapper_fsi2d.su2_exec  = "mpirun -np 2 SU2_CFD.py --nZone 2 --fsi True --parallel -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)
@@ -817,22 +845,18 @@ def main():
     pass_list.append(sphere_ffd_def.run_def())
     test_list.append(sphere_ffd_def)
 
+    # Spherical FFD test using BSplines
+    sphere_ffd_def_bspline           = TestCase('sphere_ffd_def_bspline')
+    sphere_ffd_def_bspline.cfg_dir   = "deformation/spherical_ffd"
+    sphere_ffd_def_bspline.cfg_file  = "def_spherical_bspline.cfg"
+    sphere_ffd_def_bspline.test_iter = 50
+    sphere_ffd_def_bspline.test_vals = [1.20429e-10] #residual
+    sphere_ffd_def_bspline.su2_exec  = "mpirun -n 2 SU2_DEF"
+    sphere_ffd_def_bspline.timeout   = 1600
+    sphere_ffd_def_bspline.tol       = 1e-16
 
-    ######################################
-    ### RUN EXTERNAL FSI COUPLING TEST ###
-    ######################################
-
-    # Pitch-plunge NACA 0012 (external FSI coupling)
-    coupled_FSI            = TestCase('coupled_FSI')
-    coupled_FSI.cfg_dir    = "coupled_fsi/2d_aeroelasticity"
-    coupled_FSI.cfg_file   = "FSICoupler_config.cfg"
-    coupled_FSI.test_iter  = 1
-    coupled_FSI.su2_exec   = "mpirun -np 2 fsi_computation.py"
-    coupled_FSI.timeout    = 1600
-    coupled_FSI.reference_file = "StructHistory.dat.ref_parallel"
-    coupled_FSI.test_file  = "StructHistory.dat"
-    pass_list.append(coupled_FSI.run_filediff())
-    test_list.append(coupled_FSI)
+    pass_list.append(sphere_ffd_def_bspline.run_def())
+    test_list.append(sphere_ffd_def_bspline)
 
 
     # Tests summary

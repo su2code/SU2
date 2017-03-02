@@ -2,7 +2,7 @@
  * \file variable_direct_mean_inc.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,11 +37,11 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-	Primitive = NULL;
-	
+  Primitive = NULL;
+  
   Gradient_Primitive = NULL;
   
-	Limiter_Primitive = NULL;
+  Limiter_Primitive = NULL;
   
   WindGust    = NULL;
   WindGustDer = NULL;
@@ -56,7 +58,7 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
 
 CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
+  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -86,28 +88,28 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   
   nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
 
-	/*--- Allocate residual structures ---*/
+  /*--- Allocate residual structures ---*/
   
-	Res_TruncError = new su2double [nVar];
+  Res_TruncError = new su2double [nVar];
   
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_TruncError[iVar] = 0.0;
-	}
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
   
-	/*--- Only for residual smoothing (multigrid) ---*/
+  /*--- Only for residual smoothing (multigrid) ---*/
   
-	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if ((nMGSmooth > 0) || low_fidelity) {
-		Residual_Sum = new su2double [nVar];
-		Residual_Old = new su2double [nVar];
-	}
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
   
-	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
-		Undivided_Laplacian = new su2double [nVar];
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
+    Undivided_Laplacian = new su2double [nVar];
   }
   
   /*--- Always allocate the slope limiter,
@@ -128,7 +130,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
     Solution_Min[iVar] = 0.0;
   }
   
-	/*--- Solution and old solution initialization ---*/
+  /*--- Solution and old solution initialization ---*/
 
   Solution[0] = val_pressure;
   Solution_Old[0] = val_pressure;
@@ -138,20 +140,20 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   }
 
   
-	/*--- Allocate and initialize solution for dual time strategy ---*/
+  /*--- Allocate and initialize solution for dual time strategy ---*/
   
-	if (dual_time) {
+  if (dual_time) {
     Solution_time_n[0]  =  val_pressure;
     Solution_time_n1[0] =  val_pressure;
     for (iDim = 0; iDim < nDim; iDim++) {
       Solution_time_n[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
       Solution_time_n1[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
     }
-	}
+  }
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
   
-	if (windgust) {
+  if (windgust) {
     WindGust = new su2double [nDim];
     WindGustDer = new su2double [nDim+1];
   }
@@ -173,7 +175,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
 }
 
 CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
+  unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -199,28 +201,28 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
  
   Undivided_Laplacian = NULL;
  
-	/*--- Allocate and initialize the primitive variables and gradients ---*/
+  /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
   
-	/*--- Allocate residual structures ---*/
-	Res_TruncError = new su2double [nVar];
+  /*--- Allocate residual structures ---*/
+  Res_TruncError = new su2double [nVar];
   
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_TruncError[iVar] = 0.0;
-	}
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
   
-	/*--- Only for residual smoothing (multigrid) ---*/
-	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+  /*--- Only for residual smoothing (multigrid) ---*/
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
   if ((nMGSmooth > 0) || low_fidelity) {
-		Residual_Sum = new su2double [nVar];
-		Residual_Old = new su2double [nVar];
-	}
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
   
-	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
-	if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
-		Undivided_Laplacian = new su2double [nVar];
+  /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED)
+    Undivided_Laplacian = new su2double [nVar];
   
   /*--- Always allocate the slope limiter,
    and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
@@ -239,26 +241,26 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
     Solution_Min[iVar] = 0.0;
   }
   
-	/*--- Solution initialization ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar] = val_solution[iVar];
-		Solution_Old[iVar] = val_solution[iVar];
-	}
+  /*--- Solution initialization ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar] = val_solution[iVar];
+    Solution_Old[iVar] = val_solution[iVar];
+  }
   
-	/*--- Allocate and initializate solution for dual time strategy ---*/
-	if (dual_time) {
-		Solution_time_n = new su2double [nVar];
-		Solution_time_n1 = new su2double [nVar];
+  /*--- Allocate and initializate solution for dual time strategy ---*/
+  if (dual_time) {
+    Solution_time_n = new su2double [nVar];
+    Solution_time_n1 = new su2double [nVar];
     
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Solution_time_n[iVar] = val_solution[iVar];
-			Solution_time_n1[iVar] = val_solution[iVar];
-		}
-	}
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Solution_time_n[iVar] = val_solution[iVar];
+      Solution_time_n1[iVar] = val_solution[iVar];
+    }
+  }
   
     
   /*--- Allocate vector for wind gust and wind gust derivative field ---*/
-	if (windgust) {
+  if (windgust) {
     WindGust = new su2double [nDim];
     WindGustDer = new su2double [nDim+1];
   }
@@ -279,7 +281,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 }
 
 CIncEulerVariable::~CIncEulerVariable(void) {
-	unsigned short iVar;
+  unsigned short iVar;
 
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
@@ -297,23 +299,23 @@ CIncEulerVariable::~CIncEulerVariable(void) {
 }
 
 void CIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
-	unsigned short iVar, iDim;
+  unsigned short iVar, iDim;
   
-	for (iVar = 0; iVar < val_primvar; iVar++)
-		for (iDim = 0; iDim < nDim; iDim++)
-			Gradient_Primitive[iVar][iDim] = 0.0;
+  for (iVar = 0; iVar < val_primvar; iVar++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Primitive[iVar][iDim] = 0.0;
 }
 
 
 su2double CIncEulerVariable::GetProjVel(su2double *val_vector) {
-	su2double ProjVel;
-	unsigned short iDim;
+  su2double ProjVel;
+  unsigned short iDim;
   
-	ProjVel = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		ProjVel += Primitive[iDim+1]*val_vector[iDim];
+  ProjVel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    ProjVel += Primitive[iDim+1]*val_vector[iDim];
   
-	return ProjVel;
+  return ProjVel;
 }
 
 
@@ -347,22 +349,22 @@ CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity,
                          unsigned short val_nDim, unsigned short val_nvar,
                          CConfig *config) : CIncEulerVariable(val_pressure, val_velocity, val_nDim, val_nvar, config) {
   
-	Temperature_Ref = config->GetTemperature_Ref();
-	Viscosity_Ref   = config->GetViscosity_Ref();
-	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-	Prandtl_Lam     = config->GetPrandtl_Lam();
-	Prandtl_Turb    = config->GetPrandtl_Turb();
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
   
 }
 
 CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
                          unsigned short val_nvar, CConfig *config) : CIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
-	Temperature_Ref = config->GetTemperature_Ref();
-	Viscosity_Ref   = config->GetViscosity_Ref();
-	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-	Prandtl_Lam     = config->GetPrandtl_Lam();
-	Prandtl_Turb    = config->GetPrandtl_Turb();
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
 }
 
 CIncNSVariable::~CIncNSVariable(void) { }
@@ -424,7 +426,7 @@ bool CIncNSVariable::SetStrainMag(bool val_limiter) {
 
 bool CIncNSVariable::SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) {
   
-	su2double ArtComp_Factor = config->GetArtComp_Factor();
+  su2double ArtComp_Factor = config->GetArtComp_Factor();
   
   /*--- Set the value of the density and viscosity ---*/
   

@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean_inc.cpp
  * \brief Main subrotuines for solving adjoint incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,10 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,13 +53,12 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(void) : CSolver() {
 }
 
 CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val, myArea_Monitored, Area, *Normal;
-  bool restart = config->GetRestart();
+  su2double myArea_Monitored, Area, *Normal;
   bool axisymmetric = config->GetAxisymmetric();
   
   int rank = MASTER_NODE;
@@ -247,72 +248,10 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
 
   }
 
-  if (!restart || (iMesh != MESH_0)) {
-    /*--- Restart the solution from infinity ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CAdjIncEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
-  }
-  else {
-    
-    /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFileName();
-    filename = config->GetObjFunc_Extension(mesh_filename);
-    
-    restart_file.open(filename.data(), ios::in);
-    
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-    
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CAdjIncEulerVariable(Solution, nDim, nVar, config);
-      }
-      iPoint_Global++;
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CAdjIncEulerVariable(Solution, nDim, nVar, config);
-    }
-    
-    /*--- Close the restart file ---*/
-    restart_file.close();
-    
-  }
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CAdjIncEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
   
   /*--- Define solver parameters needed for execution of destructor ---*/
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
@@ -1257,19 +1196,19 @@ void CAdjIncEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solv
     for (AngleInt = 0; AngleInt < 180; AngleInt++)
       IndexNF_inv[AngleInt] = -1;
     
-	if (IndexNF.size() <= 180) {
-		for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
-			IndexNF_inv[IndexNF[iIndex]] = iIndex;
-	}
-	else {
-		#ifndef HAVE_MPI
-				exit(EXIT_FAILURE);
-		#else
-				MPI_Barrier(MPI_COMM_WORLD);
-				MPI_Abort(MPI_COMM_WORLD, 1);
-				MPI_Finalize();
-		#endif
-	}
+  if (IndexNF.size() <= 180) {
+    for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
+      IndexNF_inv[IndexNF[iIndex]] = iIndex;
+  }
+  else {
+    #ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+    #else
+        MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        MPI_Finalize();
+    #endif
+  }
     
   }
   
@@ -1403,14 +1342,14 @@ void CAdjIncEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solv
             A[1][0] = -velocity[0]*velocity[1]; A[1][1] = velocity[1]; A[1][2] = velocity[0]; A[1][3] = 0.0;
             A[2][0] = 0.5*(Gamma-3.0)*velocity[1]*velocity[1]+0.5*Gamma_Minus_One*velocity[0]*velocity[0]; A[2][1] = -Gamma_Minus_One*velocity[0];
             A[2][2] = (3.0-Gamma)*velocity[1]; A[2][3] = Gamma_Minus_One; A[3][0] = -Gamma*velocity[1]*Energy+Gamma_Minus_One*velocity[1]*sqvel;
-            A[3][1] = -Gamma_Minus_One*velocity[0]*velocity[1]; A[3][2] = Gamma*Energy-0.5*Gamma_Minus_One*(velocity[0]*velocity[0]+3.0*velocity[1]*velocity[1]);	A[3][3] = Gamma*velocity[1];
+            A[3][1] = -Gamma_Minus_One*velocity[0]*velocity[1]; A[3][2] = Gamma*Energy-0.5*Gamma_Minus_One*(velocity[0]*velocity[0]+3.0*velocity[1]*velocity[1]);  A[3][3] = Gamma*velocity[1];
             
             /*--- Compute the transformation matrix ---*/
             
             M[0][0] = 1.0; M[0][1] = 0.0; M[0][2] = 0.0; M[0][3] = 0.0;
             M[1][0] = velocity[0]; M[1][1] = Rho; M[1][2] = 0.0; M[1][3] = 0.0;
             M[2][0] = velocity[1]; M[2][1] = 0.0; M[2][2] = Rho; M[2][3] = 0.0;
-            M[3][0] = 0.5*sqvel;	M[3][1] = Rho*velocity[0]; M[3][2] = Rho*velocity[1]; M[3][3] = 1.0/Gamma_Minus_One;
+            M[3][0] = 0.5*sqvel;  M[3][1] = Rho*velocity[0]; M[3][2] = Rho*velocity[1]; M[3][3] = 1.0/Gamma_Minus_One;
             
             /*--- Create the soruce term (AM)^T X = b ---*/
             
@@ -1807,7 +1746,7 @@ void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
-  //	bool gravity        = (config->GetGravityForce() == YES);
+  //  bool gravity        = (config->GetGravityForce() == YES);
   bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   
   /*--- Initialize the source residual to zero ---*/
@@ -2023,59 +1962,59 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
     
   }
   
-  //	su2double dx = 0.1;
-  //	su2double LimK = 0.03;
-  //	su2double eps2 =  pow((LimK*dx),3);
+  //  su2double dx = 0.1;
+  //  su2double LimK = 0.03;
+  //  su2double eps2 =  pow((LimK*dx),3);
   //
-  //	unsigned long iPoint, jPoint;
-  //	unsigned short iNeigh, nNeigh, iDim;
-  //	su2double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
-  //	du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
+  //  unsigned long iPoint, jPoint;
+  //  unsigned short iNeigh, nNeigh, iDim;
+  //  su2double **Gradient_i, *Coord_i, *Coord_j, diff_coord, dist_ij, r_u, r_u_ij,
+  //  du_max, du_min, u_ij, *Solution_i, *Solution_j, dp, dm;
   //
   //
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //  for (iPoint = 0; iPoint < nPoint; iPoint++)
   //
-  //		if (geometry->node[iPoint]->GetDomain()) {
+  //    if (geometry->node[iPoint]->GetDomain()) {
   //
-  //			Solution_i = node[iPoint]->GetSolution();
-  //			Gradient_i = node[iPoint]->GetGradient();
-  //			Coord_i = geometry->node[iPoint]->GetCoord();
-  //			nNeigh = geometry->node[iPoint]->GetnPoint();
+  //      Solution_i = node[iPoint]->GetSolution();
+  //      Gradient_i = node[iPoint]->GetGradient();
+  //      Coord_i = geometry->node[iPoint]->GetCoord();
+  //      nNeigh = geometry->node[iPoint]->GetnPoint();
   //
-  //			/*--- Find max and min value of the variable in the control volume around the mesh point ---*/
-  //			du_max = 1.0E-8; du_min = -1.0E-8;
-  //			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
-  //				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //				Solution_j = node[jPoint]->GetSolution();
-  //				du_max = max(du_max, Solution_j[0] - Solution_i[0]);
-  //				du_min = min(du_min, Solution_j[0] - Solution_i[0]);
-  //			}
+  //      /*--- Find max and min value of the variable in the control volume around the mesh point ---*/
+  //      du_max = 1.0E-8; du_min = -1.0E-8;
+  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+  //        Solution_j = node[jPoint]->GetSolution();
+  //        du_max = max(du_max, Solution_j[0] - Solution_i[0]);
+  //        du_min = min(du_min, Solution_j[0] - Solution_i[0]);
+  //      }
   //
-  //			r_u = 1.0;
-  //			for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+  //      r_u = 1.0;
+  //      for (iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
   //
-  //				/*--- Unconstrained reconstructed solution ---*/
-  //				jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
-  //				Solution_j = node[jPoint]->GetSolution();
-  //				Coord_j = geometry->node[jPoint]->GetCoord();
-  //				u_ij = Solution_i[0]; dist_ij = 0;
-  //				for (iDim = 0; iDim < nDim; iDim++) {
-  //					diff_coord = Coord_j[iDim]-Coord_i[iDim];
-  //					u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
-  //				}
+  //        /*--- Unconstrained reconstructed solution ---*/
+  //        jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
+  //        Solution_j = node[jPoint]->GetSolution();
+  //        Coord_j = geometry->node[jPoint]->GetCoord();
+  //        u_ij = Solution_i[0]; dist_ij = 0;
+  //        for (iDim = 0; iDim < nDim; iDim++) {
+  //          diff_coord = Coord_j[iDim]-Coord_i[iDim];
+  //          u_ij += 0.5*diff_coord*Gradient_i[0][iDim];
+  //        }
   //
-  //				/*--- Venkatakrishnan limiter ---*/
-  //				if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
-  //				else	dp = du_min;
-  //				dm = u_ij - Solution_i[0];
-  //				r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
+  //        /*--- Venkatakrishnan limiter ---*/
+  //        if ((u_ij - Solution_i[0]) >= 0.0) dp = du_max;
+  //        else  dp = du_min;
+  //        dm = u_ij - Solution_i[0];
+  //        r_u_ij = (dp*dp+2.0*dm*dp + eps2)/(dp*dp+2*dm*dm+dm*dp + eps2);
   //
-  //				/*--- Take the smallest value of the limiter ---*/
-  //				r_u = min(r_u, r_u_ij);
+  //        /*--- Take the smallest value of the limiter ---*/
+  //        r_u = min(r_u, r_u_ij);
   //
-  //			}
-  //			node[iPoint]->SetSensor(1.0-r_u);
-  //		}
+  //      }
+  //      node[iPoint]->SetSensor(1.0-r_u);
+  //    }
   
   /*--- MPI parallelization ---*/
   Set_MPI_Dissipation_Switch(geometry, config);
@@ -3757,16 +3696,172 @@ void CAdjIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **sol
   
 }
 
+void CAdjIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+  unsigned short iDim, iVar, iMesh;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  string UnstExt, text_line, filename, restart_filename;
+  ifstream restart_file;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[iZone]->GetnZone();
+
+  /*--- Restart the solution from file information ---*/
+
+  filename         = config->GetSolution_AdjFileName();
+  restart_filename = config->GetObjFunc_Extension(filename);
+
+  Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
+  /*--- Modify file name for an unsteady restart ---*/
+
+  if (dual_time || time_stepping)
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+
+  /*--- Open the restart file, and throw an error if this fails. ---*/
+
+  restart_file.open(restart_filename.data(), ios::in);
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no adjoint restart file!! " << restart_filename.data() << "."<< endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- The first line is the header ---*/
+
+  getline (restart_file, text_line);
+
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    getline (restart_file, text_line);
+
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+
+      iPoint_Local = Global2Local[iPoint_Global];
+
+      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2];
+      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+
+      node[iPoint_Local]->SetSolution(Solution);
+      iPoint_Global_Local++;
+
+    }
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Close the restart file ---*/
+
+  restart_file.close();
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We also call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated. ---*/
+
+  solver[MESH_0][ADJFLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][ADJFLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][ADJFLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][ADJFLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  }
+
+  delete [] Coord;
+
+}
+
 CAdjIncNSSolver::CAdjIncNSSolver(void) : CAdjIncEulerSolver() { }
 
 CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CAdjIncEulerSolver() {
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
-  bool restart = config->GetRestart();
+  su2double Area=0.0, *Normal = NULL, myArea_Monitored;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -3923,73 +4018,11 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   Phi_Inf = new su2double [nDim];
   Phi_Inf[0] = 0.0; Phi_Inf[1] = 0.0;
   if (nDim == 3) Phi_Inf[2] = 0.0;
-  
-  if (!restart || (iMesh != MESH_0)) {
-    /*--- Restart the solution from infinity ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CAdjIncNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
-  }
-  else {
-    
-    /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFileName();
-    filename = config->GetObjFunc_Extension(mesh_filename);
-    
-    restart_file.open(filename.data(), ios::in);
-    
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-    
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0;
-    
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CAdjIncNSVariable(Solution, nDim, nVar, config);
-      }
-      iPoint_Global++;
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CAdjIncNSVariable(Solution, nDim, nVar, config);
-    }
-    
-    /*--- Close the restart file ---*/
-    restart_file.close();
 
-  }
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CAdjIncNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;

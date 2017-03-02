@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -156,8 +156,8 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
   config->SetViscosity_Ref(config->GetViscosity_FreeStream());
   config->SetViscosity_FreeStreamND(config->GetViscosity_FreeStream()/config->GetViscosity_Ref());
   cout << config->GetTemperature_Ref() << endl;
-  }
 
+  }
 
   if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
@@ -292,6 +292,7 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
     LinSysRes.SetBlock_Zero(iPoint);
 
   }
+
   /*--- Initialize the Jacobian matrices ---*/
 
   Jacobian.SetValZero();
@@ -521,7 +522,6 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
     }
 
   }
-
 }
 
 void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,

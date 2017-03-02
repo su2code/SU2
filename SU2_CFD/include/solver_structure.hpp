@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -18,7 +18,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CSolver {
 protected:
@@ -454,7 +454,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void Set_OldSolution(CGeometry *geometry);
-  
+
+  /*!
+   * \brief Set the new solution variables to the current solution value for classical RK.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void Set_NewSolution(CGeometry *geometry);
+
   /*!
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -547,23 +553,23 @@ public:
   
   /*!
    * \brief A virtual member.
- 	 * \param[in] geometry - Geometrical definition of the problem.
- 	 * \param[in] config - Definition of the particular problem.
- 	 */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
- 	 * \param[in] geometry - Geometrical definition of the problem.
- 	 * \param[in] config - Definition of the particular problem.
- 	 */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
- 	 * \param[in] geometry - Geometrical definition of the problem.
- 	 * \param[in] config - Definition of the particular problem.
- 	 */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] config - Definition of the particular problem.
+    */
   virtual void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
 
   /*!
@@ -1262,7 +1268,7 @@ public:
   * \param[in] val_state  - requested state component
   */
   virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
-	
+  
  /*!
   * \brief Set the outer state for fluid interface nodes.
   * \param[in] val_marker - marker index
@@ -1282,7 +1288,17 @@ public:
    */
   virtual void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iRKStep);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  virtual void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                      unsigned short iRKStep);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1314,8 +1330,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3275,10 +3290,11 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   virtual void LoadRestart(CGeometry **geometry, CSolver ***solver,
-                           CConfig *config, int val_iter);
-  
+                           CConfig *config, int val_iter, bool val_update_geo);
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3559,7 +3575,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -3568,7 +3584,14 @@ public:
    * \brief Constructor of the class.
    */
   CBaselineSolver(void);
-  
+
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CBaselineSolver(CGeometry *geometry, CConfig *config);
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3577,14 +3600,12 @@ public:
    * \param[in] field_names - Vector of variable names.
    */
   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
-  
+
   /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Destructor of the class.
    */
-  CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+  virtual ~CBaselineSolver(void);
+
   /*!
    * \brief Impose the send-receive boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3598,8 +3619,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
   /*!
    * \brief Load a FSI solution from a restart file.
@@ -3609,11 +3631,12 @@ public:
    * \param[in] val_iter - Current external iteration number.
    */
   void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter);
-  
+
   /*!
-   * \brief Destructor of the class.
+   * \brief Set the number of variables and string names from the restart file.
+   * \param[in] config - Definition of the particular problem.
    */
-  virtual ~CBaselineSolver(void);
+  void SetOutputVariables(CGeometry *geometry, CConfig *config);
   
 };
 
@@ -3622,29 +3645,29 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CEulerSolver : public CSolver {
 protected:
   
   su2double
-  Mach_Inf,	/*!< \brief Mach number at the infinity. */
-  Density_Inf,	/*!< \brief Density at the infinity. */
-  Energy_Inf,			/*!< \brief Energy at the infinity. */
-  Temperature_Inf,			/*!< \brief Energy at the infinity. */
-  Pressure_Inf,		/*!< \brief Pressure at the infinity. */
-  *Velocity_Inf;		/*!< \brief Flow Velocity vector at the infinity. */
+  Mach_Inf,  /*!< \brief Mach number at the infinity. */
+  Density_Inf,  /*!< \brief Density at the infinity. */
+  Energy_Inf,      /*!< \brief Energy at the infinity. */
+  Temperature_Inf,      /*!< \brief Energy at the infinity. */
+  Pressure_Inf,    /*!< \brief Pressure at the infinity. */
+  *Velocity_Inf;    /*!< \brief Flow Velocity vector at the infinity. */
   
   su2double
-  *CD_Inv,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
-  *CL_Inv,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
-  *CSF_Inv,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
-  *CMx_Inv,			/*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CMy_Inv,			/*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CMz_Inv,			/*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CFx_Inv,			/*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
-  *CFy_Inv,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
-  *CFz_Inv,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
+  *CD_Inv,  /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
+  *CL_Inv,      /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
+  *CSF_Inv,    /*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
+  *CMx_Inv,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CMy_Inv,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CMz_Inv,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CFx_Inv,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
+  *CFy_Inv,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
+  *CFz_Inv,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
   *Surface_CL_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CD_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CSF_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
@@ -3655,21 +3678,21 @@ protected:
   *Surface_CMx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *CEff_Inv,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-  *CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-  *CT_Inv,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-  *CQ_Inv,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  *CEquivArea_Inv,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  *CNearFieldOF_Inv,				/*!< \brief Near field pressure (inviscid contribution) for each boundary. */
-  *CD_Mnt,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
-  *CL_Mnt,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
-  *CSF_Mnt,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
-  *CMx_Mnt,			/*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CMy_Mnt,			/*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CMz_Mnt,			/*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CFx_Mnt,			/*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
-  *CFy_Mnt,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
-  *CFz_Mnt,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
+  *CEff_Inv,        /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
+  *CMerit_Inv,        /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
+  *CT_Inv,      /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
+  *CQ_Inv,      /*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
+  *CEquivArea_Inv,        /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  *CNearFieldOF_Inv,        /*!< \brief Near field pressure (inviscid contribution) for each boundary. */
+  *CD_Mnt,  /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
+  *CL_Mnt,      /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
+  *CSF_Mnt,    /*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
+  *CMx_Mnt,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CMy_Mnt,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CMz_Mnt,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CFx_Mnt,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
+  *CFy_Mnt,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
+  *CFz_Mnt,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
   *Surface_CL_Mnt, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CD_Mnt, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CSF_Mnt, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
@@ -3680,73 +3703,73 @@ protected:
   *Surface_CMx_Mnt,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMy_Mnt,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMz_Mnt,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *CEff_Mnt,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-  *CMerit_Mnt,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-  *CT_Mnt,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-  *CQ_Mnt,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  *CEquivArea_Mnt,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-  **CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
-  **CPressureTarget,		/*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  **HeatFlux,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **HeatFluxTarget,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **YPlus,		/*!< \brief Yplus for each boundary and vertex. */
-  ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
-  ***DonorPrimVar,		/*!< \brief Value of the donor variables at each boundary. */
-  *ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
-  *MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-  *ForceMomentum,		/*!< \brief Inviscid force for each boundary. */
-  *MomentMomentum;	/*!< \brief Inviscid moment for each boundary. */
-  su2double *Inflow_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-  *Exhaust_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-  *Inflow_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-  *Inflow_Mach,	/*!< \brief Fan face mach number for each boundary. */
-  *Inflow_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature,	/*!< \brief Fan face mach number for each boundary. */
-  Inflow_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Inflow_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-  Inflow_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
-  InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
-  unsigned long **DonorGlobalIndex;		/*!< \brief Value of the donor global index. */
-  su2double **ActDisk_DeltaP,		/*!< \brief Value of the Delta P. */
-  **ActDisk_DeltaT;		/*!< \brief Value of the Delta T. */
-  su2double **Inlet_Ptotal,		/*!< \brief Value of the Total P. */
-  **Inlet_Ttotal,		/*!< \brief Value of the Total T. */
-  ***Inlet_FlowDir;		/*!< \brief Value of the Flow Direction. */
+  *CEff_Mnt,        /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
+  *CMerit_Mnt,        /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
+  *CT_Mnt,      /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
+  *CQ_Mnt,      /*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
+  *CEquivArea_Mnt,        /*!< \brief Equivalent area (inviscid contribution) for each boundary. */
+  **CPressure,    /*!< \brief Pressure coefficient for each boundary and vertex. */
+  **CPressureTarget,    /*!< \brief Target Pressure coefficient for each boundary and vertex. */
+  **HeatFlux,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **HeatFluxTarget,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **YPlus,    /*!< \brief Yplus for each boundary and vertex. */
+  ***CharacPrimVar,    /*!< \brief Value of the characteristic variables at each boundary. */
+  ***DonorPrimVar,    /*!< \brief Value of the donor variables at each boundary. */
+  *ForceInviscid,    /*!< \brief Inviscid force for each boundary. */
+  *MomentInviscid,  /*!< \brief Inviscid moment for each boundary. */
+  *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
+  *MomentMomentum;  /*!< \brief Inviscid moment for each boundary. */
+  su2double *Inflow_MassFlow,  /*!< \brief Mass flow rate for each boundary. */
+  *Exhaust_MassFlow,  /*!< \brief Mass flow rate for each boundary. */
+  *Inflow_Pressure,  /*!< \brief Fan face pressure for each boundary. */
+  *Inflow_Mach,  /*!< \brief Fan face mach number for each boundary. */
+  *Inflow_Area,  /*!< \brief Boundary total area. */
+  *Exhaust_Area,  /*!< \brief Boundary total area. */
+  *Exhaust_Pressure,  /*!< \brief Fan face pressure for each boundary. */
+  *Exhaust_Temperature,  /*!< \brief Fan face mach number for each boundary. */
+  Inflow_MassFlow_Total,  /*!< \brief Mass flow rate for each boundary. */
+  Exhaust_MassFlow_Total,  /*!< \brief Mass flow rate for each boundary. */
+  Inflow_Pressure_Total,  /*!< \brief Fan face pressure for each boundary. */
+  Inflow_Mach_Total,  /*!< \brief Fan face mach number for each boundary. */
+  InverseDesign;  /*!< \brief Inverse design functional for each boundary. */
+  unsigned long **DonorGlobalIndex;    /*!< \brief Value of the donor global index. */
+  su2double **ActDisk_DeltaP,    /*!< \brief Value of the Delta P. */
+  **ActDisk_DeltaT;    /*!< \brief Value of the Delta T. */
+  su2double **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
+  **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
+  ***Inlet_FlowDir;    /*!< \brief Value of the Flow Direction. */
   
   su2double
-  AllBound_CD_Inv,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CL_Inv,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CSF_Inv,			/*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMx_Inv,			/*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Inv,			/*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Inv,			/*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFx_Inv,			/*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Inv,			/*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Inv,			/*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Inv,			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMerit_Inv,			/*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-  AllBound_CT_Inv,			/*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Inv,			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEquivArea_Inv,			/*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CD_Inv,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CL_Inv,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CSF_Inv,      /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMx_Inv,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMy_Inv,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMz_Inv,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFx_Inv,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFy_Inv,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFz_Inv,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CEff_Inv,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMerit_Inv,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
+  AllBound_CT_Inv,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CQ_Inv,      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CEquivArea_Inv,      /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CNearFieldOF_Inv;      /*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
   
   su2double
-  AllBound_CD_Mnt,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CL_Mnt,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CSF_Mnt,			/*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CMx_Mnt,			/*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CMy_Mnt,			/*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CMz_Mnt,			/*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CFx_Mnt,			/*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CFy_Mnt,			/*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CFz_Mnt,			/*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CEff_Mnt,			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CMerit_Mnt,			/*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
- 	AllBound_CT_Mnt,			/*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
- 	AllBound_CQ_Mnt;			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CD_Mnt,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CL_Mnt,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CSF_Mnt,      /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CFx_Mnt,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CFy_Mnt,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CFz_Mnt,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CEff_Mnt,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CMerit_Mnt,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
+   AllBound_CT_Mnt,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
   
   su2double
   OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
@@ -3760,7 +3783,7 @@ protected:
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   AoA_Prev, /*!< \brief Old value of the AoA for fixed lift mode. */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_CL,		/*!< \brief Total lift coefficient for all the boundaries. */
+  Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_CD_SolidSurf, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
@@ -3776,29 +3799,29 @@ protected:
   Total_ByPassProp_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Adiab_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Poly_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_NetCThrust_Prev,		/*!< \brief Total lift coefficient for all the boundaries. */
-  Total_BCThrust_Prev,		/*!< \brief Total lift coefficient for all the boundaries. */
+  Total_NetCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
+  Total_BCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_Custom,        /*!< \brief Total IDC coefficient for all the boundaries. */
-  Total_CSF,		/*!< \brief Total sideforce coefficient for all the boundaries. */
-  Total_CMx,			/*!< \brief Total x moment coefficient for all the boundaries. */
-  Total_CMy,			/*!< \brief Total y moment coefficient for all the boundaries. */
-  Total_CMz,			/*!< \brief Total z moment coefficient for all the boundaries. */
-  Total_CFx,			/*!< \brief Total x force coefficient for all the boundaries. */
-  Total_CFy,			/*!< \brief Total y force coefficient for all the boundaries. */
-  Total_CFz,			/*!< \brief Total z force coefficient for all the boundaries. */
-  Total_CEff,			/*!< \brief Total efficiency coefficient for all the boundaries. */
-  Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
-  Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
-  Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
+  Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
+  Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CFx,      /*!< \brief Total x force coefficient for all the boundaries. */
+  Total_CFy,      /*!< \brief Total y force coefficient for all the boundaries. */
+  Total_CFz,      /*!< \brief Total z force coefficient for all the boundaries. */
+  Total_CEff,      /*!< \brief Total efficiency coefficient for all the boundaries. */
+  Total_CMerit,      /*!< \brief Total rotor Figure of Merit for all the boundaries. */
+  Total_CT,    /*!< \brief Total thrust coefficient for all the boundaries. */
+  Total_CQ,    /*!< \brief Total torque coefficient for all the boundaries. */
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
-  Total_AeroCD,			/*!< \brief Total aero drag coefficient for all the boundaries. */
-  Total_RadialDistortion,			/*!< \brief Total fan face radial distortion for all the boundaries. */
-  Total_CircumferentialDistortion,			/*!< \brief Total fan face circumferential distortion for all the boundaries. */
-  Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-  Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_HeatFluxDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_AeroCD,      /*!< \brief Total aero drag coefficient for all the boundaries. */
+  Total_RadialDistortion,      /*!< \brief Total fan face radial distortion for all the boundaries. */
+  Total_CircumferentialDistortion,      /*!< \brief Total fan face circumferential distortion for all the boundaries. */
+  Total_CEquivArea,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_CNearFieldOF,      /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
+  Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_HeatFluxDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double *Surface_CL,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CD,          /*!< \brief Drag coefficient for each monitoring surface. */
@@ -3812,35 +3835,35 @@ protected:
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
-  su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
-  su2double *SecondaryVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
-  *SecondaryVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-  su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
-  *PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
+  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
+  *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
+  su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
+  *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-  unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
+  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
   *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
-  euler_implicit,			/*!< \brief True if euler implicit scheme used. */
+  euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
-  su2double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  su2double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   
-  su2double *Primitive,		/*!< \brief Auxiliary nPrimVar vector. */
-  *Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+  su2double *Primitive,    /*!< \brief Auxiliary nPrimVar vector. */
+  *Primitive_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+  *Primitive_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
   
-  su2double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
-  *Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Secondary_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+  su2double *Secondary,    /*!< \brief Auxiliary nPrimVar vector. */
+  *Secondary_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+  *Secondary_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
   
-  su2double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func;			/*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter;	/*!< \brief Number of elements of the Cauchy serial. */
-  su2double *Cauchy_Serie;			/*!< \brief Complete Cauchy serial. */
-  su2double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
+  su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
+  Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
+  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
+  su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
+  su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
+  New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
   unsigned long BCThrust_Counter;
@@ -3972,8 +3995,7 @@ public:
    * \return Value of the pressure at the infinity.
    */
   CFluidModel* GetFluidModel(void);
-  
-  
+
   /*!
    * \brief Compute the density at the infinity.
    * \return Value of the density at the infinity.
@@ -4058,6 +4080,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeConsExtrapolation(CConfig *config);
+
   /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4298,13 +4321,13 @@ public:
     
   /*!
    * \brief Impose the engine inflow boundary condition.
- 	 * \param[in] geometry - Geometrical definition of the problem.
- 	 * \param[in] solver_container - Container vector with all the solutions.
- 	 * \param[in] conv_numerics - Description of the numerical method.
- 	 * \param[in] visc_numerics - Description of the numerical method.
- 	 * \param[in] config - Definition of the particular problem.
- 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
- 	 */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] conv_numerics - Description of the numerical method.
+    * \param[in] visc_numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+    */
   void BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                         CConfig *config, unsigned short val_marker);
   
@@ -4322,13 +4345,13 @@ public:
   
   /*!
    * \brief Impose the engine inflow boundary condition.
- 	 * \param[in] geometry - Geometrical definition of the problem.
- 	 * \param[in] solver_container - Container vector with all the solutions.
- 	 * \param[in] conv_numerics - Description of the numerical method.
- 	 * \param[in] visc_numerics - Description of the numerical method.
- 	 * \param[in] config - Definition of the particular problem.
- 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
- 	 */
+    * \param[in] geometry - Geometrical definition of the problem.
+    * \param[in] solver_container - Container vector with all the solutions.
+    * \param[in] conv_numerics - Description of the numerical method.
+    * \param[in] visc_numerics - Description of the numerical method.
+    * \param[in] config - Definition of the particular problem.
+    * \param[in] val_marker - Surface marker where the boundary condition is applied.
+    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker, bool inlet_surface);
   
@@ -4763,7 +4786,13 @@ public:
    * \param[in] b - value 2.
    */
   static bool Compareval(std::vector<su2double> a,std::vector<su2double> b);
-  
+
+  /*!
+   * \brief Set the new solution variables to the current solution value for classical RK.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void Set_NewSolution(CGeometry *geometry);
+
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -4773,7 +4802,17 @@ public:
    */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
-  
+
+  /*!
+   * \brief Update the solution using the classical fourth-order Runge-Kutta scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                              unsigned short iRKStep);
+
   /*!
    * \brief Compute the Fan face Mach number.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5950,8 +5989,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
  /*!
    * \brief Set the outer state for fluid interface nodes.
@@ -6003,21 +6043,21 @@ class CIncEulerSolver : public CSolver {
 protected:
   
   su2double
-  Density_Inf,	/*!< \brief Density at the infinity. */
-  Temperature_Inf,			/*!< \brief Energy at the infinity. */
-  Pressure_Inf,		/*!< \brief Pressure at the infinity. */
-  *Velocity_Inf;		/*!< \brief Flow Velocity vector at the infinity. */
+  Density_Inf,  /*!< \brief Density at the infinity. */
+  Temperature_Inf,      /*!< \brief Energy at the infinity. */
+  Pressure_Inf,    /*!< \brief Pressure at the infinity. */
+  *Velocity_Inf;    /*!< \brief Flow Velocity vector at the infinity. */
   
   su2double
-  *CD_Inv,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
-  *CL_Inv,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
-  *CSF_Inv,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
-  *CMx_Inv,			/*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CMy_Inv,			/*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CMz_Inv,			/*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CFx_Inv,			/*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
-  *CFy_Inv,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
-  *CFz_Inv,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
+  *CD_Inv,  /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
+  *CL_Inv,      /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
+  *CSF_Inv,    /*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
+  *CMx_Inv,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CMy_Inv,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CMz_Inv,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CFx_Inv,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
+  *CFy_Inv,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
+  *CFz_Inv,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
   *Surface_CL_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CD_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CSF_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
@@ -6028,19 +6068,19 @@ protected:
   *Surface_CMx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *CEff_Inv,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-  *CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-  *CT_Inv,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-  *CQ_Inv,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  *CD_Mnt,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
-  *CL_Mnt,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
-  *CSF_Mnt,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
-  *CMx_Mnt,			/*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-  *CMy_Mnt,			/*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-  *CMz_Mnt,			/*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-  *CFx_Mnt,			/*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
-  *CFy_Mnt,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
-  *CFz_Mnt,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
+  *CEff_Inv,        /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
+  *CMerit_Inv,        /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
+  *CT_Inv,      /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
+  *CQ_Inv,      /*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
+  *CD_Mnt,  /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
+  *CL_Mnt,      /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
+  *CSF_Mnt,    /*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
+  *CMx_Mnt,      /*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
+  *CMy_Mnt,      /*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
+  *CMz_Mnt,      /*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
+  *CFx_Mnt,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
+  *CFy_Mnt,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
+  *CFz_Mnt,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
   *Surface_CL_Mnt, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CD_Mnt, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CSF_Mnt, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
@@ -6051,52 +6091,52 @@ protected:
   *Surface_CMx_Mnt,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMy_Mnt,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CMz_Mnt,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *CEff_Mnt,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-  *CMerit_Mnt,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-  *CT_Mnt,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-  *CQ_Mnt,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-  **CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
-  **CPressureTarget,		/*!< \brief Target Pressure coefficient for each boundary and vertex. */
-  **HeatFlux,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **HeatFluxTarget,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **YPlus,		/*!< \brief Yplus for each boundary and vertex. */
-  ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
-  *ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
-  *MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-  *ForceMomentum,		/*!< \brief Inviscid force for each boundary. */
-  *MomentMomentum,	/*!< \brief Inviscid moment for each boundary. */
-  InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
+  *CEff_Mnt,        /*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
+  *CMerit_Mnt,        /*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
+  *CT_Mnt,      /*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
+  *CQ_Mnt,      /*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
+  **CPressure,    /*!< \brief Pressure coefficient for each boundary and vertex. */
+  **CPressureTarget,    /*!< \brief Target Pressure coefficient for each boundary and vertex. */
+  **HeatFlux,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **HeatFluxTarget,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
+  **YPlus,    /*!< \brief Yplus for each boundary and vertex. */
+  ***CharacPrimVar,    /*!< \brief Value of the characteristic variables at each boundary. */
+  *ForceInviscid,    /*!< \brief Inviscid force for each boundary. */
+  *MomentInviscid,  /*!< \brief Inviscid moment for each boundary. */
+  *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
+  *MomentMomentum,  /*!< \brief Inviscid moment for each boundary. */
+  InverseDesign;  /*!< \brief Inverse design functional for each boundary. */
   
   su2double
-  AllBound_CD_Inv,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CL_Inv,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CSF_Inv,			/*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMx_Inv,			/*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Inv,			/*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Inv,			/*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFx_Inv,			/*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Inv,			/*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Inv,			/*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Inv,			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMerit_Inv,			/*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-  AllBound_CT_Inv,			/*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Inv;			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CD_Inv,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CL_Inv,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CSF_Inv,      /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMx_Inv,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMy_Inv,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMz_Inv,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFx_Inv,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFy_Inv,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFz_Inv,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CEff_Inv,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMerit_Inv,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
+  AllBound_CT_Inv,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CQ_Inv;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
 
 
   su2double
-  AllBound_CD_Mnt,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CL_Mnt,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CSF_Mnt,			/*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMx_Mnt,			/*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMy_Mnt,			/*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMz_Mnt,			/*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFx_Mnt,			/*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFy_Mnt,			/*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CFz_Mnt,			/*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CEff_Mnt,			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CMerit_Mnt,			/*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-  AllBound_CT_Mnt,			/*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Mnt;			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CD_Mnt,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CL_Mnt,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CSF_Mnt,      /*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMx_Mnt,      /*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMy_Mnt,      /*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMz_Mnt,      /*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFx_Mnt,      /*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFy_Mnt,      /*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFz_Mnt,      /*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CEff_Mnt,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMerit_Mnt,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
+  AllBound_CT_Mnt,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
 
   su2double
   OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
@@ -6112,22 +6152,22 @@ protected:
   Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CD, /*!< \brief Total drag coefficient for all the boundaries. */
-  Total_CL,		/*!< \brief Total lift coefficient for all the boundaries. */
-  Total_CSF,		/*!< \brief Total sideforce coefficient for all the boundaries. */
-  Total_CMx,			/*!< \brief Total x moment coefficient for all the boundaries. */
-  Total_CMy,			/*!< \brief Total y moment coefficient for all the boundaries. */
-  Total_CMz,			/*!< \brief Total z moment coefficient for all the boundaries. */
-  Total_CFx,			/*!< \brief Total x force coefficient for all the boundaries. */
-  Total_CFy,			/*!< \brief Total y force coefficient for all the boundaries. */
-  Total_CFz,			/*!< \brief Total z force coefficient for all the boundaries. */
-  Total_CEff,			/*!< \brief Total efficiency coefficient for all the boundaries. */
-  Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
-  Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
-  Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
+  Total_CL,    /*!< \brief Total lift coefficient for all the boundaries. */
+  Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
+  Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
+  Total_CMy,      /*!< \brief Total y moment coefficient for all the boundaries. */
+  Total_CMz,      /*!< \brief Total z moment coefficient for all the boundaries. */
+  Total_CFx,      /*!< \brief Total x force coefficient for all the boundaries. */
+  Total_CFy,      /*!< \brief Total y force coefficient for all the boundaries. */
+  Total_CFz,      /*!< \brief Total z force coefficient for all the boundaries. */
+  Total_CEff,      /*!< \brief Total efficiency coefficient for all the boundaries. */
+  Total_CMerit,      /*!< \brief Total rotor Figure of Merit for all the boundaries. */
+  Total_CT,    /*!< \brief Total thrust coefficient for all the boundaries. */
+  Total_CQ,    /*!< \brief Total torque coefficient for all the boundaries. */
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
-  Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_HeatFluxDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_CpDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_HeatFluxDiff,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double *Surface_CL,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CD,          /*!< \brief Drag coefficient for each monitoring surface. */
@@ -6139,30 +6179,30 @@ protected:
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
   *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
-  su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
-  su2double *SecondaryVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
-  *SecondaryVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-  su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
-  *PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-  unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
+  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
+  *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
+  su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
+  *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
+  unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
   *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
-  euler_implicit,			/*!< \brief True if euler implicit scheme used. */
+  euler_implicit,      /*!< \brief True if euler implicit scheme used. */
   least_squares;        /*!< \brief True if computing gradients by least squares. */
-  su2double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  su2double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
+  su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   
-  su2double *Primitive,		/*!< \brief Auxiliary nPrimVar vector. */
-  *Primitive_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-  *Primitive_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
+  su2double *Primitive,    /*!< \brief Auxiliary nPrimVar vector. */
+  *Primitive_i,        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
+  *Primitive_j;        /*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
 
-  su2double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
-  Cauchy_Func;			/*!< \brief Current value of the convergence indicator at one iteration. */
-  unsigned short Cauchy_Counter;	/*!< \brief Number of elements of the Cauchy serial. */
-  su2double *Cauchy_Serie;			/*!< \brief Complete Cauchy serial. */
-  su2double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
-  New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
+  su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
+  Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
+  unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
+  su2double *Cauchy_Serie;      /*!< \brief Complete Cauchy serial. */
+  su2double Old_Func,  /*!< \brief Old value of the objective function (the function which is monitored). */
+  New_Func;      /*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
   
@@ -6223,10 +6263,10 @@ public:
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
   //  /*!
-  //	 * \brief Impose the send-receive boundary condition.
-  //	 * \param[in] geometry - Geometrical definition of the problem.
-  //	 * \param[in] config - Definition of the particular problem.
-  //	 */
+  //   * \brief Impose the send-receive boundary condition.
+  //   * \param[in] geometry - Geometrical definition of the problem.
+  //   * \param[in] config - Definition of the particular problem.
+  //   */
   //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
@@ -6400,20 +6440,20 @@ public:
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
   //  /*!
-  //	 * \brief Compute the gradient of the primitive variables using Green-Gauss method,
-  //	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //	 * \param[in] geometry - Geometrical definition of the problem.
-  //	 * \param[in] config - Definition of the particular problem.
-  //	 */
-  //	void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
+  //   * \brief Compute the gradient of the primitive variables using Green-Gauss method,
+  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+  //   * \param[in] geometry - Geometrical definition of the problem.
+  //   * \param[in] config - Definition of the particular problem.
+  //   */
+  //  void SetSecondary_Gradient_GG(CGeometry *geometry, CConfig *config);
   
-  //	/*!
-  //	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //	 * \param[in] geometry - Geometrical definition of the problem.
-  //	 * \param[in] config - Definition of the particular problem.
-  //	 */
-  //	void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
+  //  /*!
+  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+  //   * \param[in] geometry - Geometrical definition of the problem.
+  //   * \param[in] config - Definition of the particular problem.
+  //   */
+  //  void SetSecondary_Gradient_LS(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
@@ -6431,19 +6471,19 @@ public:
   void SetPrimitive_Limiter(CGeometry *geometry, CConfig *config);
   
   //  /*!
-  //	 * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-  //	 *        and stores the result in the <i>Gradient_Primitive</i> variable.
-  //	 * \param[in] geometry - Geometrical definition of the problem.
-  //	 * \param[in] config - Definition of the particular problem.
-  //	 */
-  //	void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
+  //   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
+  //   *        and stores the result in the <i>Gradient_Primitive</i> variable.
+  //   * \param[in] geometry - Geometrical definition of the problem.
+  //   * \param[in] config - Definition of the particular problem.
+  //   */
+  //  void Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config);
   
-  //	/*!
-  //	 * \brief Compute the limiter of the primitive variables.
-  //	 * \param[in] geometry - Geometrical definition of the problem.
-  //	 * \param[in] config - Definition of the particular problem.
-  //	 */
-  //	void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
+  //  /*!
+  //   * \brief Compute the limiter of the primitive variables.
+  //   * \param[in] geometry - Geometrical definition of the problem.
+  //   * \param[in] config - Definition of the particular problem.
+  //   */
+  //  void SetSecondary_Limiter(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the undivided laplacian for the solution, except the energy equation.
@@ -6544,7 +6584,7 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
   
-	 /*!
+   /*!
     * \brief compare to values.
     * \param[in] a - value 1.
     * \param[in] b - value 2.
@@ -7281,8 +7321,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
   /*!
    * \brief Set the initial condition for the Euler Equations.
@@ -7317,7 +7358,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -7717,23 +7758,23 @@ public:
  * \brief Main class for defining the incompressible Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CIncNSSolver : public CIncEulerSolver {
 private:
-	su2double Viscosity_Inf;	/*!< \brief Viscosity at the infinity. */
-  su2double Tke_Inf;	/*!< \brief Turbulent kinetic energy at the infinity. */
-	su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
-	Prandtl_Turb;         /*!< \brief Turbulent Prandtl number. */
-  su2double *CD_Visc,	/*!< \brief Drag coefficient (viscous contribution) for each boundary. */
-  *CL_Visc,		/*!< \brief Lift coefficient (viscous contribution) for each boundary. */
-  *CSF_Visc,		/*!< \brief Side force coefficient (viscous contribution) for each boundary. */
-	*CMx_Visc,			/*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
-	*CMy_Visc,			/*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
-	*CMz_Visc,			/*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
-	*CFx_Visc,			/*!< \brief Force x coefficient (viscous contribution) for each boundary. */
-	*CFy_Visc,			/*!< \brief Force y coefficient (viscous contribution) for each boundary. */
-	*CFz_Visc,			/*!< \brief Force z coefficient (viscous contribution) for each boundary. */
+  su2double Viscosity_Inf;  /*!< \brief Viscosity at the infinity. */
+  su2double Tke_Inf;  /*!< \brief Turbulent kinetic energy at the infinity. */
+  su2double Prandtl_Lam,   /*!< \brief Laminar Prandtl number. */
+  Prandtl_Turb;         /*!< \brief Turbulent Prandtl number. */
+  su2double *CD_Visc,  /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
+  *CL_Visc,    /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
+  *CSF_Visc,    /*!< \brief Side force coefficient (viscous contribution) for each boundary. */
+  *CMx_Visc,      /*!< \brief Moment x coefficient (viscous contribution) for each boundary. */
+  *CMy_Visc,      /*!< \brief Moment y coefficient (viscous contribution) for each boundary. */
+  *CMz_Visc,      /*!< \brief Moment z coefficient (viscous contribution) for each boundary. */
+  *CFx_Visc,      /*!< \brief Force x coefficient (viscous contribution) for each boundary. */
+  *CFy_Visc,      /*!< \brief Force y coefficient (viscous contribution) for each boundary. */
+  *CFz_Visc,      /*!< \brief Force z coefficient (viscous contribution) for each boundary. */
   *Surface_CL_Visc,/*!< \brief Lift coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CD_Visc,/*!< \brief Drag coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CSF_Visc,/*!< \brief Side-force coefficient (viscous contribution) for each monitoring surface. */
@@ -7744,131 +7785,131 @@ private:
   *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
-	*CEff_Visc,			/*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
-	*CMerit_Visc,			/*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
-	*CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
-	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
-  *HF,		/*!< \brief Heat load (viscous contribution) for each boundary. */
+  *CEff_Visc,      /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
+  *CMerit_Visc,      /*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
+  *CT_Visc,    /*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
+  *CQ_Visc,    /*!< \brief Torque coefficient (viscous contribution) for each boundary. */
+  *HF,    /*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHF_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-  ***CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
-	su2double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
-	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
+  ***CSkinFriction;  /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  su2double *ForceViscous,  /*!< \brief Viscous force for each boundary. */
+  *MomentViscous;      /*!< \brief Inviscid moment for each boundary. */
   su2double AllBound_CD_Visc, /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CL_Visc,		/*!< \brief Lift coefficient (viscous contribution) for all the boundaries. */
-  AllBound_CSF_Visc,		/*!< \brief Sideforce coefficient (viscous contribution) for all the boundaries. */
-	AllBound_CMx_Visc,			/*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMy_Visc,			/*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMz_Visc,			/*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CEff_Visc,			/*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
-	AllBound_CFx_Visc,			/*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CFy_Visc,			/*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CFz_Visc,			/*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMerit_Visc,			/*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
-	AllBound_CT_Visc,		/*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
-	AllBound_CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
-  AllBound_HF_Visc,		/*!< \brief Heat load (viscous contribution) for all the boundaries. */
+  AllBound_CL_Visc,    /*!< \brief Lift coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CSF_Visc,    /*!< \brief Sideforce coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CMx_Visc,      /*!< \brief Moment x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMy_Visc,      /*!< \brief Moment y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMz_Visc,      /*!< \brief Moment z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CEff_Visc,      /*!< \brief Efficient coefficient (Viscous contribution) for all the boundaries. */
+  AllBound_CFx_Visc,      /*!< \brief Force x coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFy_Visc,      /*!< \brief Force y coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CFz_Visc,      /*!< \brief Force z coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_CMerit_Visc,      /*!< \brief Rotor Figure of Merit coefficient (Viscous contribution) for all the boundaries. */
+  AllBound_CT_Visc,    /*!< \brief Thrust coefficient (viscous contribution) for all the boundaries. */
+  AllBound_CQ_Visc,    /*!< \brief Torque coefficient (viscous contribution) for all the boundaries. */
+  AllBound_HF_Visc,    /*!< \brief Heat load (viscous contribution) for all the boundaries. */
   AllBound_MaxHF_Visc; /*!< \brief Maximum heat flux (viscous contribution) for all boundaries. */
   su2double StrainMag_Max, Omega_Max; /*!< \brief Maximum Strain Rate magnitude and Omega. */
   
 public:
   
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CIncNSSolver(void);
+  /*!
+   * \brief Constructor of the class.
+   */
+  CIncNSSolver(void);
     
-	/*!
-	 * \overload
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
     
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CIncNSSolver(void);
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CIncNSSolver(void);
     
-	/*!
+  /*!
    * \brief Provide the non dimensional lift coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the lift coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CL_Visc(unsigned short val_marker);
   
   /*!
    * \brief Provide the non dimensional drag coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the drag coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CD_Visc(unsigned short val_marker);
     
-	/*!
+  /*!
    * \brief Provide the non dimensional side-force coefficient.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CSF_Visc(unsigned short val_marker);
     
-	/*!
+  /*!
    * \brief Provide the non dimensional side-force coefficient.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the side-force coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CEff_Visc(unsigned short val_marker);
     
     /*!
    * \brief Provide the non dimensional x force coefficient.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x force coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CFx_Visc(unsigned short val_marker);
   
   /*!
    * \brief Provide the non dimensional y force coefficient.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CFy_Visc(unsigned short val_marker);
     
-	/*!
+  /*!
    * \brief Provide the non dimensional z force coefficient.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z force coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CFz_Visc(unsigned short val_marker);
     
-	/*!
+  /*!
    * \brief Provide the non dimensional x moment coefficient.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the x moment coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CMx_Visc(unsigned short val_marker);
   
-	/*!
+  /*!
    * \brief Provide the non dimensional y moment coefficient.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y moment coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CMy_Visc(unsigned short val_marker);
-	
+  
   /*!
    * \brief Provide the non dimensional z moment coefficient.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
-	 */
+   */
   su2double GetSurface_CMz_Visc(unsigned short val_marker);
   
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
    * \return Value of the lift coefficient (inviscid contribution).
-	 */
+   */
   su2double GetAllBound_CL_Visc(void);
   
-	/*!
+  /*!
    * \brief Get the inviscid contribution to the drag coefficient.
    * \return Value of the drag coefficient (inviscid contribution).
-	 */
+   */
   su2double GetAllBound_CD_Visc(void);
   
   /*!
@@ -7989,7 +8030,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-	void Friction_Forces(CGeometry *geometry, CConfig *config);
+  void Friction_Forces(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Get the non dimensional lift coefficient (viscous contribution).
@@ -8102,7 +8143,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -8230,8 +8271,9 @@ public:
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
 };
 
@@ -8240,7 +8282,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -8467,7 +8509,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -8619,7 +8661,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -8795,7 +8837,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -8809,7 +8851,7 @@ protected:
   *Sens_Temp,      /*!< \brief Temperature sensitivity coefficient for each boundary. */
   *Sens_BPress,     /*!< \brief Back pressure sensitivity coefficient for each boundary. */
   **CSensitivity,    /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
-  ***DonorAdjVar;		/*!< \brief Value of the donor variables at each boundary. */
+  ***DonorAdjVar;    /*!< \brief Value of the donor variables at each boundary. */
   su2double Total_Sens_Mach;  /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_AoA;    /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Geo;    /*!< \brief Total shape sensitivity coefficient for all the boundaries. */
@@ -8825,7 +8867,7 @@ protected:
   su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
   su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
   *FlowPrimVar_j;        /*!< \brief Store the flow solution at point j. */
-  unsigned long **DonorGlobalIndex;		/*!< \brief Value of the donor global index. */
+  unsigned long **DonorGlobalIndex;    /*!< \brief Value of the donor global index. */
 
   su2double pnorm,
   Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
@@ -9374,8 +9416,17 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 
 /*!
@@ -9387,30 +9438,30 @@ public:
  */
 class CAdjIncEulerSolver : public CSolver {
 protected:
-  su2double PsiRho_Inf,	/*!< \brief PsiRho variable at the infinity. */
-  PsiE_Inf,			/*!< \brief PsiE variable at the infinity. */
-  *Phi_Inf;			/*!< \brief Phi vector at the infinity. */
+  su2double PsiRho_Inf,  /*!< \brief PsiRho variable at the infinity. */
+  PsiE_Inf,      /*!< \brief PsiE variable at the infinity. */
+  *Phi_Inf;      /*!< \brief Phi vector at the infinity. */
   su2double *Sens_Mach, /*!< \brief Mach sensitivity coefficient for each boundary. */
-  *Sens_AoA,			/*!< \brief Angle of attack sensitivity coefficient for each boundary. */
-  *Sens_Geo,			/*!< \brief Shape sensitivity coefficient for each boundary. */
-  *Sens_Press,			/*!< \brief Pressure sensitivity coefficient for each boundary. */
-  *Sens_Temp,			/*!< \brief Temperature sensitivity coefficient for each boundary. */
+  *Sens_AoA,      /*!< \brief Angle of attack sensitivity coefficient for each boundary. */
+  *Sens_Geo,      /*!< \brief Shape sensitivity coefficient for each boundary. */
+  *Sens_Press,      /*!< \brief Pressure sensitivity coefficient for each boundary. */
+  *Sens_Temp,      /*!< \brief Temperature sensitivity coefficient for each boundary. */
   *Sens_BPress,     /*!< \brief Back pressure sensitivity coefficient for each boundary. */
-  **CSensitivity;		/*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
-  su2double Total_Sens_Mach;	/*!< \brief Total mach sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_AoA;		/*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
+  **CSensitivity;    /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  su2double Total_Sens_Mach;  /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
+  su2double Total_Sens_AoA;    /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
+  su2double Total_Sens_Geo;    /*!< \brief Total shape sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
-  su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
+  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   bool space_centered;  /*!< \brief True if space centered scheeme used. */
   su2double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
-  unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
-  su2double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-  su2double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-  su2double *FlowPrimVar_i,	/*!< \brief Store the flow solution at point i. */
+  unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
+  su2double Gamma;                  /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
+  su2double Gamma_Minus_One;        /*!< \brief Fluids's Gamma - 1.0  . */
+  su2double *FlowPrimVar_i,  /*!< \brief Store the flow solution at point i. */
   *FlowPrimVar_j;        /*!< \brief Store the flow solution at point j. */
   
   su2double pnorm,
@@ -9805,8 +9856,17 @@ public:
    * \param[in] ExtIter - External iteration.
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 
 /*!
@@ -9814,7 +9874,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -9923,7 +9983,7 @@ public:
  * \brief Main class for defining the incompressible Navier-Stokes adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjIncNSSolver : public CAdjIncEulerSolver {
 public:
@@ -10032,7 +10092,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -10178,7 +10238,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 4.3.0 "Cardinal"
+ *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -10310,7 +10370,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 4.3.0 "Cardinal"
+ *  \version 5.0.0 "Raven"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -10433,15 +10493,6 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   */
-  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
   
   /*!
    * \brief Compute the total wave strength coefficient.
@@ -11122,6 +11173,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 };
 
 /*!
@@ -11129,7 +11190,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -11337,7 +11398,7 @@ public:
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CDiscAdjSolver : public CSolver {
 private:
@@ -11531,5 +11592,16 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
 };
 #include "solver_structure.inl"

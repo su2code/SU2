@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Edwin van der Weide's group at the University of Twente.
  *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
- * Copyright (C) 2012-2016 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2017 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2738,9 +2738,10 @@ CSurfaceMovement::~CSurfaceMovement(void) {}
 void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *config) {
   
   unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
-  int rank = MASTER_NODE;
-  string FFDBoxTag;
-  bool allmoving;
+  unsigned short Degree_Unitary [] = {1,1,1}, BSpline_Unitary [] = {2,2,2};
+	int rank = MASTER_NODE;
+	string FFDBoxTag;
+	bool allmoving;
   
   bool cylindrical = (config->GetFFD_CoordSystem() == CYLINDRICAL);
   bool spherical = (config->GetFFD_CoordSystem() == SPHERICAL);
@@ -2789,9 +2790,9 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       /*--- Create a unitary FFDBox as baseline for other FFDBoxes shapes ---*/
       
-      CFreeFormDefBox FFDBox_unitary(1,1,1);
+      CFreeFormDefBox FFDBox_unitary(Degree_Unitary, BSpline_Unitary, BEZIER);
       FFDBox_unitary.SetUnitCornerPoints();
-      
+
       /*--- Compute the control points of the unitary box, in this case the degree is 1 and the order is 2 ---*/
       
       FFDBox_unitary.SetControlPoints_Parallelepiped();
@@ -3286,9 +3287,9 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   
   /*--- Change order and control points reduce the
    complexity of the point inversion (this only works with boxes,
-   and we maintain an internal copy) ---*/
+ in case of Bezier curves, and we maintain an internal copy)---*/
   
-  if (BoxFFD) {
+  if (BoxFFD && (config->GetFFD_Blending() == BEZIER)) {
     
     for (iOrder = 0; iOrder < 2; iOrder++) {
       for (jOrder = 0; jOrder < 2; jOrder++) {
@@ -3309,9 +3310,10 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
     
     FFDBox->SetlOrder(2); FFDBox->SetmOrder(2); FFDBox->SetnOrder(2);
     FFDBox->SetnControlPoints();
-    
+    FFDBox->BlendingFunction[0]->SetOrder(2, 2);
+    FFDBox->BlendingFunction[1]->SetOrder(2, 2);
+    FFDBox->BlendingFunction[2]->SetOrder(2, 2);
   }
-  
   /*--- Point inversion algorithm with a basic box ---*/
   
   ParamCoordGuess[0]  = 0.5; ParamCoordGuess[1] = 0.5; ParamCoordGuess[2] = 0.5;
@@ -3437,8 +3439,12 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   
   if (BoxFFD) {
     FFDBox->SetOriginalControlPoints();
+    if (config->GetFFD_Blending() == BEZIER){
+      FFDBox->BlendingFunction[0]->SetOrder(FFDBox->GetlOrder(), FFDBox->GetlOrder());
+      FFDBox->BlendingFunction[1]->SetOrder(FFDBox->GetmOrder(), FFDBox->GetmOrder());
+      FFDBox->BlendingFunction[2]->SetOrder(FFDBox->GetnOrder(), FFDBox->GetnOrder());
+    }
   }
-  
 }
 
 void CSurfaceMovement::SetParametricCoordCP(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBoxParent, CFreeFormDefBox *FFDBoxChild) {
@@ -5291,7 +5297,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
 	unsigned long iVertex;
 	unsigned short iMarker;
-	su2double VarCoord[3] = {0.0,0.0,0.0}, ek, fk, *Coord, *Normal, xCoord;
+  su2double VarCoord[3] = {0.0,0.0,0.0}, ek, fk, *Coord, xCoord;
 
 	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
@@ -5321,7 +5327,6 @@ void CSurfaceMovement::SetSurface_Bump(CGeometry *boundary, CConfig *config, uns
 			if (config->GetMarker_All_DV(iMarker) == YES) {
 
 				Coord = boundary->vertex[iMarker][iVertex]->GetCoord();
-				Normal = boundary->vertex[iMarker][iVertex]->GetNormal();
 
 				xCoord = (Coord[0] - BumpLoc);
 				ek = log10(0.5)/log10((xk-BumpLoc+EPS)/BumpSize);
@@ -7070,6 +7075,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   nElem, my_nSurfPoints, nSurfPoints, *nSurfacePoints;
   
   unsigned short nDim = geometry->GetnDim(), iDim;
+  unsigned short SplineOrder[3];
+  unsigned short Blending = 0;
+
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -7192,8 +7200,51 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           if (nDim == 3) cout << ", " << degree[2];
           cout << ". " << endl;
         }
-        
-				FFDBox[iFFDBox] = new CFreeFormDefBox(SU2_TYPE::Int(degree[0]), SU2_TYPE::Int(degree[1]), SU2_TYPE::Int(degree[2]));				
+
+        getline (mesh_file, text_line);
+        if (text_line.substr(0,12) != "FFD_BLENDING"){
+          if (rank == MASTER_NODE) {
+            cout << endl << "Deprecated FFD information found in mesh file." << endl;
+            cout << "FFD information generated with SU2 version <= 4.3 is incompatible with the current version." << endl;
+            cout << "Run SU2_DEF again with DV_KIND= FFD_SETTING." << endl;
+          }
+          exit(EXIT_FAILURE);
+        }
+        text_line.erase(0,14);
+        if (text_line == "BEZIER"){
+          Blending = BEZIER;
+        }
+        if (text_line == "BSPLINE_UNIFORM"){
+          Blending = BSPLINE_UNIFORM;
+        }
+
+
+
+        if (Blending == BSPLINE_UNIFORM) {
+          getline (mesh_file, text_line);
+          text_line.erase (0,17); SplineOrder[0] = atoi(text_line.c_str());
+          getline (mesh_file, text_line);
+          text_line.erase (0,17); SplineOrder[1] = atoi(text_line.c_str());
+          if (nDim == 3){
+            getline (mesh_file, text_line);
+            text_line.erase (0,17); SplineOrder[2] = atoi(text_line.c_str());
+          } else {
+            SplineOrder[2] = 2;
+          }
+        }
+        if (rank == MASTER_NODE){
+          if (Blending == BSPLINE_UNIFORM){
+            cout << "FFD Blending using B-Splines. ";
+            cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
+            if (nDim == 3) cout << ", " << SplineOrder[2];
+            cout << ". " << endl;
+          }
+          if (Blending == BEZIER){
+            cout << "FFD Blending using Bezier Curves." << endl;
+          }
+        }
+
+        FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, Blending);
 				FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
 
 				/*--- Read the number of parents boxes ---*/
@@ -7367,8 +7418,15 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
   su2double coord[3];
   unsigned short degree[3], iFFDBox, iCornerPoints, LevelFFDBox, nParentFFDBox,
   iParentFFDBox, nChildFFDBox, iChildFFDBox, *nCornerPoints;
+
   
-  unsigned short nDim = geometry->GetnDim();
+  unsigned short nDim = geometry->GetnDim(), iDim;
+  unsigned short SplineOrder[3]={2,2,2};
+
+  for (iDim = 0; iDim < 3; iDim++){
+    SplineOrder[iDim] = SU2_TYPE::Short(config->GetFFD_BSplineOrder()[iDim]);
+  }
+
   int rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
@@ -7416,9 +7474,21 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
       cout << ". " << endl;
     }
     
-    FFDBox[iFFDBox] = new CFreeFormDefBox(SU2_TYPE::Int(degree[0]), SU2_TYPE::Int(degree[1]), SU2_TYPE::Int(degree[2]));
+    if (rank == MASTER_NODE){
+      if (config->GetFFD_Blending() == BSPLINE_UNIFORM){
+        cout << "FFD Blending using B-Splines. ";
+        cout << "Order: " << SplineOrder[0] << ", " << SplineOrder[1];
+        if (nDim == 3) cout << ", " << SplineOrder[2];
+        cout << ". " << endl;
+      }
+      if (config->GetFFD_Blending() == BEZIER){
+        cout << "FFD Blending using Bezier Curves." << endl;
+      }
+    }
+
+    FFDBox[iFFDBox] = new CFreeFormDefBox(degree, SplineOrder, config->GetFFD_Blending());
     FFDBox[iFFDBox]->SetTag(TagFFDBox); FFDBox[iFFDBox]->SetLevel(LevelFFDBox);
-    
+
     /*--- Read the number of parents boxes ---*/
     
     nParentFFDBox = 0; // Nested FFD is not active
@@ -7755,7 +7825,16 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
       output_file << "FFD_DEGREE_I= " << FFDBox[iFFDBox]->GetlOrder()-1 << endl;
       output_file << "FFD_DEGREE_J= " << FFDBox[iFFDBox]->GetmOrder()-1 << endl;
       if (nDim == 3) output_file << "FFD_DEGREE_K= " << FFDBox[iFFDBox]->GetnOrder()-1 << endl;
-      
+      if (config->GetFFD_Blending() == BSPLINE_UNIFORM) {
+        output_file << "FFD_BLENDING= BSPLINE_UNIFORM" << endl;
+        output_file << "BSPLINE_ORDER_I= " << FFDBox[iFFDBox]->BlendingFunction[0]->GetOrder() << endl;
+        output_file << "BSPLINE_ORDER_J= " << FFDBox[iFFDBox]->BlendingFunction[1]->GetOrder() << endl;
+        if (nDim == 3) output_file << "BSPLINE_ORDER_K= " << FFDBox[iFFDBox]->BlendingFunction[2]->GetOrder() << endl;
+      }
+      if (config->GetFFD_Blending() == BEZIER) {
+        output_file << "FFD_BLENDING= BEZIER" << endl;
+      }
+
       output_file << "FFD_PARENTS= " << FFDBox[iFFDBox]->GetnParentFFDBox() << endl;
       for (iParentFFDBox = 0; iParentFFDBox < FFDBox[iFFDBox]->GetnParentFFDBox(); iParentFFDBox++)
         output_file << FFDBox[iFFDBox]->GetParentFFDBoxTag(iParentFFDBox) << endl;
@@ -7819,7 +7898,7 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
 
 CFreeFormDefBox::CFreeFormDefBox(void) : CGridMovement() { }
 
-CFreeFormDefBox::CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_mDegree, unsigned short val_nDegree) : CGridMovement() {
+CFreeFormDefBox::CFreeFormDefBox(unsigned short Degree[], unsigned short BSplineOrder[], unsigned short kind_blending) : CGridMovement() {
   
 	unsigned short iCornerPoints, iOrder, jOrder, kOrder, iDim;
 	
@@ -7838,14 +7917,14 @@ CFreeFormDefBox::CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_
 	cart_coord = new su2double[nDim]; cart_coord_ = new su2double[nDim];
 	Gradient = new su2double[nDim];
 
-	lDegree = val_lDegree; lOrder = lDegree+1;
-	mDegree = val_mDegree; mOrder = mDegree+1;
-	nDegree = val_nDegree; nOrder = nDegree+1;
+  lDegree = Degree[0]; lOrder = lDegree+1;
+  mDegree = Degree[1]; mOrder = mDegree+1;
+  nDegree = Degree[2]; nOrder = nDegree+1;
 	nControlPoints = lOrder*mOrder*nOrder;
   
-  lDegree_Copy = val_lDegree; lOrder_Copy = lDegree+1;
-	mDegree_Copy = val_mDegree; mOrder_Copy = mDegree+1;
-	nDegree_Copy = val_nDegree; nOrder_Copy = nDegree+1;
+  lDegree_Copy = Degree[0]; lOrder_Copy = lDegree+1;
+  mDegree_Copy = Degree[1]; mOrder_Copy = mDegree+1;
+  nDegree_Copy = Degree[2]; nOrder_Copy = nDegree+1;
 	nControlPoints_Copy = lOrder_Copy*mOrder_Copy*nOrder_Copy;
 	
 	Coord_Control_Points = new su2double*** [lOrder];
@@ -7871,11 +7950,24 @@ CFreeFormDefBox::CFreeFormDefBox(unsigned short val_lDegree, unsigned short val_
 			}
 		}
 	}
-	 
+
+  BlendingFunction = new CFreeFormBlending*[nDim];
+
+  if (kind_blending == BEZIER){
+    BlendingFunction[0] = new CBezierBlending(lOrder, lOrder);
+    BlendingFunction[1] = new CBezierBlending(mOrder, mOrder);
+    BlendingFunction[2] = new CBezierBlending(nOrder, nOrder);
+  }
+  if (kind_blending == BSPLINE_UNIFORM){
+    BlendingFunction[0] = new CBSplineBlending(BSplineOrder[0], lOrder);
+    BlendingFunction[1] = new CBSplineBlending(BSplineOrder[1], mOrder);
+    BlendingFunction[2] = new CBSplineBlending(BSplineOrder[2], nOrder);
+  }
+
 }
 
 CFreeFormDefBox::~CFreeFormDefBox(void) {
-	unsigned short iOrder, jOrder, kOrder, iCornerPoints;
+  unsigned short iOrder, jOrder, kOrder, iCornerPoints, iDim;
 	
 	for (iOrder = 0; iOrder < lOrder; iOrder++) 
 		for (jOrder = 0; jOrder < mOrder; jOrder++) 
@@ -7895,6 +7987,11 @@ CFreeFormDefBox::~CFreeFormDefBox(void) {
 	for (iCornerPoints = 0; iCornerPoints < nCornerPoints; iCornerPoints++)
 		delete [] Coord_Corner_Points[iCornerPoints];
 	delete [] Coord_Corner_Points;
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    delete BlendingFunction[iDim];
+  }
+  delete [] BlendingFunction;
 }
 
 void  CFreeFormDefBox::SetUnitCornerPoints(void) {
@@ -8426,71 +8523,20 @@ su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) {
 			for (kDegree = 0; kDegree <= nDegree; kDegree++)
 				for (iDim = 0; iDim < nDim; iDim++) {
 					cart_coord[iDim] += Coord_Control_Points[iDegree][jDegree][kDegree][iDim]
-					* GetBernstein(lDegree, iDegree, ParamCoord[0])
-					* GetBernstein(mDegree, jDegree, ParamCoord[1])
-					* GetBernstein(nDegree, kDegree, ParamCoord[2]);
+          * BlendingFunction[0]->GetBasis(iDegree, ParamCoord[0])
+          * BlendingFunction[1]->GetBasis(jDegree, ParamCoord[1])
+          * BlendingFunction[2]->GetBasis(kDegree, ParamCoord[2]);
 				}
 	
 	return cart_coord;
 }
 
-su2double CFreeFormDefBox::GetBernstein(short val_n, short val_i, su2double val_t) {
-  
-  su2double value = 0.0;
-  
-  if (val_i > val_n) { value = 0.0; return value; }
-  
-  if (val_i == 0) {
-    if (val_t == 0) value = 1.0;
-    else if (val_t == 1) value = 0.0;
-    else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0 - val_t, val_n - val_i);
-  }
-  else if (val_i == val_n) {
-    if (val_t == 0) value = 0.0;
-    else if (val_t == 1) value = 1.0;
-    else value = pow(val_t, val_n);
-  }
-  else {
-    if ((val_t == 0) || (val_t == 1)) value = 0.0;
-    value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0-val_t, val_n - val_i);
-  }
-  
-  return value;
-  
-}
-
-su2double CFreeFormDefBox::GetBernsteinDerivative(short val_n, short val_i, 
-											   su2double val_t, short val_order) {
-	su2double value = 0.0;
-	
-	/*--- Verify this subroutine, it provides negative val_n, 
-	 which is a wrong value for GetBernstein ---*/
-	
-	if (val_order == 0) { 
-		value = GetBernstein(val_n, val_i, val_t); return value; 
-	}
-	
-	if (val_i == 0) { 
-		value = val_n*(-GetBernsteinDerivative(val_n-1, val_i, val_t, val_order-1)); return value; 
-	}
-	else {
-		if (val_n == 0) { 
-			value = val_t; return value; 
-		}
-		else {
-			value = val_n*(GetBernsteinDerivative(val_n-1, val_i-1, val_t, val_order-1) - GetBernsteinDerivative(val_n-1, val_i, val_t, val_order-1));
-			return value;
-		}
-	}
-
-	return value;
-}
 
 su2double *CFreeFormDefBox::GetFFDGradient(su2double *val_coord, su2double *xyz) {
   
 	unsigned short iDim, jDim, lmn[3];
   
-  /*--- Set the Degree of the Berstein polynomials ---*/
+  /*--- Set the Degree of the spline ---*/
   
   lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
   
@@ -8509,7 +8555,7 @@ void CFreeFormDefBox::GetFFDHessian(su2double *uvw, su2double *xyz, su2double **
   
   unsigned short iDim, jDim, lmn[3];
   
-  /*--- Set the Degree of the Berstein polynomials ---*/
+  /*--- Set the Degree of the spline ---*/
   
   lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
   
@@ -8644,14 +8690,28 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
         for (iDim = 0; iDim < nDim; iDim++)
           ParamCoord[iDim] = su2double(rand())/su2double(RAND_MAX);
       }
-      
-		}
-    
-	}
-	
-	for (iDim = 0; iDim < nDim; iDim++) 
-		delete [] Hessian[iDim];
-	delete [] Hessian;
+
+    }
+
+    /* --- Splines are not defined outside of [0,1]. So if the parametric coords are outside of
+     *  [0,1] the step was too big and we have to use a smaller relaxation factor. ---*/
+
+    if ((config->GetFFD_Blending() == BSPLINE_UNIFORM)     &&
+        (((ParamCoord[0] < 0.0) || (ParamCoord[0] > 1.0))  ||
+         ((ParamCoord[1] < 0.0) || (ParamCoord[1] > 1.0))  ||
+         ((ParamCoord[2] < 0.0) || (ParamCoord[2] > 1.0)))) {
+
+      for (iDim = 0; iDim < nDim; iDim++){
+        ParamCoord[iDim] = ParamCoordGuess[iDim];
+      }
+      SOR_Factor = 0.9*SOR_Factor;
+    }
+
+  }
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    delete [] Hessian[iDim];
+  delete [] Hessian;
   delete [] IndepTerm;
 
   /*--- The code has hit the max number of iterations ---*/
@@ -8663,31 +8723,6 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
 	/*--- Real Solution is now ParamCoord; Return it ---*/
 
 	return ParamCoord;
-  
-}
-
-su2double CFreeFormDefBox::Binomial(unsigned short n, unsigned short m) {
-  
-  unsigned short i, j;
-  su2double result;
-  
-  su2double *binomial = new su2double [n+1];
-  
-  binomial[0] = 1.0;
-  for (i = 1; i <= n; ++i) {
-    binomial[i] = 1.0;
-    for (j = i-1U; j > 0; --j) {
-      binomial[j] += binomial[j-1U];
-    }
-  }
-  
-  result = binomial[m];
-  if (fabs(result) < EPS*EPS) { result = 0.0; }
-  
-  delete [] binomial;
-  
-  return result;
-  
   
 }
 
@@ -8817,10 +8852,10 @@ su2double CFreeFormDefBox::GetDerivative1(su2double *uvw, unsigned short val_dif
   unsigned short iDim;
   su2double value = 0.0;
 	
-  value = GetBernsteinDerivative(lmn[val_diff], ijk[val_diff], uvw[val_diff], 1);
+  value = BlendingFunction[val_diff]->GetDerivative(ijk[val_diff], uvw[val_diff], 1);
 	for (iDim = 0; iDim < nDim; iDim++)
-		if (iDim != val_diff)
-			value *= GetBernstein(lmn[iDim], ijk[iDim], uvw[iDim]);
+    if (iDim != val_diff)
+      value *= BlendingFunction[iDim]->GetBasis(ijk[iDim], uvw[iDim]);
 	
 	return value;
   
@@ -8835,9 +8870,9 @@ su2double CFreeFormDefBox::GetDerivative2 (su2double *uvw, unsigned short dim, s
 		for (jDegree = 0; jDegree <= lmn[1]; jDegree++)
 			for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
 				value += Coord_Control_Points[iDegree][jDegree][kDegree][dim] 
-				* GetBernstein(lmn[0], iDegree, uvw[0])
-				* GetBernstein(lmn[1], jDegree, uvw[1])
-				* GetBernstein(lmn[2], kDegree, uvw[2]);
+        * BlendingFunction[0]->GetBasis(iDegree, uvw[0])
+        * BlendingFunction[1]->GetBasis(jDegree, uvw[1])
+        * BlendingFunction[2]->GetBasis(kDegree, uvw[2]);
       }
 	 
 	return 2.0*(value - xyz[dim]);
@@ -8857,7 +8892,7 @@ su2double CFreeFormDefBox::GetDerivative3(su2double *uvw, unsigned short dim, un
 			for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
 				ijk[0] = iDegree; ijk[1] = jDegree; ijk[2] = kDegree;
 				value += Coord_Control_Points[iDegree][jDegree][kDegree][dim] * 
-				GetDerivative1(uvw, diff_this, ijk, lmn);
+        GetDerivative1(uvw, diff_this, ijk, lmn);
 			}
 	
   delete [] ijk;
@@ -8866,29 +8901,29 @@ su2double CFreeFormDefBox::GetDerivative3(su2double *uvw, unsigned short dim, un
 }
 
 su2double CFreeFormDefBox::GetDerivative4(su2double *uvw, unsigned short val_diff, unsigned short val_diff2,
-																			 unsigned short *ijk, unsigned short *lmn) {
+                                       unsigned short *ijk, unsigned short *lmn) {
 	unsigned short iDim;
 	su2double value = 0.0;
 	
 	if (val_diff == val_diff2) {
-		value = GetBernsteinDerivative(lmn[val_diff], ijk[val_diff], uvw[val_diff], 2);
+    value = BlendingFunction[val_diff]->GetDerivative(ijk[val_diff], uvw[val_diff], 2);
 		for (iDim = 0; iDim < nDim; iDim++)
 			if (iDim != val_diff)
-				value *= GetBernstein(lmn[iDim], ijk[iDim], uvw[iDim]);
+        value *= BlendingFunction[iDim]->GetBasis(ijk[iDim], uvw[iDim]);
 	}
 	else {
-		value = GetBernsteinDerivative(lmn[val_diff],  ijk[val_diff],  uvw[val_diff], 1) *
-		GetBernsteinDerivative(lmn[val_diff2], ijk[val_diff2], uvw[val_diff2], 1);
+    value = BlendingFunction[val_diff]->GetDerivative(ijk[val_diff],  uvw[val_diff],1) *
+    BlendingFunction[val_diff2]->GetDerivative(ijk[val_diff2], uvw[val_diff2], 1);
 		for (iDim = 0; iDim < nDim; iDim++)
 			if ((iDim != val_diff) && (iDim != val_diff2))
-				value *= GetBernstein(lmn[iDim], ijk[iDim], uvw[iDim]);
+        value *= BlendingFunction[iDim]->GetBasis(ijk[iDim], uvw[iDim]);
 	}
 	
 	return value;
 }
 
 su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, unsigned short diff_this, unsigned short diff_this_also, 
-																			unsigned short *lmn) {
+                                      unsigned short *lmn) {
 	
   unsigned short iDegree, jDegree, kDegree, iDim;
   su2double value = 0.0;
@@ -8908,4 +8943,214 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
   delete [] ijk;
   
 	return value;
+}
+
+CFreeFormBlending::CFreeFormBlending(){}
+
+CFreeFormBlending::~CFreeFormBlending(){}
+
+CBSplineBlending::CBSplineBlending(short val_order, short n_controlpoints): CFreeFormBlending(){
+  SetOrder(val_order, n_controlpoints);
+}
+
+CBSplineBlending::~CBSplineBlending(){}
+
+void CBSplineBlending::SetOrder(short val_order, short n_controlpoints){
+
+  unsigned short iKnot;
+
+  Order    = val_order;
+  Degree   = Order - 1;
+  nControl = n_controlpoints;
+
+  KnotSize = Order + nControl;
+
+  U.resize(KnotSize, 0.0);
+
+  /*--- Set up the knot vectors for open uniform B-Splines ---*/
+
+  /*--- Note: the first knots are zero now.---*/
+
+  /*--- The next knots are equidistantly distributed in [0,1] ---*/
+
+  for (iKnot = 0; iKnot < nControl - Order; iKnot++){
+    U[Order + iKnot] = su2double(iKnot+1)/su2double(nControl - Order + 1);
+  }
+  for (iKnot = nControl - Order; iKnot < nControl; iKnot++){
+    U[Order + iKnot]  = 1.0;
+  }
+
+  /*--- Allocate the temporary vectors for the basis evaluation ---*/
+
+  N.resize(Order, vector<su2double>(Order, 0.0));
+}
+
+su2double CBSplineBlending::GetBasis(short val_i, su2double val_t){
+
+  /*--- Evaluation is based on the algorithm from "The NURBS Book (Les Piegl and Wayne Tiller)" ---*/
+
+  /*--- Special cases ---*/
+
+  if ((val_i == 0 && val_t == U[0]) || (val_i == (short)U.size()-1 && val_t == U.back())) {return 1.0;}
+
+  /*--- Local property of BSplines ---*/
+
+  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])){ return 0.0;}
+
+  unsigned short j,k;
+  su2double saved, temp;
+
+  for (j = 0; j < Order; j++){
+    if ((val_t >= U[val_i+j]) && (val_t < U[val_i+j+1])) N[j][0] = 1.0;
+    else N[j][0] = 0;
+  }
+
+  for (k = 1; k < Order; k++){
+    if (N[0][k-1] == 0.0) saved = 0.0;
+    else saved = ((val_t - U[val_i])*N[0][k-1])/(U[val_i+k] - U[val_i]);
+    for (j = 0; j < Order-k; j++){
+      if (N[j+1][k-1] == 0.0){
+        N[j][k] = saved; saved = 0.0;
+      } else {
+        temp     = N[j+1][k-1]/(U[val_i+j+k+1] - U[val_i+j+1]);
+        N[j][k]  = saved+(U[val_i+j+k+1] - val_t)*temp;
+        saved    = (val_t - U[val_i+j+1])*temp;
+      }
+    }
+  }
+  return N[0][Order-1];
+}
+
+su2double CBSplineBlending::GetDerivative(short val_i, su2double val_t, short val_order_der){
+
+  if ((val_t < U[val_i]) || (val_t >= U[val_i+Order])){ return 0.0;}
+
+  /*--- Evaluate the i+p basis functions up to the order p (stored in the matrix N). ---*/
+
+  GetBasis(val_i, val_t);
+
+  /*--- Use the recursive definition for the derivative (hardcoded for 1st and 2nd derivative). ---*/
+
+  if (val_order_der == 0){ return N[0][Order-1];}
+
+  if (val_order_der == 1){
+    return (Order-1.0)/(1e-10 + U[val_i+Order-1] - U[val_i]  )*N[0][Order-2]
+         - (Order-1.0)/(1e-10 + U[val_i+Order]   - U[val_i+1])*N[1][Order-2];
+  }
+
+  if (val_order_der == 2 && Order > 2){
+    const su2double left = (Order-2.0)/(1e-10 + U[val_i+Order-2] - U[val_i])  *N[0][Order-3]
+                         - (Order-2.0)/(1e-10 + U[val_i+Order-1] - U[val_i+1])*N[1][Order-3];
+
+    const su2double right = (Order-2.0)/(1e-10 + U[val_i+Order-1] - U[val_i+1])*N[1][Order-3]
+                          - (Order-2.0)/(1e-10 + U[val_i+Order]   - U[val_i+2])*N[2][Order-3];
+
+    return (Order-1.0)/(1e-10 + U[val_i+Order-1] - U[val_i]  )*left
+         - (Order-1.0)/(1e-10 + U[val_i+Order]   - U[val_i+1])*right;
+  }
+
+  /*--- Higher order derivatives are not implemented, so we exit if they are requested. ---*/
+
+  if (val_order_der > 2){
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+    if (rank == MASTER_NODE){
+      cout << "Higher order derivatives for BSplines are not implemented." << endl;
+    }
+    exit(EXIT_FAILURE);
+  }
+  return 0.0;
+}
+
+CBezierBlending::CBezierBlending(short val_order, short n_controlpoints){
+  SetOrder(val_order, n_controlpoints);
+}
+
+CBezierBlending::~CBezierBlending(){}
+
+void CBezierBlending::SetOrder(short val_order, short n_controlpoints){
+  Order  = val_order;
+  Degree = Order - 1;
+  binomial.resize(Order+1, 0.0);
+}
+
+su2double CBezierBlending::GetBasis(short val_i, su2double val_t){
+  return GetBernstein(Degree, val_i, val_t);
+}
+
+su2double CBezierBlending::GetBernstein(short val_n, short val_i, su2double val_t){
+
+  su2double value = 0.0;
+
+  if (val_i > val_n) { value = 0.0; return value; }
+
+  if (val_i == 0) {
+    if (val_t == 0) value = 1.0;
+    else if (val_t == 1) value = 0.0;
+    else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0 - val_t, val_n - val_i);
+  }
+  else if (val_i == val_n) {
+    if (val_t == 0) value = 0.0;
+    else if (val_t == 1) value = 1.0;
+    else value = pow(val_t, val_n);
+  }
+  else {
+    if ((val_t == 0) || (val_t == 1)) value = 0.0;
+    value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0-val_t, val_n - val_i);
+  }
+
+  return value;
+}
+
+su2double CBezierBlending::GetDerivative(short val_i, su2double val_t, short val_order_der){
+  return GetBernsteinDerivative(Degree, val_i, val_t, val_order_der);
+}
+
+su2double CBezierBlending::GetBernsteinDerivative(short val_n, short val_i, su2double val_t, short val_order_der){
+
+  su2double value = 0.0;
+
+  /*--- Verify this subroutine, it provides negative val_n,
+   which is a wrong value for GetBernstein ---*/
+
+  if (val_order_der == 0) {
+    value = GetBernstein(val_n, val_i, val_t); return value;
+  }
+
+  if (val_i == 0) {
+    value = val_n*(-GetBernsteinDerivative(val_n-1, val_i, val_t, val_order_der-1)); return value;
+  }
+  else {
+    if (val_n == 0) {
+      value = val_t; return value;
+    }
+    else {
+      value = val_n*(GetBernsteinDerivative(val_n-1, val_i-1, val_t, val_order_der-1) - GetBernsteinDerivative(val_n-1, val_i, val_t, val_order_der-1));
+      return value;
+    }
+  }
+
+  return value;
+}
+
+su2double CBezierBlending::Binomial(unsigned short n, unsigned short m){
+
+  unsigned short i, j;
+  su2double result;
+
+  binomial[0] = 1.0;
+  for (i = 1; i <= n; ++i) {
+    binomial[i] = 1.0;
+    for (j = i-1U; j > 0; --j) {
+      binomial[j] += binomial[j-1U];
+    }
+  }
+
+  result = binomial[m];
+  if (fabs(result) < EPS*EPS) { result = 0.0; }
+
+  return result;
+
 }
