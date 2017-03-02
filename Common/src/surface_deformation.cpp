@@ -2206,8 +2206,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
           StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
           StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 0.5;
         }
-
-        else if ((iControl = lControl -1)){
+        else if ((iControl == lControl -1)){
           StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
           StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 1.0/3.0;
           StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 1.0/3.0;
@@ -2243,17 +2242,16 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
     EnergyMatrix = StencilMatrix.transpose()*StencilMatrix;
 
-    LinearSystemMatrix.block(0, 0, EnergyMatrix.rows(), EnergyMatrix.cols()) = EnergyMatrix;
 
+    /* --- Set up the minimization problem --- */
+
+    LinearSystemMatrix.block(0, 0, TotalControl, TotalControl)          = EnergyMatrix;
     LinearSystemMatrix.block(0, TotalControl, TotalControl, nParameter) = SystemMatrix.transpose();
-
     LinearSystemMatrix.block(TotalControl, 0, nParameter, TotalControl) = SystemMatrix;
 
-    cout << LinearSystemMatrix << endl;
+    Eigen::FullPivHouseholderQR<EigenMatrix> EigenQR;
 
-    Eigen::PartialPivLU<EigenMatrix> EigenQR;
-
-    EigenQR = LinearSystemMatrix.partialPivLu();
+    EigenQR = LinearSystemMatrix.fullPivHouseholderQr();
 
     LinearSystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesX;
 
@@ -2295,7 +2293,9 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 //      if (nDim == 3){
 //        cout << ", " << DeltaZ.norm();
 //      }
-      cout << " )" <<endl;
+
+//      cout << " )" <<endl;
+
       cout << "Control Point Movement:             ( "
         << ControlPointPositionsX.norm() << ", "
         << ControlPointPositionsY.norm();
