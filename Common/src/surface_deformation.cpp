@@ -2110,6 +2110,13 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   const unsigned short nDim = geometry->GetnDim();
   su2double Movement[3];
 
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   for (iGroup = 0; iGroup < nGroup; iGroup++){
     const unsigned long nPilotPoints = FFDBox->PilotPointsX[iGroup].size();
     nParameter += nPilotPoints;
