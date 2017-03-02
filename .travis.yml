@@ -13,7 +13,7 @@ notifications:
   
 branches:
     only:
-        - feature_MZHB
+        - feature_TMZHB
 
 env:
     global:
