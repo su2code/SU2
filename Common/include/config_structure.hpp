@@ -825,7 +825,7 @@ private:
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
   *default_body_force;        /*!< \brief Default body force vector for the COption class. */
-  bool Body_Force;  			       /*!< \brief Flag to know if a body force is incuded in the formulation. */
+  bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
