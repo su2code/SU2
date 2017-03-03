@@ -2626,7 +2626,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
-  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+  const unsigned short nMetricPerPoint = ctc::nDim*ctc::nDim + 1;
 
   /*--- Loop over the owned volume elements to compute the contribution of the
         volume integral in the DG FEM formulation to the residual.       ---*/
@@ -2646,7 +2646,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /*------------------------------------------------------------------------*/
 
     /* Easier storage of the solution variables for this element. */
-    su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+    su2double *solDOFs = VecSolDOFs.data() + ctc::nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
@@ -2658,50 +2658,150 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /*---         integration weight, in the integration points.           ---*/
     /*------------------------------------------------------------------------*/ 
 
-    /* Loop over the integration points. */
-    unsigned short ll = 0;
-    for(unsigned short i=0; i<nInt; ++i) {
+    /* Make a distinction between two and three space dimensions
+        in order to have the most efficient code. */
+    switch( ctc::nDim ) {
 
-      /*--- Compute the velocities and pressure in this integration point. ---*/
-      const su2double *sol = solInt + nVar*i;
+      case 2: {
 
-      const su2double DensityInv = 1.0/sol[0];
-      su2double vel[3], Velocity2 = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-        vel[iDim] = sol[iDim+1]*DensityInv;
-        Velocity2 += vel[iDim]*vel[iDim];
+        /* 2D simulation. Loop over the integration points to compute
+           the fluxes. */
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Easier storage of the metric terms in this integration point and
+             compute the inverse of the Jacobian. */
+          const su2double *metricTerms = volElem[l].metricTerms.data()
+                                       + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
+          const su2double JacInv       = 1.0/Jac;
+
+          /* Compute the metric terms multiplied by minus the integration weight.
+             The minus sign comes from the integration by parts in the weak
+             formulation. */
+          const su2double wDrdx = -weights[i]*metricTerms[1];
+          const su2double wDrdy = -weights[i]*metricTerms[2];
+
+          const su2double wDsdx = -weights[i]*metricTerms[3];
+          const su2double wDsdy = -weights[i]*metricTerms[4];
+
+          /* Easier storage of the location where the solution data of this
+             integration point starts. */
+          const su2double *sol = solInt + ctc::nVar*i;
+
+          /*--- Compute the velocities and static energy in this integration point. ---*/
+          const su2double rhoInv       = 1.0/sol[0];
+          const su2double u            = sol[1]*rhoInv;
+          const su2double v            = sol[2]*rhoInv;
+          const su2double TotalEnergy  = sol[3]*rhoInv;
+          const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v);
+
+          /*--- Compute the pressure. ---*/
+          FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+          const su2double Pressure = FluidModel->GetPressure();
+
+          /* Set the pointer for the fluxes in this integration point. */
+          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+
+          /*--- Fluxes in r-direction. */
+          const su2double H     = TotalEnergy + rhoInv*Pressure;
+          const su2double rhoUr = sol[1]*wDrdx + sol[2]*wDrdy;
+
+          flux[0] = rhoUr;
+          flux[1] = rhoUr*u + Pressure*wDrdx;
+          flux[2] = rhoUr*v + Pressure*wDrdy;
+          flux[3] = rhoUr*H;
+
+          /*--- Fluxes in s-direction. */
+          const su2double rhoUs = sol[1]*wDsdx + sol[2]*wDsdy;
+
+          flux[4] = rhoUs;
+          flux[5] = rhoUs*u + Pressure*wDsdx;
+          flux[6] = rhoUs*v + Pressure*wDsdy;
+          flux[7] = rhoUs*H;
+        }
+
+        break;
       }
 
-      su2double StaticEnergy = sol[nDim+1]*DensityInv - 0.5*Velocity2;
+      /*----------------------------------------------------------------------*/
 
-      FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-      const su2double Pressure = FluidModel->GetPressure();
+      case 3: {
 
-      /* Easier storage of the metric terms in this integration point. The +1
-         is present, because the first element of the metric terms is the
-         Jacobian in the integration point. */
-      const su2double *metricTerms = volElem[l].metricTerms.data()
-                                   + i*nMetricPerPoint + 1;
+        /* 3D simulation. Loop over the integration points to compute
+           the fluxes. */
+        for(unsigned short i=0; i<nInt; ++i) {
 
-      /*--- Loop over the number of dimensions to compute the fluxes in the
-            direction of the parametric coordinates. ---*/
-      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+          /* Easier storage of the metric terms in this integration point and
+             compute the inverse of the Jacobian. */
+          const su2double *metricTerms = volElem[l].metricTerms.data()
+                                       + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
+          const su2double JacInv       = 1.0/Jac;
 
-        /* Pointer to the metric terms for this direction. */
-        const su2double *metric = metricTerms + iDim*nDim;
+          /* Compute the metric terms multiplied by minus the integration weight.
+             The minus sign comes from the integration by parts in the weak
+             formulation. */
+          const su2double wDrdx = -weights[i]*metricTerms[1];
+          const su2double wDrdy = -weights[i]*metricTerms[2];
+          const su2double wDrdz = -weights[i]*metricTerms[3];
 
-        /* Compute the velocity in the direction of the current parametric coordinate. */
-        su2double vPar = 0.0;
-        for(unsigned short jDim=0; jDim<nDim; ++jDim)
-          vPar += vel[jDim]*metric[jDim];
+          const su2double wDsdx = -weights[i]*metricTerms[4];
+          const su2double wDsdy = -weights[i]*metricTerms[5];
+          const su2double wDsdz = -weights[i]*metricTerms[6];
 
-        /* Compute the flux, multiplied by minus the integration weight. */
-        fluxes[ll++] = -weights[i]*sol[0]*vPar;
+          const su2double wDtdx = -weights[i]*metricTerms[7];
+          const su2double wDtdy = -weights[i]*metricTerms[8];
+          const su2double wDtdz = -weights[i]*metricTerms[9];
 
-        for(unsigned short jDim=0; jDim<nDim; ++jDim)
-          fluxes[ll++] = -weights[i]*(sol[jDim+1]*vPar + Pressure*metric[jDim]);
+          /* Easier storage of the location where the solution data of this
+             integration point starts. */
+          const su2double *sol    = solInt + ctc::nVar*i;
 
-        fluxes[ll++] = -weights[i]*(sol[nDim+1] + Pressure)*vPar;
+          /*--- Compute the velocities and static energy in this integration point. ---*/
+          const su2double rhoInv       = 1.0/sol[0];
+          const su2double u            = sol[1]*rhoInv;
+          const su2double v            = sol[2]*rhoInv;
+          const su2double w            = sol[3]*rhoInv;
+          const su2double TotalEnergy  = sol[4]*rhoInv;
+          const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v + w*w);
+
+          /*--- Compute the pressure. ---*/
+          FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+          const su2double Pressure = FluidModel->GetPressure();
+
+          /* Set the pointer for the fluxes in this integration point. */
+          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+
+          /*--- Fluxes in r-direction. */
+          const su2double H     = TotalEnergy + rhoInv*Pressure;
+          const su2double rhoUr = sol[1]*wDrdx + sol[2]*wDrdy + sol[3]*wDrdz;
+
+          flux[0] = rhoUr;
+          flux[1] = rhoUr*u + Pressure*wDrdx;
+          flux[2] = rhoUr*v + Pressure*wDrdy;
+          flux[3] = rhoUr*w + Pressure*wDrdz;
+          flux[4] = rhoUr*H;
+
+          /*--- Fluxes in s-direction. */
+          const su2double rhoUs = sol[1]*wDsdx + sol[2]*wDsdy + sol[3]*wDsdz;
+
+          flux[5] = rhoUs;
+          flux[6] = rhoUs*u + Pressure*wDsdx;
+          flux[7] = rhoUs*v + Pressure*wDsdy;
+          flux[8] = rhoUs*w + Pressure*wDsdz;
+          flux[9] = rhoUs*H;
+
+          /*--- Fluxes in t-direction. */
+          const su2double rhoUt = sol[1]*wDtdx + sol[2]*wDtdy + sol[3]*wDtdz;
+
+          flux[10] = rhoUt;
+          flux[11] = rhoUt*u + Pressure*wDtdx;
+          flux[12] = rhoUt*v + Pressure*wDtdy;
+          flux[13] = rhoUt*w + Pressure*wDtdz;
+          flux[14] = rhoUt*H;
+        }
+
+        break;
       }
     }
 
@@ -6030,11 +6130,11 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
   su2double tick = 0.0;
 
   su2double *solAndGradInt = VecTmpMemory.data();
-  su2double *fluxes        = solAndGradInt + nIntegrationMax*nVar*(nDim+1);
+  su2double *fluxes        = solAndGradInt + nIntegrationMax*nVar*(ctc::nDim+1);
 
   /* Store the number of metric points per integration point, which depends
      on the number of dimensions. */
-  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+  const unsigned short nMetricPerPoint = ctc::nDim*ctc::nDim + 1;
 
   /*--- Loop over the owned volume elements to compute the contribution of the
         volume integral in the DG FEM formulation to the residual.       ---*/
@@ -6061,7 +6161,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /*------------------------------------------------------------------------*/
 
     /* Easier storage of the solution variables for this element. */
-    su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+    su2double *solDOFs = VecSolDOFs.data() + ctc::nVar*volElem[l].offsetDOFsSolLocal;
 
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
@@ -6078,154 +6178,333 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     /* Determine the offset between the solution variables and the r-derivatives,
        which is also the offset between the r- and s-derivatives and the offset
        between s- and t-derivatives. */
-    const unsigned short offDeriv = nVar*nInt;
+    const unsigned short offDeriv = ctc::nVar*nInt;
 
-    /* Loop over the integration points, ll is the counter for the fluxes
-       in the integration points. */
-    unsigned short ll = 0;
-    for(unsigned short i=0; i<nInt; ++i) {
+    /* Make a distinction between two and three space dimensions
+        in order to have the most efficient code. */
+    switch( ctc::nDim ) {
 
-      /* Easier storage of the metric terms in this integration point. First
-         compute the inverse of the Jacobian, the Jacobian is the first entry
-         in the metric terms, and afterwards update the metric terms by 1. */
-      const su2double *metricTerms = volElem[l].metricTerms.data()
-                                   + i*nMetricPerPoint;
-      const su2double Jac          = metricTerms[0];
-      const su2double JacInv       = 1.0/Jac;
-      metricTerms                 += 1;
+      case 2: {
 
-      /* Easier storage of the location where the solution data of this
-         integration point starts. */
-      const su2double *sol = solAndGradInt + nVar*i;
+        /* 2D simulation. Loop over the integration points to compute
+           the fluxes. */
+        for(unsigned short i=0; i<nInt; ++i) {
 
-      /*--- Compute the Cartesian gradients of the independent solution
-            variables from the gradients in parametric coordinates and the
-            metric terms in this integration point. Note that at the end a
-            multiplication with JacInv takes places, because the metric terms
-            are scaled by the Jacobian. ---*/
-      su2double solGradCart[5][3];
-#pragma simd
-      for(unsigned short k=0; k<ctc::nDim; ++k) {
-        for(unsigned short j=0; j<nVar; ++j) {
-          solGradCart[j][k] = 0.0;
-          for(unsigned short l=0; l<ctc::nDim; ++l)
-            solGradCart[j][k] += sol[j+(l+1)*offDeriv]*metricTerms[k+l*ctc::nDim];
-          solGradCart[j][k] *= JacInv;
+          /* Easier storage of the metric terms in this integration point and
+             compute the inverse of the Jacobian. */
+          const su2double *metricTerms = volElem[l].metricTerms.data()
+                                       + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
+          const su2double JacInv       = 1.0/Jac;
+
+          /* Compute the true metric terms in this integration point. */
+          const su2double drdx = JacInv*metricTerms[1];
+          const su2double drdy = JacInv*metricTerms[2];
+
+          const su2double dsdx = JacInv*metricTerms[3];
+          const su2double dsdy = JacInv*metricTerms[4];
+
+          /* Compute the metric terms multiplied by minus the integration weight.
+             The minus sign comes from the integration by parts in the weak
+             formulation. */
+          const su2double wDrdx = -weights[i]*metricTerms[1];
+          const su2double wDrdy = -weights[i]*metricTerms[2];
+
+          const su2double wDsdx = -weights[i]*metricTerms[3];
+          const su2double wDsdy = -weights[i]*metricTerms[4];
+
+          /* Easier storage of the location where the solution data of this
+             integration point starts. */
+          const su2double *sol    = solAndGradInt + ctc::nVar*i;
+          const su2double *dSolDr = sol    + offDeriv;
+          const su2double *dSolDs = dSolDr + offDeriv;
+
+          /*--- Compute the Cartesian gradients of the independent solution
+                variables from the gradients in parametric coordinates and the
+                metric terms in this integration point. ---*/
+          const su2double dRhoDx  = dSolDr[0]*drdx + dSolDs[0]*dsdx;
+          const su2double dRhoUDx = dSolDr[1]*drdx + dSolDs[1]*dsdx;
+          const su2double dRhoVDx = dSolDr[2]*drdx + dSolDs[2]*dsdx;
+          const su2double dRhoEDx = dSolDr[3]*drdx + dSolDs[3]*dsdx;
+
+          const su2double dRhoDy  = dSolDr[0]*drdy + dSolDs[0]*dsdy;
+          const su2double dRhoUDy = dSolDr[1]*drdy + dSolDs[1]*dsdy;
+          const su2double dRhoVDy = dSolDr[2]*drdy + dSolDs[2]*dsdy;
+          const su2double dRhoEDy = dSolDr[3]*drdy + dSolDs[3]*dsdy;
+
+          /*--- Compute the velocities and static energy in this integration point. ---*/
+          const su2double rhoInv       = 1.0/sol[0];
+          const su2double u            = sol[1]*rhoInv;
+          const su2double v            = sol[2]*rhoInv;
+          const su2double TotalEnergy  = sol[3]*rhoInv;
+          const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v);
+
+          /*--- Compute the Cartesian gradients of the velocities and static energy
+                in this integration point and also the divergence of the velocity. ---*/
+          const su2double dudx = rhoInv*(dRhoUDx - u*dRhoDx);
+          const su2double dudy = rhoInv*(dRhoUDy - u*dRhoDy);
+
+          const su2double dvdx = rhoInv*(dRhoVDx - v*dRhoDx);
+          const su2double dvdy = rhoInv*(dRhoVDy - v*dRhoDy);
+
+          const su2double dStaticEnergyDx = rhoInv*(dRhoEDx - TotalEnergy*dRhoDx)
+                                          - u*dudx - v*dvdx;
+          const su2double dStaticEnergyDy = rhoInv*(dRhoEDy - TotalEnergy*dRhoDy)
+                                          - u*dudy - v*dvdy;
+
+          const su2double divVel = dudx + dvdy;
+
+          /*--- Compute the pressure and the laminar viscosity. ---*/
+          FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+          const su2double Pressure     = FluidModel->GetPressure();
+          const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+          /*--- If an SGS model is used the eddy viscosity must be computed. ---*/
+          su2double ViscosityTurb = 0.0;
+          if( SGSModelUsed ) {
+            const su2double dist = volElem[l].wallDistance[i];
+            su2double velGrad[3][3];
+            velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = 0.0;
+            velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = 0.0;
+            velGrad[2][0] = 0.0;  velGrad[2][1] = 0.0;  velGrad[2][2] = 0.0;
+
+            ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
+                                                           lenScale, dist);
+          }
+
+          /* Compute the total viscosity and heat conductivity. Note that the heat
+             conductivity is divided by the Cv, because gradients of internal energy
+             are computed and not temperature. */
+          const su2double Viscosity = ViscosityLam + ViscosityTurb;
+          const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
+                                  + ViscosityTurb*factHeatFlux_Turb;
+
+          /*--- Set the value of the second viscosity and compute the divergence
+                term in the viscous normal stresses. ---*/
+          const su2double lambda     = -TWO3*Viscosity;
+          const su2double lamDivTerm =  lambda*divVel;
+
+          /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+          const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+          const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+          const su2double tauxy = Viscosity*(dudy + dvdx);
+
+          const su2double qx = kOverCv*dStaticEnergyDx;
+          const su2double qy = kOverCv*dStaticEnergyDy;
+
+          /* Set the pointer for the fluxes in this integration point. */
+          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+
+          /*--- Fluxes in r-direction. */
+          const su2double H     = TotalEnergy + rhoInv*Pressure;
+          const su2double rhoUr = sol[1]*wDrdx + sol[2]*wDrdy;
+
+          flux[0] = rhoUr;
+          flux[1] = rhoUr*u + (Pressure - tauxx)*wDrdx - tauxy*wDrdy;
+          flux[2] = rhoUr*v - tauxy*wDrdx + (Pressure - tauyy)*wDrdy;
+          flux[3] = rhoUr*H - (u*tauxx + v*tauxy + qx)*wDrdx
+                            - (u*tauxy + v*tauyy + qy)*wDrdy;
+
+          /*--- Fluxes in s-direction. */
+          const su2double rhoUs = sol[1]*wDsdx + sol[2]*wDsdy;
+
+          flux[4] = rhoUs;
+          flux[5] = rhoUs*u + (Pressure - tauxx)*wDsdx - tauxy*wDsdy;
+          flux[6] = rhoUs*v - tauxy*wDsdx + (Pressure - tauyy)*wDsdy;
+          flux[7] = rhoUs*H - (u*tauxx + v*tauxy + qx)*wDsdx
+                            - (u*tauxy + v*tauyy + qy)*wDsdy;
         }
+
+        break;
       }
 
-      /*--- Compute the velocities and static energy in this integration point. ---*/
-      const su2double DensityInv = 1.0/sol[0];
-      su2double vel[3], Velocity2 = 0.0;
-      for(unsigned short j=0; j<nDim; ++j) {
-        vel[j]     = sol[j+1]*DensityInv;
-        Velocity2 += vel[j]*vel[j];
-      }
+      /*----------------------------------------------------------------------*/
 
-      const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
-      const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+      case 3: {
 
-      /*--- Compute the Cartesian gradients of the velocities and static energy
-            in this integration point and also the divergence of the velocity. ---*/
-      su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
-      for(unsigned short k=0; k<nDim; ++k) {
-        StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
-                            -             TotalEnergy*solGradCart[0][k]);
-        for(unsigned short j=0; j<nDim; ++j) {
-          velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
-                               -      vel[j]*solGradCart[0][k]);
-          StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
+        /* 3D simulation. Loop over the integration points to compute
+           the fluxes. */
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Easier storage of the metric terms in this integration point and
+             compute the inverse of the Jacobian. */
+          const su2double *metricTerms = volElem[l].metricTerms.data()
+                                       + i*nMetricPerPoint;
+          const su2double Jac          = metricTerms[0];
+          const su2double JacInv       = 1.0/Jac;
+
+          /* Compute the true metric terms in this integration point. */
+          const su2double drdx = JacInv*metricTerms[1];
+          const su2double drdy = JacInv*metricTerms[2];
+          const su2double drdz = JacInv*metricTerms[3];
+
+          const su2double dsdx = JacInv*metricTerms[4];
+          const su2double dsdy = JacInv*metricTerms[5];
+          const su2double dsdz = JacInv*metricTerms[6];
+
+          const su2double dtdx = JacInv*metricTerms[7];
+          const su2double dtdy = JacInv*metricTerms[8];
+          const su2double dtdz = JacInv*metricTerms[9];
+
+          /* Compute the metric terms multiplied by minus the integration weight.
+             The minus sign comes from the integration by parts in the weak
+             formulation. */
+          const su2double wDrdx = -weights[i]*metricTerms[1];
+          const su2double wDrdy = -weights[i]*metricTerms[2];
+          const su2double wDrdz = -weights[i]*metricTerms[3];
+
+          const su2double wDsdx = -weights[i]*metricTerms[4];
+          const su2double wDsdy = -weights[i]*metricTerms[5];
+          const su2double wDsdz = -weights[i]*metricTerms[6];
+
+          const su2double wDtdx = -weights[i]*metricTerms[7];
+          const su2double wDtdy = -weights[i]*metricTerms[8];
+          const su2double wDtdz = -weights[i]*metricTerms[9];
+
+          /* Easier storage of the location where the solution data of this
+             integration point starts. */
+          const su2double *sol    = solAndGradInt + ctc::nVar*i;
+          const su2double *dSolDr = sol    + offDeriv;
+          const su2double *dSolDs = dSolDr + offDeriv;
+          const su2double *dSolDt = dSolDs + offDeriv;
+
+          /*--- Compute the Cartesian gradients of the independent solution
+                variables from the gradients in parametric coordinates and the
+                metric terms in this integration point. ---*/
+          const su2double dRhoDx  = dSolDr[0]*drdx + dSolDs[0]*dsdx + dSolDt[0]*dtdx;
+          const su2double dRhoUDx = dSolDr[1]*drdx + dSolDs[1]*dsdx + dSolDt[1]*dtdx;
+          const su2double dRhoVDx = dSolDr[2]*drdx + dSolDs[2]*dsdx + dSolDt[2]*dtdx;
+          const su2double dRhoWDx = dSolDr[3]*drdx + dSolDs[3]*dsdx + dSolDt[3]*dtdx;
+          const su2double dRhoEDx = dSolDr[4]*drdx + dSolDs[4]*dsdx + dSolDt[4]*dtdx;
+
+          const su2double dRhoDy  = dSolDr[0]*drdy + dSolDs[0]*dsdy + dSolDt[0]*dtdy;
+          const su2double dRhoUDy = dSolDr[1]*drdy + dSolDs[1]*dsdy + dSolDt[1]*dtdy;
+          const su2double dRhoVDy = dSolDr[2]*drdy + dSolDs[2]*dsdy + dSolDt[2]*dtdy;
+          const su2double dRhoWDy = dSolDr[3]*drdy + dSolDs[3]*dsdy + dSolDt[3]*dtdy;
+          const su2double dRhoEDy = dSolDr[4]*drdy + dSolDs[4]*dsdy + dSolDt[4]*dtdy;
+
+          const su2double dRhoDz  = dSolDr[0]*drdz + dSolDs[0]*dsdz + dSolDt[0]*dtdz;
+          const su2double dRhoUDz = dSolDr[1]*drdz + dSolDs[1]*dsdz + dSolDt[1]*dtdz;
+          const su2double dRhoVDz = dSolDr[2]*drdz + dSolDs[2]*dsdz + dSolDt[2]*dtdz;
+          const su2double dRhoWDz = dSolDr[3]*drdz + dSolDs[3]*dsdz + dSolDt[3]*dtdz;
+          const su2double dRhoEDz = dSolDr[4]*drdz + dSolDs[4]*dsdz + dSolDt[4]*dtdz;
+
+          /*--- Compute the velocities and static energy in this integration point. ---*/
+          const su2double rhoInv       = 1.0/sol[0];
+          const su2double u            = sol[1]*rhoInv;
+          const su2double v            = sol[2]*rhoInv;
+          const su2double w            = sol[3]*rhoInv;
+          const su2double TotalEnergy  = sol[4]*rhoInv;
+          const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v + w*w);
+
+          /*--- Compute the Cartesian gradients of the velocities and static energy
+                in this integration point and also the divergence of the velocity. ---*/
+          const su2double dudx = rhoInv*(dRhoUDx - u*dRhoDx);
+          const su2double dudy = rhoInv*(dRhoUDy - u*dRhoDy);
+          const su2double dudz = rhoInv*(dRhoUDz - u*dRhoDz);
+
+          const su2double dvdx = rhoInv*(dRhoVDx - v*dRhoDx);
+          const su2double dvdy = rhoInv*(dRhoVDy - v*dRhoDy);
+          const su2double dvdz = rhoInv*(dRhoVDz - v*dRhoDz);
+
+          const su2double dwdx = rhoInv*(dRhoWDx - w*dRhoDx);
+          const su2double dwdy = rhoInv*(dRhoWDy - w*dRhoDy);
+          const su2double dwdz = rhoInv*(dRhoWDz - w*dRhoDz);
+
+          const su2double dStaticEnergyDx = rhoInv*(dRhoEDx - TotalEnergy*dRhoDx)
+                                          - u*dudx - v*dvdx - w*dwdx;
+          const su2double dStaticEnergyDy = rhoInv*(dRhoEDy - TotalEnergy*dRhoDy)
+                                          - u*dudy - v*dvdy - w*dwdy;
+          const su2double dStaticEnergyDz = rhoInv*(dRhoEDz - TotalEnergy*dRhoDz)
+                                          - u*dudz - v*dvdz - w*dwdz;
+
+          const su2double divVel = dudx + dvdy + dwdz;
+
+          /*--- Compute the pressure and the laminar viscosity. ---*/
+          FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+          const su2double Pressure     = FluidModel->GetPressure();
+          const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+          /*--- If an SGS model is used the eddy viscosity must be computed. ---*/
+          su2double ViscosityTurb = 0.0;
+          if( SGSModelUsed ) {
+            const su2double dist = volElem[l].wallDistance[i];
+            su2double velGrad[3][3];
+            velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = dudz;
+            velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = dvdz;
+            velGrad[2][0] = dwdx; velGrad[2][1] = dwdy; velGrad[2][2] = dwdz;
+
+            ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
+                                                           lenScale, dist);
+          }
+
+          /* Compute the total viscosity and heat conductivity. Note that the heat
+             conductivity is divided by the Cv, because gradients of internal energy
+             are computed and not temperature. */
+          const su2double Viscosity = ViscosityLam + ViscosityTurb;
+          const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
+                                  + ViscosityTurb*factHeatFlux_Turb;
+
+          /*--- Set the value of the second viscosity and compute the divergence
+                term in the viscous normal stresses. ---*/
+          const su2double lambda     = -TWO3*Viscosity;
+          const su2double lamDivTerm =  lambda*divVel;
+
+          /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+          const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+          const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+          const su2double tauzz = 2.0*Viscosity*dwdz + lamDivTerm;
+
+          const su2double tauxy = Viscosity*(dudy + dvdx);
+          const su2double tauxz = Viscosity*(dudz + dwdx);
+          const su2double tauyz = Viscosity*(dvdz + dwdy);
+
+          const su2double qx = kOverCv*dStaticEnergyDx;
+          const su2double qy = kOverCv*dStaticEnergyDy;
+          const su2double qz = kOverCv*dStaticEnergyDz;
+
+          /* Set the pointer for the fluxes in this integration point. */
+          su2double *flux = fluxes + i*ctc::nDim*ctc::nVar;
+
+          /*--- Fluxes in r-direction. */
+          const su2double H     = TotalEnergy + rhoInv*Pressure;
+          const su2double rhoUr = sol[1]*wDrdx + sol[2]*wDrdy + sol[3]*wDrdz;
+
+          flux[0] = rhoUr;
+          flux[1] = rhoUr*u + (Pressure - tauxx)*wDrdx - tauxy*wDrdy - tauxz*wDrdz;
+          flux[2] = rhoUr*v - tauxy*wDrdx + (Pressure - tauyy)*wDrdy - tauyz*wDrdz;
+          flux[3] = rhoUr*w - tauxz*wDrdx - tauyz*wDrdy + (Pressure - tauzz)*wDrdz;
+          flux[4] = rhoUr*H - (u*tauxx + v*tauxy + w*tauxz + qx)*wDrdx
+                            - (u*tauxy + v*tauyy + w*tauyz + qy)*wDrdy
+                            - (u*tauxz + v*tauyz + w*tauzz + qz)*wDrdz;
+
+          /*--- Fluxes in s-direction. */
+          const su2double rhoUs = sol[1]*wDsdx + sol[2]*wDsdy + sol[3]*wDsdz;
+
+          flux[5] = rhoUs;
+          flux[6] = rhoUs*u + (Pressure - tauxx)*wDsdx - tauxy*wDsdy - tauxz*wDsdz;
+          flux[7] = rhoUs*v - tauxy*wDsdx + (Pressure - tauyy)*wDsdy - tauyz*wDsdz;
+          flux[8] = rhoUs*w - tauxz*wDsdx - tauyz*wDsdy + (Pressure - tauzz)*wDsdz;
+          flux[9] = rhoUs*H - (u*tauxx + v*tauxy + w*tauxz + qx)*wDsdx
+                            - (u*tauxy + v*tauyy + w*tauyz + qy)*wDsdy
+                            - (u*tauxz + v*tauyz + w*tauzz + qz)*wDsdz;
+
+          /*--- Fluxes in t-direction. */
+          const su2double rhoUt = sol[1]*wDtdx + sol[2]*wDtdy + sol[3]*wDtdz;
+
+          flux[10] = rhoUt;
+          flux[11] = rhoUt*u + (Pressure - tauxx)*wDtdx - tauxy*wDtdy - tauxz*wDtdz;
+          flux[12] = rhoUt*v - tauxy*wDtdx + (Pressure - tauyy)*wDtdy - tauyz*wDtdz;
+          flux[13] = rhoUt*w - tauxz*wDtdx - tauyz*wDtdy + (Pressure - tauzz)*wDtdz;
+          flux[14] = rhoUt*H - (u*tauxx + v*tauxy + w*tauxz + qx)*wDtdx
+                             - (u*tauxy + v*tauyy + w*tauyz + qy)*wDtdy
+                             - (u*tauxz + v*tauyz + w*tauzz + qz)*wDtdz;
         }
-        divVel += velGrad[k][k];
-      }
 
-      /*--- Compute the pressure and the laminar viscosity. ---*/
-      FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
-      const su2double Pressure     = FluidModel->GetPressure();
-      const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
-
-      /*--- If an SGS model is used the eddy viscosity must be computed. ---*/
-      su2double ViscosityTurb = 0.0;
-      if( SGSModelUsed ) {
-        const su2double dist = volElem[l].wallDistance[i];
-        ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
-                                                       lenScale, dist);
-      }
-
-      /* Compute the total viscosity and heat conductivity. Note that the heat
-         conductivity is divided by the Cv, because gradients of internal energy
-         are computed and not temperature. */
-      const su2double Viscosity = ViscosityLam + ViscosityTurb;
-      const su2double kOverCv = ViscosityLam *factHeatFlux_Lam
-                              + ViscosityTurb*factHeatFlux_Turb;
-
-      /*--- Set the value of the second viscosity and compute the divergence
-            term in the viscous normal stresses. ---*/
-      const su2double lambda     = -TWO3*Viscosity;
-      const su2double lamDivTerm =  lambda*divVel;
-
-      /*--- Compute the viscous stress tensor. ---*/
-      su2double tauVis[3][3];
-      for(unsigned short k=0; k<nDim; ++k) {
-        tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
-        for(unsigned short j=(k+1); j<nDim; ++j) {
-          tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
-          tauVis[k][j] = tauVis[j][k];
-        }
-      }
-
-      /*--- Compute the Cartesian flux vectors in this integration point. This
-            is the sum of the inviscid flux and the negative of the viscous
-            flux. ---*/
-      su2double fluxCart[5][3];
-      const su2double rH = sol[nDim+1] + Pressure;
-      for(unsigned short k=0; k<nDim; ++k) {
-
-        /* Density flux vector. */
-        fluxCart[0][k] = sol[k+1];
-
-        /* Momentum flux vector. */
-        for(unsigned short j=0; j<nDim; ++j)
-          fluxCart[j+1][k] = sol[j+1]*vel[k] - tauVis[j][k];
-        fluxCart[k+1][k]  += Pressure;
-
-        /* Energy flux vector. */
-        fluxCart[nDim+1][k] = rH*vel[k]                        // Inviscid part
-                            - kOverCv*StaticEnergyGrad[k];     // Heat flux part
-        for(unsigned short j=0; j<nDim; ++j)
-          fluxCart[nDim+1][k] -= tauVis[j][k]*vel[j];    // Work of the viscous forces part
-      }
-
-      /*--- Loop over the number of dimensions to compute the fluxes in the
-            direction of the parametric coordinates. ---*/
-
-      for(unsigned short k=0; k<ctc::nDim; ++k) {
-
-        /* Pointer to the metric terms for this direction. */
-        const su2double *metric = metricTerms + k*ctc::nDim;
-
-        /*--- Loop over the number of variables in the flux vector.
-              Note that also the counter ll must be updated here. ---*/
-        unsigned short ll_offset = i*ctc::nDim*nVar + k*nVar;
-
-        //for(unsigned short j=0; j<nVar; ++j, ++ll) {
-#pragma simd private(ll)
-        for(unsigned short j=0; j<nVar; ++j) {
-          ll = ll_offset + j;
-
-          /* Carry out the dot product of the Cartesian fluxes and the
-             metric terms to obtain the correct flux vector in this
-             parametric direction. */
-          fluxes[ll] = 0.0;
-          for(unsigned short iDim=0; iDim<ctc::nDim; ++iDim)
-            fluxes[ll] += fluxCart[j][iDim]*metric[iDim];
-
-          /* Multiply the flux by minus the integration weight to obtain the
-             correct expression in the weak formulation. */
-          fluxes[ll] *= -weights[i];
-        }
+        break;
       }
     }
+
     config->Tock(tick, "IR_2_1", 4);
 
     /*------------------------------------------------------------------------*/
