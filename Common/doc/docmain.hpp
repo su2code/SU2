@@ -32,7 +32,7 @@
  */
 
 /*! 
- * \mainpage The SU2 Suite
+ * \mainpage SU2 version 5.0.0 "Raven"
  * SU2 suite is an open-source collection of C++ based software tools
  * to perform PDE analysis and PDE constrained optimization problems.  The toolset is designed with 
  * computational fluid dynamics and aerodynamic shape optimization in mind, but is extensible to

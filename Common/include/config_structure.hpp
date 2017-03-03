@@ -546,6 +546,7 @@ private:
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool Update_Restart_Params;	/*!< \brief Read and write additional restart metadata for parameter updates.*/
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -4198,7 +4199,13 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void);
-  
+
+  /*!
+   * \brief Flag controlling whether restart parameter metadata is written/read.
+   * \return Restart metadata updates, if <code>TRUE</code> then the code will read/write restart metadata for parameter updates.
+   */
+  bool GetUpdate_Restart_Params(void);
+
   /*!
    * \brief Provides the number of varaibles.
    * \return Number of variables.
