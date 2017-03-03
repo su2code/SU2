@@ -10545,27 +10545,6 @@ public:
   virtual ~CHeatSolver(void);
 
   /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
