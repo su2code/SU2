@@ -879,8 +879,8 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
- //   Delta = Vol / (solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
- //   Jacobian.AddVal2Diag(iPoint, Delta);
+    Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+    Jacobian.AddVal2Diag(iPoint, Delta);
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
