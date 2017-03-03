@@ -563,6 +563,23 @@ inline su2double *CVariable::GetPrestretch(void) { return NULL; }
 
 inline su2double CVariable::GetPrestretch(unsigned short iVar) { return 0.0; }
 
+inline su2double CVariable::GetSolution_New(unsigned short val_var) { return 0.0; }
+
+inline void CVariable::SetSolution_New(void) { }
+
+inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_solution) { }
+
+inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
+
+inline void CEulerVariable::SetSolution_New(void) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_New[iVar] = Solution[iVar];
+}
+
+inline void CEulerVariable::AddSolution_New(unsigned short val_var, su2double val_solution) {
+  Solution_New[val_var] += val_solution;
+}
+
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline su2double CEulerVariable::GetEnergy(void) { return Solution[nVar-1]/Solution[0]; };
