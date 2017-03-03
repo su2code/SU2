@@ -4450,12 +4450,10 @@ public:
                          CConfig *config, unsigned short val_marker);
   
   /*!
-   * \brief It avarage the fluxes value along a boundary.
+   * \brief Set the new solution variables to the current solution value for classical RK.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
+  void Set_NewSolution(CGeometry *geometry);
 
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.

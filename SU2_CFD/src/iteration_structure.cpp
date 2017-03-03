@@ -1820,10 +1820,10 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
                                                                               config_container[val_iZone]);
   }
     
-  }
+}
   
 
-void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+void CDiscAdjFluidIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
 
@@ -1842,7 +1842,7 @@ void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, 
 }
 
 
-void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
 
@@ -1907,7 +1907,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
   }
 }
   
-void CDiscAdjMeanFlowIteration::Update(COutput *output,
+void CDiscAdjFluidIteration::Update(COutput *output,
                                        CIntegration ***integration_container,
                                        CGeometry ***geometry_container,
                                        CSolver ****solver_container,

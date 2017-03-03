@@ -3790,9 +3790,9 @@ void CTurbomachineryDriver::Preprocessing(void){
 
 bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
-  double CFL;
-  double rot_z_ini, rot_z_final ,rot_z;
-  double outPres_ini, outPres_final, outPres;
+  su2double CFL;
+  su2double rot_z_ini, rot_z_final ,rot_z;
+  su2double outPres_ini, outPres_final, outPres;
   unsigned long rampFreq, finalRamp_Iter;
   unsigned short iMarker, KindBC, KindBCOption;
   string Marker_Tag;
@@ -3941,7 +3941,7 @@ CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
   direct_iteration = new CIteration*[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++){
-    direct_iteration[iZone] = new CMeanFlowIteration(config_container[iZone]);
+    direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
   }
 
 }
