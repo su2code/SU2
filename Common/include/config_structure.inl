@@ -1023,6 +1023,8 @@ inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Si
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
 
+inline bool CConfig::GetUpdate_Restart_Params(void) {	return Update_Restart_Params; }
+
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
 inline bool CConfig::GetEquivArea(void) { return EquivArea; }
