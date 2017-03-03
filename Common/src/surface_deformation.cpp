@@ -2122,26 +2122,21 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     nParameter += nPilotPoints;
   }
 
-  EigenMatrix SystemMatrix(nParameter, TotalControl);
   EigenVector ParameterValuesX(nParameter);
   EigenVector ParameterValuesY(nParameter);
   EigenVector ParameterValuesZ(nParameter);
-  EigenVector DeltaX(nParameter);
-  EigenVector DeltaY(nParameter);
-  EigenVector DeltaZ(nParameter);
   EigenVector ControlPointPositionsX(TotalControl);
   EigenVector ControlPointPositionsY(TotalControl);
   EigenVector ControlPointPositionsZ(TotalControl);
-  EigenSVD   SystemMatrixSVD;
   EigenMatrix EnergyMatrix(TotalControl, TotalControl);
-  EigenMatrix StencilMatrix(TotalControl, TotalControl);
-  EigenMatrix LinearSystemMatrix(TotalControl + nParameter, TotalControl + nParameter);
-  EigenVector LinearSystemSol(TotalControl + nParameter);
-  EigenVector LinearSystemRHS(TotalControl + nParameter);
-  StencilMatrix = EigenMatrix::Zero(TotalControl, TotalControl);
-  LinearSystemMatrix = EigenMatrix::Zero(TotalControl + nParameter, TotalControl + nParameter);
-  LinearSystemRHS = EigenVector::Zero(TotalControl + nParameter);
-  LinearSystemSol = EigenVector::Zero(TotalControl + nParameter);
+  EigenMatrix SystemMatrix(TotalControl + nParameter, TotalControl + nParameter);
+  EigenVector SystemSol(TotalControl + nParameter);
+  EigenVector SystemRHS(TotalControl + nParameter);
+
+
+  SystemMatrix    = EigenMatrix::Zero(TotalControl + nParameter, TotalControl + nParameter);
+  SystemRHS       = EigenVector::Zero(TotalControl + nParameter);
+  SystemSol       = EigenVector::Zero(TotalControl + nParameter);
 
   /*--- Loop through all groups of this ffd box ---*/
 
@@ -2174,96 +2169,33 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     if (nDim == 3)
       ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
 
-    SystemMatrix.block(displ,0, Block.rows(), Block.cols()) = Block;
+    SystemMatrix.block(displ, TotalControl, Block.cols(), Block.rows()) = Block.transpose();
+    SystemMatrix.block(TotalControl, displ, Block.rows(), Block.cols()) = Block;
 
     displ += Block.rows();
 
-
   }
 
+  FFDBox->GetLaplacianEnergyMatrix(EnergyMatrix);
 
-
-  for (iControl = 0; iControl < lControl; iControl++){
-    for (jControl = 0; jControl < mControl; jControl++){
-      for (kControl = 0; kControl < nControl; kControl++){
-        unsigned long CIndex = iControl*mControl*nControl + jControl*nControl + kControl;
-
-        StencilMatrix(CIndex, CIndex) = -1.0;
-
-        if ((iControl == 0) && (jControl == 0)){
-          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 0.5;
-        }
-        else if ((iControl == lControl - 1) && (jControl == mControl - 1)){
-          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 0.5;
-        }
-        else if ((iControl == 0) && (jControl ==  mControl - 1)){
-          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 0.5;
-        }
-        else if ((iControl == lControl - 1) && (jControl == 0)){
-          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 0.5;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 0.5;
-        }
-        else if ((iControl == lControl -1)){
-          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 1.0/3.0;
-        }
-        else if ((jControl == mControl -1)){
-          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 1.0/3.0;
-        }
-        else if (iControl == 0){
-          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 1.0/3.0;
-        }
-        else if (jControl == 0){
-          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 1.0/3.0;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 1.0/3.0;
-        }
-        else {
-          StencilMatrix(CIndex, (iControl-1)*mControl*nControl + jControl*nControl + kControl) = 0.25;
-          StencilMatrix(CIndex, (iControl+1)*mControl*nControl + jControl*nControl + kControl) = 0.25;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl-1)*nControl + kControl) = 0.25;
-          StencilMatrix(CIndex, iControl*mControl*nControl + (jControl+1)*nControl + kControl) = 0.25;
-        }
-      }
-    }
-  }
-
-
+  SystemMatrix.block(0, 0, TotalControl, TotalControl) = EnergyMatrix;
 
   if (nGroup > 0){
 
-    EnergyMatrix = StencilMatrix.transpose()*StencilMatrix;
+    Eigen::FullPivHouseholderQR<EigenMatrix> QRSystemMatrix;
+
+    /*--- QR decomposition of the system matrix ---*/
+
+    QRSystemMatrix = SystemMatrix.fullPivHouseholderQr();
 
 
-    /* --- Set up the minimization problem --- */
+    SystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesX;
+    SystemSol = QRSystemMatrix.solve(SystemRHS);
+    ControlPointPositionsX = SystemSol.block(0, 0, TotalControl, 1);
 
-    LinearSystemMatrix.block(0, 0, TotalControl, TotalControl)          = EnergyMatrix;
-    LinearSystemMatrix.block(0, TotalControl, TotalControl, nParameter) = SystemMatrix.transpose();
-    LinearSystemMatrix.block(TotalControl, 0, nParameter, TotalControl) = SystemMatrix;
-
-    Eigen::FullPivHouseholderQR<EigenMatrix> EigenQR;
-
-    EigenQR = LinearSystemMatrix.fullPivHouseholderQr();
-
-    LinearSystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesX;
-
-    LinearSystemSol = EigenQR.solve(LinearSystemRHS);
-
-    ControlPointPositionsX = LinearSystemSol.block(0, 0, TotalControl, 1);
-
-    LinearSystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesY;
-
-    LinearSystemSol = EigenQR.solve(LinearSystemRHS);
-
-    ControlPointPositionsY = LinearSystemSol.block(0, 0, TotalControl, 1);
+    SystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesY;
+    SystemSol = QRSystemMatrix.solve(SystemRHS);
+    ControlPointPositionsY = SystemSol.block(0, 0, TotalControl, 1);
 
 
 //    /*--- Set up necessary matrices and vectors ---*/
@@ -6852,6 +6784,81 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
       RHS = EigenVector::Constant(nPilotPoints, 0.0);
     }
   }
+}
+
+void CFreeFormDefBox::GetLaplacianEnergyMatrix(EigenMatrix &Matrix){
+
+
+  const unsigned short lControl = BlendingFunction[0]->GetnControl();
+  const unsigned short mControl = BlendingFunction[1]->GetnControl();
+  const unsigned short nControl = BlendingFunction[2]->GetnControl();
+  unsigned short iControl, jControl, kControl;
+  const unsigned long TotalControl = lControl*mControl*nControl;
+
+  unsigned long Index_ij, Index_ip1j, Index_im1j, Index_ijp1, Index_ijm1;
+
+
+  EigenMatrix StencilMatrix(TotalControl, TotalControl);
+
+  StencilMatrix = EigenMatrix::Zero(TotalControl, TotalControl);
+
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
+      for (kControl = 0; kControl < nControl; kControl++){
+        Index_ij   = iControl*mControl*nControl + jControl*nControl + kControl;
+        Index_ip1j = (iControl+1)*mControl*nControl + jControl*nControl + kControl;
+        Index_im1j = (iControl-1)*mControl*nControl + jControl*nControl + kControl;
+        Index_ijp1 = iControl*mControl*nControl + (jControl+1)*nControl + kControl;
+        Index_ijm1 = iControl*mControl*nControl + (jControl-1)*nControl + kControl;
+
+        StencilMatrix(Index_ij, Index_ij) = -1.0;
+
+        if ((iControl == 0) && (jControl == 0)){
+          StencilMatrix(Index_ij, Index_ip1j) = 0.5;
+          StencilMatrix(Index_ij, Index_ijp1) = 0.5;
+        }
+        else if ((iControl == lControl - 1) && (jControl == mControl - 1)){
+          StencilMatrix(Index_ij, Index_im1j) = 0.5;
+          StencilMatrix(Index_ij, Index_ijm1) = 0.5;
+        }
+        else if ((iControl == 0) && (jControl ==  mControl - 1)){
+          StencilMatrix(Index_ij, Index_ip1j) = 0.5;
+          StencilMatrix(Index_ij, Index_ijm1) = 0.5;
+        }
+        else if ((iControl == lControl - 1) && (jControl == 0)){
+          StencilMatrix(Index_ij, Index_im1j) = 0.5;
+          StencilMatrix(Index_ij, Index_ijp1) = 0.5;
+        }
+        else if ((iControl == lControl -1)){
+          StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+        }
+        else if ((jControl == mControl -1)){
+          StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
+        }
+        else if (iControl == 0){
+          StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+        }
+        else if (jControl == 0){
+          StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
+          StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+        }
+        else {
+          StencilMatrix(Index_ij, Index_im1j) = 0.25;
+          StencilMatrix(Index_ij, Index_ip1j) = 0.25;
+          StencilMatrix(Index_ij, Index_ijm1) = 0.25;
+          StencilMatrix(Index_ij, Index_ijp1) = 0.25;
+        }
+      }
+    }
+  }
+  Matrix = StencilMatrix.transpose()*StencilMatrix;
 }
 
 CFreeFormBlending::CFreeFormBlending(){}

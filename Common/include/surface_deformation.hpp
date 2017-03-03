@@ -942,6 +942,8 @@ public:
 
   void GetAbsoluteGroupRHS(EigenVector &RHS, unsigned short iGroup, unsigned short iDim, CConfig *config);
 
+  void GetLaplacianEnergyMatrix(EigenMatrix &Matrix);
+
 };
 
 
