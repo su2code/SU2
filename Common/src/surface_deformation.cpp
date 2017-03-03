@@ -2132,7 +2132,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   EigenMatrix SystemMatrix(TotalControl + nParameter, TotalControl + nParameter);
   EigenVector SystemSol(TotalControl + nParameter);
   EigenVector SystemRHS(TotalControl + nParameter);
-
+  EigenMatrix ConstraintMatrix(nParameter, TotalControl);
 
   SystemMatrix    = EigenMatrix::Zero(TotalControl + nParameter, TotalControl + nParameter);
   SystemRHS       = EigenVector::Zero(TotalControl + nParameter);
@@ -2169,16 +2169,16 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     if (nDim == 3)
       ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
 
-    SystemMatrix.block(displ, TotalControl, Block.cols(), Block.rows()) = Block.transpose();
-    SystemMatrix.block(TotalControl, displ, Block.rows(), Block.cols()) = Block;
+    ConstraintMatrix.block(0, displ, Block.rows(), Block.cols()) = Block;
 
     displ += Block.rows();
 
   }
 
   FFDBox->GetLaplacianEnergyMatrix(EnergyMatrix);
-
-  SystemMatrix.block(0, 0, TotalControl, TotalControl) = EnergyMatrix;
+  SystemMatrix.block(0, 0, TotalControl, TotalControl)          = EnergyMatrix;
+  SystemMatrix.block(0, TotalControl, TotalControl, nParameter) = ConstraintMatrix.transpose();
+  SystemMatrix.block(TotalControl, 0, nParameter, TotalControl) = ConstraintMatrix;
 
   if (nGroup > 0){
 
