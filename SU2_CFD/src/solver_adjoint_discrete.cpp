@@ -44,21 +44,11 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver(
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
 
   unsigned short iVar, iMarker, iDim;
-
-  bool restart = config->GetRestart();
-
-  unsigned long iVertex, iPoint, index;
+  unsigned long iVertex, iPoint;
   string text_line, mesh_filename;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val;
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
@@ -131,130 +121,10 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
       }
   }
 
+  /*--- Initialize the discrete adjoint solution to zero everywhere. ---*/
 
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-  if (!restart || (iMesh != MESH_0)) {
-
-    /*--- Restart the solution from zero ---*/
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
-
-  }
-  else {
-
-    /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFileName();
-    filename = config->GetObjFunc_Extension(mesh_filename);
-
-    restart_file.open(filename.data(), ios::in);
-
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    }
-
-    /*--- Read all lines in the restart file ---*/
-    long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-    /*--- Skip coordinates ---*/
-    unsigned short skipVars = nDim;
-
-    /*--- Skip flow adjoint variables ---*/
-    if (Kind_Solver == RUNTIME_TURB_SYS) {
-      if (compressible) {
-        skipVars += nDim + 2;
-      }
-      if (incompressible) {
-        skipVars += nDim + 1;
-      }
-    }
-
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      
-      istringstream point_line(text_line);
-
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        point_line >> index;
-        for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
-        for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
-        node[iPoint_Local] = new CDiscAdjVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-      
-    }
-
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
-    }
-
-    /*--- Close the restart file ---*/
-    restart_file.close();
-
-  }
-
-  /*--- Store the direct solution ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    node[iPoint]->SetSolution_Direct(direct_solver->node[iPoint]->GetSolution());
-  }
-
-  ///*---Initilize number of span-wise quantities---*/
-  //nSpanWiseSections = config->GetnSpanWiseSections();
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
 
 }
 
@@ -308,7 +178,7 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
     }
   }
 
-  /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
+  /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
    * when running the discrete adjoint solver. ---*/
 
   direct_solver->Jacobian.SetValZero();
@@ -642,4 +512,138 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
         }
 
     }
+}
+
+void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  unsigned short iVar, iMesh;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  su2double Area_Children, Area_Parent, *Solution_Fine, dull_val;
+  ifstream restart_file;
+  string restart_filename, filename, text_line;
+
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  /*--- Restart the solution from file information ---*/
+
+  filename = config->GetSolution_AdjFileName();
+  restart_filename = config->GetObjFunc_Extension(filename);
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  restart_file.open(restart_filename.data(), ios::in);
+
+  /*--- In case there is no file ---*/
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no adjoint restart file!! " << restart_filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  map<unsigned long,unsigned long> Global2Local;
+  map<unsigned long,unsigned long>::const_iterator MI;
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Skip flow adjoint variables ---*/
+  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
+    if (compressible) {
+      skipVars += nDim + 2;
+    }
+    if (incompressible) {
+      skipVars += nDim + 1;
+    }
+  }
+
+  /*--- The first line is the header ---*/
+
+  getline (restart_file, text_line);
+
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    getline (restart_file, text_line);
+
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    MI = Global2Local.find(iPoint_Global);
+    if (MI != Global2Local.end()) {
+
+      iPoint_Local = Global2Local[iPoint_Global];
+
+      point_line >> index;
+      for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
+      for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
+      node[iPoint_Local]->SetSolution(Solution);
+      iPoint_Global_Local++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Close the restart file ---*/
+
+  restart_file.close();
+
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. ---*/
+
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][ADJFLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+  }
+
 }
