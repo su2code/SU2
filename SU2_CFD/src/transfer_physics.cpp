@@ -342,8 +342,8 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer
 
 }
 
-CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config){
-	unsigned short iVar;
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *donor_config, CConfig *target_config){
+	unsigned short iVar, iSpan;
 	nVar = val_nVar;
 
 
@@ -357,8 +357,17 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short va
 		Target_Variable[iVar] = 0.0;
 	}
 
-	nSpanMaxAllZones = config->GetnSpanMaxAllZones();
+	nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
 
+
+	SpanValueCoeffTarget = new su2double[target_config->GetnSpanWiseSections() + 1];
+	SpanLevelDonor       = new unsigned short[target_config->GetnSpanWiseSections() + 1];
+
+
+	for (iSpan = 0; iSpan < target_config->GetnSpanWiseSections() + 1;iSpan++){
+		SpanValueCoeffTarget[iSpan] = 0.0;
+		SpanLevelDonor[iSpan]       = 1;
+	}
 
 }
 
