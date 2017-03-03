@@ -3170,12 +3170,13 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
           }
           //cout << "  tot  " << Area << endl;
         }
-        /*
-        if(target_iPoint == 2 && Area < 1){
+/*        
+        if(target_iPoint == 2 && Area != 1.0){
           cout << target_iPoint << "  " << Coord_i[1] << "  " << jVertexTarget << "  tot  " << Area << endl;
           cout << target_iMidEdge_point[1] << "  " << target_jMidEdge_point[1] << endl;
+          getchar();
         }
-        */
+*/        
         //cout << endl;
       }    
       //getchar();
@@ -3455,15 +3456,21 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
 
           target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
           target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
-
+Area_old = 0;
           for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){              
             target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
             target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, Donor_GlobalPoint[ Donor_Vect[iDonor] ] );
             target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
             target_geometry->vertex[markTarget][iVertex]->SetDonorPeriodicity(iDonor, 0.0);// da sistemare qua e anche nelle altre fnziono
             //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;               
+            Area_old += Coeff_Vect[iDonor];
           }
 
+          if(Area_old != Area){
+            cout << target_iPoint << "  " << nDonorPoints << "  tot  " << Area_old << "  " << Area << "  " << Area_old/Area << endl;
+            getchar();
+          }
+        
           for (ii = 0; ii < 2*nEdges_target + 2; ii++)
             delete [] target_element[ii];
           delete [] target_element;
