@@ -2439,7 +2439,7 @@ void CDriver::Interface_Preprocessing() {
       if (config_container[donorZone]->GetBoolMixingPlaneInterface()){
       	nVarTransfer = 0;
       	nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
-      	transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone]);
+      	transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone], config_container[targetZone]);
       	if (rank == MASTER_NODE) cout << "mixing-plane averages. "<< endl;
       }
 
@@ -3640,7 +3640,7 @@ void CTurbomachineryDriver::PreprocessingMixingPlane(unsigned short donorZone){
 			if (targetZone != donorZone){
 				transfer_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
 																																									config_container[donorZone], config_container[targetZone],
-																																									iMarkerInt, true );
+																																									iMarkerInt);
 			}
 		}
 	}
@@ -4274,7 +4274,7 @@ void CDiscAdjTurbomachineryDriver::PreprocessingMixingPlane(unsigned short donor
 			if (targetZone != donorZone){
 				transfer_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
 																																									config_container[donorZone], config_container[targetZone],
-																																									iMarkerInt, true );
+																																									iMarkerInt);
 			}
 		}
 	}

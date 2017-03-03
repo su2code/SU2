@@ -1418,7 +1418,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
 
 void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
-																 CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt, bool allocate){
+																 CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
 
 	unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
 	unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
@@ -1444,15 +1444,6 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 	nSpanDonor     = donor_config->GetnSpanWiseSections()  + 1;
 	nSpanTarget		 = target_config->GetnSpanWiseSections() + 1;
 
-
-	SpanValueCoeffTarget = new su2double[nSpanTarget];
-	SpanLevelDonor       = new unsigned short[nSpanTarget];
-
-
-	for (iSpan = 0; iSpan < nSpanTarget;iSpan++){
-		SpanValueCoeffTarget[iSpan] = 0.0;
-		SpanLevelDonor[iSpan]       = 1;
-	}
 	/*--- On the donor side ---*/
 	for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
 		/*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
@@ -1522,6 +1513,7 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 		}
 
 		if (Marker_Target != -1 && Marker_Donor != -1){
+
 			SpanValuesDonor  = donor_geometry->GetSpanWiseValue(Donor_Flag);
 			SpanValuesTarget = target_geometry->GetSpanWiseValue(Target_Flag);
 
@@ -1562,7 +1554,6 @@ void CTransfer::Preprocessing_InterfaceAverage(CGeometry *donor_geometry, CGeome
 
 				}
 			}
-			//compute the coefficient and span per each value execpt the 0 and n span
 		}
 
 }
@@ -1815,8 +1806,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			avgKeiTarget[iSpan]             += avgKeiDonor[SpanLevelDonor[iSpan]];
 			avgOmegaTarget[iSpan]            = SpanValueCoeffTarget[iSpan]*(avgOmegaDonor[SpanLevelDonor[iSpan] + 1] - avgOmegaDonor[SpanLevelDonor[iSpan] ]);
 			avgOmegaTarget[iSpan]           += avgOmegaDonor[SpanLevelDonor[iSpan]];
-
 		}
+
 
 		/*--- transfer values at the hub ---*/
 		avgDensityTarget[0]        = avgDensityDonor[0];
