@@ -4032,7 +4032,7 @@ void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config)
     /*--- Energy contribution ---*/
 
     for (iDim = 0; iDim < nDim; iDim++)
-      val_residual[nDim+1] = -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+      val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
 
   }
 
