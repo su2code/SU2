@@ -2169,7 +2169,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     if (nDim == 3)
       ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
 
-    ConstraintMatrix.block(0, displ, Block.rows(), Block.cols()) = Block;
+    ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
 
     displ += Block.rows();
 
