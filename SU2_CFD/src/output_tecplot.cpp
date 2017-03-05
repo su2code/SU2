@@ -1035,6 +1035,84 @@ void COutput::SetSTL_MeshASCII(CConfig *config, CGeometry *geometry) {
 
 }
 
+void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {
+
+	short iStation, nStation;
+	unsigned short iDim, nDim = geometry->GetnDim();
+	unsigned long iVertex, iPoint;
+	su2double ZeroValue = 0.0, *Plane_P0, *Plane_Normal;
+	vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Variable_Airfoil;
+	ofstream csv_File;
+
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	if (nDim == 3) {
+
+		Plane_P0 = new su2double[3];
+		Plane_Normal = new su2double[3];
+
+		if (geometry->GetnDim() == 3) {
+
+			nStation = config->GetnLocationStations();
+
+			for (iStation = 0; iStation < nStation; iStation++) {
+
+				/*--- Read the values from the config file ---*/
+
+				Plane_Normal[0] = 0.0; Plane_P0[0] = 0.0;
+				Plane_Normal[1] = 0.0; Plane_P0[1] = 0.0;
+				Plane_Normal[2] = 0.0; Plane_P0[2] = 0.0;
+
+				Plane_Normal[config->GetAxis_Stations()] = 1.0;
+				Plane_P0[config->GetAxis_Stations()] = config->GetLocationStations(iStation);
+
+				/*--- Compute the airfoil Stations (note that we feed in the Cp) ---*/
+
+				geometry->ComputeAirfoil_Section(Plane_P0, Plane_Normal, -1E6,
+						1E6, NULL, Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil,
+						Variable_Airfoil, true, config);
+
+				if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() == 0)) {
+					cout << "Please check the config file, the station " << Plane_P0[config->GetAxis_Stations()]
+					                                                                 << " has not been detected." << endl;
+				}
+
+				/*--- Write Cp at each Station (csv format) ---*/
+
+				if ((rank == MASTER_NODE) && (Xcoord_Airfoil.size() != 0)) {
+
+					if (iStation == 0) csv_File.open("surface_grid.csv", ios::out);
+					else csv_File.open("surface_grid.csv", ios::app);
+
+					/*--- Coordinates value ---*/
+
+					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+						csv_File << Xcoord_Airfoil[iVertex] << " ," << Ycoord_Airfoil[iVertex] << " ," << Zcoord_Airfoil[iVertex];
+						if (iVertex == 0) { if (iStation == 0) csv_File << ", 2"; else csv_File << ", 1"; }
+						else csv_File << ", 0";
+						csv_File << endl;
+					}
+
+					csv_File.close();
+
+				}
+
+			}
+
+		}
+
+		/*--- Delete dynamically allocated memory ---*/
+
+		delete[] Plane_P0;
+		delete[] Plane_Normal;
+
+	}
+
+}
+
 void COutput::SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
   unsigned short iVar, nDim = geometry->GetnDim();

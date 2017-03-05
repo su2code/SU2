@@ -407,6 +407,14 @@ public:
   void SetSTL_MeshASCII(CConfig *config, CGeometry *geometry);
 
   /*!
+   * \brief Write the nodal coordinates and connectivity to a n3d ASCII mesh file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void SetCSV_MeshASCII(CConfig *config, CGeometry *geometry);
+
+  /*!
    * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.

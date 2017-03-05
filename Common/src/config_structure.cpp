@@ -1375,10 +1375,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /*!\par CONFIG_CATEGORY: Optimization Problem*/
   
-  /* DESCRIPTION: Setup for design variables (upper bound) */
-  addDoubleOption("OPT_BOUND_UPPER", DVBound_Upper, 1E6);
-  /* DESCRIPTION: Setup for design variables (lower bound) */
-  addDoubleOption("OPT_BOUND_LOWER", DVBound_Lower, -1E6);
+  /* DESCRIPTION: Scale the line search in the optimizer */
+  addDoubleOption("OPT_SCALE", Opt_Scale, 1.0);
+
+  /* DESCRIPTION: Bound the line search in the optimizer */
+  addDoubleOption("OPT_BOUND", Opt_Bound, 1E6);
 
   /*!\par CONFIG_CATEGORY: Wind Gust \ingroup Config*/
   /*--- Options related to wind gust simulations ---*/
@@ -1747,6 +1748,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
 
+  /* DESCRIPTION: Upper bound for the optimizer */
+  addPythonOption("OPT_BOUND_UPPER");
+
+  /* DESCRIPTION: Lower bound for the optimizer */
+  addPythonOption("OPT_BOUND_LOWER");
+
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
   
@@ -2063,16 +2070,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   Nonphys_Points   = 0;
   Nonphys_Reconstr = 0;
-  
-  /*--- Apply a bound to the deformation if there is any design variable ---*/
-  
-  if (Design_Variable != NULL) {
-    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
-      if (DV_Value != NULL)
-        DV_Value[iDV][0] = max(min(DV_Value[iDV][0], DVBound_Upper), DVBound_Lower);
-    }
-  }
-  
+
   if (Kind_Solver == POISSON_EQUATION) {
     Unsteady_Simulation = STEADY;
   }
@@ -2211,6 +2209,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
     Grid_Movement = true;
 
+  /*--- The Line Search should be applied only in the deformation stage. ---*/
+
+  if (Kind_SU2 != SU2_DEF)
+  	Opt_Scale = 1.0;
+
   /*--- If it is not specified, set the mesh motion mach number
    equal to the freestream value. ---*/
   
@@ -2239,7 +2242,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
     exit(EXIT_FAILURE);
   }
-  
+
   /*--- Make sure that there aren't more than one rigid motion or
    rotating frame specified in GRID_MOVEMENT_KIND. ---*/
  /* 
@@ -3722,10 +3725,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
-      if (Fixed_CL_Mode) cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
+      if (Fixed_CL_Mode) {
+      	cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
+      }
       if (Fixed_CM_Mode) {
       		cout << "Fixed CM mode, target value:  " << Target_CM << "." << endl;
-        cout << "HTP rotation axis (X,Z): ("<< HTP_Axis[0] <<", "<< HTP_Axis[1] <<")."<< endl;
+      		cout << "HTP rotation axis (X,Z): ("<< HTP_Axis[0] <<", "<< HTP_Axis[1] <<")."<< endl;
       }
     }
 
@@ -3770,8 +3775,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else if (Ref_NonDim == FREESTREAM_VEL_EQ_ONE) { cout << "Non-Dimensional simulation (V=1.0, Rho=1.0, T=1.0 at the farfield)." << endl; }
     
     if (RefAreaCoeff == 0) cout << "The reference length/area will be computed using y(2D) or z(3D) projection." << endl;
-    else cout << "The reference length/area (force coefficient) is " << RefAreaCoeff << "." << endl;
-    cout << "The reference length (moment computation) is " << RefLengthMoment << "." << endl;
+    else { cout << "The reference length/area (force coefficient) is " << RefAreaCoeff;
+    	if (SystemMeasurements == US) cout << " in^2." << endl;
+    	else cout << " m^2." << endl;
+    }
+    cout << "The reference length (moment computation) is " << RefLengthMoment;
+  	if (SystemMeasurements == US) cout << " in." << endl;
+  	else cout << " m." << endl;
 
     if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
       cout << "Surface(s) where the force coefficients are evaluated and \n";
@@ -3780,7 +3790,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
         cout << "   - " << Marker_Monitoring[iMarker_Monitoring] << " (" << RefOriginMoment_X[iMarker_Monitoring] <<", "<<RefOriginMoment_Y[iMarker_Monitoring] <<", "<< RefOriginMoment_Z[iMarker_Monitoring] << ")";
         if (iMarker_Monitoring < nMarker_Monitoring-1) cout << ".\n";
-        else cout <<"."<< endl;
+        else {
+        	if (SystemMeasurements == US) cout <<" in."<< endl;
+        	else cout <<" m."<< endl;
+        }
       }
     }
     else {
@@ -4050,9 +4063,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
-        case DRAG_COEFFICIENT:           cout << "CD objective function." << endl;
-          if (Fixed_CL_Mode) cout << "dCD/dCL = " << dCD_dCL << "." << endl;
-          if (Fixed_CM_Mode) cout << "dCD/dCM = " << dCD_dCM << "." << endl;
+        case DRAG_COEFFICIENT: cout << "CD objective function";
+          if (Fixed_CL_Mode) { cout << " using fixed CL mode, dCD/dCL = " << dCD_dCL << "." << endl; }
+          else if (Fixed_CM_Mode) { cout << " using fixed CM mode, dCD/dCM = " << dCD_dCM << "." << endl; }
+          else { cout << "." << endl; }
           break;
         case LIFT_COEFFICIENT:           cout << "CL objective function." << endl; break;
         case MOMENT_X_COEFFICIENT:       cout << "CMx objective function." << endl; break;
@@ -4119,7 +4133,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 
 			if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
-				if (Kind_Upwind_Flow == ROE) cout << "Roe (with entropy fix) solver for the flow inviscid terms."<< endl;
+				if (Kind_Upwind_Flow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == AUSM)	cout << "AUSM solver for the flow inviscid terms."<< endl;
 				if (Kind_Upwind_Flow == HLLC)	cout << "HLLC solver for the flow inviscid terms."<< endl;
@@ -4183,7 +4197,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) {
-        if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix) solver for the adjoint inviscid terms."<< endl;
+        if (Kind_Upwind_AdjFlow == ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
         switch (SpatialOrder_AdjFlow) {
           case FIRST_ORDER: cout << "First order integration." << endl; break;
           case SECOND_ORDER: cout << "Second order integration." << endl; break;

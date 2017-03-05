@@ -308,9 +308,14 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+      if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+#ifndef HAVE_MPI
       exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
     }
     
     /*--- In case this is a parallel simulation, we need to perform the
@@ -6132,10 +6137,15 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
     /*--- In case there is no file ---*/
     if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+      if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+#ifndef HAVE_MPI
       exit(EXIT_FAILURE);
-    }
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+      }
     
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/

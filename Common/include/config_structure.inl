@@ -1360,6 +1360,12 @@ inline su2double CConfig::GetFFD_Tol(void) { return FFD_Tol; }
 
 inline su2double CConfig::GetFFD_Scale(void) {return FFD_Scale; }
 
+inline su2double CConfig::GetOpt_Bound(void) {return Opt_Bound; }
+
+inline su2double CConfig::GetOpt_Scale(void) {return Opt_Scale; }
+
+inline void CConfig::SetOpt_Scale(su2double val_scale) {Opt_Scale = val_scale; }
+
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }

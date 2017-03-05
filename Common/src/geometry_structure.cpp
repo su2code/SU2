@@ -12926,8 +12926,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
-    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
+    if (rank == MASTER_NODE) cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
   }
   
   if (rank == MASTER_NODE)
@@ -13048,10 +13054,8 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     XValue = Xcoord_Airfoil_[iVertex];
     ZValue = Zcoord_Airfoil_[iVertex];
-    
     Xcoord_Airfoil_[iVertex] = XValue*ValCos - ZValue*ValSin;
     Zcoord_Airfoil_[iVertex] = ZValue*ValCos + XValue*ValSin;
-    
   }
   
   /*--- Identify upper and lower side, and store the value of the normal --*/
@@ -13078,7 +13082,11 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
     unsigned short index = 2;
     if ((config->GetAxis_Stations() == Z_AXIS) && (nDim == 3)) index = 0;
     
-    if (Normal[index] >= 0.0) {
+    /*--- Removing the trailing edge from list of points that we are going to use in the interpolation,
+			to be sure that a blunt trailing edge do not affect the interpolation ---*/
+
+
+    if ((Normal[index] >= 0.0) && (fabs(Xcoord_Airfoil_[iVertex]) > MaxDistance*0.01)) {
       Xcoord.push_back(Xcoord_Airfoil_[iVertex]);
       Ycoord.push_back(Ycoord_Airfoil_[iVertex]);
       Zcoord.push_back(Zcoord_Airfoil_[iVertex]);
@@ -13114,7 +13122,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
       if (Thickness > MaxThickness_Value) { MaxThickness_Value = Thickness; }
     }
   }
-  
+
   return MaxThickness_Value;
   
 }

@@ -7624,6 +7624,12 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
+    /*--- Write an csv surface file, done in parallel ---*/
+
+    if (rank == MASTER_NODE) cout <<"Writing .csv surface file." << endl;
+
+    if (su2_file) SetCSV_MeshASCII(config[iZone], geometry[iZone]);
+
   }
 }
 
@@ -7924,46 +7930,45 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
 
 				Cp_File.close();
 
-				/*--- Write Cp at each section (n3d format) ---*/
-
-				ofstream n3d_File;
-
-				if (iSection == 0) n3d_File.open("cp_sections.n3d", ios::out);
-				else n3d_File.open("cp_sections.n3d", ios::app);
-
-				/*--- Coordinates and pressure value ---*/
-
-				if (config->GetSystemMeasurements() == SI) {
-					n3d_File << setprecision(4);
-					n3d_File << fixed;
-					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-						n3d_File << setw(10) << Xcoord_Airfoil[iVertex] << setw(10) << Ycoord_Airfoil[iVertex]
-						<< setw(10) << Zcoord_Airfoil[iVertex];
-						if (iVertex==0) {
-							if (iSection == 0) n3d_File << "2 ";
-							else n3d_File << "1 ";
-						}
-						else n3d_File << "0 ";
-						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
-					}
-				}
-				if (config->GetSystemMeasurements() == US) {
-					n3d_File << setprecision(4);
-					n3d_File << fixed;
-					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-						n3d_File << setw(10) <<  Xcoord_Airfoil[iVertex] * 12.0 << setw(10) << Ycoord_Airfoil[iVertex] * 12.0
-								<< setw(10) << Zcoord_Airfoil[iVertex] * 12.0;
-						if (iVertex==0) {
-							if (iSection == 0) n3d_File << "2 ";
-							else n3d_File << "1 ";
-						}
-						else n3d_File << "0 ";
-						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
-					}
-				}
-
-				n3d_File.close();
-
+//				/*--- Write Cp at each section (n3d format) ---*/
+//
+//				ofstream n3d_File;
+//
+//				if (iSection == 0) n3d_File.open("cp_sections.n3d", ios::out);
+//				else n3d_File.open("cp_sections.n3d", ios::app);
+//
+//				/*--- Coordinates and pressure value ---*/
+//
+//				if (config->GetSystemMeasurements() == SI) {
+//					n3d_File << setprecision(4);
+//					n3d_File << fixed;
+//					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+//						n3d_File << setw(10) << Xcoord_Airfoil[iVertex] << setw(10) << Ycoord_Airfoil[iVertex]
+//						<< setw(10) << Zcoord_Airfoil[iVertex];
+//						if (iVertex==0) {
+//							if (iSection == 0) n3d_File << "2 ";
+//							else n3d_File << "1 ";
+//						}
+//						else n3d_File << "0 ";
+//						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
+//					}
+//				}
+//				if (config->GetSystemMeasurements() == US) {
+//					n3d_File << setprecision(4);
+//					n3d_File << fixed;
+//					for (iVertex = 0; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+//						n3d_File << setw(10) <<  Xcoord_Airfoil[iVertex] * 12.0 << setw(10) << Ycoord_Airfoil[iVertex] * 12.0
+//								<< setw(10) << Zcoord_Airfoil[iVertex] * 12.0;
+//						if (iVertex==0) {
+//							if (iSection == 0) n3d_File << "2 ";
+//							else n3d_File << "1 ";
+//						}
+//						else n3d_File << "0 ";
+//						n3d_File << setw(10) << CPressure_Airfoil[iVertex] << endl;
+//					}
+//				}
+//
+//				n3d_File.close();
 
 				/*--- Compute load distribution ---*/
 
@@ -8027,13 +8032,13 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
           
           if (config->GetOutput_FileFormat() == PARAVIEW) {
             Load_File.open("load_distribution.csv", ios::out);
-            Load_File << "\"Percent Semispan\",\"Sect. C<sub>L</sub>\",\"Spanload (c C<sub>L</sub> / c<sub>ref</sub>) \",\"Elliptic Spanload\"" << endl;
+            Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
           }
           else {
             Load_File.open("load_distribution.dat", ios::out);
             Load_File << "TITLE = \"Load distribution\"" << endl;
-            Load_File << "VARIABLES = \"Percent Semispan\",\"Sect. C<sub>L</sub>\",\"Spanload (c C<sub>L</sub> / c<sub>ref</sub>) \",\"Elliptic Spanload\"" << endl;
-            Load_File << "ZONE T=\"Wing load distribution\", NODES= " << nSection << ", ELEMENTS= " << nSection - 1 << ", DATAPACKING= POINT, ZONETYPE= FELINESEG" << endl;
+            Load_File << "VARIABLES = \"Percent Semispan\",\"Sectional C<sub>L</sub>\",\"Spanload (c C<sub>L</sub> / c<sub>ref</sub>) \",\"Elliptic Spanload\"" << endl;
+            Load_File << "ZONE T=\"Wing load distribution\"" << endl;
           }
         } else {
           if (config->GetOutput_FileFormat() == PARAVIEW) Load_File.open("load_distribution.csv", ios::app);
@@ -8041,28 +8046,12 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry,
         }
         
         
-        if (config->GetOutput_FileFormat() == PARAVIEW) {
-          
-          /*--- CL and spanload ---*/
-          
-          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLengthMoment <<", " << Elliptic_Spanload   << endl;
- 
-        }
-        
-        else {
-          
-          /*--- CL and spanload ---*/
+        /*--- CL and spanload ---*/
 
+        if (config->GetOutput_FileFormat() == PARAVIEW)
+          Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLengthMoment <<", " << Elliptic_Spanload   << endl;
+        else
           Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLengthMoment <<" " << Elliptic_Spanload   << endl;
-          
-          /*--- Basic conectivity ---*/
-          
-          if (iSection == nSection - 1) {
-            for (iSection = 1; iSection < nSection; iSection++) {
-              Load_File << iSection << "\t" << iSection + 1 << "\n";
-            }
-          }
-        }
 
 				Load_File.close();
 
