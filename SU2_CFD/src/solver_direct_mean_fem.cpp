@@ -6900,9 +6900,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
         memory such that the function DenseMatrixProduct can be used to compute
         the gradients solution variables in the integration points of the face. ---*/
   for(unsigned short i=0; i<nDOFsElem; ++i) {
-    const su2double *solDOF = VecSolDOFs.data() + nVar*DOFsElem[i];
-    su2double       *sol    = solElem + nVar*i;
-    for(unsigned short j=0; j<nVar; ++j)
+    const su2double *solDOF = VecSolDOFs.data() + ctc::nVar*DOFsElem[i];
+    su2double       *sol    = solElem + ctc::nVar*i;
+    for(unsigned short j=0; j<ctc::nVar; ++j)
       sol[j] = solDOF[j];
   }
 
@@ -6914,84 +6914,177 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
   
   /* Determine the offset between r- and -s-derivatives, which is also the
      offset between s- and t-derivatives. */
-  const unsigned short offDeriv = nVar*nInt;
+  const unsigned short offDeriv = ctc::nVar*nInt;
 
-  /*--- Loop over the integration points to compute the viscous fluxes. ---*/
-  for(unsigned short i=0; i<nInt; ++i) {
+  /* Make a distinction between two and three space dimensions
+        in order to have the most efficient code. */
+  switch( ctc::nDim ) {
 
-    /* Easier storage of the metric terms needed to compute the Cartesian
-       gradients in this integration point and the starting locations of
-       the solution and the gradients, w.r.t. the parametric coordinates
-       of this solution. */
-    const su2double *metricTerms = metricCoorDerivFace + i*nDim*nDim;
-    const su2double *sol         = solInt + nVar*i;
-    const su2double *gradSol     = gradSolInt + nVar*i;
+    case 2: {
 
-    /*--- Compute the Cartesian gradients of the solution. ---*/
-    su2double solGradCart[5][3];
-#pragma simd
-    for(unsigned short k=0; k<ctc::nDim; ++k) {
-      for(unsigned short j=0; j<ctc::nVar; ++j) {
-        solGradCart[j][k] = 0.0;
-        for(unsigned short l=0; l<ctc::nDim; ++l)
-          solGradCart[j][k] += gradSol[j+l*offDeriv]*metricTerms[k+l*ctc::nDim];
+      /* 2D simulation. Loop over the integration points to
+         compute the viscous fluxes. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the metric terms needed to compute the Cartesian
+           gradients in this integration point and the starting locations of
+           the solution and the gradients, w.r.t. the parametric coordinates
+           of this solution. */
+        const su2double *metricTerms = metricCoorDerivFace + i*ctc::nDim*ctc::nDim;
+        const su2double *sol         = solInt     + ctc::nVar*i;
+        const su2double *dSolDr      = gradSolInt + ctc::nVar*i;
+        const su2double *dSolDs      = dSolDr     + offDeriv;
+
+        /* Easier storage of the metric terms in this integration point. */
+        const su2double drdx = metricTerms[0];
+        const su2double drdy = metricTerms[1];
+
+        const su2double dsdx = metricTerms[2];
+        const su2double dsdy = metricTerms[3];
+
+        /*--- Compute the Cartesian gradients of the solution. ---*/
+        su2double solGradCart[4][2];
+
+        solGradCart[0][0] = dSolDr[0]*drdx + dSolDs[0]*dsdx;
+        solGradCart[1][0] = dSolDr[1]*drdx + dSolDs[1]*dsdx;
+        solGradCart[2][0] = dSolDr[2]*drdx + dSolDs[2]*dsdx;
+        solGradCart[3][0] = dSolDr[3]*drdx + dSolDs[3]*dsdx;
+
+        solGradCart[0][1] = dSolDr[0]*drdy + dSolDs[0]*dsdy;
+        solGradCart[1][1] = dSolDr[1]*drdy + dSolDs[1]*dsdy;
+        solGradCart[2][1] = dSolDr[2]*drdy + dSolDs[2]*dsdy;
+        solGradCart[3][1] = dSolDr[3]*drdy + dSolDs[3]*dsdy;
+
+        /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
+              actual normal viscous flux. The viscosity and thermal conductivity
+              are stored for later use. ---*/
+        const su2double *normal  = metricNormalsFace + i*(ctc::nDim+1);
+        su2double *normalFlux    = viscNormFluxes + i*ctc::nVar;
+        const su2double wallDist = wallDistanceInt ? wallDistanceInt[i] : 0.0;
+
+        su2double Viscosity, kOverCv;
+
+        ViscousNormalFluxIntegrationPoint_2D(sol, solGradCart, normal, HeatFlux,
+                                             factHeatFlux_Lam, factHeatFlux_Turb,
+                                             wallDist, lenScale_LES,
+                                             Viscosity, kOverCv, normalFlux);
+        viscosityInt[i] = Viscosity;
+        kOverCvInt[i]   = kOverCv;
       }
+
+      break;
     }
 
-    /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
-          actual normal viscous flux. The viscosity and thermal conductivity
-          are stored for later use. ---*/
-    const su2double *normal  = metricNormalsFace + i*(nDim+1); 
-    su2double *normalFlux    = viscNormFluxes + i*nVar;
-    const su2double wallDist = wallDistanceInt ? wallDistanceInt[i] : 0.0;
+    /*------------------------------------------------------------------------*/
 
-    su2double Viscosity, kOverCv;
+    case 3: {
 
-    ViscousNormalFluxIntegrationPoint(sol, solGradCart, normal, HeatFlux,
-                                      factHeatFlux_Lam, factHeatFlux_Turb,
-                                      wallDist, lenScale_LES,
-                                      Viscosity, kOverCv, normalFlux);
-    viscosityInt[i] = Viscosity;
-    kOverCvInt[i]   = kOverCv;
+      /* 3D simulation. Loop over the integration points to
+         compute the viscous fluxes. */
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the metric terms needed to compute the Cartesian
+           gradients in this integration point and the starting locations of
+           the solution and the gradients, w.r.t. the parametric coordinates
+           of this solution. */
+        const su2double *metricTerms = metricCoorDerivFace + i*ctc::nDim*ctc::nDim;
+        const su2double *sol         = solInt     + ctc::nVar*i;
+        const su2double *dSolDr      = gradSolInt + ctc::nVar*i;
+        const su2double *dSolDs      = dSolDr     + offDeriv;
+        const su2double *dSolDt      = dSolDs     + offDeriv;
+
+        /* Easier storage of the metric terms in this integration point. */
+        const su2double drdx = metricTerms[0];
+        const su2double drdy = metricTerms[1];
+        const su2double drdz = metricTerms[2];
+
+        const su2double dsdx = metricTerms[3];
+        const su2double dsdy = metricTerms[4];
+        const su2double dsdz = metricTerms[5];
+
+        const su2double dtdx = metricTerms[6];
+        const su2double dtdy = metricTerms[7];
+        const su2double dtdz = metricTerms[8];
+
+        /*--- Compute the Cartesian gradients of the solution. ---*/
+        su2double solGradCart[5][3];
+
+        solGradCart[0][0] = dSolDr[0]*drdx + dSolDs[0]*dsdx + dSolDt[0]*dtdx;
+        solGradCart[1][0] = dSolDr[1]*drdx + dSolDs[1]*dsdx + dSolDt[1]*dtdx;
+        solGradCart[2][0] = dSolDr[2]*drdx + dSolDs[2]*dsdx + dSolDt[2]*dtdx;
+        solGradCart[3][0] = dSolDr[3]*drdx + dSolDs[3]*dsdx + dSolDt[3]*dtdx;
+        solGradCart[4][0] = dSolDr[4]*drdx + dSolDs[4]*dsdx + dSolDt[4]*dtdx;
+
+        solGradCart[0][1] = dSolDr[0]*drdy + dSolDs[0]*dsdy + dSolDt[0]*dtdy;
+        solGradCart[1][1] = dSolDr[1]*drdy + dSolDs[1]*dsdy + dSolDt[1]*dtdy;
+        solGradCart[2][1] = dSolDr[2]*drdy + dSolDs[2]*dsdy + dSolDt[2]*dtdy;
+        solGradCart[3][1] = dSolDr[3]*drdy + dSolDs[3]*dsdy + dSolDt[3]*dtdy;
+        solGradCart[4][1] = dSolDr[4]*drdy + dSolDs[4]*dsdy + dSolDt[4]*dtdy;
+
+        solGradCart[0][2] = dSolDr[0]*drdz + dSolDs[0]*dsdz + dSolDt[0]*dtdz;
+        solGradCart[1][2] = dSolDr[1]*drdz + dSolDs[1]*dsdz + dSolDt[1]*dtdz;
+        solGradCart[2][2] = dSolDr[2]*drdz + dSolDs[2]*dsdz + dSolDt[2]*dtdz;
+        solGradCart[3][2] = dSolDr[3]*drdz + dSolDs[3]*dsdz + dSolDt[3]*dtdz;
+        solGradCart[4][2] = dSolDr[4]*drdz + dSolDs[4]*dsdz + dSolDt[4]*dtdz;
+
+        /*--- Call the function ViscousNormalFluxIntegrationPoint to compute the
+              actual normal viscous flux. The viscosity and thermal conductivity
+              are stored for later use. ---*/
+        const su2double *normal  = metricNormalsFace + i*(ctc::nDim+1);
+        su2double *normalFlux    = viscNormFluxes + i*ctc::nVar;
+        const su2double wallDist = wallDistanceInt ? wallDistanceInt[i] : 0.0;
+
+        su2double Viscosity, kOverCv;
+
+        ViscousNormalFluxIntegrationPoint_3D(sol, solGradCart, normal, HeatFlux,
+                                             factHeatFlux_Lam, factHeatFlux_Turb,
+                                             wallDist, lenScale_LES,
+                                             Viscosity, kOverCv, normalFlux);
+        viscosityInt[i] = Viscosity;
+        kOverCvInt[i]   = kOverCv;
+      }
+
+      break;
+    }
   }
 }
 
-void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
-                                                         const su2double solGradCart[5][3],
-                                                         const su2double *normal,
-                                                         const su2double HeatFlux,
-                                                         const su2double factHeatFlux_Lam,
-                                                         const su2double factHeatFlux_Turb,
-                                                         const su2double wallDist,
-                                                         const su2double lenScale_LES,
-                                                               su2double &Viscosity,
-                                                               su2double &kOverCv,
-                                                               su2double *normalFlux) {
+void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol,
+                                                            const su2double solGradCart[4][2],
+                                                            const su2double *normal,
+                                                            const su2double HeatFlux,
+                                                            const su2double factHeatFlux_Lam,
+                                                            const su2double factHeatFlux_Turb,
+                                                            const su2double wallDist,
+                                                            const su2double lenScale_LES,
+                                                                  su2double &Viscosity,
+                                                                  su2double &kOverCv,
+                                                                  su2double *normalFlux) {
 
   /*--- Compute the velocities and static energy in this integration point. ---*/
-  const su2double DensityInv = 1.0/sol[0];
-  su2double vel[3], Velocity2 = 0.0;
-  for(unsigned short j=0; j<nDim; ++j) {
-    vel[j]     = sol[j+1]*DensityInv;
-    Velocity2 += vel[j]*vel[j];
-  }
+  const su2double rhoInv = 1.0/sol[0];
+  const su2double u = rhoInv*sol[1];
+  const su2double v = rhoInv*sol[2];
 
-  const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
-  const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+  const su2double TotalEnergy  = rhoInv*sol[3];
+  const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v);
 
   /*--- Compute the Cartesian gradients of the velocities and static energy
         in this integration point and also the divergence of the velocity. ---*/
-  su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
-  for(unsigned short k=0; k<nDim; ++k) {
-    StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
-                        -             TotalEnergy*solGradCart[0][k]);
-    for(unsigned short j=0; j<nDim; ++j) {
-      velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
-                           -      vel[j]*solGradCart[0][k]);
-      StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
-    }
-    divVel += velGrad[k][k];
-  }
+  const su2double dudx = rhoInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+  const su2double dudy = rhoInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+
+  const su2double dvdx = rhoInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+  const su2double dvdy = rhoInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+
+  const su2double dStaticEnergyDx = rhoInv*(solGradCart[3][0]
+                                  -         TotalEnergy*solGradCart[0][0])
+                                  - u*dudx - v*dvdx;
+  const su2double dStaticEnergyDy = rhoInv*(solGradCart[3][1]
+                                  -         TotalEnergy*solGradCart[0][1])
+                                  - u*dudy - v*dvdy;
+
+  const su2double divVel = dudx + dvdy;
 
   /*--- Compute the laminar viscosity. ---*/
   FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
@@ -6999,9 +7092,15 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
 
   /*--- Compute the eddy viscosity, if needed. ---*/
   su2double ViscosityTurb = 0.0;
-  if( SGSModelUsed )
+  if( SGSModelUsed ) {
+    su2double velGrad[3][3];
+    velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = 0.0;
+    velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = 0.0;
+    velGrad[2][0] = 0.0;  velGrad[2][1] = 0.0;  velGrad[2][2] = 0.0;
+
     ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
                                                    lenScale_LES, wallDist);
+  }
 
   /* Compute the total viscosity and heat conductivity. Note that the heat
      conductivity is divided by the Cv, because gradients of internal energy
@@ -7014,49 +7113,131 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint(const su2double *sol,
   const su2double lambda     = -TWO3*Viscosity;
   const su2double lamDivTerm =  lambda*divVel;
 
-  /*--- Compute the viscous stress tensor. ---*/
-  su2double tauVis[3][3];
-  for(unsigned short k=0; k<nDim; ++k) {
-    tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
-    for(unsigned short j=(k+1); j<nDim; ++j) {
-      tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
-      tauVis[k][j] = tauVis[j][k];
-    }
+  /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+  const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+  const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+  const su2double tauxy = Viscosity*(dudy + dvdx);
+
+  const su2double qx = kOverCv*dStaticEnergyDx;
+  const su2double qy = kOverCv*dStaticEnergyDy;
+
+  /* Compute the unscaled normal vector. */
+  const su2double nx = normal[0]*normal[2];
+  const su2double ny = normal[1]*normal[2];
+
+  /*--- Compute the viscous normal flux. Note that the energy flux get a 
+        contribution from both the prescribed and the computed heat flux.
+        At least one of these terms is zero. ---*/
+  normalFlux[0] = 0.0;
+  normalFlux[1] = tauxx*nx + tauxy*ny;
+  normalFlux[2] = tauxy*nx + tauyy*ny;
+  normalFlux[3] = normal[2]*HeatFlux
+                + (u*tauxx + v*tauxy + qx)*nx + (u*tauxy + v*tauyy + qy)*ny;
+}
+
+void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol,
+                                                            const su2double solGradCart[5][3],
+                                                            const su2double *normal,
+                                                            const su2double HeatFlux,
+                                                            const su2double factHeatFlux_Lam,
+                                                            const su2double factHeatFlux_Turb,
+                                                            const su2double wallDist,
+                                                            const su2double lenScale_LES,
+                                                                  su2double &Viscosity,
+                                                                  su2double &kOverCv,
+                                                                  su2double *normalFlux) {
+
+  /*--- Compute the velocities and static energy in this integration point. ---*/
+  const su2double rhoInv = 1.0/sol[0];
+  const su2double u = rhoInv*sol[1];
+  const su2double v = rhoInv*sol[2];
+  const su2double w = rhoInv*sol[3];
+
+  const su2double TotalEnergy  = rhoInv*sol[4];
+  const su2double StaticEnergy = TotalEnergy - 0.5*(u*u + v*v + w*w);
+
+  /*--- Compute the Cartesian gradients of the velocities and static energy
+        in this integration point and also the divergence of the velocity. ---*/
+  const su2double dudx = rhoInv*(solGradCart[1][0] - u*solGradCart[0][0]);
+  const su2double dudy = rhoInv*(solGradCart[1][1] - u*solGradCart[0][1]);
+  const su2double dudz = rhoInv*(solGradCart[1][2] - u*solGradCart[0][2]);
+
+  const su2double dvdx = rhoInv*(solGradCart[2][0] - v*solGradCart[0][0]);
+  const su2double dvdy = rhoInv*(solGradCart[2][1] - v*solGradCart[0][1]);
+  const su2double dvdz = rhoInv*(solGradCart[2][2] - v*solGradCart[0][2]);
+
+  const su2double dwdx = rhoInv*(solGradCart[3][0] - w*solGradCart[0][0]);
+  const su2double dwdy = rhoInv*(solGradCart[3][1] - w*solGradCart[0][1]);
+  const su2double dwdz = rhoInv*(solGradCart[3][2] - w*solGradCart[0][2]);
+
+  const su2double dStaticEnergyDx = rhoInv*(solGradCart[4][0]
+                                  -         TotalEnergy*solGradCart[0][0])
+                                  - u*dudx - v*dvdx - w*dwdx;
+  const su2double dStaticEnergyDy = rhoInv*(solGradCart[4][1] 
+                                  -         TotalEnergy*solGradCart[0][1])
+                                  - u*dudy - v*dvdy - w*dwdy;
+  const su2double dStaticEnergyDz = rhoInv*(solGradCart[4][2] 
+                                  -         TotalEnergy*solGradCart[0][2])
+                                  - u*dudz - v*dvdz - w*dwdz;
+
+  const su2double divVel = dudx + dvdy + dwdz;
+
+  /*--- Compute the laminar viscosity. ---*/
+  FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+  const su2double ViscosityLam = FluidModel->GetLaminarViscosity();
+
+  /*--- Compute the eddy viscosity, if needed. ---*/
+  su2double ViscosityTurb = 0.0;
+  if( SGSModelUsed ) {
+    su2double velGrad[3][3];
+    velGrad[0][0] = dudx; velGrad[0][1] = dudy; velGrad[0][2] = dudz;
+    velGrad[1][0] = dvdx; velGrad[1][1] = dvdy; velGrad[1][2] = dvdz;
+    velGrad[2][0] = dwdx; velGrad[2][1] = dwdy; velGrad[2][2] = dwdz;
+
+    ViscosityTurb = SGSModel->ComputeEddyViscosity(nDim, sol[0], velGrad,
+                                                   lenScale_LES, wallDist);
   }
 
-  /*--- Compute the Cartesian viscous flux vectors in this
-        integration point. ---*/
-  su2double fluxCart[5][3];
-  for(unsigned short k=0; k<nDim; ++k) {
+  /* Compute the total viscosity and heat conductivity. Note that the heat
+     conductivity is divided by the Cv, because gradients of internal energy
+     are computed and not temperature. */
+  Viscosity = ViscosityLam + ViscosityTurb;
+  kOverCv   = ViscosityLam*factHeatFlux_Lam + ViscosityTurb*factHeatFlux_Turb;
 
-    /* Momentum flux vector. */
-    for(unsigned short j=0; j<nDim; ++j)
-      fluxCart[j+1][k] = tauVis[j][k];
+  /*--- Set the value of the second viscosity and compute the divergence
+        term in the viscous normal stresses. ---*/
+  const su2double lambda     = -TWO3*Viscosity;
+  const su2double lamDivTerm =  lambda*divVel;
 
-    /* Energy flux vector. */
-    fluxCart[nDim+1][k] = kOverCv*StaticEnergyGrad[k]; // Heat flux part
-    for(unsigned short j=0; j<nDim; ++j)
-      fluxCart[nDim+1][k] += tauVis[j][k]*vel[j];      // Work of the viscous forces part
-  }
+  /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+  const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
+  const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
+  const su2double tauzz = 2.0*Viscosity*dwdz + lamDivTerm;
 
-  /*--- Initialize the fluxes to zero. ---*/
-  for(unsigned short j=0; j<nVar; ++j) normalFlux[j] = 0.0;
+  const su2double tauxy = Viscosity*(dudy + dvdx);
+  const su2double tauxz = Viscosity*(dudz + dwdx);
+  const su2double tauyz = Viscosity*(dvdz + dwdy);
 
-  /* Set the energy flux to the prescribed heat flux. If the heat flux is
-     not prescribed HeatFlux is equal to zero. */
-  normalFlux[nVar-1] = normal[nDim]*HeatFlux;
-      
-  /*--- Loop over the number of dimensions to compute the fluxes in the
-        direction of the parametric coordinates. ---*/
-  for(unsigned short k=0; k<nDim; ++k) {
-    const su2double unscaledNorm = normal[k]*normal[nDim];
+  const su2double qx = kOverCv*dStaticEnergyDx;
+  const su2double qy = kOverCv*dStaticEnergyDy;
+  const su2double qz = kOverCv*dStaticEnergyDz;
 
-    /*--- Loop over the variables to update the normal flux. Note
-          that the loop starts at 1, because the mass conservation
-          does not have a viscous contribution. ---*/
-    for(unsigned short j=1; j<nVar; ++j) 
-      normalFlux[j] += fluxCart[j][k]*unscaledNorm;
-  }
+  /* Compute the unscaled normal vector. */
+  const su2double nx = normal[0]*normal[3];
+  const su2double ny = normal[1]*normal[3];
+  const su2double nz = normal[2]*normal[3];
+
+  /*--- Compute the viscous normal flux. Note that the energy flux get a 
+        contribution from both the prescribed and the computed heat flux.
+        At least one of these terms is zero. ---*/
+  normalFlux[0] = 0.0;
+  normalFlux[1] = tauxx*nx + tauxy*ny + tauxz*nz;
+  normalFlux[2] = tauxy*nx + tauyy*ny + tauyz*nz;
+  normalFlux[3] = tauxz*nx + tauyz*ny + tauzz*nz;
+  normalFlux[4] = normal[3]*HeatFlux
+                + (u*tauxx + v*tauxy + w*tauxz + qx)*nx
+                + (u*tauxy + v*tauyy + w*tauyz + qy)*ny
+                + (u*tauxz + v*tauyz + w*tauzz + qz)*nz;
 }
 
 void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
@@ -7489,14 +7670,46 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
       su2double viscFluxL[5], viscFluxR[5];
       su2double Viscosity, kOverCv;
 
-      ViscousNormalFluxIntegrationPoint(UR, URGradCart, normals, 0.0,
-                                        factHeatFlux_Lam, factHeatFlux_Turb,
-                                        wallDist, lenScale_LES, Viscosity,
-                                        kOverCv, viscFluxR);
-      ViscousNormalFluxIntegrationPoint(UL, ULGradCart, normals, 0.0,
-                                        factHeatFlux_Lam, factHeatFlux_Turb,
-                                        wallDist, lenScale_LES, Viscosity,
-                                        kOverCv, viscFluxL);
+      switch( ctc::nDim ) {
+        case 2: {
+          su2double tmpGrad[4][2];
+          tmpGrad[0][0] = URGradCart[0][0]; tmpGrad[0][1] = URGradCart[0][1];
+          tmpGrad[1][0] = URGradCart[1][0]; tmpGrad[1][1] = URGradCart[1][1];
+          tmpGrad[2][0] = URGradCart[2][0]; tmpGrad[2][1] = URGradCart[2][1];
+          tmpGrad[3][0] = URGradCart[3][0]; tmpGrad[3][1] = URGradCart[3][1];
+
+          ViscousNormalFluxIntegrationPoint_2D(UR, tmpGrad, normals, 0.0,
+                                               factHeatFlux_Lam, factHeatFlux_Turb,
+                                               wallDist, lenScale_LES, Viscosity,
+                                               kOverCv, viscFluxR);
+
+          tmpGrad[0][0] = ULGradCart[0][0]; tmpGrad[0][1] = ULGradCart[0][1];
+          tmpGrad[1][0] = ULGradCart[1][0]; tmpGrad[1][1] = ULGradCart[1][1];
+          tmpGrad[2][0] = ULGradCart[2][0]; tmpGrad[2][1] = ULGradCart[2][1];
+          tmpGrad[3][0] = ULGradCart[3][0]; tmpGrad[3][1] = ULGradCart[3][1];
+
+          ViscousNormalFluxIntegrationPoint_2D(UL, tmpGrad, normals, 0.0,
+                                               factHeatFlux_Lam, factHeatFlux_Turb,
+                                               wallDist, lenScale_LES, Viscosity,
+                                               kOverCv, viscFluxL);
+          break;
+        }
+
+        /*--------------------------------------------------------------------*/
+
+        case 3: {
+          ViscousNormalFluxIntegrationPoint_3D(UR, URGradCart, normals, 0.0,
+                                               factHeatFlux_Lam, factHeatFlux_Turb,
+                                               wallDist, lenScale_LES, Viscosity,
+                                               kOverCv, viscFluxR);
+          ViscousNormalFluxIntegrationPoint_3D(UL, ULGradCart, normals, 0.0,
+                                               factHeatFlux_Lam, factHeatFlux_Turb,
+                                               wallDist, lenScale_LES, Viscosity,
+                                               kOverCv, viscFluxL);
+          break;
+        }
+      }
+
       viscosityInt[i] = Viscosity;
       kOverCvInt[i]   = kOverCv;
 
