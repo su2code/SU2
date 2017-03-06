@@ -201,6 +201,8 @@ inline su2double CGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane_
   
 inline su2double CGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
+inline su2double CGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
+
 inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
 
 inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) { return 0; }
@@ -217,7 +219,10 @@ inline su2double CGeometry::Compute_Curvature(su2double *LeadingEdge_im1, su2dou
                                               su2double *LeadingEdge_ip1, su2double *TrailingEdge_ip1) { return 0; }
 
 inline void CGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral) { }
+                                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                                    su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                                    su2double &Wing_MaxDihedral) { }
 
 inline void CGeometry::FindNormal_Neighbor(CConfig *config) { }
 

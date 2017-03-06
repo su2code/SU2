@@ -641,6 +641,11 @@ public:
   virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
+   * \brief A virtual member.
+   */
+  virtual su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
 	 * \brief A virtual member.
 	 */
 	virtual su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
@@ -673,7 +678,10 @@ public:
    * \brief A virtual member.
    */
   virtual void Compute_Wing(CConfig *config, bool original_surface,
-                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+                            su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                            su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                            su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                            su2double &Wing_MaxDihedral);
   
 	/*!
 	 * \brief A virtual member.
@@ -1424,6 +1432,12 @@ public:
   su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
 
   /*!
+   * \brief Compute the chord of an airfoil.
+   * \returns Chord of an airfoil.
+   */
+  su2double Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
+
+  /*!
    * \brief Compute the thickness of an airfoil.
    */
   su2double Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil);
@@ -1452,7 +1466,10 @@ public:
    * \brief Evaluate geometrical parameters of a wing.
    */
   void Compute_Wing(CConfig *config, bool original_surface,
-                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord, su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature, su2double &Wing_MaxDihedral);
+                    su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                    su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
+                    su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
+                    su2double &Wing_MaxDihedral);
 
   /*!
    * \brief Read the sensitivity from adjoint solution file and store it.

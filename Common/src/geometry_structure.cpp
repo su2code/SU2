@@ -13200,8 +13200,6 @@ su2double CPhysicalGeometry::Compute_Twist(su2double *Plane_P0, su2double *Plane
   
   Twist = atan((Zcoord_Airfoil[Leading_Point] - Zcoord_Airfoil[Trailing_Point]) / (Xcoord_Airfoil[Trailing_Point] - Xcoord_Airfoil[Leading_Point]))*180/PI_NUMBER;
 
-  if (fabs(Twist) < 0.01) Twist = 0.0;
-
   return Twist;
 
 }
@@ -13252,6 +13250,44 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   Chord = MaxDistance;
   
   return Chord;
+  
+}
+
+su2double CPhysicalGeometry::Compute_LERadius(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil) {
+
+  unsigned long iVertex, Trailing_Point, Leading_Point;
+  su2double MaxDistance, Distance, LERadius = 0.0, X1, X2, X3, Y1, Y2, Y3, Ma, Mb, Xc, Yc;
+  
+  /*--- Find the leading and trailing edges and compute the radius of curvature ---*/
+  
+  MaxDistance = 0.0; Trailing_Point = 0;  Leading_Point = 0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
+                    pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
+    
+    if (MaxDistance < Distance) { MaxDistance = Distance; Leading_Point = iVertex; }
+  }
+  
+  X1 = Xcoord_Airfoil[Leading_Point-3];
+  Y1 = Zcoord_Airfoil[Leading_Point-3];
+
+  X2 = Xcoord_Airfoil[Leading_Point];
+  Y2 = Zcoord_Airfoil[Leading_Point];
+  
+  X3 = Xcoord_Airfoil[Leading_Point+3];
+  Y3 = Zcoord_Airfoil[Leading_Point+3];
+  
+  Ma = (Y2-Y1) / (X2-X1);
+  Mb = (Y3-Y2) / (X3-X2);
+
+  Xc = (Ma*Mb*(Y1-Y3)+Mb*(X1+X2)-Ma*(X2+X3))/(2.0*(Mb-Ma));
+  Yc = -(1.0/Ma)*(Xc-0.5*(X1+X2))+0.5*(Y1+Y2);
+  
+  LERadius = 1.0/sqrt((Xc-X1)*(Xc-X1)+(Yc-Y1)*(Yc-Y1));
+
+  return LERadius;
   
 }
 
@@ -13417,13 +13453,14 @@ su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_
 }
 
 void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
-                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxChord,
+                                     su2double &Wing_Volume, su2double &Wing_MinMaxThickness, su2double &Wing_MaxMaxThickness, su2double &Wing_MinChord, su2double &Wing_MaxChord,
+                                     su2double &Wing_MinLERadius, su2double &Wing_MaxLERadius,
                                      su2double &Wing_MinToC, su2double &Wing_MaxToC, su2double &Wing_ObjFun_MinToC, su2double &Wing_MaxTwist, su2double &Wing_MaxCurvature,
                                      su2double &Wing_MaxDihedral) {
 
   unsigned short iPlane, iDim, nPlane = 0;
   unsigned long iVertex;
-  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *Twist, *Curvature, *Dihedral, SemiSpan;
+  su2double MinPlane, MaxPlane, dPlane, *Area, *MaxThickness, *ToC, *Chord, *LERadius, *Twist, *Curvature, *Dihedral, SemiSpan;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   ofstream Wing_File, Section_File;
   
@@ -13443,6 +13480,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   Area = new su2double [nPlane];
   MaxThickness = new su2double [nPlane];
   Chord = new su2double [nPlane];
+  LERadius = new su2double [nPlane];
   ToC = new su2double [nPlane];
   Twist = new su2double [nPlane];
   Curvature = new su2double [nPlane];
@@ -13500,17 +13538,17 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     if (config->GetOutput_FileFormat() == PARAVIEW) {
       Wing_File.open("wing_distribution.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"LE Radius (1/in)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
       else
-        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "\"yCoord/SemiSpan\",\"Area (m^2)\",\"Max. Thickness (m)\",\"Chord (m)\",\"LE Radius (1/m)\",\"t_max/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
     }
     else {
       Wing_File.open("wing_description.dat", ios::out);
       Wing_File << "TITLE = \"Wing description\"" << endl;
       if (config->GetSystemMeasurements() == US)
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (in<sup>2</sup>)\",\"Max. Thickness (in)\",\"Chord (in)\",\"LE Radius (1/in)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge X (in)\",\"Leading Edge Y (in)\",\"Leading Edge Z (in)\",\"Trailing Edge X (in)\",\"Trailing Edge Y (in)\",\"Trailing Edge Z (in)\"" << endl;
       else
-        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
+        Wing_File << "VARIABLES = \"<greek>h</greek>\",\"Area (m<sup>2</sup>)\",\"Max. Thickness (m)\",\"Chord (m)\",\"LE Radius (1/m)\",\"t<sub>max</sub>/c\",\"Twist (deg)\",\"Curvature (1/m)\",\"Dihedral (deg)\",\"Leading Edge X (m)\",\"Leading Edge Y (m)\",\"Leading Edge Z (m)\",\"Trailing Edge X (m)\",\"Trailing Edge Y (m)\",\"Trailing Edge Z (m)\"" << endl;
       Wing_File << "ZONE T= \"Baseline wing\"" << endl;
     }
 
@@ -13527,6 +13565,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
       Area[iPlane] = 0.0;
       MaxThickness[iPlane] = 0.0;
       Chord[iPlane] = 0.0;
+      LERadius[iPlane] = 0.0;
       ToC[iPlane] = 0.0;
       Twist[iPlane] = 0.0;
 
@@ -13539,6 +13578,8 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
         MaxThickness[iPlane]= Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
         Chord[iPlane] = Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
+
+        LERadius[iPlane] = Compute_LERadius(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane]);
 
         ToC[iPlane] = MaxThickness[iPlane] / Chord[iPlane];
 
@@ -13586,13 +13627,13 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
     	if (Xcoord_Airfoil[iPlane].size() != 0) {
     		if (config->GetOutput_FileFormat() == PARAVIEW) {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane]  <<", "<< ToC[iPlane]
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane]  <<", "<< MaxThickness[iPlane]  <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
     			                                                                                                                                            <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
     			                                                                                                                                                                                                                <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][1]  <<", "<< LeadingEdge[iPlane][2]
     			                                                                                                                                                                                                                                                                                                              <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][1]  <<", "<< TrailingEdge[iPlane][2]  << endl;
     		}
     		else  {
-    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane]  <<" "<< ToC[iPlane]
+    			Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<" "<< Area[iPlane]  <<" "<< MaxThickness[iPlane]  <<" "<< Chord[iPlane] <<" "<< LERadius[iPlane] <<" "<< ToC[iPlane]
     			                                                                                                                                        <<" "<< Twist[iPlane] <<" "<< Curvature[iPlane]  <<" "<< Dihedral[iPlane]
     			                                                                                                                                                                                                          <<" "<< LeadingEdge[iPlane][0] <<" "<< LeadingEdge[iPlane][1]  <<" "<< LeadingEdge[iPlane][2]
     			                                                                                                                                                                                                                                                                                                     <<" "<< TrailingEdge[iPlane][0] <<" "<< TrailingEdge[iPlane][1]  <<" "<< TrailingEdge[iPlane][2] << endl;
@@ -13658,13 +13699,18 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     /*--- Evaluate Max and Min quantities ---*/
 
-    Wing_MinMaxThickness = 1E6; Wing_MaxChord = -1E6; Wing_MinToC = 1E6; Wing_MaxToC = -1E6;
+    Wing_MaxMaxThickness = -1E6; Wing_MinMaxThickness = 1E6; Wing_MinChord = 1E6; Wing_MaxChord = -1E6;
+    Wing_MinLERadius = 1E6; Wing_MaxLERadius = -1E6; Wing_MinToC = 1E6; Wing_MaxToC = -1E6;
     Wing_MaxTwist = -1E6; Wing_MaxCurvature = -1E6; Wing_MaxDihedral = -1E6;
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-      Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
+      if (MaxThickness[iPlane] != 0.0) Wing_MinMaxThickness = min(Wing_MinMaxThickness, MaxThickness[iPlane]);
+      Wing_MaxMaxThickness = max(Wing_MaxMaxThickness, MaxThickness[iPlane]);
+      if (Chord[iPlane] != 0.0) Wing_MinChord = min(Wing_MinChord, Chord[iPlane]);
       Wing_MaxChord = max(Wing_MaxChord, Chord[iPlane]);
-      Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
+      if (LERadius[iPlane] != 0.0) Wing_MinLERadius = min(Wing_MinLERadius, LERadius[iPlane]);
+      Wing_MaxLERadius = max(Wing_MaxLERadius, LERadius[iPlane]);
+      if (ToC[iPlane] != 0.0) Wing_MinToC = min(Wing_MinToC, ToC[iPlane]);
       Wing_MaxToC = max(Wing_MaxToC, ToC[iPlane]);
       Wing_ObjFun_MinToC = sqrt((Wing_MinToC - 0.07)*(Wing_MinToC - 0.07));
       Wing_MaxTwist = max(Wing_MaxTwist, fabs(Twist[iPlane]));
@@ -13700,6 +13746,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
   delete [] Area;
   delete [] MaxThickness;
   delete [] Chord;
+  delete [] LERadius;
   delete [] ToC;
   delete [] Twist;
   delete [] Curvature;

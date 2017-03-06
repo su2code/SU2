@@ -935,7 +935,7 @@ void COutput::SetTecplot_MeshASCII(CConfig *config, CGeometry *geometry, bool su
 void COutput::SetSTL_MeshASCII(CConfig *config, CGeometry *geometry) {
 
 	unsigned short iDim, nDim = geometry->GetnDim();
-	unsigned long iPoint, iElem, iNode;
+	unsigned long iElem, iNode;
 	char cstr[200];
 	ofstream STL_File;
 	su2double p[3] = {0.0,0.0,0.0}, u[3] = {0.0,0.0,0.0}, v[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, a;
@@ -1038,9 +1038,9 @@ void COutput::SetSTL_MeshASCII(CConfig *config, CGeometry *geometry) {
 void COutput::SetCSV_MeshASCII(CConfig *config, CGeometry *geometry) {
 
 	short iStation, nStation;
-	unsigned short iDim, nDim = geometry->GetnDim();
-	unsigned long iVertex, iPoint;
-	su2double ZeroValue = 0.0, *Plane_P0, *Plane_Normal;
+	unsigned short nDim = geometry->GetnDim();
+	unsigned long iVertex;
+	su2double *Plane_P0, *Plane_Normal;
 	vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Variable_Airfoil;
 	ofstream csv_File;
 
