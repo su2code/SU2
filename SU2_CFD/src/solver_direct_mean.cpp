@@ -7395,7 +7395,9 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
 
   }
   
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*1)) == 0));
+  bool write_heads = (((config->GetIntIter() % (config->GetWrt_Con_Freq()*1)) == 0));
+  ofstream OUT1("unsteadymassflow1.txt", std::ofstream::app);
+  ofstream OUT2("unsteadymassflow2.txt", std::ofstream::app);
   
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
     
@@ -7409,7 +7411,12 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
 
       su2double MassFlow = Surface_MassFlow_Total[iMarker_Analyze] * config->GetDensity_Ref() * config->GetVelocity_Ref();
       if (config->GetSystemMeasurements() == US) MassFlow *= 32.174;
-
+if (MassFlow != 0.0 ){
+  if(iMarker_Analyze == 0)
+    OUT1 << MassFlow << "\n";
+  else
+    OUT2 << MassFlow << "\n";
+}
       if (config->GetSystemMeasurements() == SI) cout << "): Mass flow (kg/s): " << MassFlow;
       else if (config->GetSystemMeasurements() == US) cout << "): Mass flow (lbs/s): " << MassFlow;
       config->SetSurface_MassFlow(iMarker_Analyze, MassFlow);
@@ -7433,7 +7440,7 @@ void CEulerSolver::GetSurface_Properties(CGeometry *geometry, CNumerics *conv_nu
       else if (config->GetSystemMeasurements() == US) cout << ", Area (ft^2): ";
       cout << Surface_Area_Total[iMarker_Analyze] <<"."<< endl;
     }
-    
+//    OUT << "\n";
   }
   
   delete [] Surface_MassFlow_Local;
@@ -8311,7 +8318,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         
         
       }
-      
+      /*
       if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
         
         cout << "Surface ("<< Analyze_TagBound << "): ";
@@ -8323,7 +8330,7 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
         << "%. DC60 " << config->GetSurface_DC60(iMarker_Analyze) << "." << endl;
         
       }
-      
+      */
       /*--- Release the memory for the remaining buffers and exit ---*/
       
       delete [] Buffer_Send_Coord_x;
@@ -8350,13 +8357,13 @@ void CEulerSolver::GetSurface_Distortion(CGeometry *geometry, CConfig *config, u
     }
     
   }
-  
+  /*
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output && !config->GetDiscrete_Adjoint()) {
     
     cout << "-------------------------------------------------------------------------" << endl;
     
   }
-  
+  */
 }
 
 void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
