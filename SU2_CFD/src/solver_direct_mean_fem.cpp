@@ -6917,7 +6917,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(CConfig              *config,
   const unsigned short offDeriv = ctc::nVar*nInt;
 
   /* Make a distinction between two and three space dimensions
-        in order to have the most efficient code. */
+     in order to have the most efficient code. */
   switch( ctc::nDim ) {
 
     case 2: {
@@ -7510,10 +7510,10 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Set the pointers for the local arrays. ---*/
-  unsigned int sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
+  unsigned int sizeFluxes = nIntegrationMax*ctc::nDim;
+  sizeFluxes = ctc::nVar*max(sizeFluxes, (unsigned int) nDOFsMax);
 
-  const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+  const unsigned int sizeGradSolInt = nIntegrationMax*ctc::nDim*max(nVar,nDOFsMax);
 
   su2double *solIntL      = VecTmpMemory.data();
   su2double *solIntR      = solIntL      + nIntegrationMax*nVar;
@@ -7564,15 +7564,15 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
 
     /* Determine the offset between r- and -s-derivatives, which is also the
        offset between s- and t-derivatives. */
-    const unsigned short offDeriv = nVar*nInt;
+    const unsigned short offDeriv = ctc::nVar*nInt;
 
     /* Store the solution of the DOFs of the adjacent element in contiguous
        memory such that the function DenseMatrixProduct can be used to compute
        the gradients solution variables in the integration points of the face. */
     for(unsigned short i=0; i<nDOFsElem; ++i) {
-      const su2double *solDOF = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
-      su2double       *sol    = solElem + nVar*i;
-      for(unsigned short j=0; j<nVar; ++j)
+      const su2double *solDOF = VecSolDOFs.data() + ctc::nVar*surfElem[l].DOFsSolElement[i];
+      su2double       *sol    = solElem + ctc::nVar*i;
+      for(unsigned short j=0; j<ctc::nVar; ++j)
         sol[j] = solDOF[j];
     }
 
@@ -7581,123 +7581,253 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solElem, gradSolInt);
     config->GEMM_Tock(tick, "BC_Sym_Plane", nInt*nDim, nVar, nDOFsElem);
-    
-    /*--- Loop over the integration points to apply the symmetry condition
-          and to compute the viscous normal fluxes. This is done in the same
-          loop, because the gradients in the right integration points are
-          constructed using the symmetry boundary condition. ---*/
-    for(unsigned short i=0; i<nInt; ++i) {
 
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
+    /* Make a distinction between two and three space dimensions
+       in order to have the most efficient code. */
+    switch( ctc::nDim ) {
 
-      /* Compute the normal component of the momentum variables. */
-      su2double rVn = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        rVn += UL[iDim+1]*normals[iDim];
+      case 2: {
 
-      /* The normal velocity must be mirrored in order to get a true symmetry
-         condition. This is accomplished by multiplying rVn by two. */
-      rVn *= 2.0;
+        /*--- 2D simulation. Loop over the integration points to apply the
+              symmetry condition and to compute the viscous normal fluxes. This
+              is done in the same loop, because the gradients in the right
+              integration points are constructed using the symmetry boundary
+              condition. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
 
-      /* Set the right state. Note that the total energy of the right state is
-         identical to the left state, because the magnitude of the velocity
-         remains the same. */
-      UR[0]      = UL[0];
-      UR[nDim+1] = UL[nDim+1];
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
+          /* Easier storage of the left and right solution and the normals
+             for this integration point. */
+          const su2double *UL      = solIntL + i*ctc::nVar;
+                su2double *UR      = solIntR + i*ctc::nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
 
-      /* Easier storage of the metric terms and left gradients of this
-         integration point. */
-      const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
-                                   + i*nDim*nDim;
-      const su2double *ULGrad      = gradSolInt + nVar*i;
+          /* Compute twice the normal component of the momentum variables. The
+             factor 2 comes from the fact that the velocity must be mirrored. */
+          const su2double rVn = 2.0*(UL[1]*normals[0] + UL[2]*normals[1]);
 
-      /* Compute the Cartesian gradients of the left solution. */
-      su2double ULGradCart[5][3];
-      for(unsigned short k=0; k<nDim; ++k) {
-        for(unsigned short j=0; j<nVar; ++j) {
-          ULGradCart[j][k] = 0.0;
-          for(unsigned short ll=0; ll<nDim; ++ll)
-            ULGradCart[j][k] += ULGrad[j+ll*offDeriv]*metricTerms[k+ll*nDim];
-        }
-      }
+          /* Set the right state. Note that the total energy of the right state is
+             identical to the left state, because the magnitude of the velocity
+             remains the same. */
+          UR[0] = UL[0];
+          UR[1] = UL[1] - rVn*normals[0];
+          UR[2] = UL[2] - rVn*normals[1];
+          UR[3] = UL[3];
 
-      /* Determine the normal gradients of all variables. */
-      su2double ULGradNorm[5];
-      for(unsigned short j=0; j<nVar; ++j) {
-        ULGradNorm[j] = 0.0;
-        for(unsigned short k=0; k<nDim; ++k)
-          ULGradNorm[j] += ULGradCart[j][k]*normals[k];
-      }
+          /* Easier storage of the metric terms and left gradients of this
+             integration point. */
+          const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
+                                       + i*ctc::nDim*ctc::nDim;
+          const su2double *dULDr       = gradSolInt + ctc::nVar*i;
+          const su2double *dULDs       = dULDr + offDeriv;
 
-      /* For the construction of the gradients of the right solution, also
-         the Cartesian gradients and the normal gradient of the normal
-         momentum is needed. This is computed below. */
-      su2double GradCartNormMomL[3], GradNormNormMomL = 0.0;
-      for(unsigned short j=0; j<nDim; ++j) {
-        GradNormNormMomL   += ULGradNorm[j+1]*normals[j];
-        GradCartNormMomL[j] = 0.0;
-        for(unsigned short k=0; k<nDim; ++k)
-          GradCartNormMomL[j] += ULGradCart[k+1][j]*normals[k];
-      }
+          /* Easier storage of the metric terms in this integration point. */
+          const su2double drdx = metricTerms[0];
+          const su2double drdy = metricTerms[1];
+          const su2double dsdx = metricTerms[2];
+          const su2double dsdy = metricTerms[3];
 
-      /*--- Construct the gradients of the right solution. The tangential
-            gradients of the normal momentum and normal gradients of the other
-            variables, density, energy and tangential momentum, must be negated.
-            For the common situation that the symmetry plane coincides with an
-            x-, y- or z-plane this boils down to a multiplication by -1 or +1,
-            depending on the variable and gradient. However, the implementation
-            below is valid for an arbitrary orientation of the symmetry plane. ---*/
-      su2double URGradCart[5][3];
-      for(unsigned short k=0; k<nDim; ++k) {
-        URGradCart[0][k]      = ULGradCart[0][k]      - 2.0*normals[k]*ULGradNorm[0];
-        URGradCart[nDim+1][k] = ULGradCart[nDim+1][k] - 2.0*normals[k]*ULGradNorm[nDim+1];
+          /* Compute the Cartesian gradients of the left solution. */
+          su2double ULGradCart[4][2];
+          ULGradCart[0][0] = dULDr[0]*drdx + dULDs[0]*dsdx;
+          ULGradCart[1][0] = dULDr[1]*drdx + dULDs[1]*dsdx;
+          ULGradCart[2][0] = dULDr[2]*drdx + dULDs[2]*dsdx;
+          ULGradCart[3][0] = dULDr[3]*drdx + dULDs[3]*dsdx;
 
-        for(unsigned short j=0; j<nDim; ++j)
-          URGradCart[j+1][k] = ULGradCart[j+1][k] - 2.0*normals[k]*ULGradNorm[j+1]
-                             - 2.0*normals[j]*GradCartNormMomL[k]
-                             + 4.0*normals[j]*normals[k]*GradNormNormMomL;
-      }
+          ULGradCart[0][1] = dULDr[0]*drdy + dULDs[0]*dsdy;
+          ULGradCart[1][1] = dULDr[1]*drdy + dULDs[1]*dsdy;
+          ULGradCart[2][1] = dULDr[2]*drdy + dULDs[2]*dsdy;
+          ULGradCart[3][1] = dULDr[3]*drdy + dULDs[3]*dsdy;
 
-      /*--- Compute the viscous fluxes of the left and right state and average
-            them to compute the correct viscous flux for a symmetry boundary. ---*/
-      const su2double wallDist = wallDistance ? wallDistance[i] : 0.0;
-      su2double viscFluxL[5], viscFluxR[5];
-      su2double Viscosity, kOverCv;
+          /* Determine the normal gradients of all variables. */
+          su2double ULGradNorm[4];
+          ULGradNorm[0] = ULGradCart[0][0]*normals[0] + ULGradCart[0][1]*normals[1];
+          ULGradNorm[1] = ULGradCart[1][0]*normals[0] + ULGradCart[1][1]*normals[1];
+          ULGradNorm[2] = ULGradCart[2][0]*normals[0] + ULGradCart[2][1]*normals[1];
+          ULGradNorm[3] = ULGradCart[3][0]*normals[0] + ULGradCart[3][1]*normals[1];
 
-      switch( ctc::nDim ) {
-        case 2: {
-          su2double tmpGrad[4][2];
-          tmpGrad[0][0] = URGradCart[0][0]; tmpGrad[0][1] = URGradCart[0][1];
-          tmpGrad[1][0] = URGradCart[1][0]; tmpGrad[1][1] = URGradCart[1][1];
-          tmpGrad[2][0] = URGradCart[2][0]; tmpGrad[2][1] = URGradCart[2][1];
-          tmpGrad[3][0] = URGradCart[3][0]; tmpGrad[3][1] = URGradCart[3][1];
+          /* For the construction of the gradients of the right solution, also
+             the Cartesian gradients and the normal gradient of the normal
+             momentum is needed. This is computed below. */
+          su2double GradCartNormMomL[2];
+          GradCartNormMomL[0] = ULGradCart[1][0]*normals[0] + ULGradCart[2][0]*normals[1];
+          GradCartNormMomL[1] = ULGradCart[1][1]*normals[0] + ULGradCart[2][1]*normals[1];
 
-          ViscousNormalFluxIntegrationPoint_2D(UR, tmpGrad, normals, 0.0,
+          const su2double GradNormNormMomL = ULGradNorm[1]*normals[0] + ULGradNorm[2]*normals[1];
+
+          /* Abbreviate twice the normal vector. */
+          const su2double tnx = 2.0*normals[0], tny = 2.0*normals[1];
+
+          /*--- Construct the gradients of the right solution. The tangential
+                gradients of the normal momentum and normal gradients of the other
+                variables, density, energy and tangential momentum, must be negated.
+                For the common situation that the symmetry plane coincides with an
+                x- or y-plane this boils down to a multiplication by -1 or +1,
+                depending on the variable and gradient. However, the implementation
+                below is valid for an arbitrary orientation of the symmetry plane. ---*/
+          su2double URGradCart[4][2];
+          URGradCart[0][0] = ULGradCart[0][0] - tnx*ULGradNorm[0];
+          URGradCart[1][0] = ULGradCart[1][0] - tnx*ULGradNorm[1] - tnx*GradCartNormMomL[0] + tnx*tnx*GradNormNormMomL;
+          URGradCart[2][0] = ULGradCart[2][0] - tnx*ULGradNorm[2] - tny*GradCartNormMomL[0] + tnx*tny*GradNormNormMomL;
+          URGradCart[3][0] = ULGradCart[3][0] - tnx*ULGradNorm[3];
+
+          URGradCart[0][1] = ULGradCart[0][1] - tny*ULGradNorm[0];
+          URGradCart[1][1] = ULGradCart[1][1] - tny*ULGradNorm[1] - tnx*GradCartNormMomL[1] + tny*tnx*GradNormNormMomL;
+          URGradCart[2][1] = ULGradCart[2][1] - tny*ULGradNorm[2] - tny*GradCartNormMomL[1] + tny*tny*GradNormNormMomL;
+          URGradCart[3][1] = ULGradCart[3][1] - tny*ULGradNorm[3];
+
+          /*--- Compute the viscous fluxes of the left and right state and average
+                them to compute the correct viscous flux for a symmetry boundary. ---*/
+          const su2double wallDist = wallDistance ? wallDistance[i] : 0.0;
+          su2double viscFluxL[4], viscFluxR[4];
+          su2double Viscosity, kOverCv;
+
+          ViscousNormalFluxIntegrationPoint_2D(UR, URGradCart, normals, 0.0,
                                                factHeatFlux_Lam, factHeatFlux_Turb,
                                                wallDist, lenScale_LES, Viscosity,
                                                kOverCv, viscFluxR);
-
-          tmpGrad[0][0] = ULGradCart[0][0]; tmpGrad[0][1] = ULGradCart[0][1];
-          tmpGrad[1][0] = ULGradCart[1][0]; tmpGrad[1][1] = ULGradCart[1][1];
-          tmpGrad[2][0] = ULGradCart[2][0]; tmpGrad[2][1] = ULGradCart[2][1];
-          tmpGrad[3][0] = ULGradCart[3][0]; tmpGrad[3][1] = ULGradCart[3][1];
-
-          ViscousNormalFluxIntegrationPoint_2D(UL, tmpGrad, normals, 0.0,
+          ViscousNormalFluxIntegrationPoint_2D(UL, ULGradCart, normals, 0.0,
                                                factHeatFlux_Lam, factHeatFlux_Turb,
                                                wallDist, lenScale_LES, Viscosity,
                                                kOverCv, viscFluxL);
-          break;
+          viscosityInt[i] = Viscosity;
+          kOverCvInt[i]   = kOverCv;
+
+          su2double *viscNormalFlux = viscFluxes + i*ctc::nVar;
+          viscNormalFlux[0] = 0.5*(viscFluxL[0] + viscFluxR[0]);
+          viscNormalFlux[1] = 0.5*(viscFluxL[1] + viscFluxR[1]);
+          viscNormalFlux[2] = 0.5*(viscFluxL[2] + viscFluxR[2]);
+          viscNormalFlux[3] = 0.5*(viscFluxL[3] + viscFluxR[3]);
         }
 
-        /*--------------------------------------------------------------------*/
+        break;
+      }
 
-        case 3: {
+      /*----------------------------------------------------------------------*/
+
+      case 3: {
+
+        /*--- 3D simulation. Loop over the integration points to apply the
+              symmetry condition and to compute the viscous normal fluxes. This
+              is done in the same loop, because the gradients in the right
+              integration points are constructed using the symmetry boundary
+              condition. ---*/
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Easier storage of the left and right solution and the normals
+             for this integration point. */
+          const su2double *UL      = solIntL + i*ctc::nVar;
+                su2double *UR      = solIntR + i*ctc::nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
+
+          /* Compute twice the normal component of the momentum variables. The
+             factor 2 comes from the fact that the velocity must be mirrored. */
+          const su2double rVn = 2.0*(UL[1]*normals[0] + UL[2]*normals[1] + UL[3]*normals[2]);
+
+          /* Set the right state. Note that the total energy of the right state is
+             identical to the left state, because the magnitude of the velocity
+             remains the same. */
+          UR[0] = UL[0];
+          UR[1] = UL[1] - rVn*normals[0];
+          UR[2] = UL[2] - rVn*normals[1];
+          UR[3] = UL[3] - rVn*normals[2];
+          UR[4] = UL[4];
+
+          /* Easier storage of the metric terms and left gradients of this
+             integration point. */
+          const su2double *metricTerms = surfElem[l].metricCoorDerivFace.data()
+                                       + i*ctc::nDim*ctc::nDim;
+          const su2double *dULDr       = gradSolInt + ctc::nVar*i;
+          const su2double *dULDs       = dULDr + offDeriv;
+          const su2double *dULDt       = dULDs + offDeriv;
+
+          /* Easier storage of the metric terms in this integration point. */
+          const su2double drdx = metricTerms[0];
+          const su2double drdy = metricTerms[1];
+          const su2double drdz = metricTerms[2];
+
+          const su2double dsdx = metricTerms[3];
+          const su2double dsdy = metricTerms[4];
+          const su2double dsdz = metricTerms[5];
+
+          const su2double dtdx = metricTerms[6];
+          const su2double dtdy = metricTerms[7];
+          const su2double dtdz = metricTerms[8];
+
+          /* Compute the Cartesian gradients of the left solution. */
+          su2double ULGradCart[5][3];
+          ULGradCart[0][0] = dULDr[0]*drdx + dULDs[0]*dsdx + dULDt[0]*dtdx;
+          ULGradCart[1][0] = dULDr[1]*drdx + dULDs[1]*dsdx + dULDt[1]*dtdx;
+          ULGradCart[2][0] = dULDr[2]*drdx + dULDs[2]*dsdx + dULDt[2]*dtdx;
+          ULGradCart[3][0] = dULDr[3]*drdx + dULDs[3]*dsdx + dULDt[3]*dtdx;
+          ULGradCart[4][0] = dULDr[4]*drdx + dULDs[4]*dsdx + dULDt[4]*dtdx;
+
+          ULGradCart[0][1] = dULDr[0]*drdy + dULDs[0]*dsdy + dULDt[0]*dtdy;
+          ULGradCart[1][1] = dULDr[1]*drdy + dULDs[1]*dsdy + dULDt[1]*dtdy;
+          ULGradCart[2][1] = dULDr[2]*drdy + dULDs[2]*dsdy + dULDt[2]*dtdy;
+          ULGradCart[3][1] = dULDr[3]*drdy + dULDs[3]*dsdy + dULDt[3]*dtdy;
+          ULGradCart[4][1] = dULDr[4]*drdy + dULDs[4]*dsdy + dULDt[4]*dtdy;
+
+          ULGradCart[0][2] = dULDr[0]*drdz + dULDs[0]*dsdz + dULDt[0]*dtdz;
+          ULGradCart[1][2] = dULDr[1]*drdz + dULDs[1]*dsdz + dULDt[1]*dtdz;
+          ULGradCart[2][2] = dULDr[2]*drdz + dULDs[2]*dsdz + dULDt[2]*dtdz;
+          ULGradCart[3][2] = dULDr[3]*drdz + dULDs[3]*dsdz + dULDt[3]*dtdz;
+          ULGradCart[4][2] = dULDr[4]*drdz + dULDs[4]*dsdz + dULDt[4]*dtdz;
+
+          /* Determine the normal gradients of all variables. */
+          su2double ULGradNorm[5];
+          ULGradNorm[0] = ULGradCart[0][0]*normals[0] + ULGradCart[0][1]*normals[1] + ULGradCart[0][2]*normals[2];
+          ULGradNorm[1] = ULGradCart[1][0]*normals[0] + ULGradCart[1][1]*normals[1] + ULGradCart[1][2]*normals[2];
+          ULGradNorm[2] = ULGradCart[2][0]*normals[0] + ULGradCart[2][1]*normals[1] + ULGradCart[2][2]*normals[2];
+          ULGradNorm[3] = ULGradCart[3][0]*normals[0] + ULGradCart[3][1]*normals[1] + ULGradCart[3][2]*normals[2];
+          ULGradNorm[4] = ULGradCart[4][0]*normals[0] + ULGradCart[4][1]*normals[1] + ULGradCart[4][2]*normals[2];
+
+          /* For the construction of the gradients of the right solution, also
+             the Cartesian gradients and the normal gradient of the normal
+             momentum is needed. This is computed below. */
+          su2double GradCartNormMomL[3];
+          GradCartNormMomL[0] = ULGradCart[1][0]*normals[0] + ULGradCart[2][0]*normals[1] + ULGradCart[3][0]*normals[2];
+          GradCartNormMomL[1] = ULGradCart[1][1]*normals[0] + ULGradCart[2][1]*normals[1] + ULGradCart[3][1]*normals[2];
+          GradCartNormMomL[2] = ULGradCart[1][2]*normals[0] + ULGradCart[2][2]*normals[1] + ULGradCart[3][2]*normals[2];
+
+          const su2double GradNormNormMomL = ULGradNorm[1]*normals[0]
+                                           + ULGradNorm[2]*normals[1]
+                                           + ULGradNorm[3]*normals[2];
+
+          /* Abbreviate twice the normal vector. */
+          const su2double tnx = 2.0*normals[0], tny = 2.0*normals[1], tnz = 2.0*normals[2];
+
+          /*--- Construct the gradients of the right solution. The tangential
+                gradients of the normal momentum and normal gradients of the other
+                variables, density, energy and tangential momentum, must be negated.
+                For the common situation that the symmetry plane coincides with an
+                x-, y- or z-plane this boils down to a multiplication by -1 or +1,
+                depending on the variable and gradient. However, the implementation
+                below is valid for an arbitrary orientation of the symmetry plane. ---*/
+          su2double URGradCart[5][3];
+          URGradCart[0][0] = ULGradCart[0][0] - tnx*ULGradNorm[0];
+          URGradCart[1][0] = ULGradCart[1][0] - tnx*ULGradNorm[1] - tnx*GradCartNormMomL[0] + tnx*tnx*GradNormNormMomL;
+          URGradCart[2][0] = ULGradCart[2][0] - tnx*ULGradNorm[2] - tny*GradCartNormMomL[0] + tnx*tny*GradNormNormMomL;
+          URGradCart[3][0] = ULGradCart[3][0] - tnx*ULGradNorm[3] - tnz*GradCartNormMomL[0] + tnx*tnz*GradNormNormMomL;
+          URGradCart[4][0] = ULGradCart[4][0] - tnx*ULGradNorm[4];
+
+          URGradCart[0][1] = ULGradCart[0][1] - tny*ULGradNorm[0];
+          URGradCart[1][1] = ULGradCart[1][1] - tny*ULGradNorm[1] - tnx*GradCartNormMomL[1] + tny*tnx*GradNormNormMomL;
+          URGradCart[2][1] = ULGradCart[2][1] - tny*ULGradNorm[2] - tny*GradCartNormMomL[1] + tny*tny*GradNormNormMomL;
+          URGradCart[3][1] = ULGradCart[3][1] - tny*ULGradNorm[3] - tnz*GradCartNormMomL[1] + tny*tnz*GradNormNormMomL;
+          URGradCart[4][1] = ULGradCart[4][1] - tny*ULGradNorm[4];
+
+          URGradCart[0][2] = ULGradCart[0][2] - tnz*ULGradNorm[0];
+          URGradCart[1][2] = ULGradCart[1][2] - tnz*ULGradNorm[1] - tnx*GradCartNormMomL[2] + tnz*tnx*GradNormNormMomL;
+          URGradCart[2][2] = ULGradCart[2][2] - tnz*ULGradNorm[2] - tny*GradCartNormMomL[2] + tnz*tny*GradNormNormMomL;
+          URGradCart[3][2] = ULGradCart[3][2] - tnz*ULGradNorm[3] - tnz*GradCartNormMomL[2] + tnz*tnz*GradNormNormMomL;
+          URGradCart[4][2] = ULGradCart[4][2] - tnz*ULGradNorm[4];
+
+          /*--- Compute the viscous fluxes of the left and right state and average
+                them to compute the correct viscous flux for a symmetry boundary. ---*/
+          const su2double wallDist = wallDistance ? wallDistance[i] : 0.0;
+          su2double viscFluxL[5], viscFluxR[5];
+          su2double Viscosity, kOverCv;
+
           ViscousNormalFluxIntegrationPoint_3D(UR, URGradCart, normals, 0.0,
                                                factHeatFlux_Lam, factHeatFlux_Turb,
                                                wallDist, lenScale_LES, Viscosity,
@@ -7706,16 +7836,19 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CGeometry *geometry,
                                                factHeatFlux_Lam, factHeatFlux_Turb,
                                                wallDist, lenScale_LES, Viscosity,
                                                kOverCv, viscFluxL);
-          break;
+          viscosityInt[i] = Viscosity;
+          kOverCvInt[i]   = kOverCv;
+
+          su2double *viscNormalFlux = viscFluxes + i*ctc::nVar;
+          viscNormalFlux[0] = 0.5*(viscFluxL[0] + viscFluxR[0]);
+          viscNormalFlux[1] = 0.5*(viscFluxL[1] + viscFluxR[1]);
+          viscNormalFlux[2] = 0.5*(viscFluxL[2] + viscFluxR[2]);
+          viscNormalFlux[3] = 0.5*(viscFluxL[3] + viscFluxR[3]);
+          viscNormalFlux[4] = 0.5*(viscFluxL[4] + viscFluxR[4]);
         }
+
+        break;
       }
-
-      viscosityInt[i] = Viscosity;
-      kOverCvInt[i]   = kOverCv;
-
-      su2double *viscNormalFlux = viscFluxes + i*nVar;
-      for(unsigned short j=0; j<nVar; ++j)
-        viscNormalFlux[j] = 0.5*(viscFluxL[j] + viscFluxR[j]);
     }
 
     /* The remainder of the contribution of this boundary face to the residual
