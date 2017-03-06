@@ -540,6 +540,7 @@ private:
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
+  bool Update_Restart_Params;	/*!< \brief Read and write additional restart metadata for parameter updates.*/
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -822,8 +823,11 @@ private:
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
-  *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
-  
+  *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
+  *default_body_force;        /*!< \brief Default body force vector for the COption class. */
+  bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
+  su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -3975,7 +3979,13 @@ public:
    * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
    */
   bool GetRestart(void);
-  
+
+  /*!
+   * \brief Flag controlling whether restart parameter metadata is written/read.
+   * \return Restart metadata updates, if <code>TRUE</code> then the code will read/write restart metadata for parameter updates.
+   */
+  bool GetUpdate_Restart_Params(void);
+
   /*!
    * \brief Provides the number of varaibles.
    * \return Number of variables.
@@ -4633,7 +4643,19 @@ public:
    * \return <code>TRUE</code> if it uses the gravity force; otherwise <code>FALSE</code>.
    */
   bool GetGravityForce(void);
-  
+
+  /*!
+   * \brief Get information about the body force.
+   * \return <code>TRUE</code> if it uses a body force; otherwise <code>FALSE</code>.
+   */
+  bool GetBody_Force(void);
+
+  /*!
+   * \brief Get a pointer to the body force vector.
+   * \return A pointer to the body force vector.
+   */
+  su2double* GetBody_Force_Vector(void);
+
   /*!
    * \brief Get information about the rotational frame.
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.

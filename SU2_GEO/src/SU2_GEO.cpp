@@ -215,7 +215,7 @@ int main(int argc, char *argv[]) {
     Plane_Normal[0][2] = 0.0;   Plane_P0[0][2] = 0.0;
   }
   else if (geometry_container[ZONE_0]->GetnDim() == 3) {
-      for (iPlane = 0; iPlane < nPlane; iPlane++) {
+    for (iPlane = 0; iPlane < nPlane; iPlane++) {
         Plane_Normal[iPlane][0] = 0.0;    Plane_P0[iPlane][0] = 0.0;
         Plane_Normal[iPlane][1] = 0.0;    Plane_P0[iPlane][1] = 0.0;
         Plane_Normal[iPlane][2] = 0.0;    Plane_P0[iPlane][2] = 0.0;
