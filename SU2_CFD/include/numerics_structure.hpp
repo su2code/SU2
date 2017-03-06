@@ -824,6 +824,18 @@ public:
                                  su2double val_laminar_viscosity,
                                  su2double val_eddy_viscosity);
   
+  /*
+   * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_laminar_viscosity - Laminar viscosity.
+   * \param[in] val_eddy_viscosity - A rank-2 tensor for anisotropic eddy viscosity
+   */
+
+  void GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double *val_normal, su2double val_laminar_viscosity,
+      su2double** val_eddy_viscosity);
+
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
    * \param[in] val_velocity Pointer to the velocity.

@@ -38,21 +38,18 @@
 
 #include <iomanip>
 #include <iostream>
+#include <typeinfo>
 #include <limits> // used to find machine epsilon
 #include <cmath>  // std::abs
 
 #include "../include/numerics_structure.hpp"
 
-inline void CHECK() {
-  std::cout << "Got to: " << __FILE__ << " : " << __LINE__ << std::endl;
-};
-
-const int nDim = 3;
-const int nVar = 1;
+const unsigned short nDim = 3;
+const unsigned short nVar = 4;
 
 class TestNumerics : public CNumerics {
  public:
-  TestNumerics(CConfig* config) : CNumerics(nDim, nVar, config) {
+  TestNumerics(CConfig* config) : CNumerics(3, 4, config) {
   };
 };
 
@@ -70,40 +67,75 @@ int main() {
   CConfig* test_config = new CConfig();
 
   TestNumerics numerics(test_config);
-  CHECK();
-  su2double** gradprimvar = new su2double*[nDim];
-  for (int iDim = 0; iDim < nDim; iDim++) {
-    gradprimvar[iDim] = new su2double[nDim+1];
-    for (int jDim = 0; jDim < nDim+1; jDim++)
-      gradprimvar[iDim][jDim] = 0.0;
-  }
-  CHECK();
-  gradprimvar[1][0] =  1; // dU/dy
-  gradprimvar[2][1] = -1; // dV/dx
-  CHECK();
-  su2double normal[nDim] = {1.0, 0.0, 0.0};
-  su2double laminar_viscosity = 0.005;
-  CHECK();
-  su2double eddy_viscosity = 0.015;
-  su2double** aniso_eddy_viscosity = new su2double*[nDim];
-  for (int iDim = 0; iDim < nDim; iDim++) {
-    aniso_eddy_viscosity[iDim] = new su2double[nDim+1];
-    for (int jDim = 0; jDim < nDim+1; jDim++)
-      aniso_eddy_viscosity[iDim][jDim] = 0.0;
+
+  su2double** gradprimvar = new su2double*[nVar];
+  for (int iVar = 0; iVar < nVar; iVar++) {
+    gradprimvar[iVar] = new su2double[nDim];
+    for (int jDim = 0; jDim < nDim; jDim++)
+      gradprimvar[iVar][jDim] = 0.0;
   }
 
+
+  gradprimvar[1][1] =  1; // dU/dy
+  gradprimvar[2][0] = -1; // dV/dx
+  su2double normal[nDim] = {1.0, 0.0, 0.0};
+  su2double laminar_viscosity = 0.000;
+  su2double eddy_viscosity = 0.015;
+  su2double** Aniso_Eddy_Viscosity = new su2double*[nDim];
+  int counter = 1;
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    Aniso_Eddy_Viscosity[iDim] = new su2double[nDim];
+    for (int jDim = 0; jDim < nDim; jDim++) {
+      Aniso_Eddy_Viscosity[iDim][jDim] = counter;
+      counter++;
+    }
+  }
   //---------------------------------------------------------------------------
   // Test
+  // We set up \nu_{ij} = [[1.0, 2.0, 3.0],[4.0, 5.0, 6.0],[7.0, 8.0, 9.0]]
+  //       and \tau_{ij} = [[0, 1, 0],[-1, 0, 0],[0, 0, 0]]
+  // So that \tau_{ij} = \nu_{ik}*\pderiv{u_j}{x_k} + \nu_{jk}*\pderiv{u_i}{x_k}
+  //         \tau_{11} = 2*\nu_{12}*\pderiv{u_1}{x_2} =  4.0
+  //         \tau_{12} =   \nu_{11}*\pderiv{u_2}{x_1}
+  //                     + \nu_{22}*\pderiv{u_1}{x_2} =  4.0
+  //         \tau_{13} =   \nu_{32}*\pderiv{u_1}{x_2} =  8.0
+  //         \tau_{22} = 2*\nu_{21}*\pderiv{u_2}{x_1} = -8.0
+  //         \tau_{23} =   \nu_{31}*\pderiv{u_2}{x_1} = -7.0
+  //         \tau_{33} =                              =  0.0
+  // So the normal in the {1.0, 0.0, 0.0} direction is:
+  //         \tau_{ij}*e_1 = [tau_{11}, tau_{12}, tau_{13}]
+  //                       = [4.0, 4.0, 8.0]
   //---------------------------------------------------------------------------
-  CHECK();
   numerics.GetViscousArtCompProjFlux(gradprimvar, normal, laminar_viscosity,
-                                     eddy_viscosity);
+                                     Aniso_Eddy_Viscosity);
+  su2double* output = numerics.Proj_Flux_Tensor;
+  su2double correct_output[nVar] = {0.0, 4.0, 4.0, 8.0};
+  for (int iVar = 0; iVar < nVar; iVar++) {
+    if (output[iVar] != correct_output[iVar]) {
+      std::cout << "The projected flux tensor for an anisotropic eddy";
+      std::cout << " viscosity was incorrect" << std::endl;
+      std::cout << "    The test case was: incompressible flow." << std::endl;
+      std::cout << "  Expected:" << std::endl;
+      std::cout << "    [ " << correct_output[0] << ", ";
+      std::cout << correct_output[1] << ", " << correct_output[2] << ", ";
+      std::cout << correct_output[3] << "]" << std::endl;
+      std::cout << "  Found:" << std::endl;
+      std::cout << "    [ " << output[0] << ", " << output[1] << ", ";
+      std:;cout << output[2] << ", " << output[3] << "]" << std::endl;
+      return_flag = 1;
+      break;
+    }
+  }
 
 
   //---------------------------------------------------------------------------
   // Teardown
   //---------------------------------------------------------------------------
   delete test_config;
+//  for (int iDim = 0; iDim < 4; iDim++) {
+//    delete [] gradprimvar[iDim];
+//  }
+//  delete [] gradprimvar;
 
 #ifdef HAVE_MPI
   MPI_Finalize();

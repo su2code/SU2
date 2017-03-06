@@ -1792,6 +1792,41 @@ void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double
   }
 }
 
+void CNumerics::GetViscousArtCompProjFlux(su2double **val_gradprimvar, su2double *val_normal, su2double val_laminar_viscosity,
+    su2double** val_eddy_viscosity) {
+  unsigned short iVar, iDim, jDim, kDim;
+  /**
+   * Eddy Viscosity Effects
+   * Anisotropic eddy viscosity defines the flux tensor as:
+   *  \tau_{ij} = \nu_{jk}*\pderiv{u_i}{x_k} + \nu_{ik}*\pderiv{u_j}{x_k}
+   */
+  for (iVar = 1; iVar < nVar; iVar++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Flux_Tensor[iVar][jDim] = 0;
+      for (kDim = 0; kDim < nDim; kDim++) {
+        // Note the "-1" and the "+1"
+        Flux_Tensor[iVar][jDim] += val_eddy_viscosity[iVar-1][kDim] *
+            val_gradprimvar[jDim+1][kDim];
+        Flux_Tensor[iVar][jDim] += val_eddy_viscosity[jDim][kDim] *
+            val_gradprimvar[iVar][kDim];
+      }
+    }
+  }
+
+  /*-- Laminar viscosity effects --*/
+  for (iVar = 1; iVar < nVar; iVar++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Flux_Tensor[iVar][jDim] += val_laminar_viscosity * val_gradprimvar[iVar][jDim];
+    }
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  }
+}
+
 void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_laminar_viscosity,
     su2double val_eddy_viscosity, su2double val_dist_ij, su2double *val_normal, su2double val_dS,
     su2double *val_Proj_Visc_Flux, su2double **val_Proj_Jac_Tensor_i, su2double **val_Proj_Jac_Tensor_j) {
