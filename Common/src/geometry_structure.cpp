@@ -4437,7 +4437,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
   
-  map<long, long>::const_iterator MI;
+  map<unsigned long, unsigned long>::const_iterator MI;
 
   /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
@@ -12860,14 +12860,15 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = config->GetKind_Turb_Model() == SA;
+  bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
-
+  int counter = 0;
+  
   Sensitivity = new su2double[nPoint*nDim];
 
   if (config->GetUnsteady_Simulation()) {
@@ -12879,6 +12880,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+ 
+  if (rank == MASTER_NODE)
+    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   
   unsigned short skipVar = nDim, skipMult = 1;
 
@@ -12893,16 +12897,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   skipVar += 1;
   
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  for(iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
-  
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
@@ -12912,7 +12906,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
   }
-  
 
   iPoint_Global = 0;
 
@@ -12923,6 +12916,253 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   if (config->GetUnsteady_Simulation()) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
+
+  if (config->GetRead_Binary_Restart()) {
+
+    char str_buf[CGNS_STRING_SIZE], fname[100];
+    unsigned short iVar;
+    strcpy(fname, filename.c_str());
+    int nRestart_Vars = 4;
+    int *Restart_Vars = new int[4];
+    passivedouble *Restart_Data = NULL;
+    int Restart_Iter = 0;
+    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+
+#ifndef HAVE_MPI
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- First, read the number of variables and points. ---*/
+
+    fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. We pad the beginning of the
+     variable string vector with the Point_ID tag that wasn't written. ---*/
+
+    config->fields.push_back("Point_ID");
+    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+      fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      config->fields.push_back(str_buf);
+    }
+
+    /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+
+    /*--- Read in the data for the restart at all local points. ---*/
+
+    fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*GetnPointDomain(), fhw);
+
+    /*--- Compute (negative) displacements and grab the metadata. ---*/
+
+    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+
+    /*--- Read the external iteration. ---*/
+
+    fread(&Restart_Iter, 1, sizeof(int), fhw);
+
+    /*--- Read the metadata. ---*/
+
+    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
+    
+    /*--- Close the file. ---*/
+
+    fclose(fhw);
+
+#else
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    MPI_Status status;
+    MPI_Datatype etype, filetype;
+    MPI_Offset disp;
+    unsigned long iPoint_Global, iChar;
+    string field_buf;
+
+    int rank = MASTER_NODE, ierr;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+    
+    if (rank == MASTER_NODE)
+      MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+    SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+
+    char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
+    if (rank == MASTER_NODE) {
+      disp = nRestart_Vars*sizeof(int);
+      MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
+                       MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+
+    /*--- Broadcast the string names of the variables. ---*/
+
+    SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR,
+                   MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Now parse the string names and load into the config class in case
+     we need them for writing visualization files (SU2_SOL). ---*/
+
+    config->fields.push_back("Point_ID");
+    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+      index = iVar*CGNS_STRING_SIZE;
+      field_buf.append("\"");
+      for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+        str_buf[iChar] = mpi_str_buf[index + iChar];
+      }
+      field_buf.append(str_buf);
+      field_buf.append("\"");
+      config->fields.push_back(field_buf.c_str());
+      field_buf.clear();
+    }
+
+    /*--- Free string buffer memory. ---*/
+
+    delete [] mpi_str_buf;
+
+    /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+    etype = MPI_DOUBLE;
+
+    /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
+     along with the string names of the variables. ---*/
+
+    disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
+
+    /*--- Define a derived datatype for this rank's set of non-contiguous data
+     that will be placed in the restart. Here, we are collecting each one of the
+     points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
+
+    int *blocklen = new int[GetnPointDomain()];
+    int *displace = new int[GetnPointDomain()];
+
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
+        blocklen[counter] = Restart_Vars[0];
+        displace[counter] = iPoint_Global*Restart_Vars[0];
+        counter++;
+      }
+    }
+    MPI_Type_indexed(GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+    MPI_Type_commit(&filetype);
+
+    /*--- Set the view for the MPI file write, i.e., describe the location in
+     the file that this rank "sees" for writing its piece of the restart file. ---*/
+
+    MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+
+    /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+
+    /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+    
+    MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*GetnPointDomain(), MPI_DOUBLE, &status);
+
+    /*--- Free the derived datatype. ---*/
+
+    MPI_Type_free(&filetype);
+
+    /*--- Reset the file view before writing the metadata. ---*/
+
+    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+
+    /*--- Access the metadata. ---*/
+
+    if (rank == MASTER_NODE) {
+
+      /*--- External iteration. ---*/
+      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble));
+      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+      /*--- Additional doubles for AoA, AoS, etc. ---*/
+
+      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble) + 1*sizeof(int));
+      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+    }
+
+    /*--- Communicate metadata. ---*/
+
+    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+    
+    delete [] blocklen;
+    delete [] displace;
+    
+#endif
+
+    /*--- Load the data from the binary restart. ---*/
+
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        index = counter*Restart_Vars[0] + skipVar;
+        for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
+
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
+    }
+
+    /*--- Lastly, load the AoA sensitivity from the binary metadata. ---*/
+
+    config->SetAoA_Sens(Restart_Meta[4]);
+
+  } else {
 
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
@@ -12936,8 +13176,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 #endif
   }
   
-  if (rank == MASTER_NODE)
-    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   /*--- The first line is the header ---*/
   getline (restart_file, text_line);
   
@@ -12949,12 +13187,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      
+
+    iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
       point_line >> index;
       for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -12977,6 +13214,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   restart_file.close();
 
+  }
+  
 }
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {

@@ -1717,12 +1717,14 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   /*--- Store flow solution also in the adjoint solver in order to be able to reset it later ---*/
 
   if (ExtIter == 0) {
-    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
-      solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution());
-    }
-    if (turbulent) {
-      for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++) {
-        solver_container[val_iZone][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
+    for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
+      for (iPoint = 0; iPoint < geometry_container[val_iZone][iMesh]->GetnPoint(); iPoint++) {
+        solver_container[val_iZone][iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][iMesh][FLOW_SOL]->node[iPoint]->GetSolution());
+      }
+      if (turbulent) {
+        for (iPoint = 0; iPoint < geometry_container[val_iZone][iMesh]->GetnPoint(); iPoint++) {
+          solver_container[val_iZone][iMesh][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][iMesh][TURB_SOL]->node[iPoint]->GetSolution());
+        }
       }
     }
   }
