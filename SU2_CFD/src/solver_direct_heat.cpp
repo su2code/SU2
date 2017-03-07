@@ -308,7 +308,7 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 }
 
 
-void CHeatSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {  }
+void CHeatSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
 
 void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {  }
 
@@ -925,16 +925,16 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 }
 
 void CHeatSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+
   unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-
 #ifdef HAVE_MPI
   int send_to, receive_from;
   MPI_Status status;
 #endif
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
     if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
@@ -956,8 +956,9 @@ void CHeatSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       /*--- Copy the solution that should be sended ---*/
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
         iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        for (iVar = 0; iVar < nVar; iVar++)
+        for (iVar = 0; iVar < nVar; iVar++) {
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+        }
       }
 
 #ifdef HAVE_MPI
@@ -981,7 +982,7 @@ void CHeatSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
       /*--- Do the coordinate transformation ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        /*--- Copy transformed conserved variables back into buffer. ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
           node[iPoint]->SetSolution(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
 
@@ -1054,11 +1055,9 @@ void CHeatSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
 
       /*--- Do the coordinate transformation ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Copy transformed conserved variables back into buffer. ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         for (iVar = 0; iVar < nVar; iVar++)
           node[iPoint]->SetSolution_Old(iVar, Buffer_Receive_U[iVar*nVertexR+iVertex]);
-
       }
 
       /*--- Deallocate receive buffer ---*/
@@ -1133,7 +1132,7 @@ void CHeatSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config
 
       /*--- Do the coordinate transformation ---*/
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
         /*--- Store the received information ---*/
         for (iVar = 0; iVar < nVar; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
