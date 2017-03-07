@@ -739,6 +739,10 @@ inline su2double CConfig::GetRotation_Rate_Y(unsigned short val_iZone) { return 
 
 inline su2double CConfig::GetRotation_Rate_Z(unsigned short val_iZone) { return  Rotation_Rate_Z[val_iZone]; }
 
+inline su2double CConfig::GetFinalRotation_Rate_Z(unsigned short val_iZone) { return  FinalRotation_Rate_Z[val_iZone]; }
+
+inline su2double CConfig::SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone) { Rotation_Rate_Z[val_iZone] = newRotation_Rate_Z; }
+
 inline su2double CConfig::GetPitching_Omega_X(unsigned short val_iZone) { return  Pitching_Omega_X[val_iZone]; }
 
 inline su2double CConfig::GetPitching_Omega_Y(unsigned short val_iZone) { return  Pitching_Omega_Y[val_iZone]; }
@@ -939,25 +943,75 @@ inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
 
-inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingProcess; }
+inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_AverageProcess; }
 
-inline bool CConfig::GetBoolMixingPlane(void) { return (nMarker_MixBound !=0);}
+inline unsigned short CConfig::GetKind_PerformanceAverageProcess(void) { return Kind_PerformanceAverageProcess; }
 
-inline bool CConfig::GetBoolTurboPerf(void) { return (nMarker_TurboPerf !=0);}
+inline void CConfig::SetKind_AverageProcess(unsigned short new_AverageProcess) {Kind_AverageProcess = new_AverageProcess; }
 
-inline string CConfig::GetMarker_MixingPlane_Bound(unsigned short index) { return Marker_MixBound[index];}
+inline void CConfig::SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess) {Kind_PerformanceAverageProcess = new_AverageProcess; }
 
-inline string CConfig::GetMarker_MixingPlane_Donor(unsigned short index) { return Marker_MixDonor[index];}
+inline su2double CConfig::GetRampRotatingFrame_Coeff(unsigned short iCoeff) { return RampRotatingFrame_Coeff[iCoeff];}
 
-inline unsigned short CConfig::Get_nMarkerMixingPlane(void) { return nMarker_MixBound;}
+inline bool CConfig::GetRampRotatingFrame(void) { return RampRotatingFrame;}
 
-inline unsigned short CConfig::Get_nMarkerTurboPerf(void) { return nMarker_TurboPerf;}
+inline su2double CConfig::GetRampOutletPressure_Coeff(unsigned short iCoeff) { return RampOutletPressure_Coeff[iCoeff];}
+
+inline su2double CConfig::GetFinalOutletPressure(void) { return  FinalOutletPressure; }
+
+inline su2double CConfig::GetMonitorOutletPressure(void) { return MonitorOutletPressure; }
+
+inline void CConfig::SetMonitotOutletPressure(su2double newMonPres) {MonitorOutletPressure = newMonPres;}
+
+inline bool CConfig::GetRampOutletPressure(void) { return RampOutletPressure;}
+
+inline su2double CConfig::GetMixedout_Coeff(unsigned short iCoeff) { return Mixedout_Coeff[iCoeff];}
+
+inline su2double CConfig::GetAverageMachLimit(void) { return AverageMachLimit;}
+
+inline unsigned short CConfig::GetKind_MixingPlaneInterface(void) { return Kind_MixingPlaneInterface;}
+
+inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }
+
+inline unsigned short CConfig::GetKind_SpanWise(void) { return Kind_SpanWise; }
+
+inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0);}
+
+inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
+
+inline bool CConfig::GetBoolTurbMixingPlane(void) { return turbMixingPlane;}
+
+inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
+
+inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
+
+inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
+
+inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nMarker_MixingPlaneInterface;}
+
+inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_Turbomachinery;}
+
+inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance;}
+
+inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWiseSections_User;}
+
+inline unsigned short CConfig::GetnSpanWiseSections(void) { return nSpanWiseSections;}
+
+inline void CConfig::SetnSpanWiseSections(unsigned short nSpan) {nSpanWiseSections = nSpan;}
+
+inline void CConfig::SetnSpanMaxAllZones(unsigned short val_nSpna_max) { nSpanMaxAllZones = val_nSpna_max;}
+
+inline unsigned short CConfig::GetnSpanMaxAllZones(void) { return nSpanMaxAllZones;}
+
+inline void CConfig::SetnSpan_iZones(unsigned short nSpan, unsigned short iZone) {nSpan_iZones[iZone] = nSpan;}
+
+inline unsigned short CConfig::GetnSpan_iZones(unsigned short iZone) { return nSpan_iZones[iZone];}
 
 inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) { return Marker_TurboBoundIn[index];}
 
 inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) { return Marker_TurboBoundOut[index];}
 
-inline unsigned short CConfig::GetKind_TurboPerf(unsigned short index) { return Kind_TurboPerformance[index];}
+inline string CConfig::GetMarker_PerBound(unsigned short val_marker){return Marker_PerBound[val_marker];}
 
 inline unsigned short CConfig::GetnLocationStations(void) { return nLocationStations; }
 
@@ -1034,6 +1088,12 @@ inline void CConfig::SetMarker_All_Analyze(unsigned short val_marker, unsigned s
 
 inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
 
+inline void CConfig::SetMarker_All_Turbomachinery(unsigned short val_marker, unsigned short val_turbo) { Marker_All_Turbomachinery[val_marker] = val_turbo; }
+
+inline void CConfig::SetMarker_All_TurbomachineryFlag(unsigned short val_marker, unsigned short val_turboflag) { Marker_All_TurbomachineryFlag[val_marker] = val_turboflag; }
+
+inline void CConfig::SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixpla_interface) { Marker_All_MixingPlaneInterface[val_marker] = val_mixpla_interface; }
+
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
@@ -1061,6 +1121,12 @@ inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker)
 inline unsigned short CConfig::GetMarker_All_Analyze(unsigned short val_marker) { return Marker_All_Analyze[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_Turbomachinery(unsigned short val_marker) { return Marker_All_Turbomachinery[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_TurbomachineryFlag(unsigned short val_marker) { return Marker_All_TurbomachineryFlag[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_MixingPlaneInterface(unsigned short val_marker) { return Marker_All_MixingPlaneInterface[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
 

@@ -103,10 +103,10 @@ def gradient( func_name, method, config, state=None ):
                 config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
                 
             # Aerodynamics
-            if func_name_string in su2io.optnames_aero:
+            if func_name_string in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
 
-            elif func_name[0] in su2io.optnames_aero:
+            elif func_name[0] in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
                 
             # Stability
@@ -246,12 +246,14 @@ def adjoint( func_name, config, state=None ):
 
     # files: direct solution
     name = files['DIRECT']
+    name = su2io.expand_zones(name,config)
     name = su2io.expand_time(name,config)
     link.extend(name)
 
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
         name = files[ADJ_NAME]
+        name = su2io.expand_zones(name,config)
         name = su2io.expand_time(name,config)
         link.extend(name)       
     else:
@@ -291,6 +293,7 @@ def adjoint( func_name, config, state=None ):
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
+            name = su2io.expand_zones(name,config)
             name = su2io.expand_time(name,config)
             push.extend(name)
 

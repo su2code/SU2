@@ -739,7 +739,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
   
 }
 
-void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file) {
+void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool surf_sol, bool new_file) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint, iElem, iNode;
@@ -748,9 +748,17 @@ void COutput::SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool su
   char cstr[200];
   ofstream Tecplot_File;
 
-  if (surf_sol) strcpy(cstr, "surface_grid.dat");
-  else strcpy(cstr, "volumetric_grid.dat");
+  if (surf_sol) strcpy(cstr, "surface_grid");
+  else strcpy(cstr, "volumetric_grid");
   
+  if (config->GetnZone() > 1){
+    char appstr[200];
+    SPRINTF(appstr, "_%u", val_iZone);
+    strcat(cstr, appstr);
+  }
+
+  strcat(cstr,".dat");
+
   /*--- Open Tecplot ASCII file and write the header. ---*/
   
   if (new_file) {

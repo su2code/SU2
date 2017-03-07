@@ -68,7 +68,8 @@ protected:
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim;                           /*!< \brief Number of dimensions.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
-       fsi;                                     /*!< \brief FSI simulation flag.*/
+	     mixingplane,															/*!< \brief mixingplane simulation flag.*/
+			 fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
@@ -249,7 +250,7 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor(unsigned long ExtIter);
+  virtual bool Monitor(unsigned long ExtIter);
 
   /*!
    * \brief Output the solution in solution file.
@@ -524,6 +525,7 @@ public:
    * \brief Perform a mesh deformation as initial condition (single zone).
    */
   void SetInitialMesh();
+
 };
 
 
@@ -588,6 +590,178 @@ public:
    */
   void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 };
+
+
+/*!
+ * \class CTurbomachineryDriver
+ * \brief Class for driving an iteration for turbomachinery flow analysis.
+ * \author S. Vitale
+ * \version 4.3.0 "Cardinal"
+ */
+class CTurbomachineryDriver : public CFluidDriver {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   */
+	CTurbomachineryDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim,
+                   SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CTurbomachineryDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the physics within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short iZone);
+
+  /*!
+   * \brief Preprocessing Mixing Plane interface.
+   */
+  void PreprocessingMixingPlane(unsigned short donorZone);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
+
+  /*!
+   * \brief Set all the turbo geometrical quantities.
+   */
+  void Preprocessing(void);
+
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
+
+
+
+};
+
+
+/*!
+ * \class CDiscAdjMultiZoneDriver
+ * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
+ * \author T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CDiscAdjMultiZoneDriver : public CFluidDriver {
+
+protected:
+  unsigned short RecordingState;
+
+  su2double ObjFunc;
+
+  CIteration** direct_iteration;
+
+public:
+
+  /*!
+    * \brief Constructor of the class.
+    * \param[in] confFile - Configuration file name.
+    * \param[in] val_nZone - Total number of zones.
+    * \param[in] val_nDim - Number of dimensions.
+    */
+  CDiscAdjMultiZoneDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim,
+                   SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMultiZoneDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the physics within multiple zones.
+   */
+
+  void Run();
+
+  void SetRecording(unsigned short kind_recording);
+
+  void SetSensitivity(unsigned short kind_sensitivity);
+
+  virtual void DirectRun();
+
+  virtual void SetObjFunction();
+
+  void SetAdj_ObjFunction();
+};
+
+
+/*!
+ * \class CDiscAdjMultiZoneDriver
+ * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
+ * \author S. Vitale, T. Albring
+ * \version 4.3.0 "Cardinal"
+ */
+class CDiscAdjTurbomachineryDriver : public  CDiscAdjMultiZoneDriver {
+
+public:
+
+	 /*!
+	   * \brief Constructor of the class.
+	   * \param[in] confFile - Configuration file name.
+	   * \param[in] val_nZone - Total number of zones.
+	   * \param[in] val_nDim - Number of dimensions.
+	   */
+  CDiscAdjTurbomachineryDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim, SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjTurbomachineryDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the direct solver.
+   */
+  void DirectRun();
+
+  /*!
+   * \brief Set Obj.Function for turbomachinery design.
+   */
+  void SetObjFunction();
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short iZone);
+
+  /*!
+   * \brief Preprocessing Mixing Plane interface.
+   */
+  void PreprocessingMixingPlane(unsigned short donorZone);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
+
+  /*!
+   * \brief Set all the turbo geometrical quantities.
+   */
+  void Preprocessing(void);
+
+
+};
+
 
 
 /*!

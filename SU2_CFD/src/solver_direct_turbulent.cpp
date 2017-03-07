@@ -608,6 +608,61 @@ void CTurbSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_Riemann(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  case STATIC_PRESSURE:
+  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  }
+}
+
+void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_Riemann(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  case STATIC_PRESSURE:
+  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  }
+}
+
+
+void CTurbSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_NRBC(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:
+  	BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  case MIXING_IN:
+  	if (config->GetBoolTurbMixingPlane()){
+  		BC_Inlet_MixingPlane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	}
+  	else{
+  		BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	}
+  	break;
+
+  case STATIC_PRESSURE: case MIXING_OUT: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
+  	BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+  	break;
+  }
+}
+
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iVar;
@@ -722,6 +777,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   SetResidual_RMS(geometry, config);
   
 }
+
 
 void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
@@ -1302,6 +1358,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     node[iPoint] = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nDim, nVar, config);
 
   /*--- MPI solution ---*/
+
+//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
+  Set_MPI_Solution(geometry, config);
   Set_MPI_Solution(geometry, config);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
@@ -2157,6 +2216,117 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
   
 }
 
+void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned short iDim, iSpan;
+  unsigned long iVertex, oldVertex, iPoint, Point_Normal;
+  su2double *V_inlet, *V_domain, *Normal;
+  su2double extAverageNu;
+  Normal = new su2double[nDim];
+
+  bool grid_movement  = config->GetGrid_Movement();
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+  	switch(config->GetKind_Data_NRBC(Marker_Tag)){
+  	case MIXING_IN:
+  		extAverageNu = solver_container[FLOW_SOL]->GetExtAverageNu(val_marker, iSpan);
+  		break;
+  	}
+
+    /*--- Loop over all the vertices on this boundary marker ---*/
+
+    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+
+    	/*--- find the node related to the vertex ---*/
+      iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
+
+      /*--- using the other vertex information for retrieving some information ---*/
+      oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
+
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
+
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+      /*--- Allocate the value at the inlet ---*/
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+      /*--- Set various quantities in the solver class ---*/
+
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
+
+      Solution_i[0] = node[iPoint]->GetSolution(0);
+      Solution_j[0] = extAverageNu;
+
+      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+
+      /*--- Set various other quantities in the conv_numerics class ---*/
+
+      conv_numerics->SetNormal(Normal);
+
+      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+
+      /*--- Set various other quantities in the conv_numerics class ---*/
+
+      conv_numerics->SetNormal(Normal);
+
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                  geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute the residual using an upwind scheme ---*/
+
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Viscous contribution ---*/
+
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+
+      visc_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+      /*--- Compute residual, and Jacobians ---*/
+
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete[] Normal;
+
+}
+
+
 void CTurbSASolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                           CConfig *config, unsigned short val_marker) {
   
@@ -2326,16 +2496,11 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
   unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool viscous       = config->GetViscous();
   unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
-
-  su2double coeff;
-  su2double P_static, rho_static;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -2356,14 +2521,13 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
             PrimVar_j[iVar] = solver_container[FLOW_SOL]->GetSlidingState(iMarker, iVertex, iVar);
           }
 
-
           /*--- Set primitive variables ---*/
 
           conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
           /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = node[iPoint]->GetSolution(0);
-            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+          Solution_i[0] = node[iPoint]->GetSolution(0);
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
 
           conv_numerics->SetTurbVar(Solution_i, Solution_j);
           /*--- Set the normal vector ---*/
@@ -2377,12 +2541,10 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
 
           conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
-
           /*--- Add Residuals and Jacobians ---*/
 
           LinSysRes.AddBlock(iPoint, Residual);
 
-          //          if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
           /*--- Set the normal vector and the coordinates ---*/
@@ -2420,7 +2582,6 @@ void CTurbSASolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_con
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-
 
 }
 
@@ -2748,6 +2909,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     node[iPoint] = new CTurbSSTVariable(kine_Inf, omega_Inf, muT_Inf, nDim, nVar, constants, config);
 
   /*--- MPI solution ---*/
+
+//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
+  Set_MPI_Solution(geometry, config);
   Set_MPI_Solution(geometry, config);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
@@ -3291,22 +3455,125 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
   
 }
 
+
+void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                              unsigned short val_marker) {
+
+  unsigned short iVar, iSpan, iDim;
+  unsigned long iVertex, oldVertex, iPoint, Point_Normal;
+  su2double *V_inlet, *V_domain, *Normal;
+  su2double extAverageKei, extAverageOmega;
+  unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
+
+  Normal = new su2double[nDim];
+
+  bool grid_movement  = config->GetGrid_Movement();
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
+  	switch(config->GetKind_Data_NRBC(Marker_Tag)){
+  	case MIXING_IN:
+  		extAverageKei = solver_container[FLOW_SOL]->GetExtAverageKei(val_marker, iSpan);
+  		extAverageOmega = solver_container[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
+  		break;
+  	}
+
+  	/*--- Loop over all the vertices on this boundary marker ---*/
+
+  	for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+
+  		/*--- find the node related to the vertex ---*/
+  		iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
+
+  		/*--- using the other vertex information for retrieving some information ---*/
+  		oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
+
+  		/*--- Index of the closest interior node ---*/
+  		Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
+
+  		/*--- Normal vector for this vertex (negate for outward convention) ---*/
+
+  		geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+  		for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+  		/*--- Allocate the value at the inlet ---*/
+  		V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+  		/*--- Retrieve solution at the farfield boundary node ---*/
+
+  		V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+  		/*--- Set various quantities in the solver class ---*/
+
+  		conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+  		/*--- Set the turbulent variable states (prescribed for an inflow) ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++)
+      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+
+      Solution_j[0]= extAverageKei;
+      Solution_j[1]= extAverageOmega;
+
+      conv_numerics->SetTurbVar(Solution_i, Solution_j);
+
+      /*--- Set various other quantities in the solver class ---*/
+      conv_numerics->SetNormal(Normal);
+
+      if (grid_movement)
+      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute the residual using an upwind scheme ---*/
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Viscous contribution ---*/
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+      visc_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+      /*--- Menter's first blending function ---*/
+      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+
+      /*--- Compute residual, and Jacobians ---*/
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete[] Normal;
+
+}
+
 void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config){
 
   unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
 
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool viscous       = config->GetViscous();
   unsigned short nPrimVar = solver_container[FLOW_SOL]->GetnPrimVar();
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
 
-  su2double coeff;
-  su2double P_static, rho_static;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3332,11 +3599,11 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
           conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
 
           /*--- Set the turbulent variable states ---*/
-            Solution_i[0] = node[iPoint]->GetSolution(0);
-            Solution_i[1] = node[iPoint]->GetSolution(1);
+          Solution_i[0] = node[iPoint]->GetSolution(0);
+          Solution_i[1] = node[iPoint]->GetSolution(1);
 
-            Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
-            Solution_j[1] = GetSlidingState(iMarker, iVertex, 1);
+          Solution_j[0] = GetSlidingState(iMarker, iVertex, 0);
+          Solution_j[1] = GetSlidingState(iMarker, iVertex, 1);
 
           conv_numerics->SetTurbVar(Solution_i, Solution_j);
           /*--- Set the normal vector ---*/
@@ -3355,7 +3622,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
 
           LinSysRes.AddBlock(iPoint, Residual);
 
-          //          if (implicit)
           Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 
           /*--- Set the normal vector and the coordinates ---*/
@@ -3393,7 +3659,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-
 
 }
 

@@ -89,7 +89,7 @@ def function( func_name, config, state=None ):
     if not state['FUNCTIONS'].has_key(func_name_string):
 
         # Aerodynamics
-        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
+        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
             aerodynamics( config, state )
             
         # Stability
@@ -212,6 +212,7 @@ def aerodynamics( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
+        name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
@@ -244,6 +245,7 @@ def aerodynamics( config, state=None ):
             
             # direct files to push
             name = info.FILES['DIRECT']
+            name = su2io.expand_zones(name,config)
             name = su2io.expand_time(name,config)
             push.extend(name)
             
@@ -262,7 +264,7 @@ def aerodynamics( config, state=None ):
     #: with output redirection
     # return output 
     funcs = su2util.ordered_bunch()
-    for key in su2io.optnames_aero + su2io.grad_names_directdiff:
+    for key in su2io.optnames_aero + su2io.grad_names_directdiff + su2io.optnames_turbo:
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             

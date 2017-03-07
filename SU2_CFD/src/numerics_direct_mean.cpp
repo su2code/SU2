@@ -4012,9 +4012,9 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
   
   /*--- Retrieve the angular velocity vector from config. ---*/
   
-  Omega[0] = config->GetRotation_Rate_X(ZONE_0)/config->GetOmega_Ref();
-  Omega[1] = config->GetRotation_Rate_Y(ZONE_0)/config->GetOmega_Ref();
-  Omega[2] = config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref();
+  Omega[0] = config->GetRotation_Rate_X(config->GetiZone())/config->GetOmega_Ref();
+  Omega[1] = config->GetRotation_Rate_Y(config->GetiZone())/config->GetOmega_Ref();
+  Omega[2] = config->GetRotation_Rate_Z(config->GetiZone())/config->GetOmega_Ref();
   
   /*--- Get the momentum vector at the current node. ---*/
   

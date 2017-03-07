@@ -71,8 +71,11 @@ private:
   int rank;
   unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
-  unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
-  unsigned short *Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
+  unsigned short Kind_AverageProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_PerformanceAverageProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_MixingPlaneInterface; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_SpanWise; /*!< \brief Kind of span-wise section computation.*/
+  unsigned short *Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
   su2double Highlite_Area; /*!< \brief Highlite area. */
   su2double Fan_Poly_Eff; /*!< \brief Highlite area. */
@@ -176,8 +179,10 @@ private:
   nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
   nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
-  nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
-  nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
+  nMarker_MixingPlaneInterface,				/*!< \brief Number of mixing plane interface boundary markers. */
+  nMarker_Turbomachinery,				/*!< \brief Number turbomachinery markers. */
+  nMarker_TurboPerformance,				/*!< \brief Number of turboperformance markers. */
+  nSpanWiseSections_User,			/*!< \brief Number of spanwise sections to compute 3D BC and Performance for turbomachinery   */
   nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
   nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -186,6 +191,7 @@ private:
   nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
   nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
   nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
+  nRelaxFactor_NRBC,    /*!< \brief Number of relaxation factors for NRBC markers. */
   nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
@@ -214,8 +220,7 @@ private:
   *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
   *Marker_PerBound,				/*!< \brief Periodic boundary markers. */
   *Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
-  *Marker_MixBound,				/*!< \brief MixingPlane boundary markers. */
-  *Marker_MixDonor,				/*!< \brief MixingPlane boundary donor markers. */
+  *Marker_MixingPlaneInterface,				/*!< \brief MixingPlane interface boundary markers. */
   *Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
   *Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
   *Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
@@ -250,7 +255,7 @@ private:
   su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
   su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
   su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
-  su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
+  su2double *NRBC_Var1, *NRBC_Var2, *RelaxFactorAverage, *RelaxFactorFourier;    /*!< \brief Specified values for NRBC boundary. */
   su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
   su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
   su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
@@ -372,6 +377,7 @@ private:
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
+  unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
@@ -563,6 +569,9 @@ private:
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
   *Marker_All_Analyze,        /*!< \brief Global index for plotting using the grid information. */
   *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
+	*Marker_All_Turbomachinery,        /*!< \brief Global index for Turbomachinery markers using the grid information. */
+	*Marker_All_TurbomachineryFlag,        /*!< \brief Global index for Turbomachinery markers flag using the grid information. */
+	*Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
@@ -573,12 +582,16 @@ private:
   *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Analyze,     /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_FSIinterface,     /*!< \brief Global index for FSI interface using the config information. */
+	*Marker_CfgFile_Turbomachinery,     /*!< \brief Global index for Turbomachinery  using the config information. */
+	*Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
+	*Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
   su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
+  su2double *nBlades;						/*!< \brief number of blades for turbomachinery computation. */
   unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
   unsigned short Axis_Stations;	/*!< \brief Axis orientation. */
   unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
@@ -594,6 +607,7 @@ private:
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
   *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
+  *RelaxFactor_NRBC,      /*!< \brief Information about the under relaxation factor for NRBC. */
   *CFL,
   *HTP_Axis,      /*!< \brief Location of the HTP axis. */
   DomainVolume;		/*!< \brief Volume of the computational grid. */
@@ -828,7 +842,10 @@ private:
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
   *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
   *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
-  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+	*default_mixedout_coeff,    /*!< \brief Default default mixedout algorithm coefficients for the COption class. */
+	*default_rampRotFrame_coeff,/*!< \brief Default ramp rotating frame coefficients for the COption class. */
+	*default_rampOutPres_coeff, /*!< \brief Default ramp outlet pressure coefficients for the COption class. */
+	*default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
   *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
   *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
   *default_distortion,        /*!< \brief Default SU2_GEO section locations array for the COption class. */
@@ -837,7 +854,20 @@ private:
   *default_htp_axis,          /*!< \brief Default HTP axis for the COption class. */
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
-  
+  unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
+  unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
+  unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
+  bool turbMixingPlane;   /*!< \brief option for turbulent mixingplane */
+  bool RampRotatingFrame;   /*!< \brief option for ramping up or down the Rotating Frame values */
+  bool RampOutletPressure;  /*!< \brief option for ramping up or down the outlet pressure */
+  su2double *Mixedout_Coeff; /*!< \brief coefficient for the  */
+  su2double *RampRotatingFrame_Coeff; /*!< \brief coefficient for Rotating frame ramp */
+  su2double *RampOutletPressure_Coeff; /*!< \brief coefficient for outlet pressure ramp */
+  su2double AverageMachLimit;       /*!< \brief option for turbulent mixingplane */
+  su2double *FinalRotation_Rate_Z; /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
+  su2double FinalOutletPressure; /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
+  su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -1062,10 +1092,10 @@ private:
   }
   template <class Tenum>
   void addNRBCOption(const string name, unsigned short & nMarker_NRBC, string * & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                     su2double* & var1, su2double* & var2, su2double** & FlowDir) {
+                     su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionNRBC<Tenum>(name, nMarker_NRBC, Marker_NRBC, option_field, enum_map, var1, var2, FlowDir);
+    COptionBase* val = new COptionNRBC<Tenum>(name, nMarker_NRBC, Marker_NRBC, option_field, enum_map, var1, var2, FlowDir, relaxfactor1, relaxfactor2);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -1086,19 +1116,19 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
-  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
-                            string* & Marker_MixBound, string* & Marker_MixDonor) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
-  template <class Tenum>
+//  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
+//                    string* & Marker_MixBound, string* & Marker_MixDonor){
+//    assert(option_map.find(name) == option_map.end());
+//    all_options.insert(pair<string, bool>(name, true));
+//    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+//    option_map.insert(pair<string, COptionBase *>(name, val));
+//  }
+
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map) {
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );
+    COptionBase* val = new COptionTurboPerformance(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -2191,7 +2221,7 @@ public:
    * \return CFL number for each grid.
    */
   void SetCFL(unsigned short val_mesh, su2double val_cfl);
-  
+
   /*!
    * \brief Get the Courant Friedrich Levi number for unsteady simulations.
    * \return CFL number for unsteady simulations.
@@ -2740,6 +2770,27 @@ public:
    * \param[in] val_plotting - 0 or 1 depending if the the marker is part of the FSI interface.
    */
   void SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface);
+
+	/*!
+	 * \brief Set if a marker <i>val_marker</i> is part of the Turbomachinery (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperf - 0 if not part of Turbomachinery or greater than 1 if it is part.
+	 */
+	void SetMarker_All_Turbomachinery(unsigned short val_marker, unsigned short val_turbo);
+
+	/*!
+	 * \brief Set a flag to the marker <i>val_marker</i> part of the Turbomachinery (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperflag - 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
+	 */
+	void SetMarker_All_TurbomachineryFlag(unsigned short val_marker, unsigned short val_turboflag);
+
+	/*!
+	 * \brief Set if a marker <i>val_marker</i> is part of the MixingPlane interface (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperf - 0 if not part of the MixingPlane interface or greater than 1 if it is part.
+	 */
+	void SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixplan_interface);
   
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
@@ -2831,6 +2882,27 @@ public:
   unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
   
   /*!
+	 * \brief Get the MixingPlane interface information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the MixingPlane Interface and greater than 1 if it is part.
+	 */
+	unsigned short GetMarker_All_MixingPlaneInterface(unsigned short val_marker);
+
+	/*!
+	 * \brief Get the Turbomachinery information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the Turbomachinery and greater than 1 if it is part.
+	 */
+	unsigned short GetMarker_All_Turbomachinery(unsigned short val_marker);
+
+	/*!
+	 * \brief Get the Turbomachinery flag information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
+	 */
+	unsigned short GetMarker_All_TurbomachineryFlag(unsigned short val_marker);
+
+	/*!
    * \brief Get the number of FSI interface markers <i>val_marker</i>.
    * \param[in] void.
    * \return Number of markers belonging to the FSI interface.
@@ -3701,44 +3773,189 @@ public:
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
    * \return Kind of mixing process.
    */
-  unsigned short GetKind_MixingProcess(void);
+	unsigned short GetKind_AverageProcess(void);
+
+  /*!
+   * \brief Get the kind of mixing process for averaging quantities at the boundaries.
+   * \return Kind of mixing process.
+   */
+	unsigned short GetKind_PerformanceAverageProcess(void);
+
+  /*!
+   * \brief Set the kind of mixing process for averaging quantities at the boundaries.
+   * \return Kind of mixing process.
+   */
+	void SetKind_AverageProcess(unsigned short new_AverageProcess);
+
+  /*!
+   * \brief Set the kind of mixing process for averaging quantities at the boundaries.
+   * \return Kind of mixing process.
+   */
+	void SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess);
+
+  /*!
+   * \brief Get coeff for Rotating Frame Ramp.
+   * \return coeff Ramp Rotating Frame.
+   */
+	su2double GetRampRotatingFrame_Coeff(unsigned short iCoeff);
+
+  /*!
+   * \brief Get Rotating Frame Ramp option.
+   * \return Ramp Rotating Frame option.
+   */
+	bool GetRampRotatingFrame(void);
+
+	/*!
+	 * \brief Get coeff for Outlet Pressure Ramp.
+	 * \return coeff Ramp Outlet Pressure.
+	 */
+	su2double GetRampOutletPressure_Coeff(unsigned short iCoeff);
+
+	/*!
+	 * \brief Get final Outlet Pressure value for the ramp.
+	 * \return final Outlet Pressure value.
+	 */
+	su2double GetFinalOutletPressure(void);
+
+	/*!
+	 * \brief Get final Outlet Pressure value for the ramp.
+	 * \return Monitor Outlet Pressure value.
+	 */
+	su2double GetMonitorOutletPressure(void);
+
+	/*!
+	 * \brief Set Monitor Outlet Pressure value for the ramp.
+	 */
+	void SetMonitotOutletPressure(su2double newMonPres);
+
+	/*!
+	 * \brief Get Outlet Pressure Ramp option.
+	 * \return Ramp Outlet pressure option.
+	 */
+	bool GetRampOutletPressure(void);
+
+	/*!
+	 * \brief Get mixedout coefficients.
+	 * \return mixedout coefficient.
+	 */
+	su2double GetMixedout_Coeff(unsigned short iCoeff);
+
+	/*!
+	 * \brief Get mach limit for average massflow-based procedure .
+	 * \return mach limit.
+	 */
+	su2double GetAverageMachLimit(void);
+
+
+  /*!
+   * \brief Get the kind of mixing process for averaging quantities at the boundaries.
+   * \return Kind of mixing process.
+   */
+	unsigned short GetKind_MixingPlaneInterface(void);
+
+	/*!
+	 * \brief Get the kind of turbomachinery architecture.
+	 * \return Kind of turbomachinery architecture.
+	 */
+	unsigned short GetKind_TurboMachinery(unsigned short val_iZone);
+
+	/*!
+	 * \brief Get the kind of turbomachinery architecture.
+	 * \return Kind of turbomachinery architecture.
+	 */
+	unsigned short GetKind_SpanWise(void);
   
   /*!
    * \brief Verify if there is mixing plane interface specified from config file.
    * \return boolean.
    */
-  bool GetBoolMixingPlane(void);
+	bool GetBoolMixingPlaneInterface(void);
   
+	/*!
+	 * \brief Verify if there is mixing plane interface specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolTurbMixingPlane(void);
+
   /*!
    * \brief number mixing plane interface specified from config file.
    * \return number of bound.
    */
-  unsigned short Get_nMarkerMixingPlane(void);
+	unsigned short GetnMarker_MixingPlaneInterface(void);
   
   /*!
-   * \brief get bounds name of mixing plane interface.
-   * \return name of the bound.
+	 * \brief Verify if there is Turbomachinery performance option specified from config file.
+	 * \return boolean.
    */
-  string GetMarker_MixingPlane_Bound(unsigned short index);
-  
+	bool GetBoolTurbomachinery(void);
   
   /*!
-   * \brief get bounds name of mixing plane interface.
-   * \return name of the bound.
+	 * \brief number Turbomachinery blades computed using the pitch information.
+	 * \return nBlades.
    */
-  string GetMarker_MixingPlane_Donor(unsigned short index);
-  
+	su2double GetnBlades(unsigned short val_iZone);
   /*!
-   * \brief Verify if there is Turbomachinery performance option specified from config file.
+   * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
    * \return boolean.
    */
-  bool GetBoolTurboPerf(void);
+	bool GetBoolNRBC(void);
+  
+  /*!
+   * \brief Verify if there is any Rieamann Boundary Condition option specified from config file.
+   * \return boolean.
+   */
+	bool GetBoolRiemann(void);
+
   /*!
    * \brief number Turbomachinery performance option specified from config file.
    * \return number of bound.
    */
-  unsigned short Get_nMarkerTurboPerf(void);
-  
+	unsigned short GetnMarker_Turbomachinery(void);
+
+	/*!
+	 * \brief number Turbomachinery performance option specified from config file.
+	 * \return number of bound.
+	 */
+	unsigned short GetnMarker_TurboPerformance(void);
+
+  /*!
+   * \brief number span-wise sections to compute 3D BC and performance for turbomachinery specified by the user.
+   * \return number of span-wise sections.
+   */
+	unsigned short Get_nSpanWiseSections_User(void);
+
+	/*!
+	 * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
+	 * \return number of span-wise sections.
+	 */
+	unsigned short GetnSpanWiseSections(void);
+
+	/*!
+	 * \brief set number of maximum span-wise sections among all zones .
+	 */
+	void SetnSpanMaxAllZones(unsigned short val_nSpna_max);
+
+	/*!
+	 * \brief number span-wise sections to compute performance for turbomachinery.
+	 * \return number of max span-wise sections.
+	 */
+	unsigned short GetnSpanMaxAllZones(void);
+	/*!
+	 * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
+	 */
+	void SetnSpanWiseSections(unsigned short nSpan);
+
+	/*!
+	 * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
+	 */
+	unsigned short GetnSpan_iZones(unsigned short iZone);
+
+	/*!
+	 * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
+	 */
+	void SetnSpan_iZones(unsigned short nSpan, unsigned short iZone);
+
+
   /*!
    * \brief get inlet bounds name for Turbomachinery performance calculation.
    * \return name of the bound.
@@ -3752,10 +3969,16 @@ public:
   string GetMarker_TurboPerf_BoundOut(unsigned short index);
   
   /*!
-   * \brief get marker kind for Turbomachinery performance calculation.
-   * \return kind index.
+	 * \brief get outlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
    */
   unsigned short GetKind_TurboPerf(unsigned short index);
+  
+	/*!
+	 * \brief get outlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
+	 */
+	string GetMarker_PerBound(unsigned short val_marker);
   
   /*!
    * \brief Get the kind of inlet boundary condition treatment (total conditions or mass flow).
@@ -4543,6 +4766,20 @@ public:
   su2double GetRotation_Rate_Z(unsigned short val_iZone);
 
   /*!
+   * \brief Get the angular velocity of the mesh about the z-axis.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \return Angular velocity of the mesh about the z-axis.
+   */
+  su2double GetFinalRotation_Rate_Z(unsigned short val_iZone);
+
+  /*!
+   * \brief Set the angular velocity of the mesh about the z-axis.
+   * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
+   * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
+   */
+  su2double SetRotation_Rate_Z(su2double newRotation_Rate_Z, unsigned short val_iZone);
+
+  /*!
    * \brief Get the angular frequency of a mesh pitching about the x-axis.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \return Angular frequency of a mesh pitching about the x-axis.
@@ -4813,13 +5050,30 @@ public:
    * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
    */
   unsigned short GetMarker_CfgFile_Analyze(string val_marker);
-  
-  /*!
-   * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
-   * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
-   */
-  unsigned short GetMarker_CfgFile_FSIinterface(string val_marker);
-  
+
+	/*!
+	 * \brief Get the FSI interface information from the config definition for the marker <i>val_marker</i>.
+	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_FSIinterface(string val_marker);
+
+	/*!
+	 * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
+	 * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker);
+
+	/*!
+	 * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
+	 * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker);
+
+	/*!
+	 * \brief Get the MixingPlane interface information from the config definition for the marker <i>val_marker</i>.
+	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
@@ -5245,104 +5499,148 @@ public:
   su2double GetExhaust_Pressure_Target(string val_index);
   
   /*!
-   * \brief Value of the CFL reduction in LevelSet problems.
-   * \return Value of the CFL reduction in LevelSet problems.
-   */
-  su2double GetCFLRedCoeff_Turb(void);
-  
-  /*!
-   * \brief Get the flow direction unit vector at an inlet boundary.
-   * \param[in] val_index - Index corresponding to the inlet boundary.
-   * \return The flow direction vector.
-   */
-  su2double* GetInlet_FlowDir(string val_index);
-  
-  /*!
-   * \brief Get the back pressure (static) at an outlet boundary.
-   * \param[in] val_index - Index corresponding to the outlet boundary.
-   * \return The outlet pressure.
-   */
-  su2double GetOutlet_Pressure(string val_index);
-  
-  /*!
-   * \brief Get the var 1 at Riemann boundary.
-   * \param[in] val_marker - Index corresponding to the Riemann boundary.
-   * \return The var1
-   */
-  su2double GetRiemann_Var1(string val_marker);
-  
-  /*!
-   * \brief Get the var 2 at Riemann boundary.
-   * \param[in] val_marker - Index corresponding to the Riemann boundary.
-   * \return The var2
-   */
-  
-  su2double GetRiemann_Var2(string val_marker);
-  
-  /*!
-   * \brief Get the Flowdir at Riemann boundary.
-   * \param[in] val_marker - Index corresponding to the Riemann boundary.
-   * \return The Flowdir
-   */
-  su2double* GetRiemann_FlowDir(string val_marker);
-  
-  /*!
-   * \brief Get Kind Data of Riemann boundary.
-   * \param[in] val_marker - Index corresponding to the Riemann boundary.
-   * \return Kind data
-   */
-  unsigned short GetKind_Data_Riemann(string val_marker);
-  
-  /*!
-   * \brief Get the var 1 at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
-   * \return The var1
-   */
-  su2double GetNRBC_Var1(string val_marker);
-  
-  /*!
-   * \brief Get the var 2 at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
-   * \return The var2
-   */
-  
-  su2double GetNRBC_Var2(string val_marker);
-  
-  /*!
-   * \brief Get the Flowdir at NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
-   * \return The Flowdir
-   */
-  su2double* GetNRBC_FlowDir(string val_marker);
-  
-  /*!
-   * \brief Get Kind Data of NRBC boundary.
-   * \param[in] val_marker - Index corresponding to the NRBC boundary.
-   * \return Kind data
-   */
-  unsigned short GetKind_Data_NRBC(string val_marker);
-  
-  /*!
-   * \brief Get the wall temperature (static) at an isothermal boundary.
-   * \param[in] val_index - Index corresponding to the isothermal boundary.
-   * \return The wall temperature.
-   */
-  su2double GetIsothermal_Temperature(string val_index);
-  
-  /*!
-   * \brief Get the wall heat flux on a constant heat flux boundary.
-   * \param[in] val_index - Index corresponding to the constant heat flux boundary.
-   * \return The heat flux.
-   */
-  su2double GetWall_HeatFlux(string val_index);
-  
-  /*!
-   * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
-   * \param[in] val_index - Index corresponding to the engine inflow boundary.
-   * \return Target (pressure, massflow, etc) .
-   */
-  su2double GetEngineInflow_Target(string val_marker);
-  
+	 * \brief Value of the CFL reduction in LevelSet problems.
+	 * \return Value of the CFL reduction in LevelSet problems.
+	 */
+	su2double GetCFLRedCoeff_Turb(void);
+
+	/*!
+	 * \brief Get the flow direction unit vector at an inlet boundary.
+	 * \param[in] val_index - Index corresponding to the inlet boundary.
+	 * \return The flow direction vector.
+	 */
+	su2double* GetInlet_FlowDir(string val_index);
+
+	/*!
+	 * \brief Get the back pressure (static) at an outlet boundary.
+	 * \param[in] val_index - Index corresponding to the outlet boundary.
+	 * \return The outlet pressure.
+	 */
+	su2double GetOutlet_Pressure(string val_index);
+
+	/*!
+	 * \brief Get the var 1 at Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return The var1
+	 */
+	su2double GetRiemann_Var1(string val_marker);
+
+	/*!
+	 * \brief Get the var 2 at Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return The var2
+	 */
+
+	su2double GetRiemann_Var2(string val_marker);
+
+	/*!
+	 * \brief Get the Flowdir at Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return The Flowdir
+	 */
+	su2double* GetRiemann_FlowDir(string val_marker);
+
+	/*!
+	 * \brief Get Kind Data of Riemann boundary.
+	 * \param[in] val_marker - Index corresponding to the Riemann boundary.
+	 * \return Kind data
+	 */
+	unsigned short GetKind_Data_Riemann(string val_marker);
+
+	/*!
+	 * \brief Get the var 1 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The var1
+	 */
+	su2double GetNRBC_Var1(string val_marker);
+
+	/*!
+	 * \brief Set the var 1 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 */
+	void SetNRBC_Var1(su2double newVar1, string val_marker);
+
+	/*!
+	 * \brief Get the var 2 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The var2
+	 */
+
+	su2double GetNRBC_Var2(string val_marker);
+
+	/*!
+	 * \brief Get the Flowdir at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The Flowdir
+	 */
+	su2double* GetNRBC_FlowDir(string val_marker);
+
+	/*!
+	 * \brief Get the relax factor for the average component at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The relax factor for the average component
+	 */
+	su2double GetNRBC_RelaxFactorAverage(string val_marker);
+
+	/*!
+	 * \brief Get the relax factor for the fourier component at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The relax factor for the fourier component
+	 */
+	su2double GetNRBC_RelaxFactorFourier(string val_marker);
+
+	/*!
+	 * \brief Get Kind Data of NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return Kind data
+	 */
+	unsigned short GetKind_Data_NRBC(string val_marker);
+
+	/*!
+	 * \brief Get the outlet pressure imposed as BC for internal flow.
+	 * \return outlet pressure
+	 */
+	su2double GetPressureOut_BC();
+
+	/*!
+	 * \brief Get the inlet total pressure imposed as BC for internal flow.
+	 * \return inlet total pressure
+	 */
+	su2double GetTotalPressureIn_BC();
+
+	/*!
+	 * \brief Get the inlet total temperature imposed as BC for internal flow.
+	 * \return inlet total temperature
+	 */
+	su2double GetTotalTemperatureIn_BC();
+
+	/*!
+	 * \brief Get the inlet flow angle imposed as BC for internal flow.
+	 * \return inlet flow angle
+	 */
+	su2double GetFlowAngleIn_BC();
+
+	/*!
+	 * \brief Get the wall temperature (static) at an isothermal boundary.
+	 * \param[in] val_index - Index corresponding to the isothermal boundary.
+	 * \return The wall temperature.
+	 */
+	su2double GetIsothermal_Temperature(string val_index);
+
+	/*!
+	 * \brief Get the wall heat flux on a constant heat flux boundary.
+	 * \param[in] val_index - Index corresponding to the constant heat flux boundary.
+	 * \return The heat flux.
+	 */
+	su2double GetWall_HeatFlux(string val_index);
+
+	/*!
+	 * \brief Get the target (pressure, massflow, etc) at an engine inflow boundary.
+	 * \param[in] val_index - Index corresponding to the engine inflow boundary.
+	 * \return Target (pressure, massflow, etc) .
+	 */
+	su2double GetEngineInflow_Target(string val_marker);
+
   /*!
    * \brief Get the fan face Mach number at an engine inflow boundary.
    * \param[in] val_marker - Name of the boundary.

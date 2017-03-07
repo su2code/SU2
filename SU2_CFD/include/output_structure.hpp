@@ -47,7 +47,7 @@
 #include <time.h>
 #include <fstream>
 
-#include "solver_structure.hpp"
+//#include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -127,8 +127,54 @@ class COutput {
   su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
+  bool turbo;
+  unsigned short   nSpanWiseSections,
+									nMarkerTurboPerf;
 
-  
+  su2double **TotalStaticEfficiency,
+        **TotalTotalEfficiency,
+        **KineticEnergyLoss,
+        **TRadius,
+        **TotalPressureLoss,
+        **MassFlowIn,
+        **MassFlowOut,
+        **FlowAngleIn,
+        **FlowAngleIn_BC,
+        **FlowAngleOut,
+        **EulerianWork,
+        **TotalEnthalpyIn,
+        **TotalEnthalpyIn_BC,
+        **EntropyIn,
+        **EntropyOut,
+        **EntropyIn_BC,
+        **PressureRatio,
+        **TotalTemperatureIn,
+        **EnthalpyOut,
+        ***MachIn,
+        ***MachOut,
+        **VelocityOutIs,
+        **DensityIn,
+        **PressureIn,
+        ***TurboVelocityIn,
+        **DensityOut,
+        **PressureOut,
+        ***TurboVelocityOut,
+        **EnthalpyOutIs,
+        **EntropyGen,
+        **AbsFlowAngleIn,
+        **TotalEnthalpyOut,
+        **RothalpyIn,
+        **RothalpyOut,
+        **TotalEnthalpyOutIs,
+        **AbsFlowAngleOut,
+        **PressureOut_BC,
+        **TemperatureIn,
+        **TemperatureOut,
+        **TotalPressureIn,
+        **TotalPressureOut,
+        **TotalTemperatureOut,
+        **EnthalpyIn;
+
 protected:
 
 public:
@@ -136,7 +182,7 @@ public:
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(void);
+  COutput(CConfig *congig);
 
   /*! 
    * \brief Destructor of the class. 
@@ -393,7 +439,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, bool surf_sol, bool new_file);
+  void SetTecplotASCII_Mesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool surf_sol, bool new_file);
 
   /*!
    * \brief Write the solution data and connectivity to a Tecplot ASCII mesh file in parallel.
@@ -419,7 +465,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] val_iZone - iZone index.
    */
-  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry);
+  void SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream &output_file);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -571,6 +617,37 @@ public:
    * \param[in] val_nZone - Number of Zones.
    */
   void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
+
+  /*!
+	 * \brief Compute .
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iExtIter - Current external (time) iteration.
+	 */
+  void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+
+  /*!
+	 * \brief Compute .
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void WriteTutboPerfConvHistory(CConfig *config);
+
+  /*!
+	 * \brief Write the output file for spanwise turboperformance.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_nZone - iZone index.
+	 */
+  void SpanwiseFile(CGeometry ***geometry, CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
+
+  /*!
+   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
    * \brief Write the output file for harmonic balance for each time-instance.

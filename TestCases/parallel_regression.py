@@ -601,7 +601,6 @@ def main():
     bars_SST_2D.su2_exec  = "SU2_CFD"
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
-    bars_SST_2D.unsteady  = True
     test_list.append(bars_SST_2D)
 
     ##########################

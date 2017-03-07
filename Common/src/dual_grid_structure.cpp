@@ -650,3 +650,24 @@ void CVertex::Allocate_DonorInfo(void) {
   Donor_Coeff  = new su2double[nDonor_Points];
 
 }
+
+
+CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : CVertex(val_point, val_nDim){
+	unsigned short iDim;
+ /*--- Pointers initialization ---*/
+	TurboNormal = NULL;
+	/*--- Allocate node, and face normal ---*/
+	TurboNormal = new su2double [nDim];
+
+	/*--- Initializate the structure ---*/
+	for (iDim = 0; iDim < nDim; iDim ++) TurboNormal[iDim] = 0.0;
+
+}
+
+CTurboVertex::~CTurboVertex() {
+
+	if (Normal != NULL) delete[] Normal;
+	if (Nodes != NULL) delete[] Nodes;
+	if (TurboNormal != NULL) delete [] TurboNormal;
+
+}

@@ -39,9 +39,12 @@ int main(int argc, char *argv[]) {
   
   char config_file_name[MAX_STRING_SIZE], *cstr;
   ofstream Gradient_file;
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  
+	int rank = MASTER_NODE;
+	int size = SINGLE_NODE;
+
+  su2double** Gradient;
+  unsigned short iDV, iDV_Value;
+
   /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
@@ -57,23 +60,37 @@ int main(int argc, char *argv[]) {
   
   CConfig **config_container          = NULL;
   CGeometry **geometry_container      = NULL;
-  CSurfaceMovement *surface_movement  = NULL;
-  CVolumetricMovement *mesh_movement  = NULL;
+  CSurfaceMovement **surface_movement = NULL;
+  CVolumetricMovement **grid_movement = NULL;
   
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
   
   if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
-  
+
+  /*--- Read the name and format of the input mesh file to get from the mesh
+   file the number of zones and dimensions from the numerical grid (required
+   for variables allocation)  ---*/
+
+  CConfig *config = NULL;
+  config = new CConfig(config_file_name, SU2_DEF);
+
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+
+
   /*--- Definition of the containers per zones ---*/
   
   config_container = new CConfig*[nZone];
   geometry_container = new CGeometry*[nZone];
+  surface_movement   = new CSurfaceMovement*[nZone];
+  grid_movement      = new CVolumetricMovement*[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
+    grid_movement [iZone]     = NULL;
+    surface_movement[iZone]   = NULL;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
@@ -130,93 +147,128 @@ int main(int argc, char *argv[]) {
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
+  for (iZone = 0; iZone < nZone; iZone++){
+  
   if (rank == MASTER_NODE)
     cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
   
   /*--- Compute elements surrounding points, points surrounding points ---*/
   
   if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-  geometry_container[ZONE_0]->SetPoint_Connectivity();
+    geometry_container[iZone]->SetPoint_Connectivity();
   
   /*--- Check the orientation before computing geometrical quantities ---*/
   
-  if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
-  geometry_container[ZONE_0]->SetBoundVolume();
-  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
-  geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
+    geometry_container[iZone]->SetBoundVolume();
+    geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+    geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
   
   /*--- Create the edge structure ---*/
   
   if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-  geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
+    geometry_container[iZone]->SetEdges(); geometry_container[iZone]->SetVertex(config_container[iZone]);
   
   /*--- Compute center of gravity ---*/
-  
-  if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[ZONE_0]->SetCoord_CG();
-  
-  /*--- Create the dual control volume structures ---*/
-  
-  if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-  geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
-  
-  /*--- Load the surface sensitivities from file. This is done only
+
+    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+    geometry_container[iZone]->SetCoord_CG();
+
+    /*--- Create the dual control volume structures ---*/
+
+    if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+    geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+
+    /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
-  
-  if (!config_container[ZONE_0]->GetDiscrete_Adjoint()){
-    if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
-    geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
-  }
-  else {
-    if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
-    mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
-    geometry_container[ZONE_0]->SetSensitivity(config_container[ZONE_0]);
-    
-    if (rank == MASTER_NODE)
-      cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
-    mesh_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false, true);
-    
-    COutput *output = new COutput();
-    output->SetSensitivity_Files(geometry_container, config_container, nZone);
-  }
-  
-  /*--- Definition of the Class for surface deformation ---*/
-  
-  surface_movement = new CSurfaceMovement();
-  
-  /*--- Copy coordinates to the surface structure ---*/
-  
-  surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
-  
-  if (config_container[ZONE_0]->GetDesign_Variable(0) != NONE){
-    if (rank == MASTER_NODE)
-      cout << endl <<"---------- Start gradient evaluation using sensitivity information ----------" << endl;
-    
-    /*--- Write the gradient in a external file ---*/
-    
-    if (rank == MASTER_NODE) {
-      cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
-      strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
-      Gradient_file.open(cstr, ios::out);
+    if (!config_container[iZone]->GetDiscrete_Adjoint()){
+      if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
+      geometry_container[iZone]->SetBoundSensitivity(config_container[iZone]);
+    } else {
+      if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
+      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
+      geometry_container[iZone]->SetSensitivity(config_container[iZone]);
+
+      if (rank == MASTER_NODE)
+        cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
+      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false, true);
+
     }
-    
-    /*--- If AD mode is enabled we can use it to compute the projection,
-     * otherwise we use finite differences. ---*/
-    
-    if (config_container[ZONE_0]->GetAD_Mode()){
-      SetProjection_AD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-    }else{
-      SetProjection_FD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-    }
-    
-    if (rank == MASTER_NODE)
-      Gradient_file.close();
   }
-  
-  /*--- Synchronization point after a single solver iteration. Compute the
-   wall clock time required. ---*/
-  
+
+   if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+     if (rank == MASTER_NODE)
+       cout << endl <<"------------------------ Mesh sensitivity Output ------------------------" << endl;
+     COutput *output = new COutput(config_container[ZONE_0]);
+     output->SetSensitivity_Files(geometry_container, config_container, nZone);
+   }
+
+   if (config_container[ZONE_0]->GetDesign_Variable(0) != NONE){
+
+     /*--- Initialize structure to store the gradient ---*/
+
+     Gradient = new su2double*[config_container[ZONE_0]->GetnDV()];
+
+     for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+       Gradient[iDV] = new su2double[config_container[ZONE_0]->GetnDV_Value(iDV)];
+       for (iDV_Value = 0; iDV_Value < config_container[ZONE_0]->GetnDV_Value(iDV); iDV_Value++){
+         Gradient[iDV][iDV_Value] = 0.0;
+       }
+     }
+
+     if (rank == MASTER_NODE)
+       cout << endl <<"---------- Start gradient evaluation using sensitivity information ----------" << endl;
+
+     /*--- Write the gradient in a external file ---*/
+
+     if (rank == MASTER_NODE) {
+       cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
+       strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
+       Gradient_file.open(cstr, ios::out);
+     }
+
+     /*--- Loop through each zone and add it's contribution to the gradient array ---*/
+
+     for (iZone = 0; iZone < nZone; iZone++){
+
+       /*--- Definition of the Class for surface deformation ---*/
+
+       surface_movement[iZone] = new CSurfaceMovement();
+
+       /*--- Copy coordinates to the surface structure ---*/
+
+       surface_movement[iZone]->CopyBoundary(geometry_container[iZone], config_container[iZone]);
+
+       /*--- If AD mode is enabled we can use it to compute the projection,
+        *    otherwise we use finite differences. ---*/
+
+       if (config_container[iZone]->GetAD_Mode()){
+         SetProjection_AD(geometry_container[iZone], config_container[iZone], surface_movement[iZone] , Gradient);
+       }else{
+         SetProjection_FD(geometry_container[iZone], config_container[iZone], surface_movement[iZone] , Gradient);
+       }
+     }
+
+     /*--- Print gradients to screen and file ---*/
+
+     OutputGradient(Gradient, config_container[ZONE_0], Gradient_file);
+
+     if (rank == MASTER_NODE)
+       Gradient_file.close();
+
+     for (iDV = 0; iDV  < config_container[ZONE_0]->GetnDV(); iDV++){
+       delete [] Gradient[iDV];
+     }
+     delete [] Gradient;
+
+   }
+
+
+
+    /*--- Synchronization point after a single solver iteration. Compute the
+     wall clock time required. ---*/
+
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
@@ -246,11 +298,11 @@ int main(int argc, char *argv[]) {
   
 }
 
-void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
+void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
   
   unsigned short iDV, nDV, iFFDBox, nDV_Value, iMarker, iDim;
   unsigned long iVertex, iPoint;
-  su2double delta_eps, my_Gradient, **Gradient, *Normal, dS, *VarCoord, Sensitivity,
+  su2double delta_eps, my_Gradient, localGradient, *Normal, dS, *VarCoord, Sensitivity,
   dalpha[3], deps[3], dalpha_deps;
   bool *UpdatePoint, MoveSurface, Local_MoveSurface;
   CFreeFormDefBox **FFDBox;
@@ -270,20 +322,15 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   
   unsigned short nFFDBox = MAX_NUMBER_FFD;
   FFDBox = new CFreeFormDefBox*[nFFDBox];
-  
-  /*--- Structure to store the gradient ---*/
-  
-  Gradient = new su2double*[nDV];
-  
+
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
     if (nDV_Value != 1){
       cout << "The projection using finite differences currently only supports a fixed direction of movement for FFD points." << endl;
       exit(EXIT_FAILURE);
     }
-    Gradient[iDV] = new su2double[nDV_Value];
   }
-  
+
   /*--- Continuous adjoint gradient computation ---*/
   
   if (rank == MASTER_NODE)
@@ -500,31 +547,19 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       }
       
 #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][0], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-      Gradient[iDV][0] = my_Gradient;
+    localGradient = my_Gradient;
 #endif
-      
+    Gradient[iDV][0] += localGradient;
     }
-    
+  }
   }
   
-  /*--- Print gradients to screen and file ---*/
-  
-  OutputGradient(Gradient, config, Gradient_file);
-  
-  for (iDV = 0; iDV  < nDV; iDV++){
-    delete [] Gradient[iDV];
-  }
-  delete [] Gradient;
-  delete [] UpdatePoint;
-  
-}
 
+void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, su2double** Gradient){
 
-void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
-  
-  su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient, *Normal, Area = 0.0;
+  su2double DV_Value, *VarCoord, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
   unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
   
@@ -538,21 +573,12 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   nDV     = config->GetnDV();
   
   VarCoord = NULL;
-  
-  /*--- Structure to store the gradient ---*/
-  
-  Gradient = new su2double*[nDV];
-  
-  for (iDV = 0; iDV  < nDV; iDV++){
-    nDV_Value =  config->GetnDV_Value(iDV);
-    Gradient[iDV] = new su2double[nDV_Value];
-  }
-  
+
   /*--- Discrete adjoint gradient computation ---*/
   
   if (rank == MASTER_NODE)
-    cout << "Evaluate functional gradient using Algorithmic Differentiation." << endl;
-  
+    cout  << endl << "Evaluate functional gradient using Algorithmic Differentiation (ZONE " << config->GetiZone() << ")." << endl;
+
   /*--- Start recording of operations ---*/
   
   AD::StartRecording();
@@ -626,11 +652,10 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
 #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-      Gradient[iDV][iDV_Value] = my_Gradient;
+      localGradient = my_Gradient;
 #endif
-      
       /*--- Angle of Attack design variable (this is different,
        the value comes form the input file) ---*/
       
@@ -638,18 +663,13 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
           (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK))  {
         Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
       }
-      
+
+      Gradient[iDV][iDV_Value] += localGradient;
     }
   }
-  
-  /*--- Print gradients to screen and file ---*/
-  
-  OutputGradient(Gradient, config, Gradient_file);
-  
-  for (iDV = 0; iDV  < nDV; iDV++){
-    delete [] Gradient[iDV];
-  }
-  delete [] Gradient;
+
+  AD::Reset();
+
 }
 
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){

@@ -95,7 +95,7 @@ def adjoint( config ):
     special_cases    = su2io.get_specialCases(konfig)
     
     # get history
-    history = su2io.read_history( history_filename )
+    history = su2io.read_history( history_filename, config.NZONES )
     
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,

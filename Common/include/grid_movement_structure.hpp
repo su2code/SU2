@@ -1293,14 +1293,14 @@ protected:
 	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
 	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
+
+public:
   vector<su2double> GlobalCoordX[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordY[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordZ[MAX_NUMBER_FFD];
   vector<string> GlobalTag[MAX_NUMBER_FFD];
   vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
 
-public:
-	
 	/*! 
 	 * \brief Constructor of the class.
 	 */
@@ -1734,7 +1734,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
+  void WriteFFDInfo(CSurfaceMovement **surface_movement, CGeometry **geometry, CConfig **config);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 
