@@ -216,6 +216,25 @@ inline void CNumerics::SetEddyViscosity(su2double val_eddy_viscosity_i, su2doubl
   Eddy_Viscosity_j = val_eddy_viscosity_j;
 }
 
+inline void CNumerics::SetAnisoEddyViscosity(su2double** val_eddy_viscosity_i,
+                                             su2double** val_eddy_viscosity_j) {
+  Aniso_Eddy_Viscosity_i = new su2double*[nDim];
+  for (unsigned int iDim = 0; iDim < nDim; iDim++) {
+    Aniso_Eddy_Viscosity_i[iDim] = new su2double[nDim];
+    for (unsigned int jDim = 0; jDim < nDim; jDim++) {
+      Aniso_Eddy_Viscosity_i[iDim][jDim] = val_eddy_viscosity_i[iDim][jDim];
+    }
+  }
+
+  Aniso_Eddy_Viscosity_j = new su2double*[nDim];
+  for (unsigned int iDim = 0; iDim < nDim; iDim++) {
+    Aniso_Eddy_Viscosity_j[iDim] = new su2double[nDim];
+    for (unsigned int jDim = 0; jDim < nDim; jDim++) {
+      Aniso_Eddy_Viscosity_j[iDim][jDim] = val_eddy_viscosity_j[iDim][jDim];
+    }
+  }
+}
+
 inline void CNumerics::SetIntermittency(su2double intermittency_in) { }
 
 inline void CNumerics::SetProduction(su2double val_production) { }

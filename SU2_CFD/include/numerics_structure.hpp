@@ -92,6 +92,8 @@ public:
   su2double *Theta_v; /*!< \brief Characteristic vibrational temperature */
   su2double Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
   Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
+  su2double** Aniso_Eddy_Viscosity_i,  /*!< \brief Eddy viscosity at point i. */
+  **Aniso_Eddy_Viscosity_j;      /*!< \brief Eddy viscosity at point j. */
   su2double turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
   turb_ke_j;      /*!< \brief Turbulent kinetic energy at point j. */
   su2double Pressure_i,  /*!< \brief Pressure at point i. */
@@ -507,7 +509,13 @@ public:
    */
   void SetEddyViscosity(su2double val_eddy_viscosity_i,
                         su2double val_eddy_viscosity_j);
-  
+  /*!
+     * \brief Set the anisotropic eddy viscosity.
+     * \param[in] val_eddy_viscosity_i - Value of the eddy viscosity at point i.
+     * \param[in] val_eddy_viscosity_j - Value of the eddy viscosity at point j.
+     */
+  void SetAnisoEddyViscosity(su2double** val_eddy_viscosity_i,
+                             su2double** val_eddy_viscosity_j);
   /*!
    * \brief Set the turbulent kinetic energy.
    * \param[in] val_turb_ke_i - Value of the turbulent kinetic energy at point i.
@@ -2812,12 +2820,13 @@ public:
  * \version 5.0.0 "Raven"
  */
 class CAvgGradArtComp_Flow : public CNumerics {
-private:
+protected:
   unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
   su2double **Mean_GradPrimVar,          /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
   dist_ij;              /*!< \brief Length of the edge and face. */
   bool implicit;        /*!< \brief Implicit calculus. */
+  su2double** Mean_Aniso_Eddy_Viscosity;
   
 public:
   

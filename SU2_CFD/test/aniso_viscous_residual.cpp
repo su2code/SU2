@@ -1,7 +1,7 @@
 /*!
- * \file aniso_viscous_flux.cpp
- * \brief checks whether the viscous projected flux is computed correctly for
- *        anisotropic eddy viscosities in incompressible flow.
+ * \file aniso_viscous_residual.cpp
+ * \brief This test checks whether the correct viscous residual is calculated
+ *        for anisotropic viscosities on incompressible flows.
  * \author C. Pederson
  * \version 4.3.0 "Cardinal"
  *
@@ -47,10 +47,95 @@
 const unsigned short nDim = 3;
 const unsigned short nVar = 4;
 
-class TestNumerics : public CNumerics {
+class TestNumerics : public CAvgGradArtComp_Flow {
  public:
-  TestNumerics(CConfig* config) : CNumerics(3, 4, config) {
+  bool useAnisoEddyViscosity;
+
+  TestNumerics(CConfig* config) : CAvgGradArtComp_Flow(3, 4, config) {
+    V_i = new su2double[nDim+4];
+    V_j = new su2double[nDim+4];
+
+    implicit = false;
   };
+
+  void ComputeMyResidual(su2double *val_residual, su2double **val_Jacobian_i,
+                         su2double **val_Jacobian_j, CConfig *config) {
+    unsigned short jDim;
+    /*--- Normalized normal vector ---*/
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Area += Normal[iDim]*Normal[iDim];
+    Area = sqrt(Area);
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = Normal[iDim]/Area;
+
+    /*--- Laminar and Eddy viscosity ---*/
+
+    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
+    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
+
+    /*--- Mean Viscosities ---*/
+
+    Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
+    if (useAnisoEddyViscosity) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          Mean_Aniso_Eddy_Viscosity[iDim][jDim] =
+              0.5*(Aniso_Eddy_Viscosity_i[iDim][jDim] +
+                   Aniso_Eddy_Viscosity_j[iDim][jDim]);
+    } else {
+      Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+    }
+
+    /*--- Mean gradient approximation ---*/
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (iDim = 0; iDim < nDim; iDim++)
+        Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
+
+    /*--- Get projected flux tensor ---*/
+
+    if (useAnisoEddyViscosity) {
+      GetViscousArtCompProjFlux(Mean_GradPrimVar, Normal,
+                                Mean_Laminar_Viscosity,
+                                Mean_Aniso_Eddy_Viscosity);
+    } else {
+
+      GetViscousArtCompProjFlux(Mean_GradPrimVar, Normal,
+                                Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+    }
+
+    /*--- Update viscous residual ---*/
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      val_residual[iVar] = Proj_Flux_Tensor[iVar];
+
+    /*--- Implicit part ---*/
+
+    if (implicit) {
+
+      dist_ij = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+      dist_ij = sqrt(dist_ij);
+
+      if (dist_ij == 0.0) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            val_Jacobian_i[iVar][jVar] = 0.0;
+            val_Jacobian_j[iVar][jVar] = 0.0;
+          }
+        }
+      }
+      else {
+        GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal,
+                                  Area, val_Jacobian_i, val_Jacobian_j);
+      }
+
+    }
+
+  }
 };
 
 int main() {
@@ -68,28 +153,48 @@ int main() {
 
   TestNumerics numerics(test_config);
 
+  su2double* residual = new su2double[nVar];
+  su2double** Jacobian_i;
+  su2double** Jacobian_j;
+
+  su2double** eddy_viscosity_i = new su2double*[nDim];
+  int counter = 2;
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    eddy_viscosity_i[iDim] = new su2double[nDim];
+    for (int jDim = 0; jDim < nDim; jDim++) {
+      eddy_viscosity_i[iDim][jDim] = counter;
+      counter++;
+    }
+  }
+
+  su2double** eddy_viscosity_j = new su2double*[nDim];
+  counter = 0;
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    eddy_viscosity_j[iDim] = new su2double[nDim];
+    for (int jDim = 0; jDim < nDim; jDim++) {
+      eddy_viscosity_j[iDim][jDim] = counter;
+      counter++;
+    }
+  }
+
   su2double** gradprimvar = new su2double*[nVar];
   for (int iVar = 0; iVar < nVar; iVar++) {
     gradprimvar[iVar] = new su2double[nDim];
     for (int jDim = 0; jDim < nDim; jDim++)
       gradprimvar[iVar][jDim] = 0.0;
   }
-
-
   gradprimvar[1][1] =  1; // dU/dy
   gradprimvar[2][0] = -1; // dV/dx
-  su2double normal[nDim] = {1.0, 0.0, 0.0};
-  su2double laminar_viscosity = 0.000;
-  su2double eddy_viscosity = 0.015;
-  su2double** Aniso_Eddy_Viscosity = new su2double*[nDim];
-  int counter = 1;
-  for (int iDim = 0; iDim < nDim; iDim++) {
-    Aniso_Eddy_Viscosity[iDim] = new su2double[nDim];
-    for (int jDim = 0; jDim < nDim; jDim++) {
-      Aniso_Eddy_Viscosity[iDim][jDim] = counter;
-      counter++;
-    }
-  }
+
+  su2double normal[3] = {1.0, 0.0, 0.0};
+
+  numerics.useAnisoEddyViscosity = true;
+  numerics.SetNormal(normal);
+  numerics.SetPrimVarGradient(gradprimvar, gradprimvar);
+  numerics.SetEddyViscosity(0.0, 0.0);
+  numerics.SetLaminarViscosity(0.0, 0.0);
+  numerics.SetAnisoEddyViscosity(eddy_viscosity_i, eddy_viscosity_j);
+
   //---------------------------------------------------------------------------
   // Test
   // We set up \nu_{ij} = [[1.0, 2.0, 3.0],[4.0, 5.0, 6.0],[7.0, 8.0, 9.0]]
@@ -106,13 +211,12 @@ int main() {
   //         \tau_{ij}*e_1 = [tau_{11}, tau_{12}, tau_{13}]
   //                       = [4.0, 4.0, 8.0]
   //---------------------------------------------------------------------------
-  numerics.GetViscousArtCompProjFlux(gradprimvar, normal, laminar_viscosity,
-                                     Aniso_Eddy_Viscosity);
-  su2double* output = numerics.Proj_Flux_Tensor;
+  numerics.ComputeMyResidual(residual, Jacobian_i, Jacobian_j, test_config);
+  su2double* output = residual;
   su2double correct_output[nVar] = {0.0, 4.0, 4.0, 8.0};
   for (int iVar = 0; iVar < nVar; iVar++) {
     if (output[iVar] != correct_output[iVar]) {
-      std::cout << "The projected flux tensor for an anisotropic eddy";
+      std::cout << "The computed viscous residual for an anisotropic eddy";
       std::cout << " viscosity was incorrect" << std::endl;
       std::cout << "    The test case was: incompressible flow." << std::endl;
       std::cout << "  Expected:" << std::endl;
@@ -126,8 +230,6 @@ int main() {
       break;
     }
   }
-
-
   //---------------------------------------------------------------------------
   // Teardown
   //---------------------------------------------------------------------------
@@ -136,6 +238,13 @@ int main() {
     delete [] gradprimvar[iVar];
   }
   delete [] gradprimvar;
+
+  for (int iDim = 0; iDim < nDim; iDim++) {
+    delete [] eddy_viscosity_i[iDim];
+    delete [] eddy_viscosity_j[iDim];
+  }
+  delete [] eddy_viscosity_i;
+  delete [] eddy_viscosity_j;
 
 #ifdef HAVE_MPI
   MPI_Finalize();
