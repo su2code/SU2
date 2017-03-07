@@ -401,7 +401,7 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
-inline void CNumerics::SetRoeDissipation(double val_dissipation) { dissipation = val_dissipation; }
+inline void CNumerics::SetRoeDissipation(su2double val_dissipation) { dissipation = val_dissipation; }
 
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
   F1_i = val_F1_i; 

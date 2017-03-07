@@ -108,11 +108,7 @@ libSU2Core_sources = \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
-<<<<<<< HEAD
   ../src/postprocessing_structure.cpp \
-  ../src/solver_adjoint_levelset.cpp \
-=======
->>>>>>> origin/develop
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \

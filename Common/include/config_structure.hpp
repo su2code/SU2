@@ -6808,13 +6808,13 @@ public:
    * \brief Get the DES Constant.
    * \return Verbosity level for the console output.
    */
-   double GetConst_DES(void);
+   su2double GetConst_DES(void);
     
   /*!
    * \brief Get the Zonal DES Distance.
    * \return Verbosity level for the console output.
    */
-  double GetZonal_Dist(void);
+  su2double GetZonal_Dist(void);
    
   /*!
    * \brief Get Zonal DES.
