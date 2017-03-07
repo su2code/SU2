@@ -132,6 +132,11 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry_container[iZone]->SetVertex(config_container[iZone]);
 
+    /*--- Store the global to local mapping after preprocessing. ---*/
+
+    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+    geometry_container[iZone]->SetGlobal_to_Local_Point();
+
   }
 
   /*--- Determine whether the simulation is a FSI simulation ---*/
