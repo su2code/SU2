@@ -10991,421 +10991,423 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-  	for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
-
-			/*--- using the other vertex information for retrieving some information ---*/
-			oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
-			V_boundary= GetCharacPrimVar(val_marker, oldVertex);
-
-			/*--- Index of the closest interior node ---*/
-			Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
-
-			/*--- Normal vector for this vertex (negate for outward convention),
-			 * 		this normal is scaled with the area of the face of the element  ---*/
-			geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
-			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-			conv_numerics->SetNormal(Normal);
-
-			/*--- find the node related to the vertex ---*/
-			iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
-
-			/*--- Normalize Normal vector for this vertex (already for outward convention) ---*/
-			geometry->turbovertex[val_marker][iSpan][iVertex]->GetNormal(UnitNormal);
-			geometry->turbovertex[val_marker][iSpan][iVertex]->GetTurboNormal(turboNormal);
-
-			/*--- Retrieve solution at this boundary node ---*/
-			V_domain = node[iPoint]->GetPrimitive();
-
-			/* --- Compute the internal state u_i --- */
-			Velocity2_i = 0;
-			for (iDim=0; iDim < nDim; iDim++)
-			{
-				Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
-				Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
-			}
-
-			Density_i = node[iPoint]->GetDensity();
-
-			Energy_i = node[iPoint]->GetEnergy();
-			StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-
-			FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
-
-			Pressure_i = FluidModel->GetPressure();
-			Enthalpy_i = Energy_i + Pressure_i/Density_i;
-
-			SoundSpeed_i = FluidModel->GetSoundSpeed();
-
-			Kappa_i = FluidModel->GetdPde_rho() / Density_i;
-			Chi_i = FluidModel->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
-
-			ProjVelocity_i = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-
-			/*--- Build the external state u_e from boundary data and internal node ---*/
-
-			switch(config->GetKind_Data_Riemann(Marker_Tag))
-			{
-			//TODO(turbo), generilize for 3D case
-			//TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
-			//TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
-			case TOTAL_CONDITIONS_PT:
-
-				/*--- Retrieve the specified total conditions for this boundary. ---*/
-				if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-				else P_Total  = config->GetRiemann_Var1(Marker_Tag);
-				T_Total  = config->GetRiemann_Var2(Marker_Tag);
-				Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-
-				/*--- Non-dim. the inputs if necessary. ---*/
-				P_Total /= config->GetPressure_Ref();
-				T_Total /= config->GetTemperature_Ref();
-
-				/* --- Computes the total state --- */
-				FluidModel->SetTDState_PT(P_Total, T_Total);
-				Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-				Entropy_e = FluidModel->GetEntropy();
-
-				/* --- Compute the boundary state u_e --- */
-				Velocity2_e = Velocity2_i;
-				for (iDim = 0; iDim < nDim; iDim++)
-					turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
-				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-				Density_e = FluidModel->GetDensity();
-				StaticEnergy_e = FluidModel->GetStaticEnergy();
-				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-				if (tkeNeeded) Energy_e += GetTke_Inf();
-				break;
-
-			case MIXING_IN:
-
-			  /* --- compute total averaged quantities ---*/
-				FluidModel->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
-				AverageEnthalpy = FluidModel->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
-				AverageEntropy  = FluidModel->GetEntropy();
-
-				FlowDirMixMag = 0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
-				for (iDim = 0; iDim < nDim; iDim++){
-					FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
-				}
-
-
-				/* --- Computes the total state --- */
-				Enthalpy_e = AverageEnthalpy;
-				Entropy_e = AverageEntropy;
-
-				/* --- Compute the boundary state u_e --- */
-				Velocity2_e = Velocity2_i;
-				for (iDim = 0; iDim < nDim; iDim++){
-					turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
-
-				}
-				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
-
-				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-				Density_e = FluidModel->GetDensity();
-				StaticEnergy_e = FluidModel->GetStaticEnergy();
-				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//				if (tkeNeeded) Energy_e += GetTke_Inf();
-				break;
-
-
-			case MIXING_OUT:
-
-				/*--- Retrieve the staic pressure for this boundary. ---*/
-				Pressure_e = ExtAveragePressure[val_marker][iSpan];
-				Density_e = Density_i;
-
-				/* --- Compute the boundary state u_e --- */
-				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-				Velocity2_e = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Velocity_e[iDim] = Velocity_i[iDim];
-					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-				}
-				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-				break;
-
-			case STATIC_PRESSURE:
-
-				/*--- Retrieve the staic pressure for this boundary. ---*/
-				Pressure_e = config->GetRiemann_Var1(Marker_Tag);
-				Pressure_e /= config->GetPressure_Ref();
-				Density_e = Density_i;
-
-				/* --- Compute the boundary state u_e --- */
-				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-				Velocity2_e = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Velocity_e[iDim] = Velocity_i[iDim];
-					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-				}
-				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-				break;
-
-
-			case RADIAL_EQUILIBRIUM:
-
-				/*--- Retrieve the staic pressure for this boundary. ---*/
-				Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
-				Density_e = Density_i;
-
-				/* --- Compute the boundary state u_e --- */
-				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-				Velocity2_e = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Velocity_e[iDim] = Velocity_i[iDim];
-					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-				}
-				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-				break;
-
-			default:
-				cout << "Warning! Invalid Riemann input!" << endl;
-				exit(EXIT_FAILURE);
-				break;
-
-			}
-
-			/*--- Compute P (matrix of right eigenvectors) ---*/
-			conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
-
-			/*--- Compute inverse P (matrix of left eigenvectors)---*/
-			conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
-
-			/*--- eigenvalues contribution due to grid motion ---*/
-			if (grid_movement){
-				gridVel = geometry->node[iPoint]->GetGridVel();
-
-				su2double ProjGridVel = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjGridVel   += gridVel[iDim]*UnitNormal[iDim];
-				ProjVelocity_i -= ProjGridVel;
-			}
-
-			/*--- Flow eigenvalues ---*/
-			for (iDim = 0; iDim < nDim; iDim++)
-				Lambda_i[iDim] = ProjVelocity_i;
-			Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
-			Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
-
-			/* --- Compute the boundary state u_e --- */
-			u_e[0] = Density_e;
-			for (iDim = 0; iDim < nDim; iDim++)
-				u_e[iDim+1] = Velocity_e[iDim]*Density_e;
-			u_e[nVar-1] = Energy_e*Density_e;
-
-			/* --- Compute the boundary state u_i --- */
-			u_i[0] = Density_i;
-			for (iDim = 0; iDim < nDim; iDim++)
-				u_i[iDim+1] = Velocity_i[iDim]*Density_i;
-			u_i[nVar-1] = Energy_i*Density_i;
-
-			/*--- Compute the characteristic jumps ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-			{
-				dw[iVar] = 0;
-				for (jVar = 0; jVar < nVar; jVar++)
-					dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
-
-			}
-
-			/*--- Compute the boundary state u_b using characteristics ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-			{
-				u_b[iVar] = u_i[iVar];
-
-				for (jVar = 0; jVar < nVar; jVar++)
-				{
-					if (Lambda_i[jVar] < 0)
-					{
-						u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
-
-					}
-				}
-			}
-
-
-			/*--- Compute the thermodynamic state in u_b ---*/
-			Density_b = u_b[0];
-			Velocity2_b = 0;
-			for (iDim = 0; iDim < nDim; iDim++)
-			{
-				Velocity_b[iDim] = u_b[iDim+1]/Density_b;
-				Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
-			}
-			Energy_b = u_b[nVar-1]/Density_b;
-			StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
-			FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
-			Pressure_b = FluidModel->GetPressure();
-			Temperature_b = FluidModel->GetTemperature();
-			Enthalpy_b = Energy_b + Pressure_b/Density_b;
-			Kappa_b = FluidModel->GetdPde_rho() / Density_b;
-			Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
-
-			/*--- Compute the residuals ---*/
-			conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
-
-			/*--- Residual contribution due to grid motion ---*/
-			if (grid_movement) {
-				gridVel = geometry->node[iPoint]->GetGridVel();
-				su2double projVelocity = 0.0;
-
-				for (iDim = 0; iDim < nDim; iDim++)
-					projVelocity +=  gridVel[iDim]*Normal[iDim];
-				for (iVar = 0; iVar < nVar; iVar++)
-					Residual[iVar] -= projVelocity *(u_b[iVar]);
-			}
-
-			if (implicit) {
-
-				Jacobian_b = new su2double*[nVar];
-				DubDu = new su2double*[nVar];
-				for (iVar = 0; iVar < nVar; iVar++)
-				{
-					Jacobian_b[iVar] = new su2double[nVar];
-					DubDu[iVar] = new su2double[nVar];
-				}
-
-				/*--- Initialize DubDu to unit matrix---*/
-
-				for (iVar = 0; iVar < nVar; iVar++)
-				{
-					for (jVar = 0; jVar < nVar; jVar++)
-						DubDu[iVar][jVar]= 0;
-
-					DubDu[iVar][iVar]= 1;
-				}
-
-				/*--- Compute DubDu -= RNL---*/
-				for (iVar=0; iVar<nVar; iVar++)
-				{
-					for (jVar=0; jVar<nVar; jVar++)
-					{
-						for (kVar=0; kVar<nVar; kVar++)
-						{
-							if (Lambda_i[kVar]<0)
-								DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
-						}
-					}
-				}
-
-				/*--- Compute flux Jacobian in state b ---*/
-				conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
-
-				/*--- Jacobian contribution due to grid motion ---*/
-				if (grid_movement)
-				{
-					gridVel = geometry->node[iPoint]->GetGridVel();
-					su2double projVelocity = 0.0;
-					for (iDim = 0; iDim < nDim; iDim++)
-						projVelocity +=  gridVel[iDim]*Normal[iDim];
-					for (iVar = 0; iVar < nVar; iVar++){
-						Residual[iVar] -= projVelocity *(u_b[iVar]);
-						Jacobian_b[iVar][iVar] -= projVelocity;
-					}
-
-				}
-
-				/*--- initiate Jacobian_i to zero matrix ---*/
-				for (iVar=0; iVar<nVar; iVar++)
-					for (jVar=0; jVar<nVar; jVar++)
-						Jacobian_i[iVar][jVar] = 0.0;
-
-				/*--- Compute numerical flux Jacobian at node i ---*/
-				for (iVar=0; iVar<nVar; iVar++) {
-					for (jVar=0; jVar<nVar; jVar++) {
-						for (kVar=0; kVar<nVar; kVar++) {
-							Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
-						}
-					}
-				}
-
-				for (iVar = 0; iVar < nVar; iVar++) {
-					delete [] Jacobian_b[iVar];
-					delete [] DubDu[iVar];
-				}
-				delete [] Jacobian_b;
-				delete [] DubDu;
-			}
-
-			/*--- Update residual value ---*/
-			LinSysRes.AddBlock(iPoint, Residual);
-
-			/*--- Jacobian contribution for implicit integration ---*/
-			if (implicit)
-				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-			/*--- Roe Turkel preconditioning, set the value of beta ---*/
-			if (config->GetKind_Upwind() == TURKEL)
-				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-
-			/*--- Viscous contribution ---*/
-			if (viscous) {
-
-				/*--- Primitive variables, using the derived quantities ---*/
-				V_boundary[0] = Temperature_b;
-				for (iDim = 0; iDim < nDim; iDim++)
-					V_boundary[iDim+1] = Velocity_b[iDim];
-				V_boundary[nDim+1] = Pressure_b;
-				V_boundary[nDim+2] = Density_b;
-				V_boundary[nDim+3] = Enthalpy_b;
-
-				/*--- Set laminar and eddy viscosity at the infinity ---*/
-				V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
-				V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
-				V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
-				V_boundary[nDim+8] = FluidModel->GetCp();
-
-				/*--- Set the normal vector and the coordinates ---*/
-				visc_numerics->SetNormal(Normal);
-				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-				/*--- Primitive variables, and gradient ---*/
-				visc_numerics->SetPrimitive(V_domain, V_boundary);
-				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-
-				/*--- Secondary variables ---*/
-				S_domain = node[iPoint]->GetSecondary();
-
-				/*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
-
-				S_boundary[0]= FluidModel->GetdPdrho_e();
-				S_boundary[1]= FluidModel->GetdPde_rho();
-
-				S_boundary[2]= FluidModel->GetdTdrho_e();
-				S_boundary[3]= FluidModel->GetdTde_rho();
-
-				/*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
-
-				S_boundary[4]= FluidModel->Getdmudrho_T();
-				S_boundary[5]= FluidModel->GetdmudT_rho();
-
-				S_boundary[6]= FluidModel->Getdktdrho_T();
-				S_boundary[7]= FluidModel->GetdktdT_rho();
-
-				visc_numerics->SetSecondary(S_domain, S_boundary);
-
-				/*--- Turbulent kinetic energy ---*/
-				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-
-				/*--- Compute and update residual ---*/
-				visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-				LinSysRes.SubtractBlock(iPoint, Residual);
-
-				/*--- Jacobian contribution for implicit integration ---*/
-				if (implicit)
-					Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
-			}
-  }
+    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+
+      /*--- using the other vertex information for retrieving some information ---*/
+      oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
+      V_boundary= GetCharacPrimVar(val_marker, oldVertex);
+
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
+
+      /*--- Normal vector for this vertex (negate for outward convention),
+       * 		this normal is scaled with the area of the face of the element  ---*/
+      geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      /*--- find the node related to the vertex ---*/
+      iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()){
+
+        /*--- Normalize Normal vector for this vertex (already for outward convention) ---*/
+        geometry->turbovertex[val_marker][iSpan][iVertex]->GetNormal(UnitNormal);
+        geometry->turbovertex[val_marker][iSpan][iVertex]->GetTurboNormal(turboNormal);
+
+        /*--- Retrieve solution at this boundary node ---*/
+        V_domain = node[iPoint]->GetPrimitive();
+
+        /* --- Compute the internal state u_i --- */
+        Velocity2_i = 0;
+        for (iDim=0; iDim < nDim; iDim++)
+        {
+          Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+          Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
+        }
+
+        Density_i = node[iPoint]->GetDensity();
+
+        Energy_i = node[iPoint]->GetEnergy();
+        StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+
+        FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
+
+        Pressure_i = FluidModel->GetPressure();
+        Enthalpy_i = Energy_i + Pressure_i/Density_i;
+
+        SoundSpeed_i = FluidModel->GetSoundSpeed();
+
+        Kappa_i = FluidModel->GetdPde_rho() / Density_i;
+        Chi_i = FluidModel->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
+
+        ProjVelocity_i = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+
+        /*--- Build the external state u_e from boundary data and internal node ---*/
+
+        switch(config->GetKind_Data_Riemann(Marker_Tag))
+        {
+          //TODO(turbo), generilize for 3D case
+          //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
+          //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
+          case TOTAL_CONDITIONS_PT:
+
+            /*--- Retrieve the specified total conditions for this boundary. ---*/
+            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+            else P_Total  = config->GetRiemann_Var1(Marker_Tag);
+            T_Total  = config->GetRiemann_Var2(Marker_Tag);
+            Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+
+            /*--- Non-dim. the inputs if necessary. ---*/
+            P_Total /= config->GetPressure_Ref();
+            T_Total /= config->GetTemperature_Ref();
+
+            /* --- Computes the total state --- */
+            FluidModel->SetTDState_PT(P_Total, T_Total);
+            Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+            Entropy_e = FluidModel->GetEntropy();
+
+            /* --- Compute the boundary state u_e --- */
+            Velocity2_e = Velocity2_i;
+            for (iDim = 0; iDim < nDim; iDim++)
+              turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+            ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
+            StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+            Density_e = FluidModel->GetDensity();
+            StaticEnergy_e = FluidModel->GetStaticEnergy();
+            Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+            if (tkeNeeded) Energy_e += GetTke_Inf();
+            break;
+
+          case MIXING_IN:
+
+            /* --- compute total averaged quantities ---*/
+            FluidModel->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
+            AverageEnthalpy = FluidModel->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
+            AverageEntropy  = FluidModel->GetEntropy();
+
+            FlowDirMixMag = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
+            for (iDim = 0; iDim < nDim; iDim++){
+              FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
+            }
+
+
+            /* --- Computes the total state --- */
+            Enthalpy_e = AverageEnthalpy;
+            Entropy_e = AverageEntropy;
+
+            /* --- Compute the boundary state u_e --- */
+            Velocity2_e = Velocity2_i;
+            for (iDim = 0; iDim < nDim; iDim++){
+              turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
+
+            }
+            ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
+
+            StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+            Density_e = FluidModel->GetDensity();
+            StaticEnergy_e = FluidModel->GetStaticEnergy();
+            Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+            //				if (tkeNeeded) Energy_e += GetTke_Inf();
+            break;
+
+
+          case MIXING_OUT:
+
+            /*--- Retrieve the staic pressure for this boundary. ---*/
+            Pressure_e = ExtAveragePressure[val_marker][iSpan];
+            Density_e = Density_i;
+
+            /* --- Compute the boundary state u_e --- */
+            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+            Velocity2_e = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity_e[iDim] = Velocity_i[iDim];
+              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+            }
+            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+            break;
+
+          case STATIC_PRESSURE:
+
+            /*--- Retrieve the staic pressure for this boundary. ---*/
+            Pressure_e = config->GetRiemann_Var1(Marker_Tag);
+            Pressure_e /= config->GetPressure_Ref();
+            Density_e = Density_i;
+
+            /* --- Compute the boundary state u_e --- */
+            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+            Velocity2_e = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity_e[iDim] = Velocity_i[iDim];
+              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+            }
+            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+            break;
+
+
+          case RADIAL_EQUILIBRIUM:
+
+            /*--- Retrieve the staic pressure for this boundary. ---*/
+            Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
+            Density_e = Density_i;
+
+            /* --- Compute the boundary state u_e --- */
+            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+            Velocity2_e = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity_e[iDim] = Velocity_i[iDim];
+              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+            }
+            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+            break;
+
+          default:
+            cout << "Warning! Invalid Riemann input!" << endl;
+            exit(EXIT_FAILURE);
+            break;
+
+        }
+
+        /*--- Compute P (matrix of right eigenvectors) ---*/
+        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+
+        /*--- Compute inverse P (matrix of left eigenvectors)---*/
+        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+
+        /*--- eigenvalues contribution due to grid motion ---*/
+        if (grid_movement){
+          gridVel = geometry->node[iPoint]->GetGridVel();
+
+          su2double ProjGridVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGridVel   += gridVel[iDim]*UnitNormal[iDim];
+          ProjVelocity_i -= ProjGridVel;
+        }
+
+        /*--- Flow eigenvalues ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          Lambda_i[iDim] = ProjVelocity_i;
+        Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
+        Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
+
+        /* --- Compute the boundary state u_e --- */
+        u_e[0] = Density_e;
+        for (iDim = 0; iDim < nDim; iDim++)
+          u_e[iDim+1] = Velocity_e[iDim]*Density_e;
+        u_e[nVar-1] = Energy_e*Density_e;
+
+        /* --- Compute the boundary state u_i --- */
+        u_i[0] = Density_i;
+        for (iDim = 0; iDim < nDim; iDim++)
+          u_i[iDim+1] = Velocity_i[iDim]*Density_i;
+        u_i[nVar-1] = Energy_i*Density_i;
+
+        /*--- Compute the characteristic jumps ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+        {
+          dw[iVar] = 0;
+          for (jVar = 0; jVar < nVar; jVar++)
+            dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+
+        }
+
+        /*--- Compute the boundary state u_b using characteristics ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+        {
+          u_b[iVar] = u_i[iVar];
+
+          for (jVar = 0; jVar < nVar; jVar++)
+          {
+            if (Lambda_i[jVar] < 0)
+            {
+              u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+
+            }
+          }
+        }
+
+
+        /*--- Compute the thermodynamic state in u_b ---*/
+        Density_b = u_b[0];
+        Velocity2_b = 0;
+        for (iDim = 0; iDim < nDim; iDim++)
+        {
+          Velocity_b[iDim] = u_b[iDim+1]/Density_b;
+          Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
+        }
+        Energy_b = u_b[nVar-1]/Density_b;
+        StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+        FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
+        Pressure_b = FluidModel->GetPressure();
+        Temperature_b = FluidModel->GetTemperature();
+        Enthalpy_b = Energy_b + Pressure_b/Density_b;
+        Kappa_b = FluidModel->GetdPde_rho() / Density_b;
+        Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+
+        /*--- Compute the residuals ---*/
+        conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
+
+        /*--- Residual contribution due to grid motion ---*/
+        if (grid_movement) {
+          gridVel = geometry->node[iPoint]->GetGridVel();
+          su2double projVelocity = 0.0;
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            projVelocity +=  gridVel[iDim]*Normal[iDim];
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] -= projVelocity *(u_b[iVar]);
+        }
+
+        if (implicit) {
+
+          Jacobian_b = new su2double*[nVar];
+          DubDu = new su2double*[nVar];
+          for (iVar = 0; iVar < nVar; iVar++)
+          {
+            Jacobian_b[iVar] = new su2double[nVar];
+            DubDu[iVar] = new su2double[nVar];
+          }
+
+          /*--- Initialize DubDu to unit matrix---*/
+
+          for (iVar = 0; iVar < nVar; iVar++)
+          {
+            for (jVar = 0; jVar < nVar; jVar++)
+              DubDu[iVar][jVar]= 0;
+
+            DubDu[iVar][iVar]= 1;
+          }
+
+          /*--- Compute DubDu -= RNL---*/
+          for (iVar=0; iVar<nVar; iVar++)
+          {
+            for (jVar=0; jVar<nVar; jVar++)
+            {
+              for (kVar=0; kVar<nVar; kVar++)
+              {
+                if (Lambda_i[kVar]<0)
+                  DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
+              }
+            }
+          }
+
+          /*--- Compute flux Jacobian in state b ---*/
+          conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
+
+          /*--- Jacobian contribution due to grid motion ---*/
+          if (grid_movement)
+          {
+            gridVel = geometry->node[iPoint]->GetGridVel();
+            su2double projVelocity = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              projVelocity +=  gridVel[iDim]*Normal[iDim];
+            for (iVar = 0; iVar < nVar; iVar++){
+              Residual[iVar] -= projVelocity *(u_b[iVar]);
+              Jacobian_b[iVar][iVar] -= projVelocity;
+            }
+
+          }
+
+          /*--- initiate Jacobian_i to zero matrix ---*/
+          for (iVar=0; iVar<nVar; iVar++)
+            for (jVar=0; jVar<nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+
+          /*--- Compute numerical flux Jacobian at node i ---*/
+          for (iVar=0; iVar<nVar; iVar++) {
+            for (jVar=0; jVar<nVar; jVar++) {
+              for (kVar=0; kVar<nVar; kVar++) {
+                Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
+              }
+            }
+          }
+
+          for (iVar = 0; iVar < nVar; iVar++) {
+            delete [] Jacobian_b[iVar];
+            delete [] DubDu[iVar];
+          }
+          delete [] Jacobian_b;
+          delete [] DubDu;
+        }
+
+        /*--- Update residual value ---*/
+        LinSysRes.AddBlock(iPoint, Residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        if (implicit)
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+        /*--- Roe Turkel preconditioning, set the value of beta ---*/
+        if (config->GetKind_Upwind() == TURKEL)
+          node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
+
+        /*--- Viscous contribution ---*/
+        if (viscous) {
+
+          /*--- Primitive variables, using the derived quantities ---*/
+          V_boundary[0] = Temperature_b;
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_boundary[iDim+1] = Velocity_b[iDim];
+          V_boundary[nDim+1] = Pressure_b;
+          V_boundary[nDim+2] = Density_b;
+          V_boundary[nDim+3] = Enthalpy_b;
+
+          /*--- Set laminar and eddy viscosity at the infinity ---*/
+          V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
+          V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
+          V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
+          V_boundary[nDim+8] = FluidModel->GetCp();
+
+          /*--- Set the normal vector and the coordinates ---*/
+          visc_numerics->SetNormal(Normal);
+          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+          /*--- Primitive variables, and gradient ---*/
+          visc_numerics->SetPrimitive(V_domain, V_boundary);
+          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+          /*--- Secondary variables ---*/
+          S_domain = node[iPoint]->GetSecondary();
+
+          /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+
+          S_boundary[0]= FluidModel->GetdPdrho_e();
+          S_boundary[1]= FluidModel->GetdPde_rho();
+
+          S_boundary[2]= FluidModel->GetdTdrho_e();
+          S_boundary[3]= FluidModel->GetdTde_rho();
+
+          /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+          S_boundary[4]= FluidModel->Getdmudrho_T();
+          S_boundary[5]= FluidModel->GetdmudT_rho();
+
+          S_boundary[6]= FluidModel->Getdktdrho_T();
+          S_boundary[7]= FluidModel->GetdktdT_rho();
+
+          visc_numerics->SetSecondary(S_domain, S_boundary);
+
+          /*--- Turbulent kinetic energy ---*/
+          if (config->GetKind_Turb_Model() == SST)
+            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+          /*--- Compute and update residual ---*/
+          visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          LinSysRes.SubtractBlock(iPoint, Residual);
+
+          /*--- Jacobian contribution for implicit integration ---*/
+          if (implicit)
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+        }
+      }
+    }
 }
 
   /*--- Free locally allocated memory ---*/
@@ -11477,59 +11479,62 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 
                 /*--- find the node related to the vertex ---*/
                 iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
-                j			 = geometry->turbovertex[iMarker][iSpan][iVertex]->GetGlobalVertexIndex();
+
+                if (geometry->node[iPoint]->GetDomain()){
+                  j			 = geometry->turbovertex[iMarker][iSpan][iVertex]->GetGlobalVertexIndex();
 
 
-                geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
-                /*--- Compute the internal state _i ---*/
+                  geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
+                  /*--- Compute the internal state _i ---*/
 
-                Pressure_i = node[iPoint]->GetPressure();
-                Density_i = node[iPoint]->GetDensity();
-                for (iDim = 0; iDim < nDim; iDim++)
-                {
-                  Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+                  Pressure_i = node[iPoint]->GetPressure();
+                  Density_i = node[iPoint]->GetDensity();
+                  for (iDim = 0; iDim < nDim; iDim++)
+                  {
+                    Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+                  }
+                  ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+
+                  if(nDim ==2){
+                    deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
+                    deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
+                    deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
+                    deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
+                  }
+                  else{
+                    //Here 3d
+                    deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
+                    deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
+                    deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
+                    deltaprim[3] = turboVelocity[2] - AverageTurboVelocity[iMarker][iSpan][2]; //New char
+                    deltaprim[4] = Pressure_i - AveragePressure[iMarker][iSpan];
+                  }
+
+                  FluidModel->SetTDState_Prho(AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
+                  AverageSoundSpeed = FluidModel->GetSoundSpeed();
+                  conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[iMarker][iSpan], deltaprim, cj);
+
+                  /*-----this is only valid 2D ----*/
+                  if(nDim ==2){
+                    cj_out1 = cj[1];
+                    cj_out2 = cj[2];
+                    cj_inf  = cj[3];
+                  }
+                  else{
+                    //Here 3D
+                    cj_out1 = cj[1];
+                    cj_out2 = cj[3];
+                    cj_inf  = cj[4];
+                  }
+
+                  jk_nVert = j*k/(nVert.real());
+                  //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
+                  complex<su2double> expArg = complex<su2double>(cos(TwoPi*jk_nVert)) - I*complex<su2double>(sin(TwoPi*jk_nVert));
+
+                  cktemp_out1 +=  cj_out1*expArg/nVert;
+                  cktemp_out2 +=  cj_out2*expArg/nVert;
+                  cktemp_inf  +=  cj_inf*expArg/nVert;
                 }
-                ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
-
-                if(nDim ==2){
-                  deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
-                  deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
-                  deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
-                  deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
-                }
-                else{
-                  //Here 3d
-                  deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
-                  deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
-                  deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
-                  deltaprim[3] = turboVelocity[2] - AverageTurboVelocity[iMarker][iSpan][2]; //New char
-                  deltaprim[4] = Pressure_i - AveragePressure[iMarker][iSpan];
-                }
-
-                FluidModel->SetTDState_Prho(AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
-                AverageSoundSpeed = FluidModel->GetSoundSpeed();
-                conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[iMarker][iSpan], deltaprim, cj);
-
-                /*-----this is only valid 2D ----*/
-                if(nDim ==2){
-                  cj_out1 = cj[1];
-                  cj_out2 = cj[2];
-                  cj_inf  = cj[3];
-                }
-                else{
-                  //Here 3D
-                  cj_out1 = cj[1];
-                  cj_out2 = cj[3];
-                  cj_inf  = cj[4];
-                }
-
-                jk_nVert = j*k/(nVert.real());
-                //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
-                complex<su2double> expArg = complex<su2double>(cos(TwoPi*jk_nVert)) - I*complex<su2double>(sin(TwoPi*jk_nVert));
-
-                cktemp_out1 +=  cj_out1*expArg/nVert;
-                cktemp_out2 +=  cj_out2*expArg/nVert;
-                cktemp_inf  +=  cj_inf*expArg/nVert;
               }
             }
           }
@@ -15054,46 +15059,46 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
     TotalAreaDensity  = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-    		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-    			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-    				/*--- Retrieve Old Solution ---*/
+            /*--- Retrieve Old Solution ---*/
 
-    				/*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
-    				for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
-    					iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+            /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
+            for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
+              iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+              if (geometry->node[iPoint]->GetDomain()){
+                /*--- Compute the integral fluxes for the boundaries ---*/
 
-    					/*--- Compute the integral fluxes for the boundaries ---*/
+                Pressure = node[iPoint]->GetPressure();
+                Density = node[iPoint]->GetDensity();
+                Enthalpy = node[iPoint]->GetEnthalpy();
 
-    					Pressure = node[iPoint]->GetPressure();
-    					Density = node[iPoint]->GetDensity();
-    					Enthalpy = node[iPoint]->GetEnthalpy();
+                /*--- Normal vector for this vertex (negate for outward convention) ---*/
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
+                Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
+                su2double VelNormal = 0.0, VelSq = 0.0;
 
-    					/*--- Normal vector for this vertex (negate for outward convention) ---*/
-    					geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
-    					geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-    					Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
-    					su2double VelNormal = 0.0, VelSq = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
+                  VelSq += Velocity[iDim]*Velocity[iDim];
+                }
 
-    					for (iDim = 0; iDim < nDim; iDim++) {
-    						Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
-    						VelSq += Velocity[iDim]*Velocity[iDim];
-    					}
+                ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
-    					ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+                /*--- Compute different integral quantities for the boundary of interest ---*/
 
-    					/*--- Compute different integral quantities for the boundary of interest ---*/
-
-    					TotalAreaPressure += Area*Pressure;
-    					TotalAreaDensity  += Area*Density;
-    					for (iDim = 0; iDim < nDim; iDim++)
-    						TotalAreaVelocity[iDim] += Area*Velocity[iDim];
-
-    				}
-    			}
-    		}
-    	}
+                TotalAreaPressure += Area*Pressure;
+                TotalAreaDensity  += Area*Density;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+              }
+            }
+          }
+        }
+      }
     }
 
 
@@ -15281,91 +15286,94 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-          	/*--- Retrieve Old Solution ---*/
+            /*--- Retrieve Old Solution ---*/
 
             /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
             for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
               iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
 
-              /*--- Compute the integral fluxes for the boundaries ---*/
-              if (compressible) {
-                Pressure = node[iPoint]->GetPressure();
-                Density = node[iPoint]->GetDensity();
-                Enthalpy = node[iPoint]->GetEnthalpy();
-              }
-              else {
-                cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
-                cout << "Press any key to exit..." << endl;
-                cin.get();
-                exit(1);
-              }
+              if (geometry->node[iPoint]->GetDomain()){
+
+                /*--- Compute the integral fluxes for the boundaries ---*/
+                if (compressible) {
+                  Pressure = node[iPoint]->GetPressure();
+                  Density = node[iPoint]->GetDensity();
+                  Enthalpy = node[iPoint]->GetEnthalpy();
+                }
+                else {
+                  cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
+                  cout << "Press any key to exit..." << endl;
+                  cin.get();
+                  exit(1);
+                }
 
 
-              /*--- Normal vector for this vertex (negate for outward convention) ---*/
-              geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
-              geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-              Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
-              su2double VelNormal = 0.0, VelSq = 0.0;
+                /*--- Normal vector for this vertex (negate for outward convention) ---*/
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
+                Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
+                su2double VelNormal = 0.0, VelSq = 0.0;
 
-              for (iDim = 0; iDim < nDim; iDim++) {
-                Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
-                VelNormal += UnitNormal[iDim]*Velocity[iDim];
-                VelSq += Velocity[iDim]*Velocity[iDim];
-              }
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
+                  VelNormal += UnitNormal[iDim]*Velocity[iDim];
+                  VelSq += Velocity[iDim]*Velocity[iDim];
+                }
 
-              ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+                ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
-              /*--- Compute different integral quantities for the boundary of interest ---*/
+                /*--- Compute different integral quantities for the boundary of interest ---*/
 
-              TotalDensity += Density;
-              TotalPressure += Pressure;
-              for (iDim = 0; iDim < nDim; iDim++)
-              	TotalVelocity[iDim] += Velocity[iDim];
+                TotalDensity += Density;
+                TotalPressure += Pressure;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalVelocity[iDim] += Velocity[iDim];
 
-              TotalAreaPressure += Area*Pressure;
-              TotalAreaDensity  += Area*Density;
-              for (iDim = 0; iDim < nDim; iDim++)
-              	TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+                TotalAreaPressure += Area*Pressure;
+                TotalAreaDensity  += Area*Density;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalAreaVelocity[iDim] += Area*Velocity[iDim];
 
-              TotalMassPressure += Area*(Density*TurboVelocity[0] )*Pressure;
-              TotalMassDensity  += Area*(Density*TurboVelocity[0] )*Density;
-              for (iDim = 0; iDim < nDim; iDim++)
-              	TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
+                TotalMassPressure += Area*(Density*TurboVelocity[0] )*Pressure;
+                TotalMassDensity  += Area*(Density*TurboVelocity[0] )*Density;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
 
-              TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
-              TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
-              for (iDim = 2; iDim < nDim+1; iDim++)
-              	TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
-              TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
+                TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
+                TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
+                for (iDim = 2; iDim < nDim+1; iDim++)
+                  TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
+                TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
 
 
-              /*--- Compute turbulent integral quantities for the boundary of interest ---*/
+                /*--- Compute turbulent integral quantities for the boundary of interest ---*/
 
-              if(turbulent){
-              	if(menter_sst){
-              		Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-              		Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
-              	}
-              	if(spalart_allmaras){
-              		Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-              	}
+                if(turbulent){
+                  if(menter_sst){
+                    Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+                    Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
+                  }
+                  if(spalart_allmaras){
+                    Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+                  }
 
-              	TotalKei   += Kei;
-              	TotalOmega += Omega;
-              	TotalNu     += Nu;
+                  TotalKei   += Kei;
+                  TotalOmega += Omega;
+                  TotalNu     += Nu;
 
-              	TotalAreaKei    += Area*Kei;
-              	TotalAreaOmega  += Area*Omega;
-              	TotalAreaNu     += Area*Nu;
+                  TotalAreaKei    += Area*Kei;
+                  TotalAreaOmega  += Area*Omega;
+                  TotalAreaNu     += Area*Nu;
 
-              	TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
-              	TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
-              	TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
+                  TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
+                  TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
+                  TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
 
-              	TotalAreaKei    += Area*Kei;
-              	TotalAreaOmega  += Area*Omega;
-              	TotalAreaNu     += Area*Nu;
+                  TotalAreaKei    += Area*Kei;
+                  TotalAreaOmega  += Area*Omega;
+                  TotalAreaNu     += Area*Nu;
 
+                }
               }
             }
           }
@@ -15857,91 +15865,93 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-          	/*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
-          	for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
-          		iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+            /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
+            for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
+              iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
 
-          		/*--- Compute the integral fluxes for the boundaries ---*/
-          		if (compressible) {
-          			Pressure = node[iPoint]->GetPressure();
-          			Density = node[iPoint]->GetDensity();
-          			Enthalpy = node[iPoint]->GetEnthalpy();
-          		}
-          		else {
-          			cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
-          			cout << "Press any key to exit..." << endl;
-          			cin.get();
-          			exit(1);
-          		}
-
-
-          		/*--- Normal vector for this vertex (negate for outward convention) ---*/
-          		geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
-          		geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-          		Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
-          		su2double VelNormal = 0.0, VelSq = 0.0;
-          		for (iDim = 0; iDim < nDim; iDim++) {
-          			Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
-          			VelNormal += UnitNormal[iDim]*Velocity[iDim];
-          			VelSq += Velocity[iDim]*Velocity[iDim];
-          		}
-
-          		ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+              if (geometry->node[iPoint]->GetDomain()){
+                /*--- Compute the integral fluxes for the boundaries ---*/
+                if (compressible) {
+                  Pressure = node[iPoint]->GetPressure();
+                  Density = node[iPoint]->GetDensity();
+                  Enthalpy = node[iPoint]->GetEnthalpy();
+                }
+                else {
+                  cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
+                  cout << "Press any key to exit..." << endl;
+                  cin.get();
+                  exit(1);
+                }
 
 
-          		/*--- Compute different integral quantities for the boundary of interest ---*/
+                /*--- Normal vector for this vertex (negate for outward convention) ---*/
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
+                Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
+                su2double VelNormal = 0.0, VelSq = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
+                  VelNormal += UnitNormal[iDim]*Velocity[iDim];
+                  VelSq += Velocity[iDim]*Velocity[iDim];
+                }
 
-          		TotalDensity += Density;
-          		TotalPressure += Pressure;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			TotalVelocity[iDim] += Velocity[iDim];
-
-          		TotalAreaPressure += Area*Pressure;
-          		TotalAreaDensity  += Area*Density;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			TotalAreaVelocity[iDim] += Area*Velocity[iDim];
-
-          		TotalMassPressure += Area*(Density*TurboVelocity[0] )*Pressure;
-          		TotalMassDensity  += Area*(Density*TurboVelocity[0] )*Density;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
-
-          		TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
-          		TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
-          		for (iDim = 2; iDim < nDim+1; iDim++)
-          			TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
-          		TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
+                ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
 
-          		/*--- Compute turbulent integral quantities for the boundary of interest ---*/
+                /*--- Compute different integral quantities for the boundary of interest ---*/
 
-          		if(turbulent){
-          			if(menter_sst){
-          				Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-          				Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
-          			}
-          			if(spalart_allmaras){
-          				Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-          			}
+                TotalDensity += Density;
+                TotalPressure += Pressure;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalVelocity[iDim] += Velocity[iDim];
 
-          			TotalKei   += Kei;
-          			TotalOmega += Omega;
-          			TotalNu     += Nu;
+                TotalAreaPressure += Area*Pressure;
+                TotalAreaDensity  += Area*Density;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalAreaVelocity[iDim] += Area*Velocity[iDim];
 
-          			TotalAreaKei    += Area*Kei;
-          			TotalAreaOmega  += Area*Omega;
-          			TotalAreaNu     += Area*Nu;
+                TotalMassPressure += Area*(Density*TurboVelocity[0] )*Pressure;
+                TotalMassDensity  += Area*(Density*TurboVelocity[0] )*Density;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
 
-          			TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
-          			TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
-          			TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
+                TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
+                TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
+                for (iDim = 2; iDim < nDim+1; iDim++)
+                  TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
+                TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
 
-          			TotalAreaKei    += Area*Kei;
-          			TotalAreaOmega  += Area*Omega;
-          			TotalAreaNu     += Area*Nu;
 
-          		}
-          	}
+                /*--- Compute turbulent integral quantities for the boundary of interest ---*/
+
+                if(turbulent){
+                  if(menter_sst){
+                    Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+                    Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
+                  }
+                  if(spalart_allmaras){
+                    Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+                  }
+
+                  TotalKei   += Kei;
+                  TotalOmega += Omega;
+                  TotalNu     += Nu;
+
+                  TotalAreaKei    += Area*Kei;
+                  TotalAreaOmega  += Area*Omega;
+                  TotalAreaNu     += Area*Nu;
+
+                  TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
+                  TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
+                  TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
+
+                  TotalAreaKei    += Area*Kei;
+                  TotalAreaOmega  += Area*Omega;
+                  TotalAreaNu     += Area*Nu;
+
+                }
+              }
+            }
           }
         }
       }
