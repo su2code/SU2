@@ -121,7 +121,7 @@ class COutput {
   su2double **Parallel_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   su2double **Parallel_Surf_Data;              // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
-  
+
   su2double **Data;
   unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
   bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
@@ -373,6 +373,7 @@ public:
    * \brief Write a native SU2 restart file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
   void SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
@@ -381,10 +382,20 @@ public:
    * \brief Write a native SU2 restart file (ASCII) in parallel.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
+  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Write a native SU2 restart file (binary) in parallel.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Flow, adjoint or linearized solution.
+   * \param[in] val_iZone - iZone index.
+   */
+  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
   /*!
    * \brief Write the x, y, & z coordinates to a CGNS output file.
    * \param[in] config - Definition of the particular problem.
@@ -428,6 +439,16 @@ public:
   void SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file);
 
   /*!
+   * \brief Write a Paraview ASCII solution file with parallel output.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+   */
+  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+
+  /*!
    * \brief Write a Tecplot ASCII solution file.
    * \param[in] geometry - Geometrical definition of the problem.
    */
@@ -458,7 +479,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void SetTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.

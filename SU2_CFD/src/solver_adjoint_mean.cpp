@@ -62,12 +62,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   string filename, AdjExt;
   su2double myArea_Monitored, Area, *Normal;
-  su2double dCD_dCL_, dCD_dCM_;
-  string::size_type position;
-  unsigned long ExtIter_;
 
   bool restart  = config->GetRestart();
-  bool metadata = config->GetUpdate_Restart_Params();
 
   bool axisymmetric = config->GetAxisymmetric();
   
@@ -300,65 +296,12 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CAdjEulerVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
 
-  if (restart && (iMesh == MESH_0) && metadata) {
+  /*--- Read the restart metadata. ---*/
 
-    /*--- Restart the solution from file information ---*/
-
-    filename = "restart_adj.meta";
-
-    restart_file.open(filename.data(), ios::in);
-
-    /*--- In case there is no file ---*/
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no adjoint restart metadata file (" << filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
-
-      while (getline (restart_file, text_line)) {
-
-
-        if (config->GetEval_dCD_dCX() == true) {
-
-          /*--- dCD_dCL coefficient ---*/
-
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
-            config->SetdCD_dCL(dCD_dCL_);
-          }
-
-          /*--- dCD_dCM coefficient ---*/
-
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
-            config->SetdCD_dCM(dCD_dCM_);
-          }
-
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          config->SetExtIter_OffSet(ExtIter_);
-        }
-
-      }
-      
-      /*--- Close the restart file ---*/
-      
-      restart_file.close();
-      
-    }
-    
+  if (restart && (iMesh == MESH_0)) {
+    mesh_filename = config->GetSolution_AdjFileName();
+    filename      = config->GetObjFunc_Extension(mesh_filename);
+    Read_SU2_Restart_Metadata(geometry, config, filename);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
@@ -5864,6 +5807,10 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -5874,63 +5821,41 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-  /*--- Open the restart file, and throw an error if this fails. ---*/
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no adjoint restart file!! " << restart_filename.data() << "."<< endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
+  /*--- Load data from the restart into correct containers. ---*/
 
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-
-  /*--- Read all lines in the restart file ---*/
-
+  int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-  /*--- The first line is the header ---*/
-
-  getline (restart_file, text_line);
-
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-    getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
-
+    
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-      iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local > -1) {
 
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
 
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
   }
 
@@ -5956,10 +5881,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     MPI_Finalize();
 #endif
   }
-
-  /*--- Close the restart file ---*/
-
-  restart_file.close();
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We also call the preprocessing routine
@@ -5990,6 +5911,12 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   delete [] Coord;
 
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
 }
 
 CAdjNSSolver::CAdjNSSolver(void) : CAdjEulerSolver() { }
@@ -5998,11 +5925,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
-  su2double dCD_dCL_, dCD_dCM_;
   ifstream restart_file;
   string filename, AdjExt;
-  string::size_type position;
-  unsigned long ExtIter_;
 
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double RefDensity  = config->GetDensity_FreeStreamND();
@@ -6202,62 +6126,12 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CAdjNSVariable(PsiRho_Inf, Phi_Inf, PsiE_Inf, nDim, nVar, config);
 
+  /*--- Read the restart metadata. ---*/
 
-  if (restart && (iMesh == MESH_0))  {
-
-    /*--- Restart the solution from file information ---*/
-
-    filename = "restart_adj.meta";
-
-    restart_file.open(filename.data(), ios::in);
-
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no adjoint restart metadata file (" << filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
-
-      while (getline (restart_file, text_line)) {
-
-        if (config->GetEval_dCD_dCX() ==  true) {
-
-          /*--- dCD_dCL coefficient ---*/
-
-          position = text_line.find ("DCD_DCL_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
-            config->SetdCD_dCL(dCD_dCL_);
-          }
-
-          /*--- dCD_dCM coefficient ---*/
-
-          position = text_line.find ("DCD_DCM_VALUE=",0);
-          if (position != string::npos) {
-            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
-            if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the dCD/dCM provided in\nthe adjointsolution file: " << dCD_dCM_ << " ." << endl;
-            config->SetdCD_dCM(dCD_dCM_);
-          }
-
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          config->SetExtIter_OffSet(ExtIter_);
-        }
-
-      }
-
-      /*--- Close the restart file ---*/
-      restart_file.close();
-      
-    }
+  if (restart && (iMesh == MESH_0)) {
+    mesh_filename = config->GetSolution_AdjFileName();
+    filename      = config->GetObjFunc_Extension(mesh_filename);
+    Read_SU2_Restart_Metadata(geometry, config, filename);
   }
 
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
