@@ -205,9 +205,9 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
 // swh
 CTurbKEVariable::CTurbKEVariable(void) : CTurbVariable() { }
 
-CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar,
-                                 su2double *constants, CConfig *config)
-: CTurbVariable(val_nDim, val_nvar, config) {
+CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar, su2double *constants, CConfig *config): CTurbVariable(val_nDim, val_nvar, config) {
+
+//CTurbKEVariable::CTurbKEVariable(su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar, su2double *constants, CConfig *config): CTurbVariable(val_nDim, val_nvar, config) {
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -239,7 +239,8 @@ CTurbKEVariable::~CTurbKEVariable(void) {
   
 }
 
-void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double val_f, su2double StrainMag) {
+//void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double val_f, su2double StrainMag) {
+void CTurbKEVariable::SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine,su2double val_epsi,su2double val_zeta, su2double StrainMag) {
 
 	unsigned short iDim;
 	su2double C_mu, C_T, C_L, C_eta;

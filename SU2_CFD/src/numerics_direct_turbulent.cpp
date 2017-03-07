@@ -1341,7 +1341,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
   su2double diff_i_epsi, diff_j_epsi;
   su2double diff_i_zeta, diff_j_zeta;
   su2double diff_i_f, diff_j_f;
-  su2double Lm_i, Lm_j;
+  //  su2double Lm_i, Lm_j;
   
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
@@ -1703,42 +1703,44 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   }
 
   // for readability...
-  tke  = TurbVar_i[0];
-  tdr  = TurbVar_i[1];
+  tke  = TurbVar_i[0]; ///Density_i;
+  tdr  = TurbVar_i[1]; ///Density_i;
   //  zeta = TurbVar_i[2];
+  v2   = TurbVar_i[2];
   f    = TurbVar_i[3];
   mu   = Laminar_Viscosity_i;
   muT  = Eddy_Viscosity_i;
   rho  = Density_i;
   S    = StrainMag_i; //*sqrt(2.0) already included
   Vol  = Volume;
-  v2 = TurbVar_i[2];
   //v2 = zeta*tke;
   zeta = v2/tke;
   nu = mu/rho;
   nuT = muT/rho;
 
+  //  if (tke>=20.0) {cout << "TKE: " << tke << "\n";}
+
   // limits?
-  tke  = max(tke,0.0);
+  //  tke  = max(tke,0.0);
   //  tdr  = max(tdr,0.0);
-  zeta = min(zeta,2.0/3.0);
-  zeta = max(zeta,0.0);
-  v2 = min(v2,2.0/3.0*tke);
-  v2 = max(v2,0.0);
+  //  zeta = min(zeta,2.0/3.0);
+  //  zeta = max(zeta,0.0);
+  //  v2 = min(v2,2.0/3.0*tke);
+  //  v2 = max(v2,0.0);
   //  f  = max(f,0.0);
 
   // from previous timestep
-  //  tke0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(5);
-  //  tdr0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(6);
-  //  zeta0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(7);
-  //  f0 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_Old(8);
+  //  tke0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(5);
+  //  tdr0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(6);
+  //  zeta0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(7);
+  //  f0 = solver_container[TURB_SOL]->node[iPoint]->GetSolution_Old(8);
 
   // denominator floors
   tke_d = max(tke,1.0E-10);
   tdr_d = max(tdr,1.0E-10);
   zeta_d = max(zeta,1.0E-6);
   v2_d = max(v2,1.0E-12);
-  f_d = max(f,1.0E-10);
+  //  f_d = max(f,1.0E-10);
 
   // must find T&L here due to Jacobian branching...
   //L = Lm_i;
@@ -1937,9 +1939,24 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[3][3] -= dDfdf * Vol;
   */
 
+  /*
+  cout << "C_2p: " << C_2p << "\n";
+  cout << "C_1: " << C_1 << "\n";
+  cout << "C_e1o: " << C_e1o << "\n";
+  cout << "C_e2: " << C_e2 << "\n";
+  cout << "C_T: " << C_T << "\n";
+  cout << "C_L: " << C_L << "\n";
+  cout << "C_eta: " << C_eta << "\n";
+  cout << "C_mu: " << C_mu << "\n";
+  */
 
     //--- v2-f ---//
-    C_e1 = C_e1o*(1.0+0.045*sqrt(tke/v2_d));
+    C_2f = C_2p;
+    //    f = (C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*(C_1-1.0)*tke)*rho/T)/tke_d;
+    //    su2double kf = (C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*(C_1-1.0)*tke)*rho/T);
+    //    kf = max(kf,0.0);
+
+    C_e1 = C_e1o*(1.0+0.045*sqrt(max(tke/v2_d,0.0)));
 
     //--- divergence of velocity ---//
     diverg = 0.0;
@@ -1948,20 +1965,23 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
  
     //--- Production ---// //<warp>//
     //pk = muT*(S*S - 2.0/3.0*diverg*diverg) - 2.0/3.0*rho*tke*diverg;
-    pk = muT*S*S - 2.0/3.0*rho*tke*diverg;
+    //    pk = muT*S*S - 2.0/3.0*rho*tke*diverg;
+    pk = 0.0;
+    //  cout << "pk: " << pk << "\n";
     pk = max(pk,0.0);
     pe = C_e1*pk/T;
     pv2 = rho*tke*f;
     pv2 = min(pv2,2.0/3.0*pk+5.0*rho*v2*tdr/tke_d);
+    //    pv2 = min(pv2,2.0/3.0*(pk+5.0*rho*tdr));
     //    pv2 = rho*f; //f=kf
     //C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke_d-0.55)));
     C_2f = C_2p;
     pf = (C_2f*pk/tke_d - ((C_1-6.0)*min(v2/tke_d,2.0/3.0) - 2.0/3.0*(C_1-1.0))*rho/T) * 1.0/(L*L);
     //    pf = (C_2f*pk - (v2*(C_1-6.0) - 2.0/3.0*tke*(C_1-1.0))*rho/T) * 1.0/(L*L); //f=kf
 
-    pe = max(pe,0.0);
-    pv2 = max(pv2,0.0);
-    pf = max(pf,0.0);
+    //    pe = max(pe,0.0);
+    //    pv2 = max(pv2,0.0);
+    //    pf = max(pf,0.0);
 
     //--- Dissipation ---//
     dk = rho*tdr;
@@ -2043,9 +2063,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
 
     dPv2dk = f;//    dPv2dk = 0.0;
     dPv2df = tke;//    dPv2df = 1.0;
-    dDv2dk = -6.0*v2/(tke*tke*rho)*rho*tdr;
-    dDv2de = 6.0*v2/tke;
-    dDv2dv2 = 6.0/(tke*rho)*rho*tdr;
+    dDv2dk = -6.0*v2/(tke_d*tke_d*rho)*rho*tdr;
+    dDv2de = 6.0*v2/tke_d;
+    dDv2dv2 = 6.0/(tke_d*rho)*rho*tdr;
 
     dPfdT = ((C_1-6.0)*v2/tke_d - 2.0/3.0*(C_1-1.0))*rho/(T*T) * 1.0/(L*L);
     dPfdL = -(C_2f*pk/tke_d - ((C_1-6.0)*v2/tke_d - 2.0/3.0*(C_1-1.0))*rho/T) * 2.0/(L*L*L);
@@ -2072,9 +2092,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[0][2] += 0.0;
     val_Jacobian_i[0][3] += 0.0;
 
-    val_Jacobian_i[1][0] += (dPedC*dCe1dk + dPedT*dTdrk) * Vol;
-    val_Jacobian_i[1][1] += (dPedT*dTdre) * Vol;
-    val_Jacobian_i[1][2] += (dPedC*dCe1dv2 + dPedT*dTdrv2) * Vol;
+    val_Jacobian_i[1][0] += 0.0; //(dPedC*dCe1dk + dPedT*dTdrk) * Vol;
+    val_Jacobian_i[1][1] += 0.0; //(dPedT*dTdre) * Vol;
+    val_Jacobian_i[1][2] += 0.0; //(dPedC*dCe1dv2 + dPedT*dTdrv2) * Vol;
     val_Jacobian_i[1][3] += 0.0;
 
     val_Jacobian_i[2][0] += dPv2dk*Vol;
@@ -2082,9 +2102,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[2][2] += 0.0;
     val_Jacobian_i[2][3] += dPv2df*Vol;
 
-    val_Jacobian_i[3][0] += (dPfdT*dTdrk + dPfdL*dLdrk + dPfdk) * Vol;
-    val_Jacobian_i[3][1] += (dPfdT*dTdre + dPfdL*dLdre + dPfde) * Vol;
-    val_Jacobian_i[3][2] += (dPfdT*dTdrv2 + dPfdL*dLdrv2 + dPfdv2) * Vol;
+    val_Jacobian_i[3][0] += dPfdk * Vol; //(dPfdT*dTdrk + dPfdL*dLdrk + dPfdk) * Vol;
+    val_Jacobian_i[3][1] += dPfde * Vol; //(dPfdT*dTdre + dPfdL*dLdre + dPfde) * Vol;
+    val_Jacobian_i[3][2] += dPfdv2 * Vol; //(dPfdT*dTdrv2 + dPfdL*dLdrv2 + dPfdv2) * Vol;
     val_Jacobian_i[3][3] += 0.0;
     */
 
@@ -2095,7 +2115,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[0][3] -= 0.0;
 
     val_Jacobian_i[1][0] -= 0.0; //dDedT*dTdrk * Vol;
-    val_Jacobian_i[1][1] -= dDede*Vol; // + dDedT*dTdre * Vol;
+    val_Jacobian_i[1][1] -= dDede * Vol; // + dDedT*dTdre * Vol;
     val_Jacobian_i[1][2] -= 0.0; //dDedT*dTdrv2 * Vol;
     val_Jacobian_i[1][3] -= 0.0;
 

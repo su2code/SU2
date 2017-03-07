@@ -733,6 +733,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           for (iVar = 0; iVar < nVar; iVar++) {
             node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
+	  //f          node[iPoint]->AddSolution(0, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint]);
           
         }        
         break;
@@ -3404,7 +3405,7 @@ su2double* CTurbSSTSolver::GetConstants() {
 }
 
 
-
+//jump
 CTurbKESolver::CTurbKESolver(void) : CTurbSolver() {
   
   /*--- Array initialization ---*/
@@ -3438,11 +3439,12 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Array initialization ---*/
   constants = NULL;
   
-  //Gamma = config->GetGamma();
-  //Gamma_Minus_One = Gamma - 1.0;
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
   nVar = 4;
+  //  nVar = 3;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
@@ -3570,10 +3572,11 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   
   // k
   lowerlimit[0] = 0.0;
+  //  lowerlimit[0] = -1.0e-1;
   upperlimit[0] = 1.0e10;
 
   // epsi  
-  lowerlimit[1] = -1.0e2; //1.0e-8;
+  lowerlimit[1] = -1.0e10; //-1.0e2;
   upperlimit[1] = 1.0e10;
 
   // zeta
@@ -3584,10 +3587,12 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   // v2
   lowerlimit[2] = 0.0;
+  //  lowerlimit[2] = -1.0e-1;
   upperlimit[2] = 1.0e10; 
   
   // f
-  lowerlimit[3] = -1.0e2; //1.0e-8;
+  //  lowerlimit[3] = 0.0;
+  lowerlimit[3] = -1.0e10; //-1.0e2;
   upperlimit[3] = 1.0e10;
 
 
@@ -3628,6 +3633,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   if (!restart || (iMesh != MESH_0)) {
     for (iPoint = 0; iPoint < nPoint; iPoint++)
       node[iPoint] = new CTurbKEVariable(kine_Inf, epsi_Inf, zeta_Inf, f_Inf, muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
+      //      node[iPoint] = new CTurbKEVariable(kine_Inf, epsi_Inf, zeta_Inf, muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
   }
   else {
     
@@ -3693,18 +3699,34 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
         if (compressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	  /*
+          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+	  */
+
+
         }
         if (incompressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	  /*
+          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+	  */
         }
         if (freesurface) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+	  /*
+          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+	  */
+
         }
         
         /*--- Instantiate the solution at this node, note that the muT_Inf should recomputed ---*/
         node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
+	//        node[iPoint_Local] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
       }
       iPoint_Global++;
     }
@@ -3715,6 +3737,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
       //      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], muT_Inf, nDim, nVar, constants, config);
       node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], Solution[3], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
+      //      node[iPoint] = new CTurbKEVariable(Solution[0], Solution[1], Solution[2], muT_Inf, Tm_Inf, Lm_Inf, nDim, nVar, constants, config);
     }
     
     /*--- Close the restart file ---*/
@@ -3796,17 +3819,24 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     
 
     /*--- Scalars ---*/
-    kine  = node[iPoint]->GetSolution(0);
+    kine = node[iPoint]->GetSolution(0);
     epsi = node[iPoint]->GetSolution(1);
     zeta = node[iPoint]->GetSolution(2);
     f = node[iPoint]->GetSolution(3);
     //cout<<"kine: "<<kine<<"\n";
     //cout<<"f: "<<f<<"\n";
 
+    kine = max(kine,1.0E-12);
+    epsi = max(epsi,1.0E-12);
+    zeta = max(zeta,1.0E-12);
+    //    zeta = 2.0/3.0*kine;
+    zeta = min(zeta,2.0/3.0*kine);
+
     /*--- T & L ---*/
     dist = geometry->node[iPoint]->GetWall_Distance();
     strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
-    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, f, strMag);
+    //    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, f, strMag);
+    node[iPoint]->SetTLFunc(mu, dist, rho, kine, epsi, zeta, strMag);
     Tm = node[iPoint]->GetTm();
     //    Lm = node[iPoint]->GetLm();
 
@@ -3814,15 +3844,14 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     Re_t = rho*(kine*kine)/(mu*epsi);
     //    muT = constants[0]*max(rho*zeta*kine*Tm,0.0);
     //    muT = max(muT,mu);
-    //    muT = constants[0]*max(rho*zeta*kine*kine/max(epsi,1.0E-12),0.0);
-    //    muT = constants[0]*max(rho*2.0/3.0*kine*Tm,0.0);
+    //    muT = constants[0]*max(rho*max(zeta*kine,0.0)/max(epsi,1.0E-9),0.0); //v2
     //muT = 0.0;
-    muT = constants[0]*max(rho*zeta*Tm,0.0); //v2
+    muT = constants[0]*rho*zeta*Tm; //v2
 
     //muT = constants[0]*rho*2.0/3.0*kine*Tm; //testing...
     node[iPoint]->SetmuT(muT);
     //cout<<"muT in solver: "<<muT<<"\n";
-    //cout<<"Tm in solver_direct: "<<Tm<<"\n";
+    //    cout<<"Tm in solver_direct: "<<Tm<<"\n";
     //cout<<"Lm in solver_direct: "<<Lm<<"\n";
   }
   
@@ -3831,7 +3860,11 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbKESolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
   
   unsigned long iPoint;
-  
+  su2double tke;
+  su2double max_tke;
+
+
+  max_tke = 0.0;  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
     /*--- Conservative variables w/o reconstruction ---*/    
@@ -3858,6 +3891,9 @@ void CTurbKESolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     numerics->SetVorticity(solver_container[FLOW_SOL]->node[iPoint]->GetVorticity(), NULL);
     numerics->SetStrainMag(solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag(), 0.0);
     
+    //    tke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+    //    max_tke = max(max_tke,tke);
+
     /*--- Compute the source term ---*/
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
     
@@ -3866,7 +3902,7 @@ void CTurbKESolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
     
   }
-  
+  //  cout << " Max TKE: " << max_tke << "\n";  
 }
 
 void CTurbKESolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -3910,11 +3946,10 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       }
       
 
-      //      wall_k = node[iPoint]->GetSolution(0);
-      //      wall_zeta = node[iPoint]->GetSolution(2);
-
-      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
-      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
+      wall_k = node[iPoint]->GetSolution(0);
+      wall_zeta = node[iPoint]->GetSolution(2);
+      //      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
+      //      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
       //      dkdn = numerics->GetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
 
       // swh: needs a modification here... 
@@ -3976,10 +4011,10 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
         laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
       }
       
-      //     wall_k = node[iPoint]->GetSolution(0);
-      //      wall_zeta = node[iPoint]->GetSolution(2);
-      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
-      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
+      wall_k = node[iPoint]->GetSolution(0);
+      wall_zeta = node[iPoint]->GetSolution(2);
+      //      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
+      //      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
 
       // wall boundary conditions (https://turbmodels.larc.nasa.gov/k-e-zeta-f.html)
       Solution[0] = 0.0;
