@@ -76,7 +76,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     f_ieqcons      = con_cieq 
     
     # gradient handles
-    if project.config.get('GRADIENT_METHOD','NONE') == 'NONE': 
+    if project.opt.GRADIENT == 'NONE':
         fprime         = None
         fprime_eqcons  = None
         fprime_ieqcons = None
@@ -86,38 +86,38 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
         fprime_ieqcons = con_dcieq        
     
     # number of design variables
-    dv_size = project.config['DEFINITION_DV']['SIZE']
-    n_dv = sum( dv_size)
+    dv_size = project.opt.nKind_DV
+    n_dv = project.opt.nDV
     project.n_dv = n_dv
     
     # Initial guess
     if not x0: x0 = [0.0]*n_dv
     
-    # prescale x0
-    dv_scales = project.config['DEFINITION_DV']['SCALE']
-    k = 0
-    for i, dv_scl in enumerate(dv_scales):
-        for j in range(dv_size[i]):
-            x0[k] =x0[k]/dv_scl;
-            k = k + 1
-
-    # scale accuracy
-    obj = project.config['OPT_OBJECTIVE']
-    obj_scale = []
-    for this_obj in obj.keys():
-        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
-    
-    # Only scale the accuracy for single-objective problems: 
-    if len(obj.keys())==1:
-        accu = accu*obj_scale[0]
+    # # prescale x0
+    # dv_scales = project.config['DEFINITION_DV']['SCALE']
+    # k = 0
+    # for i, dv_scl in enumerate(dv_scales):
+    #     for j in range(dv_size[i]):
+    #         x0[k] =x0[k]/dv_scl;
+    #         k = k + 1
+    #
+    # # scale accuracy
+    # obj = project.config['OPT_OBJECTIVE']
+    # obj_scale = []
+    # for this_obj in obj.keys():
+    #     obj_scale = obj_scale + [obj[this_obj]['SCALE']]
+    #
+    # # Only scale the accuracy for single-objective problems:
+    # if len(obj.keys())==1:
+    #     accu = accu*obj_scale[0]
 
     # scale accuracy
     eps = 1.0e-04
 
     # optimizer summary
     sys.stdout.write('Sequential Least SQuares Programming (SLSQP) parameters:\n')
-    sys.stdout.write('Number of design variables: ' + str(len(dv_size)) + ' ( ' + str(n_dv) + ' ) \n' )
-    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Number of design variables: ' + str(dv_size) + ' ( ' + str(n_dv) + ' ) \n' )
+#    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
@@ -174,34 +174,34 @@ def scipy_cg(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     func           = obj_f
 
     # gradient handles
-    if project.config.get('GRADIENT_METHOD','NONE') == 'NONE':
+    if project.opt.GRADIENT == 'NONE':
         fprime         = None
     else:
         fprime         = obj_df
 
     # number of design variables
-    n_dv = len( project.config['DEFINITION_DV']['KIND'] )
+    n_dv = project.opt.nDV
     project.n_dv = n_dv
 
     # Initial guess
     if not x0: x0 = [0.0]*n_dv
 
-    # prescale x0
-    dv_scales = project.config['DEFINITION_DV']['SCALE']
-    x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]
-
-    # scale accuracy
-    obj = project.config['OPT_OBJECTIVE']
-    obj_scale = obj[obj.keys()[0]]['SCALE']
-    accu = accu*obj_scale
-
+    # # prescale x0
+    # dv_scales = project.config['DEFINITION_DV']['SCALE']
+    # x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]
+    #
+    # # scale accuracy
+    # obj = project.config['OPT_OBJECTIVE']
+    # obj_scale = obj[obj.keys()[0]]['SCALE']
+    # accu = accu*obj_scale
+    #
     # scale accuracy
     eps = 1.0e-04
 
     # optimizer summary
     sys.stdout.write('Conjugate gradient (CG) parameters:\n')
     sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
-    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+#    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
     sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')

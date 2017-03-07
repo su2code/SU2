@@ -170,6 +170,9 @@ class Config(ordered_bunch):
         # apply scale
         dv_scales = def_dv['SCALE']
 
+        print "DV_SCALES"
+        print dv_scales
+
         k = 0
         for i, dv_scl in enumerate(dv_scales):
             for j in range(def_dv['SIZE'][i]):

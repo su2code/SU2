@@ -221,10 +221,6 @@ class State(ordered_bunch):
         """
         
         files = self.FILES
-        
-        mesh_name     = config.MESH_FILENAME
-        direct_name   = config.SOLUTION_FLOW_FILENAME
-        adjoint_name  = config.SOLUTION_ADJ_FILENAME
         targetea_name = 'TargetEA.dat'
         targetcp_name = 'TargetCp.dat'
         targetheatflux_name = 'TargetHeatFlux.dat'
@@ -233,7 +229,7 @@ class State(ordered_bunch):
         
         restart = config.RESTART_SOL == 'YES'
         special_cases = get_specialCases(config)
-        
+
         def register_file(label,filename):
             if not files.has_key(label):
                 if os.path.exists(filename):
@@ -243,9 +239,17 @@ class State(ordered_bunch):
                 assert os.path.exists(files[label]) , 'state expected file: %s' % filename
         #: register_file()                
 
-        # mesh
+        # Register Mesh
+        mesh_name     = config.MESH_FILENAME
         register_file('MESH',mesh_name)
-        
+
+        if 'FEM_ELASTICITY' in special_cases:
+            direct_name = config.SOLUTION_STRUCTURE_FILENAME
+            adjoint_name  = config.SOLUTION_ADJ_STRUCTURE_FILENAME
+        else:
+            direct_name  = config.SOLUTION_FLOW_FILENAME
+            adjoint_name = config.SOLUTION_ADJ_FILENAME
+
         # direct solution
         if restart:
             register_file('DIRECT',direct_name)
@@ -271,14 +275,6 @@ class State(ordered_bunch):
           
         # special case of Elasticity. Some redefinitions here.
         if 'FEM_ELASTICITY' in special_cases:
-          direct_name   = config.SOLUTION_STRUCTURE_FILENAME
-          adjoint_name  = config.SOLUTION_ADJ_STRUCTURE_FILENAME
-          if restart:
-            register_file('DIRECT',direct_name)
-            for obj,suff in adj_map.iteritems():
-                ADJ_LABEL = 'ADJOINT_' + obj
-                adjoint_name_suffixed = add_suffix(adjoint_name,suff)
-                register_file(ADJ_LABEL,adjoint_name_suffixed)
           if config.PRESTRETCH == 'YES':
             register_file('PRESTRETCH', config.PRESTRETCH_FILENAME)
           if config.REFERENCE_GEOMETRY == 'YES':

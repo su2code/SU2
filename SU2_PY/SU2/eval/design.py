@@ -85,7 +85,7 @@ class Design(object):
             grad(func_name,method='CONTINUOUS_ADJOINT') - gradient of specified name
     """
     
-    def __init__(self, config, state=None, folder='DESIGNS/DSN_*'):
+    def __init__(self, opt, state=None, folder='DESIGNS/DSN_*'):
         """ Initializes an SU2 Design """
         
         ## ???: Move to Project, no next folder here
@@ -94,11 +94,13 @@ class Design(object):
         
 #        print "New Design: %s" % folder
         
-        config = copy.deepcopy(config)
+        opt    = copy.deepcopy(opt)
+        config = opt.CONFIG_DIRECT
         state  = copy.deepcopy(state)
         state  = su2io.State(state)
         state.find_files(config)
-        
+
+        self.opt    = opt
         self.config = config
         self.state  = state
         self.files  = state.FILES
@@ -122,7 +124,8 @@ class Design(object):
         """ Evaluates an SU2 Design 
             always adds config and state to the inputs list
         """
-        
+
+        opt    = self.opt
         config = self.config
         state  = self.state
         files  = self.files
@@ -143,7 +146,7 @@ class Design(object):
             timestamp = state.tic()
             
             # run 
-            inputs = args + (config,state)
+            inputs = args + (opt,state)
             vals = eval_func(*inputs)
             
             # save design
@@ -210,7 +213,7 @@ class Design(object):
 #  Optimization Interface Functions
 # ----------------------------------------------------------------------
         
-def obj_f(dvs,config,state=None):
+def obj_f(dvs,opt,state=None):
     """ val = SU2.eval.obj_f(dvs,config,state=None)
     
         Evaluates SU2 Objectives 
@@ -222,14 +225,15 @@ def obj_f(dvs,config,state=None):
         
         Outputs a float.
     """
-    
+
     # unpack config and state 
-    config.unpack_dvs(dvs)
+    opt.unpack_dvs(dvs)
+    config = opt.CONFIG_DIRECT
     state = su2io.State(state)
-    
-    def_objs = config['OPT_OBJECTIVE']
+
+    def_objs = opt['OBJECTIVE_FUNCTION']
     objectives = def_objs.keys()
-    
+
 #    if objectives: print('Evaluate Objectives')
     # evaluate each objective
     vals_out = []
@@ -249,7 +253,7 @@ def obj_f(dvs,config,state=None):
 
 #: def obj_f()
 
-def obj_df(dvs,config,state=None):
+def obj_df(dvs,opt,state=None):
     """ vals = SU2.eval.obj_df(dvs,config,state=None)
     
         Evaluates SU2 Objective Gradients
@@ -263,17 +267,20 @@ def obj_df(dvs,config,state=None):
     """    
     
     # unpack config and state
-    config.unpack_dvs(dvs)
+    opt.unpack_dvs(dvs)
+    config = opt.CONFIG_DIRECT
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
-    
-    def_objs = config['OPT_OBJECTIVE']
+    grad_method = opt['GRADIENT']
+
+    def_objs = opt['OBJECTIVE_FUNCTION']
     objectives = def_objs.keys()
     n_obj = len( objectives )
     multi_objective = (config['OPT_COMBINE_OBJECTIVE']=="YES")
      
     dv_scales = config['DEFINITION_DV']['SCALE']
     dv_size   = config['DEFINITION_DV']['SIZE']
+
+    print dv_scales, dv_size
     
     #  if objectives: print('Evaluate Objective Gradients')
     # evaluate each objective

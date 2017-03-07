@@ -98,7 +98,7 @@ class Project(object):
     _design_number = '%03d'
     
     
-    def __init__( self, config, state=None , 
+    def __init__( self, opt, state=None ,
                   designs=None, folder='.' ,
                   warn = True                ):
         
@@ -108,8 +108,8 @@ class Project(object):
         
         print 'New Project: %s' % (folder)
         
-        # setup config
-        config = copy.deepcopy(config)
+        # setup opt object
+        opt = copy.deepcopy(opt)
         
         # setup state
         if state is None:
@@ -117,25 +117,28 @@ class Project(object):
         else:
             state  = copy.deepcopy(state)
             state  = su2io.State(state)
-        state.find_files(config)
-        if 'OUTFLOW_GENERALIZED' in config.OPT_OBJECTIVE:
+
+        # Find files to pass back and forth
+        state.find_files(opt.CONFIG_DIRECT)
+        if 'OUTFLOW_GENERALIZED' in opt.CONFIG_DIRECT.OPT_OBJECTIVE:
             state.FILES['DownstreamFunction'] = 'downstream_function.py'
         if 'MESH' not in state.FILES:
-            raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME
+            raise Exception , 'Could not find mesh file: %s' % opt.CONFIG_DIRECT.MESH_FILENAME
         
-        self.config  = config      # base config
+        self.opt     = opt      # base definition
+        self.config  = opt.CONFIG_DIRECT     # base config
         self.state   = state       # base state
         self.files   = state.FILES # base files
         self.designs = designs     # design list
         self.folder  = folder      # project folder
         self.results = su2util.ordered_bunch() # project design results
-        
+
         # output filenames
         self.filename = 'project.pkl' 
         self.results_filename = 'results.pkl' 
         
         # initialize folder with files
-        pull,link = state.pullnlink(config)
+        pull,link = state.pullnlink(opt.CONFIG_DIRECT)
         with redirect_folder(folder,pull,link,force=True):
         
             # look for existing designs
@@ -153,14 +156,17 @@ class Project(object):
             
         return
     
-    def _eval(self,config,func,*args):
-        """ evalautes a config, checking for existing designs
+    def _eval(self,opt,func,*args):
+        """ evaluates a config, checking for existing designs
         """
-        
-        konfig = copy.deepcopy(config) # design config
-        config = self.config           # project config
-        state  = self.state            # project state
-        folder = self.folder           # project folder
+
+        opti   = copy.deepcopy(opt)                 # design opt object
+        konfig = opti.CONFIG_DIRECT                 # design config
+
+        opt    = self.opt                           # project opt object
+        config = self.config                        # project config
+        state  = self.state                         # project state
+        folder = self.folder                        # project folder
         
         filename = self.filename
         
@@ -174,7 +180,7 @@ class Project(object):
         with redirect_folder(folder,pull,link,force=False) as push:        
         
             # start design
-            design = self.new_design(konfig)
+            design = self.new_design(opt)
             
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
                 print os.path.join(self.folder,design.folder)
@@ -204,68 +210,72 @@ class Project(object):
     
     def unpack_dvs(self,dvs):
         dvs = copy.deepcopy(dvs)
-        konfig = copy.deepcopy( self.config )
+        opti = copy.deepcopy( self.opt )
+        konfig = opti.CONFIG_DIRECT
         if isinstance(dvs, np.ndarray): dvs = dvs.tolist()
-        konfig.unpack_dvs(dvs)
-        return konfig, dvs
+        opti.unpack_dvs(dvs)
+        return opti, konfig, dvs
     
     def obj_f(self,dvs):
         func = su2eval.obj_f
-        konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(konfig, func,dvs)
+        opti,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(opti, func,dvs)
         
     def obj_df(self,dvs):
         func = su2eval.obj_df
-        konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(konfig, func,dvs)
+        opti,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(opti, func,dvs)
     
     def con_ceq(self,dvs):
         func = su2eval.con_ceq
-        konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(konfig, func,dvs)
+        opti,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(opti, func,dvs)
     
     def con_dceq(self,dvs):
         func = su2eval.con_dceq
-        konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(konfig, func,dvs)
+        opti,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(opti, func,dvs)
     
     def con_cieq(self,dvs):
         func = su2eval.con_cieq
-        konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(konfig, func,dvs)
+        opti,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(opti, func,dvs)
     
     def con_dcieq(self,dvs):
         func = su2eval.con_dcieq
-        konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(konfig, func,dvs)
-    
-    def func(self,func_name,config):
-        func = su2eval.func
-        konfig = copy.deepcopy(config)
-        return self._eval(konfig, func, func_name)
-    
-    def grad(self,func_name,method,config):
-        func = su2eval.grad
-        konfig = copy.deepcopy(config)
-        return self._eval(konfig, func, func_name,method)
+        opti,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(opti, func,dvs)
+
+    # func and grad not being used
+    # def func(self,func_name,config):
+    #     func = su2eval.func
+    #     konfig = copy.deepcopy(config)
+    #     return self._eval(konfig, func, func_name)
+    #
+    # def grad(self,func_name,method,config):
+    #     func = su2eval.grad
+    #     konfig = copy.deepcopy(config)
+    #     return self._eval(konfig, func, func_name,method)
     
     def user(self,user_func,config,*args):
         raise NotImplementedError
-        #return self._eval(config, user_func,*args) 
-    
-    def add_design(self,config):
-        #func = su2eval.touch # hack - TWL
-        func = su2eval.skip 
-        konfig = copy.deepcopy(config)
-        return self._eval(konfig, func)
+        #return self._eval(config, user_func,*args)
+
+    # add_design not being used
+    # def add_design(self,config):
+    #     #func = su2eval.touch # hack - TWL
+    #     func = su2eval.skip
+    #     konfig = copy.deepcopy(config)
+    #     return self._eval(konfig, func)
         
-    def new_design(self,config):
+    def new_design(self,opt):
         """ finds an existing design for given config
             or starts a new design with a closest design 
             used for restart data
         """
          # local konfig
-        konfig = copy.deepcopy(config)
+        opti = copy.deepcopy(opt)
+        konfig = opti.CONFIG_DIRECT
         
         # find closest design
         closest,delta = self.closest_design(konfig)
@@ -274,19 +284,20 @@ class Project(object):
             design = closest
         # start new design
         else:
-            design = self.init_design(konfig,closest)
+            design = self.init_design(opti,closest)
         #: if new design    
         
         return design
-    
-    def get_design(self,config):
-        konfig = copy.deepcopy(config)
-        closest,delta = self.closest_design(konfig)
-        if delta == 0.0 and closest:
-            design = closest
-        else:
-            raise Exception, 'design not found for this config'
-        return design
+
+    #get design not used
+    # def get_design(self,config):
+    #     konfig = copy.deepcopy(config)
+    #     closest,delta = self.closest_design(konfig)
+    #     if delta == 0.0 and closest:
+    #         design = closest
+    #     else:
+    #         raise Exception, 'design not found for this config'
+    #     return design
         
     def closest_design(self,config):
         """ looks for an existing or closest design 
@@ -315,15 +326,16 @@ class Project(object):
         
         return closest, delta 
     
-    def init_design(self,config,closest=None):
+    def init_design(self,opt,closest=None):
         """ starts a new design
             works in project folder
         """
-        
-        konfig = copy.deepcopy(config)
+
+        opti   = copy.deepcopy(opt)
+        konfig = opti.CONFIG_DIRECT
         ztate  = copy.deepcopy(self.state)
         if closest is None: closest = []
-        
+
         # use closest design as seed
         if closest:
             # copy useful state info
@@ -343,7 +355,7 @@ class Project(object):
         folder = folder % (len(self.designs) + 1)
 
         # start new design (pulls files to folder)
-        design = su2eval.Design(konfig,ztate,folder)
+        design = su2eval.Design(opti,ztate,folder)
         
         # update local state filenames ( ??? why not in Design() )
         for key in design.files:
@@ -442,25 +454,26 @@ class Project(object):
         su2io.save_data(filename,results)
             
         return self.results
-    
-    def deep_compile(self):
-        """ Project.deep_compile()
-            recompiles project using design files saved in each design folder
-            useful if designs were run outside of project class
-        """
-        
-        project_folder = self.folder
-        designs = self.designs
-        
-        with su2io.redirect_folder(project_folder):
-            for i_dsn,design in enumerate(designs):
-                design_filename = os.path.join(design.folder,design.filename)
-                self.designs[i_dsn] = su2io.load_data(design_filename)
-            
-            self.compile_results()
-            su2io.save_data(self.filename,self)
-            
-        return
+
+    # deep compile not used
+    # def deep_compile(self):
+    #     """ Project.deep_compile()
+    #         recompiles project using design files saved in each design folder
+    #         useful if designs were run outside of project class
+    #     """
+    #
+    #     project_folder = self.folder
+    #     designs = self.designs
+    #
+    #     with su2io.redirect_folder(project_folder):
+    #         for i_dsn,design in enumerate(designs):
+    #             design_filename = os.path.join(design.folder,design.filename)
+    #             self.designs[i_dsn] = su2io.load_data(design_filename)
+    #
+    #         self.compile_results()
+    #         su2io.save_data(self.filename,self)
+    #
+    #     return
     
     def plot_results(self):
         """ writes a tecplot file for plotting design results
