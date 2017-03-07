@@ -3739,8 +3739,8 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
 
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solIntL = VecTmpMemory.data();
-  su2double *solIntR = solIntL + nIntegrationMax*nVar;
-  su2double *fluxes  = solIntR + nIntegrationMax*nVar;
+  su2double *solIntR = solIntL + nIntegrationMax*ctc::nVar;
+  su2double *fluxes  = solIntR + nIntegrationMax*ctc::nVar;
 
   /* Set the starting position in the vector for the face residuals for
      this boundary marker. */
@@ -3758,34 +3758,72 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
        Use fluxes as a temporary storage array. */
     LeftStatesIntegrationPointsBoundaryFace(config, &surfElem[l], fluxes, solIntL);
 
-    /* Loop over the integration points to apply the symmetry condition. */
+    /* Determine the number of integration points. */
     const unsigned short ind  = surfElem[l].indStandardElement;
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
-    for(unsigned short i=0; i<nInt; ++i) {
+    /* Make a distinction between two and three space dimensions
+       in order to have the most efficient code. */
+    switch( ctc::nDim ) {
 
-      /* Easier storage of the left and right solution and the normals
-         for this integration point. */
-      const su2double *UL      = solIntL + i*nVar;
-            su2double *UR      = solIntR + i*nVar;
-      const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(nDim+1);
+      case 2: {
 
-      /* Compute the normal component of the momentum variables. */
-      su2double rVn = 0.0;
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        rVn += UL[iDim+1]*normals[iDim];
+        /* 2D simulation. Loop over the integration points
+           to apply the symmetry condition. */
+        for(unsigned short i=0; i<nInt; ++i) {
 
-      /* The normal velocity must be mirrored in order to get a true symmetry
-         condition. This is accomplished by multiplying rVn by two. */
-      rVn *= 2.0;
+          /* Easier storage of the left and right solution and the normals
+             for this integration point. */
+          const su2double *UL      = solIntL + i*ctc::nVar;
+                su2double *UR      = solIntR + i*ctc::nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
 
-      /* Set the right state. Note that the total energy of the right state is
-         identical to the left state, because the magnitude of the velocity
-         remains the same. */
-      UR[0]      = UL[0];
-      UR[nDim+1] = UL[nDim+1];
-      for(unsigned short iDim=0; iDim<nDim; ++iDim)
-        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
+          /* Compute twice the normal component of the momentum variables. The
+             factor 2 comes from the fact that the velocity must be mirrored. */
+          const su2double rVn = 2.0*(UL[1]*normals[0] + UL[2]*normals[1]);
+
+          /* Set the right state. Note that the total energy of the right state is
+             identical to the left state, because the magnitude of the velocity
+             remains the same. */
+          UR[0] = UL[0];
+          UR[1] = UL[1] - rVn*normals[0];
+          UR[2] = UL[2] - rVn*normals[1];
+          UR[3] = UL[3];
+        }
+
+        break;
+      }
+
+      /*----------------------------------------------------------------------*/
+
+      case 3: {
+
+        /* 3D simulation. Loop over the integration points
+           to apply the symmetry condition. */
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          /* Easier storage of the left and right solution and the normals
+             for this integration point. */
+          const su2double *UL      = solIntL + i*ctc::nVar;
+                su2double *UR      = solIntR + i*ctc::nVar;
+          const su2double *normals = surfElem[l].metricNormalsFace.data() + i*(ctc::nDim+1);
+
+          /* Compute twice the normal component of the momentum variables. The
+             factor 2 comes from the fact that the velocity must be mirrored. */
+          const su2double rVn = 2.0*(UL[1]*normals[0] + UL[2]*normals[1] + UL[3]*normals[2]);
+
+          /* Set the right state. Note that the total energy of the right state is
+             identical to the left state, because the magnitude of the velocity
+             remains the same. */
+          UR[0] = UL[0];
+          UR[1] = UL[1] - rVn*normals[0];
+          UR[2] = UL[2] - rVn*normals[1];
+          UR[3] = UL[3] - rVn*normals[2];
+          UR[4] = UL[4];
+        }
+
+        break;
+      }
     }
 
     /* The remainder of the contribution of this boundary face to the residual
@@ -6602,7 +6640,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. The
           factor 0.5 comes from the fact that the average of the viscous fluxes
           of side 0 and side 1 must be taken in the DG-FEM formulation. ---*/
-    for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
+    for(unsigned short j=0; j<(ctc::nVar*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
 
     /*--- Get the information from the standard face to compute the viscous
           fluxes in the integration points on the right side, i.e. side 1. ---*/
@@ -6626,7 +6664,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
                           gradSolInt, viscFluxes, viscosityIntR, kOverCvIntR);
 
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
-    for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
+    for(unsigned short j=0; j<(ctc::nVar*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
     
     config->Tock(tick, "ER_1_2", 4);
 
@@ -6648,15 +6686,15 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
                          viscFluxes);
 
     /* Add the penalty fluxes to the earlier computed fluxes. */
-    for(unsigned short j=0; j<(nVar*nInt); ++j) fluxes[j] += viscFluxes[j];
+    for(unsigned short j=0; j<(ctc::nVar*nInt); ++j) fluxes[j] += viscFluxes[j];
 
     /* Multiply the fluxes with the integration weight of the corresponding
        integration point. */
     const su2double *weights = standardMatchingFacesSol[ind].GetWeightsIntegration();
     for(unsigned short i=0; i<nInt; ++i) {
-      su2double *flux = fluxes + i*nVar;
+      su2double *flux = fluxes + i*ctc::nVar;
 
-      for(unsigned short j=0; j<nVar; ++j)
+      for(unsigned short j=0; j<ctc::nVar; ++j)
         flux[j] *= weights[i];
     }
     config->Tock(tick, "ER_1_3", 4);
@@ -6669,7 +6707,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
     /* Easier storage of the position in the residual array for side 0 of
        this face and update the corresponding counter. */
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
-    su2double *resFace0 = VecResFaces.data() + indResFaces*nVar;
+    su2double *resFace0 = VecResFaces.data() + indResFaces*ctc::nVar;
     indResFaces        += nDOFsFace0;
 
     /* Get the correct form of the basis functions needed for the matrix
@@ -6732,10 +6770,10 @@ void CFEM_DG_NSSolver::ResidualFaces(CGeometry *geometry, CSolver **solver_conta
       const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
       for(unsigned short i=0; i<nInt; ++i) {
-        su2double *flux        = fluxes + i*nVar*nDim;
+        su2double *flux        = fluxes + i*ctc::nVar*ctc::nDim;
         const su2double wTheta = -halfTheta*weights[i];
 
-        for(unsigned short j=0; j<(nVar*nDim); ++j)
+        for(unsigned short j=0; j<(ctc::nVar*ctc::nDim); ++j)
           flux[j] *= wTheta;
       }
       config->Tock(tick, "ER_1_5", 4);
@@ -7327,97 +7365,201 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
   const su2double alphaP1  = alpha + 1.0;
   const su2double lambdaP1 = lambdaOverMu + 1.0;
 
-  /*--- Loop over the number of integration points of the face. ---*/
-  for(unsigned short i=0; i<nInt; ++i) {
+  /* Make a distinction between two and three space dimensions
+     in order to have the most efficient code. */
+  switch( ctc::nDim ) {
 
-    /* Easier storage of the variables for this integration point. */
-    const su2double *sol0   = solInt0 + nVar*i;
-    const su2double *sol1   = solInt1 + nVar*i;
-    const su2double *normal = metricNormalsFace + i*(nDim+1);
-    su2double       *flux   = symmFluxes + nVar*i*nDim;
+    case 2: {
 
-    /* Determine the difference in conservative variables. Multiply these
-       differences by the length of the normal vector to obtain the correct
-       dimensions for the symmetrizing fluxes. */
-    su2double dSol[5];
-    for(unsigned short j=0; j<nVar; ++j)
-      dSol[j] = normal[nDim]*(sol0[j] - sol1[j]);
+      /*--- 2D simulation. Loop over the number of integration points
+            of the face. ---*/
+      for(unsigned short i=0; i<nInt; ++i) {
 
-    /*--- Compute the terms that occur in the symmetrizing fluxes
-          for state 0 and state 1. ---*/
-    const su2double DensityInv0 = 1.0/sol0[0],           DensityInv1 = 1.0/sol1[0];
-    const su2double Etot0 = DensityInv0*sol0[nDim+1],    Etot1 = DensityInv1*sol1[nDim+1];
-    const su2double nu0 = DensityInv0*viscosityInt0[i],  nu1 = DensityInv1*viscosityInt1[i];
-    const su2double kScal0 = DensityInv0*kOverCvInt0[i], kScal1 = DensityInv1*kOverCvInt1[i];
+        /* Easier storage of the variables for this integration point. */
+        const su2double *sol0   = solInt0 + ctc::nVar*i;
+        const su2double *sol1   = solInt1 + ctc::nVar*i;
+        const su2double *normal = metricNormalsFace + i*(ctc::nDim+1);
+        su2double       *flux   = symmFluxes + i*ctc::nDim*ctc::nVar;
 
-    su2double velNorm0 = 0.0, velNorm1 = 0.0, velSquared0 = 0.0, velSquared1 = 0.0;
-    su2double vel0[] = {0.0,0.0,0.0}, vel1[] = {0.0,0.0,0.0};
-    for(unsigned short j=0; j<nDim; ++j) {
-      vel0[j] = DensityInv0*sol0[j+1];
-      vel1[j] = DensityInv1*sol1[j+1];
+        /* Determine the difference in conservative variables. Multiply these
+           differences by the length of the normal vector to obtain the correct
+           dimensions for the symmetrizing fluxes. */
+        const su2double dSol[] = {normal[2]*(sol0[0] - sol1[0]),
+                                  normal[2]*(sol0[1] - sol1[1]),
+                                  normal[2]*(sol0[2] - sol1[2]),
+                                  normal[2]*(sol0[3] - sol1[3])};
 
-      velNorm0 += vel0[j]*normal[j];
-      velNorm1 += vel1[j]*normal[j];
+        /*--- Compute the terms that occur in the symmetrizing fluxes
+              for state 0 and state 1. ---*/
+        const su2double DensityInv0 = 1.0/sol0[0],           DensityInv1 = 1.0/sol1[0];
+        const su2double Etot0 = DensityInv0*sol0[3],         Etot1 = DensityInv1*sol1[3];
+        const su2double nu0 = DensityInv0*viscosityInt0[i],  nu1 = DensityInv1*viscosityInt1[i];
+        const su2double kScal0 = DensityInv0*kOverCvInt0[i], kScal1 = DensityInv1*kOverCvInt1[i];
 
-      velSquared0 += vel0[j]*vel0[j];
-      velSquared1 += vel1[j]*vel1[j];
-    }
+        const su2double vel0[] = {DensityInv0*sol0[1], DensityInv0*sol0[2]};
+        const su2double vel1[] = {DensityInv1*sol1[1], DensityInv1*sol1[2]};
 
-    /*--- Compute the average of the terms that occur in the symmetrizing
-          fluxes. The average of the left and right terms is taken, rather
-          than the terms evaluated at the average state, because the viscous
-          fluxes are also computed as the average of the fluxes and not the
-          fluxes of the averaged state. ---*/
-    const su2double nuAvg    = 0.5*(nu0    + nu1);
-    const su2double kScalAvg = 0.5*(kScal0 + kScal1);
-    const su2double nuVelSquaredAvg     = 0.5*(nu0*velSquared0 + nu1*velSquared1);
-    const su2double nuVelNormAve        = 0.5*(nu0*velNorm0    + nu1*velNorm1);
-    const su2double kScalEminVelSquaredAve = 0.5*(kScal0*(Etot0-velSquared0)
-                                           +      kScal1*(Etot1-velSquared1));
+        const su2double velNorm0 = vel0[0]*normal[0] + vel0[1]*normal[1];
+        const su2double velNorm1 = vel1[0]*normal[0] + vel1[1]*normal[1];
 
-    su2double nuVelAvg[] = {0.0,0.0,0.0}, nuVelVelAvg[] = {0.0,0.0,0.0};
-    su2double kScalVelAvg[] = {0.0,0.0,0.0};
-    for(unsigned short j=0; j<nDim; ++j) {
-      nuVelAvg[j]    = 0.5*(nu0*vel0[j]          + nu1*vel1[j]);
-      kScalVelAvg[j] = 0.5*(kScal0*vel0[j]       + kScal1*vel1[j]);
-      nuVelVelAvg[j] = 0.5*(nu0*vel0[j]*velNorm0 + nu1*vel1[j]*velNorm1);
-    }
+        const su2double velSquared0 = vel0[0]*vel0[0] + vel0[1]*vel0[1];
+        const su2double velSquared1 = vel1[0]*vel1[0] + vel1[1]*vel1[1];
 
-    /*--- Abbreviations to make the flux computations a bit more efficient. ---*/
-    su2double abv1 = 0.0, abv2 = 0.0, abv2kScal = 0.0;
-    for(unsigned short j=0; j<nDim; ++j) {
-      abv1      += normal[j]     *dSol[j+1];
-      abv2      += nuVelAvg[j]   *dSol[j+1];
-      abv2kScal += kScalVelAvg[j]*dSol[j+1];
-    }
+        /*--- Compute the average of the terms that occur in the symmetrizing
+              fluxes. The average of the left and right terms is taken, rather
+              than the terms evaluated at the average state, because the viscous
+              fluxes are also computed as the average of the fluxes and not the
+              fluxes of the averaged state. ---*/
+        const su2double nuAvg    = 0.5*(nu0    + nu1);
+        const su2double kScalAvg = 0.5*(kScal0 + kScal1);
+        const su2double nuVelSquaredAvg     = 0.5*(nu0*velSquared0 + nu1*velSquared1);
+        const su2double nuVelNormAve        = 0.5*(nu0*velNorm0    + nu1*velNorm1);
+        const su2double kScalEminVelSquaredAve = 0.5*(kScal0*(Etot0-velSquared0)
+                                               +      kScal1*(Etot1-velSquared1));
 
-    const su2double abv3 = beta*(nuAvg*abv1 - nuVelNormAve*dSol[0]);
-    const su2double abv4 = kScalAvg*dSol[nDim+1] - abv2kScal
-                         - kScalEminVelSquaredAve*dSol[0] + abv2;
+        const su2double nuVelAvg[] = {0.5*(nu0*vel0[0] + nu1*vel1[0]),
+                                      0.5*(nu0*vel0[1] + nu1*vel1[1])};
+        const su2double kScalVelAvg[] = {0.5*(kScal0*vel0[0] + kScal1*vel1[0]),
+                                         0.5*(kScal0*vel0[1] + kScal1*vel1[1])};
+        const su2double nuVelVelAvg[] = {0.5*(nu0*vel0[0]*velNorm0 + nu1*vel1[0]*velNorm1),
+                                         0.5*(nu0*vel0[1]*velNorm0 + nu1*vel1[1]*velNorm1)};
 
-    /*--- Loop over the dimensions to compute the symmetrizing fluxes.
-          ll is the counter for flux. ---*/
-    unsigned short ll = 0;
-    for(unsigned short k=0; k<nDim; ++k) {
+        /*--- Abbreviations to make the flux computations a bit more efficient. ---*/
+        const su2double abv1 = normal[0]  *dSol[1] + normal[1]  *dSol[2];
+        const su2double abv2 = nuVelAvg[0]*dSol[1] + nuVelAvg[1]*dSol[2];
 
-      /* The symmetrizing density flux, which is zero. */
-      flux[ll++] = 0.0;
+        const su2double abv2kScal = kScalVelAvg[0]*dSol[1] + kScalVelAvg[1]*dSol[2];
 
-      /* Loop over the dimensions to compute the symmetrizing momentum fluxes. */
-      for(unsigned short j=0; j<nDim; ++j, ++ll) {
+        const su2double abv3 = beta*(nuAvg*abv1 - nuVelNormAve*dSol[0]);
+        const su2double abv4 = kScalAvg*dSol[3] - abv2kScal
+                             - kScalEminVelSquaredAve*dSol[0] + abv2;
 
-        /* Make a distinction between k == j and k != j and compute
-           the momentum fluxes accordingly. */
-        if(k == j) flux[ll] = abv3 + alphaP1*normal[j]*(nuAvg*dSol[j+1]
-                                   -                    nuVelAvg[j]*dSol[0]);
-        else       flux[ll] = nuAvg*(normal[k]*dSol[j+1] + alpha*normal[j]*dSol[k+1])
-                            - (normal[k]*nuVelAvg[j] + alpha*normal[j]*nuVelAvg[k])*dSol[0];
+        /*--- Compute the symmetrizing fluxes. ---*/
+        flux[0] = 0.0;
+        flux[1] = abv3 + alphaP1*normal[0]*(nuAvg*dSol[1] - nuVelAvg[0]*dSol[0]);
+        flux[2] = nuAvg*(normal[0]*dSol[2] + alpha*normal[1]*dSol[1])
+                - (normal[0]*nuVelAvg[1] + alpha*normal[1]*nuVelAvg[0])*dSol[0];
+        flux[3] = normal[0]*abv4
+                - (lambdaP1*nuVelVelAvg[0] + nuVelSquaredAvg*normal[0])*dSol[0]
+                + alpha*nuVelNormAve*dSol[1] + beta*nuVelAvg[0]*abv1;
+
+        flux[4] = 0.0;
+        flux[5] = nuAvg*(normal[1]*dSol[1] + alpha*normal[0]*dSol[2])
+                - (normal[1]*nuVelAvg[0] + alpha*normal[0]*nuVelAvg[1])*dSol[0];
+        flux[6] = abv3 + alphaP1*normal[1]*(nuAvg*dSol[2] - nuVelAvg[1]*dSol[0]);
+        flux[7] = normal[1]*abv4
+                - (lambdaP1*nuVelVelAvg[1] + nuVelSquaredAvg*normal[1])*dSol[0]
+                + alpha*nuVelNormAve*dSol[2] + beta*nuVelAvg[1]*abv1;
       }
 
-      /* The symmetrizing energy flux. */
-      flux[ll++] = normal[k]*abv4
-                 - (lambdaP1*nuVelVelAvg[k] + nuVelSquaredAvg*normal[k])*dSol[0]
-                 + alpha*nuVelNormAve*dSol[k+1] + beta*nuVelAvg[k]*abv1;
+      break;
+    }
+
+    /*------------------------------------------------------------------------*/
+
+    case 3: {
+
+      /*--- 3D simulation. Loop over the number of integration points
+            of the face. ---*/
+      for(unsigned short i=0; i<nInt; ++i) {
+
+        /* Easier storage of the variables for this integration point. */
+        const su2double *sol0   = solInt0 + ctc::nVar*i;
+        const su2double *sol1   = solInt1 + ctc::nVar*i;
+        const su2double *normal = metricNormalsFace + i*(ctc::nDim+1);
+        su2double       *flux   = symmFluxes + i*ctc::nDim*ctc::nVar;
+
+        /* Determine the difference in conservative variables. Multiply these
+           differences by the length of the normal vector to obtain the correct
+           dimensions for the symmetrizing fluxes. */
+        const su2double dSol[] = {normal[3]*(sol0[0] - sol1[0]),
+                                  normal[3]*(sol0[1] - sol1[1]),
+                                  normal[3]*(sol0[2] - sol1[2]),
+                                  normal[3]*(sol0[3] - sol1[3]),
+                                  normal[3]*(sol0[4] - sol1[4])};
+
+        /*--- Compute the terms that occur in the symmetrizing fluxes
+              for state 0 and state 1. ---*/
+        const su2double DensityInv0 = 1.0/sol0[0],           DensityInv1 = 1.0/sol1[0];
+        const su2double Etot0 = DensityInv0*sol0[4],         Etot1 = DensityInv1*sol1[4];
+        const su2double nu0 = DensityInv0*viscosityInt0[i],  nu1 = DensityInv1*viscosityInt1[i];
+        const su2double kScal0 = DensityInv0*kOverCvInt0[i], kScal1 = DensityInv1*kOverCvInt1[i];
+
+        const su2double vel0[] = {DensityInv0*sol0[1], DensityInv0*sol0[2], DensityInv0*sol0[3]};
+        const su2double vel1[] = {DensityInv1*sol1[1], DensityInv1*sol1[2], DensityInv1*sol1[3]};
+
+        const su2double velNorm0 = vel0[0]*normal[0] + vel0[1]*normal[1] + vel0[2]*normal[2];
+        const su2double velNorm1 = vel1[0]*normal[0] + vel1[1]*normal[1] + vel1[2]*normal[2];
+
+        const su2double velSquared0 = vel0[0]*vel0[0] + vel0[1]*vel0[1] + vel0[2]*vel0[2];
+        const su2double velSquared1 = vel1[0]*vel1[0] + vel1[1]*vel1[1] + vel1[2]*vel1[2];
+
+        /*--- Compute the average of the terms that occur in the symmetrizing
+              fluxes. The average of the left and right terms is taken, rather
+              than the terms evaluated at the average state, because the viscous
+              fluxes are also computed as the average of the fluxes and not the
+              fluxes of the averaged state. ---*/
+        const su2double nuAvg    = 0.5*(nu0    + nu1);
+        const su2double kScalAvg = 0.5*(kScal0 + kScal1);
+        const su2double nuVelSquaredAvg     = 0.5*(nu0*velSquared0 + nu1*velSquared1);
+        const su2double nuVelNormAve        = 0.5*(nu0*velNorm0    + nu1*velNorm1);
+        const su2double kScalEminVelSquaredAve = 0.5*(kScal0*(Etot0-velSquared0)
+                                               +      kScal1*(Etot1-velSquared1));
+
+        const su2double nuVelAvg[] = {0.5*(nu0*vel0[0] + nu1*vel1[0]),
+                                      0.5*(nu0*vel0[1] + nu1*vel1[1]),
+                                      0.5*(nu0*vel0[2] + nu1*vel1[2])};
+        const su2double kScalVelAvg[] = {0.5*(kScal0*vel0[0] + kScal1*vel1[0]),
+                                         0.5*(kScal0*vel0[1] + kScal1*vel1[1]),
+                                         0.5*(kScal0*vel0[2] + kScal1*vel1[2])};
+        const su2double nuVelVelAvg[] = {0.5*(nu0*vel0[0]*velNorm0 + nu1*vel1[0]*velNorm1),
+                                         0.5*(nu0*vel0[1]*velNorm0 + nu1*vel1[1]*velNorm1),
+                                         0.5*(nu0*vel0[2]*velNorm0 + nu1*vel1[2]*velNorm1)};
+
+        /*--- Abbreviations to make the flux computations a bit more efficient. ---*/
+        const su2double abv1 = normal[0]  *dSol[1] + normal[1]  *dSol[2] + normal[2]  *dSol[3];
+        const su2double abv2 = nuVelAvg[0]*dSol[1] + nuVelAvg[1]*dSol[2] + nuVelAvg[2]*dSol[3];
+
+        const su2double abv2kScal = kScalVelAvg[0]*dSol[1] + kScalVelAvg[1]*dSol[2]
+                                  + kScalVelAvg[2]*dSol[3];
+
+        const su2double abv3 = beta*(nuAvg*abv1 - nuVelNormAve*dSol[0]);
+        const su2double abv4 = kScalAvg*dSol[4] - abv2kScal
+                             - kScalEminVelSquaredAve*dSol[0] + abv2;
+
+        /*--- Compute the symmetrizing fluxes. ---*/
+        flux[0] = 0.0;
+        flux[1] = abv3 + alphaP1*normal[0]*(nuAvg*dSol[1] - nuVelAvg[0]*dSol[0]);
+        flux[2] = nuAvg*(normal[0]*dSol[2] + alpha*normal[1]*dSol[1])
+                - (normal[0]*nuVelAvg[1] + alpha*normal[1]*nuVelAvg[0])*dSol[0];
+        flux[3] = nuAvg*(normal[0]*dSol[3] + alpha*normal[2]*dSol[1])
+                - (normal[0]*nuVelAvg[2] + alpha*normal[2]*nuVelAvg[0])*dSol[0];
+        flux[4] = normal[0]*abv4
+                - (lambdaP1*nuVelVelAvg[0] + nuVelSquaredAvg*normal[0])*dSol[0]
+                + alpha*nuVelNormAve*dSol[1] + beta*nuVelAvg[0]*abv1;
+
+        flux[5] = 0.0;
+        flux[6] = nuAvg*(normal[1]*dSol[1] + alpha*normal[0]*dSol[2])
+                - (normal[1]*nuVelAvg[0] + alpha*normal[0]*nuVelAvg[1])*dSol[0];
+        flux[7] = abv3 + alphaP1*normal[1]*(nuAvg*dSol[2] - nuVelAvg[1]*dSol[0]);
+        flux[8] = nuAvg*(normal[1]*dSol[3] + alpha*normal[2]*dSol[2])
+                - (normal[1]*nuVelAvg[2] + alpha*normal[2]*nuVelAvg[1])*dSol[0];
+        flux[9] = normal[1]*abv4
+                - (lambdaP1*nuVelVelAvg[1] + nuVelSquaredAvg*normal[1])*dSol[0]
+                + alpha*nuVelNormAve*dSol[2] + beta*nuVelAvg[1]*abv1;
+
+        flux[10] = 0.0;
+        flux[11] = nuAvg*(normal[2]*dSol[1] + alpha*normal[0]*dSol[3])
+                 - (normal[2]*nuVelAvg[0] + alpha*normal[0]*nuVelAvg[2])*dSol[0];
+        flux[12] = nuAvg*(normal[2]*dSol[2] + alpha*normal[1]*dSol[3])
+                 - (normal[2]*nuVelAvg[1] + alpha*normal[1]*nuVelAvg[2])*dSol[0];
+        flux[13] = abv3 + alphaP1*normal[2]*(nuAvg*dSol[3] - nuVelAvg[2]*dSol[0]);
+        flux[14] = normal[2]*abv4
+                 - (lambdaP1*nuVelVelAvg[2] + nuVelSquaredAvg*normal[2])*dSol[0]
+                 + alpha*nuVelNormAve*dSol[3] + beta*nuVelAvg[2]*abv1;
+      }
+
+      break;
     }
   }
 }
