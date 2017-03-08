@@ -553,8 +553,10 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  Update_Restart_Params,
+  Wrt_Binary_Restart,	/*!< \brief Write binary SU2 native restart files.*/
+  Read_Binary_Restart,	/*!< \brief Read binary SU2 native restart files.*/
   Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
-  bool Update_Restart_Params;	/*!< \brief Read and write additional restart metadata for parameter updates.*/
   unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
   nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
   nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -4096,10 +4098,16 @@ public:
   bool GetRestart(void);
 
   /*!
-   * \brief Flag controlling whether restart parameter metadata is written/read.
-   * \return Restart metadata updates, if <code>TRUE</code> then the code will read/write restart metadata for parameter updates.
+   * \brief Flag for whether binary SU2 native restart files are written.
+   * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
    */
-  bool GetUpdate_Restart_Params(void);
+  bool GetWrt_Binary_Restart(void);
+
+  /*!
+   * \brief Flag for whether binary SU2 native restart files are read.
+   * \return Flag for whether binary SU2 native restart files are read, if <code>TRUE</code> then the code will load binary restart files.
+   */
+  bool GetRead_Binary_Restart(void);
 
   /*!
    * \brief Provides the number of varaibles.

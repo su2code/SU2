@@ -853,12 +853,17 @@ public:
 	 */
 	virtual void FindNormal_Neighbor(CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetGlobal_to_Local_Point();
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_ipoint - Global point.
 	 * \returns Local index that correspond with the global index.
 	 */
-	virtual long GetGlobal_to_Local_Point(long val_ipoint);
+	virtual long GetGlobal_to_Local_Point(unsigned long val_ipoint);
 
 	/*!
 	 * \brief A virtual member.
@@ -1106,7 +1111,7 @@ public:
  */
 class CPhysicalGeometry : public CGeometry {
 
-  map<long,long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
+  map<unsigned long, unsigned long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
   unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
   unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
@@ -1163,13 +1168,18 @@ public:
 	 * \param[in] val_domain - Number of domains for parallelization purposes.
 	 */
 	void SetBoundaries(CConfig *config);
-  
+
+  /*!
+   * \brief Set the local index that correspond with the global numbering index.
+   */
+  void SetGlobal_to_Local_Point();
+
 	/*!
 	 * \brief Get the local index that correspond with the global numbering index.
 	 * \param[in] val_ipoint - Global point.
-	 * \returns Local index that correspond with the global index.
+	 * \returns Local index that correspond with the global index, -1 if not found on the current rank (process).
 	 */
-	long GetGlobal_to_Local_Point(long val_ipoint);
+	long GetGlobal_to_Local_Point(unsigned long val_ipoint);
   
 	/*!
 	 * \brief Get the local marker that correspond with the global marker.
