@@ -1170,8 +1170,14 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   restart_file.close();
 
   /*--- MPI solution and compute the eddy viscosity ---*/
-  
+
   solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+
+  /*--- We have to do the communication again to properly communicate the values to the periodic ghost cells
+   *    (The periodic communication is done before the parallel communication). ---*/
+
+  solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
