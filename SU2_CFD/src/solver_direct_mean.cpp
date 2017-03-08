@@ -985,11 +985,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
-  /*--- Perform the MPI communication of the solution ---*/
-  //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
-  Set_MPI_Solution(geometry, config);
-  Set_MPI_Solution(geometry, config);
-
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -14950,6 +14945,12 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
    especially if this is a turbulent simulation (eddy viscosity). ---*/
   
   solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+
+  /*--- We have to do the communication again to properly communicate the values to the periodic ghost cells
+   *    (The periodic communication is done before the parallel communication). ---*/
+
+  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -17454,12 +17455,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
-  Set_MPI_Solution(geometry, config);
-  Set_MPI_Solution(geometry, config);
 
 }
 
