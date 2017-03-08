@@ -4265,11 +4265,11 @@ void CDiscAdjMultiZoneDriver::DirectRun(){
 
 
 CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
-    																						 	 	 	 	 	 unsigned short val_nZone,
-                                                           unsigned short val_nDim,
-                                                           SU2_Comm MPICommunicator): CDiscAdjMultiZoneDriver(confFile, val_nZone, val_nDim, MPICommunicator){
+    unsigned short val_nZone,
+    unsigned short val_nDim,
+    SU2_Comm MPICommunicator): CDiscAdjMultiZoneDriver(confFile, val_nZone, val_nDim, MPICommunicator){
 
-	mixingplane = (nZone > 1);
+  mixingplane = (nZone > 1);
 
 }
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
@@ -4290,7 +4290,7 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 
 
   if(ExtIter == 0){
-  	Preprocessing();
+    Preprocessing();
   }
 
   /* --- Set the mixing-plane interface ---*/
@@ -4312,12 +4312,12 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
   for (iZone = 0; iZone < nZone; iZone++) {
 
     direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
     direct_iteration[iZone]->Iterate(output, integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
   }
   /* --- Set turboperformance for multi-zone ---*/
@@ -4348,11 +4348,11 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
   solver_container[ZONE_0][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[ZONE_0]);
 
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
-    case ENTROPY_GENERATION:
-      solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, 0));
-      break;
-    default:
-      break;
+  case ENTROPY_GENERATION:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, 0));
+    break;
+  default:
+    break;
   }
 
   ObjFunc = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
@@ -4365,55 +4365,55 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
 void CDiscAdjTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
 
   unsigned short targetZone, nMarkerInt, iMarkerInt ;
-	nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
 
   /* --- transfer the average value from the donorZone to the targetZone*/
-	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-		for (targetZone = 0; targetZone < nZone; targetZone++) {
-			if (targetZone != donorZone){
-				transfer_performance_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-						geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-						config_container[donorZone], config_container[targetZone], iMarkerInt );
-			}
-		}
-	}
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+    for (targetZone = 0; targetZone < nZone; targetZone++) {
+      if (targetZone != donorZone){
+        transfer_performance_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone], iMarkerInt );
+      }
+    }
+  }
 }
 
 
 void CDiscAdjTurbomachineryDriver::Preprocessing(void){
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
-		geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
-		geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
+  for (iZone = 0; iZone < nZone; iZone++) {
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, true);
+    geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
+    geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
 
-	}
+  }
 
-	for (iZone = 1; iZone < nZone; iZone++) {
-		transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
-	}
+  for (iZone = 1; iZone < nZone; iZone++) {
+    transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+  }
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		if(mixingplane)PreprocessingMixingPlane(iZone);
-	}
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if(mixingplane)PreprocessingMixingPlane(iZone);
+  }
 
 }
 
 void CDiscAdjTurbomachineryDriver::PreprocessingMixingPlane(unsigned short donorZone){
 
   unsigned short targetZone, nMarkerInt, iMarkerInt ;
-	nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
 
   /* --- transfer the average value from the donorZone to the targetZone*/
-	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-		for (targetZone = 0; targetZone < nZone; targetZone++) {
-			if (targetZone != donorZone){
-				transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
-																																									config_container[donorZone], config_container[targetZone],
-																																									iMarkerInt);
-			}
-		}
-	}
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+    for (targetZone = 0; targetZone < nZone; targetZone++) {
+      if (targetZone != donorZone){
+        transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone],
+            iMarkerInt);
+      }
+    }
+  }
 }
 
 void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
@@ -4422,7 +4422,7 @@ void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone
   //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
   /* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
   for (donorZone = 1; donorZone < nZone; donorZone++) {
-      transfer_performance_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL], donorZone);
+    transfer_performance_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL], donorZone);
   }
 
   /* --- compute turboperformance for each stage and the global machine ---*/
@@ -4432,12 +4432,12 @@ void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone
 }
 
 CHBDriver::CHBDriver(char* confFile,
-                                 unsigned short val_nZone,
-                                 unsigned short val_nDim,
-                                 SU2_Comm MPICommunicator) : CDriver(confFile,
-                                                                    val_nZone,
-                                                                    val_nDim,
-                                                                    MPICommunicator) {
+    unsigned short val_nZone,
+    unsigned short val_nDim,
+    SU2_Comm MPICommunicator) : CDriver(confFile,
+        val_nZone,
+        val_nDim,
+        MPICommunicator) {
   unsigned short kZone;
 
   D = NULL;
@@ -4451,8 +4451,8 @@ CHBDriver::~CHBDriver(void) {
   unsigned short kZone;
 
   /*--- delete dynamic memory for the Harmonic Balance operator ---*/
-    for (kZone = 0; kZone < nZone; kZone++) if (D[kZone] != NULL) delete [] D[kZone];
-    if (D[kZone] != NULL) delete [] D;
+  for (kZone = 0; kZone < nZone; kZone++) if (D[kZone] != NULL) delete [] D[kZone];
+  if (D[kZone] != NULL) delete [] D;
 
 }
 
@@ -4463,13 +4463,13 @@ void CHBDriver::Run() {
 
   for (iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
   for (iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
 }
 
@@ -4481,8 +4481,8 @@ void CHBDriver::Update() {
     SetHarmonicBalance(iZone);
 
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, iZone);
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
     output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
 
