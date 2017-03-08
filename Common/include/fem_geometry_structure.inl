@@ -31,6 +31,17 @@
 
 #pragma once
 
+inline CReorderElementClass::CReorderElementClass(const unsigned long  val_GlobalElemID,
+                                                  const unsigned short val_TimeLevel,
+                                                  const bool           val_CommSolution)
+ {globalElemID = val_GlobalElemID; timeLevel = val_TimeLevel; commSolution = val_CommSolution;}
+
+inline CReorderElementClass::~CReorderElementClass(void) { }
+
+inline CReorderElementClass::CReorderElementClass(const CReorderElementClass &other) { Copy(other); }
+
+inline CReorderElementClass& CReorderElementClass::operator=(const CReorderElementClass &other) { Copy(other); return (*this); }
+
 inline SortFacesClass::SortFacesClass(unsigned long val_nVolElemOwned,
                                       unsigned long val_nVolElemTot)
  {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot;}
