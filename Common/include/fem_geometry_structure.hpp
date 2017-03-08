@@ -37,6 +37,59 @@
 using namespace std;
 
 /*!
+ * \class CReorderElementClass
+ * \brief Class, used to reorder the owned elements after the partitioning.
+ * \author E. van der Weide
+ * \version 4.1.0 "Cardinal"
+ */
+class CReorderElementClass {
+public:
+  /*!
+   * \brief Constructor of the class, set the member variables to the arguments.
+   */
+  CReorderElementClass(const unsigned long  val_GlobalElemID,
+                       const unsigned short val_TimeLevel,
+                       const bool           val_CommSolution);
+
+  /*!
+   * \brief Destructor of the class. Nothing to be done.
+   */
+  ~CReorderElementClass(void);
+
+  /*!
+   * \brief Copy constructor of the class.
+   */
+  CReorderElementClass(const CReorderElementClass &other);
+
+  /*!
+   * \brief Assignment operator of the class.
+   */
+  CReorderElementClass& operator=(const CReorderElementClass &other);
+
+  /*!
+   * \brief Less than operator of the class. Needed for the sorting.
+   */
+  bool operator<(const CReorderElementClass &other) const;
+
+private:
+  unsigned long  globalElemID; /*!< \brief Global element ID of the element. */
+  unsigned short timeLevel;    /*!< \brief Time level of the element. Only relevant
+                                           for time accurate local time stepping. */
+  bool           commSolution; /*!< \brief Whether or not the solution must be
+                                           communicated to other ranks. */
+
+  /*!
+   * \brief Copy function. Needed for the copy constructor and assignment operator.
+   */
+  void Copy(const CReorderElementClass &other);
+
+  /*!
+   * \brief Default constructor of the class. Disabled.
+   */
+   CReorderElementClass(void);
+};
+
+/*!
  * \class SortFacesClass
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of FaceOfElementClass.
@@ -54,7 +107,7 @@ public:
  /*!
   * \brief Destructor of the class. Nothing to be done.
   */
-  ~SortFacesClass();
+  ~SortFacesClass(void);
 
  /*!
   * \brief Operator used for the comparison.
@@ -71,7 +124,6 @@ private:
    * \brief Default constructor of the class. Disabled.
    */
    SortFacesClass(void);
-
 };
 
 /*!
@@ -144,6 +196,8 @@ public:
   unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
   unsigned short nDOFsSol;     /*!< \brief Number of DOFs for the solution of the element. */
   unsigned short nFaces;       /*!< \brief Number of faces of the element. */
+  unsigned short timeLevel;    /*!< \brief Time level of the element when time accurate local
+                                           time stepping is employed. */
 
   unsigned short indStandardElement; /*!< \brief Index in the vector of standard elements. */
 

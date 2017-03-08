@@ -38,6 +38,26 @@
 #include "lapacke.h"
 #endif
 
+bool CReorderElementClass::operator< (const CReorderElementClass &other) const {
+
+  /* Elements with the lowest time level are stored first. */
+  if(timeLevel != other.timeLevel) return timeLevel < other.timeLevel;
+
+  /* Next comparison is whether or not the element must communicate its
+     solution data to other ranks. Elements which do not need to do this
+     are stored first. */
+  if(commSolution != other.commSolution) return other.commSolution;
+
+  /* The final comparison is based on the global element ID. */
+  return globalElemID < other.globalElemID;
+}
+
+void CReorderElementClass::Copy(const CReorderElementClass &other) {
+  globalElemID = other.globalElemID;
+  timeLevel    = other.timeLevel;
+  commSolution = other.commSolution;
+}
+
 bool SortFacesClass::operator()(const FaceOfElementClass &f0,
                                 const FaceOfElementClass &f1) {
 
@@ -361,6 +381,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     shortSendBuf[ind].push_back(geometry->elem[i]->GetNDOFsGrid());
     shortSendBuf[ind].push_back(geometry->elem[i]->GetNDOFsSol());
     shortSendBuf[ind].push_back(geometry->elem[i]->GetnFaces());
+    shortSendBuf[ind].push_back(geometry->elem[i]->GetTimeLevel());
     shortSendBuf[ind].push_back( (short) geometry->elem[i]->GetJacobianConsideredConstant());
 
     longSendBuf[ind].push_back(geometry->elem[i]->GetGlobalElemID());
@@ -391,7 +412,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     unsigned long indS = 3;
     for(long j=0; j<longSendBuf[i][0]; ++j) {
       short nDOFsGrid = shortSendBuf[i][indS], nFaces = shortSendBuf[i][indS+2];
-      indS += 3*nFaces+7;
+      indS += 3*nFaces+8;
 
       for(short k=0; k<nDOFsGrid; ++k, ++indL)
         nodeIDs.push_back(longSendBuf[i][indL]);
@@ -578,7 +599,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       unsigned short nDOFsGrid = shortRecvBuf[i][indS+3];
       unsigned short nFaces    = shortRecvBuf[i][indS+5];
-      indS += 3*nFaces + 7;
+      indS += 3*nFaces + 8;
       indL += nDOFsGrid + nFaces + 2;
     }
 
@@ -604,50 +625,110 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         unsignedLong2T is used for this purpose, such that a possible periodic
         transformation can be taken into account. Neighbors with a periodic
         transformation will always become a halo element, even if the element
-        is stored on this rank.             ---*/
+        is stored on this rank. Furthermore a vector of CReorderElementClass
+        is created for the owned elements to be able to reorder the elements,
+        see step 2 below. ---*/
   vector<unsignedLong2T> haloElements;
+  vector<CReorderElementClass> ownedElements;
+  unsigned short maxTimeLevelLoc = 0;
 
   for(int i=0; i<nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
+      unsigned long  globalID  = longRecvBuf[i][indL];
       unsigned short nDOFsGrid = shortRecvBuf[i][indS+3];
       unsigned short nFaces    = shortRecvBuf[i][indS+5];
+      unsigned short timeLevel = shortRecvBuf[i][indS+6];
+      bool           commSol   = false;
 
-      indS += 7;
+      /* Update the local value of the maximum time level. */
+      maxTimeLevelLoc = max(maxTimeLevelLoc, timeLevel);
+
+      /*--- Loop over the faces of this element to determine the halo elements
+            and the information needed to reorder the owned elements. ---*/
+      indS += 8;
       indL += nDOFsGrid + 2;
       for(unsigned short k=0; k<nFaces; ++k, indS+=3, ++indL) {
 
         if(longRecvBuf[i][indL] != -1) {  /* -1 indicates a boundary face. */
 
-          /*--- Check if this element owns the face. Only for owned faces
-                halo elements must be created. ---*/
-          bool FaceIsOwned = (bool) shortRecvBuf[i][indS+2];
+          /* Check if the neighbor of the face is also an owned element.
+             Per definition an element for which a periodic transformation
+             is carried out, is a halo element, even if the parent element
+             is stored locally. */
+          bool neighborIsInternal = false;
+          if(shortRecvBuf[i][indS] == -1) { /* -1 indicates no periodic transformation. */
+            neighborIsInternal = binary_search(globalElemID.begin(),
+                                               globalElemID.end(),
+                                               longRecvBuf[i][indL]);
+          }
 
-          if( FaceIsOwned ) {
-            bool neighborIsInternal = false;
-            if(shortRecvBuf[i][indS] == -1) { /* -1 indicates no periodic transformation. */
-              neighborIsInternal = binary_search(globalElemID.begin(),
-                                                 globalElemID.end(),
-                                                 longRecvBuf[i][indL]);
-            }
+          /* Check if this neighbor is not internal and if the element owns the face. */
+          if( !neighborIsInternal ) {
+            if( shortRecvBuf[i][indS+2] ) {
 
-            if( !neighborIsInternal )
+              /* The face is owned by this element. As the neighboring element
+                 is not owned, this implies that a halo element must be created. */
               haloElements.push_back(unsignedLong2T(longRecvBuf[i][indL],
                                                     shortRecvBuf[i][indS]+1));  /* The +1, because haloElements */
-          }                                                                     /* are unsigned longs.          */
+            }                                                                   /* are unsigned longs.          */
+            else {
+
+              /* The face is not owned by this element and therefore it is owned
+                 by the neighboring element on a different rank. Consequently the
+                 solution of this element must be communicated. */
+              commSol = true;
+            }
+          }
         }
       }
+
+      /* Store the required data for this element in ownedElements. */
+      ownedElements.push_back(CReorderElementClass(globalID, timeLevel, commSol));
     }
   }
 
+  /* Sort the halo elements in increasing order and remove the double entities. */
   sort(haloElements.begin(), haloElements.end());
   vector<unsignedLong2T>::iterator lastHalo = unique(haloElements.begin(), haloElements.end());
   haloElements.erase(lastHalo, haloElements.end());
 
+  /* Determine the maximum global time level and possibly reset the number
+     of time levels in config. */
+  unsigned short maxTimeLevelGlob = maxTimeLevelLoc;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&maxTimeLevelLoc, &maxTimeLevelLoc,
+                     1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+  config->SetnLevels_TimeAccurateLTS(maxTimeLevelGlob+1);
+
   /*----------------------------------------------------------------------------*/
-  /*--- Step 2: Store the elements, nodes and boundary elements in the data  ---*/
-  /*---         structures used by the FEM solver.                           ---*/
+  /*--- Step 2: Determine the numbering of the elements. The following       ---*/
+  /*---         criteria are used for the owned elements.                    ---*/
+  /*---         - Time level of the element: elements with the smallest time ---*/
+  /*---           level are number first, etc.                               ---*/
+  /*---         - For each time level the elements that do not need to send  ---*/
+  /*---           their data are numbered first, followed by the elements    ---*/
+  /*---           that must send their data to other ranks. Note that not    ---*/
+  /*---           sending the solution does not mean that the residual can   ---*/
+  /*---           be built without communication. It is possible that a face ---*/
+  /*---           is owned by an element on a different rank. In that case   ---*/
+  /*---           residual information is communicated back. This reversed   ---*/
+  /*---           communication is not taken into account in the numbering   ---*/
+  /*---           of the elements.                                           ---*/
+  /*---         - A reverse Cuthill McKee renumbering takes place to obtain  ---*/
+  /*---           better cache performance for the face residuals.           ---*/
+  /*---                                                                      ---*/
+  /*---         The halo elements are sorted per rank.                       ---*/
   /*----------------------------------------------------------------------------*/
+
+  /* Sort the elements of owned elements in increasing order. */
+  sort(ownedElements.begin(), ownedElements.end());
+
+
+
 
   /* Determine the mapping from the global element number to the local entry.
      At the moment the sequence is based on the global element ID, but one can
@@ -664,6 +745,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   for(unsigned long i=0; i<haloElements.size(); ++i)
     mapGlobalHaloElemToInd[haloElements[i]] = nVolElemOwned + i;
+
+  /*----------------------------------------------------------------------------*/
+  /*--- Step 3: Store the elements, nodes and boundary elements in the data  ---*/
+  /*---         structures used by the FEM solver.                           ---*/
+  /*----------------------------------------------------------------------------*/
 
   /*--- Check in parallel mode for empty partitions. If present, print a warning.
         The solver is capable of handling empty partitions, but it may not be
@@ -717,6 +803,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       volElem[ind].nDOFsGrid = shortRecvBuf[i][indS++];
       volElem[ind].nDOFsSol  = shortRecvBuf[i][indS++];
       volElem[ind].nFaces    = shortRecvBuf[i][indS++];
+      volElem[ind].timeLevel = shortRecvBuf[i][indS++];
 
       volElem[ind].JacIsConsideredConstant = (bool) shortRecvBuf[i][indS++];
 
@@ -798,7 +885,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     sort(boundaries[iMarker].surfElem.begin(), boundaries[iMarker].surfElem.end());
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 3: Communicate the information for the halo elements.           ---*/
+  /*--- Step 4: Communicate the information for the halo elements.           ---*/
   /*----------------------------------------------------------------------------*/
 
   /* Determine the number of elements per rank of the originally partitioned grid
@@ -1126,7 +1213,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   }
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 4: Build the layer of halo elements from the information in the ---*/
+  /*--- Step 5: Build the layer of halo elements from the information in the ---*/
   /*---         receive buffers shortRecvBuf, longRecvBuf and doubleRecvBuf. ---*/
   /*----------------------------------------------------------------------------*/
 
