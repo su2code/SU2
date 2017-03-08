@@ -10547,6 +10547,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- New variables get registered here before the end of the loop. ---*/
     
+    if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
+      nVar_Par +=1;
+      Variable_Names.push_back("DES_Distance");      
+    }
+    
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -10760,6 +10765,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         
+        if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
+          Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetWall_Distance(); iVar++;
+          
+        }
+          
         /*--- Increment the point counter, as there may have been halos we
          skipped over during the data loading. ---*/
         
