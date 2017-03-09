@@ -252,6 +252,13 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  virtual su2double GetSolution_Avg(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
    */
   virtual void SetSolution_New(void);
 
@@ -262,6 +269,13 @@ public:
    */
   virtual void AddSolution_New(unsigned short val_var, su2double val_solution);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  virtual void AddSolution_Avg(unsigned short val_var, su2double val_solution);
+  
   /*!
    * \brief Add a value to the solution, clipping the values.
    * \param[in] val_var - Index of the variable.
@@ -2679,6 +2693,11 @@ protected:
   /*--- New solution container for Classical RK4 ---*/
 
   su2double *Solution_New;
+    
+  /*--- New solution container for Average ---*/
+  
+  su2double *Solution_Avg;
+
   
 public:
   
@@ -2731,6 +2750,20 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   void AddSolution_New(unsigned short val_var, su2double val_solution);
+
+  /*!
+   * \brief Get the solution of Calculate Averages.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  su2double GetSolution_Avg(unsigned short val_var);
+  
+  /*!
+   * \brief Add a value to the new solution container for Calculate Averages.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  void AddSolution_Avg(unsigned short val_var, su2double val_solution);
 
   /*!
    * \brief Set to zero the gradient of the primitive variables.

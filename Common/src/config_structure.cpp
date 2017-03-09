@@ -564,6 +564,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_BINARY_RESTART", Wrt_Binary_Restart, true);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
   addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
+
+  /*!\brief CALCULATE_AVERAGE \n DESCRIPTION: Calculate average of variables over unsteady simulations. \n Options: YES, NO \ingroup Config */
+  addBoolOption("CALCULATE_AVERAGE", Calculate_Average, false);
+
+
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
