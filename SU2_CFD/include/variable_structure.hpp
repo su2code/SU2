@@ -1748,7 +1748,9 @@ public:
 	 * \param[in] val_f - Value of f redistribution.
 	 * \param[in] StrainMag - strain magnitude.
 	 */
-    virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+  //    virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+
+    virtual void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag);
 
 	/*! swh
 	 * \brief Get model timescale for ke  model.
@@ -3724,6 +3726,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
   CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_f, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar, su2double *constants, CConfig *config);
+  //  CTurbKEVariable(su2double val_rho_kine, su2double val_rho_epsi, su2double val_zeta, su2double val_muT, su2double val_Tm, su2double val_Lm, unsigned short val_nDim, unsigned short val_nvar, su2double *constants, CConfig *config);
 
 	/*!
 	 * \brief Destructor of the class.
@@ -3736,7 +3739,8 @@ public:
 	 * \param[in] val_dist - Value of the distance to the wall.
 	 * \param[in] val_density - Value of the density.
 	 */
-  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+  //  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double val_f, su2double StrainMag);
+  void SetTLFunc(su2double val_viscosity, su2double val_dist, su2double val_density, su2double val_kine, su2double val_epsi, su2double val_zeta, su2double StrainMag);
 
 	/*!
 	 * \brief Get the first blending function.

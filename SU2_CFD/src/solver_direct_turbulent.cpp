@@ -3571,11 +3571,14 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   upperlimit = new su2double[nVar];
   
   // k
-  lowerlimit[0] = 0.0;
+  lowerlimit[0] = 1.0e-14;
+  //  lowerlimit[0] = 0.0;
   //  lowerlimit[0] = -1.0e-1;
+  //  lowerlimit[0] = -1.0e-10;
   upperlimit[0] = 1.0e10;
 
   // epsi  
+  //lowerlimit[1] = 1.0e-14;
   lowerlimit[1] = -1.0e10; //-1.0e2;
   upperlimit[1] = 1.0e10;
 
@@ -3586,11 +3589,14 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   */
 
   // v2
-  lowerlimit[2] = 0.0;
+  lowerlimit[2] = 1.0e-14;
+  //  lowerlimit[2] = 0.0;
   //  lowerlimit[2] = -1.0e-1;
+  //  lowerlimit[2] = -1.0e-10;
   upperlimit[2] = 1.0e10; 
   
   // f
+  //  lowerlimit[3] = 1.0e-14;
   //  lowerlimit[3] = 0.0;
   lowerlimit[3] = -1.0e10; //-1.0e2;
   upperlimit[3] = 1.0e10;
@@ -3603,19 +3609,20 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   muLamInf  = config->GetViscosity_FreeStreamND();
   Intensity = config->GetTurbulenceIntensity_FreeStream();
   viscRatio = config->GetTurb2LamViscRatio_FreeStream();
-  
+
+  // jump  
   su2double VelMag = 0;
   for (iDim = 0; iDim < nDim; iDim++)
   VelMag += VelInf[iDim]*VelInf[iDim];
   VelMag = sqrt(VelMag);
   //  cout<<"Intensity: "<<Intensity<<"\n";
   kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
-  epsi_Inf = rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio); // not sure here... rhoInf*kine_Inf/(muLamInf*viscRatio);
+  epsi_Inf = 2.0/3.0*constants[0]*rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio); // not sure here... rhoInf*kine_Inf/(muLamInf*viscRatio);
   //  zeta_Inf = 2.0/3.0;
   zeta_Inf = 2.0/3.0*kine_Inf; // v2 here
-  Tm_Inf = kine_Inf/epsi_Inf;
-  Lm_Inf = pow(kine_Inf,1.5)/epsi_Inf; 
-  f_Inf = 10.0/3.0*1.0/Tm_Inf;
+  Tm_Inf = max( kine_Inf/max(epsi_Inf,1.0E-14), constants[8]*sqrt(muLamInf/(rhoInf*max(epsi_Inf,1.0E-14))) );
+  Lm_Inf = constants[9] * max( pow(kine_Inf,1.5)/max(epsi_Inf,1.0E-14), constants[10]*pow(muLamInf/rhoInf,0.75)/pow(max(epsi_Inf,1.0E-14),0.25) ); 
+  f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,1.0E-14);
  
   //  cout<<"Intensity: "<<Intensity<<"\n";
   //  cout<<"k inf: "<<kine_Inf<<"\n";
@@ -3624,9 +3631,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   /*--- Eddy viscosity, initialized without stress limiter at the infinity ---*/
   //  muT_Inf = constants[0] * rhoInf*zeta_Inf*(kine_Inf*kine_Inf)/epsi_Inf;
-  //  muT_Inf = constants[0] * rhoInf*zeta_Inf*kine_Inf/epsi_Inf; //v2
-
-  muT_Inf = muLamInf*viscRatio;
+  muT_Inf = constants[0] * rhoInf*zeta_Inf*Tm_Inf; //v2
+  //  muT_Inf = muLamInf*viscRatio;
 
   
   /*--- Restart the solution from file information ---*/
@@ -3826,9 +3832,9 @@ void CTurbKESolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
     //cout<<"kine: "<<kine<<"\n";
     //cout<<"f: "<<f<<"\n";
 
-    kine = max(kine,1.0E-12);
-    epsi = max(epsi,1.0E-12);
-    zeta = max(zeta,1.0E-12);
+    kine = max(kine,1.0E-8);
+    epsi = max(epsi,1.0E-8);
+    zeta = max(zeta,1.0E-8);
     //    zeta = 2.0/3.0*kine;
     zeta = min(zeta,2.0/3.0*kine);
 
@@ -3946,8 +3952,10 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       }
       
 
-      wall_k = node[iPoint]->GetSolution(0);
-      wall_zeta = node[iPoint]->GetSolution(2);
+      wall_k = node[jPoint]->GetSolution(0);
+      wall_zeta = node[jPoint]->GetSolution(2);
+      //      wall_k = node[iPoint]->GetSolution(0);
+      //      wall_zeta = node[iPoint]->GetSolution(2);
       //      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
       //      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
       //      dkdn = numerics->GetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
@@ -4010,9 +4018,11 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
         density = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
         laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosityInc();
       }
-      
-      wall_k = node[iPoint]->GetSolution(0);
-      wall_zeta = node[iPoint]->GetSolution(2);
+
+      wall_k = node[jPoint]->GetSolution(0);
+      wall_zeta = node[jPoint]->GetSolution(2);      
+      //      wall_k = node[iPoint]->GetSolution(0);
+      //      wall_zeta = node[iPoint]->GetSolution(2);
       //      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
       //      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
 
@@ -4043,7 +4053,6 @@ void CTurbKESolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
   
   unsigned long iPoint, iVertex;
   su2double *Normal, *V_infty, *V_domain;
-  su2double ff_epsi, ff_f, ff_kine, ff_zeta;
   unsigned short iVar, iDim;
   
   bool grid_movement = config->GetGrid_Movement();
@@ -4064,19 +4073,20 @@ void CTurbKESolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
       conv_numerics->SetPrimitive(V_domain, V_infty);
 
-      /*--- To force zero gradient ---*/
-      ff_kine = node[iPoint]->GetSolution(0);
-      ff_epsi = node[iPoint]->GetSolution(1);
-      ff_zeta = node[iPoint]->GetSolution(2);
-      ff_f = node[iPoint]->GetSolution(3);
-      
       /*--- Set turbulent variable at infinity ---*/
       for (iVar = 0; iVar < nVar; iVar++)
       Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+/*
       Solution_j[0] = kine_Inf;
-      Solution_j[1] = ff_epsi; //epsi_Inf;
+      Solution_j[1] = epsi_Inf;
       Solution_j[2] = zeta_Inf;
-      Solution_j[3] = ff_f; //f_Inf;
+      Solution_j[3] = f_Inf;
+*/
+      Solution_j[0] = node[iPoint]->GetSolution(0);
+      Solution_j[1] = node[iPoint]->GetSolution(1);
+      Solution_j[2] = node[iPoint]->GetSolution(2);
+      Solution_j[3] = node[iPoint]->GetSolution(3);
+
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
       /*--- Set Normal (it is necessary to change the sign) ---*/
@@ -4109,7 +4119,6 @@ void CTurbKESolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_inlet, *V_domain, *Normal;
-  su2double ff_epsi, ff_f, ff_kine, ff_zeta;
   
   Normal = new su2double[nDim];
   
@@ -4146,16 +4155,17 @@ void CTurbKESolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       for (iVar = 0; iVar < nVar; iVar++)
       Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
 
-      /*--- To force zero gradient ---*/
-      ff_kine = node[iPoint]->GetSolution(0);
-      ff_epsi = node[iPoint]->GetSolution(1);
-      ff_zeta = node[iPoint]->GetSolution(2);
-      ff_f = node[iPoint]->GetSolution(3);
-
       Solution_j[0] = kine_Inf;
-      Solution_j[1] = ff_epsi; //epsi_Inf;
+      Solution_j[1] = epsi_Inf;
       Solution_j[2] = zeta_Inf;
-      Solution_j[3] = ff_f; //f_Inf;
+      //      Solution_j[3] = f_Inf;
+      Solution_j[3] = node[iPoint]->GetSolution(3);
+      /*
+      Solution_j[0] = node[iPoint]->GetSolution(0);
+      Solution_j[1] = node[iPoint]->GetSolution(1);
+      Solution_j[2] = node[iPoint]->GetSolution(2);
+      Solution_j[3] = node[iPoint]->GetSolution(3);
+      */
       
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
