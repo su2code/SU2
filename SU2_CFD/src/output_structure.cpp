@@ -10327,6 +10327,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
+  bool calculate_average = (config->GetCalculate_Average());
   
   int *Local_Halo = NULL;
   

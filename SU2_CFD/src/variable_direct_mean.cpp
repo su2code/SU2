@@ -233,9 +233,11 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   /*--- Allocate vector for Average of conservative variables ---*/
   
-  if (calculate_average)
+  if (calculate_average){
     Solution_Avg = new su2double [nVar];
-
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution_Avg[iVar] = 0.0;
+  }
 }
 
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
