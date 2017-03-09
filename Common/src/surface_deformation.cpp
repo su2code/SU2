@@ -2100,7 +2100,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
 void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox, bool ResetDef) {
 
-  unsigned short iControl, jControl, kControl, iGroup, index[3];
+  unsigned short iControl, jControl, kControl, iGroup, index[3], iDV, iConstraint;
   const unsigned short lControl = FFDBox->BlendingFunction[0]->GetnControl();
   const unsigned short mControl = FFDBox->BlendingFunction[1]->GetnControl();
   const unsigned short nControl = FFDBox->BlendingFunction[2]->GetnControl();
@@ -2108,8 +2108,10 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   unsigned long nParameter = 0, displ = 0;
   const unsigned short nGroup = FFDBox->PilotGroupNames.size();
   const unsigned short nDim = geometry->GetnDim();
-  su2double Movement[3];
-
+  const unsigned short nConstraints = config->GetnFFD_ConstraintGroups();
+  su2double Movement[] = {0.0,0.0,0.0};
+  bool* GroupActive;
+  GroupActive = new bool[nGroup];
 
   int rank = MASTER_NODE;
 
@@ -2119,7 +2121,24 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
   for (iGroup = 0; iGroup < nGroup; iGroup++){
     const unsigned long nPilotPoints = FFDBox->PilotPointsX[iGroup].size();
-    nParameter += nPilotPoints;
+
+    GroupActive[iGroup] = false;
+
+    for (iDV = 0; iDV < config->GetnDV(); iDV++){
+      if (config->GetFFDTag(iDV) == FFDBox->PilotGroupNames[iGroup]){
+        GroupActive[iGroup] = true;   
+      }
+    }
+
+    for (iConstraint = 0; iConstraint < nConstraints; iConstraint++){
+      if (config->GetFFD_ConstraintGroup(iConstraint) == FFDBox->PilotGroupNames[iGroup]){
+        GroupActive[iGroup] = true;
+      }
+    }
+
+    if (GroupActive[iGroup]){
+      nParameter += nPilotPoints;
+    }
   }
 
   EigenVector ParameterValuesX(nParameter);
@@ -2137,42 +2156,42 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   SystemMatrix    = EigenMatrix::Zero(TotalControl + nParameter, TotalControl + nParameter);
   SystemRHS       = EigenVector::Zero(TotalControl + nParameter);
   SystemSol       = EigenVector::Zero(TotalControl + nParameter);
-
+  ParameterValuesZ = EigenVector::Zero(nParameter);
   /*--- Loop through all groups of this ffd box ---*/
 
   displ = 0;
 
   for (iGroup = 0; iGroup < nGroup; iGroup++){
+    if (GroupActive[iGroup]){
+      EigenVector RhsX;
+      EigenVector RhsY;
+      EigenVector RhsZ;
+      EigenMatrix Block;
 
-    EigenVector RhsX;
-    EigenVector RhsY;
-    EigenVector RhsZ;
-    EigenMatrix Block;
+      if (FFDBox->PilotGroupType[iGroup] == ABSOLUTE){
+        FFDBox->GetAbsoluteGroupRHS(RhsX, iGroup, 0, config);
+        FFDBox->GetAbsoluteGroupRHS(RhsY, iGroup, 1, config);
+        if (nDim == 3)
+          FFDBox->GetAbsoluteGroupRHS(RhsZ, iGroup, 2, config);
+        FFDBox->GetAbsoluteGroupBlock(Block, iGroup);
+      }
+      if (FFDBox->PilotGroupType[iGroup] == RELATIVE){
+        FFDBox->GetRelativeGroupRHS(RhsX, iGroup, 0, config);
+        FFDBox->GetRelativeGroupRHS(RhsY, iGroup, 1, config);
+        if (nDim == 3)
+          FFDBox->GetRelativeGroupRHS(RhsZ, iGroup, 2, config);
+        FFDBox->GetRelativeGroupBlock(Block, iGroup);
+      }
 
-    if (FFDBox->PilotGroupType[iGroup] == ABSOLUTE){
-      FFDBox->GetAbsoluteGroupRHS(RhsX, iGroup, 0, config);
-      FFDBox->GetAbsoluteGroupRHS(RhsY, iGroup, 1, config);
+      ParameterValuesX.block(displ, 0, RhsX.rows(),1) = RhsX;
+      ParameterValuesY.block(displ, 0, RhsY.rows(),1) = RhsY;
       if (nDim == 3)
-        FFDBox->GetAbsoluteGroupRHS(RhsZ, iGroup, 2, config);
-      FFDBox->GetAbsoluteGroupBlock(Block, iGroup);
+        ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
+
+      ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
+
+      displ += Block.rows();
     }
-    if (FFDBox->PilotGroupType[iGroup] == RELATIVE){
-      FFDBox->GetRelativeGroupRHS(RhsX, iGroup, 0, config);
-      FFDBox->GetRelativeGroupRHS(RhsY, iGroup, 1, config);
-      if (nDim == 3)
-        FFDBox->GetRelativeGroupRHS(RhsZ, iGroup, 2, config);
-      FFDBox->GetRelativeGroupBlock(Block, iGroup);
-    }
-
-    ParameterValuesX.block(displ, 0, RhsX.rows(),1) = RhsX;
-    ParameterValuesY.block(displ, 0, RhsY.rows(),1) = RhsY;
-    if (nDim == 3)
-      ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
-
-    ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
-
-    displ += Block.rows();
-
   }
 
   FFDBox->GetLaplacianEnergyMatrix(EnergyMatrix);
@@ -2181,7 +2200,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   SystemMatrix.block(TotalControl, 0, nParameter, TotalControl) = ConstraintMatrix;
 
   if (nGroup > 0){
-
+    
     Eigen::FullPivHouseholderQR<EigenMatrix> QRSystemMatrix;
 
     /*--- QR decomposition of the system matrix ---*/
@@ -2242,13 +2261,16 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
         for (kControl = 0; kControl < nControl; kControl++){
           Movement[0] = ControlPointPositionsX(iControl*mControl*nControl + jControl*nControl + kControl);
           Movement[1] = ControlPointPositionsY(iControl*mControl*nControl + jControl*nControl + kControl);
-          Movement[2] = ControlPointPositionsZ(iControl*mControl*nControl + jControl*nControl + kControl);
+          if (nDim == 3)
+            Movement[2] = ControlPointPositionsZ(iControl*mControl*nControl + jControl*nControl + kControl);
           index[0] = iControl; index[1] = jControl; index[2] = kControl;
           FFDBox->SetControlPoints(index, Movement);
         }
       }
     }
   }
+
+  delete [] GroupActive;
 }
 
 void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, CFreeFormDefBox **ResetFFDBox,
