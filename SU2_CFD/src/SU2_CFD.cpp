@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 
   		} else {
 
-  			driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
   		}
 
   	} else if (config->GetBoolTurbomachinery()){

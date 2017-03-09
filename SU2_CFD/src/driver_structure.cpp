@@ -3960,7 +3960,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 }
 
 
-CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
+CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
                                                  unsigned short val_nZone,
                                                  unsigned short val_nDim, SU2_Comm MPICommunicator) : CFluidDriver(confFile,
 																										 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	val_nZone,
@@ -3976,7 +3976,7 @@ CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
 
 }
 
-CDiscAdjMultiZoneDriver::~CDiscAdjMultiZoneDriver(){
+CDiscAdjFluidDriver::~CDiscAdjFluidDriver(){
 
   for (iZone = 0; iZone < nZone; iZone++){
     delete direct_iteration[iZone];
@@ -4150,7 +4150,7 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
 
 }
 
-void CDiscAdjMultiZoneDriver::SetAdj_ObjFunction(){
+void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 
   int rank = MASTER_NODE;
 
@@ -4180,7 +4180,7 @@ void CDiscAdjMultiZoneDriver::SetAdj_ObjFunction(){
 
 }
 
-void CDiscAdjMultiZoneDriver::SetObjFunction(){
+void CDiscAdjFluidDriver::SetObjFunction(){
 
   bool output_1d       = config_container[ZONE_0]->GetWrt_1D_Output();
   bool output_massflow = (config_container[ZONE_0]->GetKind_ObjFunc() == MASS_FLOW_RATE);
@@ -4235,7 +4235,7 @@ void CDiscAdjMultiZoneDriver::SetObjFunction(){
 
 
 
-void CDiscAdjMultiZoneDriver::DirectRun(){
+void CDiscAdjFluidDriver::DirectRun(){
 
   unsigned short iZone = 0;
 
