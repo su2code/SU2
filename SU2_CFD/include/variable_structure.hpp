@@ -264,6 +264,11 @@ public:
 
   /*!
    * \brief A virtual member.
+   */
+  virtual void SetSolution_Avg(su2double *val_solution);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_var - Number of the variable.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
@@ -2757,6 +2762,11 @@ public:
    * \return Pointer to the old solution vector.
    */
   su2double GetSolution_Avg(unsigned short val_var);
+  
+  /*!
+   * \brief Set the new solution container for Calculate Averages
+   */
+  void SetSolution_Avg(su2double *val_solution);
   
   /*!
    * \brief Add a value to the new solution container for Calculate Averages.
