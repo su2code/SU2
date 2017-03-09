@@ -106,6 +106,9 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
     Density = rho;
     StaticEnergy = e;
 
+    AD::StartPreacc();
+    AD::SetPreaccIn(rho); AD::SetPreaccIn(e);
+
     rho2 = rho*rho;
     sqrt2=sqrt(2.0);
 
@@ -148,6 +151,12 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
     Zed = Pressure/(Gas_Constant*Temperature*Density);
 
 
+    AD::SetPreaccOut(Temperature); AD::SetPreaccOut(SoundSpeed2);
+    AD::SetPreaccOut(dPde_rho); AD::SetPreaccOut(dPdrho_e);
+    AD::SetPreaccOut(Zed); AD::SetPreaccOut(dTde_rho);
+    AD::SetPreaccOut(Pressure); AD::SetPreaccOut(Entropy);
+    AD::EndPreacc();
+
 }
 
 void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
@@ -156,6 +165,9 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
   su2double rho, fv, e;
   su2double sqrt2=sqrt(2.0);
   unsigned short nmax = 20, count=0;
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(P); AD::SetPreaccIn(T);
 
   A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
   B= b*P/(T*Gas_Constant);
@@ -186,6 +198,9 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
   fv = atanh;
 
   e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
+
+  AD::SetPreaccOut(rho); AD::SetPreaccOut(e);
+  AD::EndPreacc();
 
   SetTDState_rhoe(rho, e);
 }
@@ -298,6 +313,10 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 
     su2double ad;
     su2double A, B, C, T, vb1, vb2, atanh;
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(P); AD::SetPreaccIn(rho);
+
     vb1 = (1/rho -b);
     vb2 = (1/rho/rho + 2*b/rho - b*b);
 
@@ -315,6 +334,8 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 
     StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
 
+    AD::SetPreaccOut(StaticEnergy);
+    AD::EndPreacc();
 }
 
 void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
