@@ -76,8 +76,8 @@ def finite_differences( filename           ,
     
     # State
     state = SU2.io.State()
-    problem = SU2.io.read_problem(config)
-    state.find_files(problem)
+    physics = SU2.io.read_physics(config)
+    state.find_files(physics)
     
     # Finite Difference Gradients
     SU2.eval.gradients.findiff(config,state)

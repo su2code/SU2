@@ -79,7 +79,8 @@ def discrete_adjoint( filename           ,
                         step        = 1e-4  ):
     
     # Config
-    config = SU2.io.Config(filename)
+    problem = SU2.io.Problem(filename)
+    config = problem.config
     config.NUMBER_PART = partitions
     
     # State
@@ -87,15 +88,14 @@ def discrete_adjoint( filename           ,
     
     # Force CSV output in order to compute gradients
     config.WRT_CSV_SOL = 'YES'
-    
 
-    config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
+    problem['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
     # check for existing files
     if not compute:
         config.RESTART_SOL = 'YES'
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
     else:
         state.FILES.MESH = config.MESH_FILENAME
     
@@ -103,7 +103,7 @@ def discrete_adjoint( filename           ,
     if compute:
         info = SU2.run.direct(config) 
         state.update(info)
-        SU2.io.restart2solution(config,state)
+        SU2.io.restart2solution(problem,state)
     
     # Adjoint Solution
 
@@ -113,9 +113,9 @@ def discrete_adjoint( filename           ,
 
     # Run all-at-once 
     if compute:
-        info = SU2.run.adjoint(config)
+        info = SU2.run.adjoint(problem)
         state.update(info)
-        SU2.io.restart2solution(config,state)
+        SU2.io.restart2solution(problem,state)
     
     # Gradient Projection
     info = SU2.run.projection(config,step)
@@ -163,8 +163,8 @@ def discrete_design( filename           ,
     
     # check for existing files
     if any([not compute, validation]) :
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
     else:
         state.FILES.MESH = config.MESH_FILENAME
 

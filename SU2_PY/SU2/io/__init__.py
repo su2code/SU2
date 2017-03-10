@@ -8,9 +8,9 @@ from filelock import filelock
 
 from config   import Config
 from state    import State_Factory as State
-from opt      import Opt
+from problem  import Problem
 from dv       import *
-from phys_problem import *
+from physics  import *
 
 
 

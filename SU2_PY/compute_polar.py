@@ -129,8 +129,8 @@ def main():
    config.EXT_ITER    = options.iterations
 
    # find solution files if they exist
-   problem = SU2.io.read_problem(config)
-   state.find_files(problem)
+   physics = SU2.io.read_physics(config)
+   state.find_files(physics)
 
    # start results data
    results = SU2.util.bunch()

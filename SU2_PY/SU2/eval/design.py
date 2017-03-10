@@ -85,20 +85,20 @@ class Design(object):
             grad(func_name,method='CONTINUOUS_ADJOINT') - gradient of specified name
     """
     
-    def __init__(self, opt, state=None, folder='DESIGNS/DSN_*'):
+    def __init__(self, problem, state=None, folder='DESIGNS/DSN_*'):
         """ Initializes an SU2 Design """
         
         if '*' in folder: folder = su2io.next_folder(folder)
         
 #        print "New Design: %s" % folder
         
-        opt    = copy.deepcopy(opt)
-        config = opt.CONFIG_DIRECT
+        problem= copy.deepcopy(problem)
+        config = problem.config
         state  = copy.deepcopy(state)
         state  = su2io.State(state)
-        state.find_files(opt.problem)
+        state.find_files(problem.physics)
 
-        self.opt    = opt
+        self.problem= problem
         self.config = config
         self.state  = state
         self.files  = state.FILES
@@ -112,19 +112,19 @@ class Design(object):
         self.filename = 'design.pkl'
             
         # initialize folder with files
-        pull,link = state.pullnlink(opt)
+        pull,link = state.pullnlink(problem)
         with redirect_folder(folder, pull, link, force=True):
             # save design, config
             save_data(self.filename,self)
             config.dump('config_DSN.cfg')
-            opt.dump_dv_new('./')   # dumps the values of the design variables
+            problem.dump_dv_new('./')   # dumps the values of the design variables
         
     def _eval(self,eval_func,*args):
         """ Evaluates an SU2 Design 
             always adds config and state to the inputs list
         """
 
-        opt    = self.opt
+        problem= self.problem
         config = self.config
         state  = self.state
         files  = self.files
@@ -138,7 +138,7 @@ class Design(object):
         assert os.path.exists(folder) , 'cannot find design folder %s' % folder
         
         # list files to pull and link
-        pull, link = state.pullnlink(opt)
+        pull, link = state.pullnlink(problem)
         
         # output redirection, don't re-pull files
         with redirect_folder(folder,pull,link,force=False) as push:
@@ -147,7 +147,7 @@ class Design(object):
             timestamp = state.tic()
             
             # run 
-            inputs = args + (opt, state)
+            inputs = args + (problem, state)
             vals = eval_func(*inputs)
             
             # save design
@@ -214,7 +214,7 @@ class Design(object):
 #  Optimization Interface Functions
 # ----------------------------------------------------------------------
         
-def obj_f(dvs,opt,state=None):
+def obj_f(dvs,problem,state=None):
     """ val = SU2.eval.obj_f(dvs,config,state=None)
     
         Evaluates SU2 Objectives 
@@ -228,11 +228,11 @@ def obj_f(dvs,opt,state=None):
     """
 
     # unpack config and state 
-    opt.unpack_dvs(dvs)
-    config = opt.CONFIG_DIRECT
+    problem.unpack_dvs(dvs)
+    config = problem.config
     state = su2io.State(state)
 
-    def_objs = opt['OBJECTIVE_FUNCTION']
+    def_objs = problem['OBJECTIVE_FUNCTION']
     objectives = def_objs.keys()
 
 #    if objectives: print('Evaluate Objectives')
@@ -245,7 +245,7 @@ def obj_f(dvs,opt,state=None):
         
         # Evaluate Objective Function
         # scaling and sign
-        func += su2func(this_obj, opt, state) * sign * scale
+        func += su2func(this_obj, problem, state) * sign * scale
         
     vals_out.append(func)
     #: for each objective
@@ -254,7 +254,7 @@ def obj_f(dvs,opt,state=None):
 
 #: def obj_f()
 
-def obj_df(dvs,opt,state=None):
+def obj_df(dvs,problem,state=None):
     """ vals = SU2.eval.obj_df(dvs,config,state=None)
     
         Evaluates SU2 Objective Gradients
@@ -268,12 +268,12 @@ def obj_df(dvs,opt,state=None):
     """    
     
     # unpack config and state
-    opt.unpack_dvs(dvs)
-    config      = opt.CONFIG_ADJOINT
+    problem.unpack_dvs(dvs)
+    config      = problem.config_adj
     state       = su2io.State(state)
-    grad_method = opt['GRADIENT_METHOD']
+    grad_method = problem['GRADIENT_METHOD']
 
-    def_objs = opt['OBJECTIVE_FUNCTION']
+    def_objs = problem['OBJECTIVE_FUNCTION']
     objectives = def_objs.keys()
     n_obj = len( objectives )
     multi_objective = (config['OPT_COMBINE_OBJECTIVE']=="YES")
@@ -284,7 +284,7 @@ def obj_df(dvs,opt,state=None):
     vals_out = []
     for i_obj, this_obj in enumerate(objectives):
         config.GRADIENT_METHOD = grad_method
-        grad = su2grad(this_obj, grad_method, config, state)
+        grad = su2grad(this_obj, grad_method, problem, state)
         # scaling : obj scale and sign are accounted for in combo gradient, dv scale now applied
         k = 0
         for i_dv, dv_scl in enumerate(dv_scales):

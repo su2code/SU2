@@ -46,7 +46,7 @@ from ..io import redirect_folder, redirect_output
 #  Main Function Interface
 # ----------------------------------------------------------------------
 
-def function( func_name, opt, state=None ):
+def function( func_name, problem, state=None ):
     """ val = SU2.eval.func(func_name,opt,state=None)
     
         Evaluates the objective function.
@@ -88,21 +88,24 @@ def function( func_name, opt, state=None ):
     # redundancy check
     if not state['FUNCTIONS'].has_key(func_name_string):
 
+        # An objective function is to be evaluated
+        problem.kind = 'FUNCTION'
+
         # Aerodynamics
         if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
-            aerodynamics( opt, state )
+            aerodynamics( problem, state )
             
         # Stability
         elif func_name in su2io.optnames_stab:
-            stability( opt, state )
+            stability( problem, state )
         
         # Geometry
         elif func_name in su2io.optnames_geo:
-            geometry( func_name, opt, state )
+            geometry( func_name, problem, state )
             
         # Structural OF
         elif func_name in su2io.optnames_fea:
-            structural( opt, state )
+            structural( problem, state )
             
         else:
             raise Exception, 'unknown function name, %s' % func_name
@@ -114,7 +117,7 @@ def function( func_name, opt, state=None ):
         func_out = state['FUNCTIONS']
     elif (multi_objective):
         # If combine_objective is true, use the 'combo' output.
-        objectives=opt.OBJECTIVE_FUNCTION
+        objectives=problem.OBJECTIVE_FUNCTION
         func_out = 0.0
         for func in func_name:
             sign = su2io.get_objectiveSign(func)
@@ -133,7 +136,7 @@ def function( func_name, opt, state=None ):
 #  Aerodynamic Functions
 # ----------------------------------------------------------------------
 
-def aerodynamics( opt, state=None ):
+def aerodynamics( problem, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
     
         Evaluates aerodynamics with the following:
@@ -163,7 +166,7 @@ def aerodynamics( opt, state=None ):
     # ----------------------------------------------------
 
     # Temporary
-    config = opt.CONFIG_DIRECT
+    config = problem.config
 
     # initialize
     state = su2io.State(state)
@@ -219,7 +222,7 @@ def aerodynamics( opt, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
-        name = su2io.expand_time(name, opt.problem)
+        name = su2io.expand_time(name, problem.physics)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
@@ -246,7 +249,7 @@ def aerodynamics( opt, state=None ):
             
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-            su2io.restart2solution(config,info)
+            su2io.restart2solution(problem,info)
             state.update(info)
             
             # direct files to push
@@ -286,10 +289,10 @@ def aerodynamics( opt, state=None ):
 #  Stability Functions
 # ----------------------------------------------------------------------
 
-def stability( opt, state=None, step=1e-2 ):
+def stability( problem, state=None, step=1e-2 ):
 
     # Temporary
-    config = opt.CONFIG_DIRECT
+    config = problem.config
     
     folder = 'STABILITY' # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
     
@@ -415,7 +418,7 @@ def stability( opt, state=None, step=1e-2 ):
 #  Geometric Functions
 # ----------------------------------------------------------------------
 
-def geometry( func_name, opt, state=None ):
+def geometry( func_name, problem, state=None ):
     """ val = SU2.eval.geometry(config,state=None)
     
         Evaluates geometry with the following:
@@ -441,7 +444,7 @@ def geometry( func_name, opt, state=None ):
     """
 
     # Temporary
-    config = opt.CONFIG_DIRECT
+    config = problem.config
     
     # ----------------------------------------------------
     #  Initialize    
@@ -520,7 +523,7 @@ def geometry( func_name, opt, state=None ):
 #  Structural Functions
 # ----------------------------------------------------------------------
 
-def structural( opt, state=None ):
+def structural( problem, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
     
         Evaluates structural mechanics with the following:
@@ -546,15 +549,15 @@ def structural( opt, state=None ):
     #  Initialize    
     # ----------------------------------------------------
 
-    config = opt.CONFIG_DIRECT
+    config = problem.config
 
     # initialize
     state = su2io.State(state)
     if not state.FILES.has_key('MESH'):
-        state.FILES.MESH = opt.problem.files['MESH']
+        state.FILES.MESH = problem.physics.files['MESH']
 
     # console output
-    if opt.CONFIG_DIRECT.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+    if problem.config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_direct = 'log_Direct.out'
     else:
         log_direct = None
@@ -582,11 +585,11 @@ def structural( opt, state=None ):
     for key in files:
         if key == 'DIRECT':
             name = files[key]
-            name = su2io.expand_time(name, opt.problem)
+            name = su2io.expand_time(name, problem.physics)
             link.extend(name)
         else:
             name = files[key]
-            name = su2io.expand_part(name, opt)
+            name = su2io.expand_part(name, problem)
             link.extend(name)
 
     # If direct is not in files means that we are not restarting the solution
@@ -600,12 +603,12 @@ def structural( opt, state=None ):
             
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-            su2io.restart2solution(config, info)
+            su2io.restart2solution(problem, info)
             state.update(info)
             
             # direct files to push
             name = info.FILES['DIRECT']
-            name = su2io.expand_time(name, opt.problem)
+            name = su2io.expand_time(name, problem.physics)
             push.extend(name)
                 
     #: with output redirection

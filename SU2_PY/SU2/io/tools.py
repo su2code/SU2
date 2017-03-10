@@ -956,9 +956,9 @@ def expand_part(name,config):
     names = [name]
     return names
 
-def expand_time(name, problem):
-    if problem.timeDomain:
-        n_time = problem.nTime
+def expand_time(name, physics):
+    if physics.timeDomain:
+        n_time = physics.nTime
         name_pat = add_suffix(name,'%05d')
         names = [name_pat%i for i in range(n_time)]
     else:
@@ -1012,44 +1012,30 @@ def restart2solution(problem, state={}):
     """
 
     # direct solution
-    if config.MATH_PROBLEM == 'DIRECT':
-        if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
-          restart  = config.RESTART_STRUCTURE_FILENAME
-          solution = config.SOLUTION_STRUCTURE_FILENAME
-        else:
-          restart  = config.RESTART_FLOW_FILENAME
-          solution = config.SOLUTION_FLOW_FILENAME        
-        # expand unsteady time
-        restarts  = expand_time(restart,config)
-        solutions = expand_time(solution,config)
-        # move
+    if problem.kind == 'FUNCTION':
+        # Get files
+        restarts, solutions = problem.physics.get_direct_files()
+        # Move files
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
         # update state
-        if state: state.FILES.DIRECT = solution
+        # TODO: this is a hack here - for multiphysics will need to add DIRECT_1, etc
+        if state: state.FILES.DIRECT = solutions[0]
         
     # adjoint solution
-    elif any([config.MATH_PROBLEM == 'CONTINUOUS_ADJOINT', config.MATH_PROBLEM == 'DISCRETE_ADJOINT']):
-        # add suffix
-        func_name = config.OBJECTIVE_FUNCTION
-        if config.PHYSICAL_PROBLEM == 'FEM_ELASTICITY':
-          restart  = config.RESTART_ADJ_STRUCTURE_FILENAME
-          solution = config.SOLUTION_ADJ_STRUCTURE_FILENAME    
-        else:       
-          restart  = config.RESTART_ADJ_FILENAME
-          solution = config.SOLUTION_ADJ_FILENAME         
-          suffix    = get_adjointSuffix(func_name)
-          restart   = add_suffix(restart,suffix)
-          solution  = add_suffix(solution,suffix)
-        # expand unsteady time
-        restarts  = expand_time(restart,config)
-        solutions = expand_time(solution,config)        
-        # move
+    elif problem.kind == 'ADJOINT_GRADIENT':
+
+        # Retrieve suffix
+        func_name = problem.config.OBJECTIVE_FUNCTION
+        suffix = get_adjointSuffix(func_name)
+        # Get files
+        restarts, solutions = problem.physics.get_adjoint_files(suffix)
+        # Move files
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
-        # udpate state
+        # Update state
         ADJ_NAME = 'ADJOINT_' + func_name
-        if state: state.FILES[ADJ_NAME] = solution
+        if state: state.FILES[ADJ_NAME] = solutions[0]
         
     else:
         raise Exception, 'unknown math problem'

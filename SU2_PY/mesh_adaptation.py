@@ -83,9 +83,12 @@ def mesh_adaptation( filename             ,
 
     # Set the name of the configuration file
     config_name = filename
+
+    # Read the specified problem
+    problem = SU2.io.Problem(config_name)
     
-    # Read the specified configuration file
-    config = SU2.io.Config(config_name)
+    # Read the specified configuration file, specified in the problem structure
+    config = problem.config
     
     # Set the number of partitions for parallel computations
     config.NUMBER_PART = partitions
@@ -94,7 +97,7 @@ def mesh_adaptation( filename             ,
     SU2.run.CFD(config)
 
     # Rename the output restart to the input solution file
-    SU2.io.restart2solution(config)
+    SU2.io.restart2solution(problem)
 
     # Call MSH
     SU2.run.MSH(config)

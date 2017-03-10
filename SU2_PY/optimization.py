@@ -117,28 +117,28 @@ def optimization(filename,
 
 
     # Object: opt. Contains config, optimization properties
-    opt = SU2.io.Opt(filename)
+    problem = SU2.io.Problem(filename)
 
-    ## Config is contained in opt.CONFIG_DIRECT
-    opt.CONFIG_DIRECT.NUMBER_PART = partitions
-    if quiet: opt.CONFIG_DIRECT.CONSOLE = 'CONCISE'
+    # Config is contained in problem.config
+    problem.config.NUMBER_PART = partitions
+#    if quiet: problem.config.CONSOLE = 'CONCISE'
 
-    its = int(opt.ITERATIONS)
-    accu = float(opt.ACCURACY)
-    x0 = copy.deepcopy(opt.x0)
-    xb = copy.deepcopy(opt.xb)
+    its = int(problem.ITERATIONS)
+    accu = float(problem.ACCURACY)
+    x0 = copy.deepcopy(problem.x0)
+    xb = copy.deepcopy(problem.xb)
 
     # State
     state = SU2.io.State()
-    problem = SU2.io.read_problem(opt.CONFIG_DIRECT, opt.OBJECTIVE_FUNCTION)
-    state.find_files(problem)
+    physics = SU2.io.read_physics(problem.config, problem.OBJECTIVE_FUNCTION)
+    state.find_files(physics)
 
     # Project
     #if os.path.exists(projectname):
         #project = SU2.io.load_data(projectname)
         #project.config = config
     #else:
-    project = SU2.opt.Project(opt, state)
+    project = SU2.opt.Project(problem, state)
 
     ## Optimize
     #if optimization == 'SLSQP':

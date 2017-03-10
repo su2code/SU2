@@ -131,8 +131,8 @@ def shape_optimization( filename                           ,
     
     # State
     state = SU2.io.State()
-    problem = SU2.io.read_problem(config)
-    state.find_files(problem)
+    physics = SU2.io.read_physics(config)
+    state.find_files(physics)
     
     # Project
     if os.path.exists(projectname):

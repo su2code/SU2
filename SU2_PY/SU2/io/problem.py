@@ -41,7 +41,7 @@ from ..util import bunch, ordered_bunch, switch
 from .tools import *
 from .config import *
 from .dv import *
-from .phys_problem import *
+from .physics import *
 from config_options import *
 
 try:
@@ -56,7 +56,7 @@ inf = 1.0e20
 #  Configuration Class
 # ----------------------------------------------------------------------
 
-class Opt(ordered_bunch):
+class Problem(ordered_bunch):
     """ opt = SU2.io.opt(filename="")
 
         Starts an optimization class, an extension of
@@ -92,9 +92,10 @@ class Opt(ordered_bunch):
             filename = ''
 
         # initialize ordered bunch
-        super(Opt, self).__init__(*args, **kwarg)
+        super(Problem, self).__init__(*args, **kwarg)
 
         # read config if it exists
+        # determined by the extension: .cfg or .opt
         if filename:
             try:
                 self.read(filename)
@@ -104,36 +105,77 @@ class Opt(ordered_bunch):
                 print 'Unexpected error: ', sys.exc_info()[0]
                 raise
 
-        self.CONFIG_DIRECT = Config(self.DIRECT_FILENAME)
-        self.CONFIG_ADJOINT = Config(self.ADJOINT_FILENAME)
-        self._filename = filename
+    def read(self, filename):
+        """ reads from a config or an opt file """
 
-        self.problem = self.read_problem(self.CONFIG_DIRECT, self.OBJECTIVE_FUNCTION)
+        file_split = filename.split('.')
+        extension = file_split[1]
+
+        if extension == 'opt':
+            provlem = self.read_opt(filename)
+        else:
+            provlem = self.read_cfg(filename)
+
+        self.update(provlem)
+
+    def read_opt(self, filename):
+        """ reads from an optimization file """
+
+        # Initialize an optimization problem
+        opt = Problem()
+
+        # Read properties from .opt file
+        opti = read_opt_file(filename)
+        opt.update(opti)
+
+        # Add references to config, config_adj and filename
+        opt.config = Config(opt.DIRECT_FILENAME)
+        opt.config_adj = Config(opt.ADJOINT_FILENAME)
+        opt._filename = filename
+
+        # Read physics and store in physics object
+        opt.physics = opt.read_physics(opt.config, opt.OBJECTIVE_FUNCTION)
 
         # Set properties of the problem
-        self.nKind_DV = len(self.DESIGN_VARIABLES)
-        self.nOF = len(self.OBJECTIVE_FUNCTION)
+        opt.nKind_DV = len(opt.DESIGN_VARIABLES)
+        opt.nOF = len(opt.OBJECTIVE_FUNCTION)
 
         # Read Design Variables
-        self.DV_KIND = self.read_dv()
+        opt.DV_KIND = opt.read_dv()
 
         # Copy structure for DV_NEW and DV_OLD
-        self.DV_NEW  = copy.deepcopy(self.DV_KIND)
-        self.DV_OLD  = copy.deepcopy(self.DV_KIND)
-
-        # Dump Design variables
-        self.dump_dv('./test/')
+        opt.DV_NEW  = copy.deepcopy(opt.DV_KIND)
+        opt.DV_OLD  = copy.deepcopy(opt.DV_KIND)
 
         # Set up initial guess and boundaries
-        (self.x0, self.xb) = self.pack_dvs()
+        (opt.x0, opt.xb) = opt.pack_dvs()
 
         # Total number of design variables
-        self.nDV = len(self.x0)
+        opt.nDV = len(opt.x0)
 
-    def read(self, filename):
-        """ reads from a config file """
-        opti = read_opt(filename)
-        self.update(opti)
+        # Stores the kind of problem (function/gradient)
+        opt.kind = 'FUNCTION'
+
+        return opt
+
+    def read_cfg(self, filename):
+        """ reads from a config or an opt file """
+
+        # Initialize a regular, direct or adjoint problem
+        problem = Problem()
+
+        # Read in config: access will be done through problem.config
+        problem.config = Config(problem.DIRECT_FILENAME)
+
+        # Read physics and store in physics object
+        problem.physics = problem.read_physics(problem.config, problem.OBJECTIVE_FUNCTION)
+
+        # Stores the kind of problem (function/gradient)
+        problem.kind = 'FUNCTION'
+
+        # Room for more stuff
+
+        return problem
 
     def read_dv(self):
         """ reads from a dv file """
@@ -259,7 +301,7 @@ class Opt(ordered_bunch):
         opti = read_opt(filename)
         self.update(opti)
 
-    def read_problem(self, config, ofunction):
+    def read_physics(self, config, ofunction):
         """ reads the properties of a problem from config files """
 
         # Reads the kind of problem that we want to solve
@@ -267,15 +309,15 @@ class Opt(ordered_bunch):
 
         for case in switch(kind_problem):
             if case("FLUID_STRUCTURE_INTERACTION"):
-                problem = fsi_problem(config, ofunction)
+                phys = fsi(config, ofunction)
                 break
             if case("FEM_ELASTICITY"):
-                problem = fea_problem(config, ofunction)
+                phys = fea(config, ofunction)
                 break
             if case():
-                problem = flow_problem(config, ofunction)
+                phys = flow(config, ofunction)
 
-        return problem
+        return phys
 
 
     def write(self, folder):
@@ -284,21 +326,21 @@ class Opt(ordered_bunch):
 
     def __getattr__(self, k):
         try:
-            return super(Opt, self).__getattr__(k)
+            return super(Problem, self).__getattr__(k)
         except AttributeError:
             raise AttributeError, 'Config parameter not found'
 
     def __getitem__(self, k):
         try:
-            return super(Opt, self).__getitem__(k)
+            return super(Problem, self).__getitem__(k)
         except KeyError:
             raise KeyError, 'Config parameter not found: %s' % k
 
     def __eq__(self, konfig):
-        return super(Opt, self).__eq__(konfig)
+        return super(Problem, self).__eq__(konfig)
 
     def __ne__(self, konfig):
-        return super(Opt, self).__ne__(konfig)
+        return super(Problem, self).__ne__(konfig)
 
     def local_files(self):
         """ removes path prefix from all *_FILENAME params
@@ -312,20 +354,19 @@ class Opt(ordered_bunch):
         return self.__str__()
 
     def __str__(self):
-        output = 'Opt: %s' % self._filename
+        output = 'Problem: %s' % self._filename
         for k, v in self.iteritems():
             output += '\n    %s= %s' % (k, v)
         return output
 
 
-#: class Config
-
+#: class Problem
 
 # -------------------------------------------------------------------
 #  Get SU2 Configuration Parameters
 # -------------------------------------------------------------------
 
-def read_opt(filename):
+def read_opt_file(filename):
     """ reads a config file """
 
     # initialize output dictionary

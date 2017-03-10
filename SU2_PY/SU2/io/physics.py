@@ -48,7 +48,7 @@ inf = 1.0e20
 #  Problem Class
 # ----------------------------------------------------------------------
 
-class phys_problem(object):
+class physics(object):
     """ config = SU2.io.phys_problem()
 
         Starts a generic problem class, an object that hosts
@@ -67,9 +67,110 @@ class phys_problem(object):
 
     def __init__(self, config, oFunction = 'NONE'):
 
+        self.name = 'No_physics'
+
+    def merge_solution(self, config):
+
+        if config.MATH_PROBLEM == 'DIRECT':
+            config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
+        elif config.MATH_PROBLEM in ['CONTINUOUS_ADJOINT', 'DISCRETE_ADJOINT']:
+            config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
+
+    def get_direct_files(self):
+
+        restarts = self.files['RESTART_DIRECT']
+        solutions = self.files['DIRECT']
+
+        if self.timeDomain:
+            n_time = self.nTime
+            restarts = []
+            solutions = []
+            for j in range(0,len(restarts)):
+                # Add suffix to restart and solution files
+                restart_pat = add_suffix(restarts[j], '%05d')
+                solution_pat = add_suffix(solutions[j], '%05d')
+                # Append indices corresponding to time instances
+                res  = [restart_pat % i for i in range(n_time)]
+                sols = [solution_pat % i for i in range(n_time)]
+                # Append to final restart and solution vectors
+                restarts.append(res)
+                sols.append(sols)
+
+        return restarts, solutions
+
+    def get_direct_files(self):
+
+        restarts = self.files['RESTART_DIRECT']
+        solutions = self.files['DIRECT']
+
+        if self.timeDomain:
+            n_time = self.nTime
+            restarts = []
+            solutions = []
+            for j in range(0,len(restarts)):
+                # Add suffix to restart and solution files
+                restart_pat = add_suffix(restarts[j], '%05d')
+                solution_pat = add_suffix(solutions[j], '%05d')
+                # Append indices corresponding to time instances
+                res  = [restart_pat % i for i in range(n_time)]
+                sols = [solution_pat % i for i in range(n_time)]
+                # Append to final restart and solution vectors
+                restarts.append(res)
+                sols.append(sols)
+
+        return restarts, solutions
+
+    def get_adjoint_files(self, suffix):
+
+        restarts = self.files['RESTART_ADJOINT']
+        solutions = self.files['ADJOINT']
+
+        if self.timeDomain:
+            n_time = self.nTime
+            restarts = []
+            solutions = []
+            for j in range(0,len(restarts)):
+                # Add suffix relative to the kind of objective function
+                # TODO: this if, only until binaries are modified
+                if self.kind != 'FEM_ELASTICITY':
+                    restart = add_suffix(restart, suffix)
+                    solution = add_suffix(solution, suffix)
+                # Add time suffix to restart and solution files
+                restart_pat = add_suffix(restarts[j], '%05d')
+                solution_pat = add_suffix(solutions[j], '%05d')
+                # Append indices corresponding to time instances
+                res  = [restart_pat % i for i in range(n_time)]
+                sols = [solution_pat % i for i in range(n_time)]
+                # Append to final restart and solution vectors
+                restarts.append(res)
+                sols.append(sols)
+
+        return restarts, solutions
+
+
+
+class flow(physics):
+    """ config = SU2.io.physics()
+
+        Starts a generic problem class, an object that hosts
+        filenames and other properties that are problem-dependent
+
+        use 1: initialize by reading config object
+            dv = SU2.io.problem(config_direct, config_adjoint)
+
+        Parameters can be accessed by item
+        ie: config['MESH_FILENAME']
+
+        Methods:
+            read()       - read from a dv file
+            write()      - write to a dv file (requires existing file)
+    """
+
+    def __init__(self, config, oFunction = 'NONE'):
+
         self.nZone = 1
-        self.physics = config.PHYSICAL_PROBLEM
-        self.kind = config.MATH_PROBLEM
+        self.kind = config.PHYSICAL_PROBLEM
+        self.math = config.MATH_PROBLEM
         restart = config.RESTART_SOL == 'YES'
         self.restart = restart
 
@@ -91,6 +192,8 @@ class phys_problem(object):
         files['MESH'] = config.MESH_FILENAME
         files['DIRECT'] = [config.SOLUTION_FLOW_FILENAME]
         files['ADJOINT'] = [config.SOLUTION_ADJ_FILENAME]
+        files['RESTART_DIRECT']  = [config.RESTART_FLOW_FILENAME]
+        files['RESTART_ADJOINT'] = [config.RESTART_ADJ_FILENAME]
 
         special_files = {'EQUIV_AREA': 'TargetEA.dat',
                          'INV_DESIGN_CP': 'TargetCp.dat',
@@ -109,70 +212,8 @@ class phys_problem(object):
         elif config.MATH_PROBLEM in ['CONTINUOUS_ADJOINT', 'DISCRETE_ADJOINT']:
             config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
 
-
-class flow_problem(object):
-    """ config = SU2.io.phys_problem()
-
-        Starts a generic problem class, an object that hosts
-        filenames and other properties that are problem-dependent
-
-        use 1: initialize by reading config object
-            dv = SU2.io.problem(config_direct, config_adjoint)
-
-        Parameters can be accessed by item
-        ie: config['MESH_FILENAME']
-
-        Methods:
-            read()       - read from a dv file
-            write()      - write to a dv file (requires existing file)
-    """
-
-    def __init__(self, config, oFunction = 'NONE'):
-
-        self.nZone = 1
-        self.physics = config.PHYSICAL_PROBLEM
-        self.kind = config.MATH_PROBLEM
-        restart = config.RESTART_SOL == 'YES'
-        self.restart = restart
-
-        if oFunction == 'NONE':
-            self.oFunction = config.OBJECTIVE_FUNCTION
-        else:
-            self.oFunction = oFunction
-
-        if ('UNSTEADY_SIMULATION' in config) and (config.get('UNSTEADY_SIMULATION','NO') != 'NO'):
-            self.timeDomain = True
-            if 'UNST_ADJOINT_ITER' in config:
-                self.nTime = config['UNST_ADJOINT_ITER']
-            else:
-                self.nTime = config['EXT_ITER']
-        else:
-            self.timeDomain = False
-
-        files = OrderedDict()
-        files['MESH'] = config.MESH_FILENAME
-        files['DIRECT'] = [config.SOLUTION_FLOW_FILENAME]
-        files['ADJOINT'] = [config.SOLUTION_ADJ_FILENAME]
-
-        special_files = {'EQUIV_AREA': 'TargetEA.dat',
-                         'INV_DESIGN_CP': 'TargetCp.dat',
-                         'INV_DESIGN_HEATFLUX': 'TargetHeatFlux.dat'}
-
-        for key in special_files:
-            if config.has_key(key) and config[key] == 'YES':
-                files[key] = special_files[key]
-
-        self.files = files
-
-    def merge_solution(self, config):
-
-        if config.MATH_PROBLEM == 'DIRECT':
-            config.SOLUTION_FLOW_FILENAME = config.RESTART_FLOW_FILENAME
-        elif config.MATH_PROBLEM in ['CONTINUOUS_ADJOINT', 'DISCRETE_ADJOINT']:
-            config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
-
-class fea_problem(phys_problem):
-    """ config = SU2.io.problem()
+class fea(physics):
+    """ config = SU2.io.physics()
 
         Starts a FEA problem class, an object that hosts
         filenames and other properties that are problem-dependent
@@ -191,8 +232,8 @@ class fea_problem(phys_problem):
     def __init__(self, config, oFunction = 'NONE'):
 
         self.nZone = 1
-        self.physics = config.PHYSICAL_PROBLEM
-        self.kind = config.MATH_PROBLEM
+        self.kind = config.PHYSICAL_PROBLEM
+        self.math = config.MATH_PROBLEM
         restart = config.RESTART_SOL == 'YES'
         self.restart = restart
 
@@ -216,6 +257,8 @@ class fea_problem(phys_problem):
         files['MESH'] = config.MESH_FILENAME
         files['DIRECT'] = [config.SOLUTION_STRUCTURE_FILENAME]
         files['ADJOINT'] = [config.SOLUTION_ADJ_STRUCTURE_FILENAME]
+        files['RESTART_DIRECT']  = [config.RESTART_STRUCTURE_FILENAME]
+        files['RESTART_ADJOINT'] = [config.RESTART_ADJ_STRUCTURE_FILENAME]
 
         special_cases = ['PRESTRETCH',
                          'REFERENCE_GEOMETRY']
@@ -240,11 +283,11 @@ class fea_problem(phys_problem):
             config.SOLUTION_ADJ_STRUCTURE_FILENAME = config.RESTART_ADJ_STRUCTURE_FILENAME
 
 
-class fsi_problem(phys_problem):
+class fsi(physics):
 
-    """ config = SU2.io.problem()
+    """ config = SU2.io.physics()
 
-        Starts a FEA problem class, an object that hosts
+        Starts a FSI problem class, an object that hosts
         filenames and other properties that are problem-dependent
 
         use 1: initialize by reading config object
@@ -261,8 +304,8 @@ class fsi_problem(phys_problem):
     def __init__(self, config, oFunction = 'NONE'):
 
         self.nZone = 2
-        self.physics = config.PHYSICAL_PROBLEM
-        self.kind = config.MATH_PROBLEM
+        self.kind = config.PHYSICAL_PROBLEM
+        self.math = config.MATH_PROBLEM
         restart = config.RESTART_SOL == 'YES'
         self.restart = restart
 
@@ -291,6 +334,12 @@ class fsi_problem(phys_problem):
         # Adjoint files
         files['ADJOINT'] = [add_suffix(config.SOLUTION_ADJ_FILENAME, '0')]
         files['ADJOINT'].append(add_suffix(config.SOLUTION_ADJ_STRUCTURE_FILENAME, '1'))
+        # Restart (direct) files
+        files['RESTART_DIRECT'] = [add_suffix(config.RESTART_FLOW_FILENAME, '0')]
+        files['RESTART_DIRECT'].append(add_suffix(config.RESTART_STRUCTURE_FILENAME, '1'))
+        # Restart (direct) files
+        files['RESTART_ADJOINT'] = [add_suffix(config.RESTART_FLOW_FILENAME, '0')]
+        files['RESTART_ADJOINT'].append(add_suffix(config.RESTART_STRUCTURE_FILENAME, '1'))
 
         special_cases = ['PRESTRETCH',
                          'REFERENCE_GEOMETRY']
@@ -317,7 +366,8 @@ class fsi_problem(phys_problem):
             config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
 
 
-def read_problem(config, oFunction = 'NONE'):
+
+def read_physics(config, oFunction = 'NONE'):
     """ reads the properties of a problem from config files """
 
     # Reads the kind of problem that we want to solve
@@ -325,12 +375,12 @@ def read_problem(config, oFunction = 'NONE'):
 
     for case in switch(physics):
         if case("FLUID_STRUCTURE_INTERACTION"):
-            problem = fsi_problem(config, oFunction)
+            problem = fsi(config, oFunction)
             break
         if case("FEM_ELASTICITY"):
-            problem = fea_problem(config, oFunction)
+            problem = fea(config, oFunction)
             break
         if case():
-            problem = flow_problem(config, oFunction)
+            problem = flow(config, oFunction)
 
     return problem

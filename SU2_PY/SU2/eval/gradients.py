@@ -47,7 +47,7 @@ import functions
 #  Main Gradient Interface
 # ----------------------------------------------------------------------
 
-def gradient( func_name, method, opt, state=None ):
+def gradient( func_name, method, problem, state=None ):
     """ val = SU2.eval.grad(func_name,method,config,state=None)
 
         Evaluates the aerodynamic gradients.
@@ -75,7 +75,8 @@ def gradient( func_name, method, opt, state=None ):
             A list of floats of gradient values
     """
 
-    config = opt.CONFIG_DIRECT
+    # Reference to config
+    config = problem.config
 
     # Initialize
     grads = {}
@@ -97,6 +98,9 @@ def gradient( func_name, method, opt, state=None ):
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
 
+            # The adjoint gradient is to be evaluated
+            problem.kind = 'ADJOINT_GRADIENT'
+
             # If using chain rule
             if 'OUTFLOW_GENERALIZED' in ', '.join(func_name):
                 import downstream_function
@@ -106,32 +110,32 @@ def gradient( func_name, method, opt, state=None ):
                 
             # Aerodynamics
             if func_name_string in su2io.optnames_aero:
-                grads = adjoint( func_name, config, state )
+                grads = adjoint( func_name, problem, state )
 
             elif func_name[0] in su2io.optnames_aero:
-                grads = adjoint( func_name, config, state )
+                grads = adjoint( func_name, problem, state )
                 
             # Stability
             elif func_name_string in su2io.optnames_stab:
-                grads = stability( func_name, config, state )
+                grads = stability( func_name, problem, state )
 
             # Geometry (actually a finite difference)
             elif func_name_string in su2io.optnames_geo:
-                grads = geometry( func_name, config, state )
+                grads = geometry( func_name, problem, state )
                 
             # Structural OF
             elif func_name_string in su2io.optnames_fea:
-                grads = structural_adjoint( func_name, config, state )                
+                grads = structural_adjoint( func_name, problem, state )
 
             else:
                 raise Exception, 'unknown function name: %s' % func_name_string
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
-            grads = findiff( opt, state )
+            grads = findiff( problem, state )
 
         elif method == 'DIRECTDIFF':
-            grad = directdiff (opt , state )
+            grad = directdiff (problem , state )
 
         else:
             raise Exception , 'unrecognized gradient method'
@@ -162,7 +166,7 @@ def gradient( func_name, method, opt, state=None ):
 #  Adjoint Gradients
 # ----------------------------------------------------------------------
 
-def adjoint( func_name, config, state=None ):
+def adjoint( func_name, problem, state=None ):
     """ vals = SU2.eval.adjoint(func_name,config,state=None)
 
         Evaluates the aerodynamics gradients using the 
@@ -195,6 +199,9 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------
     #  Initialize    
     # ----------------------------------------------------
+
+    # Temporary
+    config = problem.config
 
     # initialize
     state = su2io.State(state)
@@ -287,17 +294,17 @@ def adjoint( func_name, config, state=None ):
                 config['OBJECTIVE_FUNCTION'] = func_name
 
             # # RUN ADJOINT SOLUTION # #
-            info = su2run.adjoint(config)
-            su2io.restart2solution(config,info)
+            info = su2run.adjoint(problem)
+            su2io.restart2solution(problem,info)
             state.update(info)
 
             # Gradient Projection
-            info = su2run.projection(config,state)
+            info = su2run.projection(problem,state)
             state.update(info)
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
-            name = su2io.expand_time(name, opt.problem)
+            name = su2io.expand_time(name, problem.physics)
             push.extend(name)
 
     #: with output redirection
@@ -315,8 +322,10 @@ def adjoint( func_name, config, state=None ):
 #  Stability Functions
 # ----------------------------------------------------------------------
 
-def stability( func_name, config, state=None, step=1e-2 ):
+def stability( func_name, problem, state=None, step=1e-2 ):
 
+    # Temporary
+    config = problem.config
 
     folder = 'STABILITY' # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
 
@@ -427,7 +436,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
 #  Structural adjoint Gradients
 # ----------------------------------------------------------------------
 
-def structural_adjoint( func_name, config, state=None ):
+def structural_adjoint( func_name, problem, state=None ):
     """ vals = SU2.eval.adjoint(func_name,config,state=None)
 
         Evaluates the structural gradients using the 
@@ -460,9 +469,11 @@ def structural_adjoint( func_name, config, state=None ):
     #  Initialize    
     # ----------------------------------------------------
 
+    config = problem.config
+
     # initialize
     state = su2io.State(state)
-    special_cases = su2io.get_specialCases(config)
+    special_cases = su2io.get_specialCases(problem.config)
     
     # check for multiple objectives
     multi_objective = (type(func_name)==list)
@@ -472,10 +483,10 @@ def structural_adjoint( func_name, config, state=None ):
     ADJ_NAME = 'ADJOINT_'+func_name_string
 
     # console output
-    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+    if problem.config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_adjoint = 'log_Adjoint.out'
     else:
-        log_adjoint = None   
+        log_adjoint = None
 
     # ----------------------------------------------------
     #  Redundancy Check
@@ -491,48 +502,35 @@ def structural_adjoint( func_name, config, state=None ):
     # ----------------------------------------------------        
 
     # run (includes redundancy checks)
-    function( func_name, opt, state )
+    function( func_name, problem, state )
 
     # ----------------------------------------------------    
     #  Adjoint Solution
-    # ----------------------------------------------------        
-
-
+    # ----------------------------------------------------
     # ./DESIGNS/DSN_003
 
     # files to pull
     files = state['FILES']
     pull = []; link = []    
 
-    # files: mesh
-    name = files['MESH']
-    name = su2io.expand_part(name,config)
-    link.extend(name)
+    for key in files:
+        if key == 'DIRECT':
+            name = files[key]
+            name = su2io.expand_time(name, problem.physics)
+            link.extend(name)
+        if key == ADJ_NAME:
+            name = files[key]
+            name = su2io.expand_time(name, problem.physics)
+            link.extend(name)
+        else:
+            name = files[key]
+            name = su2io.expand_part(name, problem)
+            link.extend(name)
 
-    # files: direct solution
-    name = files['DIRECT']
-    name = su2io.expand_time(name, opt.problem)
-    link.extend(name)
-
-    # files: adjoint solution
-    if files.has_key( ADJ_NAME ):
-        name = files[ADJ_NAME]
-        name = su2io.expand_time(name, opt.problem)
-        link.extend(name)       
-    else:
+    # If direct is not in files means that we are not restarting the solution
+    # (This may be removed using CONFIG_DIRECT and CONFIG_ADJOINT)
+    if ADJ_NAME not in files:
         config['RESTART_SOL'] = 'NO'
-        
-    # Reference geometry files
-    if config.REFERENCE_GEOMETRY == 'YES':
-        name = files['REFERENCE_GEOMETRY']
-        name = su2io.expand_part(name,config)
-        link.extend(name)
-
-    # Prestretch files
-    if config.PRESTRETCH == 'YES':
-        name = files['PRESTRETCH']
-        name = su2io.expand_part(name,config)
-        link.extend(name)
 
     # link sets files to be linked
     # pull sets files to be copied
@@ -549,13 +547,13 @@ def structural_adjoint( func_name, config, state=None ):
                 config['OBJECTIVE_FUNCTION'] = func_name
 
             # # RUN ADJOINT SOLUTION # #
-            info = su2run.adjoint(config)
-            su2io.restart2solution(config,info)
+            info = su2run.adjoint(problem)
+            su2io.restart2solution(problem, info)
             state.update(info)
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
-            name = su2io.expand_time(name, opt.problem)
+            name = su2io.expand_time(name, problem.physics)
             # push copies the files that were generated (new restart, for example)
             push.extend(name)
 

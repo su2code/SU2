@@ -174,13 +174,13 @@ def scipy_cg(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     func           = obj_f
 
     # gradient handles
-    if project.opt.GRADIENT_METHOD == 'NONE':
+    if project.problem.GRADIENT_METHOD == 'NONE':
         fprime         = None
     else:
         fprime         = obj_df
 
     # number of design variables
-    n_dv = project.opt.nDV
+    n_dv = project.problem.nDV
     project.n_dv = n_dv
 
     # Initial guess

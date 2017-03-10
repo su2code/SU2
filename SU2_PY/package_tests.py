@@ -125,7 +125,8 @@ def level1():
         
         # Setup
         config_name = 'config_NACA0012.cfg'
-        config = SU2.io.Config(config_name)
+        problem = SU2.io.Problem(config_name)
+        config = problem.config
         config['NUMBER_PART'] = 2
         config['EXT_ITER'] = 9
         
@@ -139,12 +140,12 @@ def level1():
         # Direct Solution
         info = SU2.run.direct(config) 
         state.update(info)
-        SU2.io.restart2solution(config,state)
+        SU2.io.restart2solution(problem,state)
         
         # Adjoint Solution
-        info = SU2.run.adjoint(config)
+        info = SU2.run.adjoint(problem)
         state.update(info)
-        SU2.io.restart2solution(config,state)
+        SU2.io.restart2solution(problem,state)
         
         # Gradient Projection
         info = SU2.run.projection(config)
@@ -201,8 +202,8 @@ def level3():
         
         # initialize design state
         state = SU2.io.State()
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
         
         # start design
         design = SU2.eval.Design(config,state)
@@ -236,8 +237,8 @@ def level4():
         
         # initialize design state
         state = SU2.io.State()
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
         
         # initialize project
         project = SU2.opt.Project(config,state)
@@ -295,8 +296,8 @@ def level5():
                 
         # initialize design state
         state = SU2.io.State()
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
         
         # initialize project
         project = SU2.opt.Project(config,state)
@@ -318,13 +319,14 @@ def mesh0():
         
         # Setup
         config_name = 'config_NACA0012.cfg'
-        config = SU2.io.Config(config_name)
+        problem = SU2.io.Problem(config_name)
+        config = problem.config
         config.EXT_ITER = 9
         config.NUMBER_PART = 2
                 
         SU2.run.CFD(config)    
         
-        SU2.io.restart2solution(config)
+        SU2.io.restart2solution(problem)
         
         SU2.run.MSH(config)
         

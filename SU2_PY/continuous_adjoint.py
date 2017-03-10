@@ -76,7 +76,8 @@ def continuous_adjoint( filename           ,
                         step        = 1e-4  ):
     
     # Config
-    config = SU2.io.Config(filename)
+    problem = SU2.io.Problem(filename)
+    config = problem.config
     config.NUMBER_PART = partitions
     
     # State
@@ -88,8 +89,8 @@ def continuous_adjoint( filename           ,
     # check for existing files
     if not compute:
         config.RESTART_SOL = 'YES'
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
     else:
         state.FILES.MESH = config.MESH_FILENAME
     
@@ -97,7 +98,7 @@ def continuous_adjoint( filename           ,
     if compute:
         info = SU2.run.direct(config) 
         state.update(info)
-        SU2.io.restart2solution(config,state)
+        SU2.io.restart2solution(problem,state)
 
     # Adjoint Solution
 
@@ -109,7 +110,7 @@ def continuous_adjoint( filename           ,
         config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
     # Run all-at-once 
     if compute:
-        info = SU2.run.adjoint(config)
+        info = SU2.run.adjoint(problem)
         state.update(info)
     info = SU2.run.projection(config,state, step)
     state.update(info)
@@ -141,8 +142,8 @@ def continuous_design( filename           ,
     
     # check for existing files
     if not compute:
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
     else:
         state.FILES.MESH = config.MESH_FILENAME    
     

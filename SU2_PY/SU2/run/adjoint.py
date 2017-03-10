@@ -46,7 +46,7 @@ from interface import CFD       as SU2_CFD
 #  Adjoint Simulation
 # ----------------------------------------------------------------------
 
-def adjoint( config ): 
+def adjoint( problem ):
     """ info = SU2.run.adjoint(config)
         
         Runs an adjoint analysis with:
@@ -72,13 +72,10 @@ def adjoint( config ):
     """
     
     # local copy
-    konfig = copy.deepcopy(config)
+    konfig = copy.deepcopy(problem.config)
     
-    # setup problem    
-    if konfig.get('GRADIENT_METHOD', 'CONTINUOUS_ADJOINT') == 'DISCRETE_ADJOINT':
-        konfig['MATH_PROBLEM']  = 'DISCRETE_ADJOINT'
-    else:
-        konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
+    # setup problem
+    konfig['MATH_PROBLEM']  = problem.GRADIENT_METHOD
 
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
     
@@ -99,8 +96,8 @@ def adjoint( config ):
     history = su2io.read_history( history_filename )
     
     # update super config
-    config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,
-                    'OBJECTIVE_FUNCTION'  : konfig['OBJECTIVE_FUNCTION']   })
+    problem.config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,
+                            'OBJECTIVE_FUNCTION'  : konfig['OBJECTIVE_FUNCTION']   })
     
     # files out
     objective    = konfig['OBJECTIVE_FUNCTION']
@@ -113,6 +110,8 @@ def adjoint( config ):
     info = su2io.State()
     info.FILES[adj_title] = restart_name
     info.HISTORY[adj_title] = history
+
+    print
     
     if konfig['PHYSICAL_PROBLEM'] == 'FEM_ELASTICITY':
       restart_name = konfig['RESTART_STRUCTURE_FILENAME']

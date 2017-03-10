@@ -77,8 +77,8 @@ def direct_differentiation( filename           ,
     
     # State
     state = SU2.io.State()
-    problem = SU2.io.read_problem(config)
-    state.find_files(problem)
+    physics = SU2.io.read_physics(config)
+    state.find_files(physics)
     
     # Direct Differentiation Gradients
     SU2.eval.gradients.directdiff(config,state)

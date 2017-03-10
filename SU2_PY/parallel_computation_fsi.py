@@ -82,8 +82,8 @@ def parallel_computation( filename           ,
     
     # check for existing files
     if not compute:
-        problem = SU2.io.read_problem(config)
-        state.find_files(problem)
+        physics = SU2.io.read_physics(config)
+        state.find_files(physics)
     else:
         state.FILES.MESH = config.MESH_FILENAME
     

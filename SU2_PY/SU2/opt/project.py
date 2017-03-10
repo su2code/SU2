@@ -98,7 +98,7 @@ class Project(object):
     _design_number = '%03d'
     
     
-    def __init__( self, opt, state=None ,
+    def __init__( self, problem, state=None ,
                   designs=None, folder='.' ,
                   warn = True                ):
         
@@ -109,7 +109,7 @@ class Project(object):
         print 'New Project: %s' % (folder)
         
         # setup opt object
-        opt = copy.deepcopy(opt)
+        problem = copy.deepcopy(problem)
         
         # setup state
         if state is None:
@@ -119,20 +119,20 @@ class Project(object):
             state  = su2io.State(state)
 
         # Find files to pass back and forth
-        problem = su2io.read_problem(opt.CONFIG_DIRECT, opt.OBJECTIVE_FUNCTION)
-        state.find_files(problem)
+        physics = su2io.read_physics(problem.config, problem.OBJECTIVE_FUNCTION)
+        state.find_files(physics)
 
-        if 'OUTFLOW_GENERALIZED' in opt.CONFIG_DIRECT.OPT_OBJECTIVE:
+        if 'OUTFLOW_GENERALIZED' in problem.config.OPT_OBJECTIVE:
             state.FILES['DownstreamFunction'] = 'downstream_function.py'
         if 'MESH' not in state.FILES:
-            raise Exception , 'Could not find mesh file: %s' % opt.CONFIG_DIRECT.MESH_FILENAME
+            raise Exception , 'Could not find mesh file: %s' % problem.config.MESH_FILENAME
         
-        self.opt     = opt      # base definition
-        self.config  = opt.CONFIG_DIRECT     # base config
-        self.state   = state       # base state
-        self.files   = state.FILES # base files
-        self.designs = designs     # design list
-        self.folder  = folder      # project folder
+        self.problem = problem          # base definition
+        self.config  = problem.config   # base config
+        self.state   = state            # base state
+        self.files   = state.FILES      # base files
+        self.designs = designs          # design list
+        self.folder  = folder           # project folder
         self.results = su2util.ordered_bunch() # project design results
 
         # output filenames
@@ -140,7 +140,7 @@ class Project(object):
         self.results_filename = 'results.pkl' 
         
         # initialize folder with files
-        pull, link = state.pullnlink(opt)
+        pull, link = state.pullnlink(problem)
         with redirect_folder(folder, pull, link, force=True):
         
             # look for existing designs
@@ -158,14 +158,14 @@ class Project(object):
             
         return
     
-    def _eval(self,opt,func,*args):
+    def _eval(self,problem,func,*args):
         """ evaluates a config, checking for existing designs
         """
 
-        opti   = copy.deepcopy(opt)                 # design opt object
-        konfig = opti.CONFIG_DIRECT                 # design config
+        provlem= copy.deepcopy(problem)             # design opt object
+        konfig = provlem.config                     # design config
 
-        opt    = self.opt                           # project opt object
+        problem= self.problem                       # project problem definition
         config = self.config                        # project config
         state  = self.state                         # project state
         folder = self.folder                        # project folder
@@ -176,13 +176,13 @@ class Project(object):
         assert os.path.exists(folder) , 'cannot find project folder %s' % folder        
         
         # list project files to pull and link
-        pull,link = state.pullnlink(opt)
+        pull,link = state.pullnlink(problem)
         
         # project folder redirection, don't overwrite files
         with redirect_folder(folder,pull,link,force=False) as push:        
         
             # start design
-            design = self.new_design(opt)
+            design = self.new_design(problem)
             
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
                 print os.path.join(self.folder,design.folder)
@@ -212,41 +212,41 @@ class Project(object):
     
     def unpack_dvs(self,dvs):
         dvs = copy.deepcopy(dvs)
-        opti = copy.deepcopy( self.opt )
-        konfig = opti.CONFIG_DIRECT
+        provlem = copy.deepcopy( self.problem )
+        konfig = provlem.config
         if isinstance(dvs, np.ndarray): dvs = dvs.tolist()
-        opti.unpack_dvs(dvs)
-        return opti, konfig, dvs
+        provlem.unpack_dvs(dvs)
+        return provlem, konfig, dvs
     
     def obj_f(self,dvs):
         func = su2eval.obj_f
-        opti,konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(opti, func,dvs)
+        provlem,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(provlem, func,dvs)
         
     def obj_df(self,dvs):
         func = su2eval.obj_df
-        opti,konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(opti, func,dvs)
+        provlem,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(provlem, func,dvs)
     
     def con_ceq(self,dvs):
         func = su2eval.con_ceq
-        opti,konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(opti, func,dvs)
+        provlem,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(provlem, func,dvs)
     
     def con_dceq(self,dvs):
         func = su2eval.con_dceq
-        opti,konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(opti, func,dvs)
+        provlem,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(provlem, func,dvs)
     
     def con_cieq(self,dvs):
         func = su2eval.con_cieq
-        opti,konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(opti, func,dvs)
+        provlem,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(provlem, func,dvs)
     
     def con_dcieq(self,dvs):
         func = su2eval.con_dcieq
-        opti,konfig,dvs = self.unpack_dvs(dvs)
-        return self._eval(opti, func,dvs)
+        provlem,konfig,dvs = self.unpack_dvs(dvs)
+        return self._eval(provlem, func,dvs)
 
     # func and grad not being used
     # def func(self,func_name,config):
@@ -270,14 +270,14 @@ class Project(object):
     #     konfig = copy.deepcopy(config)
     #     return self._eval(konfig, func)
         
-    def new_design(self,opt):
+    def new_design(self,problem):
         """ finds an existing design for given config
             or starts a new design with a closest design 
             used for restart data
         """
          # local konfig
-        opti = copy.deepcopy(opt)
-        konfig = opti.CONFIG_DIRECT
+        provlem = copy.deepcopy(problem)
+        konfig  = provlem.config
         
         # find closest design
         closest,delta = self.closest_design(konfig)
@@ -286,7 +286,7 @@ class Project(object):
             design = closest
         # start new design
         else:
-            design = self.init_design(opti, closest)
+            design = self.init_design(provlem, closest)
         #: if new design    
         
         return design
@@ -328,13 +328,13 @@ class Project(object):
         
         return closest, delta 
     
-    def init_design(self,opt,closest=None):
+    def init_design(self,problem,closest=None):
         """ starts a new design
             works in project folder
         """
 
-        opti   = copy.deepcopy(opt)
-        konfig = opti.CONFIG_DIRECT
+        provlem= copy.deepcopy(problem)
+        konfig = provlem.config
         ztate  = copy.deepcopy(self.state)
         if closest is None: closest = []
 
@@ -357,7 +357,7 @@ class Project(object):
         folder = folder % (len(self.designs) + 1)
 
         # start new design (pulls files to folder)
-        design = su2eval.Design(opti,ztate,folder)
+        design = su2eval.Design(provlem,ztate,folder)
         
         # update local state filenames ( ??? why not in Design() )
         for key in design.files:
