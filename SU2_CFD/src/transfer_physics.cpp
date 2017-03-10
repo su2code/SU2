@@ -381,7 +381,8 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 																														unsigned long iSpan, unsigned long rank) {
 
 	unsigned short nDim = nVar - 2;
-  bool turbulent = (donor_config->GetKind_Solver() == RANS);
+  bool turbulent = ((donor_config->GetKind_Solver() == RANS) || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
+
 
 
 	Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
@@ -417,7 +418,7 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 										  unsigned long iSpan, unsigned long rank) {
 
 	unsigned short nDim = nVar - 2;
-  bool turbulent = (target_config->GetKind_Solver() == RANS);
+  bool turbulent = ((target_config->GetKind_Solver() == RANS) || (target_config->GetKind_Solver() == DISC_ADJ_RANS));
 
 
 	target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);

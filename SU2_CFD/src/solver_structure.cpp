@@ -618,13 +618,20 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     r11 = 0.0; r12 = 0.0; r13 = 0.0; r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0; r33 = 0.0;
-    
+
+    AD::StartPreacc();
+    AD::SetPreaccIn(Solution_i, nVar);
+    AD::SetPreaccIn(Coord_i, nDim);
+
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
       Solution_j = node[jPoint]->GetSolution();
-      
+
+      AD::SetPreaccIn(Coord_j, nDim);
+      AD::SetPreaccIn(Solution_j, nVar);
+
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -712,7 +719,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
         node[iPoint]->SetGradient(iVar, iDim, product);
       }
     }
-    
+
+    AD::SetPreaccOut(node[iPoint]->GetGradient(), nVar, nDim);
+    AD::EndPreacc();
   }
   
   /*--- Deallocate memory ---*/
@@ -2792,7 +2801,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry[iZone]->GetnZone();
+  unsigned short nZone = config->GetnZone();
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();

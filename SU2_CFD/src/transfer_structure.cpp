@@ -1574,7 +1574,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE, iSize;
   unsigned short nDim = nVar - 2;
-  bool turbulent = (donor_config->GetKind_Solver() == RANS);
+  bool turbulent = (donor_config->GetKind_Solver() == RANS)|| (donor_config->GetKind_Solver() == DISC_ADJ_RANS);
 
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
