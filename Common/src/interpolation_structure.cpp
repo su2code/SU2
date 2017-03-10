@@ -1663,6 +1663,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
   Normal    = new su2double[nDim];
   Direction = new su2double[nDim];
     
+  nHalo    = 0;
+  nHaloTot = 0;
     
   /* 2 - Find boundary tag between touching grids */
 
@@ -2682,6 +2684,16 @@ cout << endl;
 cout << endl;
 */
 /*
+for (iVertexDonor = 1; iVertexDonor < nGlobalVertex_Donor; iVertexDonor++)
+  if(DonorPoint_Coord[ nDim * iVertexDonor + 1 ] < DonorPoint_Coord[ nDim * (iVertexDonor-1) + 1 ]){
+    dtmp = DonorPoint_Coord[ nDim * iVertexDonor + 1 ];
+    DonorPoint_Coord[ nDim * (iVertexDonor-1) + 1 ] = DonorPoint_Coord[ nDim * iVertexDonor + 1 ];
+    DonorPoint_Coord[ nDim * iVertexDonor + 1 ] = dtmp;
+  }
+*/
+
+
+/*
     for (iVertexTarget = 0; iVertexTarget < nGlobalVertex_Target; iVertexTarget++){
       cout << Target_nLinkedNodes[iVertexTarget] << "  " << Target_GlobalPoint[iVertexTarget] << "  ";
       for (int ii=0; ii<Target_nLinkedNodes[iVertexTarget]; ii++)
@@ -2907,7 +2919,7 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
 //if(target_iPoint == 2) cout << "donorrrrr   " << DonorPoint_Coord[ donor_iPoint * nDim + 1 ] << endl;    
 
           check = false;
-
+//Area = 0;
           /*--- Proceeds along the forward direction (depending on which connected boundary node is found first) ---*/
 
           while( !check ){
@@ -2927,22 +2939,22 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
               check = true;
               continue;
             }
-//if(target_iPoint == 2) cout << DonorPoint_Coord[ donor_backward_point  * nDim +1] << "  " << DonorPoint_Coord[ donor_forward_point  * nDim + 1] << endl;            
+
             for(iDim = 0; iDim < nDim; iDim++){
               donor_iMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_forward_point  * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim ] ) / 2;
               donor_jMidEdge_point[iDim] = ( DonorPoint_Coord[ donor_backward_point * nDim + iDim] + DonorPoint_Coord[ donor_iPoint * nDim + iDim ] ) / 2;
             }
-//if(target_iPoint == 2) cout << donor_jMidEdge_point[1] << "  " << donor_iMidEdge_point[1] << endl;                        
-      //cout << donor_forward_point << "  " << donor_backward_point << "  " << Buffer_Receive_nLinkedNodes[jVertexTarget] << "  " << iVertex << endl;
- /*     
+
+            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+/*
+      Area += LineIntersectionLength;
       cout << "a  ";
-      cout << Buffer_Receive_nLinkedNodes[donor_iPoint] << "  ";
       cout << donor_iPoint << "  ";
       cout << donor_backward_point << "  ";
-      cout << donor_forward_point << endl;            
+      cout << donor_forward_point << "  ";   
+      cout << donor_OldiPoint << "  ";
+      cout << length << endl; 
 */
-            LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
-//if(target_iPoint == 2) cout << "length  " << LineIntersectionLength << endl; 
             if ( LineIntersectionLength == 0.0 ){
               check = true;
               continue;
@@ -2992,10 +3004,14 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
             if (tmp_storeProc  != NULL)
               delete [] tmp_storeProc;
 
+            nDonorPoints++;
+                          
+            if( donor_forward_point == donor_OldiPoint )
+              break;
+
             donor_OldiPoint = donor_iPoint;
             donor_iPoint = donor_forward_point;
 
-            nDonorPoints++;
           }
           
           if ( Buffer_Receive_nLinkedNodes[donor_StartIndex] == 2 ){
@@ -3035,15 +3051,18 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
             }       
 
             LineIntersectionLength = ComputeLineIntersectionLength(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+
 /*
+      Area += LineIntersectionLength;
       cout << "b  ";
-      cout << nGlobalVertex_Donor << "  " << "  " << nHaloTot << "  ";
-      cout << Buffer_Receive_nLinkedNodes[donor_iPoint] << "  ";
       cout << donor_iPoint << "  ";
       cout << donor_backward_point << "  ";
-      cout << donor_forward_point << endl;        
+      cout << donor_forward_point << "  ";
+      cout << donor_OldiPoint << "  ";
+      cout << Area << endl;        
 */
-            if ( LineIntersectionLength == 0.0 ){
+
+            if ( LineIntersectionLength == 0.0){
               check = true;
               continue;
             }
@@ -3092,10 +3111,14 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
             if (tmp_storeProc  != NULL)
               delete [] tmp_storeProc;
 
+            nDonorPoints++;
+            
+            if( donor_forward_point == donor_OldiPoint )
+              break;
+
             donor_OldiPoint = donor_iPoint;
             donor_iPoint = donor_forward_point;
-  
-            nDonorPoints++;
+              
           }
                 
           /*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
@@ -3170,13 +3193,14 @@ for (iVertex = 0; iVertex < nVertexTarget; iVertex++)
           }
           //cout << "  tot  " << Area << endl;
         }
-/*        
-        if(target_iPoint == 2 && Area != 1.0){
-          cout << target_iPoint << "  " << Coord_i[1] << "  " << jVertexTarget << "  tot  " << Area << endl;
-          cout << target_iMidEdge_point[1] << "  " << target_jMidEdge_point[1] << endl;
-          getchar();
+        
+
+        if(iPeriodic == 2){
+          //cout << target_iPoint << "  " << Coord_i[1] << "  " << jVertexTarget << "  tot  " << Area << endl;
+          cout << target_iMidEdge_point[1] << "  " << Coord_i[1] << "  " << target_jMidEdge_point[1] << "  tot  " << scientific << Area << endl;
+          //getchar();
         }
-*/        
+        
         //cout << endl;
       }    
       //getchar();
