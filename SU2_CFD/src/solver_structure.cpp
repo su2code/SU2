@@ -2812,7 +2812,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Skip coordinates ---*/
 
-  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+  unsigned short skipVars = geometry[iZone]->GetnDim();
 
   /*--- Retrieve filename from config ---*/
 
@@ -2847,9 +2847,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+    Read_SU2_Restart_Binary(geometry[iZone], config, filename);
   } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+    Read_SU2_Restart_ASCII(geometry[iZone], config, filename);
   }
 
   int counter = 0;
