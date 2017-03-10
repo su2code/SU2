@@ -88,7 +88,8 @@ def continuous_adjoint( filename           ,
     # check for existing files
     if not compute:
         config.RESTART_SOL = 'YES'
-        state.find_files(config)
+        problem = SU2.io.read_problem(config)
+        state.find_files(problem)
     else:
         state.FILES.MESH = config.MESH_FILENAME
     
@@ -140,7 +141,8 @@ def continuous_design( filename           ,
     
     # check for existing files
     if not compute:
-        state.find_files(config)
+        problem = SU2.io.read_problem(config)
+        state.find_files(problem)
     else:
         state.FILES.MESH = config.MESH_FILENAME    
     

@@ -41,6 +41,7 @@ from ..util import bunch, ordered_bunch, switch
 from .tools import *
 from .config import *
 from .dv import *
+from .phys_problem import *
 from config_options import *
 
 try:
@@ -107,6 +108,8 @@ class Opt(ordered_bunch):
         self.CONFIG_ADJOINT = Config(self.ADJOINT_FILENAME)
         self._filename = filename
 
+        self.problem = self.read_problem(self.CONFIG_DIRECT, self.OBJECTIVE_FUNCTION)
+
         # Set properties of the problem
         self.nKind_DV = len(self.DESIGN_VARIABLES)
         self.nOF = len(self.OBJECTIVE_FUNCTION)
@@ -114,8 +117,15 @@ class Opt(ordered_bunch):
         # Read Design Variables
         self.DV_KIND = self.read_dv()
 
+        # Copy structure for DV_NEW and DV_OLD
+        self.DV_NEW  = copy.deepcopy(self.DV_KIND)
+        self.DV_OLD  = copy.deepcopy(self.DV_KIND)
+
+        # Dump Design variables
+        self.dump_dv('./test/')
+
         # Set up initial guess and boundaries
-        (self.x0, self.xb) = self.setx0()
+        (self.x0, self.xb) = self.pack_dvs()
 
         # Total number of design variables
         self.nDV = len(self.x0)
@@ -139,6 +149,20 @@ class Opt(ordered_bunch):
 
         return data_dict
 
+    def dump_dv(self, folder):
+        """ writes a group of dv files """
+
+        # For the kind of design variables
+        for i in range(0, self.nKind_DV):
+            self.DV_KIND[self.DESIGN_VARIABLES[i]].write(folder)
+
+    def dump_dv_new(self, folder):
+        """ writes a group of dv files """
+
+        # For the kind of design variables
+        for i in range(0, self.nKind_DV):
+            self.DV_NEW[self.DESIGN_VARIABLES[i]].write(folder)
+
     def reread_dv(self,folder):
         """ reads from a dv file """
         # initialize output vector
@@ -160,7 +184,29 @@ class Opt(ordered_bunch):
 
         return x_dv
 
-    def unpack_dvs(self,dv_new,dv_old=None):
+    def pack_dvs(self):
+
+        x0 = []
+        xb_low = []
+        xb_up = []
+
+        # For the kind of design variables
+        for i in range(0, self.nKind_DV):
+            # Shallow copy should be enough here
+            dvKind = copy.copy(self.DV_KIND[self.DESIGN_VARIABLES[i]])
+            # For the number of design variables in the current DV kind
+            for j in range(0,dvKind.nDV):
+                # For the number of values per design variable
+                for k in range(0,dvKind.DV[j]['SIZE']):
+                    x0.append(float(dvKind.DV[j]['VALUE'][k]))
+                    xb_low.append(float(dvKind.DV[j]['LOWER_BOUND'][k]))
+                    xb_up.append(float(dvKind.DV[j]['UPPER_BOUND'][k]))
+
+        xb = zip(xb_low, xb_up)  # design bounds
+
+        return x0, xb
+
+    def unpack_dvs(self, dv_new, dv_old=None):
         """ updates config with design variable vectors
             will scale according to each DEFINITION_DV scale parameter
 
@@ -181,74 +227,60 @@ class Opt(ordered_bunch):
         dv_old = copy.deepcopy(dv_old)
 
         # handle unpacking cases
-        dv_names   = self.DESIGN_VARIABLES
-        dv_kinds   = self.DV_KIND
+        dv_names = self.DESIGN_VARIABLES
+        dv_kinds = self.DV_KIND
         n_dv_total = self.nDV
-        n_dv_kind  = self.nKind_DV
 
         if not dv_old: dv_old = [0.0] * n_dv_total
         assert len(dv_new) == len(dv_old), 'unexpected design vector length'
 
-        # handle param
- #       param_dv = self['DV_PARAM']
-
-        print dv_names
-
         k = 0
-        # apply scale
-        for i in range(0, n_dv_kind):
-            n_dv = dv_kinds[dv_names[i]].nDV
-            for j in range(0, n_dv):
-                dv_scl = float(dv_kinds[dv_names[i]].DV[j]['SCALE'])
-                dv_new[k] = dv_new[k] * dv_scl
-                dv_old[k] = dv_new[k] * dv_scl
-
-        # Change the parameters of the design variables
-
-#        self['DV_KIND'] = def_dv['KIND']
-#        param_dv['PARAM'] = def_dv['PARAM']
-#        param_dv['FFDTAG'] = def_dv['FFDTAG']
-#        param_dv['SIZE'] = def_dv['SIZE']
-
-        # self.update({'DV_MARKER': def_dv['MARKER'][0],
-        #              'DV_VALUE_OLD': dv_old,
-        #              'DV_VALUE_NEW': dv_new})
-
-        self.CONFIG_DIRECT.update({'DV_VALUE_OLD': dv_old,
-                                   'DV_VALUE_NEW': dv_new})
-
-    def setx0(self):
-
-        x0 = []
-        xb_low = []
-        xb_up = []
-
         # For the kind of design variables
         for i in range(0, self.nKind_DV):
-            # Shallow copy should be enough here
-            dvKind = copy.copy(self.DV_KIND[self.DESIGN_VARIABLES[i]])
+            # Deep copy here -> Then need to update
+            new_dv = copy.deepcopy(self.DV_NEW[self.DESIGN_VARIABLES[i]])
+            old_dv = copy.deepcopy(self.DV_OLD[self.DESIGN_VARIABLES[i]])
             # For the number of design variables in the current DV kind
-            for j in range(0,dvKind.nDV):
-                x0.append(float(dvKind.DV[j]['VALUE']))
-                xb_low.append(float(dvKind.DV[j]['LOWER_BOUND']))
-                xb_up.append(float(dvKind.DV[j]['UPPER_BOUND']))
+            for j in range(0,new_dv.nDV):
+                for iDV in range(0,new_dv.DV[j]['SIZE']):
+                    # Read scale
+                    dv_scl = float(dv_kinds[dv_names[i]].DV[j]['SCALE'])
+                    # Store new and old values in structure
+                    new_dv.DV[j]['VALUE'][iDV] = str(dv_new[k] * dv_scl)
+                    old_dv.DV[j]['VALUE'][iDV] = str(dv_old[k] * dv_scl)
+                    k += 1
 
-        xb = zip(xb_low, xb_up)  # design bounds
-
-        return x0, xb
-
+            # Update old and new DVs
+            self.DV_NEW[self.DESIGN_VARIABLES[i]].update(new_dv)
+            self.DV_OLD[self.DESIGN_VARIABLES[i]].update(old_dv)
 
     def read_of(self, filename):
         """ reads from a config file """
         opti = read_opt(filename)
         self.update(opti)
 
+    def read_problem(self, config, ofunction):
+        """ reads the properties of a problem from config files """
 
-    def write(self, filename=''):
-        """ updates an existing config file """
-        if not filename: filename = self._filename
-        assert os.path.exists(filename), 'must write over an existing config file'
-        write_opt(filename, self)
+        # Reads the kind of problem that we want to solve
+        kind_problem = config.PHYSICAL_PROBLEM
+
+        for case in switch(kind_problem):
+            if case("FLUID_STRUCTURE_INTERACTION"):
+                problem = fsi_problem(config, ofunction)
+                break
+            if case("FEM_ELASTICITY"):
+                problem = fea_problem(config, ofunction)
+                break
+            if case():
+                problem = flow_problem(config, ofunction)
+
+        return problem
+
+
+    def write(self, folder):
+        """ writes a new design variable file """
+        write_dv_opt(self, folder)
 
     def __getattr__(self, k):
         try:
@@ -280,7 +312,7 @@ class Opt(ordered_bunch):
         return self.__str__()
 
     def __str__(self):
-        output = 'Config: %s' % self._filename
+        output = 'Opt: %s' % self._filename
         for k, v in self.iteritems():
             output += '\n    %s= %s' % (k, v)
         return output
@@ -416,273 +448,4 @@ def read_opt(filename):
 
 
 #: def read_config()
-
-
-def read_dv_opt(opt):
-    """ reads from a dv file """
-    # initialize output dictionary
-    data_dict = OrderedDict()
-
-    # For the kind of design variables
-    for i in range(0, opt.nKind_DV):
-        if opt.DESIGN_VARIABLES[i] == 'YOUNG_MODULUS':
-            data_dict[opt.DESIGN_VARIABLES[i]] = DV_FEA('dv_young.opt')
-        if opt.DESIGN_VARIABLES[i] == 'ELECTRIC_FIELD':
-            data_dict[opt.DESIGN_VARIABLES[i]] = DV_FEA('dv_efield.opt')
-
-    return data_dict
-
-
-
-
-# -------------------------------------------------------------------
-#  Set SU2 Configuration Parameters
-# -------------------------------------------------------------------
-
-def write_opt(filename, param_dict):
-    """ updates an existing config file """
-
-    temp_filename = "temp.cfg"
-    shutil.copy(filename, temp_filename)
-    output_file = open(filename, "w")
-
-    # break pointers
-    param_dict = copy.deepcopy(param_dict)
-
-    for raw_line in open(temp_filename):
-        # remove line returns
-        line = raw_line.strip('\r\n')
-
-        # make sure it has useful data
-        if not "=" in line:
-            output_file.write(raw_line)
-            continue
-
-        # split across equals sign
-        line = line.split("=")
-        this_param = line[0].strip()
-        old_value = line[1].strip()
-
-        # skip if parameter unwanted
-        if not param_dict.has_key(this_param):
-            output_file.write(raw_line)
-            continue
-
-        # start writing parameter
-        new_value = param_dict[this_param]
-        output_file.write(this_param + "= ")
-
-        # handle parameter types
-        for case in switch(this_param):
-
-            # comma delimited list of floats
-            if case("DV_VALUE_NEW"): pass
-            if case("DV_VALUE_OLD"): pass
-            if case("DV_VALUE"):
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write("%s" % new_value[i_value])
-                    if i_value + 1 < n_lists:
-                        output_file.write(", ")
-                break
-
-            # comma delimited list of strings no paren's
-            if case("DV_KIND"): pass
-            if case("TASKS"): pass
-            if case("GRADIENTS"):
-                if not isinstance(new_value, list):
-                    new_value = [new_value]
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(new_value[i_value])
-                    if i_value + 1 < n_lists:
-                        output_file.write(", ")
-                break
-
-                # comma delimited list of strings inside paren's
-            if case("MARKER_EULER"): pass
-            if case("MARKER_FAR"): pass
-            if case("MARKER_PLOTTING"): pass
-            if case("MARKER_MONITORING"): pass
-            if case("MARKER_SYM"): pass
-            if case("DV_MARKER"):
-                if not isinstance(new_value, list):
-                    new_value = [new_value]
-                output_file.write("( ")
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(new_value[i_value])
-                    if i_value + 1 < n_lists:
-                        output_file.write(", ")
-                output_file.write(" )")
-                break
-
-                # semicolon delimited lists of comma delimited lists
-            if case("DV_PARAM"):
-
-                assert isinstance(new_value['PARAM'], list), 'incorrect specification of DV_PARAM'
-                if not isinstance(new_value['PARAM'][0], list): new_value = [new_value]
-
-                for i_value in range(len(new_value['PARAM'])):
-
-                    output_file.write("( ")
-                    this_param_list = new_value['PARAM'][i_value]
-                    this_ffd_list = new_value['FFDTAG'][i_value]
-                    n_lists = len(this_param_list)
-
-                    if this_ffd_list != []:
-                        output_file.write("%s, " % this_ffd_list)
-                        for j_value in range(1, n_lists):
-                            output_file.write("%s" % this_param_list[j_value])
-                            if j_value + 1 < n_lists:
-                                output_file.write(", ")
-                    else:
-                        for j_value in range(n_lists):
-                            output_file.write("%s" % this_param_list[j_value])
-                            if j_value + 1 < n_lists:
-                                output_file.write(", ")
-
-                    output_file.write(") ")
-                    if i_value + 1 < len(new_value['PARAM']):
-                        output_file.write("; ")
-                break
-
-            # int parameters
-            if case("NUMBER_PART"): pass
-            if case("ADAPT_CYCLES"): pass
-            if case("TIME_INSTANCES"): pass
-            if case("AVAILABLE_PROC"): pass
-            if case("UNST_ADJOINT_ITER"): pass
-            if case("EXT_ITER"):
-                output_file.write("%i" % new_value)
-                break
-
-            if case("DEFINITION_DV"):
-                n_dv = len(new_value['KIND'])
-                if not n_dv:
-                    output_file.write("NONE")
-                for i_dv in range(n_dv):
-                    this_kind = new_value['KIND'][i_dv]
-                    output_file.write("( ")
-                    output_file.write("%i , " % get_dvID(this_kind))
-                    output_file.write("%s " % new_value['SCALE'][i_dv])
-                    output_file.write("| ")
-                    # markers
-                    n_mark = len(new_value['MARKER'][i_dv])
-                    for i_mark in range(n_mark):
-                        output_file.write("%s " % new_value['MARKER'][i_dv][i_mark])
-                        if i_mark + 1 < n_mark:
-                            output_file.write(", ")
-                    #: for each marker
-                    if not this_kind in ['AOA', 'MACH_NUMBER']:
-                        output_file.write(" | ")
-                        # params
-                        if this_kind in ['FFD_SETTING', 'FFD_ANGLE_OF_ATTACK', 'FFD_CONTROL_POINT', 'FFD_NACELLE',
-                                         'FFD_GULL', 'FFD_TWIST_ANGLE', 'FFD_TWIST', 'FFD_TWIST_2D', 'FFD_ROTATION',
-                                         'FFD_CAMBER', 'FFD_THICKNESS', 'FFD_CONTROL_POINT_2D', 'FFD_CAMBER_2D',
-                                         'FFD_THICKNESS_2D']:
-                            n_param = len(new_value['PARAM'][i_dv])
-                            output_file.write("%s , " % new_value['FFDTAG'][i_dv])
-                            for i_param in range(1, n_param):
-                                output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
-                                if i_param + 1 < n_param:
-                                    output_file.write(", ")
-                        else:
-                            n_param = len(new_value['PARAM'][i_dv])
-                            for i_param in range(n_param):
-                                output_file.write("%s " % new_value['PARAM'][i_dv][i_param])
-                                if i_param + 1 < n_param:
-                                    output_file.write(", ")
-
-                                    #: for each param
-                    output_file.write(" )")
-                    if i_dv + 1 < n_dv:
-                        output_file.write("; ")
-                #: for each dv
-                break
-
-            if case("OPT_OBJECTIVE"):
-                i_name = 0
-                for name, value in new_value.iteritems():
-                    if i_name > 0: output_file.write("; ")
-                    output_file.write("%s * %s" % (name, value['SCALE']))
-                    i_name += 1
-                break
-
-            if case("OPT_CONSTRAINT"):
-                i_con = 0
-                for con_type in ['EQUALITY', 'INEQUALITY']:
-                    this_con = new_value[con_type]
-                    for name, value in this_con.iteritems():
-                        if i_con > 0: output_file.write("; ")
-                        output_file.write("( %s %s %s ) * %s"
-                                          % (name, value['SIGN'], value['VALUE'], value['SCALE']))
-                        i_con += 1
-                        #: for each constraint
-                #: for each constraint type
-                if not i_con: output_file.write("NONE")
-                break
-
-            if case("ELECTRIC_FIELD_MOD"):
-                if not isinstance(new_value, list):
-                    new_value = [new_value]
-                output_file.write("( ")
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(str(new_value[i_value]))
-                    if i_value + 1 < n_lists:
-                        output_file.write(", ")
-                output_file.write(" )")
-                break
-
-            if case("ELECTRIC_FIELD_MIN"):
-                if not isinstance(new_value, list):
-                    new_value = [new_value]
-                output_file.write("( ")
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(str(new_value[i_value]))
-                    if i_value + 1 < n_lists:
-                        output_file.write(", ")
-                output_file.write(" )")
-                break
-
-            if case("ELECTRIC_FIELD_MAX"):
-                if not isinstance(new_value, list):
-                    new_value = [new_value]
-                output_file.write("( ")
-                n_lists = len(new_value)
-                for i_value in range(n_lists):
-                    output_file.write(str(new_value[i_value]))
-                    if i_value + 1 < n_lists:
-                        output_file.write(", ")
-                output_file.write(" )")
-                break
-
-                # default, assume string, integer or unformatted float
-            if case():
-                output_file.write('%s' % new_value)
-                break
-
-                #: for case
-
-        # remove from param dictionary
-        del param_dict[this_param]
-
-        # next line
-        output_file.write("\n")
-
-        #: for each line
-
-    # check that all params were used
-    for this_param in param_dict.keys():
-        if not this_param in ['JOB_NUMBER']:
-            print ('Warning: Parameter %s not found in config file and was not written' % (this_param))
-
-    output_file.close()
-    os.remove(temp_filename)
-
-
-#: def write_config()
-
 

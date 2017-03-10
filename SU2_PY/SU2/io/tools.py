@@ -956,9 +956,9 @@ def expand_part(name,config):
     names = [name]
     return names
 
-def expand_time(name,config):
-    if 'UNSTEADY_SIMULATION' in get_specialCases(config):
-        n_time = config['UNST_ADJOINT_ITER']
+def expand_time(name, problem):
+    if problem.timeDomain:
+        n_time = problem.nTime
         name_pat = add_suffix(name,'%05d')
         names = [name_pat%i for i in range(n_time)]
     else:
@@ -1003,7 +1003,7 @@ def make_link(src,dst):
         if os.path.exists(dst): os.remove(dst)
         os.symlink(src,dst)
     
-def restart2solution(config,state={}):
+def restart2solution(problem, state={}):
     """ restart2solution(config,state={})
         moves restart file to solution file, 
         optionally updates state

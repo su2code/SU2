@@ -88,8 +88,6 @@ class Design(object):
     def __init__(self, opt, state=None, folder='DESIGNS/DSN_*'):
         """ Initializes an SU2 Design """
         
-        ## ???: Move to Project, no next folder here
-        
         if '*' in folder: folder = su2io.next_folder(folder)
         
 #        print "New Design: %s" % folder
@@ -98,7 +96,7 @@ class Design(object):
         config = opt.CONFIG_DIRECT
         state  = copy.deepcopy(state)
         state  = su2io.State(state)
-        state.find_files(config)
+        state.find_files(opt.problem)
 
         self.opt    = opt
         self.config = config
@@ -114,11 +112,12 @@ class Design(object):
         self.filename = 'design.pkl'
             
         # initialize folder with files
-        pull,link = state.pullnlink(config)
-        with redirect_folder(folder,pull,link,force=True):
+        pull,link = state.pullnlink(opt)
+        with redirect_folder(folder, pull, link, force=True):
             # save design, config
             save_data(self.filename,self)
             config.dump('config_DSN.cfg')
+            opt.dump_dv_new('./')   # dumps the values of the design variables
         
     def _eval(self,eval_func,*args):
         """ Evaluates an SU2 Design 
@@ -133,11 +132,13 @@ class Design(object):
         
         filename = self.filename
 
+        # Sends files from base folder (or from previous design) into ./DESIGNS/DSN_003
+
         # check folder
         assert os.path.exists(folder) , 'cannot find design folder %s' % folder
         
         # list files to pull and link
-        pull,link = state.pullnlink(config)
+        pull, link = state.pullnlink(opt)
         
         # output redirection, don't re-pull files
         with redirect_folder(folder,pull,link,force=False) as push:
@@ -146,7 +147,7 @@ class Design(object):
             timestamp = state.tic()
             
             # run 
-            inputs = args + (opt,state)
+            inputs = args + (opt, state)
             vals = eval_func(*inputs)
             
             # save design
@@ -244,7 +245,7 @@ def obj_f(dvs,opt,state=None):
         
         # Evaluate Objective Function
         # scaling and sign
-        func += su2func(this_obj,config,state) * sign * scale
+        func += su2func(this_obj, opt, state) * sign * scale
         
     vals_out.append(func)
     #: for each objective
@@ -268,9 +269,9 @@ def obj_df(dvs,opt,state=None):
     
     # unpack config and state
     opt.unpack_dvs(dvs)
-    config = opt.CONFIG_DIRECT
-    state = su2io.State(state)
-    grad_method = opt['GRADIENT']
+    config      = opt.CONFIG_ADJOINT
+    state       = su2io.State(state)
+    grad_method = opt['GRADIENT_METHOD']
 
     def_objs = opt['OBJECTIVE_FUNCTION']
     objectives = def_objs.keys()
@@ -280,8 +281,20 @@ def obj_df(dvs,opt,state=None):
     dv_scales = config['DEFINITION_DV']['SCALE']
     dv_size   = config['DEFINITION_DV']['SIZE']
 
-    print dv_scales, dv_size
-    
+    vals_out = []
+    for i_obj, this_obj in enumerate(objectives):
+        config.GRADIENT_METHOD = grad_method
+        grad = su2grad(this_obj, grad_method, config, state)
+        # scaling : obj scale and sign are accounted for in combo gradient, dv scale now applied
+        k = 0
+        for i_dv, dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                grad[k] = grad[k] / dv_scl
+                print grad[k]
+                k = k + 1
+        vals_out.append(grad)
+
+    '''
     #  if objectives: print('Evaluate Objective Gradients')
     # evaluate each objective
     vals_out = []
@@ -303,11 +316,11 @@ def obj_df(dvs,opt,state=None):
 
         vals_out.append(grad)
     elif (objectives[0] == 'REFERENCE_GEOMETRY' or objectives[0] == 'REFERENCE_NODE'):
-        grad_method = config.get('GRADIENT_METHOD','DISCRETE_ADJOINT')
-        config.GRADIENT_METHOD = 'DISCRETE_ADJOINT'
         for i_obj,this_obj in enumerate(objectives):
-          grad = su2grad(this_obj,grad_method,config,state)
-          # scaling : obj scale  adn sign are accounted for in combo gradient, dv scale now applied
+          print "GRAD METHOD", grad_method
+          config.GRADIENT_METHOD = 'DISCRETE_ADJOINT'
+          grad = su2grad(this_obj, grad_method, config, state)
+          # scaling : obj scale and sign are accounted for in combo gradient, dv scale now applied
           k = 0                  
           for i_dv,dv_scl in enumerate(dv_scales):
               for i_grd in range(dv_size[i_dv]):
@@ -337,7 +350,8 @@ def obj_df(dvs,opt,state=None):
                     k = k + 1
             
             vals_out.append(grad)
-    
+
+    '''
     #: for each objective
     
     return vals_out

@@ -94,7 +94,8 @@ def discrete_adjoint( filename           ,
     # check for existing files
     if not compute:
         config.RESTART_SOL = 'YES'
-        state.find_files(config)
+        problem = SU2.io.read_problem(config)
+        state.find_files(problem)
     else:
         state.FILES.MESH = config.MESH_FILENAME
     
@@ -162,7 +163,8 @@ def discrete_design( filename           ,
     
     # check for existing files
     if any([not compute, validation]) :
-        state.find_files(config)
+        problem = SU2.io.read_problem(config)
+        state.find_files(problem)
     else:
         state.FILES.MESH = config.MESH_FILENAME
 

@@ -125,12 +125,13 @@ def optimization(filename,
 
     its = int(opt.ITERATIONS)
     accu = float(opt.ACCURACY)
-    x0 = opt.x0
-    xb = opt.xb
+    x0 = copy.deepcopy(opt.x0)
+    xb = copy.deepcopy(opt.xb)
 
     # State
     state = SU2.io.State()
-    state.find_files(opt.CONFIG_DIRECT)
+    problem = SU2.io.read_problem(opt.CONFIG_DIRECT, opt.OBJECTIVE_FUNCTION)
+    state.find_files(problem)
 
     # Project
     #if os.path.exists(projectname):

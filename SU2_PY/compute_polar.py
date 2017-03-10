@@ -129,7 +129,8 @@ def main():
    config.EXT_ITER    = options.iterations
 
    # find solution files if they exist
-   state.find_files(config)
+   problem = SU2.io.read_problem(config)
+   state.find_files(problem)
 
    # start results data
    results = SU2.util.bunch()

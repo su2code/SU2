@@ -90,7 +90,7 @@ class DV(ordered_bunch):
         # read config if it exists
         if filename:
             try:
-                self.read(filename)
+                (self.nDV, self.DV) = self.read(filename)
             except IOError:
                 print 'Could not find DV file: %s' % filename
             except:
@@ -126,10 +126,11 @@ class DV(ordered_bunch):
 
             # store in a dictionary
             dv_definitions = {'INDEX': line[0].strip(),
-                              'VALUE': line[1].strip(),
+                              'VALUE': [line[1].strip()],
                               'SCALE': line[2].strip(),
                               'PROP1': line[3].strip(),
-                              'PROP2': line[4].strip()}
+                              'PROP2': line[4].strip(),
+                              'SIZE': 1}
 
             # save to output dictionary
             data_dict = dv_definitions
@@ -137,8 +138,7 @@ class DV(ordered_bunch):
             data_list.append(data_dict.copy())
             nDV += 1
 
-        self.nDV = nDV
-        self.DV = data_list
+        return nDV, data_list
 
     def write(self, filename=''):
         """ updates an existing config file """
@@ -444,76 +444,6 @@ def write_config(filename, param_dict):
 
 #: def write_config()
 
-
-class DV_YOUNG(DV):
-
-    def __init__(self, *args, **kwarg):
-
-        # look for filename in inputs
-        if args and isinstance(args[0], str):
-            filename = args[0]
-            args = args[1:]
-        elif kwarg.has_key('filename'):
-            filename = kwarg['filename']
-            del kwarg['filename']
-        else:
-            filename = ''
-
-        # initialize ordered bunch
-        super(DV, self).__init__(*args, **kwarg)
-
-        # read config if it exists
-        if filename:
-            try:
-                (self.nDV, self.DV) = self.read(filename)
-            except IOError:
-                print 'Could not find DV file: %s' % filename
-            except:
-                print 'Unexpected error: ', sys.exc_info()[0]
-                raise
-
-        self._filename = filename
-
-    def read(self, filename):
-
-        """ reads from a dv file """
-        # initialize output list and dictionary
-        data_list = []
-
-        input_file = open(filename)
-
-        nDV = 0
-
-        # process each line
-        while 1:
-            # read the line
-            line = input_file.readline()
-            if not line:
-                break
-
-            # remove line returns
-            line = line.strip('\r\n')
-            # skip first line (starts with ID, INDEX)
-            if line[0] == 'I':
-                continue
-            # split across equals sign
-            line = line.split("\t")
-
-            # store in a dictionary
-            dv_definitions = {'INDEX': line[0].strip(),
-                              'VALUE': line[1].strip(),
-                              'SCALE': line[2].strip(),
-                              'LOWER_BOUND': line[3].strip(),
-                              'UPPER_BOUND': line[4].strip()}
-
-            # save to output dictionary
-            data_dict = dv_definitions
-
-            data_list.append(data_dict.copy())
-            nDV += 1
-
-        return nDV, data_list
-
 class DV_FEA(DV):
 
     def __init__(self, *args, **kwarg):
@@ -571,10 +501,11 @@ class DV_FEA(DV):
 
             # store in a dictionary
             dv_definitions = {'INDEX': line[0].strip(),
-                              'VALUE': line[1].strip(),
+                              'VALUE': [line[1].strip()],
                               'SCALE': line[2].strip(),
-                              'LOWER_BOUND': line[3].strip(),
-                              'UPPER_BOUND': line[4].strip()}
+                              'LOWER_BOUND': [line[3].strip()],
+                              'UPPER_BOUND': [line[4].strip()],
+                              'SIZE': 1}
 
             # save to output dictionary
             data_dict = dv_definitions
@@ -583,3 +514,25 @@ class DV_FEA(DV):
             nDV += 1
 
         return nDV, data_list
+
+    def write(self, folder):
+
+        """ writes to a dv file """
+        # initialize output list and dictionary
+        data_list = []
+        data_dict = OrderedDict()
+
+        output_filename = folder + self._filename
+        output_file = open(output_filename, "w")
+
+        nDV = self.nDV
+
+        for i in range(0, nDV):
+            output_file.write("%s\t" % self.DV[i]['INDEX'])
+            output_file.write("%s\t" % self.DV[i]['VALUE'][0])
+            output_file.write("%s\t" % self.DV[i]['SCALE'])
+            output_file.write("%s\t" % self.DV[i]['LOWER_BOUND'][0])
+            output_file.write("%s\t" % self.DV[i]['UPPER_BOUND'][0])
+            output_file.write("\n")
+
+        output_file.close()

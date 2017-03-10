@@ -38,6 +38,7 @@
 import os, sys, shutil, copy, time
 from ..io   import expand_part, expand_time, get_adjointSuffix, add_suffix, \
                    get_specialCases, Config
+from .phys_problem import *
 from ..util import bunch
 from ..util import ordered_bunch
 
@@ -108,7 +109,8 @@ def State_Factory(state=None,config=None):
         NewClass[key] = ordered_bunch()
             
     if config:
-        NewClass.find_files(config)
+        problem = read_problem(config)
+        NewClass.find_files(problem)
             
     return NewClass
 
@@ -165,11 +167,13 @@ class State(ordered_bunch):
                 output += '\n        %s' % v1
         return output
     
-    def pullnlink(self,config):
+    def pullnlink(self, opt):
         """ pull,link = SU2.io.State.pullnlink(config)
             returns lists pull and link of files for folder
             redirection, based on a given config
         """
+
+        problem = opt.problem
         
         pull = []; link = []
         
@@ -179,15 +183,15 @@ class State(ordered_bunch):
             # link big files
             if key == 'MESH':
                 # mesh (merged or partitioned)
-                value = expand_part(value,config)
+                value = expand_part(value, problem)
                 link.extend(value)
             elif key == 'DIRECT':
                 # direct solution
-                value = expand_time(value,config)
+                value = expand_time(value, problem)
                 link.extend(value)
             elif 'ADJOINT_' in key:
                 # adjoint solution
-                value = expand_time(value,config)
+                value = expand_time(value, problem)
                 link.extend(value)
             #elif key == 'STABILITY':
                 #pass
@@ -212,23 +216,16 @@ class State(ordered_bunch):
             vector.extend(value)
         return vector
     
-    def find_files(self,config):
-        """ SU2.io.State.find_files(config)
-            finds mesh and solution files for a given config.
+    def find_files(self, problem):
+        """ SU2.io.State.find_files(problem)
+            finds mesh and solution files for a given physical problem.
             updates state.FILES with filenames.
             files already logged in state are not overridden.
             will ignore solutions if config.RESTART_SOL == 'NO'.
         """
-        
-        files = self.FILES
-        targetea_name = 'TargetEA.dat'
-        targetcp_name = 'TargetCp.dat'
-        targetheatflux_name = 'TargetHeatFlux.dat'
 
-        adj_map = get_adjointSuffix()
-        
-        restart = config.RESTART_SOL == 'YES'
-        special_cases = get_specialCases(config)
+        # Definition of register file
+        files = self.FILES
 
         def register_file(label,filename):
             if not files.has_key(label):
@@ -237,48 +234,40 @@ class State(ordered_bunch):
                     print 'Found: %s' % filename
             else:
                 assert os.path.exists(files[label]) , 'state expected file: %s' % filename
-        #: register_file()                
+        #: register_file()
 
-        # Register Mesh
-        mesh_name     = config.MESH_FILENAME
-        register_file('MESH',mesh_name)
+        nZone = problem.nZone          # Number of zones in the problem
+        restart = problem.restart      # Check whether restart is needed
 
-        if 'FEM_ELASTICITY' in special_cases:
-            direct_name = config.SOLUTION_STRUCTURE_FILENAME
-            adjoint_name  = config.SOLUTION_ADJ_STRUCTURE_FILENAME
-        else:
-            direct_name  = config.SOLUTION_FLOW_FILENAME
-            adjoint_name = config.SOLUTION_ADJ_FILENAME
+        adj_map = get_adjointSuffix()  # Get adjoint suffix
 
-        # direct solution
-        if restart:
-            register_file('DIRECT',direct_name)
-        
-        # adjoint solutions
-        if restart:
-            for obj,suff in adj_map.iteritems():
-                ADJ_LABEL = 'ADJOINT_' + obj
-                adjoint_name_suffixed = add_suffix(adjoint_name,suff)
-                register_file(ADJ_LABEL,adjoint_name_suffixed)
-        
-        # equivalent area
-        if 'EQUIV_AREA' in special_cases:
-            register_file('TARGET_EA',targetea_name)
-        
-        # pressure inverse design
-        if 'INV_DESIGN_CP' in special_cases:
-          register_file('TARGET_CP',targetcp_name)
-            
-        # heat flux inverse design
-        if 'INV_DESIGN_HEATFLUX' in special_cases:
-          register_file('TARGET_HEATFLUX',targetheatflux_name)
-          
-        # special case of Elasticity. Some redefinitions here.
-        if 'FEM_ELASTICITY' in special_cases:
-          if config.PRESTRETCH == 'YES':
-            register_file('PRESTRETCH', config.PRESTRETCH_FILENAME)
-          if config.REFERENCE_GEOMETRY == 'YES':
-            register_file('REFERENCE_GEOMETRY', config.REFERENCE_GEOMETRY_FILENAME)
+        # For all the keys in the problem files
+        for key in problem.files:
+            if key == 'DIRECT':
+                if restart:
+                    register_file('DIRECT', problem.files[key][0])
+                    # Support for multizone
+                    for i in range(1,nZone):
+                        DIR_LABEL = 'DIRECT_'+str(i)
+                        register_file(DIR_LABEL, problem.files[key][i])
+
+            elif key == 'ADJOINT':
+                if restart:
+                    adjoint_name = problem.files[key][0]
+                    for obj, suff in adj_map.iteritems():
+                        ADJ_LABEL = 'ADJOINT_' + obj
+                        adjoint_name_suffixed = add_suffix(adjoint_name, suff)
+                        register_file(ADJ_LABEL, adjoint_name_suffixed)
+                    # Support for multizone
+                    for i in range(1,nZone):
+                        adjoint_name = problem.files[key][i]
+                        for obj, suff in adj_map.iteritems():
+                            ADJ_LABEL = 'ADJOINT_' + obj + '_' + str(i)
+                            adjoint_name_suffixed = add_suffix(adjoint_name, suff)
+                            register_file(ADJ_LABEL, adjoint_name_suffixed)
+
+            else:
+                register_file(key, problem.files[key])
         
         return
     

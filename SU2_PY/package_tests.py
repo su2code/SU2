@@ -201,7 +201,8 @@ def level3():
         
         # initialize design state
         state = SU2.io.State()
-        state.find_files(config)
+        problem = SU2.io.read_problem(config)
+        state.find_files(problem)
         
         # start design
         design = SU2.eval.Design(config,state)
@@ -235,7 +236,8 @@ def level4():
         
         # initialize design state
         state = SU2.io.State()
-        state.find_files(config)
+        problem = SU2.io.read_problem(config)
+        state.find_files(problem)
         
         # initialize project
         project = SU2.opt.Project(config,state)
@@ -293,7 +295,8 @@ def level5():
                 
         # initialize design state
         state = SU2.io.State()
-        state.find_files(config)
+        problem = SU2.io.read_problem(config)
+        state.find_files(problem)
         
         # initialize project
         project = SU2.opt.Project(config,state)

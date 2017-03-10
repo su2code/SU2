@@ -59,7 +59,8 @@ config.NUMBER_PART = options.partitions
 config.EXT_ITER    = options.iterations
 
 # find solution files if they exist
-state.find_files(config)
+problem = SU2.io.read_problem(config)
+state.find_files(problem)
 
 # run su2
 drag_alpha = SU2.eval.func('D_DRAG_D_ALPHA',config,state)

@@ -46,10 +46,10 @@ from ..io import redirect_folder, redirect_output
 #  Main Function Interface
 # ----------------------------------------------------------------------
 
-def function( func_name, config, state=None ):
-    """ val = SU2.eval.func(func_name,config,state=None)
+def function( func_name, opt, state=None ):
+    """ val = SU2.eval.func(func_name,opt,state=None)
     
-        Evaluates the aerodynamics and geometry functions.
+        Evaluates the objective function.
         
         Wraps:
             SU2.eval.aerodynamics()
@@ -90,19 +90,19 @@ def function( func_name, config, state=None ):
 
         # Aerodynamics
         if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
-            aerodynamics( config, state )
+            aerodynamics( opt, state )
             
         # Stability
         elif func_name in su2io.optnames_stab:
-            stability( config, state )
+            stability( opt, state )
         
         # Geometry
         elif func_name in su2io.optnames_geo:
-            geometry( func_name, config, state )
+            geometry( func_name, opt, state )
             
         # Structural OF
         elif func_name in su2io.optnames_fea:
-            structural( config, state )
+            structural( opt, state )
             
         else:
             raise Exception, 'unknown function name, %s' % func_name
@@ -114,7 +114,7 @@ def function( func_name, config, state=None ):
         func_out = state['FUNCTIONS']
     elif (multi_objective):
         # If combine_objective is true, use the 'combo' output.
-        objectives=config.OPT_OBJECTIVE
+        objectives=opt.OBJECTIVE_FUNCTION
         func_out = 0.0
         for func in func_name:
             sign = su2io.get_objectiveSign(func)
@@ -133,7 +133,7 @@ def function( func_name, config, state=None ):
 #  Aerodynamic Functions
 # ----------------------------------------------------------------------
 
-def aerodynamics( config, state=None ):
+def aerodynamics( opt, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
     
         Evaluates aerodynamics with the following:
@@ -161,7 +161,10 @@ def aerodynamics( config, state=None ):
     # ----------------------------------------------------
     #  Initialize    
     # ----------------------------------------------------
-    
+
+    # Temporary
+    config = opt.CONFIG_DIRECT
+
     # initialize
     state = su2io.State(state)
     if not state.FILES.has_key('MESH'):
@@ -216,7 +219,7 @@ def aerodynamics( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
-        name = su2io.expand_time(name,config)
+        name = su2io.expand_time(name, opt.problem)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
@@ -248,7 +251,7 @@ def aerodynamics( config, state=None ):
             
             # direct files to push
             name = info.FILES['DIRECT']
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_time(name, opt.problem)
             push.extend(name)
             
             # equivarea files to push
@@ -283,8 +286,10 @@ def aerodynamics( config, state=None ):
 #  Stability Functions
 # ----------------------------------------------------------------------
 
-def stability( config, state=None, step=1e-2 ):
-   
+def stability( opt, state=None, step=1e-2 ):
+
+    # Temporary
+    config = opt.CONFIG_DIRECT
     
     folder = 'STABILITY' # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
     
@@ -336,7 +341,7 @@ def stability( config, state=None, step=1e-2 ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
-        name = su2io.expand_time(name,config)
+        name = su2io.expand_time(name, opt.problem)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
     else:
@@ -410,7 +415,7 @@ def stability( config, state=None, step=1e-2 ):
 #  Geometric Functions
 # ----------------------------------------------------------------------
 
-def geometry( func_name, config, state=None ):
+def geometry( func_name, opt, state=None ):
     """ val = SU2.eval.geometry(config,state=None)
     
         Evaluates geometry with the following:
@@ -434,6 +439,9 @@ def geometry( func_name, config, state=None ):
             Bunch() of functions with keys of objective function names
             and values of objective function floats.
     """
+
+    # Temporary
+    config = opt.CONFIG_DIRECT
     
     # ----------------------------------------------------
     #  Initialize    
@@ -512,7 +520,7 @@ def geometry( func_name, config, state=None ):
 #  Structural Functions
 # ----------------------------------------------------------------------
 
-def structural( config, state=None ):
+def structural( opt, state=None ):
     """ vals = SU2.eval.aerodynamics(config,state=None)
     
         Evaluates structural mechanics with the following:
@@ -537,19 +545,20 @@ def structural( config, state=None ):
     # ----------------------------------------------------
     #  Initialize    
     # ----------------------------------------------------
-    
+
+    config = opt.CONFIG_DIRECT
+
     # initialize
     state = su2io.State(state)
     if not state.FILES.has_key('MESH'):
-        state.FILES.MESH = config['MESH_FILENAME']
-    special_cases = su2io.get_specialCases(config)
-    
+        state.FILES.MESH = opt.problem.files['MESH']
+
     # console output
-    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+    if opt.CONFIG_DIRECT.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
         log_direct = 'log_Direct.out'
     else:
         log_direct = None
-    
+
    
     # ----------------------------------------------------    
     #  Direct Solution
@@ -563,38 +572,27 @@ def structural( config, state=None ):
         for key in su2io.optnames_fea:
             if state.FUNCTIONS.has_key(key):
                 struc[key] = state.FUNCTIONS[key]
-        return copy.deepcopy(aero)    
+        return copy.deepcopy(struc)
     #: if redundant
     
     # files to pull
     files = state.FILES
     pull = []; link = []
-    
-    # files: mesh
-    name = files['MESH']
-    name = su2io.expand_part(name,config)
-    link.extend(name)
-    
-    # files: direct solution
-    if files.has_key('DIRECT'):
-        name = files['DIRECT']
-        name = su2io.expand_time(name,config)
-        link.extend( name )
-        ##config['RESTART_SOL'] = 'YES' # don't override config file
-    else:
-        config['RESTART_SOL'] = 'NO'
-        
-    # Reference geometry files
-    if config.REFERENCE_GEOMETRY == 'YES':
-        name = files['REFERENCE_GEOMETRY']
-        name = su2io.expand_part(name,config)
-        link.extend(name)
 
-    # Prestretch files
-    if config.PRESTRETCH == 'YES':
-        name = files['PRESTRETCH']
-        name = su2io.expand_part(name,config)
-        link.extend(name)        
+    for key in files:
+        if key == 'DIRECT':
+            name = files[key]
+            name = su2io.expand_time(name, opt.problem)
+            link.extend(name)
+        else:
+            name = files[key]
+            name = su2io.expand_part(name, opt)
+            link.extend(name)
+
+    # If direct is not in files means that we are not restarting the solution
+    # (This may be removed using CONFIG_DIRECT and CONFIG_ADJOINT)
+    if 'DIRECT' not in files:
+        config['RESTART_SOL'] = 'NO'
 
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
@@ -602,12 +600,12 @@ def structural( config, state=None ):
             
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-            su2io.restart2solution(config,info)
+            su2io.restart2solution(config, info)
             state.update(info)
             
             # direct files to push
             name = info.FILES['DIRECT']
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_time(name, opt.problem)
             push.extend(name)
                 
     #: with output redirection
@@ -624,7 +622,7 @@ def structural( config, state=None ):
 
 #: def structural()
 
-def update_mesh(config,state=None):
+def update_mesh(opt,state=None):
     """ SU2.eval.update_mesh(config,state=None)
     
         updates mesh with the following:
@@ -648,6 +646,9 @@ def update_mesh(config,state=None):
         Modifies:
             config and state by reference
     """
+
+    # Temporary
+    config = opt.CONFIG_DIRECT
     
     # ----------------------------------------------------
     #  Initialize    

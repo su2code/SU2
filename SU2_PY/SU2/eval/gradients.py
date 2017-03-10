@@ -47,7 +47,7 @@ import functions
 #  Main Gradient Interface
 # ----------------------------------------------------------------------
 
-def gradient( func_name, method, config, state=None ):    
+def gradient( func_name, method, opt, state=None ):
     """ val = SU2.eval.grad(func_name,method,config,state=None)
 
         Evaluates the aerodynamic gradients.
@@ -74,6 +74,8 @@ def gradient( func_name, method, config, state=None ):
         Outputs:
             A list of floats of gradient values
     """
+
+    config = opt.CONFIG_DIRECT
 
     # Initialize
     grads = {}
@@ -126,10 +128,10 @@ def gradient( func_name, method, config, state=None ):
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
-            grads = findiff( config, state )
+            grads = findiff( opt, state )
 
         elif method == 'DIRECTDIFF':
-            grad = directdiff (config , state )
+            grad = directdiff (opt , state )
 
         else:
             raise Exception , 'unrecognized gradient method'
@@ -225,7 +227,7 @@ def adjoint( func_name, config, state=None ):
     # ----------------------------------------------------        
 
     # run (includes redundancy checks)
-    function( func_name, config, state )   
+    function( func_name, opt, state )
 
     # ----------------------------------------------------    
     #  Adaptation (not implemented)
@@ -250,13 +252,13 @@ def adjoint( func_name, config, state=None ):
 
     # files: direct solution
     name = files['DIRECT']
-    name = su2io.expand_time(name,config)
+    name = su2io.expand_time(name, opt.problem)
     link.extend(name)
 
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
         name = files[ADJ_NAME]
-        name = su2io.expand_time(name,config)
+        name = su2io.expand_time(name, opt.problem)
         link.extend(name)       
     else:
         config['RESTART_SOL'] = 'NO'
@@ -295,7 +297,7 @@ def adjoint( func_name, config, state=None ):
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_time(name, opt.problem)
             push.extend(name)
 
     #: with output redirection
@@ -375,7 +377,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
         name = files[ADJ_NAME]
-        name = su2io.expand_time(name,config)
+        name = su2io.expand_time(name, opt.problem)
         link.extend(name)       
     else:
         config['RESTART_SOL'] = 'NO'        
@@ -489,11 +491,14 @@ def structural_adjoint( func_name, config, state=None ):
     # ----------------------------------------------------        
 
     # run (includes redundancy checks)
-    function( func_name, config, state )   
+    function( func_name, opt, state )
 
     # ----------------------------------------------------    
     #  Adjoint Solution
     # ----------------------------------------------------        
+
+
+    # ./DESIGNS/DSN_003
 
     # files to pull
     files = state['FILES']
@@ -506,13 +511,13 @@ def structural_adjoint( func_name, config, state=None ):
 
     # files: direct solution
     name = files['DIRECT']
-    name = su2io.expand_time(name,config)
+    name = su2io.expand_time(name, opt.problem)
     link.extend(name)
 
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
         name = files[ADJ_NAME]
-        name = su2io.expand_time(name,config)
+        name = su2io.expand_time(name, opt.problem)
         link.extend(name)       
     else:
         config['RESTART_SOL'] = 'NO'
@@ -529,8 +534,12 @@ def structural_adjoint( func_name, config, state=None ):
         name = su2io.expand_part(name,config)
         link.extend(name)
 
+    # link sets files to be linked
+    # pull sets files to be copied
+
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
+        # ./DESIGNS/DSN_003/ADJOINT_WHATEVER
         with redirect_output(log_adjoint):        
 
             # setup config
@@ -546,7 +555,8 @@ def structural_adjoint( func_name, config, state=None ):
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
-            name = su2io.expand_time(name,config)
+            name = su2io.expand_time(name, opt.problem)
+            # push copies the files that were generated (new restart, for example)
             push.extend(name)
 
     #: with output redirection
@@ -625,7 +635,7 @@ def findiff( config, state=None ):
     # ----------------------------------------------------   
 
     # run
-    func_base = function( 'ALL', config, state )      
+    func_base = function( 'ALL', opt, state )
 
     # ----------------------------------------------------
     #  Plot Setup
@@ -675,7 +685,7 @@ def findiff( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
-        name = su2io.expand_time(name,config)
+        name = su2io.expand_time(name, opt.problem)
         link.extend(name)
 
     # files: target equivarea distribution
@@ -867,7 +877,7 @@ def geometry( func_name, config, state=None ):
 #  Direct Differentiation Gradients
 # ----------------------------------------------------------------------
 
-def directdiff( config, state=None ):
+def directdiff( opt, state=None ):
     """ vals = SU2.eval.directdiff(config,state=None)
 
         Evaluates the aerodynamics gradients using
@@ -900,6 +910,8 @@ def directdiff( config, state=None ):
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------
+
+    config = opt.CONFIG_DIRECT
 
     # initialize
     state = su2io.State(state)
@@ -958,7 +970,7 @@ def directdiff( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
-        name = su2io.expand_time(name,config)
+        name = su2io.expand_time(name, opt.problem)
         link.extend(name)
 
     # files: target equivarea distribution
@@ -991,7 +1003,6 @@ def directdiff( config, state=None ):
                 this_state = su2io.State()
                 this_state.FILES = copy.deepcopy( state.FILES )
                 this_konfig.unpack_dvs(this_dvs, this_dvs_old)
-
                 this_konfig.dump(temp_config_name)
 
                 # Direct Solution

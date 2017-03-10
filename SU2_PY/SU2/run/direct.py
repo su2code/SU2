@@ -128,6 +128,8 @@ def direct ( config ):
        # info out     
       info = su2io.State()
       info.FILES.DIRECT = konfig['RESTART_STRUCTURE_FILENAME']
+
+      print "DIRECT: ", info.FILES.DIRECT
       
       if config.OBJECTIVE_FUNCTION == 'REFERENCE_GEOMETRY':
         history_filename = 'of_refgeom.dat'

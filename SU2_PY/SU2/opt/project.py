@@ -119,7 +119,9 @@ class Project(object):
             state  = su2io.State(state)
 
         # Find files to pass back and forth
-        state.find_files(opt.CONFIG_DIRECT)
+        problem = su2io.read_problem(opt.CONFIG_DIRECT, opt.OBJECTIVE_FUNCTION)
+        state.find_files(problem)
+
         if 'OUTFLOW_GENERALIZED' in opt.CONFIG_DIRECT.OPT_OBJECTIVE:
             state.FILES['DownstreamFunction'] = 'downstream_function.py'
         if 'MESH' not in state.FILES:
@@ -138,8 +140,8 @@ class Project(object):
         self.results_filename = 'results.pkl' 
         
         # initialize folder with files
-        pull,link = state.pullnlink(opt.CONFIG_DIRECT)
-        with redirect_folder(folder,pull,link,force=True):
+        pull, link = state.pullnlink(opt)
+        with redirect_folder(folder, pull, link, force=True):
         
             # look for existing designs
             folders = glob.glob(self._design_folder)
@@ -174,7 +176,7 @@ class Project(object):
         assert os.path.exists(folder) , 'cannot find project folder %s' % folder        
         
         # list project files to pull and link
-        pull,link = state.pullnlink(config)
+        pull,link = state.pullnlink(opt)
         
         # project folder redirection, don't overwrite files
         with redirect_folder(folder,pull,link,force=False) as push:        
@@ -284,7 +286,7 @@ class Project(object):
             design = closest
         # start new design
         else:
-            design = self.init_design(opti,closest)
+            design = self.init_design(opti, closest)
         #: if new design    
         
         return design

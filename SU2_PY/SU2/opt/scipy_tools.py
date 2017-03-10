@@ -174,7 +174,7 @@ def scipy_cg(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     func           = obj_f
 
     # gradient handles
-    if project.opt.GRADIENT == 'NONE':
+    if project.opt.GRADIENT_METHOD == 'NONE':
         fprime         = None
     else:
         fprime         = obj_df

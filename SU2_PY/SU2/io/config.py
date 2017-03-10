@@ -170,9 +170,6 @@ class Config(ordered_bunch):
         # apply scale
         dv_scales = def_dv['SCALE']
 
-        print "DV_SCALES"
-        print dv_scales
-
         k = 0
         for i, dv_scl in enumerate(dv_scales):
             for j in range(def_dv['SIZE'][i]):
@@ -905,7 +902,10 @@ def dump_config(filename,config):
     ''' dumps a raw config file with all options in config 
         and no comments
     '''
-    
+
+
+    # HERE THE DV_VALUE gets the DV_VALUE_NEW
+
     # HACK - twl
     if config.has_key('DV_VALUE_NEW'):
         config.DV_VALUE = config.DV_VALUE_NEW
