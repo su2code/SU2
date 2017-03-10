@@ -660,7 +660,7 @@ public:
  * \author T. Albring
  * \version 4.3.0 "Cardinal"
  */
-class CDiscAdjMultiZoneDriver : public CFluidDriver {
+class CDiscAdjFluidDriver : public CFluidDriver {
 
 protected:
   unsigned short RecordingState;
@@ -677,7 +677,7 @@ public:
     * \param[in] val_nZone - Total number of zones.
     * \param[in] val_nDim - Number of dimensions.
     */
-  CDiscAdjMultiZoneDriver(char* confFile,
+  CDiscAdjFluidDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim,
                    SU2_Comm MPICommunicator);
@@ -685,7 +685,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMultiZoneDriver(void);
+  ~CDiscAdjFluidDriver(void);
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
@@ -711,7 +711,7 @@ public:
  * \author S. Vitale, T. Albring
  * \version 4.3.0 "Cardinal"
  */
-class CDiscAdjTurbomachineryDriver : public  CDiscAdjMultiZoneDriver {
+class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
 
 public:
 

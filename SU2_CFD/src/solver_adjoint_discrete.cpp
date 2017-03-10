@@ -438,11 +438,12 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
-  unsigned short iMarker,iDim;
+  unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
-  su2double Total_Sens_Geo_local = 0.0;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
   Total_Sens_Geo = 0.0;
+  su2double *MySens_Geo;
+  string Monitoring_Tag, Marker_Tag;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker] = 0.0;
@@ -452,7 +453,10 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
 
+      Sens = 0.0;
+
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Prod = 0.0;
@@ -469,26 +473,44 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
         Area = sqrt(Area);
 
-        /*--- projection of the gradient
-         *     calculated with AD onto the normal
-         *     vector of the surface ---*/
-        Sens = Prod/Area;
+        /*--- Projection of the gradient calculated with AD onto the normal vector of the surface ---*/
+
+        Sens_Vertex = Prod/Area;
+        CSensitivity[iMarker][iVertex] = -Sens_Vertex;
+        Sens += Sens_Vertex*Sens_Vertex;
+      }
+
+      if (config->GetMarker_All_Monitoring(iMarker) == YES){
 
         /*--- Compute sensitivity for each surface point ---*/
-        CSensitivity[iMarker][iVertex] = -Sens;
-        if (geometry->node[iPoint]->GetDomain()) {
-          Sens_Geo[iMarker] += Sens*Sens;
+
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (Marker_Tag == Monitoring_Tag) {
+            Sens_Geo[iMarker_Monitoring] = Sens;
+          }
         }
       }
-      Total_Sens_Geo_local += sqrt(Sens_Geo[iMarker]);
     }
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&Total_Sens_Geo_local,&Total_Sens_Geo,1,MPI_DOUBLE,MPI_SUM, MPI_COMM_WORLD);
-#else
-  Total_Sens_Geo = Total_Sens_Geo_local;
+  MySens_Geo = new su2double[config->GetnMarker_Monitoring()];
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    MySens_Geo[iMarker_Monitoring] = Sens_Geo[iMarker_Monitoring];
+    Sens_Geo[iMarker_Monitoring]   = 0.0;
+  }
+
+  SU2_MPI::Allreduce(MySens_Geo, Sens_Geo, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  delete [] MySens_Geo;
 #endif
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
+    Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
+  }
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
