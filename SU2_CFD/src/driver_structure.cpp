@@ -627,8 +627,7 @@ void CDriver::Geometrical_Preprocessing() {
 
     /*--- Create turbovertex structure ---*/
     if (config_container[iZone]->GetBoolTurbomachinery()){
-      if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
-
+      if (rank == MASTER_NODE) cout << "Compute span-wise values for turbomachinery computations" << endl;
     	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
     	geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
     	if (config_container[iZone]->GetnSpanWiseSections() > nSpanMax){
@@ -637,6 +636,7 @@ void CDriver::Geometrical_Preprocessing() {
 
     	config_container[ZONE_0]->SetnSpan_iZones(config_container[iZone]->GetnSpanWiseSections(), iZone);
 
+    if (rank == MASTER_NODE) cout << "Create TurboVertex structure." << endl;
     	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
     	geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
     }
