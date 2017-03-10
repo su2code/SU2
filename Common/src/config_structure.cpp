@@ -461,16 +461,18 @@ void CConfig::SetPointersNull(void) {
   nDV_Value = NULL;
   TagFFDBox = NULL;
  
-  Kind_Data_Riemann     = NULL;
-  Riemann_Var1          = NULL;
-  Riemann_Var2          = NULL;
-  Kind_Data_NRBC        = NULL;
-  NRBC_Var1             = NULL;
-  NRBC_Var2             = NULL;
-  Marker_TurboBoundIn   = NULL;
-  Marker_TurboBoundOut  = NULL;
-  Kind_TurboPerformance = NULL;
-  Marker_NRBC           = NULL;
+  Kind_Data_Riemann      = NULL;
+  Riemann_Var1           = NULL;
+  Riemann_Var2           = NULL;
+  Kind_Data_NRBC         = NULL;
+  NRBC_Var1              = NULL;
+  NRBC_Var2              = NULL;
+  Marker_TurboBoundIn    = NULL;
+  Marker_TurboBoundOut   = NULL;
+
+  Kind_TurboPerformance  = NULL;
+
+  Marker_NRBC            = NULL;
   
   /*--- Variable initialization ---*/
   
@@ -541,6 +543,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
+
+  /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify 2phase model \n Options: DEFAULT: NO_2PHASE_MODEL \ingroup Config*/
+  addEnumOption("KIND_2PHASE_MODEL", Kind_2phase_Model, HILL_MODEL, NO_2PHASE_MODEL);
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
@@ -898,6 +903,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
+
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
+  addDoubleOption("CFL_REDUCTION_2PHASE", CFLRedCoeff_2phase, 1.0);
+
+
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Number of total iterations */
@@ -933,6 +943,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
+
+  /* DESCRIPTION: Time discretization */
+    addEnumOption("TIME_DISCRE_2PHASE", Kind_TimeIntScheme_2phase, Time_Int_Map, EULER_IMPLICIT);
+
+
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -963,6 +978,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
   /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_TURB", Relaxation_Factor_Turb, 1.0);
+
+  /* DESCRIPTION: Relaxation of the 2phase equations solver for the implicit formulation */
+    addDoubleOption("RELAXATION_FACTOR_2PHASE", Relaxation_Factor_2phase, 1.0);
+
+
   /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Roe coefficient */
@@ -1099,6 +1119,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
   
+
+  /*!\brief SPATIAL_ORDER_2PHASE
+   *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
+  addEnumOption("SPATIAL_ORDER_2PHASE", SpatialOrder_2phase, SpatialOrder_Map, FIRST_ORDER);
+  /*!\brief SLOPE_LIMITER_2PHASE
+   *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_2PHASE", Kind_SlopeLimit_2phase, Limiter_Map, VENKATAKRISHNAN);
+  /*!\brief CONV_NUM_METHOD_2PHASE
+   *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
+  addConvectOption("CONV_NUM_METHOD_2PHASE", Kind_ConvNumScheme_2phase, Kind_Centered_2phase, Kind_Upwind_2phase);
+
+
+
   /*!\brief SPATIAL_ORDER_ADJTURB
    *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
@@ -2772,6 +2805,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_Solver == NAVIER_STOKES) &&
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
+
+  if ((Kind_2phase_Model != NONE) &&
+      (Kind_Turb_Model != NONE))
+    Kind_Solver = RANS;
+
+  if ((Kind_2phase_Model != NONE) && (Kind_Turb_Model == NONE) ) {
+	  if ((Kind_Solver != NAVIER_STOKES) &&
+			  (Kind_Solver != EULER)) {
+           cout << "Please, select NAVIER_STOKES, EULER solver"<<endl;
+           getchar();
+	  }
+  }
     
   Kappa_1st_Flow = Kappa_Flow[0];
   Kappa_2nd_Flow = Kappa_Flow[1];
@@ -3684,10 +3729,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case EULER: case DISC_ADJ_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
+        switch (Kind_2phase_Model) {
+                  case NONE:     cout << "Single phase simulation" << endl; break;
+                  case HILL:     cout << "Hill's method of moments" << endl; break;
+                }
         break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+        switch (Kind_2phase_Model) {
+                  case NONE:     cout << "Single phase simulation" << endl; break;
+                  case HILL:     cout << "Hill's method of moments" << endl; break;
+                }
         break;
       case RANS: case DISC_ADJ_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
@@ -3698,6 +3751,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
           case SST:    cout << "Menter's SST"     << endl; break;
         }
+        switch (Kind_2phase_Model) {
+                  case NONE:     cout << "Single phase simulation" << endl; break;
+                  case HILL:     cout << "Hill's method of moments" << endl; break;
+                }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
@@ -4181,6 +4238,28 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
+
+    if ((Kind_2phase_Model != NONE)) {
+      if (Kind_ConvNumScheme_2phase == SPACE_UPWIND) {
+        if (Kind_Upwind_2phase == SCALAR_UPWIND) cout << "Scalar upwind solver (first order) for the 2phase model."<< endl;
+        switch (SpatialOrder_2phase) {
+          case FIRST_ORDER: cout << "First order integration." << endl; break;
+          case SECOND_ORDER: cout << "Second order integration." << endl; break;
+          case SECOND_ORDER_LIMITER: cout << "Second order integration with slope limiter." << endl;
+            switch (Kind_SlopeLimit_2phase) {
+              case VENKATAKRISHNAN:
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                break;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
+                break;
+            }
+            break;
+        }
+      }
+    }
+
     if ((Kind_Solver == ADJ_EULER) || (Kind_Solver == ADJ_NAVIER_STOKES) || (Kind_Solver == ADJ_RANS)) {
 
       if (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED) {
@@ -4453,6 +4532,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS))
       if (Kind_TimeIntScheme_Turb == EULER_IMPLICIT)
         cout << "Euler implicit time integration for the turbulence model." << endl;
+
+    if (Kind_2phase_Model != NONE)
+      if (Kind_TimeIntScheme_2phase == EULER_IMPLICIT)
+        cout << "Euler implicit time integration for the 2-phase model." << endl;
   }
 
   if (val_software == SU2_CFD) {
@@ -5544,6 +5627,7 @@ CConfig::~CConfig(void) {
   if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
   if (Kind_TurboPerformance != NULL) delete [] Kind_TurboPerformance;
+
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
   if (Marker_NRBC != NULL) delete [] Marker_NRBC;
  
@@ -5648,17 +5732,18 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 
   switch (val_eqsystem) {
-    case RUNTIME_FLOW_SYS:      return FLOW_SOL;
-    case RUNTIME_TURB_SYS:      return TURB_SOL;
-    case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-    case RUNTIME_POISSON_SYS:   return POISSON_SOL;
-    case RUNTIME_WAVE_SYS:      return WAVE_SOL;
-    case RUNTIME_HEAT_SYS:      return HEAT_SOL;
-    case RUNTIME_FEA_SYS:       return FEA_SOL;
-    case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
-    case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
-    case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
-    case RUNTIME_MULTIGRID_SYS: return 0;
+    case RUNTIME_FLOW_SYS:        return FLOW_SOL;
+    case RUNTIME_TURB_SYS:        return TURB_SOL;
+    case RUNTIME_2PHASE_SYS:      return TWO_PHASE_SOL;
+    case RUNTIME_TRANS_SYS:       return TRANS_SOL;
+    case RUNTIME_POISSON_SYS:     return POISSON_SOL;
+    case RUNTIME_WAVE_SYS:        return WAVE_SOL;
+    case RUNTIME_HEAT_SYS:        return HEAT_SOL;
+    case RUNTIME_FEA_SYS:         return FEA_SOL;
+    case RUNTIME_ADJPOT_SYS:      return ADJFLOW_SOL;
+    case RUNTIME_ADJFLOW_SYS:     return ADJFLOW_SOL;
+    case RUNTIME_ADJTURB_SYS:     return ADJTURB_SOL;
+    case RUNTIME_MULTIGRID_SYS:   return 0;
   }
   return 0;
 }
@@ -5714,6 +5799,14 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               SpatialOrder_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
+
+      if (val_system == RUNTIME_2PHASE_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
+                              Kind_Upwind_2phase, Kind_SlopeLimit_2phase,
+                              SpatialOrder_2phase);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_2phase);
+      }
+
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
@@ -5767,6 +5860,11 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+        if (val_system == RUNTIME_2PHASE_SYS) {
+          SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
+                                Kind_Upwind_2phase, Kind_SlopeLimit_2phase,
+                                SpatialOrder_2phase);
+          SetKind_TimeIntScheme(Kind_TimeIntScheme_2phase);
       }
       if (val_system == RUNTIME_ADJTURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,

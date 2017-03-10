@@ -3629,6 +3629,37 @@ public:
   void SetmuT(su2double val_muT);
 };
 
+
+/*!
+ * \class C2phaseVariable
+ * \brief Main class for defining the variables of the 2phase model.
+ */
+class C2phaseVariable : public CVariable {
+protected:
+  su2double muT;                /*!< \brief Eddy viscosity. */
+  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  C2phaseVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  C2phaseVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~C2phaseVariable(void);
+
+};
+
 /*!
  * \class CTurbSAVariable
  * \brief Main class for defining the variables of the turbulence model.
@@ -3833,6 +3864,68 @@ public:
    */
   su2double GetF2blending(void);
   
+  /*!
+   * \brief Get the value of the cross diffusion of tke and omega.
+   */
+  su2double GetCrossDiff(void);
+};
+
+
+/*!
+ * \class C2phase_HillVariable
+ * \brief Main class for defining the variables of the 2phase model.
+ */
+
+class C2phase_HillVariable : public C2phaseVariable {
+protected:
+  su2double sigma_om2,
+  beta_star;
+  su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
+  F2,            /*!< \brief Menter blending function for stress limiter. */
+  CDkw;           /*!< \brief Cross-diffusion. */
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  C2phase_HillVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_rho_kine - Turbulent variable value (initialization value).
+   * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
+   * \param[in] config - Definition of the particular problem.
+   */
+  C2phase_HillVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
+                   su2double *constants, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~C2phase_HillVariable(void);
+
+  /*!
+   * \brief Set the blending function for the blending of k-w and k-eps.
+   * \param[in] val_viscosity - Value of the vicosity.
+   * \param[in] val_dist - Value of the distance to the wall.
+   * \param[in] val_density - Value of the density.
+   */
+  void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
+
+  /*!
+   * \brief Get the first blending function.
+   */
+  su2double GetF1blending(void);
+
+  /*!
+   * \brief Get the second blending function.
+   */
+  su2double GetF2blending(void);
+
   /*!
    * \brief Get the value of the cross diffusion of tke and omega.
    */

@@ -55,6 +55,27 @@ inline su2double CFluidModel::GetLaminarViscosity () {
         return Mu;
 }
 
+inline su2double CFluidModel::GetLiquidDensity_PT () {
+        return Liquid_Prop->GetLiquidDensity_PT();
+}
+inline su2double CFluidModel::GetLiquidEnthalpy_PT () {
+        return Liquid_Prop->GetLiquidEnthalpy_PT();
+}
+inline su2double CFluidModel::GetSurfaceTension_T () {
+        return Liquid_Prop->GetSurfaceTension_T();
+}
+inline su2double CFluidModel::GetTsat_P () {
+        return Liquid_Prop->GetTsat_p();
+}
+inline su2double CFluidModel::GetPsat_T () {
+        return Liquid_Prop->GetPsat_T();
+}
+inline su2double CFluidModel::GetdGibbs_PT () {
+        return Liquid_Prop->GetdGibbs_PT();
+}
+
+
+
 inline su2double CFluidModel::Getdmudrho_T () {
         return LaminarViscosity->Getdmudrho_T();
 }

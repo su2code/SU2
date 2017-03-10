@@ -52,12 +52,14 @@ CFluidModel::CFluidModel(void) {
 
   LaminarViscosity = NULL;
   ThermalConductivity = NULL;
+  Liquid_Prop = NULL;
 
 }
 
 CFluidModel::~CFluidModel(void) {
   if (LaminarViscosity!= NULL) delete LaminarViscosity;
   if (ThermalConductivity!= NULL) delete ThermalConductivity;
+  if (Liquid_Prop!= NULL) delete Liquid_Prop;
 }
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
@@ -84,5 +86,11 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
     break;
   }
   
+}
+
+void CFluidModel::SetLiquidPhaseModel (CConfig *config) {
+
+    Liquid_Prop = new CWater();
+
 }
 

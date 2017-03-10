@@ -148,6 +148,12 @@ public:
   *TurbVar_id,  /*!< \brief Vector of derivative of turbulent variables at point i. */
   *TurbVar_j,      /*!< \brief Vector of turbulent variables at point j. */
   *TurbVar_jd;  /*!< \brief Vector of derivative of turbulent variables at point j. */
+
+  su2double *Two_phaseVar_i,  /*!< \brief Vector of 2phase variables at point i. */
+    *Two_phaseVar_id,  /*!< \brief Vector of derivative of 2phase variables at point i. */
+    *Two_phaseVar_j,      /*!< \brief Vector of 2phase variables at point j. */
+    *Two_phaseVar_jd;  /*!< \brief Vector of derivative of 2phase variables at point j. */
+
   su2double *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;      /*!< \brief Vector of turbulent variables at point j. */
   su2double *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
@@ -169,6 +175,10 @@ public:
   **PsiVar_Grad_j;      /*!< \brief Gradient of adjoint variables at point j. */
   su2double **TurbVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
   **TurbVar_Grad_j;      /*!< \brief Gradient of turbulent variables at point j. */
+
+  su2double **Two_phaseVar_Grad_i,  /*!< \brief Gradient of 2phase variables at point i. */
+    **Two_phaseVar_Grad_j;      /*!< \brief Gradient of 2phase variables at point j. */
+
   su2double **TransVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
   **TransVar_Grad_j;      /*!< \brief Gradient of turbulent variables at point j. */
   su2double **TurbPsi_Grad_i,  /*!< \brief Gradient of adjoint turbulent variables at point i. */
@@ -404,6 +414,13 @@ public:
   void SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j);
   
   /*!
+     * \brief Set the value of the 2phase variable.
+     * \param[in] val_turbvar_i - Value of the 2phase variable at point i.
+     * \param[in] val_turbvar_j - Value of the 2phase variable at point j.
+     */
+    void Set2phaseVar(su2double *val_2phasevar_i, su2double *val_2phasevar_j);
+
+  /*!
    * \brief Set the value of the turbulent variable.
    * \param[in] val_transvar_i - Value of the turbulent variable at point i.
    * \param[in] val_transvar_j - Value of the turbulent variable at point j.
@@ -417,6 +434,13 @@ public:
    */
   void SetTurbVarGradient(su2double **val_turbvar_grad_i, su2double **val_turbvar_grad_j);
   
+  /*!
+     * \brief Set the gradient of the 2phase variables.
+     * \param[in] val_turbvar_grad_i - Gradient of the 2phase variable at point i.
+     * \param[in] val_turbvar_grad_j - Gradient of the 2phase variable at point j.
+     */
+    void Set2phaseVarGradient(su2double **val_2phasevar_grad_i, su2double **val_2phasevar_grad_j);
+
   /*!
    * \brief Set the gradient of the turbulent variables.
    * \param[in] val_turbvar_grad_i - Gradient of the turbulent variable at point i.
@@ -2156,6 +2180,9 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
+
+
+
 /*!
  * \class CUpwSca_TransLM
  * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
@@ -2234,6 +2261,44 @@ public:
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
 
+
+/*!
+ * \class CUpw_2phaseHill
+ * \brief Class for doing a scalar upwind solver for the hill's 2phase model equations.
+ */
+class CUpw_2phaseHill : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement, incompressible;
+  su2double Density_i, Density_j,
+  q_ij,
+  a0, a1;
+  unsigned short iDim;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpw_2phaseHill(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpw_2phaseHill(void);
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
 
 /*!
  * \class CCentJST_Flow

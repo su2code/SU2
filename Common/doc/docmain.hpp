@@ -95,3 +95,9 @@
  * \brief Group of classes which define the turbulence model in 
  *		  three formulations: direct, adjoint, and linearized.
  */
+
+/*!
+ * \defgroup Two_phase_Model Solving the 2phase models.
+ * \brief Group of classes which define the 2phase model in
+ *		  1 formulation: direct.
+ */

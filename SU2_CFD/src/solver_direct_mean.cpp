@@ -167,6 +167,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool two_phase = (config->GetKind_2phase_Model() != NONE );
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   int Unst_RestartIter;
@@ -507,16 +508,35 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
-        for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
-          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-      else {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
-        for (iVar = 0; iVar < nPrimVar ; iVar++) {
-          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-        }
+
+    	  if (two_phase) {
+    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 2 + 10];
+    		for (iVar = 0; iVar < nPrimVar + 2 + 10; iVar++) {
+			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+			}
+
+    	  } else {
+    	        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+    	        for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
+    	          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+    	        }
+    	  }
+
+      } else {
+
+      	  if (two_phase) {
+    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 10];
+    		for (iVar = 0; iVar < nPrimVar + 10; iVar++) {
+			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+			}
+
+    	  } else {
+
+    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
+          	for (iVar = 0; iVar < nPrimVar ; iVar++) {
+        	  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+          	}
+          }
       }
     }
   }
@@ -2141,9 +2161,16 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   int size = SINGLE_NODE;
   //bool ActDisk_Perimeter;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool two_phase = (config->GetKind_2phase_Model() != NONE);
   
   unsigned short nPrimVar_ = nPrimVar;
-  if (rans) nPrimVar_ += 2; // Add two extra variables for the turbulence.
+  if (rans) {
+	  if (two_phase) nPrimVar_ += 12; // Add two extra variables for the turbulence + 10 for 2 phases.
+	  else nPrimVar_ +=2;
+  } else {
+	  if (two_phase) nPrimVar_ += 10; // Add 10 for 2 phases.
+	  else nPrimVar_ +=0;
+  }
   
 #ifdef HAVE_MPI
   
@@ -2315,6 +2342,10 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
             }
             if (rans) {
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
+            }
+            if (two_phase) {
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
             }
             
@@ -3374,6 +3405,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool two_phase          = (config->GetKind_2phase_Model() != NONE);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
@@ -3965,6 +3997,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool two_phase = (config->GetKind_2phase_Model() != NONE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
@@ -4111,6 +4144,10 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
           solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
         }
+        if (two_phase) {
+		  solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
+		  solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n1();
+		}
       }
     }
     
@@ -4124,6 +4161,11 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       /*--- Load an additional restart file for the turbulence model ---*/
       if (rans)
         solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
+
+/*
+      if (two_phase)
+        solver_container[MESH_0][TWO_PHASE_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
+*/
       
       /*--- Push back this new solution to time level N. ---*/
       
@@ -4133,11 +4175,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           if (rans) {
             solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
           }
+          if (two_phase) {
+            solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
+          }
         }
       }
     }
   }
-
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -14404,6 +14448,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool two_phase = (config->GetKind_2phase_Model() != NONE );
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -14625,16 +14670,30 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
-        for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
-          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-        }
-      }
-      else {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
-        for (iVar = 0; iVar < nPrimVar ; iVar++) {
-          DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
-        }
+    	  if (two_phase) {
+    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2+10];
+    		  for (iVar = 0; iVar < nPrimVar + 2 +10; iVar++) {
+    			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+    		  }
+    	  } else {
+    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+    		  for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
+    			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+    		  }
+    	  }
+
+      }  else {
+    	  if (two_phase) {
+    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+10];
+    		  for (iVar = 0; iVar < nPrimVar + 10; iVar++) {
+    			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+    		  }
+    	  } else {
+    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
+    		  for (iVar = 0; iVar < nPrimVar ; iVar++) {
+    			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+    		  }
+    	  }
       }
     }
   }

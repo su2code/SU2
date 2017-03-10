@@ -49,6 +49,7 @@
 using namespace std;
 
 #include "../include/transport_model.hpp"
+#include "../include/liquid_phase_model.hpp"
 #include "../../Common/include/config_structure.hpp"
 
 
@@ -81,6 +82,7 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
 
 CViscosityModel *LaminarViscosity;            /*!< \brief Laminar Viscosity Model */
 CConductivityModel *ThermalConductivity;    /*!< \brief Thermal Conductivity Model */
+CLiquidModel *Liquid_Prop;    /*!< \brief Thermal Conductivity Model */
 
 public:
 
@@ -133,6 +135,42 @@ public:
      * \brief Get fluid specific heat at constant pressure.
      */
     su2double GetCp ();
+
+    /*!
+	 * \brief Get liquid density
+	 */
+
+    su2double GetLiquidDensity_PT ();
+
+    /*!
+	 * \brief Get liquid enthalpy
+	 */
+
+	su2double GetLiquidEnthalpy_PT ();
+
+    /*!
+	 * \brief Get surface tension
+	 */
+
+	su2double GetSurfaceTension_T ();
+
+    /*!
+	 * \brief Get Tsat(P)
+	 */
+
+	su2double GetTsat_P ();
+
+    /*!
+	 * \brief Get Psat(T)
+	 */
+
+	su2double GetPsat_T ();
+
+    /*!
+	 * \brief Get free gibbs en. variation
+	 */
+
+	su2double GetdGibbs_PT ();
 
     /*!
      * \brief Get fluid dynamic viscosity
@@ -195,6 +233,11 @@ public:
      * \brief Set thermal conductivity model.
      */
     void SetThermalConductivityModel (CConfig *config);
+
+    /*!
+     * \brief Set thermal conductivity model.
+     */
+    void SetLiquidPhaseModel (CConfig *config);
 
     /*!
      * \brief virtual member that would be different for each gas model implemented

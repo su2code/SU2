@@ -371,6 +371,12 @@ inline su2double CConfig::GetPrandtl_Turb(void) { return Prandtl_Turb; }
 
 inline su2double CConfig::GetLength_Ref(void) { return Length_Ref; }
 
+inline su2double CConfig::GetMass_Ref(void) { return Force_Ref/Length_Ref*pow(Time_Ref, 2); }
+
+inline su2double CConfig::GetBoltzmann_Ref(void) { return Force_Ref*Length_Ref/Temperature_Ref; }
+
+inline su2double CConfig::GetSurfTension_Ref(void) { return Force_Ref/Length_Ref; }
+
 inline su2double CConfig::GetPressure_Ref(void) { return Pressure_Ref; }
 
 inline su2double CConfig::GetTemperature_Ref(void) { return Temperature_Ref; }
@@ -789,6 +795,8 @@ inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation
 
 inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
+inline su2double CConfig::GetRelaxation_Factor_2phase(void) { return Relaxation_Factor_2phase; }
+
 inline su2double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
 
 inline su2double CConfig::GetSemiSpan(void) { return SemiSpan; }
@@ -851,6 +859,8 @@ inline unsigned short CConfig::GetSpatialOrder_Flow(void) { return SpatialOrder_
 
 inline unsigned short CConfig::GetSpatialOrder_Turb(void) { return SpatialOrder_Turb; }
 
+inline unsigned short CConfig::GetSpatialOrder_2phase(void) { return SpatialOrder_2phase; }
+
 inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrder_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
@@ -878,6 +888,8 @@ inline unsigned short CConfig::GetKind_SlopeLimit(void) { return Kind_SlopeLimit
 inline unsigned short CConfig::GetKind_SlopeLimit_Flow(void) { return Kind_SlopeLimit_Flow; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Turb(void) { return Kind_SlopeLimit_Turb; }
+
+inline unsigned short CConfig::GetKind_SlopeLimit_2phase(void) { return Kind_SlopeLimit_2phase; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_SlopeLimit_AdjTurb; }
 
@@ -907,11 +919,19 @@ inline su2double CConfig::GetKappa_4th_AdjFlow(void) { return Kappa_4th_AdjFlow;
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_TimeIntScheme_Turb; }
 
+inline unsigned short CConfig::GetKind_TimeIntScheme_2phase(void) { return Kind_TimeIntScheme_2phase; }
+
 inline unsigned short CConfig::GetKind_ConvNumScheme_Turb(void) { return Kind_ConvNumScheme_Turb; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_2phase(void) { return Kind_ConvNumScheme_2phase; }
 
 inline unsigned short CConfig::GetKind_Centered_Turb(void) { return Kind_Centered_Turb; }
 
+inline unsigned short CConfig::GetKind_Centered_2phase(void) { return Kind_Centered_2phase; }
+
 inline unsigned short CConfig::GetKind_Upwind_Turb(void) {	return Kind_Upwind_Turb; }
+
+inline unsigned short CConfig::GetKind_Upwind_2phase(void) {	return Kind_Upwind_2phase; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTurb(void) { return Kind_TimeIntScheme_AdjTurb; }
 
@@ -1220,6 +1240,8 @@ inline su2double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
 inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
 
+inline su2double CConfig::GetCFLRedCoeff_2phase(void) { return CFLRedCoeff_2phase; }
+
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 
 inline bool CConfig::GetRotating_Frame(void) { return Rotating_Frame; }
@@ -1245,6 +1267,8 @@ inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = val_smoothnumgrid; }
 
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
+
+inline unsigned short CConfig::GetKind_2phase_Model(void) { return Kind_2phase_Model; }
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 

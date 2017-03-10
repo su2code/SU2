@@ -2602,6 +2602,8 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   else if (config->GetKind_Turb_Model() == SST) { GridVel_Index += 2; }
   if (config->GetKind_Regime() != INCOMPRESSIBLE) { GridVel_Index += 1; }
   
+  if (config->GetKind_2phase_Model() == HILL) { GridVel_Index += 4; }
+
 #ifdef HAVE_MPI
   int send_to, receive_from;
   MPI_Status status;
@@ -2796,6 +2798,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
+  unsigned short two_phase_model = config->GetKind_2phase_Model();
 
   su2double *Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -2878,6 +2881,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
           index+=2;
         }
         
+        /*--- First, remove any variables for the 2phase model that
+                 appear in the restart file before the grid velocities. ---*/
+        if (two_phase_model == HILL) {
+          index+=4;
+        }
+
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/

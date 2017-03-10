@@ -360,6 +360,7 @@ private:
   unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
   su2double
   CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
+  CFLRedCoeff_2phase,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
@@ -411,12 +412,14 @@ private:
   Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
   Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
+  Kind_SlopeLimit_2phase,		/*!< \brief Slope limiter for the 2-phase equations.*/
   Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
   Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
+  Kind_TimeIntScheme_2phase,	/*!< \brief Time integration for the 2phase model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
@@ -428,18 +431,21 @@ private:
   Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
   Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
+  Kind_ConvNumScheme_2phase,	/*!< \brief Centered or upwind scheme for the 2phase model. */
   Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
   Kind_Centered,				/*!< \brief Centered scheme. */
   Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
+  Kind_Centered_2phase,			/*!< \brief Centered scheme for the 2phase model. */
   Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
   Kind_Upwind,				/*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
+  Kind_Upwind_2phase,			/*!< \brief Upwind scheme for the 2phase model. */
   Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
@@ -449,6 +455,7 @@ private:
   SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
+  SpatialOrder_2phase,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
@@ -457,6 +464,7 @@ private:
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
+  unsigned short Kind_2phase_Model;			/*!< \brief 2phase model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -468,6 +476,7 @@ private:
   su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
   su2double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
+  su2double Relaxation_Factor_2phase;		/*!< \brief Relaxation coefficient of the linear solver 2phase. */
   su2double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
   su2double EntropyFix_Coeff;              /*!< \brief Entropy fix coefficient. */
@@ -1462,6 +1471,27 @@ public:
    */
   su2double GetLength_Ref(void);
   
+  /*!
+   * \brief Get the value of the reference mass for non-dimensionalization.
+   *        This value should always be 1 internally, and is not user-specified.
+   * \return Reference mass for non-dimensionalization.
+   */
+  su2double GetMass_Ref(void);
+
+  /*!
+   * \brief Get the value of the reference boltzmann constant for non-dimensionalization.
+   *        This value should always be 1 internally, and is not user-specified.
+   * \return Reference Boltzmann for non-dimensionalization.
+   */
+  su2double GetBoltzmann_Ref(void);
+
+  /*!
+   * \brief Get the value of the reference surface tension for non-dimensionalization.
+   *        This value should always be 1 internally, and is not user-specified.
+   * \return Reference surface tension for non-dimensionalization.
+   */
+  su2double GetSurfTension_Ref(void);
+
   /*!
    * \brief Get the value of the reference pressure for non-dimensionalization.
    * \return Reference pressure for non-dimensionalization.
@@ -3118,6 +3148,12 @@ public:
   su2double GetRelaxation_Factor_Turb(void);
   
   /*!
+     * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+     * \return relaxation coefficient of the linear solver for the implicit formulation.
+     */
+   su2double GetRelaxation_Factor_2phase(void);
+
+  /*!
    * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
    * \return relaxation coefficient of the linear solver for the implicit formulation.
    */
@@ -3273,6 +3309,12 @@ public:
   unsigned short GetKind_Turb_Model(void);
   
   /*!
+   * \brief Get the kind of the 2phase model.
+   * \return Kind of the 2phase model.
+   */
+  unsigned short GetKind_2phase_Model(void);
+
+  /*!
    * \brief Get the kind of the transition model.
    * \return Kind of the transion model.
    */
@@ -3353,6 +3395,15 @@ public:
    */
   unsigned short GetSpatialOrder_Turb(void);
   
+  /*!
+   * \brief Get the order of the spatial integration.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return Kind of upwind scheme for the convective terms.
+   */
+  unsigned short GetSpatialOrder_2phase(void);
+
   /*!
    * \brief Get the order of the spatial integration.
    * \note This is the information that the code will use, the method will
@@ -3495,6 +3546,12 @@ public:
   
   /*!
    * \brief Get the method for limiting the spatial gradients.
+   * \return Method for limiting the spatial gradients solving the 2phase equation.
+   */
+  unsigned short GetKind_SlopeLimit_2phase(void);
+
+  /*!
+   * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint turbulent equation.
    */
   unsigned short GetKind_SlopeLimit_AdjTurb(void);
@@ -3586,6 +3643,15 @@ public:
   unsigned short GetKind_TimeIntScheme_Turb(void);
   
   /*!
+   * \brief Get the kind of integration scheme (implicit)
+   *        for the 2phase equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the 2phase equations.
+   */
+  unsigned short GetKind_TimeIntScheme_2phase(void);
+
+  /*!
    * \brief Get the kind of convective numerical scheme for the turbulence
    *        equations (upwind).
    * \note This value is obtained from the config file, and it is constant
@@ -3595,6 +3661,15 @@ public:
   unsigned short GetKind_ConvNumScheme_Turb(void);
   
   /*!
+   * \brief Get the kind of convective numerical scheme for the 2phase
+   *        equations (upwind).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the 2phase equations.
+   */
+  unsigned short GetKind_ConvNumScheme_2phase(void);
+
+  /*!
    * \brief Get the kind of center convective numerical scheme for the turbulence equations.
    * \note This value is obtained from the config file, and it is constant
    *       during the computation.
@@ -3603,6 +3678,14 @@ public:
   unsigned short GetKind_Centered_Turb(void);
   
   /*!
+   * \brief Get the kind of center convective numerical scheme for the 2phase equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of center convective numerical scheme for the 2phase equations.
+   */
+  unsigned short GetKind_Centered_2phase(void);
+
+  /*!
    * \brief Get the kind of upwind convective numerical scheme for the turbulence equations.
    * \note This value is obtained from the config file, and it is constant
    *       during the computation.
@@ -3610,6 +3693,14 @@ public:
    */
   unsigned short GetKind_Upwind_Turb(void);
   
+  /*!
+   * \brief Get the kind of upwind convective numerical scheme for the 2phase equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of upwind convective numerical scheme for the 2phase equations.
+   */
+  unsigned short GetKind_Upwind_2phase(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the adjoint turbulence equations.
@@ -3663,6 +3754,12 @@ public:
    */
   bool GetViscous_Limiter_Turb(void);
   
+  /*!
+   * \brief Viscous limiter 2phase equations.
+   * \return <code>FALSE</code> means no viscous limiter 2phase equations.
+   */
+  bool GetViscous_Limiter_2phase(void);
+
   /*!
    * \brief Write convergence file for FSI problems
    * \return <code>FALSE</code> means no file is written.
@@ -5205,6 +5302,12 @@ public:
    */
   su2double GetCFLRedCoeff_Turb(void);
   
+  /*!
+   * \brief Value of the CFL reduction in LevelSet problems.
+   * \return Value of the CFL reduction in LevelSet problems.
+   */
+  su2double GetCFLRedCoeff_2phase(void);
+
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.
    * \param[in] val_index - Index corresponding to the inlet boundary.
