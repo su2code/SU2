@@ -1382,7 +1382,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
   //  diff_f = Lm_i*Lm_i; //here
-  diff_f = 1.0;
+  diff_f = Density_i;
   //  cout << "lm_i:" << Lm_i << "\n";
   
   /*--- Compute vector going from iPoint to jPoint ---*/
@@ -1431,7 +1431,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
     Jacobian_i[3][0] = 0.0;
     Jacobian_i[3][1] = 0.0;
     Jacobian_i[3][2] = 0.0;
-    Jacobian_i[3][3] = -diff_f*proj_vector_ij;
+    Jacobian_i[3][3] = -diff_f*proj_vector_ij/Density_i;
 
 
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 
@@ -1452,7 +1452,7 @@ void CAvgGrad_TurbKE::ComputeResidual(su2double *val_residual, su2double **Jacob
     Jacobian_j[3][0] = 0.0;
     Jacobian_j[3][1] = 0.0;
     Jacobian_j[3][2] = 0.0;
-    Jacobian_j[3][3] = diff_f*proj_vector_ij;
+    Jacobian_j[3][3] = diff_f*proj_vector_ij/Density_i;
 
   }
 
@@ -1543,7 +1543,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
   diff_epsi = 0.5*(diff_i_epsi + diff_j_epsi);
   diff_zeta = 0.5*(diff_i_zeta + diff_j_zeta);
   //  diff_f = Lm_i*Lm_i; //here
-  diff_f = 1.0;
+  diff_f = Density_i;
   //  cout << "lm_i:" << Lm_i << "\n";
   
   /*--- Compute vector going from iPoint to jPoint ---*/
@@ -1596,7 +1596,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
     Jacobian_i[3][0] = 0.0;
     Jacobian_i[3][1] = 0.0;
     Jacobian_i[3][2] = 0.0;
-    Jacobian_i[3][3] = -diff_f*proj_vector_ij; // /Density_i;
+    Jacobian_i[3][3] = -diff_f*proj_vector_ij/Density_i;
 
 
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 
@@ -1617,7 +1617,7 @@ void CAvgGradCorrected_TurbKE::ComputeResidual(su2double *val_residual, su2doubl
     Jacobian_j[3][0] = 0.0;
     Jacobian_j[3][1] = 0.0;
     Jacobian_j[3][2] = 0.0;
-    Jacobian_j[3][3] = diff_f*proj_vector_ij; // /Density_j;
+    Jacobian_j[3][3] = diff_f*proj_vector_ij/Density_i;
 
   }
   
@@ -1674,7 +1674,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
   AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
-  AD::SetPreaccIn(Lm_i); AD::SetPreaccIn(Tm_i);
+  //  AD::SetPreaccIn(Lm_i); AD::SetPreaccIn(Tm_i);
 
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
@@ -1765,7 +1765,7 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
   L2 = sqrt(tke_d)/(sqrt(6.0)*C_mu*S*zeta_d);
   L3 = C_eta*pow(pow(nu,3.0)/tdr_d,0.25);
   L = C_L * max(min(L1,L2),L3);
-
+  //  cout << "L:" << L << "\n";
 
   //--- Initial Jacobian ---//
   val_Jacobian_i[0][0] = 0.0;
@@ -1985,8 +1985,9 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     //    pv2 = rho*f; //f=kf
     //C_2f = C_2p + 0.5*(2.0/3.0-C_2p)*(1.0+tanh(50.0*(v2/tke_d-0.55)));
     C_2f = C_2p;
-    pf = (C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*(C_1-1.0)*tke)*rho*R)/tke_d * 1.0/(L*L);
+    pf = (C_2f*pk - ((C_1-6.0)*v2 - 2.0/3.0*(C_1-1.0)*tke)*rho*R)/tke_d * 1.0/(L*L); // jee C1=1.4
     //    pf = (C_2f*pk - (v2*(C_1-6.0) - 2.0/3.0*tke*(C_1-1.0))*rho/T) * 1.0/(L*L); //f=kf
+    //    pf = (C_2f*pk + C_1*R*(2.0/3.0*tke-v2)*rho + 5.0*v2*R*rho)/tke_d * 1.0/(L*L); C1=0.4
 
     //    pe = max(pe,0.0);
     //    pf = max(pf,0.0);
@@ -2109,12 +2110,13 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[2][1] += 0.0;
     val_Jacobian_i[2][2] += 0.0;
     val_Jacobian_i[2][3] += dPv2df*Vol;
-
-    val_Jacobian_i[3][0] += dPfdk * Vol; //(dPfdT*dTdrk + dPfdL*dLdrk + dPfdk) * Vol;
-    val_Jacobian_i[3][1] += dPfde * Vol; //(dPfdT*dTdre + dPfdL*dLdre + dPfde) * Vol;
-    val_Jacobian_i[3][2] += dPfdv2 * Vol; //(dPfdT*dTdrv2 + dPfdL*dLdrv2 + dPfdv2) * Vol;
-    val_Jacobian_i[3][3] += 0.0;
     */
+    val_Jacobian_i[3][0] += dPfdk * Vol  + (dPfdT*dTdrk + dPfdL*dLdrk + dPfdk) * Vol;
+    val_Jacobian_i[3][1] += dPfde * Vol + (dPfdT*dTdre + dPfdL*dLdre + dPfde) * Vol;
+    val_Jacobian_i[3][2] += dPfdv2 * Vol + (dPfdT*dTdrv2 + dPfdL*dLdrv2 + dPfdv2) * Vol;
+    val_Jacobian_i[3][3] += 0.0;
+
+
 
     // destruction...
     val_Jacobian_i[0][0] -= 0.0;
