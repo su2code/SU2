@@ -3618,6 +3618,7 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   //  cout<<"Intensity: "<<Intensity<<"\n";
   kine_Inf = 3.0/2.0*(VelMag*VelMag*Intensity*Intensity);
   epsi_Inf = 2.0/3.0*constants[0]*rhoInf*(kine_Inf*kine_Inf)/(muLamInf*viscRatio); // not sure here... rhoInf*kine_Inf/(muLamInf*viscRatio);
+  epsi_Inf = min( epsi_Inf, pow(2.0/3.0*constants[0]/constants[8]*kine_Inf/viscRatio,2.0)*rhoInf/muLamInf);
   //  zeta_Inf = 2.0/3.0;
   zeta_Inf = 2.0/3.0*kine_Inf; // v2 here
   Tm_Inf = max( kine_Inf/max(epsi_Inf,1.0E-14), constants[8]*sqrt(muLamInf/(rhoInf*max(epsi_Inf,1.0E-14))) );
@@ -3625,6 +3626,8 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   f_Inf = (10.0/3.0+0.3)*epsi_Inf/max(kine_Inf,1.0E-14);
  
   //  cout<<"Intensity: "<<Intensity<<"\n";
+  //  cout<<"Cmu: "<<constants[0]<<"\n";
+  //  cout<<"visc ratio: "<<viscRatio<<"\n";
   //  cout<<"k inf: "<<kine_Inf<<"\n";
   //  cout<<"e inf: "<<epsi_Inf<<"\n";
   //  cout<<"z inf: "<<zeta_Inf<<"\n";
@@ -3956,8 +3959,8 @@ void CTurbKESolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
       wall_zeta = node[jPoint]->GetSolution(2);
       //      wall_k = node[iPoint]->GetSolution(0);
       //      wall_zeta = node[iPoint]->GetSolution(2);
-      //      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
-      //      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
+      //      wall_k = (node[jPoint]->GetSolution(0) - node[iPoint]->GetSolution(0));
+      //      wall_zeta = (node[jPoint]->GetSolution(2) - node[iPoint]->GetSolution(2));
       //      dkdn = numerics->GetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
 
       // swh: needs a modification here... 
@@ -4025,6 +4028,8 @@ void CTurbKESolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
       //      wall_zeta = node[iPoint]->GetSolution(2);
       //      wall_k = (node[iPoint]->GetSolution(0) - node[jPoint]->GetSolution(0));
       //      wall_zeta = (node[iPoint]->GetSolution(2) - node[jPoint]->GetSolution(2));
+      //      wall_k = (node[jPoint]->GetSolution(0) - node[iPoint]->GetSolution(0));
+      //      wall_zeta = (node[jPoint]->GetSolution(2) - node[iPoint]->GetSolution(2));
 
       // wall boundary conditions (https://turbmodels.larc.nasa.gov/k-e-zeta-f.html)
       Solution[0] = 0.0;
