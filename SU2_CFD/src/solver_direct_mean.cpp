@@ -4167,6 +4167,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool marker_analyze   = (config->GetnMarker_Analyze() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool calculate_average = config->GetCalculate_Average();
+  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
+
   su2double *Solution_Avg_aux;
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
@@ -4242,15 +4244,17 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Adding the solution for Calculate Averages ---*/
 
-  if (calculate_average){
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        Solution_Avg_aux = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
-        for (iVar = 0; iVar < nVar; iVar++) {
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar, Solution_Avg_aux[iVar])
-        }
+  if (calculate_average && restart_unst){
+    unsigned long iPoint;
+    unsigned short iVar;
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      Solution_Avg_aux = node[iPoint]->GetSolution();
+      for (iVar = 0; iVar < nVar; iVar++) {
+        node[iPoint]->AddSolution_Avg(iVar, Solution_Avg_aux[iVar]);
       }
     }
+    
   }
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -14689,7 +14693,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool calculate_average = config->GetCalculate_Average();
-  su2double *Solution_Avg_aux;
+  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
+
+  su2double *Solution_Avg_Aux;
   
   string UnstExt, text_line;
   ifstream restart_file;
@@ -14878,7 +14884,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   
   /*--- Update the values for Calculate Averages. ---*/
   
-  if (calculate_average){
+  if (calculate_average && restart_unst){
     for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
       Solution_Avg_Aux = solver[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution();      
       solver[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(Solution_Avg_Aux);
