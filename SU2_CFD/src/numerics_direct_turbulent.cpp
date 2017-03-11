@@ -2110,12 +2110,12 @@ void CSourcePieceWise_TurbKE::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[2][1] += 0.0;
     val_Jacobian_i[2][2] += 0.0;
     val_Jacobian_i[2][3] += dPv2df*Vol;
-    */
+
     val_Jacobian_i[3][0] += dPfdk * Vol  + (dPfdT*dTdrk + dPfdL*dLdrk + dPfdk) * Vol;
     val_Jacobian_i[3][1] += dPfde * Vol + (dPfdT*dTdre + dPfdL*dLdre + dPfde) * Vol;
     val_Jacobian_i[3][2] += dPfdv2 * Vol + (dPfdT*dTdrv2 + dPfdL*dLdrv2 + dPfdv2) * Vol;
     val_Jacobian_i[3][3] += 0.0;
-
+    */
 
 
     // destruction...
