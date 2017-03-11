@@ -10328,6 +10328,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   bool calculate_average = (config->GetCalculate_Average());
+  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
+  unsigned long Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter());
   
   int *Local_Halo = NULL;
   
@@ -10553,6 +10555,19 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("DES_Distance");      
     }
     
+    if (calculate_average && restart_unst){
+      nVar_Par +=1;
+      Variable_Names.push_back("Mean_Consv1");
+      nVar_Par +=1;
+      Variable_Names.push_back("Mean_Consv2");
+      nVar_Par +=1;
+      Variable_Names.push_back("Mean_Consv3");
+      nVar_Par +=1;
+      Variable_Names.push_back("Mean_Consv4");
+      nVar_Par +=1;
+      Variable_Names.push_back("Mean_Consv5");
+    }    
+    
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -10769,6 +10784,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetWall_Distance(); iVar++;
           
+        }
+        
+        if (calculate_average){
+          for (jVar = 0; jVar < nVar_Second; jVar++) {
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
+            iVar++;
+          }
         }
           
         /*--- Increment the point counter, as there may have been halos we
