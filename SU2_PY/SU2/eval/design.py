@@ -106,9 +106,6 @@ class Design(object):
         self.grads  = state.GRADIENTS
         self.folder = folder
         
-        if 'ELECTRIC_FIELD' in self.config.DV_KIND:
-          config.update_efield(config.DV_VALUE_NEW)
-        
         self.filename = 'design.pkl'
             
         # initialize folder with files

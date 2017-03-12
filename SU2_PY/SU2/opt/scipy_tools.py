@@ -386,7 +386,6 @@ def obj_f(x,project):
         su2:         minimize f(x), list[nobj]
         scipy_slsqp: minimize f(x), float
     """
-        
     obj_list = project.obj_f(x)
     obj = 0
     for this_obj in obj_list:
@@ -402,8 +401,7 @@ def obj_df(x,project):
         
         su2:         df(x), list[nobj x dim]
         scipy_slsqp: df(x), ndarray[dim]
-    """    
-    
+    """
     dobj_list = project.obj_df(x)
     dobj=[0.0]*len(dobj_list[0])
     

@@ -140,13 +140,13 @@ def gradient( func_name, method, problem, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in ', '.join(func_name)):
+        if ('CUSTOM' in problem.DESIGN_VARIABLES and 'OUTFLOW_GENERALIZED' in ', '.join(func_name)):
             import downstream_function
             chaingrad = downstream_function.downstream_gradient(config,state)
             n_dv = len(grads[func_name_string])
             custom_dv=1
             for idv in range(n_dv):
-                if (config.DV_KIND[idv] == 'CUSTOM'):
+                if (problem.DESIGN_VARIABLES[idv] == 'CUSTOM'):
                     grads[func_name_string][idv] = chaingrad[4+custom_dv]
                     custom_dv = custom_dv+1
         # store
@@ -295,11 +295,12 @@ def adjoint( func_name, problem, state=None ):
 
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(problem)
-            su2io.restart2solution(problem,info)
+            problem.kind = 'ADJOINT_GRADIENT'
+            su2io.restart2solution(problem, info)
             state.update(info)
 
             # Gradient Projection
-            info = su2run.projection(problem,state)
+            info = su2run.projection(problem, state)
             state.update(info)
 
             # solution files to push
@@ -548,8 +549,13 @@ def structural_adjoint( func_name, problem, state=None ):
 
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(problem)
+            problem.kind = 'ADJOINT_GRADIENT'
             su2io.restart2solution(problem, info)
             state.update(info)
+
+            # # READ GRADIENTS # #
+            gradients = problem.read_gradients(func_name)
+            state.GRADIENTS.update(gradients)
 
             # solution files to push
             name = state.FILES[ADJ_NAME]

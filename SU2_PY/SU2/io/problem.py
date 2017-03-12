@@ -205,26 +205,31 @@ class Problem(ordered_bunch):
         for i in range(0, self.nKind_DV):
             self.DV_NEW[self.DESIGN_VARIABLES[i]].write(folder)
 
-    def reread_dv(self,folder):
+    def read_gradients(self, objective):
         """ reads from a dv file """
+
         # initialize output vector
-        x_dv = []
+        df_dx = []
 
         # For the kind of design variables
         for i in range(0, self.nKind_DV):
 
             # Choose appropriate file name
-            if self.DESIGN_VARIABLES[i] == 'YOUNG_MODULUS': dv_file = folder + 'dv_young.opt'
-            elif self.DESIGN_VARIABLES[i] == 'ELECTRIC_FIELD': dv_file = folder + 'dv_efield.opt'
+            if self.DESIGN_VARIABLES[i] == 'YOUNG_MODULUS': grad_file = 'grad_young.opt'
+            elif self.DESIGN_VARIABLES[i] == 'ELECTRIC_FIELD': grad_file = 'grad_efield.opt'
 
             # Read variables from file (each DV kind has a child class associated, with a method "read")
-            nDV, data_list = self.DV_KIND[self.DESIGN_VARIABLES[i]].read(dv_file)
+            nDV, data_list = self.DV_KIND[self.DESIGN_VARIABLES[i]].read_gradient(grad_file)
 
             # For the number of variables in each case
             for j in range(0, nDV):
-                x_dv.append(float(data_list[j]['VALUE']))
+                # For the size of each variable
+                for k in range(0, data_list[j]['SIZE']):
+                    df_dx.append(float(data_list[j]['GRADIENT'][k]))
 
-        return x_dv
+        gradients = {objective: df_dx}
+
+        return gradients
 
     def pack_dvs(self):
 
@@ -247,6 +252,24 @@ class Problem(ordered_bunch):
         xb = zip(xb_low, xb_up)  # design bounds
 
         return x0, xb
+
+    def pack_new_dvs(self):
+
+        x = []
+
+        # For the kind of design variables
+        for i in range(0, self.nKind_DV):
+            # Shallow copy should be enough here
+            dvKind = copy.copy(self.DV_NEW[self.DESIGN_VARIABLES[i]])
+            # For the number of design variables in the current DV kind
+            for j in range(0,dvKind.nDV):
+                # For the number of values per design variable
+                for k in range(0,dvKind.DV[j]['SIZE']):
+                    x.append(float(dvKind.DV[j]['VALUE'][k]))
+
+        # Pack as a numpy array
+        x = np.array(x)
+        return x
 
     def unpack_dvs(self, dv_new, dv_old=None):
         """ updates config with design variable vectors
@@ -295,6 +318,26 @@ class Problem(ordered_bunch):
             # Update old and new DVs
             self.DV_NEW[self.DESIGN_VARIABLES[i]].update(new_dv)
             self.DV_OLD[self.DESIGN_VARIABLES[i]].update(old_dv)
+
+    def dist(self, provlem):
+        """ calculates a distance to another problem
+
+            Inputs:
+                provlem    - the problem we want to test the difference from
+
+            Outputs:
+                distance   - a float
+
+            Currently only tests the value of DV_NEW
+
+        """
+
+        current_dv = self.pack_new_dvs()
+        this_dv    = provlem.pack_new_dvs()
+
+        distance = np.sqrt(np.sum((current_dv - this_dv) ** 2))
+
+        return distance
 
     def read_of(self, filename):
         """ reads from a config file """

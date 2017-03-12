@@ -122,7 +122,7 @@ class Project(object):
         physics = su2io.read_physics(problem.config, problem.OBJECTIVE_FUNCTION)
         state.find_files(physics)
 
-        if 'OUTFLOW_GENERALIZED' in problem.config.OPT_OBJECTIVE:
+        if 'OUTFLOW_GENERALIZED' in problem.OBJECTIVE_FUNCTION:
             state.FILES['DownstreamFunction'] = 'downstream_function.py'
         if 'MESH' not in state.FILES:
             raise Exception , 'Could not find mesh file: %s' % problem.config.MESH_FILENAME
@@ -181,14 +181,14 @@ class Project(object):
         # project folder redirection, don't overwrite files
         with redirect_folder(folder,pull,link,force=False) as push:        
         
-            # start design
-            design = self.new_design(problem)
+            # start design using design problem structure
+            design = self.new_design(provlem)
             
             if config.get('CONSOLE','VERBOSE') == 'VERBOSE':
                 print os.path.join(self.folder,design.folder)
             timestamp = design.state.tic()
             
-            # run design+
+            # run design
             vals = design._eval(func,*args)
             
             # check for update
@@ -270,7 +270,7 @@ class Project(object):
     #     konfig = copy.deepcopy(config)
     #     return self._eval(konfig, func)
         
-    def new_design(self,problem):
+    def new_design(self, problem):
         """ finds an existing design for given config
             or starts a new design with a closest design 
             used for restart data
@@ -279,9 +279,9 @@ class Project(object):
         provlem = copy.deepcopy(problem)
         konfig  = provlem.config
         
-        # find closest design
-        closest,delta = self.closest_design(konfig)
-        # found existing design
+        # Find closest design
+        closest, delta = self.closest_design(provlem)
+        # If there is an existing design
         if delta == 0.0 and closest:
             design = closest
         # start new design
@@ -301,22 +301,23 @@ class Project(object):
     #         raise Exception, 'design not found for this config'
     #     return design
         
-    def closest_design(self,config):
+    def closest_design(self, problem):
         """ looks for an existing or closest design 
             given a config
         """        
                 
         designs = self.designs
         
-        keys_check = ['DV_VALUE_NEW']
-        
         if not designs: 
             return [] , inf
         
         diffs = []
         for this_design in designs:
-            this_config = this_design.config
-            distance = config.dist(this_config,keys_check)
+            # this_problem is the definition of the problem for each of the old designs
+            this_problem = this_design.problem
+            # check distance between the problem to be run now and all the problems run before
+            distance = problem.dist(this_problem)
+            # append the distance
             diffs.append(distance) 
                         
         #: for each design 

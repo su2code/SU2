@@ -515,6 +515,45 @@ class DV_FEA(DV):
 
         return nDV, data_list
 
+    def read_gradient(self, filename):
+
+        """ reads from a dv file """
+        # initialize output list and dictionary
+        data_list = []
+        data_dict = OrderedDict()
+
+        input_file = open(filename)
+
+        nDV = 0
+
+        # process each line
+        while 1:
+            # read the line
+            line = input_file.readline()
+            if not line:
+                break
+
+            # remove line returns
+            line = line.strip('\r\n')
+            # skip first line (starts with ID, INDEX)
+            if line[0] == 'I':
+                continue
+            # split across equals sign
+            line = line.split("\t")
+
+            # store in a dictionary
+            dv_definitions = {'INDEX': line[0].strip(),
+                              'GRADIENT': [line[1].strip()],
+                              'SIZE': 1}
+
+            # save to output dictionary
+            data_dict = dv_definitions
+
+            data_list.append(data_dict.copy())
+            nDV += 1
+
+        return nDV, data_list
+
     def write(self, folder):
 
         """ writes to a dv file """

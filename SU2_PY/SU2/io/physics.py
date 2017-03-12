@@ -251,8 +251,6 @@ class fea(physics):
         else:
             self.timeDomain = False
 
-        print "OFUNCTION:", oFunction
-
         files = OrderedDict()
         files['MESH'] = config.MESH_FILENAME
         files['DIRECT'] = [config.SOLUTION_STRUCTURE_FILENAME]

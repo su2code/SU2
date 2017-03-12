@@ -3113,6 +3113,30 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
     myfile_res.close();
   }
 
+  // TEST: for implementation of python framework in standalone structural problems
+  if (!config_container[val_iZone]->GetFSI_Simulation()){
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    myfile_res.open ("grad_young.opt");
+
+    unsigned short iYoung;
+    unsigned short nYoung = config_container[val_iZone]->GetnElasticityMod();
+
+    myfile_res << "INDEX" << "\t" << "GRAD" << endl;
+
+    myfile_res.precision(15);
+
+    for (iYoung = 0; iYoung < nYoung; iYoung++){
+      myfile_res << iYoung;
+      myfile_res << "\t";
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iYoung);
+      myfile_res << endl;
+    }
+
+    myfile_res.close();
+  }
+
 }
 
 void CDiscAdjFEAIteration::SetRecording(COutput *output,

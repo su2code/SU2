@@ -121,7 +121,7 @@ def optimization(filename,
 
     # Config is contained in problem.config
     problem.config.NUMBER_PART = partitions
-#    if quiet: problem.config.CONSOLE = 'CONCISE'
+    if quiet: problem.config.CONSOLE = 'CONCISE'
 
     its = int(problem.ITERATIONS)
     accu = float(problem.ACCURACY)
