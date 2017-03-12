@@ -10329,8 +10329,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   bool calculate_average = (config->GetCalculate_Average());
   bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
-  unsigned long Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter());
-  
+  su2double Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter());
   int *Local_Halo = NULL;
   
   stringstream varname;
@@ -10564,9 +10563,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Mean_Consv3");
       nVar_Par +=1;
       Variable_Names.push_back("Mean_Consv4");
-      nVar_Par +=1;
-      Variable_Names.push_back("Mean_Consv5");
-    }    
+        if (geometry->GetnDim()==3){
+          nVar_Par +=1;
+          Variable_Names.push_back("Mean_Consv5");
+            
+        }
+    }
     
   }
   
@@ -10786,7 +10788,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           
         }
         
-        if (calculate_average){
+        if (calculate_average && restart_unst){
           for (jVar = 0; jVar < nVar_Second; jVar++) {
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
             iVar++;

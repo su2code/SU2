@@ -4254,7 +4254,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
         node[iPoint]->AddSolution_Avg(iVar, Solution_Avg_aux[iVar]);
       }
     }
-    
   }
   
   /*--- Initialize the Jacobian matrices ---*/
@@ -14967,7 +14966,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
@@ -15779,6 +15778,10 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool marker_analyze       = (config->GetnMarker_Analyze() != 0);
+    
+  bool calculate_average = config->GetCalculate_Average();
+  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
+  su2double *Solution_Avg_aux;
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -15858,6 +15861,21 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     Omega_Max = max(Omega_Max, Omega);
     
   }
+    
+  /*--- Adding the solution for Calculate Averages ---*/
+
+  if (calculate_average && restart_unst){
+    unsigned long iPoint;
+    unsigned short iVar;
+        
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      Solution_Avg_aux = node[iPoint]->GetSolution();
+      for (iVar = 0; iVar < nVar; iVar++) {
+        solver_container[FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar, Solution_Avg_aux[iVar]);
+      }
+    }
+  }
+
   
   /*--- Initialize the Jacobian matrices ---*/
   
