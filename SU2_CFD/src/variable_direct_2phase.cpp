@@ -35,6 +35,8 @@
 
 C2phaseVariable::C2phaseVariable(void) : CVariable() {
 
+	Source = 0; Enthalpy_Liquid = 0;
+
 }
 
 C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
@@ -56,6 +58,15 @@ C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nva
   }
   
 }
+
+su2double C2phaseVariable::GetMassSource( )               { return Source; };
+
+void      C2phaseVariable::SetMassSource(su2double S)     {Source = S; };
+
+su2double C2phaseVariable::GetLiquidEnthalpy( )           { return Enthalpy_Liquid; };
+
+void      C2phaseVariable::SetLiquidEnthalpy(su2double h) {Enthalpy_Liquid = h; };
+
 
 C2phaseVariable::~C2phaseVariable(void) { }
 
@@ -110,7 +121,7 @@ void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2d
 
     N = Solution[0]/rho_m;
 
-    S = rho_m * 3 * y / R * G;
+    Source = rho_m * 3 * y / R * G;
 
 }
 
@@ -151,5 +162,8 @@ void C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Ph
 	V_l[8] = liquid->GetMixtureDensity();
 	V_l[8] = V_l[8]/config->GetDensity_Ref();
 
+
 }
+
+
 

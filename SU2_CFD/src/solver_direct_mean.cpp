@@ -510,8 +510,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       if (rans) {
 
     	  if (two_phase) {
-    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 2 + 4];
-    		for (iVar = 0; iVar < nPrimVar + 2 + 4; iVar++) {
+    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 2 + 2];
+    		for (iVar = 0; iVar < nPrimVar + 2 + 2; iVar++) {
 			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
 			}
 
@@ -525,8 +525,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       } else {
 
       	  if (two_phase) {
-    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 4];
-    		for (iVar = 0; iVar < nPrimVar + 4; iVar++) {
+    		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 2];
+    		for (iVar = 0; iVar < nPrimVar + 2; iVar++) {
 			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
 			}
 
@@ -2165,10 +2165,10 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   
   unsigned short nPrimVar_ = nPrimVar;
   if (rans) {
-	  if (two_phase) nPrimVar_ += 6; // Add two extra variables for the turbulence + 4 for 2 phases.
+	  if (two_phase) nPrimVar_ += 4; // Add two extra variables for the turbulence + 2 for 2 phases.
 	  else nPrimVar_ +=2;
   } else {
-	  if (two_phase) nPrimVar_ += 4; // Add 4 for 2 phases.
+	  if (two_phase) nPrimVar_ += 2; // Add 2 for 2 phases.
 	  else nPrimVar_ +=0;
   }
   
@@ -4300,6 +4300,7 @@ void CEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
 
 unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
+  double S, h;
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol  = true;
   
@@ -4317,6 +4318,13 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
     if (config->GetKind_2phase_Model != NONE) {
     	node[iPoint]->SetLaminarViscosity(FluidModel->GetLaminarViscosity());
     	node[iPoint]->SetThermalConductivity(FluidModel->GetThermalConductivity());
+
+    	S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
+    	h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
+
+    	node[iPoint]->SetMassSource(S);
+    	node[iPoint]->SetLiquidEnthalpy(h);
+
     }
 
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
@@ -14698,8 +14706,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
     	  if (two_phase) {
-    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2+4];
-    		  for (iVar = 0; iVar < nPrimVar + 2 +4; iVar++) {
+    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2+2];
+    		  for (iVar = 0; iVar < nPrimVar + 2 +2; iVar++) {
     			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
     		  }
     	  } else {
@@ -14711,8 +14719,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
       }  else {
     	  if (two_phase) {
-    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+4];
-    		  for (iVar = 0; iVar < nPrimVar + 4; iVar++) {
+    		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+    		  for (iVar = 0; iVar < nPrimVar + 2; iVar++) {
     			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
     		  }
     	  } else {
@@ -15444,6 +15452,18 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     RightSol = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
     
+    if (config->GetKind_2phase_Model != NONE) {
+    	node[iPoint]->SetLaminarViscosity(FluidModel->GetLaminarViscosity());
+    	node[iPoint]->SetThermalConductivity(FluidModel->GetThermalConductivity());
+
+    	S = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetMassSource();
+    	h = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetLiquidEnthalpy();
+
+    	node[iPoint]->SetMassSource(S);
+    	node[iPoint]->SetLiquidEnthalpy(h);
+
+    }
+
     if (!RightSol ) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective, source and viscous residual vector ---*/

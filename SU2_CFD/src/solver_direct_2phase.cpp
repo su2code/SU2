@@ -1120,7 +1120,7 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
 
     /*--- Define some auxiliary vectors related to the liquid phase ---*/
 
-    Primitive_Liquid = new su2double[9];
+    Primitive_Liquid = new su2double[10];
 
     /*--- Define some auxiliary vector related with the geometry ---*/
     
@@ -1128,7 +1128,7 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
     
     /*--- Define some auxiliary vector related with the flow solution ---*/
     
-    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     
@@ -1352,8 +1352,9 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 }
 
 void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-  su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
-  unsigned long iPoint;
+
+  unsigned long iPoint, iNode, rho_m;
+  su2double R, S, y;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1374,7 +1375,22 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
     // evaluate the source term, use the growth rate stored in Primitive liquid, position 9
 	// then set it in the node primitive
 
-	  solver_container[FLOW_SOL]->node[iPoint]->;
+
+	node[iNode]->SetDropletProp (Primitive_Liquid[1], FlowPrimVar_i[nDim + 2], Primitive_Liquid[9]);
+
+	R = Solution[1]/Solution[0];
+
+    y = Solution[3]*(Primitive_Liquid[1] - FlowPrimVar_i[nDim + 2]);
+    y = y + 0.75 * FlowPrimVar_i[nDim + 2] / 3.14;
+    y = y*Primitive_Liquid[1] / y;
+
+    rho_m = y/ Primitive_Liquid[1] + (1.0 - y)/ FlowPrimVar_i[nDim + 2];
+    rho_m = 1.0/ rho_m;
+
+    S = rho_m * 3 * y / R * Primitive_Liquid[9];
+
+	node[iPoint]->SetMassSource(S);
+	node[iPoint]->SetLiquidEnthalpy(Primitive_Liquid[2]);
     
   }
   

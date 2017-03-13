@@ -2030,7 +2030,7 @@ public:
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
 
-
+/*
   // classes for 2phase solver
   void SetRadius(su2double R) ;
 
@@ -2039,7 +2039,7 @@ public:
   void SetMassSource(su2double S) ;
 
   void SetLiquidEnthalpy(su2double h) ;
-
+*/
   void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
   su2double GetRadius() ;
@@ -2049,6 +2049,14 @@ public:
   su2double GetLiquidPrim() ;
 
   void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
+
+  su2double GetMassSource( )             ;
+
+  void      SetMassSource(su2double S)   ;
+
+  su2double GetLiquidEnthalpy( )         ;
+
+  void      SetLiquidEnthalpy(su2double h);
 
 
 };
@@ -3112,6 +3120,10 @@ public:
    * \brief Set the value of therm. cond in case of 2phase calculations
    */
   void SetThermalConductivity (su2double k);
+
+  void SetMassSource(su2double S) ;
+
+  void SetLiquidEnthalpy(su2double h) ;
 };
 
 /*!
@@ -3515,6 +3527,10 @@ public:
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
+
+  void SetMassSource(su2double S) ;
+
+  void SetLiquidEnthalpy(su2double h) ;
 };
 
 /*!
@@ -3670,6 +3686,7 @@ public:
 class C2phaseVariable : public CVariable {
 protected:
 
+	su2double Source, Enthalpy_Liquid;
 
 public:
   /*!
@@ -3690,6 +3707,14 @@ public:
    */
   virtual ~C2phaseVariable(void);
 
+
+  su2double GetMassSource( )               ;
+
+  void      SetMassSource(su2double S)     ;
+
+  su2double GetLiquidEnthalpy( )           ;
+
+  void      SetLiquidEnthalpy(su2double h) ;
 
 };
 
@@ -3912,7 +3937,7 @@ public:
 class C2phase_HillVariable : public C2phaseVariable {
 
 protected:
-	su2double R, y, N, S, rho_m, V_l, P, T, rho, h;
+	su2double R, y, N, rho_m, V_l, P, T, rho, h;
 
 public:
   /*!
@@ -3936,7 +3961,7 @@ public:
    * \brief Destructor of the class.
    */
   ~C2phase_HillVariable(void);
-
+/*
   void SetRadius(su2double R) ;
 
   void SetDropletNumber(su2double N) ;
@@ -3944,7 +3969,7 @@ public:
   void SetMassSource(su2double S) ;
 
   void SetLiquidEnthalpy(su2double h) ;
-
+*/
   void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
   su2double GetRadius() ;
