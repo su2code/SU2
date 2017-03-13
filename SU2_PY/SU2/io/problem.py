@@ -42,6 +42,7 @@ from .tools import *
 from .config import *
 from .dv import *
 from .physics import *
+from .ofunction import *
 from config_options import *
 
 try:
@@ -135,6 +136,9 @@ class Problem(ordered_bunch):
 
         # Read physics and store in physics object
         opt.physics = opt.read_physics(opt.config, opt.OBJECTIVE_FUNCTION)
+
+        # Read objective function and store in OF object
+        opt.ofunction = opt.set_ofunction()
 
         # Set properties of the problem
         opt.nKind_DV = len(opt.DESIGN_VARIABLES)
@@ -343,10 +347,20 @@ class Problem(ordered_bunch):
 
         return distance
 
-    def read_of(self, filename):
-        """ reads from a config file """
-        opti = read_opt(filename)
-        self.update(opti)
+    def set_ofunction(self):
+        """ builds an objective function object """
+        # initialize output dictionary
+        ofunction = OrderedDict()
+        # retrieve list of objective functions
+        list_of = self.OBJECTIVE_FUNCTION.keys()
+
+        if any(i in optnames_aero for i in list_of):
+            ofunction['AERO'] = of_aero(list_of)
+
+        if any(i in optnames_fea for i in list_of):
+            ofunction['FEA'] = of_fea(list_of)
+
+        return ofunction
 
     def read_physics(self, config, ofunction):
         """ reads the properties of a problem from config files """
@@ -455,7 +469,7 @@ def read_opt_file(filename):
                 this_value = ''.join(this_value.split())
                 # split by +
                 this_def = {}
-                this_value = this_value.split(";")
+                this_value = this_value.split(",")
 
                 for this_obj in this_value:
                     # split by scale

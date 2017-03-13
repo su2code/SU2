@@ -72,10 +72,11 @@ def adjoint( problem ):
     """
     
     # local copy
-    konfig = copy.deepcopy(problem.config)
+    provlem = copy.deepcopy(problem)
+    konfig = provlem.config
     
     # setup problem
-    konfig['MATH_PROBLEM']  = problem.GRADIENT_METHOD
+    konfig['MATH_PROBLEM']  = provlem.GRADIENT_METHOD
 
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
     
@@ -83,7 +84,7 @@ def adjoint( problem ):
     SU2_CFD(konfig)
     
     # merge
-    konfig['SOLUTION_ADJ_FILENAME'] = konfig['RESTART_ADJ_FILENAME'] 
+    problem.physics.merge_solution(konfig)
     su2merge(konfig)
     
     # filenames

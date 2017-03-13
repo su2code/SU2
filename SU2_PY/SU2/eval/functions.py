@@ -602,7 +602,7 @@ def structural( problem, state=None ):
         with redirect_output(log_direct):     
             
             # # RUN DIRECT SOLUTION # #
-            info = su2run.direct(config)
+            info = su2run.direct(problem)
             su2io.restart2solution(problem, info)
             state.update(info)
             
