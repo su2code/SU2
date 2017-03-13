@@ -2609,6 +2609,11 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- Set the pointers for the local arrays. ---*/
   su2double *solInt = VecTmpMemory.data();
   su2double *fluxes = solInt + nIntegrationMax*nVar;
@@ -2707,6 +2712,12 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
+
+    if(rank == MASTER_NODE) {
+      if(l == 1500){
+	 cout << "Cell " << l << " vol residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
+      }
+    }
   }
 }
 
@@ -2718,6 +2729,11 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
                                           unsigned short iMesh) {
 
   /*--- Stub for source term integration. ---*/
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   bool body_force = config->GetBody_Force();
 
@@ -2742,7 +2758,7 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
       const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
       const unsigned short nDOFs           = volElem[l].nDOFsSol;
       const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
-      //const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+      const su2double *lagBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
       const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
       /*------------------------------------------------------------------------*/
@@ -2756,7 +2772,7 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
       /* Call the general function to carry out the matrix product. */
       config->GEMM_Tick(&tick);
       DenseMatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
-      config->GEMM_Tock(tick, "Volume_Residual1", nInt, nVar, nDOFs);
+      config->GEMM_Tock(tick, "Source_Residual1", nInt, nVar, nDOFs);
 
       /* Loop over the integration points. */
       unsigned short ll = 0;
@@ -2777,7 +2793,7 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
 
         /* Compute the momentum sources in each cartesian direction */
         for(unsigned short jDim=0; jDim<nDim; ++jDim){
-          sources[ll++] = -weights[i]*body_force_vector[jDim];
+          sources[ll++] = weights[i]*body_force_vector[jDim];
         }
 
         /* Easier storage of the metric terms in this integration point. The +1
@@ -2799,9 +2815,15 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
             velPar += vel[jDim]*metric[jDim];
           }
 
-          sources[ll] = -weights[i]*body_force_vector[iDim]*velPar;
+          //sources[ll] += weights[i]*body_force_vector[iDim]*velPar;
+          sources[ll] = 0.0;
         }
         ll++;
+        if(rank == MASTER_NODE) {
+            if(i == 0){
+              cout << "Int point " << i << " sources = " << sources[0] << ", " << sources[1] << ", " << sources[2] << ", " << sources[3] << endl;
+            }
+        }
       }
       /*------------------------------------------------------------------------*/
       /*--- Step 3: Compute the contribution to the residuals from the       ---*/
@@ -2813,8 +2835,15 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
 
       /* Call the general function to carry out the matrix product. */
       config->GEMM_Tick(&tick);
-      DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matBasisInt, sources , res);
-      config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
+      DenseMatrixProduct(nDOFs, nVar, nInt, lagBasisIntTrans, sources , res);
+      config->GEMM_Tock(tick, "Source_Residual2", nDOFs, nVar, nInt);
+      if(rank == MASTER_NODE) {
+          cout << "nDofs = " << nDOFs << endl;
+          cout << "nVar  = " << nVar << endl;
+          cout << "nInt  = " << nInt << endl;
+          cout << "nDim  = " << nDim << endl;
+          cout << "Cell " << l << " source residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
+        }
     }
   }
 }
@@ -5687,6 +5716,11 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
   /* Start the MPI communication of the solution in the halo elements. */
   Initiate_MPI_Communication();
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -5898,6 +5932,9 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
+    if(rank == MASTER_NODE) {
+	 cout << "Cell " << l << " vol residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
+    }
   }
 }
 
