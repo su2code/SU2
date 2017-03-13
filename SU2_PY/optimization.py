@@ -142,9 +142,9 @@ def optimization(filename,
 
     ## Optimize
     #if optimization == 'SLSQP':
-        #SU2.opt.SLSQP(project, x0, xb, its, accu)
+    SU2.opt.SLSQP(project, x0, xb, its, accu)
     #if optimization == 'CG':
-    SU2.opt.CG(project, x0, xb, its, accu)
+        #SU2.opt.CG(project, x0, xb, its, accu)
     #if optimization == 'BFGS':
         #SU2.opt.BFGS(project, x0, xb, its, accu)
     #if optimization == 'POWELL':

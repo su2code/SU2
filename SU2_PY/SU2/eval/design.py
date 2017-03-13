@@ -129,6 +129,10 @@ class Design(object):
         
         filename = self.filename
 
+        # TODO: hack here to test while I update the way of reading in the info into SU2
+        x = problem.pack_new_dvs()
+        config['ELASTICITY_MODULUS'] = x[0]
+
         # Sends files from base folder (or from previous design) into ./DESIGNS/DSN_003
 
         # check folder
@@ -287,7 +291,6 @@ def obj_df(dvs,problem,state=None):
         for i_dv, dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
                 grad[k] = grad[k] / dv_scl
-                print grad[k]
                 k = k + 1
         vals_out.append(grad)
 
@@ -355,7 +358,7 @@ def obj_df(dvs,problem,state=None):
 
 #: def obj_df()
 
-def con_ceq(dvs,config,state=None):
+def con_ceq(dvs,problem,state=None):
     """ vals = SU2.eval.con_ceq(dvs,config,state=None)
     
         Evaluates SU2 Equality Constraints
@@ -370,10 +373,10 @@ def con_ceq(dvs,config,state=None):
     """
     
     # unpack state and config
-    config.unpack_dvs(dvs)
+    problem.unpack_dvs(dvs)
     state = su2io.State(state)
     
-    def_cons = config['OPT_CONSTRAINT']['EQUALITY']
+    def_cons = problem['CONSTRAINTS']['EQUALITY']
     constraints = def_cons.keys()
     
  #   if constraints: sys.stdout.write('Evalaute Equality Constraints')
@@ -386,7 +389,7 @@ def con_ceq(dvs,config,state=None):
         
         # Evaluate Constraint Function
 #        sys.stdout.write('  %s... ' % this_con.title())
-        func = su2func(this_con,config,state)
+        func = su2func(this_con, problem, state)
 #        sys.stdout.write('done: %.6f\n' % func)
         
         # scaling and centering
@@ -400,7 +403,7 @@ def con_ceq(dvs,config,state=None):
 
 #: def obj_ceq()
 
-def con_dceq(dvs,config,state=None):
+def con_dceq(dvs, problem, state=None):
     """ vals = SU2.eval.con_dceq(dvs,config,state=None)
     
         Evaluates SU2 Equality Constraint Gradients
@@ -415,15 +418,16 @@ def con_dceq(dvs,config,state=None):
     """
     
     # unpack state and config
-    config.unpack_dvs(dvs)
+    problem.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
+    grad_method = problem['GRADIENT_METHOD']
     
-    def_cons = config['OPT_CONSTRAINT']['EQUALITY']
+    def_cons = problem['CONSTRAINTS']['EQUALITY']
     constraints = def_cons.keys()
-    
-    dv_scales = config['DEFINITION_DV']['SCALE']
-    dv_size   = config['DEFINITION_DV']['SIZE']
+
+    # config = problem.config
+    # dv_scales = config['DEFINITION_DV']['SCALE']
+    # dv_size   = config['DEFINITION_DV']['SIZE']
 
 #    if constraints: sys.stdout.write('Evaluate Equality Constraint Gradients ...')
     
@@ -453,7 +457,7 @@ def con_dceq(dvs,config,state=None):
 
 #: def obj_dceq()
 
-def con_cieq(dvs,config,state=None):
+def con_cieq(dvs, problem, state=None):
     """ vals = SU2.eval.con_cieq(dvs,config,state=None)
     
         Evaluates SU2 Inequality Constraints
@@ -469,10 +473,10 @@ def con_cieq(dvs,config,state=None):
     """    
     
     # unpack state and config    
-    config.unpack_dvs(dvs)
+    problem.unpack_dvs(dvs)
     state = su2io.State(state)
     
-    def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
+    def_cons = problem['CONSTRAINTS']['INEQUALITY']
     constraints = def_cons.keys()
     
 #    if constraints: sys.stdout.write('Evaluate Inequality Constraints')
@@ -501,7 +505,7 @@ def con_cieq(dvs,config,state=None):
 
 #: def obj_cieq()
 
-def con_dcieq(dvs,config,state=None):
+def con_dcieq(dvs, problem, state=None):
     """ vals = SU2.eval.con_dceq(dvs,config,state=None)
     
         Evaluates SU2 Inequality Constraint Gradients
@@ -517,15 +521,17 @@ def con_dcieq(dvs,config,state=None):
     """    
     
     # unpack state and config
-    config.unpack_dvs(dvs)
+    problem.unpack_dvs(dvs)
     state = su2io.State(state)
-    grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
+    grad_method = problem['GRADIENT_METHOD']
     
-    def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
+    def_cons = problem['CONSTRAINTS']['INEQUALITY']
     constraints = def_cons.keys()
-    
-    dv_scales = config['DEFINITION_DV']['SCALE']
-    dv_size   = config['DEFINITION_DV']['SIZE']
+
+    config = problem.config
+
+    # dv_scales = config['DEFINITION_DV']['SCALE']
+    # dv_size   = config['DEFINITION_DV']['SIZE']
 
 #    if constraints: sys.stdout.write('Evaluate Inequality Constraint Gradients')
     

@@ -76,7 +76,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     f_ieqcons      = con_cieq 
     
     # gradient handles
-    if project.opt.GRADIENT == 'NONE':
+    if project.problem.GRADIENT_METHOD == 'NONE':
         fprime         = None
         fprime_eqcons  = None
         fprime_ieqcons = None
@@ -86,8 +86,8 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
         fprime_ieqcons = con_dcieq        
     
     # number of design variables
-    dv_size = project.opt.nKind_DV
-    n_dv = project.opt.nDV
+    dv_size = project.problem.nKind_DV
+    n_dv = project.problem.nDV
     project.n_dv = n_dv
     
     # Initial guess

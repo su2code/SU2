@@ -248,7 +248,7 @@ class Problem(ordered_bunch):
                     x0.append(float(dvKind.DV[j]['VALUE'][k]))
                     xb_low.append(float(dvKind.DV[j]['LOWER_BOUND'][k]))
                     xb_up.append(float(dvKind.DV[j]['UPPER_BOUND'][k]))
-
+                    # SCALE HERE
         xb = zip(xb_low, xb_up)  # design bounds
 
         return x0, xb
@@ -266,9 +266,8 @@ class Problem(ordered_bunch):
                 # For the number of values per design variable
                 for k in range(0,dvKind.DV[j]['SIZE']):
                     x.append(float(dvKind.DV[j]['VALUE'][k]))
+                    # SCALE HERE
 
-        # Pack as a numpy array
-        x = np.array(x)
         return x
 
     def unpack_dvs(self, dv_new, dv_old=None):
@@ -335,7 +334,12 @@ class Problem(ordered_bunch):
         current_dv = self.pack_new_dvs()
         this_dv    = provlem.pack_new_dvs()
 
-        distance = np.sqrt(np.sum((current_dv - this_dv) ** 2))
+        # Pack as a numpy array
+        currdv = np.array(current_dv)
+        thisdv = np.array(this_dv)
+
+        # Compute distance
+        distance = np.sqrt(np.sum((currdv - thisdv) ** 2))
 
         return distance
 
