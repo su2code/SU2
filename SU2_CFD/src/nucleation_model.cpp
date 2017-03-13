@@ -42,11 +42,10 @@ CNucleationModel::~CNucleationModel(void) { }
 
 
 
-CClassicalTheory::CClassicalTheory(CConfig *config, CGeometry *geometry) : CNucleationModel() {
+CClassicalTheory::CClassicalTheory(CConfig *config) : CNucleationModel() {
 
 	Gamma = config->GetGamma();
 	Gas_Constant = config -> GetGas_ConstantND();
-	nDim = geometry->GetnDim();
 
 	Boltzmann = 1.38064852/config->GetBoltzmann_Ref();
 	MolMass   = 18.0 * 1.66054e-27 / config ->GetMass_Ref();
@@ -59,54 +58,47 @@ CClassicalTheory::~CClassicalTheory(void) {
 }
 
 
-void CClassicalTheory::SetNucleationRate (su2double V_i, su2double V_Liquid) {
+void CClassicalTheory::SetNucleation_GrowthRate (su2double P, su2double T, su2double rho,
+		                      su2double h, su2double k, su2double mu, su2double V_l) {
 
-	Theta = (V_i[nDim + 3] - V_Liquid[2])/Gas_Constant/V_i[0];
-	Theta = (Theta-0.5)*Theta;
-	Theta = Theta * 2 * (Gamma - 1)/(Gamma + 1);
+	// V_l = T, rho, h, Psat, Tsat, sigma, Rc
 
-	if (V_i[nDim + 1] < V_Liquid[3])
-		Rc = 0;
-	else
-	    Rc = 2*V_Liquid[5] / V_Liquid[1] / V_Liquid[6] ;
+	if ((V_l[4]-T) < 0) {
+		J = 0; G = 0;
+	} else {
 
+		Theta = (h - V_l[2])/Gas_Constant/T;
+		Theta = (Theta-0.5)*Theta;
+		Theta = Theta * 2 * (Gamma - 1)/(Gamma + 1);
 
-	J     = -4.0*3.14*V_Liquid[5]*Rc*Rc / 3 / V_i[0] / Boltzmann;
+		J  = -4.0*3.14*V_l[5]*V_l[6]*V_l[6] / 3 / T / Boltzmann;
 
-	J = exp(J) * V_i[nDim+2]/V_Liquid[1]*sqrt(2*V_Liquid[5] / 3.14 / MolMass);
+	    J = exp(J) * rho/V_l[1]*sqrt(2*V_Liquid[5] / 3.14 / MolMass);
 
-	J = J / (1+Theta);
+	    J = J / (1+Theta);
 
-}
+		G = k * (V_l[4] - T);
 
+		if (V_l[7] == 0) G = G * (1-V_l[6]/1e-15);
+		else G = G * (1-V_l[6]/V_l[7]);
 
-void CClassicalTheory::SetGrowthRate (su2double V_i, su2double V_Liquid) {
+		G = G / V_l[1] / (h - V_l[2]);
 
-	if (V_i[0] > V_Liquid[4])
-		G = 0;
-	else {
-
-		if (V_i[nDim + 1] < V_Liquid[3])
-			Rc = 0;
-		else
-		    Rc = 2*V_Liquid[5] / V_Liquid[1] / V_Liquid[6] ;
-
-		G = V_i[nDim+7] * (V_Liquid[4] - V_i[0]);
-		G = G * (1-Rc/(V_Liquid[7] + 1e-30));
-		G = G / V_Liquid[1] / (V_i[nDim + 3] - V_Liquid[2]);
-
-		Ni = Gas_Constant * V_Liquid[4] / (V_i[nDim + 3] - V_Liquid[2]);
+		Ni = Gas_Constant * V_l[4] / (h - V_l[2]);
 		Ni = Ni * 0.25 * (Gamma + 1) / (Gamma -1);
 		Ni = 0.5 - Ni;
-		Ni = Ni * Gas_Constant * V_Liquid[4] / (V_i[nDim+3] - V_Liquid[2]);
+		Ni = Ni * Gas_Constant * V_l[4] / (h - V_l[2]);
 
-		Lambda = 1.5* V_i[nDim+5] * sqrt(Gas_Constant * V_i[0] / V_i[nDim + 1]);
-		Pr = Gas_Constant * Gamma / (Gamma - 1) * V_i[nDim+5] / V_i[nDim+7];
+		Lambda = 1.5* mu * sqrt(Gas_Constant * T / P);
+		Pr = Gas_Constant * Gamma / (Gamma - 1) * mu / k;
 
-		Lambda = V_Liquid[7] + 1.89 * (1-Ni) * Lambda / Pr;
+		Lambda = V_l[7] + 1.89 * (1-Ni) * Lambda / Pr;
 		G   = G / Lambda;
+
 	}
 
 }
+
+
 
 

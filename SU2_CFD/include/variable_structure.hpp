@@ -1038,7 +1038,7 @@ public:
    * \brief A virtual member.
    */
   virtual bool SetPrimVar(CFluidModel *FluidModel);
-  
+
   /*!
    * \brief A virtual member.
    */
@@ -2029,6 +2029,28 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+
+  // classes for 2phase solver
+  void SetRadius(su2double R) ;
+
+  void SetDropletNumber(su2double N) ;
+
+  void SetMassSource(su2double S) ;
+
+  void SetLiquidEnthalpy(su2double h) ;
+
+  void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
+
+  su2double GetRadius() ;
+
+  su2double GetMassSource() ;
+
+  su2double GetLiquidPrim() ;
+
+  void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
+
+
 };
 
 /*!
@@ -3080,6 +3102,16 @@ public:
    * \param[in] Value of the derivatives of the wind gust
    */
   void SetWindGustDer(su2double* val_WindGust);
+
+  /*!
+   * \brief Set the value of the mu in case of 2phase calculations
+   */
+  void SetLaminarViscosity(su2double mu);
+
+  /*!
+   * \brief Set the value of therm. cond in case of 2phase calculations
+   */
+  void SetThermalConductivity (su2double k);
 };
 
 /*!
@@ -3478,6 +3510,7 @@ public:
   bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
   using CVariable::SetPrimVar;
   
+
   /*!
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
@@ -3636,8 +3669,7 @@ public:
  */
 class C2phaseVariable : public CVariable {
 protected:
-  su2double muT;                /*!< \brief Eddy viscosity. */
-  su2double *HB_Source;          /*!< \brief Harmonic Balance source term. */
+
 
 public:
   /*!
@@ -3657,6 +3689,7 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~C2phaseVariable(void);
+
 
 };
 
@@ -3877,12 +3910,9 @@ public:
  */
 
 class C2phase_HillVariable : public C2phaseVariable {
+
 protected:
-  su2double sigma_om2,
-  beta_star;
-  su2double F1,    /*!< \brief Menter blending function for blending of k-w and k-eps. */
-  F2,            /*!< \brief Menter blending function for stress limiter. */
-  CDkw;           /*!< \brief Cross-diffusion. */
+	su2double R, y, N, S, rho_m, V_l, P, T, rho, h;
 
 public:
   /*!
@@ -3900,36 +3930,31 @@ public:
    * \param[in] constants -
    * \param[in] config - Definition of the particular problem.
    */
-  C2phase_HillVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
-                   su2double *constants, CConfig *config);
+  C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
   ~C2phase_HillVariable(void);
 
-  /*!
-   * \brief Set the blending function for the blending of k-w and k-eps.
-   * \param[in] val_viscosity - Value of the vicosity.
-   * \param[in] val_dist - Value of the distance to the wall.
-   * \param[in] val_density - Value of the density.
-   */
-  void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
+  void SetRadius(su2double R) ;
 
-  /*!
-   * \brief Get the first blending function.
-   */
-  su2double GetF1blending(void);
+  void SetDropletNumber(su2double N) ;
 
-  /*!
-   * \brief Get the second blending function.
-   */
-  su2double GetF2blending(void);
+  void SetMassSource(su2double S) ;
 
-  /*!
-   * \brief Get the value of the cross diffusion of tke and omega.
-   */
-  su2double GetCrossDiff(void);
+  void SetLiquidEnthalpy(su2double h) ;
+
+  void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
+
+  su2double GetRadius() ;
+
+  su2double GetMassSource() ;
+
+  su2double GetLiquidPrim() ;
+
+  void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
+
 };
 
 

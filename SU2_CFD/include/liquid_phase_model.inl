@@ -33,15 +33,14 @@
 
 #pragma once
 
-inline su2double CLiquidModel::GetLiquidDensity_PT() { return rho_l; }
-inline su2double CLiquidModel::GetLiquidEnthalpy_PT() { return h_l; }
-inline su2double CLiquidModel::GetSurfaceTension_T() { return sigma; }
-inline su2double CLiquidModel::GetTsat_P() { return Tsat; }
-inline su2double CLiquidModel::GetPsat_T() { return Psat; }
-inline su2double CLiquidModel::GetdGibbs_PT() { return dGibbs; }
+inline su2double CLiquidModel::GetLiquidDensity() { return rho_l; }
+inline su2double CLiquidModel::GetMixtureDensity() { return rho_m; }
+inline su2double CLiquidModel::GetLiquidTemperature() { return T_l; }
+inline su2double CLiquidModel::GetLiquidEnthalpy() { return h_l; }
+inline su2double CLiquidModel::GetSurfaceTension() { return sigma; }
+inline su2double CLiquidModel::GetTsat() { return Tsat; }
+inline su2double CLiquidModel::GetPsat() { return Psat; }
+inline su2double CLiquidModel::GetCriticalRadius() { return Rc; }
+inline su2double CLiquidModel::GetRadius() { return R; }
 
-inline su2double CLiquidModel::SetLiquidDensity_PT(su2double P, su2double T, su2double Tstar) { return rho_l; }
-inline su2double CLiquidModel::SetLiquidEnthalpy_Prho(su2double P, su2double T, su2double h_v, su2double Tstar) { return h_l; }
-inline su2double CLiquidModel::SetSurfaceTension_T(su2double T, su2double Tstar) { return sigma; }
-inline su2double CLiquidModel::SetTsat_P(su2double P) { return Tsat; }
-inline su2double CLiquidModel::SetdGibbs_PT(su2double P, su2double T, su2double Gas_Constant) { return dGibbs, Psat; }
+inline su2double CLiquidModel::SetLiquidProperties(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var, su2double *val_Solution) { return R, rho_l, rho_m, h_l, T_l, Rc, Psat, Tsat, sigma); }

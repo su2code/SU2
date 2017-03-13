@@ -114,3 +114,42 @@ void CUpw_2phaseHill::ComputeResidual(su2double *val_residual, su2double **val_J
   
 }
 
+void  CUpw_2phaseHill::ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {
+
+	unsigned short iVar;
+
+	// for euler equations, mass transfer
+
+	q_ij = 0;
+
+	if (grid_movement) {
+	    for (iDim = 0; iDim < nDim; iDim++) {
+	      Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
+	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
+	    }
+	  }
+	  else {
+	    for (iDim = 0; iDim < nDim; iDim++) {
+	      Velocity_i[iDim] = V_i[iDim+1];
+	      q_ij += Velocity_i[iDim]*Velocity_i[iDim];
+	    }
+	  }
+
+	Residual[0] = Primitive[sizeof Primitive -2] * Volume;
+
+	for (iDim=0; iDim< nDim; iDim++) {
+		Residual  [iDim+1] = Primitive[sizeof Primitive-2] * Primitive[iDim + 1] * Volume;
+	}
+
+	Residual[nDim] = Primitive[sizeof Primitive-2] * (Primitive[sizeof Primitive-1] + 0.5*q_ij) * Volume;
+
+	for (iVar=0; iVar< nVar; iVar++) {
+		for (iVar=0; iVar< nVar; iVar++) {
+			Jacobian_i[iVar][iVar] = 0;
+		}
+	}
+
+}
+
+void CUpw_2phaseHill::ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config) {
+}

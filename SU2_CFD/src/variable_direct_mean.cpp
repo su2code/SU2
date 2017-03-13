@@ -483,6 +483,7 @@ bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
   
 }
 
+
 void CEulerVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
@@ -644,6 +645,8 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
   return RightVol;
   
 }
+
+
 
 void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 

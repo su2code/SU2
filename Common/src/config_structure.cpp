@@ -5860,6 +5860,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+
         if (val_system == RUNTIME_2PHASE_SYS) {
           SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
                                 Kind_Upwind_2phase, Kind_SlopeLimit_2phase,

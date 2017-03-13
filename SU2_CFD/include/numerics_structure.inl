@@ -101,6 +101,10 @@ inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_
 
 inline void CNumerics::ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, 
                    su2double **val_Jacobian_j, CConfig *config) { }
+                   
+                   // for 2phase
+                   
+inline void CNumerics::ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {}
 
 inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, 
                    su2double **val_Jacobian_ii, su2double **val_Jacobian_ij, 
@@ -460,3 +464,11 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, 
                   su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
+                                   
+ inline su2double CNumerics::GetNucleationRate () {
+        return nucleation_model->GetNucleationRate();
+}
+
+ inline su2double CNumerics::GetGrowthRate () {
+        return nucleation_model->GetGrowthRate();
+}

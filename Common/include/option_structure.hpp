@@ -338,7 +338,11 @@ static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,			/*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_2PHASE_SYS = 4,			/*!< \brief One-physics case, the code is solving the 2phase model. */
+
+  //check what value to use here
+  RUNTIME_2PHASE_SYS = 9,			/*!< \brief One-physics case, the code is solving the 2phase model. */
+
+
   RUNTIME_POISSON_SYS = 4,			/*!< \brief One-physics case, the code is solving the poissonal potential equation. */
   RUNTIME_ADJPOT_SYS = 5,		/*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
@@ -354,7 +358,11 @@ const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the s
 const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
-const int TWO_PHASE_SOL = 2;/*!< \brief Position of the phase model solution in the solver container array. */
+
+// check what value to use here
+const int TWO_PHASE_SOL = 5;/*!< \brief Position of the phase model solution in the solver container array. */
+
+
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */

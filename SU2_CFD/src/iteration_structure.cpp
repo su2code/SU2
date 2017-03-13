@@ -535,6 +535,7 @@ void CFluidIteration::Iterate(COutput *output,
     integration_container[val_iZone][TURB_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                      config_container, RUNTIME_TURB_SYS, IntIter, val_iZone);
     
+
     /*--- Solve transition model ---*/
     
     if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {
@@ -545,6 +546,17 @@ void CFluidIteration::Iterate(COutput *output,
     
   }
   
+  // solve the 2-phase equations
+
+  if (config_container[val_iZone]->GetKind_2phase_Model() != NONE)  {
+
+	  // solve the 2-phase equations
+
+	  config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_2PHASE_SYS, ExtIter);
+	  integration_container[val_iZone][TWO_PHASE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+																	   config_container, RUNTIME_2PHASE_SYS, IntIter, val_iZone);
+  }
+
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
   
   if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
@@ -603,6 +615,13 @@ void CFluidIteration::Update(COutput *output,
       integration_container[val_iZone][TURB_SOL]->SetConvergence(false);
     }
     
+    /*--- Update dual time solver for the 2-phase model ---*/
+
+    if (config_container[val_iZone]->GetKind_2phase_Model() != NONE)  {
+      integration_container[val_iZone][TWO_PHASE_SOL]->SetDualTime_Solver(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0][TWO_PHASE_SOL], config_container[val_iZone], MESH_0);
+      integration_container[val_iZone][TWO_PHASE_SOL]->SetConvergence(false);
+    }
+
     /*--- Update dual time solver for the transition model ---*/
     
     if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {

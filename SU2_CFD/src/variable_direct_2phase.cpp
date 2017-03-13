@@ -1,5 +1,5 @@
 /*!
- * \file variable_direct_turbulent.cpp
+ * \file variable_direct_2phase.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
  * \version 5.0.0 "Raven"
@@ -34,10 +34,7 @@
 #include "../include/variable_structure.hpp"
 
 C2phaseVariable::C2phaseVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  HB_Source = NULL;
-  
+
 }
 
 C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
@@ -45,18 +42,6 @@ C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nva
   
   unsigned short iVar;
 
-  /*--- Array initialization ---*/
-  
-  HB_Source = NULL;
-  
-  /*--- Allocate space for the harmonic balance source terms ---*/
-  
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    HB_Source = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++)
-      HB_Source[iVar] = 0.0;
-  }
-  
   /*--- Allocate space for the limiter ---*/
   
   Limiter = new su2double [nVar];
@@ -76,70 +61,95 @@ C2phaseVariable::~C2phaseVariable(void) { }
 
 
 
+C2phase_HillVariable::C2phase_HillVariable(void) : C2phaseVariable() {
 
-C2phase_HillVariable::C2phase_HillVariable(void) : C2phaseVariable() { }
+	V_l = new su2double [9];
+}
 
-C2phase_HillVariable::C2phase_HillVariable(su2double val_kine, su2double val_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
-                                   su2double *constants, CConfig *config)
-: C2phaseVariable(val_nDim, val_nvar, config) {
+C2phase_HillVariable::C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, CConfig *config): C2phaseVariable() {
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
+
   /*--- Initialization of variables ---*/
   
-  Solution[0] = val_kine;     Solution_Old[0] = val_kine;
-  Solution[1] = val_omega;  Solution_Old[1] = val_omega;
-  
-  sigma_om2 = constants[3];
-  beta_star = constants[6];
-  
-  F1   = 1.0;
-  F2   = 0.0;
-  CDkw = 0.0;
-  
-  /*--- Initialization of eddy viscosity ---*/
-  
-  muT = val_muT;
-  
+  Solution[0] = rho_m * val_N;                Solution_Old[0] = rho_m * val_N;
+  Solution[1] = rho_m * val_N*val_R;          Solution_Old[1] = rho_m * val_N*val_R;
+  Solution[2] = rho_m * val_N*pow(val_R, 2);  Solution_Old[2] = rho_m * val_N*pow(val_R, 2);
+  Solution[3] = rho_m * val_N*pow(val_R, 3);  Solution_Old[3] = rho_m * val_N*pow(val_R, 3);
+
+
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   
   if (dual_time) {
-    Solution_time_n[0]  = val_kine; Solution_time_n[1]  = val_omega;
-    Solution_time_n1[0]  = val_kine; Solution_time_n1[1]  = val_omega;
+	Solution_time_n[0] = rho_m * val_N;                Solution_time_n1[0] = rho_m * val_N;
+	Solution_time_n[1] = rho_m * val_N*val_R;          Solution_time_n1[1] = rho_m * val_N*val_R;
+	Solution_time_n[2] = rho_m * val_N*pow(val_R, 2);  Solution_time_n1[2] = rho_m * val_N*pow(val_R, 2);
+	Solution_time_n[3] = rho_m * val_N*pow(val_R, 3);  Solution_time_n1[3] = rho_m * val_N*pow(val_R, 3);
   }
     
 }
 
 C2phase_HillVariable::~C2phase_HillVariable(void) {
 
-  if (HB_Source != NULL) delete [] HB_Source;
+	if (V_l != NULL) delete [] V_l;
   
 }
 
-void C2phase_HillVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) {
-  unsigned short iDim;
-  su2double arg2, arg2A, arg2B, arg1;
-  
-  /*--- Cross diffusion ---*/
-  
-  CDkw = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    CDkw += Gradient[0][iDim]*Gradient[1][iDim];
-  CDkw *= 2.0*val_density*sigma_om2/Solution[1];
-  CDkw = max(CDkw, pow(10.0, -20.0));
-  
-  /*--- F1 ---*/
-  
-  arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist+EPS*EPS);
-  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]+EPS*EPS);
-  arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist+EPS*EPS));
-  F1 = tanh(pow(arg1, 4.0));
-  
-  /*--- F2 ---*/
-  
-  arg2 = max(2.0*arg2A, arg2B);
-  F2 = tanh(pow(arg2, 2.0));
-  
+void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) {
+
+	R = Solution[1]/Solution[0];
+
+    y = Solution[3]*(rho_l - rho_v);
+    y = y + 0.75 * rho_v / 3.14;
+    y = y*rho_l / y;
+
+    rho_m = y/ rho_l + (1.0 - y)/ rho_v;
+    rho_m = 1.0/ rho_m;
+
+    N = Solution[0]/rho_m;
+
+    S = rho_m * 3 * y / R * G;
+
 }
+
+void C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,
+		   CLiquidModel *liquid, CConfig *config) {
+
+	P   = Primitive[nDim+1] / config->GetPressure_Ref();
+	T   = Primitive[0]      / config->GetTemperature_Ref();
+	rho = Primitive[nDim+2] / config->GetDensity_Ref();
+	h   = Primitive[nDim+3] / config->GetEnergy_Ref();
+
+	liquid->SetLiquidProp(P, T, rho, h, Two_Phase_Var);
+
+	V_l[0] = liquid->GetLiquidTemperature();
+	V_l[0] = V_l[0]/config->GetTemperature_Ref();
+
+	V_l[1] = liquid->GetLiquidDensity();
+	V_l[1] = V_l[1]/config->GetDensity_Ref();
+
+	V_l[2] = liquid->GetLiquidEnthalpy();
+	V_l[2] = V_l[2]/config->GetEnergy_Ref();
+
+	V_l[3] = liquid->GetPsat();
+	V_l[3] = V_l[3]/config->GetPressure_Ref();
+
+	V_l[4] = liquid->GetTsat();
+	V_l[4] = V_l[4]/config->GetTemperature_Ref();
+
+	V_l[5] = liquid->GetSurfaceTension();
+	V_l[5] = V_l[5]/config->GetSurfTension_Ref();
+
+	V_l[6] = liquid->GetCriticalRadius();
+	V_l[6] = V_l[6]/config->GetLength_Ref();
+
+	V_l[7] = liquid->GetRadius();
+	V_l[7] = V_l[7]/config->GetLength_Ref();
+
+	V_l[8] = liquid->GetMixtureDensity();
+	V_l[8] = V_l[8]/config->GetDensity_Ref();
+
+}
+

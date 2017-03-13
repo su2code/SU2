@@ -8303,6 +8303,8 @@ protected:
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
   
+  su2double *Primitive_Liquid;  /*!< \brief prim vector for the model. */
+
 public:
 
   /*!
@@ -8358,7 +8360,7 @@ public:
    */
   
   void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short iMesh);
+                       CLiquidModel *liquid, unsigned short iMesh);
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -8988,9 +8990,7 @@ public:
 
 class C2phase_HillSolver: public C2phaseSolver {
 private:
-  su2double *constants,  /*!< \brief Constants for the model. */
-  kine_Inf,           /*!< \brief Free-stream turbulent kinetic energy. */
-  omega_Inf;          /*!< \brief Free-stream specific dissipation. */
+  su2double *Primitive_Liquid;  /*!< \brief prim vector for the model. */
 
 public:
   /*!
@@ -9023,6 +9023,8 @@ public:
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
+
+  void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, CLiquidModel *liquid, unsigned short iMesh)
   /*!
    * \brief Computes the eddy viscosity.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9118,11 +9120,6 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
   
-  /*!
-   * \brief Get the constants for the SST model.
-   * \return A pointer to an array containing a set of constants
-   */
-  su2double* GetConstants();
 
   /*!
    * \brief Set the solution using the Freestream values.

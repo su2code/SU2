@@ -59,8 +59,9 @@ using namespace std;
 class CLiquidModel {
 
 protected:
-	su2double rho_l, h_l;
-	su2double dGibbs, Tsat, Psat, sigma;
+	su2double rho_l, h_l, T_l;
+	su2double dGibbs, Tsat, Psat, sigma, Rc;
+
 
 public:
 
@@ -78,58 +79,53 @@ public:
     /*!
      * \brief return liquid density value.
      */
-    su2double GetLiquidDensity_PT(void);
+    su2double GetLiquidDensity(void);
+
+    /*!
+     * \brief return mixture density value.
+     */
+    su2double GetMixtureDensity(void);
+
+    /*!
+     * \brief return liquid density value.
+     */
+    su2double GetLiquidTemperature(void);
 
     /*!
      * \brief return liquid enthalpy value.
      */
-    su2double GetLiquidEnthalpy_Prho(void);
+    su2double GetLiquidEnthalpy(void);
 
     /*!
      * \brief return surface tension value.
      */
-    su2double GetSurfaceTension_T(void);
+    su2double GetSurfaceTension(void);
 
     /*!
      * \brief return saturation temperature value at correspondent pressure.
      */
-    su2double GetTsat_P(void);
+    su2double GetTsat(void);
 
     /*!
      * \brief return saturation pressure value at correspondent temperature.
      */
-    su2double GetPsat_T(void);
+    su2double GetPsat(void);
 
     /*!
-     * \brief return free gibbs energy variation.
+     * \brief return critical radius.
      */
-    su2double GetdGibbs_PT(void);
+    su2double GetCriticalRadius(void);
+
+    /*!
+	* \brief return radius.
+	*/
+	su2double GetRadius(void);
 
 
     /*!
      * \brief return liquid density value.
      */
-    virtual   void SetLiquidDensity_PT(su2double P, su2double T, su2double Tstar);
-
-    /*!
-     * \brief return liquid enthalpy value.
-     */
-    virtual   void SetLiquidEnthalpy_Prho(su2double P, su2double T, su2double h_v, su2double Tstar);
-
-    /*!
-     * \brief return surface tension value.
-     */
-    virtual   void SetSurfaceTension_T(su2double T, su2double Tstar);
-
-    /*!
-     * \brief return saturation temperature value at correspondent pressure.
-     */
-    virtual   void SetTsat_P(su2double P);
-
-    /*!
-     * \brief return free gibbs energy variation and Psat at same temperature.
-     */
-    virtual   void SetdGibbs_PT(su2double P, su2double T, su2double Gas_Constant);
+    virtual   void SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
 
 
 };
@@ -142,7 +138,7 @@ public:
 class CWater : public CLiquidModel {
 protected:
 
-  su2double rho_l, h_l, dGibbs, Tsat, Psat, sigma;
+  su2double rho_l, rho_m, h_l, dGibbs, Tsat, Psat, sigma, Rc, y, R;
   
   su2double *coeff_saturation, *coeff_latent_heat;
   su2double Asat, Bsat,
@@ -150,13 +146,17 @@ protected:
 		    Esat, Fsat,
 		    Gsat, Hsat;
 
+  su2double Tstar;
+
+  su2double Gas_Constant;
+
 public:
   
 
   /*!
    * \brief Constructor of the class.
    */
-  CWater(void);
+  CWater(CConfig*config);
   
   /*!
    * \brief Destructor of the class.
@@ -166,28 +166,7 @@ public:
   /*!
    * \brief return liquid density value.
    */
-  void SetLiquidDensity_PT(su2double P, su2double T, su2double Tstar);
-
-  /*!
-   * \brief return liquid enthalpy value.
-   */
-  void SetLiquidEnthalpy_PT(su2double P, su2double T, su2double h_v, su2double Tstar);
-
-  /*!
-   * \brief return surface tension value.
-   */
-  void SetSurfaceTension_T(su2double T, su2double Tstar);
-
-  /*!
-   * \brief return saturation temperature value at correspondent pressure.
-   */
-  void SetTsat_P(su2double P);
-
-  /*!
-   * \brief return free gibbs energy variation and Psat at same temperature.
-   */
-  void SetdGibbs_PT(su2double P, su2double T, su2double Gas_Constant);
-
+  void SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var, su2double *val_solution);
 
   
 };

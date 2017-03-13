@@ -59,8 +59,6 @@ using namespace std;
 class CNucleationModel {
 
 protected:
-	su2double ;
-	su2double ;
 
 public:
 
@@ -86,21 +84,10 @@ public:
     su2double GetGrowthRate(void);
 
     /*!
-     * \brief return surface tension value.
-     */
-    su2double GetCriticalRadius(void);
-
-
-    /*!
      * \brief return liquid density value.
      */
-    virtual   void SetNucleationRate();
-
-    /*!
-     * \brief return liquid enthalpy value.
-     */
-    virtual   void SetGrowthRate();
-
+    virtual   void SetNucleation_GrowthRate(su2double P, su2double T, su2double rho,
+            su2double h, su2double k, su2double mu, su2double V_Liquid);
 
 };
 
@@ -112,11 +99,10 @@ public:
 class CClassicalTheory : public CNucleationModel  {
 protected:
 
-  su2double Theta, Rc, J, G;
+  su2double Theta, J, G;
   su2double Lambda, Ni, Pr;
   su2double Gamma, Gas_Constant;
   double    Boltzmann, MolMass;
-  unsigned short  nDim;
 
 public:
   
@@ -124,7 +110,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CClassicalTheory(CConfig *config, CGeometry *geometry);
+  CClassicalTheory(CConfig *config);
   
   /*!
    * \brief Destructor of the class.
@@ -134,13 +120,8 @@ public:
   /*!
    * \brief return liquid density value.
    */
-  void SetNucleationRate(su2double V_i, su2double V_Liquid);
-
-  /*!
-   * \brief return liquid enthalpy value.
-   */
-  void SetGrowthRate(su2double V_i, su2double V_Liquid);
-  
+  void SetNucleation_GrowthRate(su2double P, su2double T, su2double rho,
+          su2double h, su2double k, su2double mu, su2double V_Liquid);
 };
 
 

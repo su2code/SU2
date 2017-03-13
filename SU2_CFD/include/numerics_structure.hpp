@@ -48,6 +48,8 @@
 #include "../../Common/include/element_structure.hpp"
 #include "variable_structure.hpp"
 
+#include "../include/nucleation_model.hpp"
+
 using namespace std;
 
 /*!
@@ -67,6 +69,8 @@ protected:
   su2double Prandtl_Lam;        /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl's number. */
   
+  CNucleationModel *nucleation_model;  // nucleation model in use
+
 public:
   
   su2double
@@ -1425,6 +1429,23 @@ public:
    */
   void CreateBasis(su2double *val_Normal);
   
+  /*
+   * additional routines from CNucleationModel
+   */
+
+  su2double  GetNucleationRate ();
+
+  su2double  GetGrowthRate ();
+
+  su2double  GetCriticalRadius ();
+
+  void       SetNucleationRate (su2double V_i, su2double V_Liquid);
+
+  void       SetGrowthRate (su2double V_i, su2double V_Liquid);
+
+  void       ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+
+  void       ComputeResidual(su2double *Residual, su2double **Jacobian_i, NULL, CConfig *config);
 };
 
 /*!
@@ -1475,6 +1496,8 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                        CConfig *config);
+
+  void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double *Jacobian_i);
 };
 
 /*!
@@ -2275,6 +2298,8 @@ private:
   a0, a1;
   unsigned short iDim;
 
+
+
 public:
 
   /*!
@@ -2290,6 +2315,20 @@ public:
    */
   ~CUpw_2phaseHill(void);
 
+
+  // routines from CNucleationModel
+
+  su2double  GetNucleationRate ();
+
+  su2double  GetGrowthRate ();
+
+  su2double  GetCriticalRadius ();
+
+  void  SetNucleationRate (su2double V_i, su2double V_Liquid);
+
+  void  SetGrowthRate (su2double V_i, su2double V_Liquid);
+
+
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
@@ -2298,6 +2337,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+
+  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config);
+
 };
 
 /*!

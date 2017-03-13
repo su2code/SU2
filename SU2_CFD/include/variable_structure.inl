@@ -311,6 +311,8 @@ inline bool CVariable::SetPrimVar(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar(CFluidModel *FluidModel) { return true; }
 
+inline bool CVariable::SetPrimVar(CFluidModel *FluidModel, CConfig *config) { return true; }
+
 inline void CVariable::SetSecondaryVar(CFluidModel *FluidModel) { }
 
 inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
@@ -720,6 +722,16 @@ inline void CEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
 
 inline su2double* CEulerVariable::GetWindGustDer() { return WindGustDer;}
 
+
+//for 2phase calculation 
+inline void CEulerVariable::SetLaminarViscosity(su2double laminarViscosity) {
+  Primitive[nDim+5] = laminarViscosity;
+}
+
+inline void CEulerVariable::SetThermalConductivity(su2double thermalConductivity) {
+  Primitive[nDim+7] = thermalConductivity;
+}
+
 inline su2double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
 
 inline su2double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5]; }
@@ -1097,11 +1109,32 @@ inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
 
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
-inline su2double C2phase_HillVariable::GetF1blending() { return F1; }
 
-inline su2double C2phase_HillVariable::GetF2blending() { return F2; }
 
-inline su2double C2phase_HillVariable::GetCrossDiff() { return CDkw; }
+inline void C2phase_HillVariable::SetRadius(su2double R) { 
+ Primitive[Primitive.size() - 3] = R; }
+ 
+inline void C2phase_HillVariable::SetDropletNumber(su2double N) { 
+ Primitive[Primitive.size() - 2] = N; }
+ 
+inline void C2phase_HillVariable::SetMassSource(su2double S) { 
+ Primitive[Primitive.size() - 1] = S; }
+ 
+inline void C2phase_HillVariable::SetLiquidEnthalpy(su2double h) { 
+ Primitive[Primitive.size()] = h; }
+ 
+inline void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) { return R, S; }
+
+inline su2double C2phase_HillVariable::GetRadius() { return R; } 
+
+inline su2double C2phase_HillVariable::GetMassSource() { return S; }
+
+inline su2double C2phase_HillVariable::GetLiquidPrim() { return V_l; }
+
+inline void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config) {return V_l;}
+
+
+
 
 inline void CAdjTurbVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
   for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {
