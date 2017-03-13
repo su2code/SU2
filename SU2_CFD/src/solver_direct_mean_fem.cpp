@@ -51,6 +51,35 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   symmetrizingTermsPresent = true;
 }
 
+CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
+
+  /*--- Dummy solver constructor that calls the SetNondim. routine in
+   order to load the flow non-dim. information into the config class.
+   This is needed to complete a partitioning for time-accurate local
+   time stepping that depends on the flow state. ---*/
+
+  nDim = val_nDim;
+  SetNondimensionalization(config, iMesh);
+
+  /*--- Basic array initialization ---*/
+  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
+  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
+  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+
+  /*--- Surface-based array initialization ---*/
+  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
+  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
+  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+
+  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
+  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
+  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+
+  /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
+  symmetrizingTermsPresent = true;
+
+}
+
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   /*--- Determine the restart information. ---*/
@@ -207,7 +236,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
@@ -686,7 +715,7 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 #endif
 }
 
-void CFEM_DG_EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
