@@ -57,7 +57,9 @@ inline MatchingFaceClass::MatchingFaceClass(const MatchingFaceClass &other){Copy
 
 inline MatchingFaceClass& MatchingFaceClass::operator=(const MatchingFaceClass &other){Copy(other); return (*this);}
 
-inline long CGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return 0; }
+inline void CGeometry::SetGlobal_to_Local_Point(void) { }
+
+inline long CGeometry::GetGlobal_to_Local_Point(unsigned long val_ipoint) { return 0; }
 
 inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }
 
@@ -256,8 +258,15 @@ inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeo
 
 inline void CMultiGridGeometry::SetPoint_Connectivity(void) { CGeometry::SetPoint_Connectivity(); }
 
-inline long CPhysicalGeometry::GetGlobal_to_Local_Point(long val_ipoint) {
-  map<long, long>::const_iterator MI = Global_to_Local_Point.find(val_ipoint);
+inline void CPhysicalGeometry::SetGlobal_to_Local_Point(void) {
+  Global_to_Local_Point.clear();
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    Global_to_Local_Point[node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+}
+
+inline long CPhysicalGeometry::GetGlobal_to_Local_Point(unsigned long val_ipoint) {
+  map<unsigned long, unsigned long>::const_iterator MI = Global_to_Local_Point.find(val_ipoint);
   if (MI != Global_to_Local_Point.end()) {
     return Global_to_Local_Point[val_ipoint];
   } else {

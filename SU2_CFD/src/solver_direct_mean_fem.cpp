@@ -51,6 +51,35 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   symmetrizingTermsPresent = true;
 }
 
+CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
+
+  /*--- Dummy solver constructor that calls the SetNondim. routine in
+   order to load the flow non-dim. information into the config class.
+   This is needed to complete a partitioning for time-accurate local
+   time stepping that depends on the flow state. ---*/
+
+  nDim = val_nDim;
+  SetNondimensionalization(config, iMesh);
+
+  /*--- Basic array initialization ---*/
+  CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
+  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
+  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+
+  /*--- Surface-based array initialization ---*/
+  Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
+  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
+  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+
+  Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
+  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
+  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+
+  /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
+  symmetrizingTermsPresent = true;
+
+}
+
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   /*--- Determine the restart information. ---*/
@@ -207,7 +236,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
 
   /*--- Define some auxiliary vectors related to the residual ---*/
 
@@ -686,7 +715,7 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 #endif
 }
 
-void CFEM_DG_EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
@@ -2600,6 +2629,16 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *con
     const su2double *solPred = VecSolDOFsPredictorADER.data() + j*nVar*nDOFsLocOwned;
     for(unsigned long i=0; i<(nVar*nDOFsLocOwned); ++i)
        VecSolDOFs[i] += DOFToThisTimeInt[j]*solPred[i];
+  }
+}
+
+void CFEM_DG_EulerSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+  /*--- Run shock capturing algorithm ---*/
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case NONE:
+      break;
   }
 }
 
@@ -5708,6 +5747,178 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual(CConfig           *co
   /*--------------------------------------------------------------------------*/
 
   DenseMatrixProduct(nDOFs, nVar, nInt, basisFunctionsIntTrans, divFlux, res);
+}
+
+void CFEM_DG_NSSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+  /*--- Run shock capturing algorithm ---*/
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case NONE:
+      break;
+    case PERSSON:
+      Shock_Capturing_DG_Persson(geometry, solver_container, numerics, config, iMesh, iStep);
+      break;
+  }
+
+}
+void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                          CConfig *config, unsigned short iMesh, unsigned short iStep) {
+
+  /*--- Dummy variable for storing shock sensor value temporarily ---*/
+  su2double sensorVal, sensorLowerBound, machNorm, machMax;
+  su2double DensityInv, Velocity2, StaticEnergy, SoundSpeed2;
+
+  bool shockExist;
+  unsigned short nDOFsPm1;       // Number of DOFs up to polynomial degree p-1
+
+  /*--- Loop over the owned volume elements to sense the shock. If shock exists,
+        add artificial viscosity for DG FEM formulation to the residual.  ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Get the data from the corresponding standard element. */
+    const unsigned short ind          = volElem[l].indStandardElement;
+    const unsigned short nDOFs        = volElem[l].nDOFsSol;
+    const unsigned short VTK_TypeElem = volElem[l].VTK_Type;
+    const unsigned short nPoly        = standardElementsSol[ind].GetNPoly();
+    const su2double *matVanderInv     = standardElementsSol[ind].GetMatVandermondeInv();
+
+    /*----------------------------------------------------------------------------*/
+    /*--- Step 1: Calculate the number of DOFs up to polynomial degree p-1.    ---*/
+    /*----------------------------------------------------------------------------*/
+
+    switch( VTK_TypeElem ) {
+      case TRIANGLE:
+        nDOFsPm1 = nPoly*(nPoly+1)/2;
+        break;
+      case QUADRILATERAL:
+        nDOFsPm1 = nPoly*nPoly;
+        break;
+      case TETRAHEDRON:
+        nDOFsPm1 = nPoly*(nPoly+1)*(nPoly+2)/6;
+        break;
+      case PYRAMID:
+        nDOFsPm1 = nPoly*(nPoly+1)*(2*nPoly+1)/6;
+        break;
+      case PRISM:
+        nDOFsPm1 = nPoly*nPoly*(nPoly+1)/2;
+        break;
+      case HEXAHEDRON:
+        nDOFsPm1 = nPoly*nPoly*nPoly;
+        break;
+    }
+
+    /*---------------------------------------------------------------------*/
+    /*--- Step 2: Calculate the shock sensor value for this element.    ---*/
+    /*---------------------------------------------------------------------*/
+
+    /* Initialize dummy variable for this volume element */
+    sensorVal = 0;
+    machMax = -1;
+    shockExist = false;
+    sensorLowerBound = 1.e15;
+
+    /* Easier storage of the solution variables for this element. */
+    const su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /* Temporary storage of mach number for DOFs in this element. */
+    su2double *machSolDOFs = VecTmpMemory.data();
+    su2double *vecTemp     = machSolDOFs + nDOFs;
+
+    /* Calculate primitive variables and mach number for DOFs in this element.
+       Also, track the maximum mach number in this element. */
+    for(unsigned short iInd=0; iInd<nDOFs; ++iInd) {
+
+      const su2double *sol = solDOFs + iInd*nVar;
+      DensityInv = 1.0/sol[0];
+      Velocity2 = 0.0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double vel = sol[iDim]*DensityInv;
+        Velocity2 += vel*vel;
+      }
+
+      StaticEnergy = sol[nDim+1]*DensityInv - 0.5*Velocity2;
+
+      FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+      SoundSpeed2 = FluidModel->GetSoundSpeed2();
+      machSolDOFs[iInd] = sqrt( Velocity2/SoundSpeed2 );
+      machMax = max(machSolDOFs[iInd],machMax);
+    }
+
+    /* Change the solution coefficients to modal form from nodal form */
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      vecTemp[i] = 0.0;
+      for (unsigned short j=0; j<nDOFs; ++j)
+        vecTemp[i] += matVanderInv[i+j*nDOFs]*machSolDOFs[j];
+    }
+    
+    /* Get the L2 norm of solution coefficients for the highest polynomial order. */
+    for(unsigned short i=nDOFsPm1; i<nDOFs; ++i) {
+        sensorVal += vecTemp[i]*vecTemp[i];
+    }
+
+    /* If the maximum mach number is greater than 1.0, try to calculate the shockSensorValue.
+       Otherwise, assign default value. */
+    if ( machMax > 1.0) {
+      // !!!!!Threshold value for sensorVal should be further investigated
+      if(sensorVal > 1.e-15) {
+        machNorm = 0.0;
+
+        /*--- Get L2 norm square of vecTemp ---*/
+        for (unsigned short i=0; i<nDOFs; ++i) {
+          machNorm += vecTemp[i]*vecTemp[i];
+        }
+        if (machNorm < 1.e-15) {
+          // This should not happen
+          volElem[l].shockSensorValue = 1000.0;
+        }
+        else {
+          volElem[l].shockSensorValue = log(sensorVal/machNorm);
+          shockExist = true;
+        }
+      }
+      else {
+        // There is no shock in this element
+        volElem[l].shockSensorValue = -1000.0;
+      }
+    }
+    else {
+      volElem[l].shockSensorValue = -1000.0;
+    }
+
+    /*---------------------------------------------------------------------*/
+    /*--- Step 3: Determine artificial viscosity for this element.      ---*/
+    /*---------------------------------------------------------------------*/
+    if (shockExist) {
+      // Following if-else clause is purely empirical from NACA0012 case.
+      // Need to develop thorough method for general problems
+      if ( nPoly == 1) {
+        sensorLowerBound = -6.0;
+      }
+      else if ( nPoly == 2 ) {
+        sensorLowerBound = -12.0;
+      }
+      else if ( nPoly == 3 ) {
+        sensorLowerBound = -12.0;
+      }
+      else if ( nPoly == 4 ) {
+         sensorLowerBound = -17.0;
+      }
+
+      // Assign artificial viscosity based on shockSensorValue
+      if ( volElem[l].shockSensorValue > sensorLowerBound ) {
+        // Following value is initial guess.
+        volElem[l].shockArtificialViscosity = 1.e-10;
+      }
+      else {
+        volElem[l].shockArtificialViscosity = 0.0;
+      }
+    }
+    else {
+      volElem[l].shockArtificialViscosity = 0.0;
+    }
+  }
+
 }
 
 void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

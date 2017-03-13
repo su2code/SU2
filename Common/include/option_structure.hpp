@@ -611,6 +611,17 @@ static const map<string, ENUM_FEM> FEM_Map = CCreateMap<string, ENUM_FEM>
 ("DG", DG);
 
 /*!
+ * \brief types of shock capturing method in Discontinuous Galerkin numerical method.
+ */
+enum ENUM_SHOCK_CAPTURING_DG {
+  NO_SHOCK_CAPTURING = 0,            /*!< \brief Shock capturing is not used. */
+  PERSSON = 1,                       /*!< \brief Per-Olof Persson's sub-cell shock capturing method. */
+};
+static const map<string, ENUM_SHOCK_CAPTURING_DG> ShockCapturingDG_Map = CCreateMap<string, ENUM_SHOCK_CAPTURING_DG>
+("NONE", NO_SHOCK_CAPTURING)
+("PERSSON", PERSSON);
+
+/*!
  * \brief Spatial numerical order integration
  */
 enum ENUM_SPATIAL_ORDER {

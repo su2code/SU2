@@ -160,6 +160,9 @@ public:
 
   su2double lenScale;                /*!< \brief Length scale of the element. */
 
+  su2double shockSensorValue;               /*!< \brief Value for sensing a shock */
+  su2double shockArtificialViscosity;       /*!< \brief Artificial viscosity for a shock */
+
 
   vector<su2double> metricTerms;            /*!< \brief Vector of the metric terms in the
                                                         integration points of this element. */

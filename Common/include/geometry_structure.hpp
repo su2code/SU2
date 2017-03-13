@@ -853,12 +853,17 @@ public:
 	 */
 	virtual void FindNormal_Neighbor(CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetGlobal_to_Local_Point();
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_ipoint - Global point.
 	 * \returns Local index that correspond with the global index.
 	 */
-	virtual long GetGlobal_to_Local_Point(long val_ipoint);
+	virtual long GetGlobal_to_Local_Point(unsigned long val_ipoint);
 
 	/*!
 	 * \brief A virtual member.
@@ -1106,7 +1111,7 @@ public:
  */
 class CPhysicalGeometry : public CGeometry {
 
-  map<long,long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
+  map<unsigned long, unsigned long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
   unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
   unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
@@ -1163,13 +1168,18 @@ public:
 	 * \param[in] val_domain - Number of domains for parallelization purposes.
 	 */
 	void SetBoundaries(CConfig *config);
-  
+
+  /*!
+   * \brief Set the local index that correspond with the global numbering index.
+   */
+  void SetGlobal_to_Local_Point();
+
 	/*!
 	 * \brief Get the local index that correspond with the global numbering index.
 	 * \param[in] val_ipoint - Global point.
-	 * \returns Local index that correspond with the global index.
+	 * \returns Local index that correspond with the global index, -1 if not found on the current rank (process).
 	 */
-	long GetGlobal_to_Local_Point(long val_ipoint);
+	long GetGlobal_to_Local_Point(unsigned long val_ipoint);
   
 	/*!
 	 * \brief Get the local marker that correspond with the global marker.
@@ -1379,19 +1389,22 @@ public:
 
   /*!
    * \brief Compute the weights of the FEM graph for ParMETIS.
-   * \param[in]  config      - Definition of the particular problem.
-   * \param[in]  localFaces  - Vector, which contains the element faces of this rank.
-   * \param[in]  xadj_l      - Number of neighbors per element, ParMETIS storage format.
-   * \param[in]  adjacency_l - Neighbors of the element, ParMETIS storage format.
-   * \param[out] vwgt        - Weights of the vertices of the graph, i.e. the elements.
-   * \param[out] adjwgt      - Weights of the edges of the graph.
+   * \param[in]  config                       - Definition of the particular problem.
+   * \param[in]  localFaces                   - Vector, which contains the element faces of this rank.
+   * \param[in]  xadj_l                       - Number of neighbors per element, ParMETIS storage format.
+   * \param[in]  adjacency_l                  - Neighbors of the element, ParMETIS storage format.
+   * \param[in]  mapExternalElemIDToTimeLevel - Map from the external element ID's to their time level.
+   * \param[out] vwgt                         - Weights of the vertices of the graph, i.e. the elements.
+   * \param[out] adjwgt                       - Weights of the edges of the graph.
    */
-  void ComputeFEMGraphWeights(CConfig                          *config,
-                              const vector<FaceOfElementClass> &localFaces,
-                              const vector<unsigned long>      &xadj_l,
-                              const vector<unsigned long>      &adjacency_l,
-                              vector<su2double>                &vwgt,
-                              vector<su2double>                &adjwgt);
+  void ComputeFEMGraphWeights(
+              CConfig                                 *config,
+              const vector<FaceOfElementClass>         &localFaces,
+              const vector<unsigned long>              &xadj_l,
+              const vector<unsigned long>              &adjacency_l,
+              const map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel,
+                    vector<su2double>                  &vwgt,
+                    vector<su2double>                  &adjwgt);
 
   /*!
    * \brief Determine whether or not the Jacobians of the elements and faces
@@ -1407,6 +1420,19 @@ public:
    */
   void DeterminePeriodicFacesFEMGrid(CConfig                    *config,
                                      vector<FaceOfElementClass> &localFaces);
+
+  /*!
+   * \brief Determine the time level of the elements when time accurate
+            local time stepping is employed.
+   * \param[in]  config                       - Definition of the particular problem.
+   * \param[in]  localFaces                   - Vector, which contains the element
+                                                faces of this rank.
+   * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to
+                                                their time level.
+   */
+  void DetermineTimeLevelElements(CConfig                            *config,
+                                  const vector<FaceOfElementClass>   &localFaces,
+                                  map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel);
 
 	/*!
 	 * \brief Set the rotational velocity at each node.
