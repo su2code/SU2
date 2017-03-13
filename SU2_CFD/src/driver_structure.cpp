@@ -128,7 +128,13 @@ CDriver::CDriver(char* confFile,
      partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
-    
+
+    /*--- For the FEM solver with time-accurate local time-stepping, use
+     a dummy solver class to retrieve the initial flow state. ---*/
+
+    CSolver *solver_aux = NULL;
+    if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
+
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
     
     config_container[ZONE_0]->Tick(&tick);
@@ -161,10 +167,11 @@ CDriver::CDriver(char* confFile,
     }
     config_container[ZONE_0]->Tock(tick,"CPhysicalGeometry_2",1);
     
-    /*--- Deallocate the memory of geometry_aux ---*/
+    /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
     
     delete geometry_aux;
-    
+    if (solver_aux != NULL) delete solver_aux;
+
     /*--- Add the Send/Receive boundaries ---*/
     config_container[ZONE_0]->Tick(&tick);
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
