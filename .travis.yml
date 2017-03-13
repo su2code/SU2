@@ -11,6 +11,8 @@ notifications:
         recipients:
             - economon@stanford.edu
             - e.t.a.vanderweide@utwente.nl
+            - jhchoi89@stanford.edu
+            - gomer@stanford.edu
   
 branches:
     only:

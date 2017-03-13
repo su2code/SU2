@@ -57,7 +57,7 @@ inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *con
 
 //inline void CSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
+inline void CSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) { }
 
 inline unsigned short CSolver::GetIterLinSolver(void) { return IterLinSolver; }
 
@@ -76,7 +76,7 @@ inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver
 
 inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
-inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) { }
+inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
 inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) { }
   
@@ -916,8 +916,8 @@ inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Poin
 inline su2double* CSolver::GetPoint_Max_Coord(unsigned short val_var) { return Point_Max_Coord[val_var]; }
 
 inline void CSolver::Set_OldSolution(CGeometry *geometry) {
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
-    node[iPoint]->Set_OldSolution(); // The loop should be over nPoints 
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    node[iPoint]->Set_OldSolution(); // The loop should be over nPoints
                                      //  to guarantee that the boundaries are
                                      //  well updated
 }
@@ -1004,6 +1004,11 @@ inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    node[iPoint]->SetSolution_New();
+}
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
@@ -2067,6 +2072,9 @@ inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned lo
 
 inline void CSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
                                                          unsigned short iTime) {}
+
+inline void CSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
 
 inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}

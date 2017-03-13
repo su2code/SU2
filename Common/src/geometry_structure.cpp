@@ -4762,7 +4762,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
   
-  map<long, long>::const_iterator MI;
+  map<unsigned long, unsigned long>::const_iterator MI;
 
   /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
@@ -12341,7 +12341,9 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     }
     
     /*--- Calling ParMETIS ---*/
-    if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
+    if (rank == MASTER_NODE)
+      cout << endl <<"----------------------- Calling ParMETIS --------------------------------" << endl;
+
     ParMETIS_V3_PartKway(vtxdist,xadj, adjacency, NULL, NULL, &wgtflag,
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
@@ -12501,7 +12503,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine the maximum global point ID that occurs in localFacesComm
         of all ranks. Note that only the first point is taken into account,
-        because the this point determines the rank where the face is sent to. ---*/
+        because this point determines the rank where the face is sent to. ---*/
   unsigned long nFacesLocComm = localFacesComm.size();
   unsigned long maxPointIDLoc = 0;
   for(unsigned long i=0; i<nFacesLocComm; ++i)
@@ -12826,18 +12828,61 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         can be considered constant. ---*/
   DetermineFEMConstantJacobiansAndLenScale(config);
 
+  /*--- Determine the time levels of the elements. This is only relevant
+        when time accurate local time stepping is employed. ---*/
+  map<unsigned long, unsigned short> mapExternalElemIDToTimeLevel;
+  DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
+
   /*--- Determine the ownership of the internal faces, i.e. which adjacent
         element is responsible for computing the fluxes through the face. ---*/
   for(unsigned long i=0; i<nFacesLoc; ++i) {
 
-    /* For the time being just a very simple decision which element is the
-       owner of the face. This must be modified later, especially when time
-       accurate local time stepping is employed. */
-    const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
-    if( sumElemID%2 )
-      localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
-    else
-      localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+    /* Check for a matching face. */
+    if(localFaces[i].elemID1 < Global_nElem) {
+
+      /* Determine the time level for both elements. Elem0 is always owned, while
+         elem1 is either owned or external. The data for external elements is
+         stored in mapExternalElemIDToTimeLevel. */
+      unsigned long  elemID0    = localFaces[i].elemID0 - starting_node[rank];
+      unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
+
+      unsigned short timeLevel1;
+      if(localFaces[i].elemID1 >= starting_node[rank] &&
+         localFaces[i].elemID1 <  starting_node[rank]+nElem) {
+
+        unsigned long elemID1 = localFaces[i].elemID1 - starting_node[rank];
+        timeLevel1 = elem[elemID1]->GetTimeLevel();
+      }
+      else {
+
+        map<unsigned long,unsigned short>::const_iterator MI;
+        MI = mapExternalElemIDToTimeLevel.find(localFaces[i].elemID1);
+        timeLevel1 = MI->second;
+      }
+
+      /* Check if both elements have the same time level. */
+      if(timeLevel0 == timeLevel1) {
+
+        /* Same time level, hence both elements can own the face. The decision
+           below makes an attempt to spread the workload evenly. */
+        const unsigned long sumElemID = localFaces[i].elemID0 + localFaces[i].elemID1;
+        if( sumElemID%2 )
+          localFaces[i].elem0IsOwner = localFaces[i].elemID0 < localFaces[i].elemID1;
+        else
+          localFaces[i].elem0IsOwner = localFaces[i].elemID0 > localFaces[i].elemID1;
+      }
+      else {
+
+        /* The time level of both elements differ. The element with the smallest
+           time level must be the owner of the element. */
+        localFaces[i].elem0IsOwner = timeLevel0 < timeLevel1;
+      }
+    }
+    else {
+
+      /* Non-matching face. Give the ownership to element 0. */
+      localFaces[i].elem0IsOwner = true;
+    }
   }
 
   /*--- All the matching face information is known now, including periodic
@@ -12912,10 +12957,11 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sort(adjacency_l.begin()+xadj_l[i], adjacency_l.begin()+xadj_l[i+1]);
 
   /*--- Compute the weigts of the graph. ---*/
-  vector<su2double> vwgt(nElem);
+  vector<su2double> vwgt(2*nElem);
   vector<su2double> adjwgt(xadj_l[nElem]);
 
-  ComputeFEMGraphWeights(config, localFaces, xadj_l, adjacency_l, vwgt, adjwgt);
+  ComputeFEMGraphWeights(config, localFaces, xadj_l, adjacency_l,
+                         mapExternalElemIDToTimeLevel, vwgt, adjwgt);
 
   /*--- The remainder of this function should only ever be called if we have parallel
         support with MPI and have the ParMETIS library compiled and linked. ---*/
@@ -12927,10 +12973,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   if(size > SINGLE_NODE)
   {
     /*--- The scalar variables and the options array for the call to ParMETIS. ---*/
-    idx_t  wgtflag = 2;               // Weights on both the vertices and edges.
+    idx_t  wgtflag = 3;               // Weights on both the vertices and edges.
     idx_t  numflag = 0;               // C-numbering.
-    idx_t  ncon    = 1;               // Number of constraints.
-    real_t ubvec   = 1.05;            // Tolerance, recommended value is 1.05.
+    idx_t  ncon    = 2;               // Number of constraints.
+    real_t ubvec[] = {1.05, 1.05};    // Tolerances for the vertex weights, recommended value is 1.05.
     idx_t  nparts  = (idx_t)size;     // Number of subdomains. Must be number of MPI ranks.
     idx_t  options[METIS_NOPTIONS];   // Just use the default options.
     METIS_SetDefaultOptions(options);
@@ -12953,25 +12999,26 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     for(unsigned long i=0; i<xadj_l[nElem]; ++i)
       adjacencyPar[i] = adjacency_l[i];
 
-    vector<idx_t> vwgtPar(nElem);
-    for(unsigned long i=0; i<nElem; ++i)
+    vector<idx_t> vwgtPar(nElem*ncon);
+    for(unsigned long i=0; i<nElem*ncon; ++i)
       vwgtPar[i] = (idx_t) ceil(vwgt[i]);
 
     vector<idx_t> adjwgtPar(xadj_l[nElem]);
     for(unsigned long i=0; i<xadj_l[nElem]; ++i)
       adjwgtPar[i] = (idx_t) ceil(adjwgt[i]);
 
-    vector<real_t> tpwgts(size, 1.0/((real_t)size));  // Equal distribution.
+    vector<real_t> tpwgts(size*ncon, 1.0/((real_t)size));  // Equal distribution.
 
     /*--- Calling ParMETIS ---*/
     vector<idx_t> part(nElem);
-    if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
+    if (rank == MASTER_NODE)
+      cout << endl <<"----------------------- Calling ParMETIS --------------------------------" << endl;
 
     idx_t edgecut;
     MPI_Comm comm = MPI_COMM_WORLD;
     ParMETIS_V3_PartKway(vtxdist.data(), xadjPar.data(), adjacencyPar.data(),
                          vwgtPar.data(), adjwgtPar.data(), &wgtflag, &numflag,
-                         &ncon, &nparts, tpwgts.data(), &ubvec, options,
+                         &ncon, &nparts, tpwgts.data(), ubvec, options,
                          &edgecut, part.data(), &comm);
     if (rank == MASTER_NODE) {
       cout << "Finished partitioning using ParMETIS (";
@@ -13410,6 +13457,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     elem[i]->InitializeJacobianConstantFaces(nFaces);
 
     /*--- Loop over the number of faces of this element. ---*/
+    su2double jacFaceMax = 0.0;
     for(unsigned short j=0; j<nFaces; ++j) {
 
       /*--- Determine the index jj in the standard face elements for this face.
@@ -13543,30 +13591,466 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
                       maxRatioLenFaceNormals <= 1.000001;
 
       elem[i]->SetJacobianConstantFace(constJacobian, j);
+
+      /* Update the maximum value of the Jacobian of all faces surrounding
+         the current element. */
+      jacFaceMax = max(jacFaceMax, normLenMax);
     }
 
     /*------------------------------------------------------------------------*/
     /*--- Determine the length scale of the element. This is needed to     ---*/
     /*--- compute the computational weights of an element when time        ---*/
-    /*--- accurate local time stepping is employed.                        ---*/
+    /*--- accurate local time stepping is employed. Note that a factor 2   ---*/
+    /*--- must be taken into account, which is the length scale of all the ---*/
+    /*--- reference elements used in this code.                            ---*/
     /*------------------------------------------------------------------------*/
 
-    /* TEMPORARY IMPLEMENTATION. */
-    elem[i]->SetLengthScale(-1.0);
+    const su2double lenScale = 2.0*jacMin/jacFaceMax;
+    elem[i]->SetLengthScale(lenScale);
   }
 }
 
-void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          *config,
-                                               const vector<FaceOfElementClass> &localFaces,
-                                               const vector<unsigned long>      &xadj_l,
-                                               const vector<unsigned long>      &adjacency_l,
-                                               vector<su2double>                &vwgt,
-                                               vector<su2double>                &adjwgt){
+void CPhysicalGeometry::DetermineTimeLevelElements(
+                          CConfig *config,
+                          const vector<FaceOfElementClass>   &localFaces,
+                          map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel) {
+
+  /*--- Determine my rank and the number of ranks. ---*/
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Initialize the time level of external elements to zero. ---*/
+  for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
+                                                 FI!=localFaces.end(); ++FI) {
+    if(FI->elemID1 < Global_nElem) {     // Safeguard against non-matching faces.
+
+      if(FI->elemID1 <  starting_node[rank] ||
+         FI->elemID1 >= starting_node[rank]+nElem) {
+
+        /* This element is an external element. Store it in the map
+           mapExternalElemIDToTimeLevel if not already done so. */
+        map<unsigned long,unsigned short>::iterator MI;
+        MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
+        if(MI == mapExternalElemIDToTimeLevel.end())
+          mapExternalElemIDToTimeLevel[FI->elemID1] = 0;
+      }
+    }
+  }
+
+  /*--- Get the number of time levels used and check whether or not
+        time accurate local time stepping is used. ---*/
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+
+  if(nTimeLevels == 1) {
+
+    /*--- No time accurate local time stepping. Set the time level of
+          all elements to zero. ---*/
+    for(unsigned long i=0; i<nElem; ++i)
+      elem[i]->SetTimeLevel(0);
+  }
+  else {
+
+    /*--- Time accurate local time stepping is used. The estimate of the time
+          step is based on free stream values at the moment, but this is easy
+          to change, if needed. ---*/
+    const su2double Gamma      = config->GetGamma();
+    const su2double Prandtl    = config->GetPrandtl_Lam();
+    unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+
+    /* TEMPORARY IMPLEMENTATION. HARD CODED UNTIL A BETTER SOLUTION IS FOUND. */
+    const su2double Density    = 1.0;
+    const su2double Vel[]      = {0.118322, 0.0, 0.0};
+    const su2double VelMag     = sqrt(Vel[0]*Vel[0] + Vel[1]*Vel[1] + Vel[2]*Vel[2]);
+    const su2double SoundSpeed = 10.0*VelMag;
+    const su2double Viscosity  = 0.00118322;
+ // const su2double Viscosity  = 1.97203e-06;
+
+    cout << endl << "     WARNING in CPhysicalGeometry::DetermineTimeLevelElements" << endl;
+    cout << "Free stream velocity and viscosity hard coded at the moment" << endl;
+    cout << endl;
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Estimate the time steps of the locally owned elements.   ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* In the estimate of the time step the spectral radius of the inviscid terms is
+       needed. As the current estimate is based on the free stream, the value of this
+       spectral radius can be computed beforehand. Note that this is a rather
+       conservative estimate. */
+    su2double charVel2 = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+      const su2double rad = fabs(Vel[iDim]) + SoundSpeed;
+      charVel2 += rad*rad;
+    }
+
+    const su2double charVel = sqrt(charVel2);
+
+    /* Also the viscous contribution to the time step is constant. Compute it. */
+    const su2double factHeatFlux  =  Gamma/Prandtl;
+    const su2double lambdaOverMu  = -TWO3;
+    const su2double radVisc       =  max(max(1.0, 2.0+lambdaOverMu),factHeatFlux)
+                                  *  Viscosity/Density;
+
+    /*--- Allocate the memory for time step estimate of the local elements and
+          determine the values. Also keep track of the minimum value. ---*/
+    su2double minDeltaT = 1.e25;
+    vector<su2double> timeStepElements(nElem);
+
+    for(unsigned long i=0; i<nElem; ++i) {
+
+      unsigned short nPoly = elem[i]->GetNPolySol();
+      if(nPoly == 0) nPoly = 1;
+      const su2double lenScaleInv = nPoly/elem[i]->GetLengthScale();
+      const su2double lenScale    = 1.0/lenScaleInv;
+
+      timeStepElements[i] = lenScale/(charVel + lenScaleInv*radVisc);
+      minDeltaT           = min(minDeltaT, timeStepElements[i]);
+    }
+
+    /* Determine the minimum value of all elements in the grid.
+       Only needed for a parallel implementation. */
+#ifdef HAVE_MPI
+    su2double locVal = minDeltaT;
+    SU2_MPI::Allreduce(&locVal, &minDeltaT, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#endif
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Set up the variables to carry out the MPI communication  ---*/
+    /*---         of the external element data.                            ---*/
+    /*------------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+
+    /*--- Determine the ranks from which I receive element data during
+          the actual exchange. ---*/
+    vector<int> recvFromRank(size, 0);
+
+    for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
+                                                   FI!=localFaces.end(); ++FI) {
+      if(FI->elemID1 < Global_nElem) {     // Safeguard against non-matching faces.
+
+        if(FI->elemID1 <  starting_node[rank] ||
+           FI->elemID1 >= starting_node[rank]+nElem) {
+
+          /* Element is stored on a different rank. Determine this rank. */
+          int rankElem;
+          if(FI->elemID1 >= starting_node[size-1]) rankElem = size-1;
+          else {
+            const unsigned long *low;
+            low = lower_bound(starting_node, starting_node+size, FI->elemID1);
+
+            rankElem = low - starting_node -1;
+            if(*low == FI->elemID1) ++rankElem;
+          }
+
+          /* Set the corresponding index of recvFromRank to 1. */
+          recvFromRank[rankElem] = 1;
+        }
+      }
+    }
+
+    map<int,int> mapRankToIndRecv;
+    for(int i=0; i<size; ++i) {
+      if( recvFromRank[i] ) {
+        int ind = mapRankToIndRecv.size();
+        mapRankToIndRecv[i] = ind;
+      }
+    }
+
+    /* Determine the number of ranks from which I will receive data and to
+       which I will send data. */
+    int nRankRecv = mapRankToIndRecv.size();
+    int nRankSend;
+
+    vector<int> sizeSend(size, 1);
+    MPI_Reduce_scatter(recvFromRank.data(), &nRankSend, sizeSend.data(),
+                       MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    /*--- Create the vector of vectors of the global element ID's that
+          will be received from other ranks. ---*/
+    vector<vector<unsigned long> > recvElem(nRankRecv, vector<unsigned long>(0));
+
+    for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
+                                                   FI!=localFaces.end(); ++FI) {
+      if(FI->elemID1 < Global_nElem) {     // Safeguard against non-matching faces.
+
+        if(FI->elemID1 <  starting_node[rank] ||
+           FI->elemID1 >= starting_node[rank]+nElem) {
+
+          int rankElem;
+          if(FI->elemID1 >= starting_node[size-1]) rankElem = size-1;
+          else {
+            const unsigned long *low;
+            low = lower_bound(starting_node, starting_node+size, FI->elemID1);
+
+            rankElem = low - starting_node -1;
+            if(*low == FI->elemID1) ++rankElem;
+          }
+
+          map<int,int>::const_iterator MRI = mapRankToIndRecv.find(rankElem);
+          recvElem[MRI->second].push_back(FI->elemID1);
+        }
+      }
+    }
+
+    /*--- Loop over the ranks from which I receive data during the actual
+          exchange and send over the global element ID's. In order to avoid
+          unnecessary communication, multiple entries are filtered out. ---*/
+    vector<MPI_Request> sendReqs(nRankRecv);
+    map<int,int>::const_iterator MRI = mapRankToIndRecv.begin();
+
+    for(int i=0; i<nRankRecv; ++i, ++MRI) {
+
+      sort(recvElem[i].begin(), recvElem[i].end());
+      vector<unsigned long>::iterator lastElem = unique(recvElem[i].begin(),
+                                                        recvElem[i].end());
+      recvElem[i].erase(lastElem, recvElem[i].end());
+
+      SU2_MPI::Isend(recvElem[i].data(), recvElem[i].size(), MPI_UNSIGNED_LONG,
+                     MRI->first, MRI->first, MPI_COMM_WORLD, &sendReqs[i]);
+    }
+
+    /*--- Receive the messages in arbitrary sequence and store the requested
+          element ID's, which are converted to local ID's. Furthermore, store
+          the processors from which the requested element ID's came from. ---*/
+    vector<vector<unsigned long> > sendElem(nRankSend, vector<unsigned long>(0));
+    vector<int> sendRank(nRankSend);
+
+    for(int i=0; i<nRankSend; ++i) {
+
+      MPI_Status status;
+      MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+      sendRank[i] = status.MPI_SOURCE;
+
+      int sizeMess;
+      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+      sendElem[i].resize(sizeMess);
+
+      SU2_MPI::Recv(sendElem[i].data(), sizeMess, MPI_UNSIGNED_LONG,
+                    sendRank[i], rank, MPI_COMM_WORLD, &status);
+
+      for(int j=0; j<sizeMess; ++j)
+        sendElem[i][j] -= starting_node[rank];
+    }
+
+    /* Complete the non-blocking sends. Synchronize the processors afterwards,
+       because wild cards have been used in the communication. */
+    SU2_MPI::Waitall(nRankRecv, sendReqs.data(), MPI_STATUSES_IGNORE);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+#endif
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Determine the time levels of the owned elements as well  ---*/
+    /*---         the external elements. The information of the latter is  ---*/
+    /*---         stored in the map mapExternalElemIDToTimeLevel.          ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Initial estimate of the time level of the owned elements. */
+    for(unsigned long i=0; i<nElem; ++i) {
+      unsigned short timeLevel;
+      su2double deltaT = minDeltaT;
+      for(timeLevel=0; timeLevel<(nTimeLevels-1); ++timeLevel) {
+        deltaT *= 2;
+        if(timeStepElements[i] < deltaT) break;
+      }
+
+      elem[i]->SetTimeLevel(timeLevel);
+    }
+
+    /*--- Iterative algorithm to make sure that neighboring elements differ
+          at most one time level. This is no fundamental issue, but it makes
+          the parallel implementation easier, while the penalty in efficiency
+          should be small for most cases. ---*/
+    for(;;) {
+
+      /* Variable to indicate whether the local situation has changed. */
+      unsigned short localSituationChanged = 0;
+
+      /*--- Communicate the information of the externals, if needed. ---*/
+#ifdef HAVE_MPI
+
+      /* Define the send buffers and resize the vector of send requests. */
+      vector<vector<unsigned short> > sendBuf(nRankSend, vector<unsigned short>(0));
+      sendReqs.resize(nRankSend);
+
+      /*--- Copy the information of the time level into the send buffers
+            and send the data using non-blocking sends. ---*/
+      for(int i=0; i<nRankSend; ++i) {
+
+        sendBuf[i].resize(sendElem[i].size());
+        for(unsigned long j=0; j<sendElem[i].size(); ++j)
+          sendBuf[i][j] = elem[sendElem[i][j]]->GetTimeLevel();
+
+        SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_UNSIGNED_SHORT,
+                       sendRank[i], sendRank[i], MPI_COMM_WORLD, &sendReqs[i]);
+      }
+
+      /*--- Receive the data for the externals. As this data is needed
+            immediately, blocking communication is used. The time level of the
+            externals is stored in mapExternalElemIDToTimeLevel, whose second
+            element, which contains the time level, is updated accordingly. ---*/
+      for(int i=0; i<nRankRecv; ++i) {
+
+        MPI_Status status;
+        MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+        int source = status.MPI_SOURCE;
+
+        MRI = mapRankToIndRecv.find(source);
+        const int ind = MRI->second;
+
+        vector<unsigned short> recvBuf(recvElem[ind].size());
+        SU2_MPI::Recv(recvBuf.data(), recvBuf.size(), MPI_UNSIGNED_SHORT,
+                      source, rank, MPI_COMM_WORLD, &status);
+
+        for(unsigned long j=0; j<recvBuf.size(); ++j) {
+          map<unsigned long,unsigned short>::iterator MI;
+          MI = mapExternalElemIDToTimeLevel.find(recvElem[ind][j]);
+          MI->second = recvBuf[j];
+        }
+      }
+
+      /* Complete the nonblocking sends. */
+      SU2_MPI::Waitall(nRankSend, sendReqs.data(), MPI_STATUSES_IGNORE);
+#endif
+      /*--- Loop over the matching faces and update the time levels of the
+            adjacent elements, if needed. ---*/
+      for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
+                                                 FI!=localFaces.end(); ++FI) {
+        /* Safeguard against non-matching faces. */
+        if(FI->elemID1 < Global_nElem) {
+
+          /* Local element ID of the first element. Per definition this is
+             always a locally stored element. Also store its time level. */
+          const unsigned long  elemID0    = FI->elemID0 - starting_node[rank];
+          const unsigned short timeLevel0 = elem[elemID0]->GetTimeLevel();
+
+          /* Determine the status of the second element. */
+          if(FI->elemID1 >= starting_node[rank] &&
+             FI->elemID1 <  starting_node[rank]+nElem) {
+
+            /* Both elements are stored locally. Determine the local
+               element of the second element and determine the minimum
+               time level. */
+            const unsigned long  elemID1    = FI->elemID1 - starting_node[rank];
+            const unsigned short timeLevel1 = elem[elemID1]->GetTimeLevel();
+            const unsigned short timeLevel  = min(timeLevel0, timeLevel1);
+
+            /* If the time level of either element is larger than timeLevel+1,
+               adapt the time levels and indicate that the local situation
+               has changed. */
+            if(timeLevel0 > timeLevel+1) {
+              elem[elemID0]->SetTimeLevel(timeLevel+1);
+              localSituationChanged = 1;
+            }
+
+            if(timeLevel1 > timeLevel+1) {
+              elem[elemID1]->SetTimeLevel(timeLevel+1);
+              localSituationChanged = 1;
+            }
+          }
+          else {
+
+            /* The second element is stored on a different processor.
+               Retrieve its time level from mapExternalElemIDToTimeLevel
+               and determine the minimum time level. */
+            map<unsigned long,unsigned short>::iterator MI;
+            MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
+            const unsigned short timeLevel = min(timeLevel0, MI->second);
+
+            /* If the time level of either element is larger than timeLevel+1,
+               adapt the time levels and indicate that the local situation
+               has changed. */
+            if(timeLevel0 > timeLevel+1) {
+              elem[elemID0]->SetTimeLevel(timeLevel+1);
+              localSituationChanged = 1;
+            }
+
+            if(MI->second > timeLevel+1) {
+              MI->second = timeLevel+1;
+              localSituationChanged = 1;
+            }
+          }
+        }
+      }
+
+      /* Determine whether or not the global situation changed. If not
+         the infinite loop can be terminated. For security reasons
+         post a barrier, because wild cards have been used in the
+         communication cycle. */
+      unsigned short globalSituationChanged = localSituationChanged;
+
+#ifdef HAVE_MPI
+      MPI_Barrier(MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&localSituationChanged, &globalSituationChanged,
+                         1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+#endif
+      if( !globalSituationChanged ) break;
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 4: Print a nice output about the number of elements per     ---*/
+    /*---         time level.                                              ---*/
+    /*------------------------------------------------------------------------*/
+
+    if(rank == MASTER_NODE)
+      cout << endl <<"------- Element distribution for time accurate local time stepping ------" << endl;
+
+    /* Determine the local number of elements per time level. */
+    vector<unsigned long> nLocalElemPerLevel(nTimeLevels, 0);
+    for(unsigned long i=0; i<nElem; ++i)
+      ++nLocalElemPerLevel[elem[i]->GetTimeLevel()];
+
+    /* Determine the global version of nLocalElemPerLevel. This only needs to
+       be known on the master node. */
+    vector<unsigned long> nGlobalElemPerLevel = nLocalElemPerLevel;
+
+#ifdef HAVE_MPI
+     SU2_MPI::Reduce(nLocalElemPerLevel.data(), nGlobalElemPerLevel.data(),
+                     nTimeLevels, MPI_UNSIGNED_LONG, MPI_SUM,
+                     MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+    /* Write the output. */
+    if(rank == MASTER_NODE) {
+      for(unsigned short i=0; i<nTimeLevels; ++i) {
+        if( nGlobalElemPerLevel[i] )
+          cout << "Number of elements time level " << i << ": "
+               << nGlobalElemPerLevel[i] << endl;
+      }
+    }
+  }
+}
+
+void CPhysicalGeometry::ComputeFEMGraphWeights(
+              CConfig                                  *config,
+              const vector<FaceOfElementClass>         &localFaces,
+              const vector<unsigned long>              &xadj_l,
+              const vector<unsigned long>              &adjacency_l,
+              const map<unsigned long, unsigned short> &mapExternalElemIDToTimeLevel,
+                    vector<su2double>                  &vwgt,
+                    vector<su2double>                  &adjwgt){
   /*--- Determine my rank. ---*/
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Determine the maximum time level that occurs in the grid. ---*/
+  unsigned short maxTimeLevel = 0;
+  for(unsigned long i=0; i<nElem; ++i)
+    maxTimeLevel = max(maxTimeLevel, elem[i]->GetTimeLevel());
+
+#ifdef HAVE_MPI
+  unsigned short maxTimeLevelLocal = maxTimeLevel;
+  SU2_MPI::Allreduce(&maxTimeLevelLocal, &maxTimeLevel, 1,
+                     MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
   /*--- Define the standard elements for the volume elements, the boundary faces
@@ -13590,6 +14074,10 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     /*--- (DG-)FEM formulation.                                            ---*/
     /*------------------------------------------------------------------------*/
 
+    /* Easier storage of the two indices for the vertex weights of this element. */
+    const unsigned long ind0 = 2*i;
+    const unsigned long ind1 = ind0 + 1;
+
     /*--- Determine the corresponding standard element for this volume element.
           Create it, if it does not exist. ---*/
     unsigned short VTK_Type = elem[i]->GetVTK_Type();
@@ -13608,8 +14096,9 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                                                          JacIsConstant, config));
     }
 
-    /*--- Initialize the computational work for this element. ---*/
-    vwgt[i] = standardElements[ii].WorkEstimateMetis(config);
+    /* Initialize the computational work for this element, which is stored
+       in the 1st vertex weight. */
+    vwgt[ind0] = standardElements[ii].WorkEstimateMetis(config);
 
     /*------------------------------------------------------------------------*/
     /*--- Determine the computational weight of the surface integral in    ---*/
@@ -13677,8 +14166,9 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                                                                          config));
           }
 
-          /*--- Update the computational work for this element. ---*/
-          vwgt[i] += standardMatchingFaces[ii].WorkEstimateMetis(config);
+          /* Update the computational work for this element, i.e. the 1st 
+             vertex weight. */
+          vwgt[ind0] += standardMatchingFaces[ii].WorkEstimateMetis(config);
         }
       }
       else {
@@ -13700,27 +14190,38 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                                                                        config));
         }
 
-        /*--- Update the computational work for this element. ---*/
-        vwgt[i] += standardBoundaryFaces[ii].WorkEstimateMetis(config);
+        /* Update the computational work for this element, i.e. the 1st
+           vertex weight. */
+        vwgt[ind0] += standardBoundaryFaces[ii].WorkEstimateMetis(config);
       }
     }
+
+    /* The final weight is obtained by taking the amount of work in time into
+       account. Note that this correction is only relevant when time accurate
+       local time stepping is employed. */
+    const unsigned short diffLevel = maxTimeLevel - elem[i]->GetTimeLevel();
+    vwgt[ind0] *= pow(2, diffLevel);
+
+    /* Set the value of the second vertex weight to the number of DOFs. */
+    vwgt[ind1] = elem[i]->GetNDOFsSol();
   }
 
-  /*--- Determine the minimum vertex weight over the entire domain. ---*/
+  /*--- Determine the minimum of the workload, i.e. 1st vertex weight,
+        over the entire domain. ---*/
   su2double minvwgt = vwgt[0];
-  for(unsigned long i=0; i<nElem; ++i) minvwgt = min(minvwgt, vwgt[i]);
+  for(unsigned long i=0; i<nElem; ++i) minvwgt = min(minvwgt, vwgt[2*i]);
 
 #ifdef HAVE_MPI
   su2double locminvwgt = minvwgt;
   SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
 #endif
 
-  /*--- Scale the vertex weights with the minimum value and multiply them by 50.
-        The value 50 is chosen such that the conversion to an integer in the
-        weights, ParMETIS is using integers for the weights, does not lead to a
-        significant increase in the load balance.        ---*/
-  minvwgt = 50.0/minvwgt;
-  for(unsigned long i=0; i<nElem; ++i) vwgt[i] *= minvwgt;
+  /*--- Scale the workload of the elements, the 1st vertex weight, with the
+        minimum value and multiply by 100, such that the conversion to integer
+        weights (ParMETIS is using integers for the weights) does not lead to
+        a significant increase in the load imbalance. ---*/
+  minvwgt = 100.0/minvwgt;
+  for(unsigned long i=0; i<nElem; ++i) vwgt[2*i] *= minvwgt;
 
   /*--- Create a map of the two global element IDs adjacent to the face to
         the index in localFaces. This map is used for an efficient search
@@ -13736,12 +14237,15 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         and its edges. The map mapElemIDsToFaceInd is used to determine
         the corresponding index in localFaces.   ---*/
   for(unsigned long i=0; i<nElem; ++i) {
-    unsigned long elemID0 = starting_node[rank] + i;
+
+    const unsigned short timeLevelCur = elem[i]->GetTimeLevel();
+    const unsigned long  elemID0      = starting_node[rank] + i;
 
     for(unsigned long j=xadj_l[i]; j<xadj_l[i+1]; ++j) {
-      unsigned long e0 = min(elemID0, adjacency_l[j]);
-      unsigned long e1 = max(elemID0, adjacency_l[j]);
+      const unsigned long e0 = min(elemID0, adjacency_l[j]);
+      const unsigned long e1 = max(elemID0, adjacency_l[j]);
 
+      /* Determine the index of this edge in localFaces. */
       unsignedLong2T elemIDs(e0, e1);
       map<unsignedLong2T, unsigned long>::const_iterator MI = mapElemIDsToFaceInd.find(elemIDs);
       if(MI == mapElemIDsToFaceInd.end()) {
@@ -13756,17 +14260,33 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
       unsigned long ind = MI->second;
 
-      if(     localFaces[ind].elemID0 == elemID0) adjwgt[j] = localFaces[ind].nDOFsElem1;
-      else if(localFaces[ind].elemID1 == elemID0) adjwgt[j] = localFaces[ind].nDOFsElem0;
-      else {
-        cout << "This should not happen in function CPhysicalGeometry::ComputeFEMGraphWeights" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
+      /* Determine the time level of the adjacent element. A distinction must be
+         made whether or not the element is currently stored on this rank. */
+      unsigned short timeLevelAdj;
+      if(adjacency_l[j] >= starting_node[rank] &&
+         adjacency_l[j] <  starting_node[rank]+nElem) {
+
+        unsigned long elemIDAdj = adjacency_l[j] - starting_node[rank];
+        timeLevelAdj = elem[elemIDAdj]->GetTimeLevel();
       }
+      else {
+
+        map<unsigned long,unsigned short>::const_iterator MI;
+        MI = mapExternalElemIDToTimeLevel.find(adjacency_l[j]);
+        timeLevelAdj = MI->second;
+      }
+
+      /* Determine the difference of the maximum time level that occurs and
+         the minimum of the time level of the current and the adjacent element.
+         This value can only be nonzero when time accurate local time stepping
+         is employed. */
+      const unsigned short diffLevel = maxTimeLevel - min(timeLevelCur, timeLevelAdj);
+
+      /* Set the edge weight. As ParMetis expects an undirected graph, set the edge weight
+         to the sum of the number of DOFs on both sides, multiplied by the weight factor
+         to account for different time levels. */
+      adjwgt[j] = pow(2, diffLevel)
+                * (localFaces[ind].nDOFsElem0 + localFaces[ind].nDOFsElem1);
     }
   }
 }
@@ -15115,14 +15635,15 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = config->GetKind_Turb_Model() == SA;
+  bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
   string::size_type position;
-
+  int counter = 0;
+  
   Sensitivity = new su2double[nPoint*nDim];
 
   if (config->GetUnsteady_Simulation()) {
@@ -15134,6 +15655,9 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+ 
+  if (rank == MASTER_NODE)
+    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   
   unsigned short skipVar = nDim, skipMult = 1;
 
@@ -15148,16 +15672,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   skipVar += 1;
   
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  for(iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Global2Local[node[iPoint]->GetGlobalIndex()] = iPoint;
-  
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
@@ -15167,7 +15681,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
   }
-  
 
   iPoint_Global = 0;
 
@@ -15179,14 +15692,259 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
+  if (config->GetRead_Binary_Restart()) {
+
+    char str_buf[CGNS_STRING_SIZE], fname[100];
+    unsigned short iVar;
+    strcpy(fname, filename.c_str());
+    int nRestart_Vars = 4;
+    int *Restart_Vars = new int[4];
+    passivedouble *Restart_Data = NULL;
+    int Restart_Iter = 0;
+    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+
+#ifndef HAVE_MPI
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- First, read the number of variables and points. ---*/
+
+    fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. We pad the beginning of the
+     variable string vector with the Point_ID tag that wasn't written. ---*/
+
+    config->fields.push_back("Point_ID");
+    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+      fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+      config->fields.push_back(str_buf);
+    }
+
+    /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+
+    /*--- Read in the data for the restart at all local points. ---*/
+
+    fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*GetnPointDomain(), fhw);
+
+    /*--- Compute (negative) displacements and grab the metadata. ---*/
+
+    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+
+    /*--- Read the external iteration. ---*/
+
+    fread(&Restart_Iter, 1, sizeof(int), fhw);
+
+    /*--- Read the metadata. ---*/
+
+    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
+    
+    /*--- Close the file. ---*/
+
+    fclose(fhw);
+
+#else
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    MPI_Status status;
+    MPI_Datatype etype, filetype;
+    MPI_Offset disp;
+    unsigned long iPoint_Global, iChar;
+    string field_buf;
+
+    int rank = MASTER_NODE, ierr;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+    
+    if (rank == MASTER_NODE)
+      MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+    SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Read the variable names from the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+
+    char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
+    if (rank == MASTER_NODE) {
+      disp = nRestart_Vars*sizeof(int);
+      MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
+                       MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+
+    /*--- Broadcast the string names of the variables. ---*/
+
+    SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR,
+                   MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Now parse the string names and load into the config class in case
+     we need them for writing visualization files (SU2_SOL). ---*/
+
+    config->fields.push_back("Point_ID");
+    for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+      index = iVar*CGNS_STRING_SIZE;
+      field_buf.append("\"");
+      for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+        str_buf[iChar] = mpi_str_buf[index + iChar];
+      }
+      field_buf.append(str_buf);
+      field_buf.append("\"");
+      config->fields.push_back(field_buf.c_str());
+      field_buf.clear();
+    }
+
+    /*--- Free string buffer memory. ---*/
+
+    delete [] mpi_str_buf;
+
+    /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+    etype = MPI_DOUBLE;
+
+    /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
+     along with the string names of the variables. ---*/
+
+    disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
+
+    /*--- Define a derived datatype for this rank's set of non-contiguous data
+     that will be placed in the restart. Here, we are collecting each one of the
+     points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
+
+    int *blocklen = new int[GetnPointDomain()];
+    int *displace = new int[GetnPointDomain()];
+
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      if (GetGlobal_to_Local_Point(iPoint_Global) > -1) {
+        blocklen[counter] = Restart_Vars[0];
+        displace[counter] = iPoint_Global*Restart_Vars[0];
+        counter++;
+      }
+    }
+    MPI_Type_indexed(GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+    MPI_Type_commit(&filetype);
+
+    /*--- Set the view for the MPI file write, i.e., describe the location in
+     the file that this rank "sees" for writing its piece of the restart file. ---*/
+
+    MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+
+    /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+    Restart_Data = new passivedouble[Restart_Vars[0]*GetnPointDomain()];
+
+    /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+    
+    MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*GetnPointDomain(), MPI_DOUBLE, &status);
+
+    /*--- Free the derived datatype. ---*/
+
+    MPI_Type_free(&filetype);
+
+    /*--- Reset the file view before writing the metadata. ---*/
+
+    MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+
+    /*--- Access the metadata. ---*/
+
+    if (rank == MASTER_NODE) {
+
+      /*--- External iteration. ---*/
+      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble));
+      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+      /*--- Additional doubles for AoA, AoS, etc. ---*/
+
+      disp = (nRestart_Vars*sizeof(int) + Restart_Vars[0]*CGNS_STRING_SIZE*sizeof(char) +
+              Restart_Vars[0]*Restart_Vars[1]*sizeof(passivedouble) + 1*sizeof(int));
+      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+    }
+
+    /*--- Communicate metadata. ---*/
+
+    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+    
+    delete [] blocklen;
+    delete [] displace;
+    
+#endif
+
+    /*--- Load the data from the binary restart. ---*/
+
+    counter = 0;
+    for (iPoint_Global = 0; iPoint_Global < GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
+
+      iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        index = counter*Restart_Vars[0] + skipVar;
+        for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
+
+        /*--- Increment the overall counter for how many points have been loaded. ---*/
+        counter++;
+      }
+    }
+
+    /*--- Lastly, load the AoA sensitivity from the binary metadata. ---*/
+
+    config->SetAoA_Sens(Restart_Meta[4]);
+
+  } else {
+
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
     cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
     exit(EXIT_FAILURE);
   }
   
-  if (rank == MASTER_NODE)
-    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
   /*--- The first line is the header ---*/
   getline (restart_file, text_line);
   
@@ -15198,12 +15956,11 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      
+
+    iPoint_Local = GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
       point_line >> index;
       for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -15226,6 +15983,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   restart_file.close();
 
+  }
+  
 }
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {

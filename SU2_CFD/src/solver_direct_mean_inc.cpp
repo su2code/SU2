@@ -89,26 +89,59 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
-  su2double dull_val;
-  int Unst_RestartIter;
   ifstream restart_file;
-  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  string filename = config->GetSolution_FlowFileName();
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename = config->GetSolution_FlowFileName();
-  
+  string filename_ = config->GetSolution_FlowFileName();
+
   unsigned short direct_diff = config->GetDirectDiff();
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    
+  }
+
   /*--- Basic array initialization ---*/
 
   CD_Inv  = NULL; CL_Inv  = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
@@ -190,7 +223,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   
@@ -436,156 +469,30 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   }
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
-  
+
   if (config->GetFixed_CL_Mode())
     Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
-  
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-  
-  if (!restart || (iMesh != MESH_0)) {
-    
-    /*--- Restart the solution from the free-stream state ---*/
-    
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
-    
-  } else {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
 
-    if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone);
-    
-    /*--- Modify file name for a dual-time unsteady restart ---*/
-    
-    if (dual_time) {
-      
-      if (adjoint) { Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1; }
-      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-    }
-    
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-    
-    if (time_stepping) {
-      if (adjoint) {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      }
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-    }
-    
-    
-    /*--- Open the restart file, throw an error if this fails. ---*/
-    
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CIncEulerVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncEulerVariable(Solution, nDim, nVar, config);
-    
-    /*--- Close the restart file ---*/
-    
-    restart_file.close();
-    
-  }
-  
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
+
   /*--- Define solver parameters needed for execution of destructor ---*/
-  
+
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ) space_centered = true;
   else space_centered = false;
-  
+
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
   else euler_implicit = false;
-  
+
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-  
+
   /*--- Perform the MPI communication of the solution ---*/
-  
+
   Set_MPI_Solution(geometry, config);
-  
+
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
@@ -1711,7 +1618,7 @@ void CIncEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *co
   
 }
 
-void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -2158,11 +2065,11 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
       
       /*--- Load an additional restart file for a 2nd-order restart ---*/
       
-      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1));
+      solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), true);
       
       /*--- Load an additional restart file for the turbulence model ---*/
       if (rans)
-        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1));
+        solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
       
       /*--- Push back this new solution to time level N. ---*/
       
@@ -5581,13 +5488,13 @@ void CIncEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolum
 
 }
 
-void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
   
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -5609,7 +5516,16 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -5619,97 +5535,108 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
-  
-  /*--- Open the restart file, and throw an error if this fails. ---*/
-  
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
-  
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-  
-  /*--- Read all lines in the restart file ---*/
-  
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  
-  /*--- The first line is the header ---*/
-  
-  getline (restart_file, text_line);
-  
-   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-     
-  getline (restart_file, text_line);
-     
-    istringstream point_line(text_line);
-    
-     /*--- Retrieve local index. If this node from the restart file lives
-      on the current processor, we will load and instantiate the vars. ---*/
-     
-     MI = Global2Local.find(iPoint_Global);
-     if (MI != Global2Local.end()) {
-       
-       iPoint_Local = Global2Local[iPoint_Global];
-       
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
-      
+      iPoint_Global_Local++;
+
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-      
+
       if (grid_movement) {
-        
+
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
-        
+
         if (turb_model == SA || turb_model == SA_NEG) {
-          point_line >> dull_val;
+          index++;
         } else if (turb_model == SST) {
-          point_line >> dull_val >> dull_val;
+          index+=2;
         }
-        
+
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-        
+
         su2double GridVel[3] = {0.0,0.0,0.0};
-        if (!steady_restart){
-            if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-            else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        if (!steady_restart) {
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[0];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[0] + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
-        
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
-        
       }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
       
     }
   }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
   
-  /*--- Close the restart file ---*/
-  
-  restart_file.close();
-  
-  /*--- MPI solution ---*/
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We alo call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
   
   solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
   
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
@@ -5727,6 +5654,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
     solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
   }
   
   /*--- Update the geometry for flows on dynamic meshes ---*/
@@ -5758,6 +5687,12 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   delete [] Coord;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
   
 }
 
@@ -5798,27 +5733,59 @@ CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
   
-  unsigned long iPoint, index, iVertex;
+  unsigned long iPoint, iVertex;
   unsigned short iVar, iDim, iMarker, nLineLets;
-  su2double dull_val;
-  int Unst_RestartIter;
   ifstream restart_file;
-  unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  bool restart = (config->GetRestart() || config->GetRestart_Flow());
+  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
-  string filename = config->GetSolution_FlowFileName();
-  
+  string filename_ = config->GetSolution_FlowFileName();
+
   unsigned short direct_diff = config->GetDirectDiff();
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    
+  }
+
   /*--- Array initialization ---*/
   
   CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
@@ -5862,7 +5829,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -6181,166 +6148,37 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
-  
+
   if (config->GetFixed_CL_Mode())
     Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
-  
-  /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
-  
-  if (!restart || (iMesh != MESH_0)) {
-    
-    /*--- Restart the solution from the free-stream state ---*/
-    
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
-    
-  }
-  
-  else {
-    
-    /*--- Modify file name for an unsteady restart ---*/
 
-    if (nZone >1)
-      filename = config->GetMultizone_FileName(filename, iZone);
-    
-    if (dual_time) {
-      
-      if (adjoint) {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      else
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-      
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-      
-    }
-    
-    /*--- Modify file name for a simple unsteady restart ---*/
-    
-    if (time_stepping) {
-      if (adjoint) {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
-      } else {
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-      }
-      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-    }
-    
-    /*--- Open the restart file, throw an error if this fails. ---*/
-    
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-    
-    map<unsigned long,unsigned long> Global2Local;
-    map<unsigned long,unsigned long>::const_iterator MI;
-    
-    /*--- Now fill array with the transform values only for local points ---*/
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-    
-    /*--- The first line is the header ---*/
-    
-    getline (restart_file, text_line);
-    
-    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-      
-      getline (restart_file, text_line);
-      istringstream point_line(text_line);
-      
-      if (iPoint_Global >= geometry->GetGlobal_nPointDomain()) { sbuf_NotMatching = 1; break; }
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on the current processor, we will load and instantiate the vars. ---*/
-      
-      MI = Global2Local.find(iPoint_Global);
-      if (MI != Global2Local.end()) {
-        
-        iPoint_Local = Global2Local[iPoint_Global];
-        
-        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        node[iPoint_Local] = new CIncNSVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
-      }
-    }
-    
-    /*--- Detect a wrong solution file ---*/
-    
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-    
-    /*--- Instantiate the variable class with an arbitrary solution
-     at any halo/periodic nodes. The initial solution can be arbitrary,
-     because a send/recv is performed immediately in the solver. ---*/
-    
-    for (iPoint = nPointDomain; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CIncNSVariable(Solution, nDim, nVar, config);
-    
-    /*--- Close the restart file ---*/
-    
-    restart_file.close();
-    
-  }
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
 
   /*--- For incompressible solver set the initial values for the density and viscosity ---*/
-  
+
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->SetDensity(Density_Inf);
     node[iPoint]->SetLaminarViscosity(Viscosity_Inf);
   }
 
   /*--- Define solver parameters needed for execution of destructor ---*/
-  
+
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) space_centered = true;
   else space_centered = false;
-  
+
   if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
   else euler_implicit = false;
-  
+
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-  
+
   /*--- Perform the MPI communication of the solution ---*/
-  
+
   Set_MPI_Solution(geometry, config);
-  
+
 }
 
 CIncNSSolver::~CIncNSSolver(void) {

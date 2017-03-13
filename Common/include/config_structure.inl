@@ -608,6 +608,8 @@ inline unsigned short CConfig::GetFFD_CoordSystem(void) { return FFD_CoordSystem
 
 inline unsigned short CConfig::GetnRKStep(void) { return nRKStep; }
 
+inline unsigned short CConfig::GetnLevels_TimeAccurateLTS(void) { return nLevels_TimeAccurateLTS; }
+
 inline unsigned short CConfig::GetnTimeDOFsADER_DG(void) { return nTimeDOFsADER_DG; }
 
 inline su2double *CConfig::GetTimeDOFsADER_DG(void) { return TimeDOFsADER_DG; }
@@ -901,6 +903,8 @@ inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Fl
 
 inline unsigned short CConfig::GetKind_FEM_Flow(void) { return Kind_FEM_Flow; }
 
+inline unsigned short CConfig::GetKind_FEM_DG_Shock(void) { return Kind_FEM_DG_Shock; }
+
 inline su2double CConfig::GetKappa_1st_Flow(void) { return Kappa_1st_Flow; }
 
 inline su2double CConfig::GetKappa_2nd_Flow(void) { return Kappa_2nd_Flow; }
@@ -984,6 +988,10 @@ inline unsigned short CConfig::GetKind_SensSmooth(void) { return Kind_SensSmooth
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
+
+inline bool CConfig::GetWrt_Binary_Restart(void) {	return Wrt_Binary_Restart; }
+
+inline bool CConfig::GetRead_Binary_Restart(void) {	return Read_Binary_Restart; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 
@@ -1479,6 +1487,10 @@ inline bool CConfig::GetIncrementalLoad(void) { return IncrementalLoad; }
 inline unsigned long CConfig::GetNumberIncrements(void) { return IncLoad_Nincrements; }
 
 inline su2double CConfig::GetIncLoad_Criteria(unsigned short val_var) { return IncLoad_Criteria[val_var]; }
+
+inline bool CConfig::GetEulerPersson(void) { return EulerPersson; }
+
+inline void CConfig::SetEulerPersson(bool val_EulerPersson) { EulerPersson = val_EulerPersson; }
 
 inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
