@@ -136,9 +136,9 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
     case DEAD_WEIGHT:
     case ELECTRIC_FIELD:
       ReadDV(config);
-      cout << "Test DV Vals" << endl;
+      cout << "Test DV Vals " << n_DV << endl;
       for (unsigned short iDV = 0; iDV < n_DV; iDV++)
-        cout << DV_Val[iDV] << endl;
+        cout << scientific << DV_Val[iDV] << endl;
       if ((config->GetDirectDiff() == D_YOUNG) ||
           (config->GetDirectDiff() == D_POISSON) ||
           (config->GetDirectDiff() == D_RHO) ||
@@ -322,16 +322,16 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
 
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
-      E   = DV_Val[element->Get_iDV()];
+      E   = DV_Val[element->Get_iDV()] * E;
       break;
     case POISSON_RATIO:
-      Nu  = DV_Val[element->Get_iDV()];
+      Nu  = DV_Val[element->Get_iDV()] * Nu;
       break;
     case DENSITY_VAL:
-      Rho_s = DV_Val[element->Get_iDV()];
+      Rho_s = DV_Val[element->Get_iDV()] * Rho_s;
       break;
     case DEAD_WEIGHT:
-      Rho_s_DL = DV_Val[element->Get_iDV()];
+      Rho_s_DL = DV_Val[element->Get_iDV()] * Rho_s_DL;
       break;
   }
 
@@ -361,21 +361,28 @@ void CFEM_Elasticity::ReadDV(CConfig *config) {
 
   /*--- Choose the filename of the design variable ---*/
 
+  string input_name;
+
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
-      filename = 'dv_young.opt';
+      input_name = "dv_young.opt";
       break;
     case POISSON_RATIO:
-      filename = 'dv_poisson.opt';
+      input_name = "dv_poisson.opt";
       break;
     case DENSITY_VAL:
     case DEAD_WEIGHT:
-      filename = 'dv_density.opt';
+      input_name = "dv_density.opt";
       break;
     case ELECTRIC_FIELD:
-      filename = 'dv_efield.opt';
+      input_name = "dv_efield.opt";
+      break;
+    default:
+      input_name = "dv.opt";
       break;
   }
+
+  filename = input_name;
 
   cout << "Filename: " << filename << "." << endl;
 
@@ -429,6 +436,8 @@ void CFEM_Elasticity::ReadDV(CConfig *config) {
       istringstream point_line(text_line);
 
       point_line >> index >> DV_Val[iDV];
+
+      iDV++;
 
     }
 
