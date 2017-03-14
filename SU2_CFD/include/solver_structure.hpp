@@ -229,11 +229,11 @@ public:
   //  virtual void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  virtual void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Compute the pressure at the infinity.
@@ -4125,11 +4125,11 @@ public:
   //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Compute the pressure at the infinity.
@@ -6411,11 +6411,11 @@ public:
   //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Set the solver nondimensionalization.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Compute the pressure at the infinity.
@@ -11871,6 +11871,9 @@ protected:
   
   bool symmetrizingTermsPresent;    /*!< \brief Whether or not symmetrizing terms are present in the
                                      discretization. */
+  
+  bool mpiCommsPresent;    /*!< \brief Whether or not we have set up the MPI comms structures. */
+
 private:
   
 #ifdef HAVE_MPI
@@ -11906,14 +11909,23 @@ public:
    * \brief Constructor of the class.
    */
   CFEM_DG_EulerSolver(void);
-  
+
+  /*!
+   * \overload
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nDim - Dimension of the problem (2D or 3D).
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh);
+
   /*!
    * \overload
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Destructor of the class.
    */
@@ -11921,10 +11933,10 @@ public:
   
   /*!
    * \brief Set the fluid solver nondimensionalization.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
