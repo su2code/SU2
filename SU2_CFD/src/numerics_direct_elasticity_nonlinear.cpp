@@ -859,7 +859,7 @@ void CFEM_NonlinearElasticity::SetElectric_Properties(CElement *element, CConfig
 
   switch (config->GetDV_FEA()) {
     case ELECTRIC_FIELD:
-      EFieldMod_Ref   = DV_Val[element->Get_iDV()];
+      EFieldMod_Ref   = DV_Val[element->Get_iDV()] * EFieldMod_Ref;
       break;
   }
 
