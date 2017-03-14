@@ -2820,6 +2820,13 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
         /* Create pointer to solution at integration points */
     	const su2double *sol = solInt + nVar*i;
 
+    	/* Easier storage of the metric terms in this integration point. The +1
+    	   is present, because the first element of the metric terms is the
+    	   Jacobian in the integration point. */
+    	const su2double *metricTerms = volElem[l].metricTerms.data()
+    	                                   + i*nMetricPerPoint;
+    	const su2double jacobian = metricTerms[0];
+
     	/* Store inverse of the density */
         const su2double DensityInv = 1.0/sol[0];
         su2double vel[3] = {0.0, 0.0, 0.0};
@@ -2831,38 +2838,15 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
         sources[ll++] = 0.0;
 
         /* Compute the momentum sources in each cartesian direction */
-        for(unsigned short jDim=0; jDim<nDim; ++jDim){
-          sources[ll++] = weights[i]*body_force_vector[jDim];
+        for(unsigned short iDim=0; iDim<nDim; ++iDim){
+          sources[ll++] = -weights[i]*jacobian*body_force_vector[iDim];
         }
 
-        /* Easier storage of the metric terms in this integration point. The +1
-           is present, because the first element of the metric terms is the
-           Jacobian in the integration point. */
-        const su2double *metricTerms = volElem[l].metricTerms.data()
-                                     + i*nMetricPerPoint + 1;
-
-        /*--- Loop over the number of dimensions to compute the velocity in the
-               direction of the parametric coordinates. ---*/
-        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-
-          /* Pointer to the metric terms for this direction. */
-          const su2double *metric = metricTerms + iDim*nDim;
-
-          /* Compute the velocity in the direction of the current parametric coordinate. */
-          su2double velPar = 0.0;
-          for(unsigned short jDim=0; jDim<nDim; ++jDim){
-            velPar += vel[jDim]*metric[jDim];
-          }
-
-          //sources[ll] += weights[i]*body_force_vector[iDim]*velPar;
-          sources[ll] = 0.0;
+        /* Compute the contribution to the energy from the force */
+        for(unsigned short iDim=0; iDim<nDim; ++iDim){
+          sources[ll] += -weights[i]*jacobian*body_force_vector[iDim]*vel[iDim];
         }
         ll++;
-        if(rank == MASTER_NODE) {
-            if(i == 0){
-              cout << "Int point " << i << " sources = " << sources[0] << ", " << sources[1] << ", " << sources[2] << ", " << sources[3] << endl;
-            }
-        }
       }
       /*------------------------------------------------------------------------*/
       /*--- Step 3: Compute the contribution to the residuals from the       ---*/
@@ -2877,10 +2861,10 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
       DenseMatrixProduct(nDOFs, nVar, nInt, lagBasisIntTrans, sources , res);
       config->GEMM_Tock(tick, "Source_Residual2", nDOFs, nVar, nInt);
       if(rank == MASTER_NODE) {
-          cout << "nDofs = " << nDOFs << endl;
-          cout << "nVar  = " << nVar << endl;
-          cout << "nInt  = " << nInt << endl;
-          cout << "nDim  = " << nDim << endl;
+//          cout << "nDofs = " << nDOFs << endl;
+//          cout << "nVar  = " << nVar << endl;
+//          cout << "nInt  = " << nInt << endl;
+//          cout << "nDim  = " << nDim << endl;
           cout << "Cell " << l << " source residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
         }
     }
