@@ -94,6 +94,10 @@ int main(int argc, char *argv[]) {
     
     geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
     
+    cout << "Check 1" << endl;
+    for (long nPoint=0; nPoint < geometry_aux->GetGlobal_nPoint(); nPoint++)
+      cout << "Point= " << nPoint << " XCoord = "<< geometry_aux->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_aux->node[nPoint]->GetCoord()[1] << endl;
+    
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
@@ -125,9 +129,6 @@ int main(int argc, char *argv[]) {
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
 	
-	for (long nPoint=0; nPoint < geometry_container[0]->GetGlobal_nPoint(); nPoint++)
-		cout << "Point= " << nPoint << " XCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[1] << endl;
-	
 	cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 	
 	/*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
@@ -138,9 +139,16 @@ int main(int argc, char *argv[]) {
 	/*--- Check the orientation before computing geometrical quantities ---*/
   
 	cout << "Check numerical grid orientation." <<endl;
-	geometry_container[ZONE_0]->SetBoundVolume(); geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]); geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+	geometry_container[ZONE_0]->SetBoundVolume();
+  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+  geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
 	
-	/*--- Create the edge structure ---*/
+  //Test statement
+  cout << "Check 2" << endl;
+  for (long nPoint=0; nPoint < geometry_container[0]->GetGlobal_nPoint(); nPoint++)
+    cout << "Point= " << nPoint << " XCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[0] << " YCoord = "<< geometry_container[0]->node[nPoint]->GetCoord()[1] << endl;
+
+  /*--- Create the edge structure ---*/
   
 	cout << "Identify faces, edges and vertices." <<endl;
 	geometry_container[ZONE_0]->SetFaces(); geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]); geometry_container[ZONE_0]->SetCoord_CG();

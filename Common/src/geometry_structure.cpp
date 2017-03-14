@@ -1442,7 +1442,6 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     boundary_file.close();
 
   }
-  
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
@@ -14316,7 +14315,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
     NewSort[iPoint] = iPoint;
   }
 	
-  /*---
+  /*--
   unsigned long Index = OldnPoint-1;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
@@ -14331,7 +14330,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       }
     }
   }
-	---*/
+	--*/
 	
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
@@ -14381,7 +14380,6 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
       output_file << "MARKER_TAG= SEND_RECEIVE" << endl;
       output_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-			output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       

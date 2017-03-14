@@ -111,7 +111,7 @@ CDriver::CDriver(char* confFile,
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
     geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-
+    
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
@@ -125,7 +125,7 @@ CDriver::CDriver(char* confFile,
     /*--- Deallocate the memory of geometry_aux ---*/
 
     delete geometry_aux;
-
+    
     /*--- Add the Send/Receive boundaries ---*/
 
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
@@ -136,6 +136,7 @@ CDriver::CDriver(char* confFile,
 
   }
 
+  
   /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
    based data structure is constructed, i.e. node and cell neighbors are
    identified and linked, face areas and volumes of the dual mesh cells are
@@ -145,7 +146,7 @@ CDriver::CDriver(char* confFile,
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
 
     Geometrical_Preprocessing();
-
+  
     for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Computation of wall distances for turbulence modeling ---*/
@@ -387,7 +388,7 @@ CDriver::CDriver(char* confFile,
 #else
   StartTime = MPI_Wtime();
 #endif
-
+  
 }
 
 void CDriver::Postprocessing(){
