@@ -169,7 +169,7 @@ class Problem(ordered_bunch):
         problem = Problem()
 
         # Read in config: access will be done through problem.config
-        problem.config = Config(problem.DIRECT_FILENAME)
+        problem.config = Config(filename)
 
         # Read physics and store in physics object
         problem.physics = problem.read_physics(problem.config, problem.OBJECTIVE_FUNCTION)

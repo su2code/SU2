@@ -128,6 +128,8 @@ def optimization(filename,
     x0 = copy.deepcopy(problem.x0)
     xb = copy.deepcopy(problem.xb)
 
+    optimization = problem.OPTIMIZATION_METHOD
+
     # State
     state = SU2.io.State()
     physics = SU2.io.read_physics(problem.config, problem.OBJECTIVE_FUNCTION)
@@ -141,14 +143,14 @@ def optimization(filename,
     project = SU2.opt.Project(problem, state)
 
     ## Optimize
-    #if optimization == 'SLSQP':
-    SU2.opt.SLSQP(project, x0, xb, its, accu)
-    #if optimization == 'CG':
-        #SU2.opt.CG(project, x0, xb, its, accu)
-    #if optimization == 'BFGS':
-        #SU2.opt.BFGS(project, x0, xb, its, accu)
-    #if optimization == 'POWELL':
-        #SU2.opt.POWELL(project, x0, xb, its, accu)
+    if optimization == 'SLSQP':
+        SU2.opt.SLSQP(project, x0, xb, its, accu)
+    if optimization == 'CG':
+        SU2.opt.CG(project, x0, xb, its, accu)
+    if optimization == 'BFGS':
+        SU2.opt.BFGS(project, x0, xb, its, accu)
+    if optimization == 'POWELL':
+        SU2.opt.POWELL(project, x0, xb, its, accu)
 
     ## rename project file
     #if projectname:

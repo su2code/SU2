@@ -291,7 +291,7 @@ class Project(object):
         
         return design
 
-    #get design not used
+    # get design not used
     # def get_design(self,config):
     #     konfig = copy.deepcopy(config)
     #     closest,delta = self.closest_design(konfig)
