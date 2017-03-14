@@ -30,6 +30,7 @@
  */
 
 #include "../include/fem_geometry_structure.hpp"
+#include "../include/adt_structure.hpp"
 
 /* MKL or LAPACK include files, if supported. */
 #ifdef HAVE_MKL
@@ -37,6 +38,20 @@
 #elif HAVE_LAPACK
 #include "lapacke.h"
 #endif
+
+bool long3T::operator<(const long3T &other) const {
+  if(long0 != other.long0) return (long0 < other.long0);
+  if(long1 != other.long1) return (long1 < other.long1);
+  if(long2 != other.long2) return (long2 < other.long2);
+
+  return false;
+}
+
+void long3T::Copy(const long3T &other) {
+  long0 = other.long0;
+  long1 = other.long1;
+  long2 = other.long2;
+}
 
 bool CReorderElementClass::operator< (const CReorderElementClass &other) const {
 
@@ -138,27 +153,6 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
   return f0.faceIndicator > f1.faceIndicator;
 }
 
-void CPointCompare::Copy(const CPointCompare &other) {
-  nDim           = other.nDim;
-  nodeID         = other.nodeID;
-  tolForMatching = other.tolForMatching;
-
-  for(unsigned short l=0; l<nDim; ++l)
-    coor[l] = other.coor[l];
-}
-
-bool CPointCompare::operator< (const CPointCompare &other) const {
-  if(nDim != other.nDim) return nDim < other.nDim;    // This should never be active.
-
-  su2double tol = min(tolForMatching, other.tolForMatching); // Tolerance for comparing.
-  for(unsigned short l=0; l<nDim; ++l) {
-    if(fabs(coor[l] - other.coor[l]) > tol)
-      return coor[l] < other.coor[l];
-  }
-
-  return false;  // Both objects are identical.
-}
-
 void CPointFEM::Copy(const CPointFEM &other) {
   globalID           = other.globalID;
   periodIndexToDonor = other.periodIndexToDonor;
@@ -207,87 +201,6 @@ void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
     unsigned long nn = faceConn[j];
     faceConn[j] = nodeIDsGrid[nn];
   }
-}
-
-su2double CSurfaceElementFEM::DetermineLengthScale(vector<CPointFEM> &meshPoints) {
-
-  /* Variables needed to make a generic treatment possible. */
-  unsigned short nDim=0, nEdges=0;  // To avoid a compiler warning.
-  unsigned long  edgeVertices[4][2];
-
-  su2double lenScale;
-
-  /*--- A distinction must be made between element types. As this is a surface
-        element the only options are a line, a triangle and a quadrilateral.
-        Determine the number of edges and its connectivities.             ---*/
-  switch( VTK_Type ) {
-
-    case LINE: {
-      nEdges = 1; nDim = 2;
-      edgeVertices[0][0] = nodeIDsGrid.front();
-      edgeVertices[0][1] = nodeIDsGrid.back();
-      break;
-    }
-
-    case TRIANGLE: {
-      nEdges = 3; nDim = 3;
-      edgeVertices[0][0] = nodeIDsGrid.front();
-      edgeVertices[0][1] = nodeIDsGrid[nPolyGrid];
-
-      edgeVertices[1][0] = nodeIDsGrid[nPolyGrid];
-      edgeVertices[1][1] = nodeIDsGrid.back();
-
-      edgeVertices[2][0] = nodeIDsGrid.back();
-      edgeVertices[2][1] = nodeIDsGrid.front();
-      break;
-    }
-
-    case QUADRILATERAL: {
-      nEdges = 4; nDim = 3;
-      edgeVertices[0][0] = nodeIDsGrid.front();
-      edgeVertices[0][1] = nodeIDsGrid[nPolyGrid];
-
-      edgeVertices[1][0] = nodeIDsGrid[nPolyGrid];
-      edgeVertices[1][1] = nodeIDsGrid.back();
-
-      edgeVertices[2][0] = nodeIDsGrid.back();
-      edgeVertices[2][1] = nodeIDsGrid[nPolyGrid*(nPolyGrid+1)];
-
-      edgeVertices[3][0] = nodeIDsGrid[nPolyGrid*(nPolyGrid+1)];
-      edgeVertices[3][1] = nodeIDsGrid.front();
-      break;
-    }
-
-    default: {
-      cout << "CSurfaceElementFEM::DetermineLengthScale: This should not happen." << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-  }
-
-  /* Loop over the edges, determine their length and take the minimum
-     for the length scale. */
-  for(unsigned short i=0; i<nEdges; ++i) {
-    unsigned long n0 = edgeVertices[i][0];
-    unsigned long n1 = edgeVertices[i][1];
-
-    su2double len = 0.0;
-    for(unsigned short l=0; l<nDim; ++l) {
-      su2double ds = meshPoints[n1].coor[l] - meshPoints[n0].coor[l];
-      len += ds*ds;
-    }
-    len = sqrt(len);
-
-    if(i == 0) lenScale = len;
-    else       lenScale = min(lenScale, len);
-  }
-
-  /* Return the length scale. */
-  return lenScale;
 }
 
 void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
@@ -398,6 +311,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       shortSendBuf[ind].push_back( (short) geometry->elem[i]->GetJacobianConstantFace(j));
       shortSendBuf[ind].push_back( (short) geometry->elem[i]->GetOwnerFace(j));
     }
+
+    doubleSendBuf[ind].push_back(geometry->elem[i]->GetLengthScale());
   }
 
   /*--- Determine for each rank to which I have to send elements the data of
@@ -698,14 +613,15 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   unsigned short maxTimeLevelGlob = maxTimeLevelLoc;
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&maxTimeLevelLoc, &maxTimeLevelLoc,
+  SU2_MPI::Allreduce(&maxTimeLevelLoc, &maxTimeLevelGlob,
                      1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
-  config->SetnLevels_TimeAccurateLTS(maxTimeLevelGlob+1);
+  const unsigned short nTimeLevels = maxTimeLevelGlob+1;
+  config->SetnLevels_TimeAccurateLTS(nTimeLevels);
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 2: Determine the numbering of the elements. The following       ---*/
+  /*--- Step 2: Determine the numbering of the owned elements. The following ---*/
   /*---         criteria are used for the owned elements.                    ---*/
   /*---         - Time level of the element: elements with the smallest time ---*/
   /*---           level are number first, etc.                               ---*/
@@ -721,30 +637,172 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*---         - A reverse Cuthill McKee renumbering takes place to obtain  ---*/
   /*---           better cache performance for the face residuals.           ---*/
   /*---                                                                      ---*/
-  /*---         The halo elements are sorted per rank.                       ---*/
+  /*---         The halo elements are sorted per rank and the sequence is    ---*/
+  /*---         determined by the local numbering on the sending rank.       ---*/
   /*----------------------------------------------------------------------------*/
 
   /* Sort the elements of owned elements in increasing order. */
   sort(ownedElements.begin(), ownedElements.end());
 
+  /* Loop over the owned elements to determine the number of elements per time
+     level, as well as the number of internal elements per time level. The
+     former vector will be in cumulative storage format, hence its size is
+     maxTimeLevelGlob+1. */
+  nVolElemOwnedPerTimeLevel.assign(nTimeLevels+1, 0);
+  nVolElemInternalPerTimeLevel.assign(nTimeLevels, 0);
 
+  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
+                                             OEI!=ownedElements.end(); ++OEI) {
+    ++nVolElemOwnedPerTimeLevel[OEI->GetTimeLevel()+1];
+    if( !OEI->GetCommSolution() ) ++nVolElemInternalPerTimeLevel[OEI->GetTimeLevel()];
+  }
 
+  /* Put nVolElemOwnedPerTimeLevel in cumulative storage format. */
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    nVolElemOwnedPerTimeLevel[i+1] += nVolElemOwnedPerTimeLevel[i];
 
-  /* Determine the mapping from the global element number to the local entry.
-     At the moment the sequence is based on the global element ID, but one can
-     change this in order to have a better load balance for the threads.
-     However, the owned elements should always be stored before the halos. */
-  map<unsigned long,  unsigned long> mapGlobalElemIDToInd;
-  map<unsignedLong2T, unsigned long> mapGlobalHaloElemToInd;
-
+  /* Determine the number of owned elements and the total number of
+     elements stored on this rank. */
   nVolElemOwned = globalElemID.size();
   nVolElemTot   = nVolElemOwned + haloElements.size();
 
+  /* Determine the map from the global element ID to the current storage
+     sequence of ownedElements. */
+  map<unsigned long, unsigned long> mapGlobalElemIDToInd;
   for(unsigned long i=0; i<nVolElemOwned; ++i)
-    mapGlobalElemIDToInd[globalElemID[i]] = i;
+    mapGlobalElemIDToInd[ownedElements[i].GetGlobalElemID()] = i;
 
-  for(unsigned long i=0; i<haloElements.size(); ++i)
-    mapGlobalHaloElemToInd[haloElements[i]] = nVolElemOwned + i;
+  /*--- Create the graph of local elements. The halo elements are ignored. ---*/
+  vector<vector<unsigned long> > neighElem(nVolElemOwned, vector<unsigned long>(0));
+
+  for(int i=0; i<nRankRecv; ++i) {
+    unsigned long indL = 1, indS = 0;
+    for(long j=0; j<longRecvBuf[i][0]; ++j) {
+      unsigned long  globalID  = longRecvBuf[i][indL];
+      unsigned short nDOFsGrid = shortRecvBuf[i][indS+3];
+      unsigned short nFaces    = shortRecvBuf[i][indS+5];
+
+      map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(globalID);
+      unsigned long ind = MMI->second;
+
+      indS += 8;
+      indL += nDOFsGrid + 2;
+      for(unsigned short k=0; k<nFaces; ++k, indS+=3, ++indL) {
+        if((longRecvBuf[i][indL] != -1) && (shortRecvBuf[i][indS] == -1)) { // Check for internal owned node.
+
+          MMI = mapGlobalElemIDToInd.find(longRecvBuf[i][indL]);
+          if(MMI != mapGlobalElemIDToInd.end()) neighElem[ind].push_back(MMI->second);
+        }
+      }
+    }
+  }
+
+  /* Sort the neighbors of each element in increasing order. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i)
+    sort(neighElem[i].begin(), neighElem[i].end());
+
+  /* Define the vector, which contains the new numbering of the owned elements
+     w.r.t. to the numbering currently stored in ownedElements. Note that signed
+     longs are used for this purpose, because the vector is initialized with -1
+     to indicate that no new number has been assigned yet. */
+  vector<long> oldElemToNewElem(nVolElemOwned, -1);
+
+  /* Initialize the counter vectors to keep track of the new numbering
+     of the elements. Note that a counter is needed for internal and
+     communication elements for every time level. */
+  vector<unsigned long> counterInternalElem(nTimeLevels);
+  vector<unsigned long> counterCommElem(nTimeLevels);
+
+  for(unsigned short i=0; i<nTimeLevels; ++i) {
+    counterInternalElem[i] = nVolElemOwnedPerTimeLevel[i];
+    counterCommElem[i]     = nVolElemOwnedPerTimeLevel[i]
+                           + nVolElemInternalPerTimeLevel[i];
+  }
+
+  /*--- While loop to carry out the renumbering. A while loop is present,
+        because the local partition may not be contiguous. ---*/
+  unsigned long nElemRenumbered = 0;
+  while (nElemRenumbered < nVolElemOwned) {
+
+    /* Determine the first element in the list that has not been renumbered. */
+    unsigned long indBeg;
+    for(indBeg=0; indBeg<nVolElemOwned; ++indBeg)
+      if(oldElemToNewElem[indBeg] == -1) break;
+
+    /* Determine the time level of the element indBeg and determine the element
+       range in which the starting element for the renumbering must be sought. */
+    const unsigned short timeLevelStart = ownedElements[indBeg].GetTimeLevel();
+    unsigned long indEnd;
+    if( ownedElements[indBeg].GetCommSolution() )
+      indEnd = nVolElemOwnedPerTimeLevel[timeLevelStart+1];
+    else
+      indEnd = nVolElemOwnedPerTimeLevel[timeLevelStart]
+             + nVolElemInternalPerTimeLevel[timeLevelStart];
+
+    /* Determine the element in the range [indBeg,indEnd) with the least number
+       of neighbors that has not been renumbered yet. This is the starting
+       element for the current renumbering round. */
+    for(unsigned long i=(indBeg+1); i<indEnd; ++i) {
+      if((oldElemToNewElem[i] == -1) &&
+         (neighElem[i].size() < neighElem[indBeg].size())) indBeg = i;
+    }
+
+    /* Start of the Reverse Cuthil McKee renumbering. */
+    vector<unsigned long> frontElements(1, indBeg);
+    while( frontElements.size() ) {
+
+      /* Vector, which stores the front for the next round. */
+      vector<unsigned long> frontElementsNew;
+
+      /* Loop over the elements of the current front. */
+      for(unsigned long i=0; i<frontElements.size(); ++i) {
+
+        /* Carry out the renumbering for this element. */
+        const unsigned long  ind       = frontElements[i];
+        const unsigned short timeLevel = ownedElements[ind].GetTimeLevel();
+        if( ownedElements[ind].GetCommSolution() )
+          oldElemToNewElem[ind] = counterCommElem[timeLevel]++;
+        else
+          oldElemToNewElem[ind] = counterInternalElem[timeLevel]++;
+
+        /* Store the neighbors that have not been renumbered yet in the front
+           for the next round. Set its index to -2 to indicate that is on the
+           new front. */
+        for(unsigned long j=0; j<neighElem[ind].size(); ++j) {
+          if(oldElemToNewElem[neighElem[ind][j]] == -1) {
+            frontElementsNew.push_back(neighElem[ind][j]);
+            oldElemToNewElem[neighElem[ind][j]] = -2;
+          }
+        }
+      }
+
+      /* Update the counter nElemRenumbered. */
+      nElemRenumbered += frontElements.size();
+
+      /* Sort frontElementsNew in increasing order. */
+      sort(frontElementsNew.begin(), frontElementsNew.end());
+
+      /* Store the new front elements in frontElements for the next round. */
+      frontElements = frontElementsNew;
+    }
+  }
+
+  if(nElemRenumbered != nVolElemOwned) {
+    cout << "Something went wrong in the renumbering" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /* Determine the final mapping from the global element number to the local
+     entry for the owned elements. First clear mapGlobalElemIDToInd before
+     it can be used to store its correct content. */
+  mapGlobalElemIDToInd.clear();
+  for(unsigned long i=0; i<nVolElemOwned; ++i)
+    mapGlobalElemIDToInd[ownedElements[i].GetGlobalElemID()] = oldElemToNewElem[i];
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 3: Store the elements, nodes and boundary elements in the data  ---*/
@@ -828,10 +886,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         if(neighBorID == -1)
           volElem[ind].ElementOwnsFaces[k] = true;  // Boundary faces are always owned.
       }
+
+      volElem[ind].lenScale = doubleRecvBuf[i][indD++]; 
     }
 
     /* The data for the nodes. Loop over these nodes in the buffer and store
-       them in meshPoints.             */
+       them in meshPoints. */
     unsigned long nNodesThisRank = longRecvBuf[i][indL++];
     for(unsigned long j=0; j<nNodesThisRank; ++j) {
       CPointFEM thisPoint;
@@ -871,6 +931,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   vector<CPointFEM>::iterator lastPoint = unique(meshPoints.begin(), meshPoints.end());
   meshPoints.erase(lastPoint, meshPoints.end());
 
+  /* Clear the contents of the map globalPointIDToLocalInd and fill
+     it with the information present in meshPoints. */
+  globalPointIDToLocalInd.clear();
+  for(unsigned long i=0; i<meshPoints.size(); ++i)
+    globalPointIDToLocalInd[meshPoints[i].globalID] = i;
+
   /*--- All the data from the receive buffers has been copied in the local
         data structures. Release the memory of the receive buffers. To make
         sure that all the memory is deleted, the swap function is used. ---*/
@@ -885,7 +951,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     sort(boundaries[iMarker].surfElem.begin(), boundaries[iMarker].surfElem.end());
 
   /*----------------------------------------------------------------------------*/
-  /*--- Step 4: Communicate the information for the halo elements.           ---*/
+  /*--- Step 4: Obtain the information of the halo elements, which are       ---*/
+  /*---         sorted per rank and the sequence is determined by the local  ---*/
+  /*---         numbering on the sending rank.                               ---*/
   /*----------------------------------------------------------------------------*/
 
   /* Determine the number of elements per rank of the originally partitioned grid
@@ -954,18 +1022,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     longSendBuf[ind].push_back(haloElements[i].long0);
     longSendBuf[ind].push_back(perIndex);
-
-    /* Determine the index in volElem where this halo must be stored. This info
-       is also communicated, such that the return information can be stored in
-       the correct location in volElem. */
-    map<unsignedLong2T, unsigned long>::const_iterator MMI;
-    MMI = mapGlobalHaloElemToInd.find(haloElements[i]);
-
-    longSendBuf[ind].push_back(MMI->second);
   }
 
-  /*--- Resize the first index of the long receive buffer. ---*/
+  /* Resize the first index of the long receive buffer and define the vector
+     to store the ranks from which the message came. */
   longRecvBuf.resize(nRankRecv);
+  vector<int> sourceRank(nRankRecv);
 
   /*--- Communicate the data to the correct ranks. Make a distinction
         between parallel and sequential mode.    ---*/
@@ -981,9 +1043,6 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
                    dest, dest, MPI_COMM_WORLD, &commReqs[i]);
   }
-
-  /* Define the vector to store the ranks from which the message came. */
-  vector<int> sourceRank(nRankRecv);
 
   /* Loop over the number of ranks from which I receive data. */
   for(int i=0; i<nRankRecv; ++i) {
@@ -1020,6 +1079,242 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     vector<long>().swap(longSendBuf[i]);
   }
 
+  longSendBuf.resize(nRankRecv);
+
+#ifdef HAVE_MPI
+  /* Resize the vector of the communication requests to the number of messages
+     to be sent by this rank. Only in parallel node. */
+  commReqs.resize(nRankRecv);
+#endif
+
+  /*--- Loop over the receive buffers to fill and send the send buffers again. ---*/
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Determine the number of elements present in longRecvBuf[i] and reserve
+       the memory for the send buffer. */
+    const long nElemBuf = longRecvBuf[i].size()/2;
+    longSendBuf[i].reserve(3*nElemBuf);
+
+    /* Loop over the elements stored in the receive buffer. */
+    for(long j=0; j<nElemBuf; ++j) {
+
+      /* Get the global element ID and periodic index from the receive buffer. */
+      const long globalID = longRecvBuf[i][2*j];
+      const long perInd   = longRecvBuf[i][2*j+1];
+
+      /* Determine the local index of the element in the original partitioning.
+         Check if the index is valid. */
+      const long localID = globalID - geometry->starting_node[rank];
+      if(localID < 0 || localID >= (long) geometry->npoint_procs[rank]) {
+        cout << localID << " " << geometry->npoint_procs[rank] << endl;
+        cout << "Invalid local element ID in function CMeshFEM::CMeshFEM" << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /* Determine which rank owns this element and store everything in the
+         send buffer. */
+      longSendBuf[i].push_back(globalID);
+      longSendBuf[i].push_back(perInd);
+      longSendBuf[i].push_back(geometry->elem[localID]->GetColor());
+    }
+
+     /* Release the memory of this receive buffer. */
+    vector<long>().swap(longRecvBuf[i]);
+
+    /*--- Send the send buffer back to the calling rank.
+          Only in parallel mode of course.     ---*/
+#ifdef HAVE_MPI
+    int dest = sourceRank[i];
+    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
+                   dest, dest+1, MPI_COMM_WORLD, &commReqs[i]);
+#endif
+  }
+
+  /*--- Resize the first index of the receive buffers to nRankSend, such that
+        the requested halo information can be received.     ---*/
+  longRecvBuf.resize(nRankSend);
+
+  /*--- Receive the communication data from the correct ranks. Make a distinction
+        between parallel and sequential mode.    ---*/
+#ifdef HAVE_MPI
+
+  /* Parallel mode. Loop over the number of ranks from which I receive data
+     in the return communication, i.e. nRankSend. */
+  for(int i=0; i<nRankSend; ++i) {
+
+    /* Block until a message with longs arrives from any processor.
+       Determine the source and the size of the message.   */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    int source = status.MPI_SOURCE;
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+
+    /* Allocate the memory for the long receive buffer and receive the message. */
+    longRecvBuf[i].resize(sizeMess);
+    SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
+                  source, rank+1, MPI_COMM_WORLD, &status);
+  }
+
+  /* Complete the non-blocking sends. */
+  SU2_MPI::Waitall(nRankRecv, commReqs.data(), MPI_STATUSES_IGNORE);
+
+  /* Wild cards have been used in the communication,
+     so synchronize the ranks to avoid problems.    */
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#else
+
+  /*--- Sequential mode. Simply copy the buffer. ---*/
+  longRecvBuf[0] = longSendBuf[0];
+
+#endif
+
+  /* Release the memory of the send buffers. To make sure that all
+     the memory is deleted, the swap function is used. */
+  for(int i=0; i<nRankRecv; ++i)
+    vector<long>().swap(longSendBuf[i]);
+
+  /* Copy the data from the receive buffers into a class of long3T, such that
+     it can be sorted in increasing order. Note that the rank of the element
+     is stored first, followed by its global ID and last the periodic index. */
+  vector<long3T> haloData;
+  for(int i=0; i<nRankSend; ++i) {
+    const long nElemBuf = longRecvBuf[i].size()/3;
+
+    for(long j=0; j<nElemBuf; ++j) {
+      const long j3 = 3*j;
+      haloData.push_back(long3T(longRecvBuf[i][j3+2], longRecvBuf[i][j3],
+                                longRecvBuf[i][j3+1]));
+    }
+
+    /* Release the memory of this receive buffer. */
+    vector<long>().swap(longRecvBuf[i]);
+  }
+
+  /* Sort halo data in increasing order. */
+  sort(haloData.begin(), haloData.end());
+
+  /* Determine the number of halo elements per rank in cumulative storage.
+     The first element of this vector is nVolElemOwned, such that this vector
+     contains the starting position in the vector volElem. Also determine the
+     number of ranks to which I have to send requests for data. */
+  vector<unsigned long> nHaloElemPerRank(nRank+1, 0);
+  for(unsigned long i=0; i<haloData.size(); ++i)
+    ++nHaloElemPerRank[haloData[i].long0+1];
+
+  nHaloElemPerRank[0] = nVolElemOwned;
+  for(int i=0; i<nRank; ++i)
+    nHaloElemPerRank[i+1] += nHaloElemPerRank[i];
+
+  if(nHaloElemPerRank[nRank] != nVolElemTot) {
+    cout << "Inconsistency in function CMeshFEM::CMeshFEM" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /* Determine the number of ranks to which I have to send data and the number
+     of ranks from which I receive data in this cycle. */
+  sendToRank.assign(nRank, 0);
+  rankToIndCommBuf.clear();
+  for(int i=0; i<nRank; ++i) {
+    if(nHaloElemPerRank[i+1] > nHaloElemPerRank[i]) {
+      sendToRank[i] = 1;
+      int ind = rankToIndCommBuf.size();
+      rankToIndCommBuf[i] = ind;
+    }
+  }
+
+  nRankSend = rankToIndCommBuf.size();
+
+  /*--- Determine the number of ranks, from which this rank will receive elements. ---*/
+  nRankRecv = nRankSend;
+
+#ifdef HAVE_MPI
+  MPI_Reduce_scatter(sendToRank.data(), &nRankRecv, sizeRecv.data(),
+                     MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  /*--- Copy the data to be sent to the send buffers. ---*/
+  longSendBuf.resize(nRankSend);
+  MI = rankToIndCommBuf.begin();
+
+  for(int i=0; i<nRankSend; ++i, ++MI) {
+    int dest = MI->first;
+    for(unsigned long j=nHaloElemPerRank[dest]; j<nHaloElemPerRank[dest+1]; ++j) {
+      const unsigned long jj = j - nVolElemOwned;
+      longSendBuf[i].push_back(haloData[jj].long1);
+      longSendBuf[i].push_back(haloData[jj].long2);
+    }
+  }
+
+  /*--- Resize the first index of the long receive buffer. ---*/
+  longRecvBuf.resize(nRankRecv);
+
+  /*--- Communicate the data to the correct ranks. Make a distinction
+        between parallel and sequential mode.    ---*/
+
+#ifdef HAVE_MPI
+
+  /* Parallel mode. Send all the data using non-blocking sends. */
+  commReqs.resize(nRankSend);
+  MI = rankToIndCommBuf.begin();
+
+  for(int i=0; i<nRankSend; ++i, ++MI) {
+    int dest = MI->first;
+    SU2_MPI::Isend(longSendBuf[i].data(), longSendBuf[i].size(), MPI_LONG,
+                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+  }
+
+  /* Resize the vector to store the ranks from which the message came. */
+  sourceRank.resize(nRankRecv);
+
+  /* Loop over the number of ranks from which I receive data. */
+  for(int i=0; i<nRankRecv; ++i) {
+
+    /* Block until a message with longs arrives from any processor.
+       Determine the source and the size of the message and receive it. */
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    sourceRank[i] = status.MPI_SOURCE;
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_LONG, &sizeMess);
+
+    longRecvBuf[i].resize(sizeMess);
+    SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
+                  sourceRank[i], rank, MPI_COMM_WORLD, &status);
+  }
+
+  /* Complete the non-blocking sends. */
+  SU2_MPI::Waitall(nRankSend, commReqs.data(), MPI_STATUSES_IGNORE);
+
+#else
+
+  /*--- Sequential mode. Simply copy the buffer. ---*/
+  for(int i=0; i<nRankSend; ++i)
+    longRecvBuf[i] = longSendBuf[i];
+
+#endif
+
+  /*--- Release the memory of the send buffers. To make sure that all the memory
+        is deleted, the swap function is used. Afterwards resize the first index
+        of the send buffers to nRankRecv, because this number of messages must
+        be sent back to the sending ranks with halo information. ---*/
+  for(int i=0; i<nRankSend; ++i) {
+    vector<long>().swap(longSendBuf[i]);
+  }
+
   shortSendBuf.resize(nRankRecv);
   longSendBuf.resize(nRankRecv);
   doubleSendBuf.resize(nRankRecv);
@@ -1030,30 +1325,23 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   commReqs.resize(3*nRankRecv);
 #endif
 
-  /*--- Loop over the receive buffers to fill and send the send buffers again. ---*/
+  /*--- Loop over the receive buffers to fill the send buffers again. ---*/
   for(int i=0; i<nRankRecv; ++i) {
 
-    /* Vector with node IDs that must be returned to this calling rank.
-       Note that also the periodic index must be stored, hence use an
-       unsignedLong2T for this purpose. As -1 cannot be stored for an
-       unsigned long a 1 is added to the periodic transformation when
-       stored in nodeIDs. */
-    vector<unsignedLong2T> nodeIDs;
+    /* Loop over the elements in this receive buffer to determine the local
+       index on this rank. Note that also the periodic index must be stored,
+       hence use an unsignedLong2T for this purpose. As -1 cannot be stored
+       for an unsigned long a 1 is added to the periodic transformation. */
+    const unsigned long nElemBuf = longRecvBuf[i].size()/2;
+    vector<unsignedLong2T> elemBuf(nElemBuf);
 
-    /* Determine the number of elements present in longRecvBuf[i] and loop over
-       them. Note that in position 0 of longSendBuf the number of elements
-       present in communication buffers is stored. */
-    long nElemBuf = longRecvBuf[i].size()/3;
-    longSendBuf[i].push_back(nElemBuf);
-    unsigned long indL = 0;
-    for(long j=0; j<nElemBuf; ++j) {
+    for(unsigned long j=0; j<nElemBuf; ++j) {
+      const unsigned long j2 = 2*j;
 
-      /* Determine the local index of the element in the original partitioning.
-         Check if the index is valid. */
-      long locElemInd = longRecvBuf[i][indL] - geometry->starting_node[rank];
-      if(locElemInd < 0 || locElemInd >= (long) geometry->npoint_procs[rank]) {
-        cout << locElemInd << " " << geometry->npoint_procs[rank] << endl;
-        cout << "Invalid local element ID in function CMeshFEM::CMeshFEM" << endl;
+      const unsigned long elemID = longRecvBuf[i][j2];
+      map<unsigned long, unsigned long>::iterator MMI = mapGlobalElemIDToInd.find(elemID);
+      if(MMI == mapGlobalElemIDToInd.end()) {
+        cout << "Entry not found in mapGlobalElemIDToInd in function CMeshFEM::CMeshFEM" << endl;
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
@@ -1062,44 +1350,67 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #endif
       }
 
-      /* Store the periodic index in the short send buffer and the global element
-         ID and local element ID (on the calling processor) in the long buffer. */
-      longSendBuf[i].push_back(longRecvBuf[i][indL++]);
-      short perIndex = (short) longRecvBuf[i][indL++];
-      shortSendBuf[i].push_back(perIndex);
-      longSendBuf[i].push_back(longRecvBuf[i][indL++]);
-
-      /* Store the relevant information of this element in the short and long
-         communication buffers. */
-      shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetVTK_Type());
-      shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetNPolyGrid());
-      shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetNPolySol());
-      shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetNDOFsGrid());
-      shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetNDOFsSol());
-      shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetnFaces());
-
-      longSendBuf[i].push_back(geometry->elem[locElemInd]->GetColor());
-
-      for(unsigned short j=0; j<geometry->elem[locElemInd]->GetNDOFsGrid(); ++j) {
-        long thisNodeID = geometry->elem[locElemInd]->GetNode(j);
-        longSendBuf[i].push_back(thisNodeID);
-        nodeIDs.push_back(unsignedLong2T(thisNodeID,perIndex+1)); // Note the +1.
-      }
-
-      for(unsigned short j=0; j<geometry->elem[locElemInd]->GetnFaces(); ++j) {
-        shortSendBuf[i].push_back((short) geometry->elem[locElemInd]->GetJacobianConstantFace(j));
-      }
+      elemBuf[j].long0 = MMI->second;
+      elemBuf[j].long1 = longRecvBuf[i][j2+1] + 1;
     }
 
-    /*--- Sort nodeIDs in increasing order and remove the double entities. ---*/
+    /* Release the memory of the long receive buffer via the swap function
+       and sort elemBuf in increasing order. */
+    vector<long>().swap(longRecvBuf[i]);
+
+    sort(elemBuf.begin(), elemBuf.end());
+
+    /* Store the number of elements in the first element of the long send buffer. */
+    longSendBuf[i].push_back(nElemBuf);
+
+    /* Vector with node IDs that must be returned to this calling rank.
+       Note that also the periodic index must be stored, hence use an
+       unsignedLong2T for this purpose. */
+    vector<unsignedLong2T> nodeIDs;
+
+    /* Loop over the elements to fill the send buffers. */
+    for(unsigned long j=0; j<nElemBuf; ++j) {
+
+      /* Store the global element ID in the long buffer,
+         the periodic index in the short send buffer and
+         the length scale in the double send buffer. */
+      const unsigned long indV = elemBuf[j].long0;
+      longSendBuf[i].push_back(volElem[indV].elemIDGlobal);
+
+      const short perIndex = (short) elemBuf[j].long1 -1; // Note the -1.
+      shortSendBuf[i].push_back(perIndex);
+
+      doubleSendBuf[i].push_back(volElem[indV].lenScale);
+
+      /* Store the other relevant information of this element in the short
+         and long communication buffers. Also store the node IDs and the
+         periodic transformation in nodeIDs. */
+      shortSendBuf[i].push_back(volElem[indV].VTK_Type);
+      shortSendBuf[i].push_back(volElem[indV].nPolyGrid);
+      shortSendBuf[i].push_back(volElem[indV].nPolySol);
+      shortSendBuf[i].push_back(volElem[indV].nDOFsGrid);
+      shortSendBuf[i].push_back(volElem[indV].nDOFsSol);
+      shortSendBuf[i].push_back(volElem[indV].nFaces);
+
+      for(unsigned short k=0; k<volElem[indV].nDOFsGrid; ++k) {
+        longSendBuf[i].push_back(volElem[indV].nodeIDsGrid[k]);
+        nodeIDs.push_back(unsignedLong2T(volElem[indV].nodeIDsGrid[k],
+                                         elemBuf[j].long1));
+      }
+
+      for(unsigned short k=0; k<volElem[indV].nFaces; ++k)
+        shortSendBuf[i].push_back((short) volElem[indV].JacFacesIsConsideredConstant[k]);
+    }
+
+    /* Sort nodeIDs in increasing order and remove the double entities. */
     sort(nodeIDs.begin(), nodeIDs.end());
     vector<unsignedLong2T>::iterator lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
     nodeIDs.erase(lastNodeID, nodeIDs.end());
 
-    /*--- Add the number of node IDs and the node IDs itself to longSendBuf[i]
-          and the periodix index to shortSendBuf. Note again the -1 for the
-          periodic index, because an unsigned long cannot represent -1, the
-          value for the periodic index when no peridicity is present.       ---*/
+    /* Add the number of node IDs and the node IDs itself to longSendBuf[i]
+       and the periodix index to shortSendBuf. Note again the -1 for the
+       periodic index, because an unsigned long cannot represent -1, the
+       value for the periodic index when no peridicity is present. */
     longSendBuf[i].push_back(nodeIDs.size());
     for(unsigned long j=0; j<nodeIDs.size(); ++j) {
       longSendBuf[i].push_back(nodeIDs[j].long0);
@@ -1123,11 +1434,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       unsigned long ind = LMI->second;
       for(unsigned short l=0; l<nDim; ++l)
-        doubleSendBuf[i].push_back(geometry->node[ind]->GetCoord(l));
+        doubleSendBuf[i].push_back(meshPoints[ind].coor[l]);
     }
-
-    /* Release the memory of this receive buffer. */
-    vector<long>().swap(longRecvBuf[i]);
 
     /*--- Send the communication buffers back to the calling rank.
           Only in parallel mode of course.     ---*/
@@ -1148,6 +1456,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   longRecvBuf.resize(nRankSend);
   doubleRecvBuf.resize(nRankSend);
 
+  /* Resize the vector to store the ranks from which the message came. */
+  sourceRank.resize(nRankSend);
+
   /*--- Receive the communication data from the correct ranks. Make a distinction
         between parallel and sequential mode.    ---*/
 #ifdef HAVE_MPI
@@ -1160,7 +1471,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
        Determine the source and the size of the message.   */
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
-    int source = status.MPI_SOURCE;
+    sourceRank[i] = status.MPI_SOURCE;
 
     int sizeMess;
     MPI_Get_count(&status, MPI_SHORT, &sizeMess);
@@ -1168,24 +1479,24 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Allocate the memory for the short receive buffer and receive the message. */
     shortRecvBuf[i].resize(sizeMess);
     SU2_MPI::Recv(shortRecvBuf[i].data(), sizeMess, MPI_SHORT,
-                  source, rank+1, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+1, MPI_COMM_WORLD, &status);
 
     /* Block until the corresponding message with longs arrives, determine
        its size, allocate the memory and receive the message. */
-    MPI_Probe(source, rank+2, MPI_COMM_WORLD, &status);
+    MPI_Probe(sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
     MPI_Get_count(&status, MPI_LONG, &sizeMess);
     longRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(longRecvBuf[i].data(), sizeMess, MPI_LONG,
-                  source, rank+2, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+2, MPI_COMM_WORLD, &status);
 
     /* Idem for the message with doubles. */
-    MPI_Probe(source, rank+3, MPI_COMM_WORLD, &status);
+    MPI_Probe(sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
     MPI_Get_count(&status, MPI_DOUBLE, &sizeMess);
     doubleRecvBuf[i].resize(sizeMess);
 
     SU2_MPI::Recv(doubleRecvBuf[i].data(), sizeMess, MPI_DOUBLE,
-                  source, rank+3, MPI_COMM_WORLD, &status);
+                  sourceRank[i], rank+3, MPI_COMM_WORLD, &status);
   }
 
   /* Complete the non-blocking sends. */
@@ -1197,10 +1508,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
 #else
 
-  /*--- Sequential mode. Simply copy the buffers. ---*/
-  shortRecvBuf[0]  = shortSendBuf[0];
-  longRecvBuf[0]   = longSendBuf[0];
-  doubleRecvBuf[0] = doubleSendBuf[0];
+  /* Sequential mode. Simply copy the buffers. Note that nRankSend is at most 1. */
+  for(int i=0; i<nRankSend; ++i) {
+    sourceRank[i]    = i;
+    shortRecvBuf[i]  = shortSendBuf[i];
+    longRecvBuf[i]   = longSendBuf[i];
+    doubleRecvBuf[i] = doubleSendBuf[i];
+  }
 
 #endif
 
@@ -1229,11 +1543,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
 
       /* Retrieve the data from the communication buffers. */
-      long globElemID = longRecvBuf[i][indL++];
-      long indV       = longRecvBuf[i][indL++];
+      const unsigned long indV = nHaloElemPerRank[sourceRank[i]] + j;
 
-      volElem[indV].elemIDGlobal = globElemID;
-      volElem[indV].rankOriginal = longRecvBuf[i][indL++];
+      volElem[indV].elemIDGlobal = longRecvBuf[i][indL++];
+      volElem[indV].rankOriginal = sourceRank[i];
 
       volElem[indV].periodIndexToDonor = shortRecvBuf[i][indS++];
       volElem[indV].VTK_Type           = shortRecvBuf[i][indS++];
@@ -1259,10 +1572,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       /* Halo elements do not own a face per definition. */
       volElem[indV].ElementOwnsFaces.assign(volElem[indV].nFaces, false);
+
+      /* Get the length scale from the double receive buffer.*/
+      volElem[indV].lenScale = doubleRecvBuf[i][indD++];
     }
 
     /* Store the information of the points in haloPoints. */
-    long nPointsThisRank = longRecvBuf[i][indL++];
+    const long nPointsThisRank = longRecvBuf[i][indL++];
     for(long j=0; j<nPointsThisRank; ++j) {
       CPointFEM thisPoint;
       thisPoint.globalID           = longRecvBuf[i][indL++];
@@ -1291,7 +1607,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   short         InvalidPerInd  = SHRT_MAX;
 
   /*--- Search for the nonperiodic halo points in the local points to see
-        of these points are already stored on this rank. If this is the
+        if these points are already stored on this rank. If this is the
         case invalidate this halo and decrease the number of halo points.
         Afterwards remove the invalid halos from the vector.       ---*/
   unsigned long nHaloPoints = haloPoints.size();
@@ -1351,7 +1667,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  /*--- The only halo points that must be added the meshPoints are the periodic
+  /*--- The only halo points that must be added to meshPoints are the periodic
         halo points. It must be checked whether or not the periodic points in
         haloPoints match with points in meshPoints. This is done below. ---*/
   for(unsigned long iLow=0; iLow<haloPoints.size(); ) {
@@ -1368,45 +1684,49 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       /* Easier storage of the surface elements. */
       vector<CSurfaceElementFEM> &surfElem = boundaries[perIndex].surfElem;
 
-      /*--- Store the points of this local periodic boundary in a data structure
-            that can be used for searching coordinates. ---*/
-      vector<CPointCompare> pointsBoundary;
-      vector<long> indInPointsBoundary(meshPoints.size(), -1);
+      /*--- In the loop below the coordinates of the points of this local
+            periodic boundary as well as a matching tolerance are determined.
+            A vector of point ID's is also created, which is needed later on
+            when it is checked whether or not a matching point is already
+            stored in meshPoints. ---*/
+      vector<long>          indInPoints(meshPoints.size(), -1);
+      vector<unsigned long> IDsPoints;
+      vector<su2double>     coordPoints;
+      vector<su2double>     tolPoints;
+
       for(unsigned long j=0; j<surfElem.size(); ++j) {
 
         /* Determine the tolerance for equal points, which is a small value
-           times the length scale of this surface element. */
-        su2double tolElem = 1.e-6*surfElem[j].DetermineLengthScale(meshPoints);
+           times the length scale of the adjacent volume element. */
+        const su2double tolElem = 1.e-2*volElem[surfElem[j].volElemID].lenScale;
 
         /* Loop over the nodes of this surface grid and update the points on
            this periodic boundary. */
         for(unsigned short k=0; k<surfElem[j].nDOFsGrid; ++k) {
           unsigned long nn = surfElem[j].nodeIDsGrid[k];
 
-          if(indInPointsBoundary[nn] == -1) {
+          if(indInPoints[nn] == -1) {
+
             /* Point is not stored yet in pointsBoundary. Do so now. */
-            indInPointsBoundary[nn] = pointsBoundary.size();
+            indInPoints[nn] = IDsPoints.size();
+            IDsPoints.push_back(nn);
+            tolPoints.push_back(tolElem);
 
-            CPointCompare thisPoint;
-            thisPoint.nDim           = nDim;
-            thisPoint.nodeID         = nn;
-            thisPoint.tolForMatching = tolElem;
             for(unsigned short l=0; l<nDim; ++l)
-              thisPoint.coor[l] = meshPoints[nn].coor[l];
-
-            pointsBoundary.push_back(thisPoint);
+              coordPoints.push_back(meshPoints[nn].coor[l]);
           }
           else {
-            /* Point is already stored in pointsBoundary. Update the tolerance. */
-            nn = indInPointsBoundary[nn];
-            pointsBoundary[nn].tolForMatching = min(pointsBoundary[nn].tolForMatching, tolElem);
+
+            /* Point is already stored. Update the tolerance. */
+            nn = indInPoints[nn];
+            tolPoints[nn] = min(tolPoints[nn], tolElem);
           }
         }
       }
 
-      /* Sort pointsBoundary in increasing order, such that binary searches can
-         be carried out later on. */
-      sort(pointsBoundary.begin(), pointsBoundary.end());
+      /* Create a local ADT of the points on the periodic boundary. */
+      su2_adtPointsOnlyClass periodicADT(nDim, IDsPoints.size(), coordPoints.data(),
+                                         IDsPoints.data(), false);
 
       /* Get the data for the periodic transformation to the donor. */
       su2double *center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(perIndex));
@@ -1415,7 +1735,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       /*--- Compute the rotation matrix and translation vector for the
             transformation from the donor. This is the transpose of the
-            transformation to the donor.               ---*/
+            transformation to the donor. ---*/
 
       /* Store (center-trans) as it is constant and will be added on. */
       su2double translation[] = {center[0] - trans[0],
@@ -1461,33 +1781,34 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         haloPoints[i].coor[2] = rotMatrix[2][0]*dx + rotMatrix[2][1]*dy
                               + rotMatrix[2][2]*dz + translation[2];
 
-        /* Create an object of the type CPointCompare, which can be used
-           to search the points on the periodic boundary, pointsBoundary. */
-        CPointCompare thisPoint;
-        thisPoint.nDim   = nDim;
-        thisPoint.nodeID = ULONG_MAX;
-        thisPoint.tolForMatching = 1.e+10;   // Just a large value.
-        for(unsigned short l=0; l<nDim; ++l)
-          thisPoint.coor[l] = haloPoints[i].coor[l];
+        /* Search for the nearest coordinate in the ADT. */
+        su2double dist;
+        unsigned long pointID;
+        int rankID;
 
-        /* Check if this point is present in pointsBoundary. */
-        if( binary_search(pointsBoundary.begin(), pointsBoundary.end(), thisPoint) ) {
+        periodicADT.DetermineNearestNode(haloPoints[i].coor, dist,
+                                         pointID, rankID);
 
-          /* This point is present on the boundary. Find its position and
-             store it in the mapping to the local points in meshPoints. */
-          vector<CPointCompare>::const_iterator periodicLow;
-          periodicLow = lower_bound(pointsBoundary.begin(), pointsBoundary.end(), thisPoint);
+        /* Check whether the distance is less equal to the tolerance for
+           a matching point. */
+        const unsigned long nn = indInPoints[pointID];
+        if(dist <= tolPoints[nn]) {
 
+          /* The distance to the nearest point is less than the tolerance,
+             hence this periodically transformed point is present on the
+             boundary. Store it as such in the map mapGlobalPointIDToInd. */
           unsignedLong2T globIndAndPer;
           globIndAndPer.long0 = haloPoints[i].globalID;
           globIndAndPer.long1 = haloPoints[i].periodIndexToDonor+1;  // Note the +1 again.
 
-          mapGlobalPointIDToInd[globIndAndPer] = periodicLow->nodeID;
+          mapGlobalPointIDToInd[globIndAndPer] = pointID;
         }
         else {
 
-          /* This point is not present yet on this rank. Store it in the
-             mapping to the local points in mesh points and create it. */
+          /* The distance to the nearest point is larger than the tolerance,
+             hence this periodically transformed point is not present yet on
+             this rank. Store it in the mapping to the local points and
+             create it in meshPoints. */
           unsignedLong2T globIndAndPer;
           globIndAndPer.long0 = haloPoints[i].globalID;
           globIndAndPer.long1 = haloPoints[i].periodIndexToDonor+1;  // Note the +1 again.
