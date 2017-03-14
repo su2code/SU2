@@ -11866,6 +11866,9 @@ protected:
   
   bool symmetrizingTermsPresent;    /*!< \brief Whether or not symmetrizing terms are present in the
                                      discretization. */
+  
+  bool mpiCommsPresent;    /*!< \brief Whether or not we have set up the MPI comms structures. */
+
 private:
   
 #ifdef HAVE_MPI
