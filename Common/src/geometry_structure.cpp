@@ -13683,18 +13683,17 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     const su2double Prandtl    = config->GetPrandtl_Lam();
     unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
 
-    /* TEMPORARY IMPLEMENTATION. HARD CODED UNTIL A BETTER SOLUTION IS FOUND. */
-    const su2double Density    = 1.0;
-    const su2double Vel[]      = {0.118322, 0.0, 0.0};
-    const su2double VelMag     = sqrt(Vel[0]*Vel[0] + Vel[1]*Vel[1] + Vel[2]*Vel[2]);
-    const su2double SoundSpeed = 10.0*VelMag;
-    const su2double Viscosity  = 0.00118322;
- // const su2double Viscosity  = 1.97203e-06;
+    const su2double Density   = config->GetDensity_FreeStreamND();
+    const su2double *Vel      = config->GetVelocity_FreeStreamND();
+    const su2double Viscosity = config->GetViscosity_FreeStreamND();
 
-    cout << endl << "     WARNING in CPhysicalGeometry::DetermineTimeLevelElements" << endl;
-    cout << "Free stream velocity and viscosity hard coded at the moment" << endl;
-    cout << endl;
+    su2double VelMag = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      VelMag += Vel[iDim]*Vel[iDim];
+    VelMag = sqrt(VelMag);
 
+    const su2double SoundSpeed = VelMag/config->GetMach();
+    
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Estimate the time steps of the locally owned elements.   ---*/
     /*------------------------------------------------------------------------*/
