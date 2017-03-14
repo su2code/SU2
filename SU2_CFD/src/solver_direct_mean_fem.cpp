@@ -34,6 +34,9 @@
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   
   /*--- Basic array initialization ---*/
+  
+  FluidModel = NULL;
+ 
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
@@ -46,9 +49,15 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+  
+  Cauchy_Serie = NULL;
 
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
+
+  /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
+  mpiCommsPresent = false;
+  
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
@@ -62,6 +71,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   SetNondimensionalization(config, iMesh);
 
   /*--- Basic array initialization ---*/
+  
+  FluidModel = NULL;
+  
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
@@ -75,8 +87,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
 
+  Cauchy_Serie = NULL;
+  
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
+
+  /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
+  mpiCommsPresent = false;
 
 }
 
@@ -658,6 +675,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         the reverse communication for the residuals of the halo elements. ---*/
   Prepare_MPI_Communication(DGGeometry, config);
 
+  /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
+  mpiCommsPresent = true;
+  
   /*--- Perform the MPI communication of the solution. ---*/
   Initiate_MPI_Communication();
   Complete_MPI_Communication();
@@ -665,7 +685,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 
-  if( FluidModel) delete FluidModel;
+  if(FluidModel != NULL) delete FluidModel;
 
   /*--- Array deallocation ---*/
   if (CD_Inv != NULL)           delete [] CD_Inv;
@@ -703,14 +723,17 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
 
 #ifdef HAVE_MPI
 
-  /*--- Release the memory of the persistent communication and the derived
-        data types. ---*/
-  for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&commRequests[i]);
-  for(int i=0; i<nCommRequests; ++i) MPI_Type_free(&commTypes[i]);
+  if (mpiCommsPresent) {
+    
+    /*--- Release the memory of the persistent communication and the derived
+          data types. ---*/
+    for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&commRequests[i]);
+    for(int i=0; i<nCommRequests; ++i) MPI_Type_free(&commTypes[i]);
 
-  for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&reverseCommRequests[i]);
-  for(unsigned int i=0; i<reverseCommTypes.size(); ++i)
-     MPI_Type_free(&reverseCommTypes[i]);
+    for(int i=0; i<nCommRequests; ++i) MPI_Request_free(&reverseCommRequests[i]);
+    for(unsigned int i=0; i<reverseCommTypes.size(); ++i)
+       MPI_Type_free(&reverseCommTypes[i]);
+  }
 
 #endif
 }
