@@ -817,6 +817,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
         }
         node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
+        if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD){
+          if (compressible) {
+            if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+            if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+          }
+        }
+        node[iPoint_Local]->SetSolution_Old(Solution);
         iPoint_Global_Local++;
       }
       iPoint_Global++;
@@ -926,6 +933,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
   Set_MPI_Solution(geometry, config);
   Set_MPI_Solution(geometry, config);
+  Set_MPI_Solution_Old(geometry, config);
+  Set_MPI_Solution_Old(geometry, config);
 
 }
 
@@ -7916,6 +7925,27 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     invP_Tensor[iVar] = new su2double[nVar];
   }
   
+
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
+
+  su2double Physical_t;
+  su2double Physical_dt;
+  /*--- Calculation of Physical time step for unsteady simulation ---*/
+  if (harmonic_balance) {
+
+    /*--- time interval using nTimeInstances ---*/
+    Physical_dt  = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+
+    /*--- Non-dimensionalization of time step.  ---*/
+    Physical_dt /= config->GetTime_Ref();
+    Physical_t  = config->GetiZone()*Physical_dt;
+  }
+  else {
+    Physical_dt = (su2double)config->GetDelta_UnstTimeND();
+    Physical_t  = (config->GetExtIter())*Physical_dt;
+  }
+  if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
   	V_boundary= GetCharacPrimVar(val_marker, iVertex);
@@ -7981,6 +8011,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 				else P_Total  = config->GetRiemann_Var1(Marker_Tag);
 				T_Total  = config->GetRiemann_Var2(Marker_Tag);
 				Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+
+//P_Total  = config->GetRiemann_Var1(Marker_Tag)*( 1+0.004*sin(1422.85889495918677459237e-3/config->GetOmega_Ref()*Physical_t)+
+//                                                   0.004*(sin(3841.7190163898042913994e-3/config->GetOmega_Ref()*Physical_t)));
+        P_Total = config->GetRiemann_Var1(Marker_Tag)*( 1+0.04*sin(config->GetOmega_HB()[1]/config->GetOmega_Ref()*Physical_t));
+//        P_Total = config->GetRiemann_Var1(Marker_Tag)*( 1+0.04*sin(config->GetOmega_HB()[1]/config->GetOmega_Ref()*Physical_t));
+
+
 
         /*--- Non-dim. the inputs if necessary. ---*/
 				P_Total /= config->GetPressure_Ref();

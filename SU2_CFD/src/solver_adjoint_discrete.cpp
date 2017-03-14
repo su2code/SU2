@@ -261,6 +261,11 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
     direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
   }
 
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Old()[iVar]);
+//      }
+//    }
   if (time_n_needed){
     for (iPoint = 0; iPoint < nPoint; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
@@ -296,10 +301,13 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
   input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
-
+//  for (iPoint = 0; iPoint < nPoint; iPoint++){
+//    direct_solver->node[iPoint]->RegisterSolution_Old(input);
+//  }
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->node[iPoint]->RegisterSolution(input);
   }
+
   if (time_n_needed){
     for (iPoint = 0; iPoint < nPoint; iPoint++){
       direct_solver->node[iPoint]->RegisterSolution_time_n();
@@ -375,6 +383,11 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->node[iPoint]->RegisterSolution(input);
   }
+//
+//  for (iPoint = 0; iPoint < nPoint; iPoint++){
+//    direct_solver->node[iPoint]->RegisterSolution_Old(input);
+//  }
+
 }
 
 
@@ -516,12 +529,29 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       SetRes_RMS(iVar,0.0);
       SetRes_Max(iVar,0.0,0);
   }
-
+//   for (iPoint = 0; iPoint < nPoint; iPoint++){
+//
+//    /*--- Set the old solution ---*/
+//
+////    node[iPoint]->Set_OldSolution();
+//
+//
+//
+//    /*--- Extract the adjoint solution ---*/
+//
+//    direct_solver->node[iPoint]->GetAdjointSolution_Old(Solution);
+//
+//    /*--- Store the adjoint solution ---*/
+//
+//    node[iPoint]->SetSolution_Old(Solution);
+//   }
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Set the old solution ---*/
 
     node[iPoint]->Set_OldSolution();
+
+
 
     /*--- Extract the adjoint solution ---*/
 
@@ -531,6 +561,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     node[iPoint]->SetSolution(Solution);
   }
+
 
   if (time_n_needed){
     for (iPoint = 0; iPoint < nPoint; iPoint++){
@@ -611,11 +642,12 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
-    if (dual_time){
+//    if (dual_time){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
-    }
+//    }
+//    direct_solver->node[iPoint]->SetAdjointSolution_Old(node[iPoint]->GetSolution_Old());
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
 }

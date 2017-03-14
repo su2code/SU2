@@ -3539,51 +3539,74 @@ CSpectralDriver::~CSpectralDriver(void) {
 
 void CSpectralDriver::Run() {
 
-	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-	/*--- If this is the first iteration, set up the spectral operators,
+  /*--- If this is the first iteration, set up the spectral operators,
    initialize the source terms, and compute any grid veocities, if necessary. ---*/
-	if (ExtIter == 0) {
-		if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL))
-			SetTimeSpectral_Velocities();
-		for (iZone = 0; iZone < nZone; iZone++)
-			SetSpectralMethod(iZone);
-	}
+  if (ExtIter == 0) {
+    if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL))
+      SetTimeSpectral_Velocities();
+  }
 
-	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
-	if(ExtIter == 0){
-		if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-			for (iZone = 0; iZone < nZone; iZone++)
-				SetGeoTurboAvgValues(iZone, true);
-		}
-		for (iZone = 0; iZone < nZone; iZone++){
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-		}
-	}
+  for (iZone = 0; iZone < nZone; iZone++)
+    SetSpectralMethod(iZone);
 
-	/*--- Run a single iteration of a spectral method problem. Preprocess all
+  /*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
+  if(ExtIter == 0){
+
+    if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+      for (iZone = 0; iZone < nZone; iZone++)
+        SetGeoTurboAvgValues(iZone, true);
+    }
+
+    for (iZone = 0; iZone < nZone; iZone++){
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+    }
+  }
+
+  /*--- Run a single iteration of a spectral method problem. Preprocess all
    all zones before beginning the iteration. ---*/
 
-	for (iZone = 0; iZone < nZone; iZone++)
-		iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
-				solver_container, numerics_container, config_container,
-				surface_movement, grid_movement, FFDBox, iZone);
+  for (iZone = 0; iZone < nZone; iZone++)
+    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
-	for (iZone = 0; iZone < nZone; iZone++)
-		iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
-				solver_container, numerics_container, config_container,
-				surface_movement, grid_movement, FFDBox, iZone);
+  for (iZone = 0; iZone < nZone; iZone++)
+    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+        solver_container, numerics_container, config_container,
+        surface_movement, grid_movement, FFDBox, iZone);
 
-	for (iZone = 0; iZone < nZone; iZone++){
-		if(config_container[iZone]->GetBoolTurbomachinery()){
-			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
-		}
-	}
+  for (iZone = 0; iZone < nZone; iZone++){
+    if(config_container[iZone]->GetBoolTurbomachinery()){
+      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
+    }
+  }
 
-	SetSpectralAverage();
+  SetSpectralAverage();
+
+
+//  /*--- Print residuals in the first iteration ---*/
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//
+//    //    if ((rank == MASTER_NODE) && (kind_recording == SOLUTION) && (config_container[iZone]->GetExtIter() == 0)){
+//    cout << endl << "Convergence of direct solver for Zone " << iZone << ": " << endl;
+//
+//    cout << "  log10[RMS Density]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+//               <<", Drag: " <<solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
+//               <<", Lift: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+//
+//    if (config_container[iZone]->GetKind_Turb_Model() != NONE){
+//      cout << "  log10[RMS k]:       " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+//      if (config_container[iZone]->GetKind_Turb_Model() == SST){
+//        cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
+//      }
+//    }
+//    cout << "Entropy Gen: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(config_container[iZone]->GetnMarker_TurboPerformance() - 1) << endl;
+//  }
 
 }
 
@@ -3697,36 +3720,40 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
   for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-    
+
     /*--- Loop over each node in the volume mesh ---*/
     for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-      
+
       for (iVar = 0; iVar < nVar; iVar++) {
         Source[iVar] = 0.0;
       }
-      
+
       /*--- Step across the columns ---*/
       for (jZone = 0; jZone < nZone; jZone++) {
-        
+
         /*--- Retrieve solution at this node in current zone ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
-          
+
           if (!adjoint) {
             U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
             Source[iVar] += U[iVar]*D[iZone][jZone];
-            
+
             if (implicit) {
               U_old[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
               deltaU = U[iVar] - U_old[iVar];
+              //              if (deltaU != 0)
+              //                cout << "DELTA U:    " << deltaU << endl ;
               Source[iVar] += deltaU*D[iZone][jZone];
+              //              Source[iVar] += 0.*D[iZone][jZone];
             }
-            
+
+
           }
-          
+
           else {
             Psi[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar);
             Source[iVar] += Psi[iVar]*D[jZone][iZone];
-            
+
             if (implicit) {
               Psi_old[iVar] = solver_container[jZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
               deltaPsi = Psi[iVar] - Psi_old[iVar];
@@ -3734,7 +3761,7 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
             }
           }
         }
-        
+
         /*--- Store sources for current row ---*/
         for (iVar = 0; iVar < nVar; iVar++) {
           if (!adjoint) {
@@ -3744,7 +3771,21 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
             solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
           }
         }
-        
+//      }
+
+//      if(config_container[iZone]->GetDiscrete_Adjoint()){
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          Source[iVar] = 0.0;
+//        }
+//        for (jZone = 0; jZone < nZone; jZone++) {
+//          for (iVar = 0; iVar < nVar; iVar++) {
+//            Source[iVar] -= geometry_container[ZONE_0][iMGlevel]->node[iPoint]->GetVolume()*D[jZone][iZone];
+//          }
+
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          solver_container[iZone][iMGlevel][ADJFLOW_SOL]->node[iPoint]->SetDual_Time_Derivative(iVar, Source[iVar]);
+//       }
+//      }
       }
     }
   }
@@ -3846,7 +3887,7 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
     	sbuf_force[7]  = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
     	sbuf_force[8]  = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
     	sbuf_force[9]  = solver_container[kZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
-      sbuf_force[10] = solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+        sbuf_force[10] = solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
       
       for (iVar = 0; iVar < nVar_Force; iVar++) {
         rbuf_force[iVar] = sbuf_force[iVar];
@@ -4638,6 +4679,9 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
       solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
     }
   }
+
+//  for (iZone = 0; iZone < nZone; iZone++)
+//  	SetSpectralMethod(iZone);
 
   SetSpectralAverage();
 

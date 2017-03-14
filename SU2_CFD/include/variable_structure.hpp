@@ -2035,7 +2035,11 @@ public:
    * \param[in] input - input or output variables.
    */
   void RegisterSolution(bool input);
-
+//  /*!
+//   * \brief Register the variables in the solution array as input/output variable.
+//   * \param[in] input - input or output variables.
+//   */
+//  void RegisterSolution_Old(bool input);
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
    */
@@ -2052,11 +2056,22 @@ public:
    */
   void SetAdjointSolution(su2double *adj_sol);
 
+//  /*!
+//   * \brief Set the adjoint values of the solution.
+//   * \param[in] adj_sol - The adjoint values of the solution.
+//   */
+//  void SetAdjointSolution_Old(su2double *adj_sol);
   /*!
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void GetAdjointSolution(su2double *adj_sol);
+//  /*!
+//   * \brief Get the adjoint values of the solution.
+//   * \param[in] adj_sol - The adjoint values of the solution.
+//   */
+//  void GetAdjointSolution_Old(su2double *adj_sol);
+
 
   /*!
    * \brief Set the adjoint values of the solution at time n.
