@@ -3238,6 +3238,11 @@ public:
   
   /*!
    * \brief A virtual member.
+   */
+  virtual void ReadDV(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
    * \return Pointer to the values of the Electric Field
    */
   virtual su2double GetVal_EField(unsigned short iVal);
@@ -12590,6 +12595,11 @@ public:
    */
   unsigned short GetnEField(void);
   
+  /*!
+   * \brief Read the design variables for the adjoint solver
+   */
+  void ReadDV(CConfig *config);
+
   /*!
    * \brief Get the number of design variables from the adjoint solver,
    * \return Number of design variables from the adjoint solver
