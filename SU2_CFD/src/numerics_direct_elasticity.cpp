@@ -69,9 +69,6 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 //	Rho_s_DL_i[0] = config->GetMaterialDensity(0);    // For dead loads
 
 
-
-
-
 	if (pseudo_static) Rho_s_i[0] = 0.0;             // Pseudo-static: no inertial effects considered
 
 	// Initialization
@@ -131,17 +128,17 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	}
 
   DV_Val      = NULL;
-  n_DV        = config->GetnDV();
+  n_DV        = 0;
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
     case POISSON_RATIO:
     case DENSITY_VAL:
     case DEAD_WEIGHT:
     case ELECTRIC_FIELD:
-      DV_Val = new su2double[n_DV];
+      ReadDV(config);
+      cout << "Test DV Vals " << n_DV << endl;
       for (unsigned short iDV = 0; iDV < n_DV; iDV++)
-        DV_Val[iDV] = config->GetDV_Value(iDV,0);
-
+        cout << scientific << DV_Val[iDV] << endl;
       if ((config->GetDirectDiff() == D_YOUNG) ||
           (config->GetDirectDiff() == D_POISSON) ||
           (config->GetDirectDiff() == D_RHO) ||
@@ -325,16 +322,16 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
 
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
-      E   = DV_Val[element->Get_iDV()];
+      E   = DV_Val[element->Get_iDV()] * E;
       break;
     case POISSON_RATIO:
-      Nu  = DV_Val[element->Get_iDV()];
+      Nu  = DV_Val[element->Get_iDV()] * Nu;
       break;
     case DENSITY_VAL:
-      Rho_s = DV_Val[element->Get_iDV()];
+      Rho_s = DV_Val[element->Get_iDV()] * Rho_s;
       break;
     case DEAD_WEIGHT:
-      Rho_s_DL = DV_Val[element->Get_iDV()];
+      Rho_s_DL = DV_Val[element->Get_iDV()] * Rho_s_DL;
       break;
   }
 
@@ -346,3 +343,108 @@ void CFEM_Elasticity::SetElement_Properties(CElement *element, CConfig *config) 
 
 }
 
+void CFEM_Elasticity::ReadDV(CConfig *config) {
+
+  unsigned long iElem;
+  unsigned long index;
+
+  unsigned short iVar;
+  unsigned short iZone = config->GetiZone();
+
+  string filename;
+  ifstream properties_file;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Choose the filename of the design variable ---*/
+
+  string input_name;
+
+  switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      input_name = "dv_young.opt";
+      break;
+    case POISSON_RATIO:
+      input_name = "dv_poisson.opt";
+      break;
+    case DENSITY_VAL:
+    case DEAD_WEIGHT:
+      input_name = "dv_density.opt";
+      break;
+    case ELECTRIC_FIELD:
+      input_name = "dv_efield.opt";
+      break;
+    default:
+      input_name = "dv.opt";
+      break;
+  }
+
+  filename = input_name;
+
+  cout << "Filename: " << filename << "." << endl;
+
+  properties_file.open(filename.data(), ios::in);
+
+  /*--- In case there is no file, all elements get the same property (0) ---*/
+
+  if (properties_file.fail()) {
+
+    if (rank == MASTER_NODE)
+      cout << "There is no design variable file." << endl;
+
+    n_DV   = 1;
+    DV_Val = new su2double[n_DV];
+    for (unsigned short iDV = 0; iDV < n_DV; iDV++)
+      DV_Val[iDV] = 1.0;
+
+  }
+  else{
+
+    string text_line;
+
+     /*--- First pass: determine number of design variables ---*/
+
+    unsigned short iDV = 0;
+
+    /*--- Skip the first line: it is the header ---*/
+
+    getline (properties_file, text_line);
+
+    while (getline (properties_file, text_line)) iDV++;
+
+    /*--- Close the restart file ---*/
+
+    properties_file.close();
+
+    n_DV = iDV;
+    DV_Val = new su2double[n_DV];
+
+    /*--- Reopen the file (TODO: improve this) ---*/
+
+    properties_file.open(filename.data(), ios::in);
+
+    /*--- Skip the first line: it is the header ---*/
+
+    getline (properties_file, text_line);
+
+    iDV = 0;
+    while (getline (properties_file, text_line)) {
+
+      istringstream point_line(text_line);
+
+      point_line >> index >> DV_Val[iDV];
+
+      iDV++;
+
+    }
+
+    /*--- Close the restart file ---*/
+
+    properties_file.close();
+
+  }
+
+}
