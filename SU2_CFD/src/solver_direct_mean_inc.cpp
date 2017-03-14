@@ -223,7 +223,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   
@@ -1618,7 +1618,7 @@ void CIncEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *co
   
 }
 
-void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -5829,7 +5829,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
