@@ -1390,6 +1390,12 @@ public:
   virtual void SetElement_Properties(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member
+   * \param[in] config - Config structure
+   */
+  virtual void ReadDV(CConfig *config);
+
+  /*!
    * \brief A virtual member to set the value of the design variables
    * \param[in] i_DV - Index of the design variable.
    * \param[in] val_DV - Value of the design variable
@@ -3878,6 +3884,8 @@ public:
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
   void SetElement_Properties(CElement *element_container, CConfig *config);
+
+  void ReadDV(CConfig *config);
 
   void Set_DV_Val(unsigned short i_DV, su2double val_DV);
 

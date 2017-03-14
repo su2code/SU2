@@ -83,6 +83,8 @@ inline void CFEM_Elasticity::Compute_Eigenproblem(CElement *element_container, C
 
 inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::ReadDV(CConfig *config){ }
+
 inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
 
 inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) { return 0.0; }
