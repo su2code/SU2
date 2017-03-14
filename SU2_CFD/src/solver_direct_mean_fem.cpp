@@ -2724,8 +2724,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
              compute the inverse of the Jacobian. */
           const su2double *metricTerms = volElem[l].metricTerms.data()
                                        + i*nMetricPerPoint;
-          const su2double Jac          = metricTerms[0];
-          const su2double JacInv       = 1.0/Jac;
 
           /* Compute the metric terms multiplied by minus the integration weight.
              The minus sign comes from the integration by parts in the weak
@@ -2787,8 +2785,6 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
              compute the inverse of the Jacobian. */
           const su2double *metricTerms = volElem[l].metricTerms.data()
                                        + i*nMetricPerPoint;
-          const su2double Jac          = metricTerms[0];
-          const su2double JacInv       = 1.0/Jac;
 
           /* Compute the metric terms multiplied by minus the integration weight.
              The minus sign comes from the integration by parts in the weak
