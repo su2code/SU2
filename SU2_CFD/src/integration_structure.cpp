@@ -570,9 +570,23 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 }
 
 
-void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
+void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh, unsigned short SolContainer_Position) {
+
+  unsigned short iVar;
   unsigned long iPoint;
-  
+
+  bool calculate_average = config->GetCalculate_Average();
+
+  /*--- Adding the solution for Calculate Averages ---*/
+
+  if (SolContainer_Position == FLOW_SOL && calculate_average) {
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < solver->GetnVar(); iVar++) {
+        solver->node[iPoint]->AddSolution_Avg(iVar, solver->node[iPoint]->GetSolution(iVar));
+      }
+    }
+  }
+
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     solver->node[iPoint]->Set_Solution_time_n1();
     solver->node[iPoint]->Set_Solution_time_n();

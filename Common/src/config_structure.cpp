@@ -3128,6 +3128,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Check for the calculation of averages. Disable if it is not
+   an unsteady calculation with a restart. ---*/
+
+  if (Calculate_Average) {
+    if (Unsteady_Simulation == NO || !Restart)
+      Calculate_Average = false;
+  }
+
   /*--- Check for 2nd order w/ limiting for JST and correct ---*/
   
   if ((Kind_ConvNumScheme_Flow == SPACE_CENTERED) && (Kind_Centered_Flow == JST) && (SpatialOrder_Flow == SECOND_ORDER_LIMITER))
