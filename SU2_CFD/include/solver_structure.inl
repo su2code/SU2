@@ -612,6 +612,8 @@ inline unsigned short CSolver::GetnEField(void) { return 0; }
 
 inline unsigned short CSolver::GetnDVFEA(void) { return 0; }
 
+inline void CSolver::ReadDV(CConfig *config) { }
+
 inline su2double CSolver::GetVal_EField(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetVal_DVFEA(unsigned short iVal) { return 0.0; }
