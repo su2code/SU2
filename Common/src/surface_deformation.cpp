@@ -6809,8 +6809,70 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
   }
 }
 
-void CFreeFormDefBox::GetLaplacianEnergyMatrix(EigenMatrix &Matrix){
+void CFreeFormDefBox::GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2double *uvw){
 
+  const unsigned short lControl = BlendingFunction[0]->GetnControl();
+  const unsigned short mControl = BlendingFunction[1]->GetnControl();
+  const unsigned short nControl = BlendingFunction[2]->GetnControl();
+  unsigned short iDegree, jDegree, kDegree;
+  unsigned short iDim, lmn[3], jDim;
+
+  lmn[0] = lDegree; lmn[1] = mDegree; lmn[2] = nDegree;
+
+
+  unsigned short ijk[3];
+  for (iDim = 0; iDim < nDim; iDim++) ijk[iDim] = 0;
+
+  for (iDegree = 0; iDegree <= lmn[0]; iDegree++){
+    for (jDegree = 0; jDegree <= lmn[1]; jDegree++){
+      for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
+        ijk[0] = iDegree; ijk[1] = jDegree; ijk[2] = kDegree;
+        for (iDim = 0; iDim < nDim; iDim++){
+          Derivative(iDegree*mControl*nControl + jDegree*nControl + kDegree, iDim) = GetDerivative1(uvw, iDim, ijk, lmn);
+        }
+      }
+    }
+  }
+
+
+  LocalMatrix = EigenMatrix::Zeros(nDim, nDim);
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    for (jDim = 0; jDim < nDim; jDim++){
+      for (iDegree = 0; iDegree <= lmn[0]; iDegree++){
+        for (jDegree = 0; jDegree <= lmn[1]; jDegree++){
+          for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
+            LocalMatrix(iDim, jDim) += Coord_Control_Points[iDegree][jDegree][kDegree][iDim]* Derivative(iDegree*mControl*nControl + jDegree*nControl + kDegree, jDim);
+          }
+        }
+      }
+    }
+  }
+
+  R = Derivative*LocalMatrix.inverse();
+
+  unsigned short Offset1, Offset2;
+
+  for (iDegree = 0; iDegree <= lmn[0]; iDegree++){
+    for (jDegree = 0; jDegree <= lmn[1]; jDegree++){
+      for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
+        Offset1 = iDegree*mControl*nControl*nDim + jDegree*nControl*nDim + kDegree*nDim;
+        Offset2 = iDegree*mControl*nControl + jDegree*nControl + kDegree;
+        for (iDim = 0; iDim < nDim; iDim++){
+          StiffMatrix(Offset1 + iDim, iDim) = R(Offset2, iDim);
+        }
+        StiffMatrix(Offset1 + 3, 0) = 0.5*R(Offset2, 1);
+        StiffMatrix(Offset1 + 3, 1) = 0.5*R(Offset2, 0);
+        StiffMatrix(Offset1 + 4, 0) = 0.5*R(Offset2, 2);
+        StiffMatrix(Offset1 + 4, 2) = 0.5*R(Offset2, 0);
+        StiffMatrix(Offset1 + 5, 1) = 0.5*R(Offset2, 2);
+        StiffMatrix(Offset1 + 5, 2) = 0.5*R(Offset2, 1);
+      }
+    }
+  }
+}
+
+void CFreeFormDefBox::SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, CGeometry *geometry){
 
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
@@ -6818,8 +6880,78 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix(EigenMatrix &Matrix){
   unsigned short iControl, jControl, kControl;
   const unsigned long TotalControl = lControl*mControl*nControl;
 
-  unsigned long Index_ij, Index_ip1j, Index_im1j, Index_ijp1, Index_ijm1;
+  unsigned long iVertex, iPoint, iSurfacePoints;
+  unsigned short iMarker, iDim;
 
+  su2double *ParamCoord, Area = 0, *Normal;
+
+  EigenMatrix LocalStiffness(TotalControl*nDim, 6);
+  EigenMatrix ConstitutiveMatrix(6,6);
+  Matrix.resize(TotalControl*nDim, TotalControl*nDim);
+  Derivative.resize(TotalControl, nDim);
+  LocalMatrix.resize(nDim, nDim);
+  R.resize(TotalControl, nDim);
+
+  Matrix = Eigenmatrix::Zeros(TotalControl*nDim, TotalControl*nDim);
+
+  su2double E = 1.0, nu = 0.25;
+
+  su2double Lambda = (nu*E)/((1+nu)*(1-nu));
+  su2double mu     = E/(2*(1+nu));
+
+  ConstitutiveMatrix = EigenMatrix::Zeros(6,6);
+  ConstitutiveMatrix(0,0) = Lambda+2*mu; ConstitutiveMatrix(0, 1) = Lambda; ConstitutiveMatrix(0, 2) = Lambda;
+  ConstitutiveMatrix(1,0) = Lambda; ConstitutiveMatrix(1, 1) = Lambda+2*mu; ConstitutiveMatrix(1, 2) = Lambda;
+  ConstitutiveMatrix(2,0) = Lambda; ConstitutiveMatrix(2, 1) = Lambda; ConstitutiveMatrix(2, 2) = Lambda+2*mu;
+  ConstitutiveMatrix(3,3) = 4*mu;   ConstitutiveMatrix(4,4) = 4*mu;    ConstitutiveMatrix(5,5) = 4*mu;
+
+
+
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
+      for (kControl = 0; kControl < nControl; kControl++){
+        for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
+
+          iMarker = Get_MarkerIndex(iSurfacePoints);
+
+          if (config->GetMarker_All_DV(iMarker) == YES) {
+
+            iVertex = Get_VertexIndex(iSurfacePoints);
+            iPoint  = Get_PointIndex(iSurfacePoints);
+
+            ParamCoord = Get_ParametricCoord(iSurfacePoints);
+
+            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++){
+              Area += Normal[iDim]*Normal[iDim];
+            }
+            Area = sqrt(Area);
+            GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
+            Matrix += 0.5*(LocalStiffness.transpose()*D*LocalStiffness)*Area;
+          }
+        }
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+void CFreeFormDefBox::GetLaplacianEnergyMatrix2D(EigenMatrix &Matrix){
+
+
+  const unsigned short lControl = BlendingFunction[0]->GetnControl();
+  const unsigned short mControl = BlendingFunction[1]->GetnControl();
+  unsigned short iControl, jControl;
+  const unsigned long TotalControl = lControl*mControl;
+
+  unsigned long Index_ij, Index_ip1j, Index_im1j, Index_ijp1, Index_ijm1;
 
   EigenMatrix StencilMatrix(TotalControl, TotalControl);
 

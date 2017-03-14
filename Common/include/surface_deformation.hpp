@@ -300,6 +300,8 @@ public:
   CFreeFormBlending** BlendingFunction;
 
 
+  EigenMatrix Derivative, R, LocalMatrix;
+
 public:
 
   /*!
@@ -942,8 +944,13 @@ public:
 
   void GetAbsoluteGroupRHS(EigenVector &RHS, unsigned short iGroup, unsigned short iDim, CConfig *config);
 
-  void GetLaplacianEnergyMatrix(EigenMatrix &Matrix);
+  void GetLaplacianEnergyMatrix2D(EigenMatrix &Matrix);
 
+  void GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix);
+
+  void GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2double *uvw);
+
+  void SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, CGeometry *geometry);
 };
 
 
