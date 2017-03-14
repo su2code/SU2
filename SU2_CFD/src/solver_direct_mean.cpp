@@ -3971,7 +3971,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
-  
+  bool calculate_average = config->GetCalculate_Average();
+
+  su2double *Solution_Avg_Aux;
 
   /*--- Set subsonic initial condition for engine intakes ---*/
   
@@ -4141,6 +4143,16 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     }
   }
 
+  /*--- Update the values for Calculate Averages. ---*/
+
+  if (calculate_average){
+    for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+      Solution_Avg_Aux = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution();
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(Solution_Avg_Aux);
+    }
+  }
+
+
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -4166,10 +4178,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool marker_analyze   = (config->GetnMarker_Analyze() != 0);
   bool fixed_cl         = config->GetFixed_CL_Mode();
-  bool calculate_average = config->GetCalculate_Average();
-  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
-
-  su2double *Solution_Avg_aux;
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -4239,20 +4247,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     if ((center_jst) && ((iMesh == MESH_0) || low_fidelity)) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
-    }
-  }
-  
-  /*--- Adding the solution for Calculate Averages ---*/
-
-  if (calculate_average && restart_unst){
-    unsigned long iPoint;
-    unsigned short iVar;
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      Solution_Avg_aux = node[iPoint]->GetSolution();
-      for (iVar = 0; iVar < nVar; iVar++) {
-        node[iPoint]->AddSolution_Avg(iVar, Solution_Avg_aux[iVar]);
-      }
     }
   }
   
@@ -14691,10 +14685,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool calculate_average = config->GetCalculate_Average();
-  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
-
-  su2double *Solution_Avg_Aux;
   
   string UnstExt, text_line;
   ifstream restart_file;
@@ -14880,16 +14870,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
     }
   }
-  
-  /*--- Update the values for Calculate Averages. ---*/
-  
-  if (calculate_average && restart_unst){
-    for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
-      Solution_Avg_Aux = solver[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution();      
-      solver[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(Solution_Avg_Aux);
-    }
-  }
-  
   
   delete [] Coord;
 
@@ -15778,10 +15758,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool nearfield            = (config->GetnMarker_NearFieldBound() != 0);
   bool interface            = (config->GetnMarker_InterfaceBound() != 0);
   bool marker_analyze       = (config->GetnMarker_Analyze() != 0);
-    
-  bool calculate_average = config->GetCalculate_Average();
-  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
-  su2double *Solution_Avg_aux;
+  
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -15861,22 +15838,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     Omega_Max = max(Omega_Max, Omega);
     
   }
-    
-  /*--- Adding the solution for Calculate Averages ---*/
 
-  if (calculate_average && restart_unst){
-    unsigned long iPoint;
-    unsigned short iVar;
-        
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
-      Solution_Avg_aux = node[iPoint]->GetSolution();
-      for (iVar = 0; iVar < nVar; iVar++) {
-        solver_container[FLOW_SOL]->node[iPoint]->AddSolution_Avg(iVar, Solution_Avg_aux[iVar]);
-      }
-    }
-  }
-
-  
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();

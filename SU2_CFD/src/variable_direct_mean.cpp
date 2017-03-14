@@ -75,9 +75,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
   bool calculate_average = config->GetCalculate_Average();
-  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
 
-  
   /*--- Array initialization ---*/
   
   HB_Source = NULL;
@@ -235,11 +233,12 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   /*--- Allocate vector for Average of conservative variables ---*/
   
-  if (calculate_average && restart_unst){
+  if (calculate_average){
     Solution_Avg = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++)
       Solution_Avg[iVar] = 0.0;
   }
+
 }
 
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -251,6 +250,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  bool calculate_average = config->GetCalculate_Average();
 
   /*--- Array initialization ---*/
   
@@ -276,7 +276,9 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Undivided_Laplacian = NULL;
 
   Solution_New = NULL;
- 
+
+  Solution_Avg = NULL;
+
     /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
@@ -387,7 +389,14 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
       Gradient_Secondary[iVar][iDim] = 0.0;
   }
 
-  
+  /*--- Allocate vector for Average of conservative variables ---*/
+
+  if (calculate_average){
+    Solution_Avg = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution_Avg[iVar] = 0.0;
+  }
+
 }
 
 CEulerVariable::~CEulerVariable(void) {

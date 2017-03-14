@@ -10322,14 +10322,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
-  
+  su2double Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter()) + 2;
+
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   bool calculate_average = (config->GetCalculate_Average());
-  bool restart_unst = (config->GetUnsteady_Simulation()!=NO && config->GetRestart());
-  su2double Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter());
+
   int *Local_Halo = NULL;
   
   stringstream varname;
@@ -10554,7 +10554,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("DES_Distance");      
     }
     
-    if (calculate_average && restart_unst){
+    if (calculate_average) {
       nVar_Par +=1;
       Variable_Names.push_back("Mean_Consv1");
       nVar_Par +=1;
@@ -10788,8 +10788,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           
         }
         
-        if (calculate_average && restart_unst){
-          for (jVar = 0; jVar < nVar_Second; jVar++) {
+        if (calculate_average){
+          for (jVar = 0; jVar < nVar_First; jVar++) {
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
             iVar++;
           }
