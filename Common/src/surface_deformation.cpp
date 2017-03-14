@@ -2103,8 +2103,8 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   unsigned short iControl, jControl, kControl, iGroup, index[3], iDV, iConstraint;
   const unsigned short lControl = FFDBox->BlendingFunction[0]->GetnControl();
   const unsigned short mControl = FFDBox->BlendingFunction[1]->GetnControl();
-  const unsigned short nControl = FFDBox->BlendingFunction[2]->GetnControl();
-  const unsigned short TotalControl = lControl*mControl*nControl;
+  unsigned short nControl = FFDBox->BlendingFunction[2]->GetnControl();
+
   unsigned long nParameter = 0, displ = 0;
   const unsigned short nGroup = FFDBox->PilotGroupNames.size();
   const unsigned short nDim = geometry->GetnDim();
@@ -2112,6 +2112,13 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   su2double Movement[] = {0.0,0.0,0.0};
   bool* GroupActive;
   GroupActive = new bool[nGroup];
+
+  if (nDim == 2){
+    nControl = 1;
+  }
+
+  const unsigned short TotalControl = lControl*mControl*nControl*nDim;
+
 
   int rank = MASTER_NODE;
 
@@ -2173,28 +2180,33 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
         FFDBox->GetAbsoluteGroupRHS(RhsY, iGroup, 1, config);
         if (nDim == 3)
           FFDBox->GetAbsoluteGroupRHS(RhsZ, iGroup, 2, config);
-        FFDBox->GetAbsoluteGroupBlock(Block, iGroup);
+        FFDBox->GetAbsoluteGroupBlock(Block, iGroup, nDim);
       }
       if (FFDBox->PilotGroupType[iGroup] == RELATIVE){
         FFDBox->GetRelativeGroupRHS(RhsX, iGroup, 0, config);
         FFDBox->GetRelativeGroupRHS(RhsY, iGroup, 1, config);
         if (nDim == 3)
           FFDBox->GetRelativeGroupRHS(RhsZ, iGroup, 2, config);
-        FFDBox->GetRelativeGroupBlock(Block, iGroup);
+        FFDBox->GetRelativeGroupBlock(Block, iGroup, nDim);
       }
 
       ParameterValuesX.block(displ, 0, RhsX.rows(),1) = RhsX;
       ParameterValuesY.block(displ, 0, RhsY.rows(),1) = RhsY;
-      if (nDim == 3)
+      if (nDim == 3){
         ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
+      }
 
-      ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
+     ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
 
-      displ += Block.rows();
+     displ += Block.rows();
     }
   }
 
-  FFDBox->GetLaplacianEnergyMatrix(EnergyMatrix);
+  if (nDim  == 2){
+    FFDBox->GetLaplacianEnergyMatrix2D(EnergyMatrix);
+  } else {
+    FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
+  }
   SystemMatrix.block(0, 0, TotalControl, TotalControl)          = EnergyMatrix;
   SystemMatrix.block(0, TotalControl, TotalControl, nParameter) = ConstraintMatrix.transpose();
   SystemMatrix.block(TotalControl, 0, nParameter, TotalControl) = ConstraintMatrix;
@@ -2216,36 +2228,19 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     SystemSol = QRSystemMatrix.solve(SystemRHS);
     ControlPointPositionsY = SystemSol.block(0, 0, TotalControl, 1);
 
+    SystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesZ;
+    SystemSol = QRSystemMatrix.solve(SystemRHS);
+    ControlPointPositionsZ = SystemSol.block(0, 0, TotalControl, 1);
 
-//    /*--- Set up necessary matrices and vectors ---*/
-
-//    SystemMatrixSVD = SystemMatrix.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
-
-
-//    /*--- Solve the least squares system to get P_x, P_y, i.e. X = B^* P_x, Y = B^* P_y ---*/
-
-//    ControlPointPositionsX = SystemMatrixSVD.solve(ParameterValuesX);
-//    ControlPointPositionsY = SystemMatrixSVD.solve(ParameterValuesY);
-//    if (nDim == 3)
-//      ControlPointPositionsZ = SystemMatrixSVD.solve(ParameterValuesZ);
-
-//    /*--- Compute the residual  DX = X - B^* P_x, DY = Y - B^* P_y
-//     * (measures how well the pilot point positions can be represented by the FFD box )--- */
-
-//    DeltaX = ParameterValuesX - SystemMatrix*ControlPointPositionsX;
-//    DeltaY = ParameterValuesY - SystemMatrix*ControlPointPositionsY;
-//    if (nDim == 3)
-//      DeltaZ = ParameterValuesZ - SystemMatrix*ControlPointPositionsZ;
-    
-//    if (rank == MASTER_NODE){
-//      cout << "Difference in Pilot Point Position: ( "
-//        << DeltaX.norm() << ", "
-//        << DeltaY.norm();
-//      if (nDim == 3){
-//        cout << ", " << DeltaZ.norm();
-//      }
-
-//      cout << " )" <<endl;
+    if (rank == MASTER_NODE){
+      cout << "Laplacian Energy: ( "
+           << ControlPointPositionsX.transpose()*EnergyMatrix*ControlPointPositionsX << ", "
+           << ControlPointPositionsY.transpose()*EnergyMatrix*ControlPointPositionsY;
+      if (nDim == 3){
+        cout << ", " << ControlPointPositionsZ.transpose()*EnergyMatrix*ControlPointPositionsZ;
+      }
+      cout << " )." << endl;
+    }
 
       cout << "Control Point Movement:             ( "
         << ControlPointPositionsX.norm() << ", "
@@ -2254,7 +2249,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
         cout << ", " << ControlPointPositionsZ.norm();
       }
       cout << " )" << endl;
-//    }
+
 
     for (iControl = 0; iControl < lControl; iControl++){
       for (jControl = 0; jControl < mControl; jControl++){
@@ -6641,14 +6636,17 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 }
 
 
-void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup){
+void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup, unsigned short nDim){
 
   EigenMatrix BlendingMatrix;
   EigenMatrix ProjectionMatrix;
   su2double Bijk = 0;
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
-  const unsigned short nControl = BlendingFunction[2]->GetnControl();
+  unsigned short nControl = BlendingFunction[2]->GetnControl();
+  if (nDim == 2){
+    nControl = 1;
+  }
   unsigned short iControl, jControl, kControl = 0;
   const unsigned short TotalControl = lControl*mControl*nControl;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
@@ -6738,12 +6736,15 @@ void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGrou
   }
 }
 
-void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup){
+void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup, unsigned short nDim){
 
   su2double Bijk = 0;
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
-  const unsigned short nControl = BlendingFunction[2]->GetnControl();
+  unsigned short nControl = BlendingFunction[2]->GetnControl();
+  if (nDim == 2){
+    nControl = 1;
+  }
   unsigned short iControl, jControl, kControl = 0;
   const unsigned short TotalControl = lControl*mControl*nControl;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
@@ -6826,56 +6827,242 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix(EigenMatrix &Matrix){
 
   for (iControl = 0; iControl < lControl; iControl++){
     for (jControl = 0; jControl < mControl; jControl++){
+      Index_ij   = iControl*mControl + jControl;
+      Index_ip1j = (iControl+1)*mControl + jControl;
+      Index_im1j = (iControl-1)*mControl + jControl;
+      Index_ijp1 = iControl*mControl + (jControl+1);
+      Index_ijm1 = iControl*mControl + (jControl-1);
+
+      StencilMatrix(Index_ij, Index_ij) = -1.0;
+
+      if ((iControl == 0) && (jControl == 0)){
+        StencilMatrix(Index_ij, Index_ip1j) = 0.5;
+        StencilMatrix(Index_ij, Index_ijp1) = 0.5;
+      }
+      else if ((iControl == lControl - 1) && (jControl == mControl - 1)){
+        StencilMatrix(Index_ij, Index_im1j) = 0.5;
+        StencilMatrix(Index_ij, Index_ijm1) = 0.5;
+      }
+      else if ((iControl == 0) && (jControl ==  mControl - 1)){
+        StencilMatrix(Index_ij, Index_ip1j) = 0.5;
+        StencilMatrix(Index_ij, Index_ijm1) = 0.5;
+      }
+      else if ((iControl == lControl - 1) && (jControl == 0)){
+        StencilMatrix(Index_ij, Index_im1j) = 0.5;
+        StencilMatrix(Index_ij, Index_ijp1) = 0.5;
+      }
+      else if ((iControl == lControl -1)){
+        StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+      }
+      else if ((jControl == mControl -1)){
+        StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
+      }
+      else if (iControl == 0){
+        StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+      }
+      else if (jControl == 0){
+        StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
+        StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+      }
+      else {
+        StencilMatrix(Index_ij, Index_im1j) = 0.25;
+        StencilMatrix(Index_ij, Index_ip1j) = 0.25;
+        StencilMatrix(Index_ij, Index_ijm1) = 0.25;
+        StencilMatrix(Index_ij, Index_ijp1) = 0.25;
+      }
+    }
+  }
+
+  Matrix = StencilMatrix.transpose()*StencilMatrix;
+}
+
+void CFreeFormDefBox::GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix){
+
+
+  const unsigned short lControl = BlendingFunction[0]->GetnControl();
+  const unsigned short mControl = BlendingFunction[1]->GetnControl();
+  const unsigned short nControl = BlendingFunction[2]->GetnControl();
+  unsigned short iControl, jControl, kControl;
+  const unsigned long TotalControl = lControl*mControl*nControl;
+
+  unsigned long Index_ijk, Index_ip1jk, Index_im1jk, Index_ijp1k, Index_ijm1k, Index_ijkp1, Index_ijkm1;
+
+void CFreeFormDefBox::GetLaplacianEnergyMatrix2D(EigenMatrix &Matrix){
+
+
+  const unsigned short lControl = BlendingFunction[0]->GetnControl();
+  const unsigned short mControl = BlendingFunction[1]->GetnControl();
+  unsigned short iControl, jControl;
+  const unsigned long TotalControl = lControl*mControl;
+
+  unsigned long Index_ij, Index_ip1j, Index_im1j, Index_ijp1, Index_ijm1;
+
+  EigenMatrix StencilMatrix(TotalControl, TotalControl);
+
+  StencilMatrix = EigenMatrix::Zero(TotalControl, TotalControl);
+
+  const su2double OneThird  = 1.0/3.0;
+  const su2double OneFourth = 1.0/4.0;
+  const su2double OneFive   = 1.0/5.0;
+  const su2double OneSix    = 1.0/6.0;
+
+  for (iControl = 0; iControl < lControl; iControl++){
+    for (jControl = 0; jControl < mControl; jControl++){
       for (kControl = 0; kControl < nControl; kControl++){
-        Index_ij   = iControl*mControl*nControl + jControl*nControl + kControl;
-        Index_ip1j = (iControl+1)*mControl*nControl + jControl*nControl + kControl;
-        Index_im1j = (iControl-1)*mControl*nControl + jControl*nControl + kControl;
-        Index_ijp1 = iControl*mControl*nControl + (jControl+1)*nControl + kControl;
-        Index_ijm1 = iControl*mControl*nControl + (jControl-1)*nControl + kControl;
+        Index_ijk   = iControl*mControl*nControl + jControl*nControl + kControl;
+        Index_ip1jk = (iControl+1)*mControl*nControl + jControl*nControl + kControl;
+        Index_im1jk = (iControl-1)*mControl*nControl + jControl*nControl + kControl;
+        Index_ijp1k = iControl*mControl*nControl + (jControl+1)*nControl + kControl;
+        Index_ijm1k = iControl*mControl*nControl + (jControl-1)*nControl + kControl;
+        Index_ijkp1 = iControl*mControl*nControl + jControl*nControl + kControl + 1;
+        Index_ijkm1 = iControl*mControl*nControl + jControl*nControl + kControl - 1;
 
-        StencilMatrix(Index_ij, Index_ij) = -1.0;
+        StencilMatrix(Index_ijk, Index_ijk) = -1.0;
 
-        if ((iControl == 0) && (jControl == 0)){
-          StencilMatrix(Index_ij, Index_ip1j) = 0.5;
-          StencilMatrix(Index_ij, Index_ijp1) = 0.5;
+        if ((iControl == 0) && (jControl == 0) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
         }
-        else if ((iControl == lControl - 1) && (jControl == mControl - 1)){
-          StencilMatrix(Index_ij, Index_im1j) = 0.5;
-          StencilMatrix(Index_ij, Index_ijm1) = 0.5;
+        else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
         }
-        else if ((iControl == 0) && (jControl ==  mControl - 1)){
-          StencilMatrix(Index_ij, Index_ip1j) = 0.5;
-          StencilMatrix(Index_ij, Index_ijm1) = 0.5;
+        else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
         }
-        else if ((iControl == lControl - 1) && (jControl == 0)){
-          StencilMatrix(Index_ij, Index_im1j) = 0.5;
-          StencilMatrix(Index_ij, Index_ijp1) = 0.5;
+        else if ((iControl == 0) && (jControl ==  0) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
         }
-        else if ((iControl == lControl -1)){
-          StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+        else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
         }
-        else if ((jControl == mControl -1)){
-          StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
+        else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
         }
-        else if (iControl == 0){
-          StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ijm1) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+        else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
         }
-        else if (jControl == 0){
-          StencilMatrix(Index_ij, Index_im1j) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ip1j) = 1.0/3.0;
-          StencilMatrix(Index_ij, Index_ijp1) = 1.0/3.0;
+        else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+        }
+        else if ((iControl == lControl -1) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+        }
+        else if ((jControl == mControl -1) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+        }
+        else if ((iControl == lControl -1) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+        }
+        else if ((jControl == mControl -1) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+        }
+        else if ((iControl == 0) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+        }
+        else if ((jControl == 0) && (kControl == 0)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+        }
+        else if ((iControl == 0) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+        }
+        else if ((jControl == 0) && (kControl == nControl - 1)){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+        }
+        else if(iControl == 0){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+        }
+        else if(iControl == lControl - 1){
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+        }
+        else if(jControl == 0){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+        }
+        else if(jControl == mControl - 1){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+        }
+        else if(kControl == 0){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+        }
+        else if(kControl == nControl - 1){
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
         }
         else {
-          StencilMatrix(Index_ij, Index_im1j) = 0.25;
-          StencilMatrix(Index_ij, Index_ip1j) = 0.25;
-          StencilMatrix(Index_ij, Index_ijm1) = 0.25;
-          StencilMatrix(Index_ij, Index_ijp1) = 0.25;
+          StencilMatrix(Index_ijk, Index_ip1jk) = OneSix;
+          StencilMatrix(Index_ijk, Index_im1jk) = OneSix;
+          StencilMatrix(Index_ijk, Index_ijp1k) = OneSix;
+          StencilMatrix(Index_ijk, Index_ijm1k) = OneSix;
+          StencilMatrix(Index_ijk, Index_ijkp1) = OneSix;
+          StencilMatrix(Index_ijk, Index_ijkm1) = OneSix;
         }
       }
     }
