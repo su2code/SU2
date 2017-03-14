@@ -304,6 +304,13 @@ class DV_FEA(DV):
         output_filename = folder + self._filename
         output_file = open(output_filename, "w")
 
+        output_file.write("%s\t" % 'INDEX')
+        output_file.write("%s\t" % 'VALUE')
+        output_file.write("%s\t" % 'SCALE')
+        output_file.write("%s\t" % 'LOWER_BOUND')
+        output_file.write("%s\t" % 'UPPER_BOUND')
+        output_file.write("\n")
+
         nDV = self.nDV
 
         for i in range(0, nDV):
