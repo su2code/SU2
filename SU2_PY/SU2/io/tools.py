@@ -175,13 +175,7 @@ def read_history( History_filename ):
 # -------------------------------------------------------------------
 #  Define Dictionary Map for Header Names
 # -------------------------------------------------------------------
-
-def get_headerMap():
-    """ returns a dictionary that maps history file header names
-        to optimization problem function names
-    """
-    # header name to config file name map
-    map_dict = { "Iteration"       : "ITERATION"               ,
+history_header_map = { "Iteration"       : "ITERATION"               ,
                  "CLift"           : "LIFT"                    ,
                  "CDrag"           : "DRAG"                    ,
                  "CSideForce"      : "SIDEFORCE"               ,
@@ -203,9 +197,9 @@ def get_headerMap():
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
                  "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
-                 "FluxAvg_Pressure": "AVG_OUTLET_PRESSURE"     ,
-                 "FluxAvg_Density" : "FLUXAVG_OUTLET_DENSITY"  ,
-                 "FluxAvg_Velocity": "FLUXAVG_OUTLET_VELOCITY" ,
+                 "Avg_Pressure"    : "AVG_OUTLET_PRESSURE"     ,
+                 "Avg_Density"     : "AVG_OUTLET_DENSITY"      ,
+                 "Avg_Velocity"    : "AVG_OUTLET_VELOCITY"     ,
                  "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
                  "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
@@ -224,7 +218,14 @@ def get_headerMap():
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
                  "ComboObj"        : "COMBO"}
-    
+     
+
+def get_headerMap():
+    """ returns a dictionary that maps history file header names
+        to optimization problem function names
+    """
+    # header name to config file name map
+    map_dict = history_header_map
     return map_dict
 
 #: def get_headerMap()
@@ -361,6 +362,39 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
                    "EFFICIENCY" : "D_EFFICIENCY"}
+
+# per-surface functions
+per_surface_map = {"LIFT"       :   "CLift" ,
+                  "DRAG"        :   "CDrag" ,
+                  "SIDEFORCE"   :   "CSideForce"  ,
+                  "MOMENT_X"    :   "CMx"   ,
+                  "MOMENT_Y"    :   "CMy"   ,
+                  "MOMENT_Z"    :   "CMz"   ,
+                  "FORCE_X"     :   "CFx"   ,
+                  "FORCE_Y"     :   "CFy"   ,
+                  "FORCE_Z"     :   "CFz"   ,
+                  "EFFICIENCY"  :   "CL/CD" }
+
+# -------------------------------------------------------------------
+#  Include per-surface output from History File
+# ------------------------------------------------------------------- 
+def update_persurface(config, state):
+    header_map = get_headerMap()
+    for base in per_surface_map:
+        base2 = per_surface_map[base]
+        for obj in config['OPT_OBJECTIVE']:
+            marker = config['OPT_OBJECTIVE'][obj]['MARKER']
+            if not header_map.has_key(base2+'_'+marker):
+                header_map[base2+'_'+marker] = base2+'_'+marker
+
+    if state['HISTORY'].has_key('DIRECT'):
+        for base in per_surface_map:
+            base2 = per_surface_map[base]
+            for obj in config['OPT_OBJECTIVE']:
+                marker = config['OPT_OBJECTIVE'][obj]['MARKER']
+                if state['HISTORY']['DIRECT'].has_key(base2+'_'+marker):
+                    state['FUNCTIONS'][base2+'_'+marker] = state['HISTORY']['DIRECT'][base2+'_'+marker][-1]
+                    
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -630,7 +664,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
                 header.append(r',"Grad_AeroCDrag","Grad_Distortion"')
                 write_format.append(", %.10f, %.10f")
             if key == "1D_OUTPUT"     :
-                header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_FluxAvg_Pressure","Grad_FluxAvg_Density","Grad_FluxAvg_Velocity","Grad_FluxAvg_Enthalpy"')
+                header.append(r',"Grad_Avg_TotalPress","Grad_Avg_Mach","Grad_Avg_Temperature","Grad_MassFlowRate","Grad_Avg_Pressure","Grad_Avg_Density","Grad_Avg_Velocity","Grad_Avg_Enthalpy"')
                 write_format.append(", %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f")
             if key == "INV_DESIGN_CP"     :
                 header.append(r',"Grad_Cp_Diff"')
@@ -755,7 +789,7 @@ def get_optFileFormat(plot_format,special_cases=None):
             header_list.extend(["AeroCDrag","Distortion"])
             write_format.append(r', %.10f, %.10f')
         if key == "1D_OUTPUT":
-            header_list.extend(["Avg_TotalPress","Avg_Mach","Avg_Temperature","MassFlowRate","FluxAvg_Pressure","FluxAvg_Density","FluxAvg_Velocity","FluxAvg_Enthalpy"])
+            header_list.extend(["Avg_TotalPress","Avg_Mach","Avg_Temperature","MassFlowRate","Avg_Pressure","Avg_Density","Avg_Velocity","Avg_Enthalpy"])
             write_format.append(r', %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f, %.10f')
         if key == "INV_DESIGN_CP"     :
             header_list.extend(["Cp_Diff"])
@@ -998,6 +1032,8 @@ def restart2solution(config,state={}):
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
         # udpate state
+        if "," in func_name:
+            func_name="COMBO"
         ADJ_NAME = 'ADJOINT_' + func_name
         if state: state.FILES[ADJ_NAME] = solution
         

@@ -225,8 +225,9 @@ def obj_f(dvs,config,state=None):
     state = su2io.State(state)
     
     def_objs = config['OPT_OBJECTIVE']
-    objectives = def_objs.keys()
     
+    objectives = def_objs.keys()
+
 #    if objectives: print('Evaluate Objectives')
     # evaluate each objective
     vals_out = []
@@ -234,17 +235,50 @@ def obj_f(dvs,config,state=None):
     for i_obj,this_obj in enumerate(objectives):
         scale = def_objs[this_obj]['SCALE']
         sign  = su2io.get_objectiveSign(this_obj)
-        
         # Evaluate Objective Function
         # scaling and sign
-        func += su2func(this_obj,config,state) * sign * scale
-        
+        if def_objs[this_obj]['CTYPE']=='NONE':
+            func += su2func(this_obj,config,state) * sign * scale
+        else:
+            func += obj_p(config,state,this_obj,def_objs,scale)
     vals_out.append(func)
     #: for each objective
-    
+        
+    if state.FUNCTIONS.has_key('COMBO'):
+        state['FUNCTIONS']['COMBO'] = func
+        
     return vals_out
 
 #: def obj_f()
+        
+def obj_p(config,state,this_obj,def_objs,scale):
+    # Penalty function: square of the difference between value and limit
+    value = su2func(this_obj,config,state)
+    valuec = float(def_objs[this_obj]['CVAL'])
+    penalty = 0.0                   
+    if (def_objs[this_obj]['CTYPE']=='=' or \
+        (def_objs[this_obj]['CTYPE']=='>' and value < valuec) or \
+        (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
+        penalty = scale*(valuec - value)**2.0
+        
+    return penalty
+#: def obj_p()
+
+def obj_dp(config,state,this_obj,def_objs,scale):
+    # Partial Derivative of Penalty function: square of the difference between value and limit
+    # If penalty constraint active, set value:
+    value = su2func(this_obj,config,state)
+    valuec = float(def_objs[this_obj]['CVAL'])
+    # For inequality constraints, if inactive set scale to 0.0
+    dpenalty = 0.0
+    if ((def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
+         (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
+        dpenalty=2.0*abs(valuec - value)
+    elif (def_objs[this_obj]['CTYPE']=='='):
+        depenalty=2.0*(value -valuec)
+
+    return dpenalty
+#: def obj_dp()
 
 def obj_df(dvs,config,state=None):
     """ vals = SU2.eval.obj_df(dvs,config,state=None)
@@ -266,6 +300,7 @@ def obj_df(dvs,config,state=None):
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
+    
     n_obj = len( objectives )
     multi_objective = (config['OPT_COMBINE_OBJECTIVE']=="YES")
      
@@ -278,8 +313,15 @@ def obj_df(dvs,config,state=None):
     if (multi_objective and n_obj>1):
         scale = [1.0]*n_obj
         for i_obj,this_obj in enumerate(objectives):
-            sign = su2io.get_objectiveSign(this_obj)
-            scale[i_obj] = def_objs[this_obj]['SCALE']*sign
+            scale[i_obj] = def_objs[this_obj]['SCALE']
+            
+            if def_objs[this_obj]['CTYPE']== 'NONE':
+                sign = su2io.get_objectiveSign(this_obj)
+                scale[i_obj]*=sign
+            else:
+                scale[i_obj]*=obj_dp(config, state, this_obj, def_objs, scale)
+
+ 
             
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         

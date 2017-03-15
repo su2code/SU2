@@ -486,7 +486,7 @@ def read_config(filename):
             if case('OPT_OBJECTIVE'):
                 # remove white space
                 this_value = ''.join(this_value.split())
-                #split by + 
+                #split by ; 
                 this_def={}
                 this_value = this_value.split(";")
                 
@@ -497,7 +497,25 @@ def read_config(filename):
                     this_scale = 1.0
                     if len(this_obj) > 1:
                         this_scale = float( this_obj[1] )
-                    this_def.update({ this_name : {'SCALE':this_scale} })
+                    # check for penalty-based constraint function 
+                    for this_sgn in ['<','>','=']:
+                        if this_sgn in this_name: break
+                    this_obj = this_name.strip('()').split(this_sgn)
+                    if len(this_obj)>1:
+                        this_type = this_sgn
+                        this_val = this_obj[1]
+                    else:
+                        this_type = 'NONE'
+                        this_val  = 0.0
+                    this_name = this_obj[0]
+                       
+ 
+                    this_def.update({ this_name : {'SCALE':this_scale, 'CTYPE':this_type, 'CVAL':this_val} })
+                    if (len(data_dict['MARKER_MONITORING'])>1):
+                        this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][len(this_def)-1]
+                    else:
+                        this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][0]
+
                 # save to output dictionary
                 data_dict[this_param] = this_def
                 break
@@ -578,11 +596,32 @@ def read_config(filename):
         data_dict['OPT_BOUND_LOWER'] = -1e10
     if not data_dict.has_key('OPT_COMBINE_OBJECTIVE'):
         data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
+    if not data_dict.has_key('OPT_CONSTRAINT'):
+        data_dict['OPT_CONSTRAINT'] =  {'INEQUALITY': OrderedDict(), 'EQUALITY': OrderedDict()}
     if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
       data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
       data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
  
+    #
+    # The eval functions below requires definition of various optimization
+    # variables, though we are handling here only a direct solution.
+    # So, if they are missing in the cfg file (and only then), some dummy values are
+    # introduced here
+    if not data_dict.has_key('OBJECTIVE_FUNCTION'):
+        data_dict['OBJECTIVE_FUNCTION']='DRAG'
+    if not data_dict.has_key('DV_KIND'):
+        data_dict['DV_KIND']=['FFD_SETTING']
+    if not data_dict.has_key('DV_PARAM'):
+        data_dict['DV_PARAM']={'FFDTAG': ['1'], 'PARAM': [[0.0, 0.5]], 'SIZE': [1]}
+    if not data_dict.has_key('DEFINITION_DV'):
+        data_dict['DEFINITION_DV']={'FFDTAG': [[]],
+            'KIND': ['HICKS_HENNE'],
+            'MARKER': [['WING']],
+            'PARAM': [[0.0, 0.05]],
+            'SCALE': [1.0],
+            'SIZE': [1]}
+
     return data_dict
     
 #: def read_config()
@@ -756,7 +795,11 @@ def write_config(filename,param_dict):
                 i_name = 0
                 for name,value in new_value.iteritems():
                     if i_name>0: output_file.write("; ")
-                    output_file.write( "%s * %s" % (name,value['SCALE']) )
+                    if value['CTYPE']=='NONE':
+                        output_file.write( "%s * %s " % (name,value['SCALE']) )
+                    else:
+                        output_file.write( "( %s %s %s ) * %s" 
+                                           % (name, value['CTYPE'], value['CVAL'], value['SCALE']) )
                     i_name += 1
                 break
             
