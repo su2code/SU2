@@ -3958,7 +3958,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   unsigned long iPoint;
   unsigned short iMesh, iDim;
-
+  unsigned short iVar;
+    
   su2double X0[3] = {0.0,0.0,0.0}, X1[3] = {0.0,0.0,0.0}, X2[3] = {0.0,0.0,0.0},
   X1_X0[3] = {0.0,0.0,0.0}, X2_X0[3] = {0.0,0.0,0.0}, X2_X1[3] = {0.0,0.0,0.0},
   CP[3] = {0.0,0.0,0.0}, Distance, DotCheck, Radius;
@@ -4145,10 +4146,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   /*--- Update the values for Calculate Averages. ---*/
 
-  if (calculate_average){
+  if (calculate_average && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))){
     for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
       Solution_Avg_Aux = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution();
-      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(Solution_Avg_Aux);
+      for (iVar = 0; iVar < nVar; iVar++) {
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(iVar, Solution_Avg_Aux[iVar]);
+      }
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
     }
   }
 

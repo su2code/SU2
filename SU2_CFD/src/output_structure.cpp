@@ -10556,18 +10556,19 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (calculate_average) {
       nVar_Par +=1;
-      Variable_Names.push_back("Mean_Consv1");
+      Variable_Names.push_back("Mean_Density");
       nVar_Par +=1;
-      Variable_Names.push_back("Mean_Consv2");
+      Variable_Names.push_back("Mean_U");
       nVar_Par +=1;
-      Variable_Names.push_back("Mean_Consv3");
+      Variable_Names.push_back("Mean_V");
+      if (geometry->GetnDim()==3){
+        nVar_Par +=1;
+        Variable_Names.push_back("Mean_W");
+      }
       nVar_Par +=1;
-      Variable_Names.push_back("Mean_Consv4");
-        if (geometry->GetnDim()==3){
-          nVar_Par +=1;
-          Variable_Names.push_back("Mean_Consv5");
-            
-        }
+      Variable_Names.push_back("Mean_E");
+      nVar_Par +=1;
+      Variable_Names.push_back("Mean_P");
     }
     
   }
@@ -10793,6 +10794,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
             iVar++;
           }
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
+          iVar++;
         }
           
         /*--- Increment the point counter, as there may have been halos we

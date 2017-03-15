@@ -584,6 +584,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       for (iVar = 0; iVar < solver->GetnVar(); iVar++) {
         solver->node[iPoint]->AddSolution_Avg(iVar, solver->node[iPoint]->GetSolution(iVar));
       }
+      solver->node[iPoint]->AddSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());
     }
   }
 
