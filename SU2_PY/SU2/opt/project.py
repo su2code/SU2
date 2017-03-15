@@ -111,6 +111,20 @@ class Project(object):
         # setup config
         config = copy.deepcopy(config)
         
+        # config data_dict creation automatically reorders objectives s.t. marker monitored 
+        # may not be in the correct order for multiple objectives. 
+        def_objs = config['OPT_OBJECTIVE']
+        if len(def_objs)>1:
+            objectives = def_objs.keys()
+            marker_monitoring = []
+            weights = []
+            for i_obj, this_obj in enumerate(objectives):
+                marker_monitoring+=[def_objs[this_obj]['MARKER']]
+                weights+=[str(def_objs[this_obj]['SCALE'])]
+            config['MARKER_MONITORING'] = marker_monitoring
+            config['OBJECTIVE_WEIGHT'] = ",".join(weights)
+            config['OBJECTIVE_FUNCTION'] = ",".join(objectives)
+        
         # setup state
         if state is None:
             state = su2io.State()
@@ -266,7 +280,6 @@ class Project(object):
         """
          # local konfig
         konfig = copy.deepcopy(config)
-        
         # find closest design
         closest,delta = self.closest_design(konfig)
         # found existing design
