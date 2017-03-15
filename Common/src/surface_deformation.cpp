@@ -2148,68 +2148,54 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     }
   }
 
-  EigenVector ParameterValuesX(nParameter);
-  EigenVector ParameterValuesY(nParameter);
-  EigenVector ParameterValuesZ(nParameter);
-  EigenVector ControlPointPositionsX(TotalControl);
-  EigenVector ControlPointPositionsY(TotalControl);
-  EigenVector ControlPointPositionsZ(TotalControl);
-  EigenMatrix EnergyMatrix(TotalControl, TotalControl);
-  EigenMatrix SystemMatrix(TotalControl + nParameter, TotalControl + nParameter);
-  EigenVector SystemSol(TotalControl + nParameter);
-  EigenVector SystemRHS(TotalControl + nParameter);
-  EigenMatrix ConstraintMatrix(nParameter, TotalControl);
+  EigenVector ParameterValues(nParameter*nDim);
+  EigenVector ControlPointPositions(TotalControl);
 
-  SystemMatrix    = EigenMatrix::Zero(TotalControl + nParameter, TotalControl + nParameter);
-  SystemRHS       = EigenVector::Zero(TotalControl + nParameter);
-  SystemSol       = EigenVector::Zero(TotalControl + nParameter);
-  ParameterValuesZ = EigenVector::Zero(nParameter);
+  EigenMatrix EnergyMatrix(TotalControl, TotalControl);
+  EigenMatrix SystemMatrix(TotalControl + nParameter*nDim, TotalControl + nParameter*nDim);
+  EigenVector SystemSol(TotalControl + nParameter*nDim);
+  EigenVector SystemRHS(TotalControl + nParameter*nDim);
+  EigenMatrix ConstraintMatrix(nParameter*nDim, TotalControl);
+
+  SystemMatrix    = EigenMatrix::Zero(TotalControl + nParameter*nDim, TotalControl + nParameter*nDim);
+  SystemRHS       = EigenVector::Zero(TotalControl + nParameter*nDim);
+  SystemSol       = EigenVector::Zero(TotalControl + nParameter*nDim);
+  ParameterValues = EigenVector::Zero(nParameter*nDim);
   /*--- Loop through all groups of this ffd box ---*/
 
   displ = 0;
 
   for (iGroup = 0; iGroup < nGroup; iGroup++){
     if (GroupActive[iGroup]){
-      EigenVector RhsX;
-      EigenVector RhsY;
-      EigenVector RhsZ;
+      EigenVector Rhs;
       EigenMatrix Block;
 
       if (FFDBox->PilotGroupType[iGroup] == ABSOLUTE){
-        FFDBox->GetAbsoluteGroupRHS(RhsX, iGroup, 0, config);
-        FFDBox->GetAbsoluteGroupRHS(RhsY, iGroup, 1, config);
-        if (nDim == 3)
-          FFDBox->GetAbsoluteGroupRHS(RhsZ, iGroup, 2, config);
-        FFDBox->GetAbsoluteGroupBlock(Block, iGroup, nDim);
+        FFDBox->GetAbsoluteGroupRHS(Rhs, iGroup, config);
+        FFDBox->GetAbsoluteGroupBlock(Block, iGroup);
       }
       if (FFDBox->PilotGroupType[iGroup] == RELATIVE){
-        FFDBox->GetRelativeGroupRHS(RhsX, iGroup, 0, config);
-        FFDBox->GetRelativeGroupRHS(RhsY, iGroup, 1, config);
-        if (nDim == 3)
-          FFDBox->GetRelativeGroupRHS(RhsZ, iGroup, 2, config);
-        FFDBox->GetRelativeGroupBlock(Block, iGroup, nDim);
+        FFDBox->GetRelativeGroupRHS(Rhs, iGroup, config);
+        FFDBox->GetRelativeGroupBlock(Block, iGroup);
       }
 
-      ParameterValuesX.block(displ, 0, RhsX.rows(),1) = RhsX;
-      ParameterValuesY.block(displ, 0, RhsY.rows(),1) = RhsY;
-      if (nDim == 3){
-        ParameterValuesZ.block(displ, 0, RhsZ.rows(),1) = RhsZ;
-      }
+      ParameterValues.block(displ, 0, Rhs.rows(),1) = Rhs;
 
-     ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
+      ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
 
-     displ += Block.rows();
+      displ += Block.rows();
     }
   }
 
-  if (nDim  == 2){
-    FFDBox->GetLaplacianEnergyMatrix2D(EnergyMatrix);
-  } else {
-    FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
-  }
+//  if (nDim  == 2){
+//    FFDBox->GetLaplacianEnergyMatrix2D(EnergyMatrix);
+//  } else {
+//    FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
+//  }
+  FFDBox->SetStiffnessMatrix(EnergyMatrix, config, geometry);
   SystemMatrix.block(0, 0, TotalControl, TotalControl)          = EnergyMatrix;
-  SystemMatrix.block(0, TotalControl, TotalControl, nParameter) = ConstraintMatrix.transpose();
-  SystemMatrix.block(TotalControl, 0, nParameter, TotalControl) = ConstraintMatrix;
+  SystemMatrix.block(0, TotalControl, TotalControl, nParameter*nDim) = ConstraintMatrix.transpose();
+  SystemMatrix.block(TotalControl, 0, nParameter*nDim, TotalControl) = ConstraintMatrix;
 
   if (nGroup > 0){
     
@@ -2220,44 +2206,36 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
     QRSystemMatrix = SystemMatrix.fullPivHouseholderQr();
 
 
-    SystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesX;
+    SystemRHS.block(TotalControl, 0, nParameter*nDim, 1) = ParameterValues;
     SystemSol = QRSystemMatrix.solve(SystemRHS);
-    ControlPointPositionsX = SystemSol.block(0, 0, TotalControl, 1);
+    ControlPointPositions = SystemSol.block(0, 0, TotalControl, 1);
 
-    SystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesY;
-    SystemSol = QRSystemMatrix.solve(SystemRHS);
-    ControlPointPositionsY = SystemSol.block(0, 0, TotalControl, 1);
 
-    SystemRHS.block(TotalControl, 0, nParameter, 1) = ParameterValuesZ;
-    SystemSol = QRSystemMatrix.solve(SystemRHS);
-    ControlPointPositionsZ = SystemSol.block(0, 0, TotalControl, 1);
+//    if (rank == MASTER_NODE){
+//      cout << "Laplacian Energy: ( "
+//           << ControlPointPositionsX.transpose()*EnergyMatrix*ControlPointPositionsX << ", "
+//           << ControlPointPositionsY.transpose()*EnergyMatrix*ControlPointPositionsY;
+//      if (nDim == 3){
+//        cout << ", " << ControlPointPositionsZ.transpose()*EnergyMatrix*ControlPointPositionsZ;
+//      }
+//      cout << " )." << endl;
+//    }
 
-    if (rank == MASTER_NODE){
-      cout << "Laplacian Energy: ( "
-           << ControlPointPositionsX.transpose()*EnergyMatrix*ControlPointPositionsX << ", "
-           << ControlPointPositionsY.transpose()*EnergyMatrix*ControlPointPositionsY;
-      if (nDim == 3){
-        cout << ", " << ControlPointPositionsZ.transpose()*EnergyMatrix*ControlPointPositionsZ;
-      }
-      cout << " )." << endl;
-    }
-
-      cout << "Control Point Movement:             ( "
-        << ControlPointPositionsX.norm() << ", "
-        << ControlPointPositionsY.norm();
-      if (nDim == 3){
-        cout << ", " << ControlPointPositionsZ.norm();
-      }
-      cout << " )" << endl;
+//      cout << "Control Point Movement:             ( "
+//        << ControlPointPositionsX.norm() << ", "
+//        << ControlPointPositionsY.norm();
+//      if (nDim == 3){
+//        cout << ", " << ControlPointPositionsZ.norm();
+//      }
+//      cout << " )" << endl;
 
 
     for (iControl = 0; iControl < lControl; iControl++){
       for (jControl = 0; jControl < mControl; jControl++){
         for (kControl = 0; kControl < nControl; kControl++){
-          Movement[0] = ControlPointPositionsX(iControl*mControl*nControl + jControl*nControl + kControl);
-          Movement[1] = ControlPointPositionsY(iControl*mControl*nControl + jControl*nControl + kControl);
-          if (nDim == 3)
-            Movement[2] = ControlPointPositionsZ(iControl*mControl*nControl + jControl*nControl + kControl);
+          Movement[0] = ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 0);
+          Movement[1] = ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 1);
+          Movement[2] = ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 2);
           index[0] = iControl; index[1] = jControl; index[2] = kControl;
           FFDBox->SetControlPoints(index, Movement);
         }
@@ -6636,7 +6614,7 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 }
 
 
-void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup, unsigned short nDim){
+void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup){
 
   EigenMatrix BlendingMatrix;
   EigenMatrix ProjectionMatrix;
@@ -6648,19 +6626,20 @@ void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned 
     nControl = 1;
   }
   unsigned short iControl, jControl, kControl = 0;
-  const unsigned short TotalControl = lControl*mControl*nControl;
+  const unsigned short TotalControl = lControl*mControl*nControl*nDim;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
   const unsigned long nParameters  = nPilotPoints;
 
-  unsigned long iPilotPoint = 0, jPilotPoint = 0, ii = 0;
+  unsigned long iPilotPoint = 0;
+  unsigned short iDim, jDim;
 
-  SystemMatrix.resize(nPilotPoints, TotalControl);
-  BlendingMatrix.resize(nPilotPoints, TotalControl);
-  ProjectionMatrix.resize(nParameters, nPilotPoints);
+  SystemMatrix.resize(nPilotPoints*nDim, TotalControl);
+  BlendingMatrix.resize(nPilotPoints*nDim, TotalControl);
+  ProjectionMatrix.resize(nParameters*nDim, nPilotPoints*nDim);
 
   /* --- Initialize the projection matrix with zeros --- */
 
-  ProjectionMatrix = EigenMatrix::Zero(nParameters, nPilotPoints);
+  ProjectionMatrix = EigenMatrix::Zero(nParameters*nDim, nPilotPoints*nDim);
 
   /*--- Loop through all pilot points of the group --- */
 
@@ -6678,26 +6657,30 @@ void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned 
           Bijk = BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
                  BlendingFunction[1]->GetBasis(jControl,ParamCoord[1])*
                  BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
-          BlendingMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
+          for (iDim = 0; iDim < nDim; iDim++){
+            BlendingMatrix(iPilotPoint*nDim + iDim, iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + iDim) = Bijk;
+          }
         }
       }
     }
 
     /*--- Set projection matrix --- */
-    ProjectionMatrix(ii, iPilotPoint) = 1.0;
-    if (iPilotPoint != nPilotPoints-1){
-      ProjectionMatrix(ii, iPilotPoint+1) = -1.0;
-    } else {
-      ProjectionMatrix(ii, 0) = -1.0;
+    for (iDim = 0; iDim < nDim; iDim++){
+      ProjectionMatrix(iPilotPoint*nDim + iDim, iPilotPoint*nDim + iDim) = 1.0;
+      if (iPilotPoint != nPilotPoints-1){
+        ProjectionMatrix(iPilotPoint*nDim + iDim, (iPilotPoint+1)*nDim + iDim) = -1.0;
+      } else {
+        ProjectionMatrix(iPilotPoint*nDim + iDim, iDim) = -1.0;
+      }
     }
-    ii++;
+
   }
 
   SystemMatrix = ProjectionMatrix*BlendingMatrix;
 
 }
 
-void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGroup, unsigned short iDim, CConfig *config){
+void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGroup, CConfig *config){
 
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
   const unsigned long nParameters = nPilotPoints;
@@ -6705,8 +6688,8 @@ void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGrou
   unsigned short iDV = 0, iConstraint = 0;
   const unsigned short nConstraints = config->GetnFFD_ConstraintGroups();
   su2double Scale = config->GetFFD_Scale(), Ampl = 0;
-
-  RHS.resize(nParameters);
+  unsigned short iDim;
+  RHS.resize(nParameters*nDim);
 
   /*--- If group is defined as design variable --- */
 
@@ -6719,9 +6702,13 @@ void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGrou
       }
       for (iParameter = 0; iParameter < nParameters - 1; iParameter++){
         if (config->GetnDV_Value(iDV) == 1){
-          RHS(iParameter) = config->GetParamDV(iDV, iDim+1)*Ampl;
+          for (iDim = 0; iDim < nDim; iDim++){
+            RHS(iParameter*nDim + iDim) = config->GetParamDV(iDV, iDim+1)*Ampl;
+          }
         } else {
-          RHS(iParameter) = config->GetDV_Value(iDV, iDim);
+          for (iDim = 0; iDim < nDim; iDim++){
+            RHS(iParameter*nDim + iDim) = config->GetDV_Value(iDV, iDim);
+          }
         }
       }
     }
@@ -6731,12 +6718,12 @@ void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGrou
 
   for (iConstraint = 0; iConstraint < nConstraints; iConstraint++){
     if (config->GetFFD_ConstraintGroup(iConstraint) == PilotGroupNames[iGroup]){
-      RHS = EigenVector::Constant(nParameters, 0.0);
+      RHS = EigenVector::Constant(nParameters*nDim, 0.0);
     }
   }
 }
 
-void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup, unsigned short nDim){
+void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned short iGroup){
 
   su2double Bijk = 0;
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
@@ -6746,12 +6733,13 @@ void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned 
     nControl = 1;
   }
   unsigned short iControl, jControl, kControl = 0;
-  const unsigned short TotalControl = lControl*mControl*nControl;
+  const unsigned short TotalControl = lControl*mControl*nControl*nDim;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
 
   unsigned long iPilotPoint = 0;
+  unsigned short iDim, jDim;
 
-  SystemMatrix.resize(nPilotPoints, TotalControl);
+  SystemMatrix.resize(nPilotPoints*nDim, TotalControl);
 
   /*--- Loop through all pilot points of the group --- */
 
@@ -6769,21 +6757,23 @@ void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned 
           Bijk = BlendingFunction[0]->GetBasis(iControl,ParamCoord[0])*
                  BlendingFunction[1]->GetBasis(jControl,ParamCoord[1])*
                  BlendingFunction[2]->GetBasis(kControl,ParamCoord[2]);
-          SystemMatrix(iPilotPoint, iControl*mControl*nControl + jControl*nControl + kControl) = Bijk;
+          for (iDim = 0; iDim < nDim; iDim++){
+            SystemMatrix(iPilotPoint*nDim + iDim, iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + iDim) = Bijk;
+          }
         }
       }
     }
   }
 }
 
-void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGroup, unsigned short iDim, CConfig *config){
+void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGroup, CConfig *config){
 
   const unsigned long nPilotPoints  = PilotPointsX[iGroup].size();
   const unsigned short nConstraints = config->GetnFFD_ConstraintGroups();
   unsigned long iPilotPoint = 0;
-  unsigned short iDV = 0, iConstraint = 0;
+  unsigned short iDV = 0, iConstraint = 0, iDim;
   su2double Scale = config->GetFFD_Scale(), Ampl = 0;
-  RHS.resize(nPilotPoints);
+  RHS.resize(nPilotPoints*nDim);
 
   /*--- If group is defined as design variable --- */
 
@@ -6792,9 +6782,13 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
     if (config->GetFFDTag(iDV) == PilotGroupNames[iGroup]){
       for (iPilotPoint = 0; iPilotPoint < nPilotPoints; iPilotPoint++){
         if (config->GetnDV_Value(iDV) == 1){
-          RHS(iPilotPoint) = config->GetParamDV(iDV, iDim+1)*Ampl;
+          for (iDim = 0; iDim < nDim; iDim++){
+            RHS(iPilotPoint*nDim + iDim) = config->GetParamDV(iDV, iDim+1)*Ampl;
+          }
         } else {
-          RHS(iPilotPoint) = config->GetDV_Value(iDV, iDim);
+          for (iDim = 0; iDim < nDim; iDim++){
+            RHS(iPilotPoint*nDim + iDim) = config->GetDV_Value(iDV, iDim);
+          }
         }
       }
     }
@@ -6804,7 +6798,7 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
 
   for (iConstraint = 0; iConstraint < nConstraints; iConstraint++){
     if (config->GetFFD_ConstraintGroup(iConstraint) == PilotGroupNames[iGroup]){
-      RHS = EigenVector::Constant(nPilotPoints, 0.0);
+      RHS = EigenVector::Constant(nPilotPoints*nDim, 0.0);
     }
   }
 }
@@ -6834,8 +6828,7 @@ void CFreeFormDefBox::GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2doubl
     }
   }
 
-
-  LocalMatrix = EigenMatrix::Zeros(nDim, nDim);
+  LocalMatrix = Eigen::Matrix<su2double, 3, 3>::Zero(3, 3);
 
   for (iDim = 0; iDim < nDim; iDim++){
     for (jDim = 0; jDim < nDim; jDim++){
@@ -6851,22 +6844,22 @@ void CFreeFormDefBox::GetLocalStiffnessMatrix(EigenMatrix &StiffMatrix, su2doubl
 
   R = Derivative*LocalMatrix.inverse();
 
-  unsigned short Offset1, Offset2;
+  unsigned short Offset1 = 0, Offset2;
 
   for (iDegree = 0; iDegree <= lmn[0]; iDegree++){
     for (jDegree = 0; jDegree <= lmn[1]; jDegree++){
       for (kDegree = 0; kDegree <= lmn[2]; kDegree++) {
-        Offset1 = iDegree*mControl*nControl*nDim + jDegree*nControl*nDim + kDegree*nDim;
         Offset2 = iDegree*mControl*nControl + jDegree*nControl + kDegree;
         for (iDim = 0; iDim < nDim; iDim++){
-          StiffMatrix(Offset1 + iDim, iDim) = R(Offset2, iDim);
+          StiffMatrix(iDim, Offset1 + iDim) = R(Offset2, iDim);
         }
-        StiffMatrix(Offset1 + 3, 0) = 0.5*R(Offset2, 1);
-        StiffMatrix(Offset1 + 3, 1) = 0.5*R(Offset2, 0);
-        StiffMatrix(Offset1 + 4, 0) = 0.5*R(Offset2, 2);
-        StiffMatrix(Offset1 + 4, 2) = 0.5*R(Offset2, 0);
-        StiffMatrix(Offset1 + 5, 1) = 0.5*R(Offset2, 2);
-        StiffMatrix(Offset1 + 5, 2) = 0.5*R(Offset2, 1);
+        StiffMatrix(3, Offset1 + 0) = 0.5*R(Offset2, 1);
+        StiffMatrix(3, Offset1 + 1) = 0.5*R(Offset2, 0);
+        StiffMatrix(4, Offset1 + 0) = 0.5*R(Offset2, 2);
+        StiffMatrix(4, Offset1 + 2) = 0.5*R(Offset2, 0);
+        StiffMatrix(5, Offset1 + 1) = 0.5*R(Offset2, 2);
+        StiffMatrix(5, Offset1 + 2) = 0.5*R(Offset2, 1);
+        Offset1 += nDim;
       }
     }
   }
@@ -6877,7 +6870,6 @@ void CFreeFormDefBox::SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, C
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
-  unsigned short iControl, jControl, kControl;
   const unsigned long TotalControl = lControl*mControl*nControl;
 
   unsigned long iVertex, iPoint, iSurfacePoints;
@@ -6885,54 +6877,48 @@ void CFreeFormDefBox::SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, C
 
   su2double *ParamCoord, Area = 0, *Normal;
 
-  EigenMatrix LocalStiffness(TotalControl*nDim, 6);
+  EigenMatrix LocalStiffness(6, TotalControl*nDim);
   EigenMatrix ConstitutiveMatrix(6,6);
   Matrix.resize(TotalControl*nDim, TotalControl*nDim);
   Derivative.resize(TotalControl, nDim);
   LocalMatrix.resize(nDim, nDim);
   R.resize(TotalControl, nDim);
 
-  Matrix = Eigenmatrix::Zeros(TotalControl*nDim, TotalControl*nDim);
+  Matrix = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
 
-  su2double E = 1.0, nu = 0.25;
+  su2double E = 10.0, nu = 0.25;
 
   su2double Lambda = (nu*E)/((1+nu)*(1-nu));
   su2double mu     = E/(2*(1+nu));
 
-  ConstitutiveMatrix = EigenMatrix::Zeros(6,6);
+  ConstitutiveMatrix = EigenMatrix::Zero(6,6);
   ConstitutiveMatrix(0,0) = Lambda+2*mu; ConstitutiveMatrix(0, 1) = Lambda; ConstitutiveMatrix(0, 2) = Lambda;
   ConstitutiveMatrix(1,0) = Lambda; ConstitutiveMatrix(1, 1) = Lambda+2*mu; ConstitutiveMatrix(1, 2) = Lambda;
   ConstitutiveMatrix(2,0) = Lambda; ConstitutiveMatrix(2, 1) = Lambda; ConstitutiveMatrix(2, 2) = Lambda+2*mu;
   ConstitutiveMatrix(3,3) = 4*mu;   ConstitutiveMatrix(4,4) = 4*mu;    ConstitutiveMatrix(5,5) = 4*mu;
 
+  for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
 
+    iMarker = Get_MarkerIndex(iSurfacePoints);
 
-  for (iControl = 0; iControl < lControl; iControl++){
-    for (jControl = 0; jControl < mControl; jControl++){
-      for (kControl = 0; kControl < nControl; kControl++){
-        for (iSurfacePoints = 0; iSurfacePoints < GetnSurfacePoint(); iSurfacePoints++){
+    if (config->GetMarker_All_DV(iMarker) == YES) {
 
-          iMarker = Get_MarkerIndex(iSurfacePoints);
+      cout << "iSurfacePoint " << iSurfacePoints << endl;
 
-          if (config->GetMarker_All_DV(iMarker) == YES) {
+      iVertex = Get_VertexIndex(iSurfacePoints);
+      iPoint  = Get_PointIndex(iSurfacePoints);
 
-            iVertex = Get_VertexIndex(iSurfacePoints);
-            iPoint  = Get_PointIndex(iSurfacePoints);
+      ParamCoord = Get_ParametricCoord(iSurfacePoints);
 
-            ParamCoord = Get_ParametricCoord(iSurfacePoints);
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++){
-              Area += Normal[iDim]*Normal[iDim];
-            }
-            Area = sqrt(Area);
-            GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
-            Matrix += 0.5*(LocalStiffness.transpose()*D*LocalStiffness)*Area;
-          }
-        }
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++){
+        Area += Normal[iDim]*Normal[iDim];
       }
+      Area = sqrt(Area);
+      GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
+      Matrix += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness)*Area;
     }
   }
 }
@@ -7025,16 +7011,6 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix){
   const unsigned long TotalControl = lControl*mControl*nControl;
 
   unsigned long Index_ijk, Index_ip1jk, Index_im1jk, Index_ijp1k, Index_ijm1k, Index_ijkp1, Index_ijkm1;
-
-void CFreeFormDefBox::GetLaplacianEnergyMatrix2D(EigenMatrix &Matrix){
-
-
-  const unsigned short lControl = BlendingFunction[0]->GetnControl();
-  const unsigned short mControl = BlendingFunction[1]->GetnControl();
-  unsigned short iControl, jControl;
-  const unsigned long TotalControl = lControl*mControl;
-
-  unsigned long Index_ij, Index_ip1j, Index_im1j, Index_ijp1, Index_ijm1;
 
   EigenMatrix StencilMatrix(TotalControl, TotalControl);
 

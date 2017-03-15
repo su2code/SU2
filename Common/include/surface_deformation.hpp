@@ -49,6 +49,7 @@
 
 #ifdef HAVE_EIGEN
 #include <Eigen/Core>
+#include <Eigen/LU>
 #include <Eigen/SVD>
 #endif
 
@@ -300,7 +301,9 @@ public:
   CFreeFormBlending** BlendingFunction;
 
 
-  EigenMatrix Derivative, R, LocalMatrix;
+  EigenMatrix Derivative, R;
+
+  Eigen::Matrix<su2double, 3, 3> LocalMatrix;
 
 public:
 
@@ -936,13 +939,13 @@ public:
   su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11,
                          su2double A12, su2double A20, su2double A21, su2double A22);
 
-  void GetRelativeGroupBlock(EigenMatrix &SystemMatrix, unsigned short iGroup, unsigned short nDim);
+  void GetRelativeGroupBlock(EigenMatrix &SystemMatrix, unsigned short iGroup);
 
-  void GetAbsoluteGroupBlock(EigenMatrix &SystemMatrix, unsigned short iGroup, unsigned short nDim);
+  void GetAbsoluteGroupBlock(EigenMatrix &SystemMatrix, unsigned short iGroup);
 
-  void GetRelativeGroupRHS(EigenVector &RHS, unsigned short iGroup, unsigned short iDim, CConfig *config);
+  void GetRelativeGroupRHS(EigenVector &RHS, unsigned short iGroup, CConfig *config);
 
-  void GetAbsoluteGroupRHS(EigenVector &RHS, unsigned short iGroup, unsigned short iDim, CConfig *config);
+  void GetAbsoluteGroupRHS(EigenVector &RHS, unsigned short iGroup, CConfig *config);
 
   void GetLaplacianEnergyMatrix2D(EigenMatrix &Matrix);
 
