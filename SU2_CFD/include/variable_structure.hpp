@@ -265,7 +265,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void SetSolution_Avg(su2double *val_solution);
+  virtual void SetSolution_Avg(unsigned short val_var, su2double val_solution);
 
   /*!
    * \brief A virtual member.
@@ -2766,7 +2766,7 @@ public:
   /*!
    * \brief Set the new solution container for Calculate Averages
    */
-  void SetSolution_Avg(su2double *val_solution);
+  void SetSolution_Avg(unsigned short val_var, su2double val_solution);
   
   /*!
    * \brief Add a value to the new solution container for Calculate Averages.
