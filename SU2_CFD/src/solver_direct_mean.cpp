@@ -4148,11 +4148,30 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
 
   if (calculate_average && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))){
     for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
+      
       Solution_Avg_Aux = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution();
-      for (iVar = 0; iVar < nVar; iVar++) {
-        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(iVar, Solution_Avg_Aux[iVar]);
-      }
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(0, Solution_Avg_Aux[0]);
+      
+      for ( iDim = 0; iDim < nDim; iDim++)
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+      
+      solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar-1, Solution_Avg_Aux[nVar-1]/Solution_Avg_Aux[0]);
       solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_Avg(nVar, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
+      
+      if (nDim == 2){
+        for ( iDim = 0; iDim < nDim; iDim++)
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(2, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(3, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure() * solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
+      }
+      else{
+        for ( iDim = 0; iDim < nDim; iDim++)
+          solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(3, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(4, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(5, Solution_Avg_Aux[2]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
+        solver_container[MESH_0][FLOW_SOL]->node[iPoint]->SetSolution_RMS(6, solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure() * solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetPressure());
+      }
     }
   }
 
