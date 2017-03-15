@@ -567,17 +567,25 @@ inline su2double CVariable::GetSolution_New(unsigned short val_var) { return 0.0
 
 inline su2double CVariable::GetSolution_Avg(unsigned short val_var) { return 0.0; }
 
+inline su2double CVariable::GetSolution_RMS(unsigned short val_var) { return 0.0; }
+
 inline void CVariable::SetSolution_New(void) { }
 
 inline void CVariable::SetSolution_Avg(unsigned short val_var, su2double val_solution) { }
+
+inline void CVariable::SetSolution_RMS(unsigned short val_var, su2double val_solution) { }
 
 inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_solution) { }
 
 inline void CVariable::AddSolution_Avg(unsigned short val_var, su2double val_solution) { }
 
+inline void CVariable::AddSolution_RMS(unsigned short val_var, su2double val_solution) { }
+
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
 inline su2double CEulerVariable::GetSolution_Avg(unsigned short val_var) { return Solution_Avg[val_var]; }
+
+inline su2double CEulerVariable::GetSolution_RMS(unsigned short val_var) { return Solution_RMS[val_var]; }
 
 inline void CEulerVariable::SetSolution_New(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
@@ -588,12 +596,20 @@ inline void CEulerVariable::SetSolution_Avg(unsigned short val_var, su2double va
   Solution_Avg[val_var] += val_solution;
 }
 
+inline void CEulerVariable::SetSolution_RMS(unsigned short val_var, su2double val_solution) {
+  Solution_RMS[val_var] += val_solution;
+}
+
 inline void CEulerVariable::AddSolution_New(unsigned short val_var, su2double val_solution) {
   Solution_New[val_var] += val_solution;
 }
 
 inline void CEulerVariable::AddSolution_Avg(unsigned short val_var, su2double val_solution) {
     Solution_Avg[val_var] += val_solution;
+}
+
+inline void CEulerVariable::AddSolution_RMS(unsigned short val_var, su2double val_solution) {
+    Solution_RMS[val_var] += val_solution;
 }
 
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }

@@ -572,19 +572,41 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh, unsigned short SolContainer_Position) {
 
-  unsigned short iVar;
+  unsigned short iVar, iDim;
   unsigned long iPoint;
 
   bool calculate_average = config->GetCalculate_Average();
-
+  su2double *Solution_Avg_Aux;
+  
   /*--- Adding the solution for Calculate Averages ---*/
 
   if (SolContainer_Position == FLOW_SOL && calculate_average) {
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for (iVar = 0; iVar < solver->GetnVar(); iVar++) {
-        solver->node[iPoint]->AddSolution_Avg(iVar, solver->node[iPoint]->GetSolution(iVar));
+      Solution_Avg_Aux = solver->node[iPoint]->GetSolution();
+      solver->node[iPoint]->SetSolution_Avg(0, Solution_Avg_Aux[0]);
+      for ( iDim = 0; iDim < geometry->GetnDim(); iDim++)
+        solver->node[iPoint]->SetSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);      
+      solver->node[iPoint]->SetSolution_Avg(solver->GetnVar()-1, Solution_Avg_Aux[solver->GetnVar()-1]/Solution_Avg_Aux[0]);
+      solver->node[iPoint]->SetSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());            
+//      for (iVar = 0; iVar < solver->GetnVar(); iVar++) {
+//        solver->node[iPoint]->AddSolution_Avg(iVar, solver->node[iPoint]->GetSolution(iVar));
+//      }
+//      solver->node[iPoint]->AddSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());
+      if (geometry->GetnDim() == 2){
+        for ( iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          solver->node[iPoint]->AddSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+        solver->node[iPoint]->AddSolution_RMS(2, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
+        solver->node[iPoint]->AddSolution_RMS(3, solver->node[iPoint]->GetPressure() * solver->node[iPoint]->GetPressure());
       }
-      solver->node[iPoint]->AddSolution_Avg(solver->GetnVar(), solver->node[iPoint]->GetPressure());
+      else{
+        for ( iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          solver->node[iPoint]->AddSolution_RMS(iDim, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
+        solver->node[iPoint]->AddSolution_RMS(3, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[2]/Solution_Avg_Aux[0]);
+        solver->node[iPoint]->AddSolution_RMS(4, Solution_Avg_Aux[1]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
+        solver->node[iPoint]->AddSolution_RMS(5, Solution_Avg_Aux[2]/Solution_Avg_Aux[0] * Solution_Avg_Aux[3]/Solution_Avg_Aux[0]);
+        solver->node[iPoint]->AddSolution_RMS(6, solver->node[iPoint]->GetPressure() * solver->node[iPoint]->GetPressure());
+      }
+
     }
   }
 

@@ -10569,6 +10569,33 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Mean_E");
       nVar_Par +=1;
       Variable_Names.push_back("Mean_P");
+      
+      if (geometry->GetnDim()==2){
+        nVar_Par +=1;
+        Variable_Names.push_back("U<sup>p</sup>U<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("V<sup>p</sup>V<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("U<sup>p</sup>V<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("P<sup>p</sup>P<sup>p</sup>");
+      }
+      else{
+        nVar_Par +=1;
+        Variable_Names.push_back("U<sup>p</sup>U<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("V<sup>p</sup>V<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("W<sup>p</sup>W<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("U<sup>p</sup>V<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("U<sup>p</sup>W<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("V<sup>p</sup>W<sup>p</sup>");
+        nVar_Par +=1;
+        Variable_Names.push_back("P<sup>p</sup>P<sup>p</sup>");
+      }
     }
     
   }
@@ -10796,6 +10823,19 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           }
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
           iVar++;
+          
+          if (geometry->GetnDim() == 2){
+            for (jVar = 0; jVar < geometry->GetnDim()+2; jVar++) {
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
+              iVar++;
+            }
+          }
+          else{
+            for (jVar = 0; jVar < geometry->GetnDim()+4; jVar++) {
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
+              iVar++;
+            }
+          }
         }
           
         /*--- Increment the point counter, as there may have been halos we

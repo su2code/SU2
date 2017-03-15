@@ -61,6 +61,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   Solution_New = NULL;
   
   Solution_Avg = NULL;
+  
+  Solution_RMS = NULL;
  
 }
 
@@ -102,6 +104,8 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Solution_New = NULL;
     
   Solution_Avg = NULL;
+  
+  Solution_RMS = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
@@ -231,12 +235,24 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Gradient_Secondary[iVar][iDim] = 0.0;
   }
   
-  /*--- Allocate vector for Average of conservative variables ---*/
+  /*--- Allocate vector for Average of primitive variables ---*/
   
   if (calculate_average){
     Solution_Avg = new su2double [nVar+1];
     for (iVar = 0; iVar < nVar+1; iVar++)
       Solution_Avg[iVar] = 0.0;
+
+    if (nDim == 2){
+      Solution_RMS = new su2double [nDim+2];
+      for (iVar = 0; iVar < nDim+2; iVar++)
+        Solution_RMS[iVar] = 0.0;
+    }
+    else{
+      Solution_RMS = new su2double [nDim+4];
+      for (iVar = 0; iVar < nDim+4; iVar++)
+        Solution_RMS[iVar] = 0.0;      
+    }
+    
   }
 
 }
@@ -278,6 +294,8 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Solution_New = NULL;
 
   Solution_Avg = NULL;
+  
+  Solution_RMS = NULL;
 
     /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
@@ -395,8 +413,18 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     Solution_Avg = new su2double [nVar+1];
     for (iVar = 0; iVar < nVar+1; iVar++)
       Solution_Avg[iVar] = 0.0;
+      
+    if (nDim == 2){
+      Solution_RMS = new su2double [nDim+2];
+      for (iVar = 0; iVar < nDim+2; iVar++)
+        Solution_RMS[iVar] = 0.0;
+    }
+    else{
+      Solution_RMS = new su2double [nDim+4];
+      for (iVar = 0; iVar < nDim+4; iVar++)
+        Solution_RMS[iVar] = 0.0;      
+    }
   }
-
 }
 
 CEulerVariable::~CEulerVariable(void) {
@@ -426,6 +454,8 @@ CEulerVariable::~CEulerVariable(void) {
   if (Solution_New != NULL) delete [] Solution_New;
   
   if (Solution_Avg != NULL) delete [] Solution_Avg;
+  
+  if (Solution_RMS != NULL) delete [] Solution_RMS;
   
 }
 
