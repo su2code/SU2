@@ -4841,7 +4841,7 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
   }
 
 
-  bool write_history = true;
+  bool write_history = false;
 
   /*--- Header of the temporary output file ---*/
   if ((write_history) && (rank == MASTER_NODE)){
@@ -4873,6 +4873,51 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(char* confFile,
     }
 
     myfile_res << endl;
+
+    myfile_res.close();
+  }
+
+  // TEST: for implementation of python framework in standalone structural problems
+  if ((config_container[ZONE_1]->GetDV_FEA() != NODV_FEA) && (rank == MASTER_NODE)){
+
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    char *output_name;
+
+    switch (config_container[ZONE_1]->GetDV_FEA()) {
+      case YOUNG_MODULUS:
+        output_name = "grad_young.opt";
+        break;
+      case POISSON_RATIO:
+        output_name = "grad_poisson.opt";
+        break;
+      case DENSITY_VAL:
+      case DEAD_WEIGHT:
+        output_name = "grad_density.opt";
+        break;
+      case ELECTRIC_FIELD:
+        output_name = "grad_efield.opt";
+        break;
+      default:
+        output_name = "grad.opt";
+        break;
+    }
+
+    myfile_res.open(output_name);
+
+    unsigned short iDV;
+    unsigned short nDV = solver_container[ZONE_1][MESH_0][ADJFEA_SOL]->GetnDVFEA();
+
+    myfile_res << "INDEX" << "\t" << "GRAD" << endl;
+
+    myfile_res.precision(15);
+
+    for (iDV = 0; iDV < nDV; iDV++){
+      myfile_res << iDV;
+      myfile_res << "\t";
+      myfile_res << scientific << solver_container[ZONE_1][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_DVFEA(iDV);
+      myfile_res << endl;
+    }
 
     myfile_res.close();
   }

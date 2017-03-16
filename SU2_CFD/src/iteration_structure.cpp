@@ -2988,6 +2988,11 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone) {
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned long IntIter = 0, nIntIter = 1;
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
@@ -3069,7 +3074,7 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 //  }
 
   // TEMPORARY output only for standalone structural problems
-  if (!config_container[val_iZone]->GetFSI_Simulation()){
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
 
 
     bool de_effects = config_container[val_iZone]->GetDE_Effects();
@@ -3114,7 +3119,7 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
   }
 
   // TEST: for implementation of python framework in standalone structural problems
-  if (!config_container[val_iZone]->GetFSI_Simulation()){
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
 
     /*--- Header of the temporary output file ---*/
     ofstream myfile_res;
