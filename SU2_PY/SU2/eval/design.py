@@ -225,10 +225,8 @@ def obj_f(dvs,config,state=None):
     state = su2io.State(state)
     
     def_objs = config['OPT_OBJECTIVE']
-    
     objectives = def_objs.keys()
 
-#    if objectives: print('Evaluate Objectives')
     # evaluate each objective
     vals_out = []
     func = 0.0
@@ -240,10 +238,10 @@ def obj_f(dvs,config,state=None):
         if def_objs[this_obj]['CTYPE']=='NONE':
             func += su2func(this_obj,config,state) * sign * scale
         else:
-            func += obj_p(config,state,this_obj,def_objs,scale)
+            func += obj_p(config,state,this_obj,def_objs) * scale
     vals_out.append(func)
     #: for each objective
-        
+    # If evaluating the combined function is desired, update it here
     if state.FUNCTIONS.has_key('COMBO'):
         state['FUNCTIONS']['COMBO'] = func
         
@@ -251,33 +249,39 @@ def obj_f(dvs,config,state=None):
 
 #: def obj_f()
         
-def obj_p(config,state,this_obj,def_objs,scale):
+def obj_p(config,state,this_obj,def_objs):
     # Penalty function: square of the difference between value and limit
+    # This function is used when a constraint-type term is added to OPT_OBJECTIVE
+    # This code, and obj_dp, must be changed to use a non-quadratic penalty function
     value = su2func(this_obj,config,state)
     valuec = float(def_objs[this_obj]['CVAL'])
     penalty = 0.0                   
     if (def_objs[this_obj]['CTYPE']=='=' or \
         (def_objs[this_obj]['CTYPE']=='>' and value < valuec) or \
         (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
-        penalty = scale*(valuec - value)**2.0
+        penalty = (valuec - value)**2.0
         
     return penalty
+
 #: def obj_p()
 
-def obj_dp(config,state,this_obj,def_objs,scale):
+def obj_dp(config,state,this_obj,def_objs):
     # Partial Derivative of Penalty function: square of the difference between value and limit
-    # If penalty constraint active, set value:
+    # This function is used when a constraint-type term is added to OPT_OBJECTIVE
+    # This code, and obj_p, must be changed to use a non-quadratic penalty function
     value = su2func(this_obj,config,state)
     valuec = float(def_objs[this_obj]['CVAL'])
-    # For inequality constraints, if inactive set scale to 0.0
     dpenalty = 0.0
+    # Inequalities will be 0 or a positive value
     if ((def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
          (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
         dpenalty=2.0*abs(valuec - value)
+    # Equalities will be positive if value>constraint, negative if value<constraint
     elif (def_objs[this_obj]['CTYPE']=='='):
         depenalty=2.0*(value -valuec)
 
     return dpenalty
+
 #: def obj_dp()
 
 def obj_df(dvs,config,state=None):
@@ -319,7 +323,9 @@ def obj_df(dvs,config,state=None):
                 sign = su2io.get_objectiveSign(this_obj)
                 scale[i_obj]*=sign
             else:
-                scale[i_obj]*=obj_dp(config, state, this_obj, def_objs, scale)
+                # For a penalty function, the term is scaled by the partial derivative
+                # d p(j) / dx = (dj / dx) * ( dp / dj)  
+                scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)
 
  
             
