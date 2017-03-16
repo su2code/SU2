@@ -272,13 +272,14 @@ def obj_dp(config,state,this_obj,def_objs):
     value = su2func(this_obj,config,state)
     valuec = float(def_objs[this_obj]['CVAL'])
     dpenalty = 0.0
+
     # Inequalities will be 0 or a positive value
     if ((def_objs[this_obj]['CTYPE']=='>' and value < valuec)  or\
          (def_objs[this_obj]['CTYPE']=='<' and value > valuec )):
         dpenalty=2.0*abs(valuec - value)
-    # Equalities will be positive if value>constraint, negative if value<constraint
     elif (def_objs[this_obj]['CTYPE']=='='):
-        depenalty=2.0*(value -valuec)
+        # Equalities will be positive if value>constraint, negative if value<constraint
+        dpenalty=2.0*(value -valuec)
 
     return dpenalty
 
@@ -326,8 +327,6 @@ def obj_df(dvs,config,state=None):
                 # For a penalty function, the term is scaled by the partial derivative
                 # d p(j) / dx = (dj / dx) * ( dp / dj)  
                 scale[i_obj]*=obj_dp(config, state, this_obj, def_objs)
-
- 
             
         config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         
