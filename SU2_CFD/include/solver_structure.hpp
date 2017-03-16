@@ -3202,6 +3202,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
+   */
+  virtual su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA);
+
+  /*!
+   * \brief A virtual member.
    * \return Value of the Young modulus from the adjoint solver
    */
   virtual su2double GetVal_Young(unsigned short iVal);
@@ -3236,6 +3242,11 @@ public:
    */
   virtual unsigned short GetnDVFEA(void);
   
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void ReadDV(CConfig *config);
+
   /*!
    * \brief A virtual member.
    * \return Pointer to the values of the Electric Field
@@ -12561,6 +12572,12 @@ public:
   su2double GetGlobal_Sens_EField(unsigned short iEField);
   
   /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the FEA DV in the region iDVFEA
+   */
+  su2double GetGlobal_Sens_DVFEA(unsigned short iDVFEA);
+
+  /*!
    * \brief Get the value of the Young modulus from the adjoint solver
    * \return Value of the Young modulus from the adjoint solver
    */
@@ -12590,6 +12607,11 @@ public:
    */
   unsigned short GetnEField(void);
   
+  /*!
+   * \brief Read the design variables for the adjoint solver
+   */
+  void ReadDV(CConfig *config);
+
   /*!
    * \brief Get the number of design variables from the adjoint solver,
    * \return Number of design variables from the adjoint solver

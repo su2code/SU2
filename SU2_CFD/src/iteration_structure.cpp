@@ -2988,6 +2988,11 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone) {
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned long IntIter = 0, nIntIter = 1;
   bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
@@ -3069,7 +3074,7 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 //  }
 
   // TEMPORARY output only for standalone structural problems
-  if (!config_container[val_iZone]->GetFSI_Simulation()){
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
 
 
     bool de_effects = config_container[val_iZone]->GetDE_Effects();
@@ -3114,23 +3119,41 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
   }
 
   // TEST: for implementation of python framework in standalone structural problems
-  if (!config_container[val_iZone]->GetFSI_Simulation()){
+  if ((!config_container[val_iZone]->GetFSI_Simulation()) && (rank == MASTER_NODE)){
 
     /*--- Header of the temporary output file ---*/
     ofstream myfile_res;
-    myfile_res.open ("grad_young.opt");
 
-    unsigned short iYoung;
-    unsigned short nYoung = config_container[val_iZone]->GetnElasticityMod();
+    switch (config_container[val_iZone]->GetDV_FEA()) {
+      case YOUNG_MODULUS:
+        myfile_res.open("grad_young.opt");
+        break;
+      case POISSON_RATIO:
+        myfile_res.open("grad_poisson.opt");
+        break;
+      case DENSITY_VAL:
+      case DEAD_WEIGHT:
+        myfile_res.open("grad_density.opt");
+        break;
+      case ELECTRIC_FIELD:
+        myfile_res.open("grad_efield.opt");
+        break;
+      default:
+        myfile_res.open("grad.opt");
+        break;
+    }
+
+    unsigned short iDV;
+    unsigned short nDV = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
 
     myfile_res << "INDEX" << "\t" << "GRAD" << endl;
 
     myfile_res.precision(15);
 
-    for (iYoung = 0; iYoung < nYoung; iYoung++){
-      myfile_res << iYoung;
+    for (iDV = 0; iDV < nDV; iDV++){
+      myfile_res << iDV;
       myfile_res << "\t";
-      myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iYoung);
+      myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_DVFEA(iDV);
       myfile_res << endl;
     }
 

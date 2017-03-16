@@ -265,7 +265,6 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 //    Donor_Variable[iVar] = Donor_Variable[iVar] * Physical_Constants[1];
 //  }
 
-
 }
 
 void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
@@ -483,7 +482,6 @@ void CTransfer_FlowTraction_DiscAdj::GetDonor_Variable(CSolver *flow_solution, C
 
     // Divergence of the velocity
     div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_Vel[iVar][iVar];
-    if (incompressible) div_vel = 0.0;
 
     for (iVar = 0; iVar < nVar; iVar++) {
 
