@@ -1452,6 +1452,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set distance to the surface with DES distance ---*/
       
       numerics->SetDistance(distDES_tilde, 0.0);
+      solver_container[FLOW_SOL]->node[iPoint]->SetDES_LengthScale(distDES_tilde);
     }
     else if (config->GetKind_HybridRANSLES()==SA_DDES){
       su2double *Coord_i, *Coord_j, aux_delta;
@@ -1521,6 +1522,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       /*--- Set distance to the surface with DDES distance ---*/
 
       numerics->SetDistance(distDES_tilde, 0.0);
+      solver_container[FLOW_SOL]->node[iPoint]->SetDES_LengthScale(distDES_tilde);
     }
     else if (config->GetKind_HybridRANSLES()==SA_ZDES){
       su2double *Coord_i, *Coord_j, deltax=0.0, deltay=0.0, deltaz=0.0, aux_delta, *Vorticity_i;
@@ -1594,6 +1596,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Set distance to the surface with DDES distance ---*/
       numerics->SetDistance(distDES_tilde, 0.0);
+      solver_container[FLOW_SOL]->node[iPoint]->SetDES_LengthScale(distDES_tilde);
     }
     else if (config->GetKind_HybridRANSLES()==SA_EDDES){
           
@@ -1748,6 +1751,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Set distance to the surface with DDES distance ---*/
       numerics->SetDistance(distDES_tilde, 0.0);
+      solver_container[FLOW_SOL]->node[iPoint]->SetDES_LengthScale(distDES_tilde);
     }
     else if (config->GetKind_HybridRANSLES()==SA_IDDES){
       su2double *Coord_i, *Coord_j, aux_delta, Delta_min, aux_min;
@@ -1830,15 +1834,18 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Set distance to the surface with IDDES distance ---*/
       
-      if (config->GetZonal_DES()){
-        dist_zonal = config->GetZonal_Dist();
-        if (dist_wall <= dist_zonal)
-          numerics->SetDistance(dist_wall, 0.0);
-        else
-          numerics->SetDistance(distDES_tilde, 0.0);
-      }
-      else
-        numerics->SetDistance(distDES_tilde, 0.0);
+      numerics->SetDistance(distDES_tilde, 0.0);
+      solver_container[FLOW_SOL]->node[iPoint]->SetDES_LengthScale(distDES_tilde);
+      
+//      if (config->GetZonal_DES()){
+//        dist_zonal = config->GetZonal_Dist();
+//        if (dist_wall <= dist_zonal)
+//          numerics->SetDistance(dist_wall, 0.0);
+//        else
+//          numerics->SetDistance(distDES_tilde, 0.0);
+//      }
+//      else
+//        numerics->SetDistance(distDES_tilde, 0.0);
       
     }
     else if (config->GetKind_HybridRANSLES()==SA_IZDES){
@@ -1931,6 +1938,10 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       distDES_tilde = f_d_tilde * dist_wall + (1.0 - f_d_tilde) * distDES*sqrt(psi_2);
       
       /*--- Set distance to the surface with IDDES distance ---*/
+
+      numerics->SetDistance(distDES_tilde, 0.0);
+      solver_container[FLOW_SOL]->node[iPoint]->SetDES_LengthScale(distDES_tilde);
+
       
 //      if (config->GetZonal_DES()){
 //          dist_zonal = config->GetZonal_Dist();

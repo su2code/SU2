@@ -10551,7 +10551,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
       nVar_Par +=1;
-      Variable_Names.push_back("DES_Distance");      
+      Variable_Names.push_back("DES_LengthScale");      
+    }
+    
+    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+      nVar_Par +=1;
+      Variable_Names.push_back("Roe_Dissipation");      
     }
     
     if (calculate_average) {
@@ -10812,10 +10817,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
          assuming they were registered above correctly. ---*/
         
         if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
-          Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetWall_Distance(); iVar++;
-          
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDES_LengthScale(); iVar++; 
         }
         
+        if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++; 
+        }
+
         if (calculate_average){
           for (jVar = 0; jVar < nVar_First; jVar++) {
             Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
