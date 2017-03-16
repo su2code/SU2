@@ -5004,6 +5004,13 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         dissipation = 1.0;
         numerics->SetRoeDissipation(dissipation);
       }
+      
+      /*--- Exporting Roe Low Dissipation ---*/
+      
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+        node[iPoint]->SetRoe_Dissipation(dissipation);
+        node[jPoint]->SetRoe_Dissipation(dissipation);
+      }
 
       /*--- Recompute the extrapolated quantities in a
        thermodynamic consistent way  ---*/
@@ -10789,7 +10796,10 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       }
       
       /*--- Ensure no dissipation in the upwind scheme ---*/
+      
       conv_numerics->SetRoeDissipation(1.0);
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+        node[iPoint]->SetRoe_Dissipation(1.0);
         
       /*--- Compute the convective residual using an upwind scheme ---*/
 
@@ -12453,7 +12463,11 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
       
       /*--- Ensure no dissipation in the upwind scheme ---*/
+      
       conv_numerics->SetRoeDissipation(1.0);
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+        node[iPoint]->SetRoe_Dissipation(1.0);
+
       
       /*--- Compute the residual using an upwind scheme ---*/
       
@@ -12639,7 +12653,10 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
       
       /*--- Ensure no dissipation in the upwind scheme ---*/
+      
       conv_numerics->SetRoeDissipation(1.0);
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+        node[iPoint]->SetRoe_Dissipation(1.0);
   
       /*--- Compute the residual using an upwind scheme ---*/
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -12782,6 +12799,12 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
+                                  
+      /*--- Ensure no dissipation in the upwind scheme ---*/
+      
+      conv_numerics->SetRoeDissipation(1.0);
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+        node[iPoint]->SetRoe_Dissipation(1.0);
       
       /*--- Compute the residual using an upwind scheme ---*/
       
@@ -12901,6 +12924,12 @@ void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_co
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
+      
+      /*--- Ensure no dissipation in the upwind scheme ---*/
+      
+      conv_numerics->SetRoeDissipation(1.0);
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+        node[iPoint]->SetRoe_Dissipation(1.0);
       
       /*--- Compute the residual using an upwind scheme ---*/
       
@@ -13119,6 +13148,12 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       
       conv_numerics->SetNormal(Normal);
       conv_numerics->SetPrimitive(V_domain, V_inflow);
+      
+      /*--- Ensure no dissipation in the upwind scheme ---*/
+      
+      conv_numerics->SetRoeDissipation(1.0);
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+        node[iPoint]->SetRoe_Dissipation(1.0);      
       
       /*--- Compute the residual using an upwind scheme ---*/
       
@@ -13489,6 +13524,12 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           if (grid_movement)
             numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            
+          /*--- Ensure no dissipation in the upwind scheme ---*/
+      
+          numerics->SetRoeDissipation(1.0);
+          if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+            node[iPoint]->SetRoe_Dissipation(1.0);
 
           /*--- Compute the convective residual using an upwind scheme ---*/
 
@@ -13612,6 +13653,12 @@ void CEulerSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_c
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       numerics->SetNormal(Normal);
       
+      /*--- Ensure no dissipation in the upwind scheme ---*/
+      
+      numerics->SetRoeDissipation(1.0);
+      if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS)
+        node[iPoint]->SetRoe_Dissipation(1.0);
+
       /*--- Compute the convective residual using an upwind scheme ---*/
       
       numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);

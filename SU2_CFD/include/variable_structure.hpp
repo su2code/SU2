@@ -267,6 +267,26 @@ public:
   /*!
    * \brief A virtual member.
    */
+  virtual su2double GetRoe_Dissipation(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetRoe_Dissipation(su2double val_roe_dissipation);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetDES_LengthScale(su2double val_des_lengthscale);
+
+  /*!
+   * \brief A virtual member.
+   */
   virtual void SetSolution_New(void);
 
   /*!
@@ -2726,6 +2746,8 @@ protected:
   
   su2double *Solution_RMS;
   
+  su2double Roe_Dissipation;
+  
 public:
   
   /*!
@@ -2791,6 +2813,17 @@ public:
    * \return Pointer to the old solution vector.
    */
   su2double GetSolution_RMS(unsigned short val_var);
+  
+    /*!
+   * \brief Get the Roe Dissipation Coefficient.
+   * \return Value of the Roe Dissipation.
+   */
+  su2double GetRoe_Dissipation(void);
+  
+  /*!
+   * \brief Set the new solution for Roe Dissipation.
+   */
+  void SetRoe_Dissipation(su2double val_roe_dissipation);
   
   /*!
    * \brief Set the new solution container for Calculate Averages
@@ -3420,6 +3453,8 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double DES_LengthScale; /*!< \brief DES Length Scale. */
+  
 public:
   
   /*!
@@ -3566,6 +3601,18 @@ public:
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
+  
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  void SetDES_LengthScale(su2double val_des_lengthscale);
+  
 };
 
 /*!

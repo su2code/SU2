@@ -569,6 +569,14 @@ inline su2double CVariable::GetSolution_Avg(unsigned short val_var) { return 0.0
 
 inline su2double CVariable::GetSolution_RMS(unsigned short val_var) { return 0.0; }
 
+inline su2double CVariable::GetRoe_Dissipation(void) { return 0.0; }
+
+inline void CVariable::SetRoe_Dissipation(su2double val_roe_dissipation) { }
+
+inline su2double CVariable::GetDES_LengthScale(void) { return 0.0; }
+
+inline void CVariable::SetDES_LengthScale(su2double val_des_lengthscale) { }
+
 inline void CVariable::SetSolution_New(void) { }
 
 inline void CVariable::SetSolution_Avg(unsigned short val_var, su2double val_solution) { }
@@ -586,6 +594,14 @@ inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { retur
 inline su2double CEulerVariable::GetSolution_Avg(unsigned short val_var) { return Solution_Avg[val_var]; }
 
 inline su2double CEulerVariable::GetSolution_RMS(unsigned short val_var) { return Solution_RMS[val_var]; }
+
+inline su2double CEulerVariable::GetRoe_Dissipation(void) { return Roe_Dissipation; }
+
+inline void CEulerVariable::SetRoe_Dissipation(su2double val_roe_dissipation) { Roe_Dissipation = val_roe_dissipation; }
+
+inline su2double CNSVariable::GetDES_LengthScale(void) { return DES_LengthScale; }
+
+inline void CNSVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES_LengthScale = val_des_lengthscale; }
 
 inline void CEulerVariable::SetSolution_New(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
