@@ -600,6 +600,8 @@ inline su2double CSolver::GetGlobal_Sens_Nu(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetGlobal_Sens_EField(unsigned short iEField) { return 0.0; }
 
+inline su2double CSolver::GetGlobal_Sens_DVFEA(unsigned short iDVFEA) { return 0.0; }
+
 inline su2double CSolver::GetVal_Young(unsigned short iVal) { return 0.0; }
 
 inline su2double CSolver::GetVal_Poisson(unsigned short iVal) { return 0.0; }
@@ -611,6 +613,8 @@ inline su2double CSolver::GetVal_Rho_DL(unsigned short iVal) { return 0.0; }
 inline unsigned short CSolver::GetnEField(void) { return 0; }
 
 inline unsigned short CSolver::GetnDVFEA(void) { return 0; }
+
+inline void CSolver::ReadDV(CConfig *config) { }
 
 inline su2double CSolver::GetVal_EField(unsigned short iVal) { return 0.0; }
 
@@ -2020,6 +2024,8 @@ inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(unsigned short iVal) { retu
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Nu(unsigned short iVal) { return Global_Sens_Nu[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetGlobal_Sens_EField(unsigned short iEField) { return Global_Sens_EField[iEField]; }
+
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_DVFEA(unsigned short iDVFEA) { return Global_Sens_DV[iDVFEA]; }
 
 inline su2double CDiscAdjFEASolver::GetVal_Young(unsigned short iVal) { return E_i[iVal]; }
 

@@ -2023,7 +2023,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Initialize vector structures for structural-based design variables ---*/
 
-  nDV = config->GetnDV();
+  nDV = 0;
   DV_Val = NULL;
   fea_dv = false;
   switch (config->GetDV_FEA()) {
@@ -2043,7 +2043,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   Global_Sens_DV= NULL;
   Total_Sens_DV = NULL;
   if (fea_dv){
-      DV_Val         = new su2double[nDV];
+      ReadDV(config);
       Local_Sens_DV  = new su2double[nDV];
       Global_Sens_DV = new su2double[nDV];
       Total_Sens_DV  = new su2double[nDV];
@@ -2485,9 +2485,9 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
         for (iVar = 0; iVar < nEField; iVar++) EField[iVar] = config->Get_Electric_Field_Mod(iVar);
     }
 
-    if(fea_dv){
-        for (iVar = 0; iVar < nDV; iVar++) DV_Val[iVar] = config->GetDV_Value(iVar,0);
-    }
+//    if(fea_dv){
+//        for (iVar = 0; iVar < nDV; iVar++) DV_Val[iVar] = config->GetDV_Value(iVar,0);
+//    }
 
     if (!reset){
         for (iVar = 0; iVar < nMPROP; iVar++) AD::RegisterInput(E_i[iVar]);
@@ -3087,6 +3087,112 @@ void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_co
       node[iPoint]->SetSolution_Vel(Solution);
       node[iPoint]->SetSolution_Accel(Solution);
     }
+
+  }
+
+}
+
+void CDiscAdjFEASolver::ReadDV(CConfig *config) {
+
+  unsigned long iElem;
+  unsigned long index;
+
+  unsigned short iVar;
+  unsigned short iZone = config->GetiZone();
+
+  string filename;
+  ifstream properties_file;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Choose the filename of the design variable ---*/
+
+  string input_name;
+
+  switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      input_name = "dv_young.opt";
+      break;
+    case POISSON_RATIO:
+      input_name = "dv_poisson.opt";
+      break;
+    case DENSITY_VAL:
+    case DEAD_WEIGHT:
+      input_name = "dv_density.opt";
+      break;
+    case ELECTRIC_FIELD:
+      input_name = "dv_efield.opt";
+      break;
+    default:
+      input_name = "dv.opt";
+      break;
+  }
+
+  filename = input_name;
+
+  cout << "Filename: " << filename << "." << endl;
+
+  properties_file.open(filename.data(), ios::in);
+
+  /*--- In case there is no file, all elements get the same property (0) ---*/
+
+  if (properties_file.fail()) {
+
+    if (rank == MASTER_NODE)
+      cout << "There is no design variable file." << endl;
+
+    nDV   = 1;
+    DV_Val = new su2double[nDV];
+    for (unsigned short iDV = 0; iDV < nDV; iDV++)
+      DV_Val[iDV] = 1.0;
+
+  }
+  else{
+
+    string text_line;
+
+     /*--- First pass: determine number of design variables ---*/
+
+    unsigned short iDV = 0;
+
+    /*--- Skip the first line: it is the header ---*/
+
+    getline (properties_file, text_line);
+
+    while (getline (properties_file, text_line)) iDV++;
+
+    /*--- Close the restart file ---*/
+
+    properties_file.close();
+
+    nDV = iDV;
+    DV_Val = new su2double[nDV];
+
+    /*--- Reopen the file (TODO: improve this) ---*/
+
+    properties_file.open(filename.data(), ios::in);
+
+    /*--- Skip the first line: it is the header ---*/
+
+    getline (properties_file, text_line);
+
+    iDV = 0;
+    while (getline (properties_file, text_line)) {
+
+      istringstream point_line(text_line);
+
+      point_line >> index >> DV_Val[iDV];
+
+      iDV++;
+
+    }
+
+    /*--- Close the restart file ---*/
+
+    properties_file.close();
 
   }
 
