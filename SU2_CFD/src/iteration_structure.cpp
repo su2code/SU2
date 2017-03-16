@@ -3123,28 +3123,25 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 
     /*--- Header of the temporary output file ---*/
     ofstream myfile_res;
-    char *output_name;
 
     switch (config_container[val_iZone]->GetDV_FEA()) {
       case YOUNG_MODULUS:
-        output_name = "grad_young.opt";
+        myfile_res.open("grad_young.opt");
         break;
       case POISSON_RATIO:
-        output_name = "grad_poisson.opt";
+        myfile_res.open("grad_poisson.opt");
         break;
       case DENSITY_VAL:
       case DEAD_WEIGHT:
-        output_name = "grad_density.opt";
+        myfile_res.open("grad_density.opt");
         break;
       case ELECTRIC_FIELD:
-        output_name = "grad_efield.opt";
+        myfile_res.open("grad_efield.opt");
         break;
       default:
-        output_name = "grad.opt";
+        myfile_res.open("grad.opt");
         break;
     }
-
-    myfile_res.open(output_name);
 
     unsigned short iDV;
     unsigned short nDV = solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetnDVFEA();
