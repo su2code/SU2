@@ -379,19 +379,18 @@ per_surface_map = {"LIFT"       :   "CLift" ,
 #  Include per-surface output from History File
 # ------------------------------------------------------------------- 
 def update_persurface(config, state):
+    # Update the header map (checking to make sure entries are not duplicated)
     header_map = get_headerMap()
     for base in per_surface_map:
         base2 = per_surface_map[base]
-        for obj in config['OPT_OBJECTIVE']:
-            marker = config['OPT_OBJECTIVE'][obj]['MARKER']
+        for marker in config['MARKER_MONITORING']:
             if not header_map.has_key(base2+'_'+marker):
                 header_map[base2+'_'+marker] = base2+'_'+marker
-
+    # Update the function values in state to include the per-surface quantities
     if state['HISTORY'].has_key('DIRECT'):
         for base in per_surface_map:
             base2 = per_surface_map[base]
-            for obj in config['OPT_OBJECTIVE']:
-                marker = config['OPT_OBJECTIVE'][obj]['MARKER']
+            for marker in config['MARKER_MONITORING']:
                 if state['HISTORY']['DIRECT'].has_key(base2+'_'+marker):
                     state['FUNCTIONS'][base2+'_'+marker] = state['HISTORY']['DIRECT'][base2+'_'+marker][-1]
                     
