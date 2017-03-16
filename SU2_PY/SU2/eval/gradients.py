@@ -467,7 +467,10 @@ def findiff( config, state=None ):
         log_findiff = None
 
     # evaluate step
-    step = 0.001 * float(config.REF_LENGTH_MOMENT)
+    if config.has_key('FIN_DIFF_STEP'):
+        step = float(config.FIN_DIFF_STEP)
+    else:
+        step = 0.001 * float(config.REF_LENGTH_MOMENT)
 
     # ----------------------------------------------------
     #  Redundancy Check
