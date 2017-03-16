@@ -509,7 +509,7 @@ def read_config(filename):
                         this_val  = 0.0
                     this_name = this_obj[0]
                        
- 
+                    # Set up dict for objective, including scale, whether it is a penalty, and constraint value 
                     this_def.update({ this_name : {'SCALE':this_scale, 'CTYPE':this_type, 'CVAL':this_val} })
                     if (len(data_dict['MARKER_MONITORING'])>1):
                         this_def[this_name]['MARKER'] = data_dict['MARKER_MONITORING'][len(this_def)-1]

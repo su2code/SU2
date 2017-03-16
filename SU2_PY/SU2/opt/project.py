@@ -111,8 +111,8 @@ class Project(object):
         # setup config
         config = copy.deepcopy(config)
         
-        # config data_dict creation automatically reorders objectives s.t. marker monitored 
-        # may not be in the correct order for multiple objectives. 
+        # config data_dict creation does not reliably produce the same order
+        # this section ensures that the order of markers and objectives match 
         def_objs = config['OPT_OBJECTIVE']
         if len(def_objs)>1:
             objectives = def_objs.keys()
