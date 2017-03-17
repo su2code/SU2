@@ -55,6 +55,7 @@ C2phaseSolver::C2phaseSolver(CConfig *config) : CSolver() {
 
   Primitive_Liquid = new su2double[9];
 
+
 }
 
 C2phaseSolver::~C2phaseSolver(void) {
@@ -429,7 +430,7 @@ void C2phaseSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *confi
 }
 
 
-void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, CLiquidModel *liquid, unsigned short iMesh) {
+void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
   
 	  su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
 	  unsigned long iEdge, iPoint, jPoint;
@@ -1229,7 +1230,7 @@ void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
 
 }
 
-void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, CLiquidModel *liquid, unsigned short iMesh) {
+void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
 
   su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
   unsigned long iEdge, iPoint, jPoint;
@@ -1375,22 +1376,26 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
     // evaluate the source term, use the growth rate stored in Primitive liquid, position 9
 	// then set it in the node primitive
 
+	//node[iNode]->SetDropletProp (Primitive_Liquid[1], FlowPrimVar_i[nDim + 2], Primitive_Liquid[9]);
+    if (Solution[0] != 0) {
+		R = Solution[1]/Solution[0];
 
-	node[iNode]->SetDropletProp (Primitive_Liquid[1], FlowPrimVar_i[nDim + 2], Primitive_Liquid[9]);
+		y = Solution[3]*(Primitive_Liquid[1] - FlowPrimVar_i[nDim + 2]);
+		y = y + 0.75 * FlowPrimVar_i[nDim + 2] / 3.14;
+		y = y*Primitive_Liquid[1] / y;
 
-	R = Solution[1]/Solution[0];
+		rho_m = y/ Primitive_Liquid[1] + (1.0 - y)/ FlowPrimVar_i[nDim + 2];
+		rho_m = 1.0/ rho_m;
 
-    y = Solution[3]*(Primitive_Liquid[1] - FlowPrimVar_i[nDim + 2]);
-    y = y + 0.75 * FlowPrimVar_i[nDim + 2] / 3.14;
-    y = y*Primitive_Liquid[1] / y;
-
-    rho_m = y/ Primitive_Liquid[1] + (1.0 - y)/ FlowPrimVar_i[nDim + 2];
-    rho_m = 1.0/ rho_m;
-
-    S = rho_m * 3 * y / R * Primitive_Liquid[9];
+		S = rho_m * 3 * y / R * Primitive_Liquid[9];
+    } else {
+    	R = 0; y = 0; rho_m = FlowPrimVar_i[nDim + 2]; S = 0;
+    }
 
 	node[iPoint]->SetMassSource(S);
 	node[iPoint]->SetLiquidEnthalpy(Primitive_Liquid[2]);
+	node[iPoint]->SetAverageRadius(R);
+    node[iPoint]->SetLiquidFraction(Primitive_Liquid[2]);
     
   }
   
@@ -1724,5 +1729,680 @@ void C2phase_HillSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   delete[] Normal;
   
 }
+
+
+
+
+C2phase_QMOMSolver::C2phase_QMOMSolver(void) : C2phaseSolver() {
+
+}
+
+C2phase_QMOMSolver::C2phase_QMOMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : C2phaseSolver() {
+  unsigned short iVar, iDim, nLineLets;
+  unsigned long iPoint;
+  ifstream restart_file;
+  string text_line;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Array initialization ---*/
+
+
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+
+  /*--- Dimension of the problem --> dependent on the 2phase model. ---*/
+
+  nVar = 4;
+  nPoint = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+
+  /*--- Initialize nVarGrad for deallocation ---*/
+
+  nVarGrad = nVar;
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nDim = geometry->GetnDim();
+  node = new CVariable*[nPoint];
+
+  /*--- Single grid simulation ---*/
+
+  if (iMesh == MESH_0) {
+
+    /*--- Define some auxiliary vector related with the residual ---*/
+
+    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
+    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
+    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
+    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max = new unsigned long[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+    Point_Max_Coord = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+    }
+
+    /*--- Define some auxiliary vector related with the solution ---*/
+
+    Solution = new su2double[nVar];
+    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
+
+
+    /*--- Define some auxiliary vectors related to the liquid phase ---*/
+
+    Primitive_Liquid = new su2double[10];
+
+    /*--- Define some auxiliary vector related with the geometry ---*/
+
+    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
+
+    /*--- Define some auxiliary vector related with the flow solution ---*/
+
+    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
+
+    /*--- Jacobians and vector structures for implicit computations ---*/
+
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
+    }
+
+    /*--- Initialization of the structure of the whole Jacobian ---*/
+
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  }
+
+  /*--- Computation of gradients by least squares ---*/
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+    Smatrix[iDim] = new su2double [nDim];
+    /*--- c vector := transpose(WA)*(Wb) ---*/
+    Cvector = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+    Cvector[iVar] = new su2double [nDim];
+  }
+
+
+  /*--- Initialize lower and upper limits---*/
+  lowerlimit = new su2double[nVar];
+  upperlimit = new su2double[nVar];
+
+  lowerlimit[0] = 1.0e-10;
+  upperlimit[0] = 1.0e10;
+
+  lowerlimit[1] = 1.0e-4;
+  upperlimit[1] = 1.0e15;
+
+  /*--- Far-field flow state quantities and initialization. ---*/
+  su2double RInf, NInf, DInf;
+
+  DInf    = config->GetDensity_FreeStreamND();
+  RInf    = 0;
+  NInf    = 0;
+
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new C2phase_HillVariable(RInf, NInf, DInf, config);
+
+  /*--- MPI solution ---*/
+  Set_MPI_Solution(geometry, config);
+
+}
+
+C2phase_QMOMSolver::~C2phase_QMOMSolver(void) {
+
+}
+
+void C2phase_QMOMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+
+  unsigned long iPoint;
+
+  unsigned long ExtIter      = config->GetExtIter();
+  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Initialize the residual vector ---*/
+
+    LinSysRes.SetBlock_Zero(iPoint);
+
+  }
+
+  /*--- Initialize the Jacobian matrices ---*/
+
+  Jacobian.SetValZero();
+
+  /*--- Upwind second order reconstruction ---*/
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+
+  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+
+  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+
+}
+
+void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short iMesh) {
+
+  su2double *Two_phase_i, *Two_phase_j, *Limiter_i = NULL, *Limiter_j = NULL, *V_i, *V_j, **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j;
+  unsigned long iEdge, iPoint, jPoint;
+  unsigned short iDim, iVar;
+
+  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
+  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
+  bool grid_movement = config->GetGrid_Movement();
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    /*--- Points in edge and normal vectors ---*/
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+
+    /*--- Primitive variables w/o reconstruction ---*/
+
+    V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+    V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+    numerics->SetPrimitive(V_i, V_j);
+
+    /*--- 2phase variables w/o reconstruction ---*/
+
+    Two_phase_i = node[iPoint]->GetSolution();
+    Two_phase_j = node[jPoint]->GetSolution();
+    numerics->Set2phaseVar(Two_phase_i, Two_phase_j);
+
+    /*--- Grid Movement ---*/
+
+    if (grid_movement)
+      numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
+
+    if (second_order) {
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+      }
+
+      /*--- Mean flow primitive variables using gradient reconstruction and limiters ---*/
+
+      Gradient_i = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
+      Gradient_j = solver_container[FLOW_SOL]->node[jPoint]->GetGradient_Primitive();
+      if (limiter) {
+        Limiter_i = solver_container[FLOW_SOL]->node[iPoint]->GetLimiter_Primitive();
+        Limiter_j = solver_container[FLOW_SOL]->node[jPoint]->GetLimiter_Primitive();
+      }
+
+      for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+        }
+        if (limiter) {
+          FlowPrimVar_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+          FlowPrimVar_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+        }
+        else {
+          FlowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
+          FlowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+        }
+      }
+
+      numerics->SetPrimitive(FlowPrimVar_i, FlowPrimVar_j);
+
+      /*--- Turbulent variables using gradient reconstruction and limiters ---*/
+
+      Gradient_i = node[iPoint]->GetGradient();
+      Gradient_j = node[jPoint]->GetGradient();
+      if (limiter) {
+        Limiter_i = node[iPoint]->GetLimiter();
+        Limiter_j = node[jPoint]->GetLimiter();
+      }
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim];
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim];
+        }
+        if (limiter) {
+          Solution_i[iVar] = Two_phase_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+          Solution_j[iVar] = Two_phase_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+        }
+        else {
+          Solution_i[iVar] = Two_phase_i[iVar] + Project_Grad_i;
+          Solution_j[iVar] = Two_phase_j[iVar] + Project_Grad_j;
+        }
+      }
+
+      numerics->Set2phaseVar(Solution_i, Solution_j);
+
+
+      /* liquid properties stored in Primitive_Liquid*/
+
+      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, liquid, config);
+      Primitive_Liquid = node[iPoint]->GetLiquidPrim();
+
+    }
+
+    /*--- Add and subtract residual ---*/
+
+    numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+    LinSysRes.AddBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(jPoint, Residual);
+
+    /*--- Implicit part ---*/
+
+    Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+    Jacobian.AddBlock(iPoint, jPoint, Jacobian_j);
+    Jacobian.SubtractBlock(jPoint, iPoint, Jacobian_i);
+    Jacobian.SubtractBlock(jPoint, jPoint, Jacobian_j);
+
+  }
+
+}
+
+void C2phase_QMOMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+
+  unsigned long iPoint, iNode, rho_m;
+  su2double R, S, y;
+
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  /*--- Compute mean flow and turbulence gradients ---*/
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
+    SetSolution_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
+    SetSolution_Gradient_LS(geometry, config);
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    // evaluate the source term, use the growth rate stored in Primitive liquid, position 9
+	// then set it in the node primitive
+
+
+	node[iNode]->SetDropletProp (Primitive_Liquid[1], FlowPrimVar_i[nDim + 2], Primitive_Liquid[9]);
+
+	R = Solution[1]/Solution[0];
+
+    y = Solution[3]*(Primitive_Liquid[1] - FlowPrimVar_i[nDim + 2]);
+    y = y + 0.75 * FlowPrimVar_i[nDim + 2] / 3.14;
+    y = y*Primitive_Liquid[1] / y;
+
+    rho_m = y/ Primitive_Liquid[1] + (1.0 - y)/ FlowPrimVar_i[nDim + 2];
+    rho_m = 1.0/ rho_m;
+
+    S = rho_m * 3 * y / R * Primitive_Liquid[9];
+
+	node[iPoint]->SetMassSource(S);
+	node[iPoint]->SetLiquidEnthalpy(Primitive_Liquid[2]);
+
+  }
+
+}
+
+void C2phase_QMOMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
+
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Conservative variables w/o reconstruction ---*/
+
+    numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
+
+
+    /*--- Set volume ---*/
+
+    numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+
+    /*--- Compute the source term ---*/
+
+    numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+
+    /*--- Subtract residual and the Jacobian ---*/
+
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+  }
+
+}
+
+
+void C2phase_QMOMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned long iPoint, iVertex, total_index;
+  unsigned short iDim, iVar;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+
+
+      /*--- Set the solution values and zero the residual ---*/
+      node[iPoint]->SetSolution_Old(Solution_j);
+      node[iPoint]->SetSolution(Solution_j);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+
+    }
+  }
+
+}
+
+void C2phase_QMOMSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                                        unsigned short val_marker) {
+
+  unsigned long iPoint, jPoint, iVertex, total_index;
+  unsigned short iDim, iVar;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Set the solution values and zero the residual ---*/
+      node[iPoint]->SetSolution_Old(Solution_j);
+      node[iPoint]->SetSolution(Solution_j);
+      LinSysRes.SetBlock_Zero(iPoint);
+
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        total_index = iPoint*nVar+iVar;
+        Jacobian.DeleteValsRowi(total_index);
+      }
+
+    }
+  }
+
+}
+
+void C2phase_QMOMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned long iPoint, iVertex;
+  su2double *Normal, *V_infty, *V_domain;
+  unsigned short iVar, iDim;
+
+  bool grid_movement = config->GetGrid_Movement();
+
+  Normal = new su2double[nDim];
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Allocate the value at the infinity ---*/
+
+      V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+      conv_numerics->SetPrimitive(V_domain, V_infty);
+
+      /*--- Set turbulent variable at the wall, and at infinity ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++)
+      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+      Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
+
+
+      conv_numerics->Set2phaseVar(Solution_i, Solution_j);
+
+      /*--- Set Normal (it is necessary to change the sign) ---*/
+
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      /*--- Grid Movement ---*/
+
+      if (grid_movement)
+      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute residuals and Jacobians ---*/
+
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Add residuals and Jacobians ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  delete [] Normal;
+
+}
+
+void C2phase_QMOMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                              unsigned short val_marker) {
+
+  unsigned short iVar, iDim;
+  unsigned long iVertex, iPoint, Point_Normal;
+  su2double *V_inlet, *V_domain, *Normal;
+
+  Normal = new su2double[nDim];
+
+  bool grid_movement  = config->GetGrid_Movement();
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+
+      /*--- Allocate the value at the inlet ---*/
+      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+      /*--- Set various quantities in the solver class ---*/
+      conv_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Set the turbulent variable states. Use free-stream SST
+       values for the turbulent state at the inflow. ---*/
+      for (iVar = 0; iVar < nVar; iVar++)
+      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+
+      Solution_j[0]= 0;
+      Solution_j[1]= 0;
+      Solution_j[2]= 0;
+      Solution_j[3]= 0;
+
+      conv_numerics->Set2phaseVar(Solution_i, Solution_j);
+
+      /*--- Set various other quantities in the solver class ---*/
+      conv_numerics->SetNormal(Normal);
+
+      if (grid_movement)
+      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute the residual using an upwind scheme ---*/
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Viscous contribution ---*/
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+      visc_numerics->SetPrimitive(V_domain, V_inlet);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      visc_numerics->Set2phaseVar(Solution_i, Solution_j);
+      visc_numerics->Set2phaseVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+      /*--- Menter's first blending function ---*/
+      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+
+      /*--- Compute residual, and Jacobians ---*/
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete[] Normal;
+
+}
+
+void C2phase_QMOMSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+
+  unsigned long iPoint, iVertex, Point_Normal;
+  unsigned short iVar, iDim;
+  su2double *V_outlet, *V_domain, *Normal;
+
+  bool grid_movement  = config->GetGrid_Movement();
+
+  Normal = new su2double[nDim];
+
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      /*--- Allocate the value at the outlet ---*/
+      V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+      /*--- Retrieve solution at the farfield boundary node ---*/
+      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
+
+      /*--- Set various quantities in the solver class ---*/
+      conv_numerics->SetPrimitive(V_domain, V_outlet);
+
+      /*--- Set the turbulent variables. Here we use a Neumann BC such
+       that the turbulent variable is copied from the interior of the
+       domain to the outlet before computing the residual.
+       Solution_i --> TurbVar_internal,
+       Solution_j --> TurbVar_outlet ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+        Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
+      }
+      conv_numerics->Set2phaseVar(Solution_i, Solution_j);
+
+      /*--- Set Normal (negate for outward convention) ---*/
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      if (grid_movement)
+      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute the residual using an upwind scheme ---*/
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Jacobian contribution for implicit integration ---*/
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      /*--- Viscous contribution ---*/
+      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      visc_numerics->SetNormal(Normal);
+
+      /*--- Conservative variables w/o reconstruction ---*/
+      visc_numerics->SetPrimitive(V_domain, V_outlet);
+
+      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      visc_numerics->Set2phaseVar(Solution_i, Solution_j);
+      visc_numerics->Set2phaseVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+
+      /*--- Menter's first blending function ---*/
+      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+
+      /*--- Compute residual, and Jacobians ---*/
+      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+      /*--- Subtract residual, and update Jacobians ---*/
+      LinSysRes.SubtractBlock(iPoint, Residual);
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+  delete[] Normal;
+
+}
+
 
 

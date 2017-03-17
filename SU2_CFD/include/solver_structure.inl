@@ -1916,6 +1916,7 @@ inline void C2phase_HillSolver::SetFreeStream_Solution(CConfig *config){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->SetSolution(0, 0);
     node[iPoint]->SetSolution(1, 0);
+    
   }
 }
 

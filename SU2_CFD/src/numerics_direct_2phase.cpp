@@ -135,13 +135,13 @@ void  CUpw_2phaseHill::ComputeResidual_2phase(su2double *Primitive, su2double *R
 	    }
 	  }
 
-	Residual[0] = Primitive[sizeof Primitive -2] * Volume;
+	Residual[0] = Primitive[sizeof Primitive -4] * Volume;
 
 	for (iDim=0; iDim< nDim; iDim++) {
-		Residual  [iDim+1] = Primitive[sizeof Primitive-2] * Primitive[iDim + 1] * Volume;
+		Residual  [iDim+1] = Primitive[sizeof Primitive-4] * Primitive[iDim + 1] * Volume;
 	}
 
-	Residual[nDim] = Primitive[sizeof Primitive-2] * (Primitive[sizeof Primitive-1] + 0.5*q_ij) * Volume;
+	Residual[nDim] = Primitive[sizeof Primitive-4] * (Primitive[sizeof Primitive-3] + 0.5*q_ij) * Volume;
 
 	for (iVar=0; iVar< nVar; iVar++) {
 		for (iVar=0; iVar< nVar; iVar++) {
@@ -153,3 +153,38 @@ void  CUpw_2phaseHill::ComputeResidual_2phase(su2double *Primitive, su2double *R
 
 void CUpw_2phaseHill::ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config) {
 }
+
+
+
+
+
+CUpw_2phaseQMOM::CUpw_2phaseQMOM(unsigned short val_nDim, unsigned short val_nVar,
+                                 CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  implicit        = (config->GetKind_TimeIntScheme_2phase() == EULER_IMPLICIT);
+  incompressible  = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  grid_movement   = config->GetGrid_Movement();
+
+  Velocity_i = new su2double [nDim];
+  Velocity_j = new su2double [nDim];
+
+}
+
+CUpw_2phaseQMOM::~CUpw_2phaseQMOM(void) {
+
+  delete [] Velocity_i;
+  delete [] Velocity_j;
+
+}
+
+void CUpw_2phaseQMOM::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+}
+
+void  CUpw_2phaseQMOM::ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {
+}
+
+void CUpw_2phaseQMOM::ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config) {
+}
+
+
+

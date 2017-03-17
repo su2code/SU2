@@ -758,6 +758,22 @@ inline void CEulerVariable::SetThermalConductivity(su2double thermalConductivity
   Primitive[nDim+7] = thermalConductivity;
 }
 
+inline void CEulerVariable::SetMassSource(su2double S) {
+  Primitive[sizeof Primitive - 4] = S;
+}
+
+inline void CEulerVariable::SetLiquidEnthalpy(su2double h) {
+  Primitive[sizeof Primitive - 3] = h;
+}
+
+inline void CEulerVariable::SetAverageRadius(su2double R) {
+  Primitive[sizeof Primitive - 2] = R;
+}
+
+inline void CEulerVariable::SetLiquidFraction(su2double Y) {
+  Primitive[sizeof Primitive - 1] = Y;
+}
+
 inline su2double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
 
 inline su2double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5]; }
@@ -1155,6 +1171,14 @@ inline  void      C2phaseVariable::SetMassSource(su2double S)     ;
 inline  su2double C2phaseVariable::GetLiquidEnthalpy()           ;
 
 inline  void      C2phaseVariable::SetLiquidEnthalpy(su2double h) ;
+
+inline  su2double C2phaseVariable::GetAverageRadius()               ;
+
+inline  void      C2phaseVariable::SetAverageRadius(su2double R)     ;
+
+inline  su2double C2phaseVariable::GetLiquidFraction()           ;
+
+inline  void      C2phaseVariable::SetLiquidFraction(su2double Y) ;
 
 
 

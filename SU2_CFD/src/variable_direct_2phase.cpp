@@ -36,6 +36,7 @@
 C2phaseVariable::C2phaseVariable(void) : CVariable() {
 
 	Source = 0; Enthalpy_Liquid = 0;
+	Radius = 0; Liquid_Fraction = 0;
 
 }
 
@@ -66,6 +67,14 @@ void      C2phaseVariable::SetMassSource(su2double S)     {Source = S; };
 su2double C2phaseVariable::GetLiquidEnthalpy( )           { return Enthalpy_Liquid; };
 
 void      C2phaseVariable::SetLiquidEnthalpy(su2double h) {Enthalpy_Liquid = h; };
+
+su2double C2phaseVariable::GetAverageRadius( )               { return Radius; };
+
+void      C2phaseVariable::SetAverageRadius(su2double R)     {Radius = R; };
+
+su2double C2phaseVariable::GetLiquidFraction( )           { return Liquid_Fraction; };
+
+void      C2phaseVariable::SetLiquidFraction(su2double Y) {Liquid_Fraction = Y; };
 
 
 C2phaseVariable::~C2phaseVariable(void) { }

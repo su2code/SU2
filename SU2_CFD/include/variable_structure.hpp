@@ -2058,6 +2058,14 @@ public:
 
   void      SetLiquidEnthalpy(su2double h);
 
+  su2double GetAverageRadius( )          ;
+
+  void      SetAverageRadius(su2double R);
+
+  su2double GetLiquidFraction( )         ;
+
+  void      SetLiquidFraction(su2double Y);
+
 
 };
 
@@ -3686,7 +3694,7 @@ public:
 class C2phaseVariable : public CVariable {
 protected:
 
-	su2double Source, Enthalpy_Liquid;
+	su2double Source, Enthalpy_Liquid, Radius, Liquid_Fraction;
 
 public:
   /*!
@@ -3715,6 +3723,14 @@ public:
   su2double GetLiquidEnthalpy( )           ;
 
   void      SetLiquidEnthalpy(su2double h) ;
+
+  su2double GetAverageRadius( )            ;
+
+  void      SetAverageRadius(su2double R)  ;
+
+  su2double GetLiquidFraction( )           ;
+
+  void      SetLiquidFraction(su2double Y) ;
 
 };
 

@@ -2344,6 +2344,66 @@ public:
 
 };
 
+
+/*!
+ * \class CUpw_2phaseQMOM
+ * \brief Class for doing a scalar upwind solver for the hill's 2phase model equations.
+ */
+class CUpw_2phaseQMOM : public CNumerics {
+private:
+  su2double *Velocity_i, *Velocity_j;
+  bool implicit, grid_movement, incompressible;
+  su2double Density_i, Density_j,
+  q_ij,
+  a0, a1;
+  unsigned short iDim;
+
+
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpw_2phaseQMOM(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpw_2phaseQMOM(void);
+
+
+  // routines from CNucleationModel
+
+  su2double  GetNucleationRate ();
+
+  su2double  GetGrowthRate ();
+
+  su2double  GetCriticalRadius ();
+
+  void  SetNucleationRate (su2double V_i, su2double V_Liquid);
+
+  void  SetGrowthRate (su2double V_i, su2double V_Liquid);
+
+
+  /*!
+   * \brief Compute the scalar upwind flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+
+  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config);
+
+};
+
 /*!
  * \class CCentJST_Flow
  * \brief Class for centered shceme - JST.
