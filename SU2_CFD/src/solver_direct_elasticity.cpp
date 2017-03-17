@@ -5411,14 +5411,21 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   else
   {
 
-    // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
-    if (!fsi){
+      // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
+   if (rank == MASTER_NODE){
       cout << "Objective function: " << Total_OFRefGeom << "." << endl;
       ofstream myfile_res;
       myfile_res.open ("of_refgeom.dat");
       myfile_res.precision(15);
       myfile_res << scientific << Total_OFRefGeom << endl;
       myfile_res.close();
+      if (fsi){
+          ofstream myfile_his;
+          myfile_his.open ("history_refgeom.dat",ios::app);
+          myfile_his.precision(15);
+          myfile_his << scientific << Total_OFRefGeom << endl;
+          myfile_his.close();
+      }
     }
 
   }
