@@ -7024,153 +7024,155 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix){
   for (iControl = 0; iControl < lControl; iControl++){
     for (jControl = 0; jControl < mControl; jControl++){
       for (kControl = 0; kControl < nControl; kControl++){
-        Index_ijk   = iControl*mControl*nControl + jControl*nControl + kControl;
-        Index_ip1jk = (iControl+1)*mControl*nControl + jControl*nControl + kControl;
-        Index_im1jk = (iControl-1)*mControl*nControl + jControl*nControl + kControl;
-        Index_ijp1k = iControl*mControl*nControl + (jControl+1)*nControl + kControl;
-        Index_ijm1k = iControl*mControl*nControl + (jControl-1)*nControl + kControl;
-        Index_ijkp1 = iControl*mControl*nControl + jControl*nControl + kControl + 1;
-        Index_ijkm1 = iControl*mControl*nControl + jControl*nControl + kControl - 1;
+        for (iDim = 0; iDim < nDim; iDim++){
+          Index_ijk   = iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim+iDim;
+          Index_ip1jk = (iControl+1)*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim+iDim;
+          Index_im1jk = (iControl-1)*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim+iDim;
+          Index_ijp1k = iControl*mControl*nControl*nDim + (jControl+1)*nControl*nDim + kControl*nDim+iDim;
+          Index_ijm1k = iControl*mControl*nControl*nDim + (jControl-1)*nControl*nDim + kControl*nDim+iDim;
+          Index_ijkp1 = iControl*mControl*nControl*nDim + jControl*nControl*nDim + (kControl + 1)*nDim+iDim;
+          Index_ijkm1 = iControl*mControl*nControl*nDim + jControl*nControl*nDim + (kControl - 1)*nDim+iDim;
 
-        StencilMatrix(Index_ijk, Index_ijk) = -1.0;
+          StencilMatrix(Index_ijk, Index_ijk) = -1.0;
 
-        if ((iControl == 0) && (jControl == 0) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
-        }
-        else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
-        }
-        else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
-        }
-        else if ((iControl == 0) && (jControl ==  0) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
-        }
-        else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
-        }
-        else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
-        }
-        else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
-        }
-        else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
-        }
-        else if ((iControl == lControl -1) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
-        }
-        else if ((jControl == mControl -1) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
-        }
-        else if ((iControl == lControl -1) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-        }
-        else if ((jControl == mControl -1) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-        }
-        else if ((iControl == 0) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
-        }
-        else if ((jControl == 0) && (kControl == 0)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
-        }
-        else if ((iControl == 0) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-        }
-        else if ((jControl == 0) && (kControl == nControl - 1)){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
-        }
-        else if(iControl == 0){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
-        }
-        else if(iControl == lControl - 1){
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
-        }
-        else if(jControl == 0){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
-        }
-        else if(jControl == mControl - 1){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
-        }
-        else if(kControl == 0){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
-        }
-        else if(kControl == nControl - 1){
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
-        }
-        else {
-          StencilMatrix(Index_ijk, Index_ip1jk) = OneSix;
-          StencilMatrix(Index_ijk, Index_im1jk) = OneSix;
-          StencilMatrix(Index_ijk, Index_ijp1k) = OneSix;
-          StencilMatrix(Index_ijk, Index_ijm1k) = OneSix;
-          StencilMatrix(Index_ijk, Index_ijkp1) = OneSix;
-          StencilMatrix(Index_ijk, Index_ijkm1) = OneSix;
+          if ((iControl == 0) && (jControl == 0) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+          }
+          else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+          }
+          else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+          }
+          else if ((iControl == 0) && (jControl ==  0) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+          }
+          else if ((iControl == 0) && (jControl ==  mControl - 1) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+          }
+          else if ((iControl == lControl - 1) && (jControl == 0) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+          }
+          else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneThird;
+          }
+          else if ((iControl == lControl - 1) && (jControl == mControl - 1) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneThird;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneThird;
+          }
+          else if ((iControl == lControl -1) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((jControl == mControl -1) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((iControl == lControl -1) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+          }
+          else if ((jControl == mControl -1) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+          }
+          else if ((iControl == 0) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((jControl == 0) && (kControl == 0)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFourth;
+          }
+          else if ((iControl == 0) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+          }
+          else if ((jControl == 0) && (kControl == nControl - 1)){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFourth;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFourth;
+          }
+          else if(iControl == 0){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+          }
+          else if(iControl == lControl - 1){
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+          }
+          else if(jControl == 0){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+          }
+          else if(jControl == mControl - 1){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+          }
+          else if(kControl == 0){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneFive;
+          }
+          else if(kControl == nControl - 1){
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_im1jk) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneFive;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneFive;
+          }
+          else {
+            StencilMatrix(Index_ijk, Index_ip1jk) = OneSix;
+            StencilMatrix(Index_ijk, Index_im1jk) = OneSix;
+            StencilMatrix(Index_ijk, Index_ijp1k) = OneSix;
+            StencilMatrix(Index_ijk, Index_ijm1k) = OneSix;
+            StencilMatrix(Index_ijk, Index_ijkp1) = OneSix;
+            StencilMatrix(Index_ijk, Index_ijkm1) = OneSix;
+          }
         }
       }
     }
