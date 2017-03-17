@@ -98,28 +98,6 @@ class physics(object):
 
         return restarts, solutions
 
-    def get_direct_files(self):
-
-        restarts = self.files['RESTART_DIRECT']
-        solutions = self.files['DIRECT']
-
-        if self.timeDomain:
-            n_time = self.nTime
-            restarts = []
-            solutions = []
-            for j in range(0,len(restarts)):
-                # Add suffix to restart and solution files
-                restart_pat = add_suffix(restarts[j], '%05d')
-                solution_pat = add_suffix(solutions[j], '%05d')
-                # Append indices corresponding to time instances
-                res  = [restart_pat % i for i in range(n_time)]
-                sols = [solution_pat % i for i in range(n_time)]
-                # Append to final restart and solution vectors
-                restarts.append(res)
-                sols.append(sols)
-
-        return restarts, solutions
-
     def get_adjoint_files(self, suffix):
 
         restarts = self.files['RESTART_ADJOINT']

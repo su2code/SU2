@@ -84,8 +84,9 @@ def adjoint( problem ):
     SU2_CFD(konfig)
     
     # merge
-    problem.physics.merge_solution(konfig)
-    su2merge(konfig)
+# TODO: fix merge for structural adjoint
+#    problem.physics.merge_solution(konfig)
+#    su2merge(konfig)
     
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']

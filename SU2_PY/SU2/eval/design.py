@@ -96,7 +96,8 @@ class Design(object):
         config = problem.config
         state  = copy.deepcopy(state)
         state  = su2io.State(state)
-        state.find_files(problem.physics)
+        # At the design level, we need to add the files that contain the design variables
+        state.find_files(problem.physics, problem.DV_KIND)
 
         self.problem= problem
         self.config = config
@@ -128,10 +129,6 @@ class Design(object):
         folder = self.folder
         
         filename = self.filename
-
-        # TODO: hack here to test while I update the way of reading in the info into SU2
-        x = problem.pack_new_dvs()
-        config['ELASTICITY_MODULUS'] = x[0]
 
         # Sends files from base folder (or from previous design) into ./DESIGNS/DSN_003
 

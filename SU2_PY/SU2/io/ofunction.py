@@ -172,11 +172,12 @@ class of_fea(ofunction):
         # Read config
         config = problem.config
 
-        plot_format = config['OUTPUT_FORMAT']
-        plot_extension = get_extension(plot_format)
-        history_filename = config['CONV_FILENAME'] + plot_extension
-        history = read_history(history_filename)
-        state.HISTORY.DIRECT = history
+#        plot_format = config['OUTPUT_FORMAT']
+#        plot_extension = get_extension(plot_format)
+#        history_filename = config['CONV_FILENAME'] + plot_extension
+# TODO: fix history to read from multicore FEA
+#        history = read_history(history_filename)
+#        state.HISTORY.DIRECT = history
 
         state.FILES.DIRECT = problem.physics.files['DIRECT']
         # TODO: add loop for multiphysics

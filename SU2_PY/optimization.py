@@ -133,6 +133,7 @@ def optimization(filename,
     # State
     state = SU2.io.State()
     physics = SU2.io.read_physics(problem.config, problem.OBJECTIVE_FUNCTION)
+    #print problem.DV_KIND
     state.find_files(physics)
 
     # Project

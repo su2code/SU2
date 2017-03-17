@@ -216,7 +216,7 @@ class State(ordered_bunch):
             vector.extend(value)
         return vector
     
-    def find_files(self, phys):
+    def find_files(self, phys, dvs={}):
         """ SU2.io.State.find_files(problem)
             finds mesh and solution files for a given physical problem.
             updates state.FILES with filenames.
@@ -272,6 +272,11 @@ class State(ordered_bunch):
                 pass
             else:
                 register_file(key, phys.files[key])
+
+        # Inside the design, dvs is passed. We need to add the files to the state to pass them within the design
+        for key in dvs:
+            DV_LABEL = 'DV_' + key
+            register_file(DV_LABEL, dvs[key]._filename)
         
         return
     
