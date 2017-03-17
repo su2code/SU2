@@ -2691,6 +2691,17 @@ void CDriver::Output(unsigned long ExtIter) {
 
 CDriver::~CDriver(void) {}
 
+CConfig* CDriver::GetConfiguration(unsigned short val_iZone){
+
+  return config_container[val_iZone];
+
+}
+
+CGeometry *CDriver::GetGeometry(unsigned short val_iZone, unsigned short val_iMesh){
+
+  return geometry_container[val_iZone][val_iMesh];
+}
+
 su2double CDriver::Get_Drag() {
 
   unsigned short val_iZone = ZONE_0;
@@ -3156,6 +3167,96 @@ su2double CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short iVer
 
 }
 
+vector<string> CDriver::GetAllBoundaryMarkersTag(){
+
+  vector<string> boundariesTagList;
+  unsigned short iMarker,nBoundariesMarkers;
+  string Marker_Tag;
+
+  nBoundariesMarkers = config_container[ZONE_0]->GetnMarker_All();
+  boundariesTagList.resize(nBoundariesMarkers);
+
+  for(iMarker=0; iMarker < nBoundariesMarkers; iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+    boundariesTagList[iMarker] = Marker_Tag;
+  }
+
+  return boundariesTagList;
+}
+
+vector<string> CDriver::GetAllMovingMarkersTag(){
+
+  vector<string> movingBoundariesTagList;
+  unsigned short iMarker, nBoundariesMarker;
+  string Marker_Tag;
+
+  nBoundariesMarker = config_container[ZONE_0]->GetnMarker_Moving();
+  movingBoundariesTagList.resize(nBoundariesMarker);
+
+  for(iMarker=0; iMarker < nBoundariesMarker; iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_Moving_TagBound(iMarker);
+    movingBoundariesTagList[iMarker] = Marker_Tag;
+  }
+
+  return movingBoundariesTagList;
+}
+
+map<string, int> CDriver::GetAllBoundaryMarkers(){
+
+  map<string, int>  allBoundariesMap;
+  unsigned short iMarker, nBoundaryMarkers;
+  string Marker_Tag;
+
+  nBoundaryMarkers = config_container[ZONE_0]->GetnMarker_All();
+
+  for(iMarker=0; iMarker < nBoundaryMarkers; iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+    allBoundariesMap[Marker_Tag] = iMarker;
+  }
+
+  return allBoundariesMap;
+}
+
+map<string, string> CDriver::GetAllBoundaryMarkersType(){
+
+  map<string, string> allBoundariesTypeMap;
+  unsigned short iMarker, KindBC;
+  string Marker_Tag, Marker_Type;
+
+  for(iMarker=0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++){
+    Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
+    KindBC = config_container[ZONE_0]->GetMarker_All_KindBC(iMarker);
+    switch(KindBC){
+      case EULER_WALL:
+        Marker_Type = "EULER_WALL";
+        break;
+      case FAR_FIELD:
+        Marker_Type = "FARFIELD";
+        break;
+      case ISOTHERMAL:
+        Marker_Type = "ISOTHERMAL";
+        break;
+      case HEAT_FLUX:
+        Marker_Type = "HEATFLUX";
+        break;
+      case INLET_FLOW:
+        Marker_Type = "INLET_FLOW";
+        break;
+      case OUTLET_FLOW:
+        Marker_Type = "OUTLET_FLOW";
+        break;
+      case SYMMETRY_PLANE:
+        Marker_Type = "SYMMETRY";
+        break;
+      default:
+        Marker_Type = "UNKNOWN_TYPE";
+    }
+    allBoundariesTypeMap[Marker_Tag] = Marker_Type;
+  }
+
+  return allBoundariesTypeMap;
+}
+
 CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
                                unsigned short val_nDim, 
                                SU2_Comm MPICommunicator) : CDriver(confFile,
@@ -3336,7 +3437,6 @@ void CFluidDriver::Run() {
 
     for (iZone = 0; iZone < nZone; iZone++) {
       config_container[iZone]->SetIntIter(IntIter);
-
       iteration_container[iZone]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
     }
 
