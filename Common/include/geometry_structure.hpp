@@ -932,6 +932,8 @@ public:
    * \param config - Config
    */
   virtual void Check_Periodicity(CConfig *config);
+
+  void SetImposedVelocity(unsigned short val_marker, unsigned long iVertex, su2double val_vx, su2double val_vy, su2double val_vz);
   
 };
 

@@ -171,6 +171,7 @@ private:
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
+  su2double *ImposedVelocity;
 
 public:
 	
@@ -736,6 +737,12 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	void AddNormal(su2double *val_face_normal);
+
+        su2double* GetImposedVelocity(void);
+
+        void SetImposedVelocity(su2double* val_imposedvelocity);
+
+        void SetImposedVelocity(su2double val_vx, su2double val_vy, su2double val_vz);
 };
 
 /*! 
