@@ -297,7 +297,7 @@ void CConfig::SetPointersNull(void) {
   
   Marker_DV                   = NULL;   Marker_Moving            = NULL;    Marker_Monitoring = NULL;
   Marker_Designing            = NULL;   Marker_GeoEval           = NULL;    Marker_Plotting   = NULL;
-  Marker_Analyze              = NULL;
+  Marker_Analyze              = NULL;   Marker_All_BCCustom      = NULL;
   Marker_CfgFile_KindBC       = NULL;   Marker_All_KindBC        = NULL;
   
   /*--- Marker Pointers ---*/
@@ -3153,6 +3153,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Moving         = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
   Marker_All_PerBound       = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
   Marker_All_Out_1D         = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_BCCustom       = new unsigned short[nMarker_All];
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
     Marker_All_TagBound[iMarker_All]      = "SEND_RECEIVE";
@@ -3168,6 +3169,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_Moving[iMarker_All]        = 0;
     Marker_All_PerBound[iMarker_All]      = 0;
     Marker_All_Out_1D[iMarker_All]        = 0;
+    Marker_All_BCCustom[iMarker_All]      = 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
@@ -5274,6 +5276,7 @@ CConfig::~CConfig(void) {
   
   if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
   if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+  if (Marker_All_BCCustom   != NULL) delete[] Marker_All_BCCustom;
   
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
   if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;

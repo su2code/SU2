@@ -563,6 +563,7 @@ private:
   *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
+  *Marker_All_BCCustom,
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
   *Marker_All_Out_1D,      /*!< \brief Global index for moving using 1D integrated output. */
   *Marker_CfgFile_Monitoring,     /*!< \brief Global index for monitoring using the config information. */
@@ -2735,6 +2736,8 @@ public:
    * \param[in] val_moving - 0 or 1 depending if the the marker is going to be moved.
    */
   void SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving);
+
+  void SetMarker_All_BCCustom(unsigned short val_marker, unsigned short val_custom);
   
   /*!
    * \brief Set if a marker <i>val_marker</i> is going to be periodic <i>val_perbound</i>
@@ -2829,6 +2832,8 @@ public:
    * \return 0 or 1 depending if the marker is going to be moved.
    */
   unsigned short GetMarker_All_Moving(unsigned short val_marker);
+
+  unsigned short GetMarker_All_BCCustom(unsigned short val_marker);
   
   /*!
    * \brief Get the airfoil sections in the slicing process.
