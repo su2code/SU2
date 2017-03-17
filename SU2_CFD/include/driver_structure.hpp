@@ -271,6 +271,10 @@ public:
    */
   virtual void SetInitialMesh() { };
 
+  CConfig* GetConfiguration(unsigned short val_iZone);
+
+  CGeometry* GetGeometry(unsigned short val_iZone, unsigned short val_iMesh);
+
   /*!
    * \brief Get the total drag.
    * \return Total drag.
@@ -466,6 +470,14 @@ public:
    * \return Norm of the VarCoord.
    */
   su2double SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex);
+
+  vector<string> GetAllBoundaryMarkersTag();
+
+  vector<string> GetAllMovingMarkersTag();
+
+  map<string, int> GetAllBoundaryMarkers();
+
+  map<string, string> GetAllBoundaryMarkersType();
 
 };
 
