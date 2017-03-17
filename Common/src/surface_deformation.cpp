@@ -2103,22 +2103,17 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   unsigned short iControl, jControl, kControl, iGroup, index[3], iDV, iConstraint;
   const unsigned short lControl = FFDBox->BlendingFunction[0]->GetnControl();
   const unsigned short mControl = FFDBox->BlendingFunction[1]->GetnControl();
-  unsigned short nControl = FFDBox->BlendingFunction[2]->GetnControl();
+  const unsigned short nControl = FFDBox->BlendingFunction[2]->GetnControl();
 
   unsigned long nParameter = 0, displ = 0;
   const unsigned short nGroup = FFDBox->PilotGroupNames.size();
-  const unsigned short nDim = geometry->GetnDim();
+  const unsigned short nDim = 3;
   const unsigned short nConstraints = config->GetnFFD_ConstraintGroups();
   su2double Movement[] = {0.0,0.0,0.0};
   bool* GroupActive;
   GroupActive = new bool[nGroup];
 
-  if (nDim == 2){
-    nControl = 1;
-  }
-
   const unsigned short TotalControl = lControl*mControl*nControl*nDim;
-
 
   int rank = MASTER_NODE;
 
@@ -2161,6 +2156,7 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
   SystemRHS       = EigenVector::Zero(TotalControl + nParameter*nDim);
   SystemSol       = EigenVector::Zero(TotalControl + nParameter*nDim);
   ParameterValues = EigenVector::Zero(nParameter*nDim);
+  ConstraintMatrix = EigenMatrix::Zero(nParameter*nDim , TotalControl);
   /*--- Loop through all groups of this ffd box ---*/
 
   displ = 0;
@@ -2183,19 +2179,24 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
       ConstraintMatrix.block(displ, 0, Block.rows(), Block.cols()) = Block;
 
+
       displ += Block.rows();
     }
   }
 
-//  if (nDim  == 2){
-//    FFDBox->GetLaplacianEnergyMatrix2D(EnergyMatrix);
-//  } else {
-//    FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
-//  }
   FFDBox->SetStiffnessMatrix(EnergyMatrix, config, geometry);
-  SystemMatrix.block(0, 0, TotalControl, TotalControl)          = EnergyMatrix;
-  SystemMatrix.block(0, TotalControl, TotalControl, nParameter*nDim) = ConstraintMatrix.transpose();
+//    FFDBox->GetLaplacianEnergyMatrix3D(EnergyMatrix);
+//  EnergyMatrix = EigenMatrix::Identity(TotalControl, TotalControl);
+
+  /* Set up the KKT system matrix --- */
+
+  SystemMatrix.block(0, 0, TotalControl, TotalControl)               = EnergyMatrix;
+  SystemMatrix.block(0, TotalControl, TotalControl, nParameter*nDim) = -ConstraintMatrix.transpose();
   SystemMatrix.block(TotalControl, 0, nParameter*nDim, TotalControl) = ConstraintMatrix;
+
+  /* Set up the KKT right-hand side--- */
+
+  SystemRHS.block(TotalControl, 0, nParameter*nDim, 1) = ParameterValues;
 
   if (nGroup > 0){
     
@@ -2205,37 +2206,19 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
 
     QRSystemMatrix = SystemMatrix.fullPivHouseholderQr();
 
-
-    SystemRHS.block(TotalControl, 0, nParameter*nDim, 1) = ParameterValues;
     SystemSol = QRSystemMatrix.solve(SystemRHS);
     ControlPointPositions = SystemSol.block(0, 0, TotalControl, 1);
 
-
-//    if (rank == MASTER_NODE){
-//      cout << "Laplacian Energy: ( "
-//           << ControlPointPositionsX.transpose()*EnergyMatrix*ControlPointPositionsX << ", "
-//           << ControlPointPositionsY.transpose()*EnergyMatrix*ControlPointPositionsY;
-//      if (nDim == 3){
-//        cout << ", " << ControlPointPositionsZ.transpose()*EnergyMatrix*ControlPointPositionsZ;
-//      }
-//      cout << " )." << endl;
-//    }
-
-//      cout << "Control Point Movement:             ( "
-//        << ControlPointPositionsX.norm() << ", "
-//        << ControlPointPositionsY.norm();
-//      if (nDim == 3){
-//        cout << ", " << ControlPointPositionsZ.norm();
-//      }
-//      cout << " )" << endl;
-
+    if (rank == MASTER_NODE){
+      cout << "Quadratic Energy: "<< ControlPointPositions.transpose()*EnergyMatrix*ControlPointPositions <<endl;
+    }
 
     for (iControl = 0; iControl < lControl; iControl++){
       for (jControl = 0; jControl < mControl; jControl++){
         for (kControl = 0; kControl < nControl; kControl++){
-          Movement[0] = ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 0);
-          Movement[1] = ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 1);
-          Movement[2] = ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 2);
+          Movement[0] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 0);
+          Movement[1] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 1);
+          Movement[2] =  ControlPointPositions(iControl*mControl*nControl*nDim + jControl*nControl*nDim + kControl*nDim + 2);
           index[0] = iControl; index[1] = jControl; index[2] = kControl;
           FFDBox->SetControlPoints(index, Movement);
         }
@@ -6041,7 +6024,7 @@ void CFreeFormDefBox::SetTecplot(CGeometry *geometry, unsigned short iFFDBox, bo
   bool new_file;
   unsigned short iDim, iDegree, jDegree, kDegree;
 
-  nDim = geometry->GetnDim();
+  unsigned short nDim = geometry->GetnDim();
 
   SPRINTF (FFDBox_filename, "ffd_boxes.dat");
 
@@ -6095,7 +6078,7 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   bool new_file;
   unsigned short iDim, iDegree, jDegree, kDegree;
 
-  nDim = geometry->GetnDim();
+  unsigned short nDim = geometry->GetnDim();
 
   if ((original) && (iFFDBox == 0)) new_file = true;
   else new_file = false;
@@ -6621,10 +6604,8 @@ void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned 
   su2double Bijk = 0;
   const unsigned short lControl = BlendingFunction[0]->GetnControl();
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
-  unsigned short nControl = BlendingFunction[2]->GetnControl();
-  if (nDim == 2){
-    nControl = 1;
-  }
+  const unsigned short nControl = BlendingFunction[2]->GetnControl();
+
   unsigned short iControl, jControl, kControl = 0;
   const unsigned short TotalControl = lControl*mControl*nControl*nDim;
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
@@ -6640,6 +6621,7 @@ void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned 
   /* --- Initialize the projection matrix with zeros --- */
 
   ProjectionMatrix = EigenMatrix::Zero(nParameters*nDim, nPilotPoints*nDim);
+  BlendingMatrix   = EigenMatrix::Zero(nPilotPoints*nDim, TotalControl);
 
   /*--- Loop through all pilot points of the group --- */
 
@@ -6740,7 +6722,7 @@ void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned 
   unsigned short iDim, jDim;
 
   SystemMatrix.resize(nPilotPoints*nDim, TotalControl);
-
+  SystemMatrix = EigenMatrix::Zero(nPilotPoints*nDim, TotalControl);
   /*--- Loop through all pilot points of the group --- */
 
   for (iPilotPoint = 0; iPilotPoint < nPilotPoints; iPilotPoint++){
@@ -6874,21 +6856,27 @@ void CFreeFormDefBox::SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, C
 
   unsigned long iVertex, iPoint, iSurfacePoints;
   unsigned short iMarker, iDim;
+  unsigned short iOrder, jOrder, kOrder;
+  unsigned short iControl, jControl, kControl;
 
-  su2double *ParamCoord, Area = 0, *Normal;
+  su2double *ParamCoord, ParamCoordGuess[] = {0.5, 0.5, 0.5}, Area = 0, *Normal;
 
+  su2double *Coord;
   EigenMatrix LocalStiffness(6, TotalControl*nDim);
   EigenMatrix ConstitutiveMatrix(6,6);
+  EigenMatrix MyEnergy(TotalControl*nDim, TotalControl*nDim);
   Matrix.resize(TotalControl*nDim, TotalControl*nDim);
   Derivative.resize(TotalControl, nDim);
+
   LocalMatrix.resize(nDim, nDim);
   R.resize(TotalControl, nDim);
 
+  MyEnergy = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
   Matrix = EigenMatrix::Zero(TotalControl*nDim, TotalControl*nDim);
+  LocalStiffness = EigenMatrix::Zero(6, TotalControl*nDim);
+  su2double E = 1E7, nu = 0.25;
 
-  su2double E = 10.0, nu = 0.25;
-
-  su2double Lambda = (nu*E)/((1+nu)*(1-nu));
+  su2double Lambda = (nu*E)/((1+nu)*(1-2*nu));
   su2double mu     = E/(2*(1+nu));
 
   ConstitutiveMatrix = EigenMatrix::Zero(6,6);
@@ -6903,24 +6891,47 @@ void CFreeFormDefBox::SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, C
 
     if (config->GetMarker_All_DV(iMarker) == YES) {
 
-      cout << "iSurfacePoint " << iSurfacePoints << endl;
+//      cout << "iSurfacePoint " << iSurfacePoints << endl;
 
       iVertex = Get_VertexIndex(iSurfacePoints);
       iPoint  = Get_PointIndex(iSurfacePoints);
+      if (geometry->node[iPoint]->GetDomain()){
 
-      ParamCoord = Get_ParametricCoord(iSurfacePoints);
+        ParamCoord = Get_ParametricCoord(iSurfacePoints);
 
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-        Area += Normal[iDim]*Normal[iDim];
+        Area = 0.0;
+        for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+          Area += Normal[iDim]*Normal[iDim];
+        }
+        Area = sqrt(Area);
+        GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
+        MyEnergy += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness)*Area;
       }
-      Area = sqrt(Area);
-      GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
-      Matrix += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness)*Area;
     }
   }
+
+
+  SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+//  /*--- Fill the rest of the cubic matrix of support control points with uniform spacing  ---*/
+//  for (iControl = 0; iControl < lControl; iControl++){
+//    for (jControl = 0; jControl < mControl; jControl++){
+//      for (kControl = 0; kControl < nControl; kControl++){
+
+
+//        Coord = GetCoordControlPoints(iControl, jControl, kControl);
+////        Area = 1.0/su2double(lControl-1)*1.0/su2double(mControl-1)*1.0/su2double(nControl-1);
+
+//        ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoordGuess, config);
+
+//        GetLocalStiffnessMatrix(LocalStiffness , ParamCoord);
+//        Matrix += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness);
+
+//      }
+//    }
+//  }
 }
 
 
@@ -7008,8 +7019,8 @@ void CFreeFormDefBox::GetLaplacianEnergyMatrix3D(EigenMatrix &Matrix){
   const unsigned short mControl = BlendingFunction[1]->GetnControl();
   const unsigned short nControl = BlendingFunction[2]->GetnControl();
   unsigned short iControl, jControl, kControl;
-  const unsigned long TotalControl = lControl*mControl*nControl;
-
+  const unsigned long TotalControl = lControl*mControl*nControl*nDim;
+  unsigned short iDim;
   unsigned long Index_ijk, Index_ip1jk, Index_im1jk, Index_ijp1k, Index_ijm1k, Index_ijkp1, Index_ijkm1;
 
   EigenMatrix StencilMatrix(TotalControl, TotalControl);
