@@ -3136,7 +3136,7 @@ void CDriver::Output(unsigned long ExtIter) {
         (KindSolver == FEM_LES)) {
 
       /*--- Temporary output for the FEM solver. ---*/
-      output->SetResult_Files_FEM(solver_container, geometry_container, config_container, ExtIter, nZone);
+      output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
 
     } else {
 

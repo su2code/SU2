@@ -3705,6 +3705,7 @@ public:
    * \brief A virtual member.
    */
   virtual unsigned long GetnDOFsGlobal(void);
+
 };
 
 /*!
@@ -11711,19 +11712,19 @@ public:
  * \class CFEM_DG_EulerSolver
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
- * \author J. Alonso, E. van der Weide, T. Economon
+ * \author E. van der Weide, T. Economon, J. Alonso
  * \version 4.0.2 "Cardinal"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
   
   unsigned long nMarker; /*!< \brief Total number of markers using the grid information. */
-  
-  CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
-  
+
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  
+
+  CFluidModel  *FluidModel; /*!< \brief fluid model used in the solver */
+
   su2double
   Mach_Inf,	       /*!< \brief Mach number at infinity. */
   Density_Inf,	       /*!< \brief Density at infinity. */
@@ -11899,7 +11900,7 @@ private:
                                                               of halo elements for which a periodic
                                                               transformation must be applied. */
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    */
@@ -11932,7 +11933,7 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh);
-  
+
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
    * \return Pointer to the vector of the solution degrees of freedom.
@@ -12277,7 +12278,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Pressure_Forces(CGeometry *geometry, CConfig *config);
-  
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
@@ -12743,7 +12754,7 @@ private:
  * \class CFEM_DG_NSSolver
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
- * \author J. Alonso, E. van der Weide, T. Economon
+ * \author E. van der Weide, T. Economon, J. Alonso
  * \version 4.0.2 "Cardinal"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
