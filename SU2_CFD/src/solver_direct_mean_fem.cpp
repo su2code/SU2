@@ -4339,6 +4339,10 @@ void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
 
 #endif
 
+void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+}
+
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
   
   /*--- Basic array initialization ---*/
