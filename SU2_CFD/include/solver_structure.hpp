@@ -3337,16 +3337,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the average is evaluated.
    */
-  virtual void SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
-
-  /*!
-   * \brief virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the average is evaluated.
-   */
-  virtual void AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  virtual void TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
   /*!
    * \brief virtual member.
@@ -5739,33 +5730,24 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] marker_flag - Surface marker flag where the function is applied.
    */
-  void SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  void TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
   /*!
-   * \brief It computes average quantities along the span for turbomachinery analysis.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   * \brief it performs a mixed out average of the nodes of a boundary.
+   * \param[in] val_init_pressure -  initial pressure value
+   * \param[in] val_Averaged_Flux - flux averaged values.
+   * \param[in] val_normal - normal vector.
+   * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
+   * \param[in] density_miz - value of the mixed-out avaraged density.
    */
-  void AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+  void MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
 
-	/*!
-	 * \brief it performs a mixed out average of the nodes of a boundary.
-	 * \param[in] val_init_pressure -  initial pressure value
-	 * \param[in] val_Averaged_Flux - flux averaged values.
-     * \param[in] val_normal - normal vector.
-     * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
-	 * \param[in] density_miz - value of the mixed-out avaraged density.
-	 */
-	void MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double& pressure_mix, su2double& density_mix);
-
-	/*!
-	 * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+  /*!
+   * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
