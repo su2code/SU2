@@ -913,9 +913,7 @@ inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
 
 inline void CSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
 
-inline void CSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
-
-inline void CSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+inline void CSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
 
 inline void CSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){ }
 
