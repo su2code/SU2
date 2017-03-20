@@ -545,7 +545,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify 2phase model \n Options: DEFAULT: NO_2PHASE_MODEL \ingroup Config*/
-  addEnumOption("KIND_2PHASE_MODEL", Kind_2phase_Model, HILL_MODEL, NO_2PHASE_MODEL);
+  addEnumOption("KIND_2PHASE_MODEL", Kind_2phase_Model, Two_phase_Model_Map, NO_2PHASE_MODEL);
 
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
@@ -5860,8 +5860,8 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
-
-        if (val_system == RUNTIME_2PHASE_SYS) {
+      }
+      if (val_system == RUNTIME_2PHASE_SYS) {
           SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
                                 Kind_Upwind_2phase, Kind_SlopeLimit_2phase,
                                 SpatialOrder_2phase);
