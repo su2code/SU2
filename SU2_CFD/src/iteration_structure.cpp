@@ -434,7 +434,10 @@ void CIteration::Update(COutput *output,
                         unsigned short val_iZone)      { }
 void CIteration::Monitor()     { }
 void CIteration::Output()      { }
-void CIteration::Postprocess() { }
+void CIteration::Postprocess(CConfig **config_container,
+                             CGeometry ***geometry_container,
+                             CSolver ****solver_container,
+                             unsigned short val_iZone) { }
 
 
 
@@ -613,7 +616,10 @@ void CFluidIteration::Update(COutput *output,
 
 void CFluidIteration::Monitor()     { }
 void CFluidIteration::Output()      { }
-void CFluidIteration::Postprocess() { }
+void CFluidIteration::Postprocess(CConfig **config_container,
+                                  CGeometry ***geometry_container,
+                                  CSolver ****solver_container,
+                                  unsigned short val_iZone) { }
 
 void CFluidIteration::SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
   // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is described in the
@@ -854,6 +860,48 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long &nVortex, vecto
 }
 
 
+CTurboIteration::CTurboIteration(CConfig *config) : CFluidIteration(config) { }
+CTurboIteration::~CTurboIteration(void) { }
+void CTurboIteration::Preprocess(COutput *output,
+                                    CIntegration ***integration_container,
+                                    CGeometry ***geometry_container,
+                                    CSolver ****solver_container,
+                                    CNumerics *****numerics_container,
+                                    CConfig **config_container,
+                                    CSurfaceMovement **surface_movement,
+                                    CVolumetricMovement **grid_movement,
+                                    CFreeFormDefBox*** FFDBox,
+                                    unsigned short val_iZone) {
+
+  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+
+  if(ExtIter == 0){
+      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone], val_iZone, INFLOW, true);
+      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],val_iZone, OUTFLOW, true);
+      geometry_container[val_iZone][MESH_0]->GatherInOutAverageValues(config_container[val_iZone], true);
+      solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
+      solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
+  }
+
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
+
+}
+
+void CTurboIteration::Postprocess( CConfig **config_container,
+                                   CGeometry ***geometry_container,
+                                   CSolver ****solver_container,
+                                   unsigned short val_iZone) {
+
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->TurboAverageProcess(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[val_iZone], geometry_container[val_iZone][MESH_0]);
+
+}
+
+
+
 CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
 CWaveIteration::~CWaveIteration(void) { }
 void CWaveIteration::Preprocess(COutput *output,
@@ -937,7 +985,10 @@ void CWaveIteration::Update(COutput *output,
 
 void CWaveIteration::Monitor()     { }
 void CWaveIteration::Output()      { }
-void CWaveIteration::Postprocess() { }
+void CWaveIteration::Postprocess(CConfig **config_container,
+                                 CGeometry ***geometry_container,
+                                 CSolver ****solver_container,
+                                 unsigned short val_iZone) { }
 
 
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
@@ -1021,7 +1072,10 @@ void CHeatIteration::Update(COutput *output,
 }
 void CHeatIteration::Monitor()     { }
 void CHeatIteration::Output()      { }
-void CHeatIteration::Postprocess() { }
+void CHeatIteration::Postprocess(CConfig **config_container,
+                                 CGeometry ***geometry_container,
+                                 CSolver ****solver_container,
+                                 unsigned short val_iZone) { }
 
 
 CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
@@ -1074,7 +1128,10 @@ void CPoissonIteration::Update(COutput *output,
                                unsigned short val_iZone)      { }
 void CPoissonIteration::Monitor()     { }
 void CPoissonIteration::Output()      { }
-void CPoissonIteration::Postprocess() { }
+void CPoissonIteration::Postprocess(CConfig **config_container,
+                        CGeometry ***geometry_container,
+                        CSolver ****solver_container,
+                        unsigned short val_iZone) { }
 
 
 CFEM_StructuralAnalysis::CFEM_StructuralAnalysis(CConfig *config) : CIteration(config) { }
@@ -1378,7 +1435,10 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 }
 void CFEM_StructuralAnalysis::Monitor()     { }
 void CFEM_StructuralAnalysis::Output()      { }
-void CFEM_StructuralAnalysis::Postprocess() { }
+void CFEM_StructuralAnalysis::Postprocess(CConfig **config_container,
+                                          CGeometry ***geometry_container,
+                                          CSolver ****solver_container,
+                                          unsigned short val_iZone) { }
 
 
 CAdjFluidIteration::CAdjFluidIteration(CConfig *config) : CIteration(config) { }
@@ -1617,7 +1677,10 @@ void CAdjFluidIteration::Update(COutput *output,
 
 void CAdjFluidIteration::Monitor()     { }
 void CAdjFluidIteration::Output()      { }
-void CAdjFluidIteration::Postprocess() { }
+void CAdjFluidIteration::Postprocess(CConfig **config_container,
+                                     CGeometry ***geometry_container,
+                                     CSolver ****solver_container,
+                                     unsigned short val_iZone) { }
 
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
   
@@ -1964,7 +2027,10 @@ void CDiscAdjFluidIteration::Update(COutput *output,
                                        unsigned short val_iZone)      { }
 void CDiscAdjFluidIteration::Monitor()     { }
 void CDiscAdjFluidIteration::Output()      { }
-void CDiscAdjFluidIteration::Postprocess() { }
+void CDiscAdjFluidIteration::Postprocess(CConfig **config_container,
+                                         CGeometry ***geometry_container,
+                                         CSolver ****solver_container,
+                                         unsigned short val_iZone) { }
 
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                                  CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
