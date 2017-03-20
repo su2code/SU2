@@ -277,22 +277,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize quantities for the average process for internal flow ---*/
 
-  AverageVelocity 									= NULL;
-  AverageTurboVelocity 							= NULL;
-  ExtAverageTurboVelocity 					= NULL;
-  AverageFlux 											= NULL;
-  SpanTotalFlux 										= NULL;
-  AveragePressure  									= NULL;
+  AverageVelocity 									                  = NULL;
+  AverageTurboVelocity 							             = NULL;
+  ExtAverageTurboVelocity 					          = NULL;
+  AverageFlux 											                      = NULL;
+  SpanTotalFlux 										                    = NULL;
+  AveragePressure  									                 = NULL;
   RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  							= NULL;
-  AverageDensity   									= NULL;
-  ExtAverageDensity   							= NULL;
+  ExtAveragePressure  							              = NULL;
+  AverageDensity   									                 = NULL;
+  ExtAverageDensity   							              = NULL;
   AverageNu                         = NULL;
   AverageKei                        = NULL;
-	AverageOmega                      = NULL;
-	ExtAverageNu                      = NULL;
-	ExtAverageKei                     = NULL;
-	ExtAverageOmega                   = NULL;
+  AverageOmega                      = NULL;
+  ExtAverageNu                      = NULL;
+  ExtAverageKei                     = NULL;
+  ExtAverageOmega                   = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -714,80 +714,80 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   nSpanWiseSections = config->GetnSpanWiseSections();
 
-  AverageVelocity 									= new su2double** [nMarker];
-  AverageTurboVelocity 							= new su2double** [nMarker];
-  OldAverageTurboVelocity 					= new su2double** [nMarker];
-  ExtAverageTurboVelocity 					= new su2double** [nMarker];
-  AverageFlux 											= new su2double** [nMarker];
-  SpanTotalFlux 										= new su2double** [nMarker];
-  AveragePressure  									= new su2double* [nMarker];
-  OldAveragePressure  							= new su2double* [nMarker];
-  RadialEquilibriumPressure         = new su2double* [nMarker];
-  ExtAveragePressure  							= new su2double* [nMarker];
-  AverageDensity   									= new su2double* [nMarker];
-  OldAverageDensity   							= new su2double* [nMarker];
-  ExtAverageDensity   							= new su2double* [nMarker];
-  AverageNu  												= new su2double* [nMarker];
-  AverageKei 												= new su2double* [nMarker];
-	AverageOmega 											= new su2double* [nMarker];
-	ExtAverageNu 											= new su2double* [nMarker];
-	ExtAverageKei 										= new su2double* [nMarker];
-	ExtAverageOmega 									= new su2double* [nMarker];
+  AverageVelocity 									                      = new su2double** [nMarker];
+  AverageTurboVelocity 							                 = new su2double** [nMarker];
+  OldAverageTurboVelocity 					              = new su2double** [nMarker];
+  ExtAverageTurboVelocity 					              = new su2double** [nMarker];
+  AverageFlux 											                          = new su2double** [nMarker];
+  SpanTotalFlux                         										= new su2double** [nMarker];
+  AveragePressure  									                     = new su2double* [nMarker];
+  OldAveragePressure                    							= new su2double* [nMarker];
+  RadialEquilibriumPressure             = new su2double* [nMarker];
+  ExtAveragePressure  							                  = new su2double* [nMarker];
+  AverageDensity                        									= new su2double* [nMarker];
+  OldAverageDensity                     							= new su2double* [nMarker];
+  ExtAverageDensity                     							= new su2double* [nMarker];
+  AverageNu                             												= new su2double* [nMarker];
+  AverageKei                            												= new su2double* [nMarker];
+  AverageOmega 											                         = new su2double* [nMarker];
+  ExtAverageNu 											                         = new su2double* [nMarker];
+  ExtAverageKei 										                        = new su2double* [nMarker];
+  ExtAverageOmega 									                      = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  	AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
-  	AverageTurboVelocity[iMarker] 						= new su2double* [nSpanWiseSections + 1];
-  	OldAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-  	ExtAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-  	AverageFlux[iMarker] 											= new su2double* [nSpanWiseSections + 1];
-  	SpanTotalFlux[iMarker] 										= new su2double* [nSpanWiseSections + 1];
-  	AveragePressure[iMarker]  								= new su2double [nSpanWiseSections + 1];
-  	OldAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-  	RadialEquilibriumPressure[iMarker]  			= new su2double [nSpanWiseSections + 1];
-  	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-  	AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
-  	OldAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-  	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-    AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
-    AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
-  	AverageOmega[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageNu[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageKei[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageOmega[iMarker]   							  = new su2double [nSpanWiseSections + 1];
+    AverageVelocity[iMarker] 									               = new su2double* [nSpanWiseSections + 1];
+    AverageTurboVelocity[iMarker] 						          = new su2double* [nSpanWiseSections + 1];
+    OldAverageTurboVelocity[iMarker] 					       = new su2double* [nSpanWiseSections + 1];
+    ExtAverageTurboVelocity[iMarker] 					       = new su2double* [nSpanWiseSections + 1];
+    AverageFlux[iMarker] 											                   = new su2double* [nSpanWiseSections + 1];
+    SpanTotalFlux[iMarker] 										                 = new su2double* [nSpanWiseSections + 1];
+    AveragePressure[iMarker]  								              = new su2double [nSpanWiseSections + 1];
+    OldAveragePressure[iMarker]  							           = new su2double [nSpanWiseSections + 1];
+    RadialEquilibriumPressure[iMarker]  			    = new su2double [nSpanWiseSections + 1];
+    ExtAveragePressure[iMarker]  							           = new su2double [nSpanWiseSections + 1];
+    AverageDensity[iMarker]   								              = new su2double [nSpanWiseSections + 1];
+    OldAverageDensity[iMarker]   							           = new su2double [nSpanWiseSections + 1];
+    ExtAverageDensity[iMarker]   							           = new su2double [nSpanWiseSections + 1];
+    AverageNu[iMarker]   							                   = new su2double [nSpanWiseSections + 1];
+    AverageKei[iMarker]   							                  = new su2double [nSpanWiseSections + 1];
+    AverageOmega[iMarker]   							                = new su2double [nSpanWiseSections + 1];
+    ExtAverageNu[iMarker]   							                = new su2double [nSpanWiseSections + 1];
+    ExtAverageKei[iMarker]   							               = new su2double [nSpanWiseSections + 1];
+    ExtAverageOmega[iMarker]   							             = new su2double [nSpanWiseSections + 1];
 
-  	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-  		AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
-  		AverageTurboVelocity[iMarker][iSpan] 										= new su2double [nDim];
-  		OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
-  		ExtAverageTurboVelocity[iMarker][iSpan] 								= new su2double [nDim];
-  		AverageFlux[iMarker][iSpan] 														= new su2double [nVar];
-  		SpanTotalFlux[iMarker][iSpan] 													= new su2double [nVar];
-  		AveragePressure[iMarker][iSpan]  												= 0.0;
-  		OldAveragePressure[iMarker][iSpan]  										= 0.0;
-  		RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
-  		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
-  		AverageDensity[iMarker][iSpan]   												= 0.0;
-  		OldAverageDensity[iMarker][iSpan]   									  = 0.0;
-  		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
-      AverageNu[iMarker][iSpan]   										        = 0.0;
-      AverageKei[iMarker][iSpan]   										        = 0.0;
-    	AverageOmega[iMarker][iSpan]   										      = 0.0;
-    	ExtAverageNu[iMarker][iSpan]   										      = 0.0;
-    	ExtAverageKei[iMarker][iSpan]   										    = 0.0;
-    	ExtAverageOmega[iMarker][iSpan]   										  = 0.0;
+    for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+      AverageVelocity[iMarker][iSpan]           												= new su2double [nDim];
+      AverageTurboVelocity[iMarker][iSpan] 										     = new su2double [nDim];
+      OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
+      ExtAverageTurboVelocity[iMarker][iSpan] 							  	= new su2double [nDim];
+      AverageFlux[iMarker][iSpan] 														              = new su2double [nVar];
+      SpanTotalFlux[iMarker][iSpan] 													            = new su2double [nVar];
+      AveragePressure[iMarker][iSpan]           												= 0.0;
+      OldAveragePressure[iMarker][iSpan]  										      = 0.0;
+      RadialEquilibriumPressure[iMarker][iSpan] 							= 0.0;
+      ExtAveragePressure[iMarker][iSpan]        										= 0.0;
+      AverageDensity[iMarker][iSpan]   												         = 0.0;
+      OldAverageDensity[iMarker][iSpan]   									      = 0.0;
+      ExtAverageDensity[iMarker][iSpan]         										= 0.0;
+      AverageNu[iMarker][iSpan]   										              = 0.0;
+      AverageKei[iMarker][iSpan]   										             = 0.0;
+      AverageOmega[iMarker][iSpan]   										           = 0.0;
+      ExtAverageNu[iMarker][iSpan]   										           = 0.0;
+      ExtAverageKei[iMarker][iSpan]   										          = 0.0;
+      ExtAverageOmega[iMarker][iSpan]   										        = 0.0;
 
-  		for (iDim = 0; iDim < nDim; iDim++) {
-  			AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
-  			AverageTurboVelocity[iMarker][iSpan][iDim] 									= 0.0;
-  			OldAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
-  			ExtAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
-  		}
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AverageVelocity[iMarker][iSpan][iDim] 											           = 0.0;
+        AverageTurboVelocity[iMarker][iSpan][iDim] 									      = 0.0;
+        OldAverageTurboVelocity[iMarker][iSpan][iDim] 							   = 0.0;
+        ExtAverageTurboVelocity[iMarker][iSpan][iDim] 						   	= 0.0;
+      }
 
-  		for (iVar = 0; iVar < nVar; iVar++) {
-  			AverageFlux[iMarker][iSpan][iVar] 													= 0.0;
-  			SpanTotalFlux[iMarker][iSpan][iVar] 												= 0.0;
-  		}
-  	}
+      for (iVar = 0; iVar < nVar; iVar++) {
+        AverageFlux[iMarker][iSpan][iVar] 													      = 0.0;
+        SpanTotalFlux[iMarker][iSpan][iVar] 												    = 0.0;
+      }
+    }
   }
 
 
@@ -803,27 +803,27 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-  	DensityIn               [iMarker] = new su2double [nSpanMax + 1];
-  	PressureIn              [iMarker] = new su2double [nSpanMax + 1];
-  	TurboVelocityIn         [iMarker] = new su2double*[nSpanMax + 1];
-  	DensityOut              [iMarker] = new su2double [nSpanMax + 1];
-  	PressureOut             [iMarker] = new su2double [nSpanMax + 1];
-  	TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
+    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
+    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
+    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
+    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
+    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
+    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
 
 
-  	for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
-  		DensityIn               [iMarker][iSpan] = 0.0;
-  		PressureIn              [iMarker][iSpan] = 0.0;
-  		TurboVelocityIn  [iMarker][iSpan]           = new su2double[nDim];
-  		DensityOut              [iMarker][iSpan] = 0.0;
-  		PressureOut             [iMarker][iSpan] = 0.0;
-  		TurboVelocityOut [iMarker][iSpan]           = new su2double[nDim];
+    for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
+      DensityIn[iMarker][iSpan]          = 0.0;
+      PressureIn[iMarker][iSpan]         = 0.0;
+      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
+      DensityOut[iMarker][iSpan]         = 0.0;
+      PressureOut[iMarker][iSpan]        = 0.0;
+      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
 
       for (iDim = 0; iDim < 3; iDim++){
-  			TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-  			TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
-  		}
-  	}
+        TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
+        TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
+      }
+    }
   }
 
 
@@ -16642,80 +16642,80 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   nSpanWiseSections = config->GetnSpanWiseSections();
 
-  AverageVelocity 									= new su2double** [nMarker];
-  AverageTurboVelocity 							= new su2double** [nMarker];
-  OldAverageTurboVelocity 					= new su2double** [nMarker];
-  ExtAverageTurboVelocity 					= new su2double** [nMarker];
-  AverageFlux 											= new su2double** [nMarker];
-  SpanTotalFlux 										= new su2double** [nMarker];
-  AveragePressure  									= new su2double* [nMarker];
-  OldAveragePressure  							= new su2double* [nMarker];
-  RadialEquilibriumPressure         = new su2double* [nMarker];
-  ExtAveragePressure  							= new su2double* [nMarker];
-  AverageDensity   									= new su2double* [nMarker];
-  OldAverageDensity   							= new su2double* [nMarker];
-  ExtAverageDensity   							= new su2double* [nMarker];
-  AverageNu  												= new su2double* [nMarker];
-  AverageKei 												= new su2double* [nMarker];
-	AverageOmega 											= new su2double* [nMarker];
-	ExtAverageNu 											= new su2double* [nMarker];
-	ExtAverageKei 										= new su2double* [nMarker];
-	ExtAverageOmega 									= new su2double* [nMarker];
+  AverageVelocity                       = new su2double** [nMarker];
+  AverageTurboVelocity                  = new su2double** [nMarker];
+  OldAverageTurboVelocity               = new su2double** [nMarker];
+  ExtAverageTurboVelocity               = new su2double** [nMarker];
+  AverageFlux                           = new su2double** [nMarker];
+  SpanTotalFlux                         = new su2double** [nMarker];
+  AveragePressure                       = new su2double* [nMarker];
+  OldAveragePressure                    = new su2double* [nMarker];
+  RadialEquilibriumPressure             = new su2double* [nMarker];
+  ExtAveragePressure                    = new su2double* [nMarker];
+  AverageDensity                        = new su2double* [nMarker];
+  OldAverageDensity                     = new su2double* [nMarker];
+  ExtAverageDensity                     = new su2double* [nMarker];
+  AverageNu                             = new su2double* [nMarker];
+  AverageKei                            = new su2double* [nMarker];
+  AverageOmega                          = new su2double* [nMarker];
+  ExtAverageNu                          = new su2double* [nMarker];
+  ExtAverageKei                         = new su2double* [nMarker];
+  ExtAverageOmega                       = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  	AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
-  	AverageTurboVelocity[iMarker] 						= new su2double* [nSpanWiseSections + 1];
-  	OldAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-  	ExtAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-  	AverageFlux[iMarker] 											= new su2double* [nSpanWiseSections + 1];
-  	SpanTotalFlux[iMarker] 										= new su2double* [nSpanWiseSections + 1];
-  	AveragePressure[iMarker]  								= new su2double [nSpanWiseSections + 1];
-  	OldAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-  	RadialEquilibriumPressure[iMarker]  			= new su2double [nSpanWiseSections + 1];
-  	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-  	AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
-  	OldAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-  	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-    AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
-    AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
-  	AverageOmega[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageNu[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageKei[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageOmega[iMarker]   							  = new su2double [nSpanWiseSections + 1];
+    AverageVelocity[iMarker]                = new su2double* [nSpanWiseSections + 1];
+    AverageTurboVelocity[iMarker]           = new su2double* [nSpanWiseSections + 1];
+    OldAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
+    ExtAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
+    AverageFlux[iMarker]                    = new su2double* [nSpanWiseSections + 1];
+    SpanTotalFlux[iMarker]                  = new su2double* [nSpanWiseSections + 1];
+    AveragePressure[iMarker]                = new su2double [nSpanWiseSections + 1];
+    OldAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
+    RadialEquilibriumPressure[iMarker]      = new su2double [nSpanWiseSections + 1];
+    ExtAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
+    AverageDensity[iMarker]                 = new su2double [nSpanWiseSections + 1];
+    OldAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
+    ExtAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
+    AverageNu[iMarker]                      = new su2double [nSpanWiseSections + 1];
+    AverageKei[iMarker]                     = new su2double [nSpanWiseSections + 1];
+    AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    ExtAverageKei[iMarker]                  = new su2double [nSpanWiseSections + 1];
+    ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
 
-  	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-  		AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
-  		AverageTurboVelocity[iMarker][iSpan] 										= new su2double [nDim];
-  		OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
-  		ExtAverageTurboVelocity[iMarker][iSpan] 								= new su2double [nDim];
-  		AverageFlux[iMarker][iSpan] 														= new su2double [nVar];
-  		SpanTotalFlux[iMarker][iSpan] 													= new su2double [nVar];
-  		AveragePressure[iMarker][iSpan]  												= 0.0;
-  		OldAveragePressure[iMarker][iSpan]  										= 0.0;
-  		RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
-  		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
-  		AverageDensity[iMarker][iSpan]   												= 0.0;
-  		OldAverageDensity[iMarker][iSpan]   									  = 0.0;
-  		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
-      AverageNu[iMarker][iSpan]   										        = 0.0;
-      AverageKei[iMarker][iSpan]   										        = 0.0;
-    	AverageOmega[iMarker][iSpan]   										      = 0.0;
-    	ExtAverageNu[iMarker][iSpan]   										      = 0.0;
-    	ExtAverageKei[iMarker][iSpan]   										    = 0.0;
-    	ExtAverageOmega[iMarker][iSpan]   										  = 0.0;
+    for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+      AverageVelocity[iMarker][iSpan]           = new su2double [nDim];
+      AverageTurboVelocity[iMarker][iSpan]      = new su2double [nDim];
+      OldAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
+      ExtAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
+      AverageFlux[iMarker][iSpan]               = new su2double [nVar];
+      SpanTotalFlux[iMarker][iSpan]             = new su2double [nVar];
+      AveragePressure[iMarker][iSpan]           = 0.0;
+      OldAveragePressure[iMarker][iSpan]        = 0.0;
+      RadialEquilibriumPressure[iMarker][iSpan] = 0.0;
+      ExtAveragePressure[iMarker][iSpan]        = 0.0;
+      AverageDensity[iMarker][iSpan]            = 0.0;
+      OldAverageDensity[iMarker][iSpan]         = 0.0;
+      ExtAverageDensity[iMarker][iSpan]         = 0.0;
+      AverageNu[iMarker][iSpan]                 = 0.0;
+      AverageKei[iMarker][iSpan]                = 0.0;
+      AverageOmega[iMarker][iSpan]              = 0.0;
+      ExtAverageNu[iMarker][iSpan]              = 0.0;
+      ExtAverageKei[iMarker][iSpan]             = 0.0;
+      ExtAverageOmega[iMarker][iSpan]           = 0.0;
 
-  		for (iDim = 0; iDim < nDim; iDim++) {
-  			AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
-  			AverageTurboVelocity[iMarker][iSpan][iDim] 									= 0.0;
-  			OldAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
-  			ExtAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
-  		}
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AverageVelocity[iMarker][iSpan][iDim]            = 0.0;
+        AverageTurboVelocity[iMarker][iSpan][iDim]       = 0.0;
+        OldAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
+        ExtAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
+      }
 
-  		for (iVar = 0; iVar < nVar; iVar++) {
-  			AverageFlux[iMarker][iSpan][iVar] 													= 0.0;
-  			SpanTotalFlux[iMarker][iSpan][iVar] 												= 0.0;
-  		}
-  	}
+      for (iVar = 0; iVar < nVar; iVar++) {
+        AverageFlux[iMarker][iSpan][iVar]       = 0.0;
+        SpanTotalFlux[iMarker][iSpan][iVar]     = 0.0;
+      }
+    }
   }
 
 
@@ -16723,37 +16723,36 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
 
-	DensityIn                     = new su2double*[nMarkerTurboPerf];
-	PressureIn                    = new su2double*[nMarkerTurboPerf];
-	TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
-	DensityOut                    = new su2double*[nMarkerTurboPerf];
-	PressureOut                   = new su2double*[nMarkerTurboPerf];
-	TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
+  DensityIn                     = new su2double*[nMarkerTurboPerf];
+  PressureIn                    = new su2double*[nMarkerTurboPerf];
+  TurboVelocityIn               = new su2double**[nMarkerTurboPerf];
+  DensityOut                    = new su2double*[nMarkerTurboPerf];
+  PressureOut                   = new su2double*[nMarkerTurboPerf];
+  TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
 
-	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-		DensityIn               [iMarker] = new su2double [nSpanMax + 1];
-		PressureIn              [iMarker] = new su2double [nSpanMax + 1];
-		TurboVelocityIn         [iMarker] = new su2double*[nSpanMax + 1];
-		DensityOut              [iMarker] = new su2double [nSpanMax + 1];
-		PressureOut             [iMarker] = new su2double [nSpanMax + 1];
-		TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
+  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
+    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
+    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
+    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
+    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
+    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
 
 
-		for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
-			DensityIn               [iMarker][iSpan] = 0.0;
-			PressureIn              [iMarker][iSpan] = 0.0;
-      TurboVelocityIn  [iMarker][iSpan]           = new su2double[3];
-			DensityOut              [iMarker][iSpan] = 0.0;
-			PressureOut             [iMarker][iSpan] = 0.0;
-      TurboVelocityOut [iMarker][iSpan]           = new su2double[3];
+    for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
+      DensityIn[iMarker][iSpan]          = 0.0;
+      PressureIn[iMarker][iSpan]         = 0.0;
+      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
+      DensityOut[iMarker][iSpan]         = 0.0;
+      PressureOut[iMarker][iSpan]        = 0.0;
+      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
 
       for (iDim = 0; iDim < 3; iDim++){
-				TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-				TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
-			}
-		}
-	}
-
+        TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
+        TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
+      }
+    }
+  }
 
   /*--- Initialize quantities for NR BC ---*/
 
