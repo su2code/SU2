@@ -175,7 +175,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       (config->GetDesign_Variable(0) == FFD_CAMBER) ||
       (config->GetDesign_Variable(0) == FFD_THICKNESS) ||
       (config->GetDesign_Variable(0) == FFD_ANGLE_OF_ATTACK) ||
-      (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION)) {
+      (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION) ||
+      (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION_2D)) {
 
     /*--- Definition of the FFD deformation class ---*/
 
@@ -304,7 +305,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
               }
             }
 
-            if (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION)
+            if (config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION ||
+                config->GetDesign_Variable(0) == FFD_DIRECT_MANIPULATION_2D)
               SetFFDDirect(geometry, config, FFDBox[iFFDBox], FFDBox, false);
 
 
@@ -2167,11 +2169,11 @@ void CSurfaceMovement::SetFFDDirect(CGeometry *geometry, CConfig *config, CFreeF
       EigenMatrix Block;
 
       if (FFDBox->PilotGroupType[iGroup] == ABSOLUTE){
-        FFDBox->GetAbsoluteGroupRHS(Rhs, iGroup, config);
+        FFDBox->GetAbsoluteGroupRHS(Rhs, iGroup, config, geometry->GetnDim());
         FFDBox->GetAbsoluteGroupBlock(Block, iGroup);
       }
       if (FFDBox->PilotGroupType[iGroup] == RELATIVE){
-        FFDBox->GetRelativeGroupRHS(Rhs, iGroup, config);
+        FFDBox->GetRelativeGroupRHS(Rhs, iGroup, config, geometry->GetnDim());
         FFDBox->GetRelativeGroupBlock(Block, iGroup);
       }
 
@@ -6662,7 +6664,7 @@ void CFreeFormDefBox::GetRelativeGroupBlock(EigenMatrix& SystemMatrix, unsigned 
 
 }
 
-void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGroup, CConfig *config){
+void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGroup, CConfig *config, unsigned short nDimProblem){
 
   const unsigned long nPilotPoints = PilotPointsX[iGroup].size();
   const unsigned long nParameters = nPilotPoints;
@@ -6672,6 +6674,7 @@ void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGrou
   su2double Scale = config->GetFFD_Scale(), Ampl = 0;
   unsigned short iDim;
   RHS.resize(nParameters*nDim);
+  RHS = EigenVector::Zero(nParameters*nDim);
 
   /*--- If group is defined as design variable --- */
 
@@ -6684,11 +6687,11 @@ void CFreeFormDefBox::GetRelativeGroupRHS(EigenVector& RHS, unsigned short iGrou
       }
       for (iParameter = 0; iParameter < nParameters - 1; iParameter++){
         if (config->GetnDV_Value(iDV) == 1){
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (iDim = 0; iDim < nDimProblem; iDim++){
             RHS(iParameter*nDim + iDim) = config->GetParamDV(iDV, iDim+1)*Ampl;
           }
         } else {
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (iDim = 0; iDim < nDimProblem; iDim++){
             RHS(iParameter*nDim + iDim) = config->GetDV_Value(iDV, iDim);
           }
         }
@@ -6748,7 +6751,7 @@ void CFreeFormDefBox::GetAbsoluteGroupBlock(EigenMatrix& SystemMatrix, unsigned 
   }
 }
 
-void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGroup, CConfig *config){
+void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGroup, CConfig *config, unsigned short nDimProblem){
 
   const unsigned long nPilotPoints  = PilotPointsX[iGroup].size();
   const unsigned short nConstraints = config->GetnFFD_ConstraintGroups();
@@ -6756,6 +6759,7 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
   unsigned short iDV = 0, iConstraint = 0, iDim;
   su2double Scale = config->GetFFD_Scale(), Ampl = 0;
   RHS.resize(nPilotPoints*nDim);
+  RHS = EigenVector::Zero(nPilotPoints*nDim);
 
   /*--- If group is defined as design variable --- */
 
@@ -6764,11 +6768,11 @@ void CFreeFormDefBox::GetAbsoluteGroupRHS(EigenVector& RHS, unsigned short iGrou
     if (config->GetFFDTag(iDV) == PilotGroupNames[iGroup]){
       for (iPilotPoint = 0; iPilotPoint < nPilotPoints; iPilotPoint++){
         if (config->GetnDV_Value(iDV) == 1){
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (iDim = 0; iDim < nDimProblem; iDim++){
             RHS(iPilotPoint*nDim + iDim) = config->GetParamDV(iDV, iDim+1)*Ampl;
           }
         } else {
-          for (iDim = 0; iDim < nDim; iDim++){
+          for (iDim = 0; iDim < nDimProblem; iDim++){
             RHS(iPilotPoint*nDim + iDim) = config->GetDV_Value(iDV, iDim);
           }
         }
@@ -6906,32 +6910,15 @@ void CFreeFormDefBox::SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, C
           Area += Normal[iDim]*Normal[iDim];
         }
         Area = sqrt(Area);
-        GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
+        GetLocalStiffnessMatrix(LocalStiffness, ParamCoord, geometry->GetnDim());
         MyEnergy += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness)*Area;
       }
     }
   }
 
-
+AD_BEGIN_PASSIVE
   SU2_MPI::Allreduce(MyEnergy.data(), Matrix.data(), TotalControl*nDim*TotalControl*nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-//  /*--- Fill the rest of the cubic matrix of support control points with uniform spacing  ---*/
-//  for (iControl = 0; iControl < lControl; iControl++){
-//    for (jControl = 0; jControl < mControl; jControl++){
-//      for (kControl = 0; kControl < nControl; kControl++){
-
-
-//        Coord = GetCoordControlPoints(iControl, jControl, kControl);
-////        Area = 1.0/su2double(lControl-1)*1.0/su2double(mControl-1)*1.0/su2double(nControl-1);
-
-//        ParamCoord = GetParametricCoord_Iterative(0, Coord, ParamCoordGuess, config);
-
-//        GetLocalStiffnessMatrix(LocalStiffness , ParamCoord);
-//        Matrix += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness);
-
-//      }
-//    }
-//  }
+AD_END_PASSIVE
 }
 
 

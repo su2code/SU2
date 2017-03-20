@@ -943,9 +943,9 @@ public:
 
   void GetAbsoluteGroupBlock(EigenMatrix &SystemMatrix, unsigned short iGroup);
 
-  void GetRelativeGroupRHS(EigenVector &RHS, unsigned short iGroup, CConfig *config);
+  void GetRelativeGroupRHS(EigenVector &RHS, unsigned short iGroup, CConfig *config, unsigned short nDimProblem);
 
-  void GetAbsoluteGroupRHS(EigenVector &RHS, unsigned short iGroup, CConfig *config);
+  void GetAbsoluteGroupRHS(EigenVector &RHS, unsigned short iGroup, CConfig *config, unsigned short nDimProblem);
 
   void GetLaplacianEnergyMatrix2D(EigenMatrix &Matrix);
 

@@ -1170,7 +1170,8 @@ enum ENUM_PARAM {
   NO_DEFORMATION = 25,		   /*!< \brief No Deformation. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102,	 /*!< \brief Angle of attack for FFD problem. */
-  FFD_DIRECT_MANIPULATION = 26
+  FFD_DIRECT_MANIPULATION = 26,
+  FFD_DIRECT_MANIPULATION_2D = 27
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1201,7 +1202,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("CUSTOM", CUSTOM)
 ("NO_DEFORMATION", NO_DEFORMATION)
 ("CST", CST)
-("FFD_DIRECT_MANIPULATION", FFD_DIRECT_MANIPULATION);
+("FFD_DIRECT_MANIPULATION", FFD_DIRECT_MANIPULATION)
+("FFD_DIRECT_MANIPULATION_2D", FFD_DIRECT_MANIPULATION_2D);
 
 
 /*!
@@ -2163,7 +2165,8 @@ public:
         case FFD_THICKNESS:        nParamDV = 3; break;
         case FFD_ANGLE_OF_ATTACK:  nParamDV = 2; break;
         case SURFACE_FILE:         nParamDV = 0; break;
-      case FFD_DIRECT_MANIPULATION: nParamDV = 4; break;
+        case FFD_DIRECT_MANIPULATION: nParamDV = 4; break;
+        case FFD_DIRECT_MANIPULATION_2D: nParamDV = 3; break;
         case CUSTOM:               nParamDV = 1; break;
         default : {
           string newstring;
@@ -2193,7 +2196,8 @@ public:
              (this->design_variable[iDV] == FFD_CONTROL_SURFACE) ||
              (this->design_variable[iDV] == FFD_CAMBER) ||
              (this->design_variable[iDV] == FFD_THICKNESS) ||
-              (this->design_variable[iDV] == FFD_DIRECT_MANIPULATION))) {
+             (this->design_variable[iDV] == FFD_DIRECT_MANIPULATION) ||
+             (this->design_variable[iDV] == FFD_DIRECT_MANIPULATION_2D))) {
               ss >> this->FFDTag[iDV];
               this->paramDV[iDV][iParamDV] = 0;
             }
@@ -2294,6 +2298,14 @@ public:
              (this->paramDV[iDV][2] == 0) &&
              (this->paramDV[iDV][3] == 0)) {
             nValueDV = 3;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_DIRECT_MANIPULATION_2D:
+          if((this->paramDV[iDV][1] == 0) &&
+             (this->paramDV[iDV][2] == 0)) {
+            nValueDV = 2;
           } else {
             nValueDV = 1;
           }

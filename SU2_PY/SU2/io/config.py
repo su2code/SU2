@@ -373,7 +373,11 @@ def read_config(filename):
                             this_dvSize = 3
 
                     if data_dict["DV_KIND"][0] in ['FFD_DIRECT_MANIPULATION']:
-                        if this_dvParam[2] == 0 and this_dvParam[3] == 0:
+                        if this_dvParam[1] == 0 and this_dvParam[2] == 0 and this_dvParam[3] == 0:
+                            this_dvSize = 3
+
+                    if data_dict["DV_KIND"][0] in ['FFD_DIRECT_MANIPULATION_2D']:
+                        if this_dvParam[1] == 0 and this_dvParam[2] == 0:
                             this_dvSize = 2
 
                     dv_FFDTag     = dv_FFDTag     + [this_dvFFDTag]
@@ -468,7 +472,11 @@ def read_config(filename):
                                 this_dvSize = 3
 
                         if this_dvKind in ['FFD_DIRECT_MANIPULATION']:
-                            if this_dvParameters[2] == 0 and this_dvParameters[3] == 0:
+                            if this_dvParameters[1] == 0 and this_dvParameters[2] == 0 and this_dvParameters[3] == 0:
+                                this_dvSize = 3
+
+                        if this_dvKind in ['FFD_DIRECT_MANIPULATION_2D']:
+                            if this_dvParameters[1] == 0 and this_dvParameters[2] == 0:
                                 this_dvSize = 2
 
                     # add to lists
@@ -739,7 +747,7 @@ def write_config(filename,param_dict):
                     if not this_kind in ['AOA','MACH_NUMBER']:
                         output_file.write(" | ")
                         # params
-                        if this_kind in ['FFD_DIRECT_MANIPULATION','FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST_ANGLE','FFD_TWIST','FFD_TWIST_2D','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
+                        if this_kind in ['FFD_DIRECT_MANIPULATION','FFD_DIRECT_MANIPULATION_2D','FFD_SETTING','FFD_ANGLE_OF_ATTACK','FFD_CONTROL_POINT','FFD_NACELLE','FFD_GULL','FFD_TWIST_ANGLE','FFD_TWIST','FFD_TWIST_2D','FFD_ROTATION','FFD_CAMBER','FFD_THICKNESS','FFD_CONTROL_POINT_2D','FFD_CAMBER_2D','FFD_THICKNESS_2D']:
                             n_param = len(new_value['PARAM'][i_dv])
                             output_file.write("%s , " % new_value['FFDTAG'][i_dv])
                             for i_param in range(1,n_param):
