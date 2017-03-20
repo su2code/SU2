@@ -1410,7 +1410,8 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     /*--- Conservative variables w/o reconstruction ---*/
     
     numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
-    
+
+    Primitive_Liquid = node[iPoint]->GetLiquidPrim();
 
     /*--- Set volume ---*/
     
@@ -1419,7 +1420,7 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     
     /*--- Compute the source term ---*/
     
-    numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+    numerics->ComputeResidual(Residual, Jacobian_i, *Primitive_Liquid, config);
     
     /*--- Subtract residual and the Jacobian ---*/
     

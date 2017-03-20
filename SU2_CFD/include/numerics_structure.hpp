@@ -1439,13 +1439,11 @@ public:
 
   su2double  GetCriticalRadius ();
 
-  void       SetNucleationRate (su2double V_i, su2double V_Liquid);
+  void       SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
-  void       SetGrowthRate (su2double V_i, su2double V_Liquid);
+  void       SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
-  void       ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
-
-  void       ComputeResidual(su2double *Residual, su2double **Jacobian_i, NULL, CConfig *config);
+  void       ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
 };
 
 /*!
@@ -2324,10 +2322,9 @@ public:
 
   su2double  GetCriticalRadius ();
 
-  void  SetNucleationRate (su2double V_i, su2double V_Liquid);
+  void  SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
-  void  SetGrowthRate (su2double V_i, su2double V_Liquid);
-
+  void  SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -2340,7 +2337,7 @@ public:
 
   void ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
 
-  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config);
+  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, CConfig *config);
 
 };
 
@@ -2384,9 +2381,9 @@ public:
 
   su2double  GetCriticalRadius ();
 
-  void  SetNucleationRate (su2double V_i, su2double V_Liquid);
+  void  SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
-  void  SetGrowthRate (su2double V_i, su2double V_Liquid);
+  void  SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
 
   /*!
@@ -2400,7 +2397,7 @@ public:
 
   void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
 
-  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config);
+  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, CConfig *config);
 
 };
 

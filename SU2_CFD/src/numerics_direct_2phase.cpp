@@ -59,28 +59,20 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
   
 	// compute the advective fluxes for the moments equations
 
+  unsigned short iVar, jVar;
+
   AD::StartPreacc();
   AD::SetPreaccIn(Two_phaseVar_i,2);
   AD::SetPreaccIn(Two_phaseVar_j,2);
   AD::SetPreaccIn(Normal, nDim);
+
   if (grid_movement) {
     AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   }
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+2);
-    AD::SetPreaccIn(V_j, nDim+2);
-
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+3);
-    AD::SetPreaccIn(V_j, nDim+3);
-
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
-  }
   
+  AD::SetPreaccIn(V_i, nDim+3);
+  AD::SetPreaccIn(V_j, nDim+3);
+
   q_ij = 0.0;
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -97,18 +89,26 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **v
     }
   }
   
-  a0 = 0.5*(q_ij+fabs(q_ij));
-  a1 = 0.5*(q_ij-fabs(q_ij));
+  a0 = 0.5*(1.0+fabs(q_ij));
+  a1 = 0.5*(1.0-fabs(q_ij));
   
-  val_residual[0] = a0*Density_i*Two_phaseVar_i[0]+a1*Density_j*Two_phaseVar_j[0];
-  val_residual[1] = a0*Density_i*Two_phaseVar_i[1]+a1*Density_j*Two_phaseVar_j[1];
+  val_residual[0] = a0*Two_phaseVar_i[0]+a1*Two_phaseVar_j[0];
+  val_residual[1] = a0*Two_phaseVar_i[1]+a1*Two_phaseVar_j[1];
+  val_residual[2] = a0*Two_phaseVar_i[2]+a1*Two_phaseVar_j[2];
+  val_residual[3] = a0*Two_phaseVar_i[3]+a1*Two_phaseVar_j[3];
   
   if (implicit) {
-    val_Jacobian_i[0][0] = a0;    val_Jacobian_i[0][1] = 0.0;
-    val_Jacobian_i[1][0] = 0.0;    val_Jacobian_i[1][1] = a0;
-    
-    val_Jacobian_j[0][0] = a1;    val_Jacobian_j[0][1] = 0.0;
-    val_Jacobian_j[1][0] = 0.0;    val_Jacobian_j[1][1] = a1;
+
+	for (iVar = 0; iVar < nVar; iVar++) {
+		for (jVar = 0; jVar < nVar; jVar++) {
+			val_Jacobian_i[iVar][jVar] = 0.0;
+		}
+	}
+
+    val_Jacobian_i[0][0] = a0;   val_Jacobian_j[0][0] = a1;
+    val_Jacobian_i[1][1] = a0;   val_Jacobian_j[1][1] = a1;
+    val_Jacobian_i[2][2] = a0;   val_Jacobian_j[2][2] = a1;
+    val_Jacobian_i[3][3] = a0;   val_Jacobian_j[3][3] = a1;
   }
 
   AD::SetPreaccOut(val_residual, nVar);
@@ -153,11 +153,61 @@ void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double *Primitive
 
 }
 
-void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config) {
+void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, CConfig *config) {
 
-	unsigned short iVar;
+	unsigned short iVar, jVar;
+
+	su2double Density_mixture_i, Critical_radius, Nucleation_rate, Growth_rate;
+	su2double P, T, rho, h, k, mu;
 
 	// compute the source terms for the moments equations
+
+	Density_mixture_i = val_liquid_i[8];
+	Critical_radius = val_liquid_i[6];
+
+	// retrieve the thermodynamic properties of the continuum phase primitive
+
+	T   = V_i[0];
+	P   = V_i[nDim+1];
+	rho = V_i[nDim+2];
+	h   = V_i[nDim+3];
+	mu  = V_i[nDim+5];
+	k   = V_i[nDim+7];
+
+	// compute the nucleation rate the growth rate
+
+	SetNucleationRate(P, T, rho, h, k, mu, val_liquid_i);
+	SetGrowthRate(P, T, rho, h, k, mu, val_liquid_i);
+
+	Nucleation_rate = GetNucleationRate();
+	Growth_rate = GetGrowthRate();
+
+	// compute the source terms
+
+	Residual[0] = Density_mixture_i*Nucleation_rate;
+	Residual[1] = Density_mixture_i*Nucleation_rate*Critical_radius + Density_mixture_i*Growth_rate*Two_phaseVar_i[0];
+	Residual[2] = Density_mixture_i*Nucleation_rate*pow(Critical_radius,2) + 2.0*Density_mixture_i*Growth_rate*Two_phaseVar_i[1];
+	Residual[3] = Density_mixture_i*Nucleation_rate*pow(Critical_radius,3) + 3.0*Density_mixture_i*Growth_rate*Two_phaseVar_i[2];
+
+	for (iVar=0; iVar< nVar; iVar++) {
+		Residual[iVar] = Residual[iVar]*Volume;
+	}
+
+	// compute the Jacobians of the source terms
+
+	if (implicit) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+			for (jVar = 0; jVar < nVar; jVar++) {
+				Jacobian_i[iVar][jVar] = 0.0;
+			}
+		}
+
+		Jacobian_i[1][0] = Density_mixture_i*Growth_rate*Volume;
+		Jacobian_i[2][1] = 2.0*Density_mixture_i*Growth_rate*Volume;
+		Jacobian_i[3][2] = 3.0*Density_mixture_i*Growth_rate*Volume;
+
+	}
 
 }
 

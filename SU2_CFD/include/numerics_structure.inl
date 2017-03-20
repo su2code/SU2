@@ -96,6 +96,9 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double **v
 inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, 
                                    CConfig *config) { }
 
+inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double *val_liquid_i, 
+                                   CConfig *config) { }
+
 inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                    su2double **val_JacobianMeanFlow_i, su2double **val_JacobianMeanFlow_j, CConfig *config) { }
 
