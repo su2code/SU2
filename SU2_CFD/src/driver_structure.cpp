@@ -3966,7 +3966,12 @@ CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,
   direct_iteration = new CIteration*[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++){
-    direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+    if(config_container[iZone]->GetBoolTurbomachinery()){
+      direct_iteration[iZone] = new CTurboIteration(config_container[iZone]);
+    }
+    else{
+      direct_iteration[iZone] = new CFluidIteration(config_container[iZone]);
+    }
   }
 
 }
