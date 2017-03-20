@@ -74,19 +74,25 @@ public:
     virtual ~CNucleationModel(void);
 
     /*!
-     * \brief return liquid density value.
+     * \brief return the nucleation rate.
      */
-    su2double GetNucleation_Rate(void);
+    su2double GetNucleationRate(void);
 
     /*!
-     * \brief return liquid enthalpy value.
+     * \brief return the growth rate.
      */
     su2double GetGrowthRate(void);
 
     /*!
-     * \brief return liquid density value.
+     * \brief compute the nucleation rate.
      */
-    virtual   void SetNucleation_GrowthRate(su2double P, su2double T, su2double rho,
+    virtual   void SetNucleationRate(su2double P, su2double T, su2double rho,
+            su2double h, su2double k, su2double mu, su2double V_Liquid);
+
+    /*!
+     * \brief compute the growth rate.
+     */
+    virtual   void SetGrowthRate(su2double P, su2double T, su2double rho,
             su2double h, su2double k, su2double mu, su2double V_Liquid);
 
 };
@@ -118,10 +124,17 @@ public:
   virtual ~CClassicalTheory(void);
   
   /*!
-   * \brief return liquid density value.
+   * \brief compute the nucleation rate.
    */
-  void SetNucleation_GrowthRate(su2double P, su2double T, su2double rho,
-          su2double h, su2double k, su2double mu, su2double V_Liquid);
+  void SetNucleationRate(su2double P, su2double T, su2double rho,
+          su2double h, su2double k, su2double mu, su2double *V_Liquid);
+
+  /*!
+   * \brief compute the growth rate.
+   */
+  void SetGrowthRate(su2double P, su2double T, su2double rho,
+          su2double h, su2double k, su2double mu, su2double *V_Liquid);
+
 };
 
 

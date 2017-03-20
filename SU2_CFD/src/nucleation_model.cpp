@@ -58,13 +58,13 @@ CClassicalTheory::~CClassicalTheory(void) {
 }
 
 
-void CClassicalTheory::SetNucleation_GrowthRate (su2double P, su2double T, su2double rho,
-		                      su2double h, su2double k, su2double mu, su2double V_l) {
+void CClassicalTheory::SetNucleationRate (su2double P, su2double T, su2double rho,
+		                      su2double h, su2double k, su2double mu, su2double *V_l) {
 
 	// V_l = T, rho, h, Psat, Tsat, sigma, Rc
 
 	if ((V_l[4]-T) < 0) {
-		J = 0; G = 0;
+		J = 0;
 	} else {
 
 		Theta = (h - V_l[2])/Gas_Constant/T;
@@ -73,9 +73,22 @@ void CClassicalTheory::SetNucleation_GrowthRate (su2double P, su2double T, su2do
 
 		J  = -4.0*3.14*V_l[5]*V_l[6]*V_l[6] / 3 / T / Boltzmann;
 
-	    J = exp(J) * rho/V_l[1]*sqrt(2*V_Liquid[5] / 3.14 / MolMass);
+	    J = exp(J) * rho/V_l[1]*sqrt(2*V_l[5] / 3.14 / MolMass);
 
 	    J = J / (1+Theta);
+
+	}
+
+}
+
+void CClassicalTheory::SetGrowthRate (su2double P, su2double T, su2double rho,
+		                      su2double h, su2double k, su2double mu, su2double *V_l) {
+
+	// V_l = T, rho, h, Psat, Tsat, sigma, Rc
+
+	if ((V_l[4]-T) < 0) {
+		G = 0;
+	} else {
 
 		G = k * (V_l[4] - T);
 
@@ -98,7 +111,6 @@ void CClassicalTheory::SetNucleation_GrowthRate (su2double P, su2double T, su2do
 	}
 
 }
-
 
 
 

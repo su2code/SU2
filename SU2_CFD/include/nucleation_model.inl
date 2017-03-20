@@ -36,5 +36,9 @@
 inline su2double CNucleationModel::GetNucleationRate() { return J; }
 inline su2double CNucleationModel::GetGrowthRate() { return G; }
 
-inline su2double CNucleationModel::SetNucleation_GrowthRate(su2double P, su2double T, su2double rho,
-		                      su2double h, su2double k, su2double mu, su2double V_l) { return J, G; }
+inline su2double CNucleationModel::SetNucleationRate(su2double P, su2double T, su2double rho,
+		                      su2double h, su2double k, su2double mu, su2double *V_l) { return J; }
+
+inline su2double CNucleationModel::SetGrowthRate(su2double P, su2double T, su2double rho,
+		                      su2double h, su2double k, su2double mu, su2double *V_l) { return G; }
+		                      

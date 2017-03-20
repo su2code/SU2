@@ -36,7 +36,7 @@
 
 
 
-CUpw_2phaseHill::CUpw_2phaseHill(unsigned short val_nDim, unsigned short val_nVar,
+CUpw_2phaseHill_Rus::CUpw_2phaseHill_Rus(unsigned short val_nDim, unsigned short val_nVar,
                                  CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit        = (config->GetKind_TimeIntScheme_2phase() == EULER_IMPLICIT);
@@ -48,15 +48,17 @@ CUpw_2phaseHill::CUpw_2phaseHill(unsigned short val_nDim, unsigned short val_nVa
   
 }
 
-CUpw_2phaseHill::~CUpw_2phaseHill(void) {
+CUpw_2phaseHill_Rus::~CUpw_2phaseHill_Rus(void) {
   
   delete [] Velocity_i;
   delete [] Velocity_j;
   
 }
 
-void CUpw_2phaseHill::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpw_2phaseHill_Rus::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+	// compute the advective fluxes for the moments equations
+
   AD::StartPreacc();
   AD::SetPreaccIn(Two_phaseVar_i,2);
   AD::SetPreaccIn(Two_phaseVar_j,2);
@@ -114,11 +116,11 @@ void CUpw_2phaseHill::ComputeResidual(su2double *val_residual, su2double **val_J
   
 }
 
-void  CUpw_2phaseHill::ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {
+void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {
 
 	unsigned short iVar;
 
-	// for euler equations, mass transfer
+	// compute the source terms for the governing equations of the continuum phase
 
 	q_ij = 0;
 
@@ -151,7 +153,12 @@ void  CUpw_2phaseHill::ComputeResidual_2phase(su2double *Primitive, su2double *R
 
 }
 
-void CUpw_2phaseHill::ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config) {
+void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config) {
+
+	unsigned short iVar;
+
+	// compute the source terms for the moments equations
+
 }
 
 

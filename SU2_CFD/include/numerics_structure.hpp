@@ -2289,7 +2289,7 @@ public:
  * \class CUpw_2phaseHill
  * \brief Class for doing a scalar upwind solver for the hill's 2phase model equations.
  */
-class CUpw_2phaseHill : public CNumerics {
+class CUpw_2phaseHill_Rus : public CNumerics {
 private:
   su2double *Velocity_i, *Velocity_j;
   bool implicit, grid_movement, incompressible;
@@ -2308,12 +2308,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpw_2phaseHill(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpw_2phaseHill_Rus(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpw_2phaseHill(void);
+  ~CUpw_2phaseHill_Rus(void);
 
 
   // routines from CNucleationModel
@@ -2338,7 +2338,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 
-  void ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+  void ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
 
   void ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config);
 
