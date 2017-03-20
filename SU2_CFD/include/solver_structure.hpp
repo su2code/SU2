@@ -3536,6 +3536,13 @@ public:
    */
   virtual void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetFreeStream_TurboSolution(CConfig *config);
+
+
 };
 
 /*!
@@ -5713,6 +5720,11 @@ public:
    */
   void SetFreeStream_Solution(CConfig *config);
 
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_TurboSolution(CConfig *config);
 
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.

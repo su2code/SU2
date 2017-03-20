@@ -14971,6 +14971,56 @@ void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
   }
 }
 
+void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+  unsigned short iZone  =  config->GetiZone();
+  su2double *turboVelocity, *cartVelocity, *turboNormal;
+  bool RightSol;
+
+  su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+  su2double Mach             = config->GetMach();
+  su2double SoundSpeed;
+
+  turboVelocity   = new su2double[nDim];
+  cartVelocity    = new su2double[nDim];
+
+  turboNormal     = config->GetFreeStreamTurboNormal();
+
+  FluidModel->SetTDState_Prho(Pressure_Inf, Density_Inf);
+  SoundSpeed = FluidModel->GetSoundSpeed();
+
+  /*--- Compute the Free Stream velocity, using the Mach number ---*/
+  turboVelocity[0] = cos(Alpha)*Mach*SoundSpeed;
+  turboVelocity[1] = sin(Alpha)*Mach*SoundSpeed;
+
+
+  if (nDim == 3) {
+    turboVelocity[2] = 0.0;
+  }
+
+  ComputeBackVelocity(turboVelocity, turboNormal, cartVelocity, INFLOW, config->GetKind_TurboMachinery(iZone));
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->SetSolution(0, Density_Inf);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      node[iPoint]->SetSolution(iDim+1, Density_Inf*cartVelocity[iDim]);
+    }
+    node[iPoint]->SetSolution(nVar-1, Density_Inf*Energy_Inf);
+
+    RightSol = node[iPoint]->SetPrimVar(FluidModel);
+    node[iPoint]->SetSecondaryVar(FluidModel);
+  }
+
+  delete [] turboVelocity;
+  delete [] cartVelocity;
+
+
+}
+
+
+
 void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint, nVert;

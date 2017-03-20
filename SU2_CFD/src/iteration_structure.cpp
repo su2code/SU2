@@ -875,11 +875,15 @@ void CTurboIteration::Preprocess(COutput *output,
 
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  bool restart   = (config_container[val_iZone]->GetRestart() || config_container[val_iZone]->GetRestart_Flow());
 
   if(ExtIter == 0){
       geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone], val_iZone, INFLOW, true);
       geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],val_iZone, OUTFLOW, true);
       geometry_container[val_iZone][MESH_0]->GatherInOutAverageValues(config_container[val_iZone], true);
+      if(!restart){
+        solver_container[val_iZone][MESH_0][FLOW_SOL]->SetFreeStream_TurboSolution(config_container[val_iZone]);
+      }
       solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],INFLOW);
       solver_container[val_iZone][MESH_0][FLOW_SOL]->PreprocessAverage(solver_container[val_iZone][MESH_0], geometry_container[val_iZone][MESH_0],config_container[val_iZone],OUTFLOW);
   }

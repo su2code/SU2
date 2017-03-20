@@ -859,7 +859,7 @@ private:
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
-
+  su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -6887,6 +6887,19 @@ public:
    */
   su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
   
+
+  /*!
+   *
+   * \brief Set freestream turbonormal for initializing solution.
+   */
+  void SetFreeStreamTurboNormal(su2double* turboNormal);
+
+  /*!
+   *
+   * \brief Set freestream turbonormal for initializing solution.
+   */
+  su2double* GetFreeStreamTurboNormal(void);
+
   /*!
    * \brief Get the verbosity level of the console output.
    * \return Verbosity level for the console output.

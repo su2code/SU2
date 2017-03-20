@@ -971,6 +971,8 @@ inline void CSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, 
 
 inline void CSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
+inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
+
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CEulerSolver::GetModVelocity_Inf(void) { 
@@ -1361,10 +1363,10 @@ inline void CEulerSolver::SetDensityIn(su2double value, unsigned short inMarkerT
 inline void CEulerSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureIn[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::SetTurboVelocityIn(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){
-	unsigned short iDim;
+  unsigned short iDim;
 
-	for(iDim = 0; iDim < nDim; iDim++)
-		TurboVelocityIn[inMarkerTP][valSpan][iDim] = value[iDim];
+  for(iDim = 0; iDim < nDim; iDim++)
+    TurboVelocityIn[inMarkerTP][valSpan][iDim] = value[iDim];
 }
 
 inline void CEulerSolver::SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityOut[inMarkerTP][valSpan] = value;}
@@ -1372,50 +1374,50 @@ inline void CEulerSolver::SetDensityOut(su2double value, unsigned short inMarker
 inline void CEulerSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureOut[inMarkerTP][valSpan] = value;}
 
 inline void CEulerSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){
-	unsigned short iDim;
+  unsigned short iDim;
 
-	for(iDim = 0; iDim < nDim; iDim++)
-		TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
+  for(iDim = 0; iDim < nDim; iDim++)
+    TurboVelocityOut[inMarkerTP][valSpan][iDim] = value[iDim];
 }
 
 inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short kind_turb) {
 
-	if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
-		turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-		turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
-		turboVelocity[0] = cartesianVelocity[2];
-	}
-	else{
-			turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-			turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
-			if (marker_flag == INFLOW){
-				turboVelocity[0] *= -1.0;
-				turboVelocity[1] *= -1.0;
-			}
-			if(nDim == 3)
-				turboVelocity[2] = cartesianVelocity[2];
-	}
+  if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
+    turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+    turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+    turboVelocity[0] = cartesianVelocity[2];
+  }
+  else{
+    turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+    turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+    if (marker_flag == INFLOW){
+      turboVelocity[0] *= -1.0;
+      turboVelocity[1] *= -1.0;
+    }
+    if(nDim == 3)
+      turboVelocity[2] = cartesianVelocity[2];
+  }
 }
 
 inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short kind_turb){
 
-	if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
-		cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
-		cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
-		cartesianVelocity[2] = turboVelocity[0];
-	}
-	else{
-			cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
-			cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+  if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+    cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+    cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+    cartesianVelocity[2] = turboVelocity[0];
+  }
+  else{
+    cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+    cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
 
-			if (marker_flag == INFLOW){
-				cartesianVelocity[0] *= -1.0;
-				cartesianVelocity[1] *= -1.0;
-			}
+    if (marker_flag == INFLOW){
+      cartesianVelocity[0] *= -1.0;
+      cartesianVelocity[1] *= -1.0;
+    }
 
-			if(nDim == 3)
-				cartesianVelocity[2] = turboVelocity[2];
-	}
+    if(nDim == 3)
+      cartesianVelocity[2] = turboVelocity[2];
+  }
 }
 
 
