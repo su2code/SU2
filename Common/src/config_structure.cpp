@@ -3680,62 +3680,62 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Identification of Fluid-Structure interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-	unsigned short indexMarker = 0;
+    unsigned short indexMarker = 0;
     Marker_CfgFile_FSIinterface[iMarker_CfgFile] = NO;
     for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_FSIinterface[iMarker_FSIinterface])
-			indexMarker = (int)(iMarker_FSIinterface/2+1);
-	  Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
+        indexMarker = (int)(iMarker_FSIinterface/2+1);
+    Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
   }
 
   /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-	unsigned short indexMarker=0;
-	Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
-	Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
+    unsigned short indexMarker=0;
+    Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
+    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
     for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++){
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_Turbomachinery]){
-      	indexMarker=(iMarker_Turbomachinery+1);
+        indexMarker=(iMarker_Turbomachinery+1);
         Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
         Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = INFLOW;
       }
-    	if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
-				indexMarker=(iMarker_Turbomachinery+1);
-				Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
-				Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
-    	}
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
+        indexMarker=(iMarker_Turbomachinery+1);
+        Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
+      }
     }
   }
   if(GetBoolTurbomachinery()){
-		unsigned short count = 0;
-		nBlades = new su2double[nZone];
-		su2double pitch;
-		for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-			unsigned short iMarker_PerBound;
-			for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
-				if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
-					if (count == 0){
-						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-						nBlades[count]= 2*PI_NUMBER/pitch;
-						if (pitch <= EPS){
-							nBlades[count]= 1.0;
-						}
+    unsigned short count = 0;
+    nBlades = new su2double[nZone];
+    su2double pitch;
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      unsigned short iMarker_PerBound;
+      for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
+        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
+          if (count == 0){
+            pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+            nBlades[count]= 2*PI_NUMBER/pitch;
+            if (pitch <= EPS){
+              nBlades[count]= 1.0;
+            }
 
-//						cout << nBlades[count] <<" in zone "<<  count<<endl;
-						count++;
-					}
-					if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (pitch <= EPS) ) && (count < nZone)){
-						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-						nBlades[count]= 2*PI_NUMBER/pitch;
-						if (pitch <= EPS){
-							nBlades[count]= 1.0;
-						}
-//						cout << nBlades[count] <<" in zone "<<  count<<endl;
-						count++;
-					}
-				}
-		}
+            //						cout << nBlades[count] <<" in zone "<<  count<<endl;
+            count++;
+          }
+          if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (pitch <= EPS) ) && (count < nZone)){
+            pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+            nBlades[count]= 2*PI_NUMBER/pitch;
+            if (pitch <= EPS){
+              nBlades[count]= 1.0;
+            }
+            //						cout << nBlades[count] <<" in zone "<<  count<<endl;
+            count++;
+          }
+        }
+    }
   }
   /*--- Identification of MixingPlane interface markers ---*/
 
@@ -6836,4 +6836,14 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
   y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
 
   return y;
+}
+
+void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
+
+  FreeStreamTurboNormal= new su2double[3];
+
+  FreeStreamTurboNormal[0] = turboNormal[0];
+  FreeStreamTurboNormal[1] = turboNormal[1];
+  FreeStreamTurboNormal[0] = 0.0;
+
 }

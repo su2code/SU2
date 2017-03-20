@@ -931,6 +931,8 @@ inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
 
+inline su2double* CConfig::GetFreeStreamTurboNormal(void){return FreeStreamTurboNormal;}
+
 inline unsigned short CConfig::GetKind_AverageProcess(void) { return Kind_AverageProcess; }
 
 inline unsigned short CConfig::GetKind_PerformanceAverageProcess(void) { return Kind_PerformanceAverageProcess; }
