@@ -796,7 +796,14 @@ inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_c
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 							        unsigned short iMesh, unsigned long Iteration) { }	
 
-inline void CSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) { }
+inline void CSolver:: CheckTimeSynchronization(CConfig         *config,
+                                               const su2double TimeSync,
+                                               su2double       &timeEvolved,
+                                               bool            &syncTimeReached) {}
+
+inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                               CNumerics **numerics, CConfig *config,
+                                               unsigned short iMesh, unsigned short RunTime_EqSystem) {}
 							        
 inline void CSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
                       unsigned short iMesh) { }  
@@ -856,9 +863,6 @@ inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_
 
 inline void CSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) { }
-
-inline void CSolver::ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                       CConfig *config, unsigned short iStep) { }
 
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
@@ -2070,9 +2074,6 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
-inline void CSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
-                                                         unsigned short iTime) {}
-
 inline void CSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
 
@@ -2081,8 +2082,6 @@ inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_conta
 
 inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight) {}
 
 inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig    *config,
                                                           const bool useADER) {}

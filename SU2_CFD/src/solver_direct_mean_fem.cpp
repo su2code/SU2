@@ -2054,8 +2054,9 @@ void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  
+  /* Check whether or not a time stepping scheme is used. */
+  const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
@@ -2085,7 +2086,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long i=0; i<nVolElemOwned; ++i) {
-        
+
         /*--- Loop over the DOFs of this element and determine
               the maximum wave speed. ---*/
         su2double charVel2Max = 0.0;
@@ -2119,19 +2120,21 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         }
         
         /*--- Compute the time step for the element and update the minimum and
-         maximum value. Note that in the length scale the polynomial degree
-         must be taken into account for the high order element. ---*/
+              maximum value. Take the factor for time accurate local time
+              stepping into account for the minimum and maximum. Note that in
+              the length scale the polynomial degree must be taken into account
+              for the high order element. ---*/
         const unsigned short ind = volElem[i].indStandardElement;
         unsigned short nPoly = standardElementsSol[ind].GetNPoly();
         if(nPoly == 0) nPoly = 1;
         
         const su2double lenScaleInv = nPoly/volElem[i].lenScale;
-        const su2double dtInv       = lenScaleInv*charVel2Max;
+        const su2double dtInv       = lenScaleInv*sqrt(charVel2Max);
         
         VecDeltaTime[i] = CFL/dtInv;
         
-        Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
-        Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
+        Min_Delta_Time = min(Min_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
+        Max_Delta_Time = max(Max_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
       }
     }
     else {
@@ -2160,7 +2163,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     }
     
     /*--- Compute the max and the min dt (in parallel). Note that we only
-     so this for steady calculations if the high verbosity is set, but we
+     do this for steady calculations if the high verbosity is set, but we
      always perform the reduction for unsteady calculations where the CFL
      limit is used to set the global time step. ---*/
     if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
@@ -2172,13 +2175,185 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
       SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
     }
-    /*--- For explicit time stepping with an unsteady CFL imposed, 
-     use the minimum delta time of the entire mesh. ---*/
+
+    /*--- For explicit time stepping with an unsteady CFL imposed, use the
+          minimum delta time of the entire mesh. As Min_Delta_Time is scaled to
+          the time step of the largest time level, a correction must be used
+          for the time level when time accurate local time stepping is used. ---*/
     if (time_stepping) {
       for(unsigned long i=0; i<nVolElemOwned; ++i)
-        VecDeltaTime[i] = Min_Delta_Time;
+        VecDeltaTime[i] = Min_Delta_Time/volElem[i].factTimeLevel;
     }
   }
+}
+
+void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
+                                                   const su2double TimeSync,
+                                                   su2double       &timeEvolved,
+                                                   bool            &syncTimeReached) {
+
+  /* Check if this is the first time this check is carried out
+     and determine the new time evolved. */
+  const bool firstTime = timeEvolved == 0.0;
+  timeEvolved         += Min_Delta_Time;
+
+  /*--- Check for a (too) small a value for the synchronization time and
+        print a warning if this happens. ---*/
+  if(firstTime && timeEvolved >= 1.5*TimeSync) {
+
+    int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+    if(rank == MASTER_NODE) {
+      cout << endl << "              WARNING" << endl;
+      cout << "The specified synchronization time is " << timeEvolved/TimeSync
+           << " times smaller than the time step for stability" << endl;
+      cout << "This is inefficient!!!!!" << endl << endl;
+    }
+  }
+
+  /*--- If the current value of timeEvolved is larger or equal than the
+        synchronization time, syncTimeReached is set to true and a correction
+        to the time step is carried out. The factor for the time accurate local
+        time stepping must be taken into account. If the synchronization time
+        has not been reached yet, syncTimeReached is set to false. ---*/
+  if(timeEvolved >= TimeSync) {
+    syncTimeReached = true;
+    const su2double newDeltaTime = Min_Delta_Time + (TimeSync - timeEvolved);
+
+    for(unsigned long i=0; i<nVolElemOwned; ++i)
+      VecDeltaTime[i] = newDeltaTime/volElem[i].factTimeLevel;
+  }
+  else syncTimeReached = false;
+}
+
+void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                                    CNumerics **numerics, CConfig *config,
+                                                    unsigned short iMesh, unsigned short RunTime_EqSystem) {
+
+  su2double tick = 0.0;
+
+  /*--- Preprocessing ---*/
+  config->Tick(&tick);
+  Preprocessing(geometry, solver_container, config, iMesh, 0, RunTime_EqSystem, false);
+  config->Tock(tick,"Preprocessing",2);
+
+  /*--- Set the old solution, carry out the predictor step and set the number
+        of time integration points and the corresponding weights. ---*/
+  Set_OldSolution(geometry);
+
+  config->Tick(&tick);
+  ADER_DG_PredictorStep(config, 0);
+  config->Tock(tick,"ADER_DG_PredictorStep",2);
+
+  const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
+  const su2double     *timeIntegrationWeights = config->GetWeightsIntegrationADER_DG();
+
+  /* Loop over the number of integration points in time. */
+  for(unsigned short iTime=0; iTime<nTimeIntegrationPoints; iTime++) {
+
+    /* The predictor solution must be interpolated in time to the correct
+       time location of the current integration point. */
+    config->Tick(&tick);
+    ADER_DG_TimeInterpolatePredictorSol(config, iTime);
+    config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
+
+    /* Compute the artificial viscosity for shock capturing in DG. */
+    config->Tick(&tick);
+    Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    config->Tock(tick,"Shock_Capturing",3);
+
+    /*--- Compute the volume portion of the residual. ---*/
+    config->Tick(&tick);
+    Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    config->Tock(tick,"Volume_Residual",3);
+
+    /*--- Compute source term residuals ---*/
+    config->Tick(&tick);
+    Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+    config->Tock(tick,"Source_Residual",3);
+
+    /*--- Boundary conditions ---*/
+    for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      switch (config->GetMarker_All_KindBC(iMarker)) {
+        case EULER_WALL:
+          config->Tick(&tick);
+          BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Euler_Wall",3);
+          break;
+        case FAR_FIELD:
+          config->Tick(&tick);
+          BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Far_Field",3);
+          break;
+        case SYMMETRY_PLANE:
+          config->Tick(&tick);
+          BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Sym_Plane",3);
+          break;
+        case INLET_FLOW:
+          config->Tick(&tick);
+          BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Inlet",3);
+          break;
+        case OUTLET_FLOW:
+          config->Tick(&tick);
+          BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Outlet",3);
+          break;
+        case ISOTHERMAL:
+          config->Tick(&tick);
+          BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Isothermal_Wall",3);
+          break;
+        case HEAT_FLUX:
+          config->Tick(&tick);
+          BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_HeatFlux_Wall",3);
+          break;
+        case CUSTOM_BOUNDARY:
+          config->Tick(&tick);
+          BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+          config->Tock(tick,"BC_Custom",3);
+          break;
+        case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+          break;
+        default:
+          cout << "BC not implemented." << endl;
+#ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+#else
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#endif
+      }
+    }
+
+    /*--- Compute surface portion of the residual. ---*/
+    config->Tick(&tick);
+    Surface_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+    config->Tock(tick,"Surface_Residual",3);
+
+    /*--- Accumulate the space time residual. ---*/
+    AccumulateSpaceTimeResidualADER(iTime, timeIntegrationWeights[iTime]);
+  }
+
+  /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
+  config->Tick(&tick);
+  MultiplyResidualByInverseMassMatrix(config, true);
+  config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
+
+  /*--- Perform the time integration ---*/
+  config->Tick(&tick);
+  ADER_DG_Iteration(geometry, solver_container, config, 0);
+  config->Tock(tick,"ADER_DG_Iteration",3);
+
+  /*--- Postprocessing ---*/
+  config->Tick(&tick);
+  Postprocessing(geometry, solver_container, config, iMesh);
+  config->Tock(tick,"Postprocessing",2);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig *config, unsigned short iStep) {
@@ -5262,7 +5437,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  /* Check whether or not a time stepping scheme is used. */
+  const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
@@ -5281,14 +5457,14 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   /* Store the number of metric points per DOF, which depends
      on the number of dimensions. */
   const unsigned short nMetricPerPoint = nDim*nDim + 1;
-  
+
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
   /* Easier storage of the CFL number. Note that if we are using explicit
    time stepping, the regular CFL condition has been overwritten with the
    unsteady CFL condition in the config post-processing (if non-zero). */
-  
+
   const su2double CFL = config->GetCFL(iMesh);
 
   /*--- Explicit time stepping with imposed time step (eventually will
@@ -5297,18 +5473,17 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
    it uses the defined unsteady time step, otherwise it computes the time
    step based on the provided unsteady CFL. Note that the regular CFL
    option in the config is always ignored with time stepping. ---*/
-  
   if (time_stepping && (config->GetUnst_CFL() == 0.0)) {
-    
+
     /*--- Loop over the owned volume elements and set the fixed dt. ---*/
     for(unsigned long i=0; i<nVolElemOwned; ++i)
       VecDeltaTime[i] = config->GetDelta_UnstTimeND();
-    
+ 
   } else {
-    
+
     /*--- Check for a compressible solver. ---*/
     if(config->GetKind_Regime() == COMPRESSIBLE) {
-      
+
       /*--- Loop over the owned volume elements. ---*/
       for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
@@ -5336,7 +5511,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
           DenseMatrixProduct(nDOFs*nDim, nVar, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
         }
-        
+
         /*--- Loop over the DOFs of this element and determine the maximum wave speed
               and the maximum value of the viscous spectral radius. ---*/
         su2double charVel2Max = 0.0, radViscMax = 0.0;
@@ -5352,22 +5527,22 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
             velAbs[iDim] = fabs(vel[iDim]);
             Velocity2 += vel[iDim]*vel[iDim];
           }
-          
+
           /*--- Compute the maximum value of the wave speed. This is a rather
                 conservative estimate. ---*/
           const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
           FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
           const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
           const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
-          
+
           su2double charVel2 = 0.0;
           for(unsigned short iDim=0; iDim<nDim; ++iDim) {
             const su2double rad = velAbs[iDim] + SoundSpeed;
             charVel2 += rad*rad;
           }
-          
+
           charVel2Max = max(charVel2Max, charVel2);
-          
+
           /* Compute the laminar kinematic viscosity and check if an eddy
              viscosity must be determined. */
           const su2double muLam = FluidModel->GetLaminarViscosity();
@@ -5428,32 +5603,33 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
           /* Update the maximum value of the viscous spectral radius. */
           radViscMax = max(radViscMax, radVisc);
         }
-        
+
         /*--- Compute the time step for the element and update the minimum and
-              maximum value. ---*/
-        const su2double dtInv = lenScaleInv*(charVel2Max + radViscMax*lenScaleInv);
-        
+              maximum value. Take the factor for time accurate local time
+              stepping into account for the minimum and maximum. ---*/
+        const su2double dtInv = lenScaleInv*(sqrt(charVel2Max) + radViscMax*lenScaleInv);
+
         VecDeltaTime[i] = CFL/dtInv;
-        
-        Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
-        Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
+
+        Min_Delta_Time = min(Min_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
+        Max_Delta_Time = max(Max_Delta_Time, volElem[i].factTimeLevel*VecDeltaTime[i]);
       }
     }
     else {
-      
+
       /*--- Incompressible solver. ---*/
-      
+
       int rank = MASTER_NODE;
 #ifdef HAVE_MPI
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
       MPI_Barrier(MPI_COMM_WORLD);
 #endif
-      
+
       if(rank == MASTER_NODE) {
         cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
         cout << "Incompressible solver not implemented yet" << endl;
       }
-      
+
 #ifdef HAVE_MPI
       MPI_Barrier(MPI_COMM_WORLD);
       MPI_Abort(MPI_COMM_WORLD,1);
@@ -5461,9 +5637,9 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 #else
       exit(EXIT_FAILURE);
 #endif
-      
+
     }
-    
+
     /*--- Compute the max and the min dt (in parallel). Note that we only
      so this for steady calculations if the high verbosity is set, but we
      always perform the reduction for unsteady calculations where the CFL
@@ -5477,11 +5653,14 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
       SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #endif
     }
-    /*--- For explicit time stepping with an unsteady CFL imposed, 
-     use the minimum delta time of the entire mesh. ---*/
+
+    /*--- For explicit time stepping with an unsteady CFL imposed, use the
+          minimum delta time of the entire mesh. As Min_Delta_Time is scaled to
+          the time step of the largest time level, a correction must be used
+          for the time level when time accurate local time stepping is used. ---*/
     if (time_stepping) {
       for(unsigned long i=0; i<nVolElemOwned; ++i)
-        VecDeltaTime[i] = Min_Delta_Time;
+        VecDeltaTime[i] = Min_Delta_Time/volElem[i].factTimeLevel;
     }
   }
 }

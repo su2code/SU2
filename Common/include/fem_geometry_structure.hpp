@@ -36,6 +36,106 @@
 
 using namespace std;
 
+/*! 
+ * \class long3T
+ * \brief Help class used to store three longs as one entity.
+ * \version 5.0.0 "Cardinal"
+ */
+class long3T {
+public:
+  long long0;  /*!< \brief First long to store in this class. */
+  long long1;  /*!< \brief Second long to store in this class. */
+  long long2;  /*!< \brief Third long to store in this class. */
+
+  /* Constructors and destructors. */
+  long3T();
+  ~long3T();
+
+  long3T(const long a, const long b, const long c);
+
+  long3T(const long3T &other);
+
+  /* Operators. */
+  long3T& operator=(const long3T &other);
+
+  bool operator<(const long3T &other) const;
+
+private:
+  /* Copy function. */
+  void Copy(const long3T &other);
+};
+
+/*!
+ * \class CReorderElementClass
+ * \brief Class, used to reorder the owned elements after the partitioning.
+ * \author E. van der Weide
+ * \version 4.1.0 "Cardinal"
+ */
+class CReorderElementClass {
+public:
+  /*!
+   * \brief Constructor of the class, set the member variables to the arguments.
+   */
+  CReorderElementClass(const unsigned long  val_GlobalElemID,
+                       const unsigned short val_TimeLevel,
+                       const bool           val_CommSolution);
+
+  /*!
+   * \brief Destructor of the class. Nothing to be done.
+   */
+  ~CReorderElementClass(void);
+
+  /*!
+   * \brief Copy constructor of the class.
+   */
+  CReorderElementClass(const CReorderElementClass &other);
+
+  /*!
+   * \brief Assignment operator of the class.
+   */
+  CReorderElementClass& operator=(const CReorderElementClass &other);
+
+  /*!
+   * \brief Less than operator of the class. Needed for the sorting.
+   */
+  bool operator<(const CReorderElementClass &other) const;
+
+  /*!
+   * \brief Function to make available the variable commSolution.
+   * \return Whether or not the solution of the element must be communicated.
+   */
+  bool GetCommSolution(void);
+
+  /*!
+   * \brief Function to make available the global element ID.
+   * \return The global element ID of the element.
+   */
+  unsigned long GetGlobalElemID(void);
+
+  /*!
+   * \brief Function to make available the time level.
+   * \return The time level of the element.
+   */
+  unsigned short GetTimeLevel(void);
+
+private:
+  unsigned long  globalElemID; /*!< \brief Global element ID of the element. */
+  unsigned short timeLevel;    /*!< \brief Time level of the element. Only relevant
+                                           for time accurate local time stepping. */
+  bool           commSolution; /*!< \brief Whether or not the solution must be
+                                           communicated to other ranks. */
+
+  /*!
+   * \brief Copy function. Needed for the copy constructor and assignment operator.
+   */
+  void Copy(const CReorderElementClass &other);
+
+  /*!
+   * \brief Default constructor of the class. Disabled.
+   */
+   CReorderElementClass(void);
+};
+
 /*!
  * \class SortFacesClass
  * \brief Functor, used for a different sorting of the faces than the < operator
@@ -54,7 +154,7 @@ public:
  /*!
   * \brief Destructor of the class. Nothing to be done.
   */
-  ~SortFacesClass();
+  ~SortFacesClass(void);
 
  /*!
   * \brief Operator used for the comparison.
@@ -71,52 +171,6 @@ private:
    * \brief Default constructor of the class. Disabled.
    */
    SortFacesClass(void);
-
-};
-
-/*!
- * \class CPointCompare
- * \brief Helper class used to determine whether two points are identical.
- * \author E. van der Weide
- * \version 4.1.0 "Cardinal"
- */
-class CPointCompare {
-public:
-  unsigned short nDim;       /*!< \brief Number of spatial dimensions. */
-  unsigned long  nodeID;     /*!< \brief The corresponding node ID in the grid. */
-  su2double coor[3];         /*!< \brief Coordinates of the point. */
-  su2double tolForMatching;  /*!< \brief Tolerance used to determine if points are matching. */
-
-  /*!
-   * \brief Constructor of the class. Nothing to be done
-   */
-  CPointCompare(void);
-
-  /*!
-   * \brief Destructor of the class. Nothing to be done.
-   */
-  ~CPointCompare(void);
-
-  /*!
-   * \brief Copy constructor of the class.
-   */
-  CPointCompare(const CPointCompare &other);
-
-  /*!
-   * \brief Assignment operator of the class.
-   */
-  CPointCompare& operator=(const CPointCompare &other);
-
-  /*!
-   * \brief Less than operator of the class. Needed for the sorting and searching.
-   */
-  bool operator<(const CPointCompare &other) const;
-
-private:
-  /*!
-   * \brief Copy function. Needed for the copy constructor and assignment operator.
-   */
-  void Copy(const CPointCompare &other);
 };
 
 /*!
@@ -144,8 +198,14 @@ public:
   unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
   unsigned short nDOFsSol;     /*!< \brief Number of DOFs for the solution of the element. */
   unsigned short nFaces;       /*!< \brief Number of faces of the element. */
+  unsigned short timeLevel;    /*!< \brief Time level of the element when time accurate local
+                                           time stepping is employed. */
 
   unsigned short indStandardElement; /*!< \brief Index in the vector of standard elements. */
+
+  unsigned int factTimeLevel;        /*!< \brief Number of local time steps for this element
+                                                 compared to the largest time step when time
+                                                 accurate local time stepping is employed. */
 
   unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
@@ -381,12 +441,6 @@ public:
   bool operator<(const CSurfaceElementFEM &other) const;
 
   /*!
-   *  \brief Function, which determines a length scale for this surface element.
-   *  \return  The relevant length scale for this surface element.
-   */
-  su2double DetermineLengthScale(vector<CPointFEM> &meshPoints);
-
-  /*!
    *  \brief Function, which determines the corner points of this surface element.
    *  \param[out] nPointsPerFace - Number of corner points of the face.
    *  \param[out] faceConn       - The corner points of the face.
@@ -436,6 +490,12 @@ class CMeshFEM: public CGeometry {
 protected:
   unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */
+
+  vector<unsigned long> nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
+                                                                  per time level. Cumulative storage. */
+  vector<unsigned long> nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
+                                                                  time level. Internal means that the solution
+                                                                  data does not need to be communicated. */
 
   vector<CVolumeElementFEM> volElem; /*!< \brief Vector of the local volume elements, including halos. */
 
