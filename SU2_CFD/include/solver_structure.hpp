@@ -496,14 +496,16 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in]     config          - Definition of the particular problem.
    * \param[in]     TimeSync        - The synchronization time.
    * \param[in,out] timeEvolved     - On input the time evolved before the time step,
                                       on output the time evolved after the time step.
    * \param[out]    syncTimeReached - Whether or not the synchronization time is reached.
    */
-  virtual void CheckTimeSynchronization(const su2double TimeSync,
-                                              su2double &timeEvolved,
-                                              bool      &syncTimeReached);
+  virtual void CheckTimeSynchronization(CConfig         *config,
+                                        const su2double TimeSync,
+                                        su2double       &timeEvolved,
+                                        bool            &syncTimeReached);
 
   /*!
    * \brief A virtual member.
@@ -12030,14 +12032,16 @@ public:
   /*!
    * \brief Function, which checks whether or not the time synchronization point is reached
             when explicit time stepping is used.
+   * \param[in]     config          - Definition of the particular problem.
    * \param[in]     TimeSync        - The synchronization time.
    * \param[in,out] timeEvolved     - On input the time evolved before the time step,
                                       on output the time evolved after the time step.
    * \param[out]    syncTimeReached - Whether or not the synchronization time is reached.
    */
-  void CheckTimeSynchronization(const su2double TimeSync,
-                                      su2double &timeEvolved,
-                                      bool      &syncTimeReached);
+  void CheckTimeSynchronization(CConfig         *config,
+                                const su2double TimeSync,
+                                su2double       &timeEvolved,
+                                bool            &syncTimeReached);
 
   /*!
    * \brief Function, to carry out the space time integration for ADER

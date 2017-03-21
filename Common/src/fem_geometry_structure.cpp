@@ -1391,6 +1391,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       shortSendBuf[i].push_back(volElem[indV].nDOFsGrid);
       shortSendBuf[i].push_back(volElem[indV].nDOFsSol);
       shortSendBuf[i].push_back(volElem[indV].nFaces);
+      shortSendBuf[i].push_back(volElem[indV].timeLevel);
 
       for(unsigned short k=0; k<volElem[indV].nDOFsGrid; ++k) {
         longSendBuf[i].push_back(volElem[indV].nodeIDsGrid[k]);
@@ -1555,6 +1556,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       volElem[indV].nDOFsGrid          = shortRecvBuf[i][indS++];
       volElem[indV].nDOFsSol           = shortRecvBuf[i][indS++];
       volElem[indV].nFaces             = shortRecvBuf[i][indS++];
+      volElem[indV].timeLevel          = shortRecvBuf[i][indS++];
 
       volElem[indV].nodeIDsGrid.resize(volElem[indV].nDOFsGrid);
       for(unsigned short k=0; k<volElem[indV].nDOFsGrid; ++k)
@@ -1823,7 +1825,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     iLow = iUpp;
   }
 
-  /*--- Convert the global node numbering in the elements to a local numbering. ---*/
+  /*--- Convert the global node numbering in the elements to a local numbering and
+        determine the value of factTimeLevel. This is the number of local time steps
+        of the element relative to the largest time step of an element in the mesh.
+        This value can only differ from 1 when time accurate local time stepping is
+        used. ---*/
   for(unsigned long i=0; i<nVolElemTot; ++i) {
     for(unsigned short j=0; j<volElem[i].nDOFsGrid; ++j) {
       unsignedLong2T searchItem(volElem[i].nodeIDsGrid[j],
@@ -1832,6 +1838,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       LLMI = mapGlobalPointIDToInd.find(searchItem);
       volElem[i].nodeIDsGrid[j] = LLMI->second;
     }
+
+    const unsigned short diffTimeLevel = nTimeLevels - 1 - volElem[i].timeLevel;
+    volElem[i].factTimeLevel = pow(2, diffTimeLevel);
   }
 }
 

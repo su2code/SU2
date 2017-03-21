@@ -796,9 +796,10 @@ inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_c
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 							        unsigned short iMesh, unsigned long Iteration) { }	
 
-inline void CSolver:: CheckTimeSynchronization(const su2double TimeSync,
-                                                     su2double &timeEvolved,
-                                                     bool      &syncTimeReached) {}
+inline void CSolver:: CheckTimeSynchronization(CConfig         *config,
+                                               const su2double TimeSync,
+                                               su2double       &timeEvolved,
+                                               bool            &syncTimeReached) {}
 
 inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                CNumerics **numerics, CConfig *config,
