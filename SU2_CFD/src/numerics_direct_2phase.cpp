@@ -153,7 +153,7 @@ void  CUpw_2phaseHill_Rus::ComputeResidual_HeatMassTransfer(su2double *Primitive
 
 }
 
-void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, CConfig *config) {
+void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, su2double *val_liquid_j, CConfig *config) {
 
 	unsigned short iVar, jVar;
 
@@ -212,7 +212,7 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacob
 }
 
 
-
+/*
 
 
 CUpw_2phaseQMOM::CUpw_2phaseQMOM(unsigned short val_nDim, unsigned short val_nVar,
@@ -240,8 +240,7 @@ void CUpw_2phaseQMOM::ComputeResidual(su2double *val_residual, su2double **val_J
 void  CUpw_2phaseQMOM::ComputeResidual_2phase(su2double *Primitive, su2double *Residual, su2double **Jacobian_i) {
 }
 
-void CUpw_2phaseQMOM::ComputeResidual(su2double *Residual, su2double **Jacobian_i, CConfig *config) {
-}
 
+*/
 
 

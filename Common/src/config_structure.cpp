@@ -3731,7 +3731,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         switch (Kind_2phase_Model) {
                   case NONE:     cout << "Single phase simulation" << endl; break;
-                  case HILL:     cout << "Hill's method of moments" << endl; break;
+                  case HILL_RUS:     cout << "Hill's method of moments, Rusanov flux" << endl; break;
                 }
         break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
@@ -3739,7 +3739,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         switch (Kind_2phase_Model) {
                   case NONE:     cout << "Single phase simulation" << endl; break;
-                  case HILL:     cout << "Hill's method of moments" << endl; break;
+                  case HILL_RUS:     cout << "Hill's method of moments, Rusanov flux" << endl; break;
                 }
         break;
       case RANS: case DISC_ADJ_RANS:
@@ -3753,7 +3753,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         switch (Kind_2phase_Model) {
                   case NONE:     cout << "Single phase simulation" << endl; break;
-                  case HILL:     cout << "Hill's method of moments" << endl; break;
+                  case HILL_RUS:     cout << "Hill's method of moments, Rusanov flux" << endl; break;
                 }
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;

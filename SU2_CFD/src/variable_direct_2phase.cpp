@@ -38,6 +38,8 @@ C2phaseVariable::C2phaseVariable(void) : CVariable() {
 	Source = 0; Enthalpy_Liquid = 0;
 	Radius = 0; Liquid_Fraction = 0;
 
+	Primitive_Liquid = new su2double [9];
+
 }
 
 C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
@@ -62,22 +64,24 @@ C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nva
 
 su2double C2phaseVariable::GetMassSource( )               { return Source; };
 
-void      C2phaseVariable::SetMassSource(su2double S)     {Source = S; };
+void      C2phaseVariable::SetSource(su2double S)     {Source = S; };
 
 su2double C2phaseVariable::GetLiquidEnthalpy( )           { return Enthalpy_Liquid; };
 
-void      C2phaseVariable::SetLiquidEnthalpy(su2double h) {Enthalpy_Liquid = h; };
+void      C2phaseVariable::SetLiqEnthalpy(su2double h) {Enthalpy_Liquid = h; };
 
 su2double C2phaseVariable::GetAverageRadius( )               { return Radius; };
 
-void      C2phaseVariable::SetAverageRadius(su2double R)     {Radius = R; };
+void      C2phaseVariable::SetRadius(su2double R)     {Radius = R;};
 
 su2double C2phaseVariable::GetLiquidFraction( )           { return Liquid_Fraction; };
 
-void      C2phaseVariable::SetLiquidFraction(su2double Y) {Liquid_Fraction = Y; };
+void      C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; };
 
 
-C2phaseVariable::~C2phaseVariable(void) { }
+C2phaseVariable::~C2phaseVariable(void) {
+	if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
+}
 
 
 

@@ -311,8 +311,6 @@ inline bool CVariable::SetPrimVar(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar(CFluidModel *FluidModel) { return true; }
 
-inline bool CVariable::SetPrimVar(CFluidModel *FluidModel, CConfig *config) { return true; }
-
 inline void CVariable::SetSecondaryVar(CFluidModel *FluidModel) { }
 
 inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
@@ -572,16 +570,6 @@ inline void CVariable::SetSolution_New(void) { }
 inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_solution) { }
 
 
-
-
-  inline void CVariable::SetMassSource(su2double S);
-  inline void CVariable::SetLiquidEnthalpy(su2double h) ;
-  
-  inline su2double CVariable::GetMassSource() ;
-  inline su2double CVariable::GetLiquidEnthalpy() ;
-
-
-
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
 inline void CEulerVariable::SetSolution_New(void) {
@@ -620,21 +608,6 @@ inline bool CEulerVariable::SetPressure(su2double pressure) {
   if (Primitive[nDim+1] > 0.0) return false;
   else return true;
 }
-
-
-
-
-
-inline void CEulerVariable::SetMassSource(su2double S) { 
- Primitive[sizeof Primitive -2] = S; }
- 
-inline void CEulerVariable::SetLiquidEnthalpy(su2double h) { 
- Primitive[sizeof Primitive -1] = h; }
- 
- 
- 
- 
- 
 
 inline void CEulerVariable::SetVelocity(void) {
   Velocity2 = 0.0;
@@ -749,30 +722,7 @@ inline void CEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
 inline su2double* CEulerVariable::GetWindGustDer() { return WindGustDer;}
 
 
-//for 2phase calculation 
-inline void CEulerVariable::SetLaminarViscosity(su2double laminarViscosity) {
-  Primitive[nDim+5] = laminarViscosity;
-}
 
-inline void CEulerVariable::SetThermalConductivity(su2double thermalConductivity) {
-  Primitive[nDim+7] = thermalConductivity;
-}
-
-inline void CEulerVariable::SetMassSource(su2double S) {
-  Primitive[sizeof Primitive - 4] = S;
-}
-
-inline void CEulerVariable::SetLiquidEnthalpy(su2double h) {
-  Primitive[sizeof Primitive - 3] = h;
-}
-
-inline void CEulerVariable::SetAverageRadius(su2double R) {
-  Primitive[sizeof Primitive - 2] = R;
-}
-
-inline void CEulerVariable::SetLiquidFraction(su2double Y) {
-  Primitive[sizeof Primitive - 1] = Y;
-}
 
 inline su2double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
 
@@ -1152,33 +1102,55 @@ inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
 
 
+
+inline void       C2phaseVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) { }
+
+inline su2double  C2phaseVariable::GetRadius() { return Radius; } 
+
+inline su2double  C2phaseVariable::GetLiquidPrim() { return *Primitive_Liquid; }
+
+inline void       C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config) {}
+
+inline  su2double C2phaseVariable::GetMassSource()             {return Source;} ;
+
+inline  void      C2phaseVariable::SetSource(su2double S)  {}   ;
+
+inline  su2double C2phaseVariable::GetLiquidEnthalpy()         {return Enthalpy_Liquid;}  ;
+
+inline  void      C2phaseVariable::SetLiqEnthalpy(su2double h) {};
+
+inline  su2double C2phaseVariable::GetAverageRadius()      {return Radius;}         ;
+
+inline  void      C2phaseVariable::SetRadius(su2double R)  {}   ;
+
+inline  su2double C2phaseVariable::GetLiquidFraction()    {return Liquid_Fraction;}       ;
+
+inline  void      C2phaseVariable::SetLiquidFrac(su2double Y) {};
+
  
-inline void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) { return R, S; }
+inline void CEulerVariable::SetLaminarViscosity(su2double laminarViscosity) {
+  Primitive[nDim+5] = laminarViscosity;
+}
 
-inline su2double C2phase_HillVariable::GetRadius() { return R; } 
+inline void CEulerVariable::SetThermalConductivity(su2double thermalConductivity) {
+  Primitive[nDim+7] = thermalConductivity;
+}
 
-inline su2double C2phase_HillVariable::GetMassSource() { return S; }
+inline void CEulerVariable::SetMassSource(su2double S) {
+  Primitive[sizeof Primitive - 4] = S;
+}
 
-inline su2double C2phase_HillVariable::GetLiquidPrim() { return V_l; }
+inline void CEulerVariable::SetLiquidEnthalpy(su2double h) {
+  Primitive[sizeof Primitive - 3] = h;
+}
 
-inline void C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config) {return V_l;}
+inline void CEulerVariable::SetAverageRadius(su2double R) {
+  Primitive[sizeof Primitive - 2] = R;
+}
 
-
-inline  su2double C2phaseVariable::GetMassSource()               ;
-
-inline  void      C2phaseVariable::SetMassSource(su2double S)     ;
-
-inline  su2double C2phaseVariable::GetLiquidEnthalpy()           ;
-
-inline  void      C2phaseVariable::SetLiquidEnthalpy(su2double h) ;
-
-inline  su2double C2phaseVariable::GetAverageRadius()               ;
-
-inline  void      C2phaseVariable::SetAverageRadius(su2double R)     ;
-
-inline  su2double C2phaseVariable::GetLiquidFraction()           ;
-
-inline  void      C2phaseVariable::SetLiquidFraction(su2double Y) ;
+inline void CEulerVariable::SetLiquidFraction(su2double Y) {
+  Primitive[sizeof Primitive - 1] = Y;
+}
 
 
 

@@ -698,10 +698,11 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
                                    CConfig *config) {
   
   unsigned short iMGlevel;
+  unsigned short two_phase = config->GetKind_2phase_Model();
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
-  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition, hill_rus, hill_ausm,
   template_solver, disc_adj;
   int val_iter = 0;
 
@@ -722,6 +723,8 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   transition       = false;
   template_solver  = false;
   
+  hill_rus = false; hill_ausm = false;
+
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
@@ -788,6 +791,17 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   
+  /*--- Assign 2phase model booleans ---*/
+
+  if (two_phase != 0)
+    switch (config->GetKind_2phase_Model()) {
+      case HILL_RUS:     hill_rus  = true;     break;
+//      case HILL_AUSM :   hill_ausm = true;     break;
+//      case QMOM_RUS:    QMOM_RUS = true;           break;
+
+      default: cout << "Specified 2phase model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
+    }
+
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
   
@@ -838,6 +852,11 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       }
       if (transition) {
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
+      }
+    }
+    if (two_phase !=0) {
+      if (hill_rus || hill_ausm) {
+        solver_container[iMGlevel][TWO_PHASE_SOL] = new C2phase_HillSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
     if (poisson) {
@@ -891,6 +910,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     if (turbulent) {
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
+    }
+    if (two_phase != 0 ) {
+      solver_container[MESH_0][TWO_PHASE_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
@@ -948,7 +970,8 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry,
                                     CConfig *config) {
   unsigned short iMGlevel;
-  bool euler, ns, turbulent,
+  unsigned short two_phase = config-> GetKind_2phase_Model();
+  bool euler, ns, turbulent, hill_rus, hill_ausm,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
@@ -994,6 +1017,12 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       case SST:    menter_sst = true;           break;
     }
   
+  if (two_phase !=0)
+    switch (config->GetKind_Turb_Model()) {
+      case HILL_RUS:     hill_rus  = true;     break;
+      case HILL_AUSM:    hill_ausm = true;     break;
+    }
+
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
   
@@ -1028,6 +1057,10 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
         delete solver_container[iMGlevel][TRANS_SOL];
       }
     }
+
+    if (two_phase != 0) {
+      delete solver_container[iMGlevel][TWO_PHASE_SOL];
+    }
     if (poisson) {
       delete solver_container[iMGlevel][POISSON_SOL];
     }
@@ -1051,6 +1084,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
       heat, template_solver, transition, disc_adj;
+  bool two_phase = (config->GetKind_2phase_Model() != 0);
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1089,6 +1123,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   if (ns) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   if (turbulent) integration_container[TURB_SOL] = new CSingleGridIntegration(config);
+  if (two_phase) integration_container[TWO_PHASE_SOL] = new CSingleGridIntegration(config);
   if (transition) integration_container[TRANS_SOL] = new CSingleGridIntegration(config);
   if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
@@ -1108,6 +1143,8 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
       heat, template_solver, transition, disc_adj;
+
+  bool two_phase = (config->GetKind_2phase_Model() != 0);
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1145,6 +1182,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
   /*--- DeAllocate solution for direct problem ---*/
   if (euler || ns) delete integration_container[FLOW_SOL];
   if (turbulent) delete integration_container[TURB_SOL];
+  if (two_phase) delete integration_container[TWO_PHASE_SOL];
   if (transition) delete integration_container[TRANS_SOL];
   if (poisson) delete integration_container[POISSON_SOL];
   if (wave) delete integration_container[WAVE_SOL];
@@ -1168,6 +1206,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Flow             = 0,
   nVar_Trans            = 0,
   nVar_Turb             = 0,
+  nVar_2phase           = 0,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
@@ -1180,7 +1219,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   bool
   euler, adj_euler,
   ns, adj_ns,
-  turbulent, adj_turb,
+  turbulent, adj_turb, hill_rus, hill_ausm,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
@@ -1188,6 +1227,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   heat,
   transition,
   template_solver;
+  bool two_phase = (config->GetKind_2phase_Model() != 0);
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1201,6 +1241,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   spalart_allmaras = false; neg_spalart_allmaras = false;  menter_sst       = false;
   transition       = false;
   template_solver  = false;
+  hill_rus = false; hill_ausm = false;
   
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
@@ -1227,16 +1268,24 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       default: cout << "Specified turbulence model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
     }
   
+  if (two_phase)
+    switch (config->GetKind_2phase_Model()) {
+      case HILL_RUS:     hill_rus = true;     break;
+      case HILL_AUSM:    hill_ausm = true; break;
+      default: cout << "Specified 2phase model unavailable or none selected" << endl; exit(EXIT_FAILURE); break;
+    }
+
   /*--- Number of variables for the template ---*/
   
   if (template_solver) nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   
   /*--- Number of variables for direct problem ---*/
   
-  if (euler)        nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
-  if (ns)           nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
-  if (turbulent)    nVar_Turb = solver_container[MESH_0][TURB_SOL]->GetnVar();
-  if (transition)   nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
+  if (euler)        nVar_Flow    = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+  if (ns)           nVar_Flow    = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+  if (turbulent)    nVar_Turb    = solver_container[MESH_0][TURB_SOL]->GetnVar();
+  if (two_phase)    nVar_2phase  = solver_container[MESH_0][TWO_PHASE_SOL]->GetnVar();
+  if (transition)   nVar_Trans   = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (poisson)      nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
   if (wave)        nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
@@ -1542,6 +1591,36 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     }
   }
   
+  if (turbulent) {
+
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+
+    switch (config->GetKind_ConvNumScheme_2phase()) {
+      case NONE :
+        break;
+      case SPACE_UPWIND :
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          if (hill_rus) numerics_container[iMGlevel][TWO_PHASE_SOL][CONV_TERM] = new CUpw_2phaseHill_Rus(nDim, nVar_2phase, config);
+          else cout << "Convective scheme not implemented (2phase)." << endl; exit(EXIT_FAILURE);
+          //          else if (hill_ausm) numerics_container[iMGlevel][TURB_SOL][CONV_TERM] = new CUpw_2phaseHill_Ausm(nDim, nVar_Turb, config);
+        }
+        break;
+      default :
+        cout << "Convective scheme not implemented (2phase)." << endl; exit(EXIT_FAILURE);
+        break;
+    }
+
+    /*--- Definition of the boundary condition method ---*/
+
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (hill_rus) {
+        numerics_container[iMGlevel][TWO_PHASE_SOL][CONV_BOUND_TERM] = new CUpw_2phaseHill_Rus(nDim, nVar_2phase, config);
+      }
+    }
+  }
+
+
+
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
     
@@ -1864,7 +1943,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   bool
   euler, adj_euler,
   ns, adj_ns,
-  turbulent, adj_turb,
+  turbulent, adj_turb, hill_rus, hill_ausm,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
@@ -1873,6 +1952,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   transition,
   template_solver;
   
+  bool two_phase = (config->GetKind_2phase_Model() != 0);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
@@ -1885,6 +1965,8 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   transition       = false;
   template_solver  = false;
   
+  hill_rus = false; hill_ausm = false;
+
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
@@ -1910,6 +1992,13 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
         
     }
   
+  if (two_phase)
+    switch (config->GetKind_2phase_Model()) {
+      case HILL_RUS:     hill_rus  = true;     break;
+      case HILL_AUSM:    hill_ausm = true; break;
+
+    }
+
   /*--- Solver definition for the template problem ---*/
   if (template_solver) {
     
@@ -2051,6 +2140,30 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     
   }
   
+  /*--- Solver definition for the 2phase model problem ---*/
+
+  if (two_phase) {
+
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+
+    switch (config->GetKind_ConvNumScheme_2phase()) {
+      case SPACE_UPWIND :
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          if (hill_rus || hill_ausm)
+            delete numerics_container[iMGlevel][TWO_PHASE_SOL][CONV_TERM];
+        }
+        break;
+    }
+
+    if (hill_rus || hill_ausm) {
+      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+        /*--- Definition of the boundary condition method ---*/
+        delete numerics_container[iMGlevel][TWO_PHASE_SOL][CONV_BOUND_TERM];
+
+      }
+    }
+  }
+
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
     
@@ -3316,6 +3429,7 @@ void CGeneralDriver::ResetConvergence() {
     integration_container[ZONE_0][FLOW_SOL]->SetConvergence(false);
       if (config_container[ZONE_0]->GetKind_Solver() == RANS) integration_container[ZONE_0][TURB_SOL]->SetConvergence(false);
       if(config_container[ZONE_0]->GetKind_Trans_Model() == LM) integration_container[ZONE_0][TRANS_SOL]->SetConvergence(false);
+      if (config_container[ZONE_0]->GetKind_2phase_Model() != 0) integration_container[ZONE_0][TWO_PHASE_SOL]->SetConvergence(false);
     break;
 
   case WAVE_EQUATION:
@@ -3543,6 +3657,7 @@ void CFluidDriver::ResetConvergence() {
       integration_container[iZone][FLOW_SOL]->SetConvergence(false);
       if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][TURB_SOL]->SetConvergence(false);
       if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][TRANS_SOL]->SetConvergence(false);
+      if (config_container[iZone]->GetKind_2phase_Model() != 0) integration_container[iZone][TWO_PHASE_SOL]->SetConvergence(false);
       break;
 
     case WAVE_EQUATION:
@@ -3694,6 +3809,7 @@ void CHBDriver::ResetConvergence() {
       integration_container[iZone][FLOW_SOL]->SetConvergence(false);
       if (config_container[iZone]->GetKind_Solver() == RANS) integration_container[iZone][TURB_SOL]->SetConvergence(false);
       if(config_container[iZone]->GetKind_Trans_Model() == LM) integration_container[iZone][TRANS_SOL]->SetConvergence(false);
+      if (config_container[iZone]->GetKind_2phase_Model() != 0) integration_container[iZone][TWO_PHASE_SOL]->SetConvergence(false);
       break;
 
     case WAVE_EQUATION:
@@ -3809,6 +3925,36 @@ void CHBDriver::SetHarmonicBalance(unsigned short iZone) {
 
       }
     }
+  }
+
+  /*--- Source term for a 2phase model ---*/
+  if (config_container[ZONE_0]->GetKind_2phase_Model() != 0) {
+
+    /*--- Extra variables needed if we have a 2phase model. ---*/
+    unsigned short nVar_2phase = solver_container[ZONE_0][MESH_0][TWO_PHASE_SOL]->GetnVar();
+    su2double *U_2phase = new su2double[nVar_2phase];
+    su2double *Source_2phase = new su2double[nVar_2phase];
+
+    /*--- Loop over only the finest mesh level (turbulence is always solved
+     on the original grid only). ---*/
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nVar_2phase; iVar++) Source_2phase[iVar] = 0.0;
+      for (jZone = 0; jZone < nZone; jZone++) {
+
+        /*--- Retrieve solution at this node in current zone ---*/
+        for (iVar = 0; iVar < nVar_2phase; iVar++) {
+          U_2phase[iVar] = solver_container[jZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->GetSolution(iVar);
+          Source_2phase[iVar] += U_2phase[iVar]*D[iZone][jZone];
+        }
+      }
+
+      /*--- Store sources for current iZone ---*/
+      for (iVar = 0; iVar < nVar_2phase; iVar++)
+        solver_container[iZone][MESH_0][TWO_PHASE_SOL]->node[iPoint]->SetHarmonicBalance_Source(iVar, Source_2phase[iVar]);
+    }
+
+    delete [] U_2phase;
+    delete [] Source_2phase;
   }
 
   /*--- Source term for a turbulence model ---*/

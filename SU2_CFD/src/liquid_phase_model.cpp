@@ -44,18 +44,71 @@ CLiquidModel::CLiquidModel(void) {
   Psat   = 0.0;
   sigma  = 0.0;
 
+
+  Gas_Constant = config->GetGas_Constant();
+  Tstar = config->GetTemperature_Critical();
+
 }
 
 CLiquidModel::~CLiquidModel(void) { }
 
+void CLiquidModel::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {
+
+	SetRadius(Two_Phase_Var);
+
+	SetTsat(P);
+	SetPsat(T);
+
+	SetSurfaceTension(T);
+
+    SetTLiquid(T);
+    SetLiquidDensity();
+
+    SetLiquidEnthalpy(h_v);
+
+    SetRCritical(P, T);
+
+    SetDensity_Mixture(rho, Two_Phase_Var);
+}
+
+void CLiquidModel::SetRCritical(su2double P, su2double T) {
+
+    if (Tsat > T) {
+		dGibbs = fabs(T * Gas_Constant * log(P/Psat));
+
+		Rc = 2.0*sigma / (rho_l * dGibbs);
+    }
+    else { Rc = 0.0  	;
+    }
+
+}
+
+void CLiquidModel::SetDensity_Mixture(su2double rho, su2double *Two_Phase_Var) {
+
+	    y = Two_Phase_Var[3]*(rho_l - rho);
+	    y = y + 0.75 * rho / 3.14;
+	    y = y*rho_l / y;
+
+	    rho_m = y/ rho_l + (1.0 - y)/ rho;
+	    rho_m = 1.0/ rho_m;
+}
 
 
-CWater::CWater(CConfig *config) : CLiquidModel() {
+
+void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {
+
+	if (Two_Phase_Var[0] == 0) R = 0;
+	else 	R = Two_Phase_Var[1]/Two_Phase_Var[0];
+
+}
+
+
+
+
+CWater::CWater() : CLiquidModel() {
 
 	coeff_saturation  = new su2double [10];
 	coeff_latent_heat = new su2double [4];
-
-	Tstar = config->GetTemperature_Critical();
 
     coeff_saturation[0]  =  0.11670521452767e4;
     coeff_saturation[1]  = -0.72421316703206e6;
@@ -73,13 +126,6 @@ CWater::CWater(CConfig *config) : CLiquidModel() {
     coeff_latent_heat[2] =  8.8253e6;
     coeff_latent_heat[3] = -5.9584e6;
 
-    rho_l  = 0.0;
-    h_l    = 0.0;
-    dGibbs = 0.0;
-    Tsat   = 0.0;
-    Psat   = 0.0;
-    sigma  = 0.0;
-
     Asat = 0;
     Bsat = 0;
     Csat = 0;
@@ -88,8 +134,6 @@ CWater::CWater(CConfig *config) : CLiquidModel() {
     Fsat = 0;
     Gsat = 0;
     Hsat = 0;
-
-    Gas_Constant = config->GetGas_Constant();
 
 }
 
@@ -103,13 +147,9 @@ CWater::~CWater(void) {
 }
 
 
-void CWater::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var, su2double *val_Solution) {
+void CWater::SetTsat(su2double P) {
 
 
-	if (Two_Phase_Var[0] == 0) R = 0;
-	else 	R = Two_Phase_Var[1]/Two_Phase_Var[0];
-
-	//tsat
     Hsat = pow((P/1E6),0.25);
     Esat =  Hsat*Hsat + coeff_saturation[2] * Hsat + coeff_saturation[5];
     Fsat =  coeff_saturation[0]*Hsat*Hsat + coeff_saturation[4]*Hsat + coeff_saturation[6];
@@ -120,8 +160,10 @@ void CWater::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_
     Tsat = -sqrt(Tsat) + coeff_saturation[9] + Dsat;
 
     Tsat =  Tsat * 0.5;
+}
 
-	//psat
+void CWater::SetPsat(su2double T) {
+
 	Hsat = T + coeff_saturation[8] / (T - coeff_saturation[9] ) ;
 	Asat = Hsat*Hsat + coeff_saturation[0]*Hsat + coeff_saturation[1];
 	Bsat = coeff_saturation[2]*Hsat*Hsat + coeff_saturation[3]*Hsat + coeff_saturation[4];
@@ -131,12 +173,16 @@ void CWater::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_
 	Psat    = pow((2.0*Csat/Psat), 4);
 
 	Psat    = Psat *1E6;
+}
 
-	//surface tension
+void CWater::SetSurfaceTension(su2double T) {
+
+
 	sigma =  1.0 - 1.0 * T/Tstar;
 	sigma =  235.8e-3 * (0.375 + 0.625*(1.0-sigma)) * pow(sigma,1.256);
+}
 
-    if ((Tsat - T) > 0) {
+void CWater::SetTLiquid(su2double T) {
 
     	//Guess Rcritical, a loop is required to evaluate the right properties
 		Rc = 1e-15;
@@ -144,39 +190,21 @@ void CWater::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_
 		if (R!=0) T_l   = Tsat  - (Tsat - T)*Rc/R;
 		else      T_l = T;
 
+}
+
+void CWater::SetLiquidDensity() {
+
 		rho_l = 928.08 + 464.63*T_l/Tstar - 568.46*(T_l/Tstar)*(T_l/Tstar) &
 						 - 255.17*pow((T_l/Tstar),3);
+
+}
+
+void CWater::SetLiquidEnthalpy(su2double h_v) {
 
 	    //enthalpy
 		h_l = coeff_latent_heat[0] + coeff_latent_heat[1]*(T_l/Tstar)  ;
 		h_l = h_l + coeff_latent_heat[2]*pow((T_l/Tstar), 2) +
 					coeff_latent_heat[3]*pow((T_l/Tstar), 3);
 		h_l = h_v - h_l;
-
-		//Rc
-		dGibbs = abs(T * Gas_Constant * log(P/Psat));
-
-		Rc = 2.0*sigma / (rho_l * dGibbs);
-
-	    y = Two_Phase_Var[3]*(rho_l - rho);
-	    y = y + 0.75 * rho / 3.14;
-	    y = y*rho_l / y;
-
-	    rho_m = y/ rho_l + (1.0 - y)/ rho;
-	    rho_m = 1.0/ rho_m;
-
-
-    } else {
-
-    	// if nucleation is not started yet ( Tsat < T)
-    	R  = 0;
-    	Rc = 0;
-    	T_l = T;
-    	h_l = h_v;
-    	rho_l = 0;
-    	rho_m = rho;
-
-    }
 }
-
 

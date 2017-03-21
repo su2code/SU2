@@ -58,6 +58,7 @@ protected:
   
   su2double *Solution,    /*!< \brief Solution of the problem. */
   *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
+  su2double *Primitive_Liquid, Source, Radius, Entyhalpy_Liquid, Liquid_Fraction;
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -87,7 +88,7 @@ protected:
   unsigned short nSecondaryVar, nSecondaryVarGrad;    /*!< \brief Number of variables of the problem,
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
-  
+
 public:
   
   /*!
@@ -1078,7 +1079,9 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  virtual bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf,
+		  su2double eddy_visc, su2double turb_ke, CConfig *config);
+
   
   /*!
    * \brief A virtual member.
@@ -2030,41 +2033,40 @@ public:
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
 
-/*
+
   // classes for 2phase solver
-  void SetRadius(su2double R) ;
 
-  void SetDropletNumber(su2double N) ;
+//  virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-  void SetMassSource(su2double S) ;
+//  virtual su2double GetRadius() ;
 
-  void SetLiquidEnthalpy(su2double h) ;
-*/
-  void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
+  virtual su2double GetMassSource() ;
 
-  su2double GetRadius() ;
+//  virtual su2double GetLiquidPrim() ;
 
-  su2double GetMassSource() ;
+//  virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
 
-  su2double GetLiquidPrim() ;
+//  virtual void      SetSource(su2double S)   ;
 
-  void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
+  virtual void      SetMassSource(su2double S)   ;
 
-  su2double GetMassSource( )             ;
+  virtual su2double GetLiquidEnthalpy( )         ;
 
-  void      SetMassSource(su2double S)   ;
+//  virtual void      SetLiqEnthalpy(su2double h);
 
-  su2double GetLiquidEnthalpy( )         ;
+  virtual void      SetLiquidEnthalpy(su2double h);
 
-  void      SetLiquidEnthalpy(su2double h);
+  virtual su2double GetAverageRadius( )          ;
 
-  su2double GetAverageRadius( )          ;
+//  virtual void      SetRadius(su2double R);
 
-  void      SetAverageRadius(su2double R);
+  virtual void      SetAverageRadius(su2double R);
 
-  su2double GetLiquidFraction( )         ;
+  virtual su2double GetLiquidFraction( )         ;
 
-  void      SetLiquidFraction(su2double Y);
+//  virtual void      SetLiquidFrac(su2double Y);
+
+  virtual void      SetLiquidFraction(su2double Y);
 
 
 };
@@ -3132,6 +3134,10 @@ public:
   void SetMassSource(su2double S) ;
 
   void SetLiquidEnthalpy(su2double h) ;
+
+  void SetLiquidFraction(su2double Y);
+
+  void SetAverageRadius(su2double R);
 };
 
 /*!
@@ -3695,6 +3701,7 @@ class C2phaseVariable : public CVariable {
 protected:
 
 	su2double Source, Enthalpy_Liquid, Radius, Liquid_Fraction;
+	su2double *Primitive_Liquid;
 
 public:
   /*!
@@ -3716,21 +3723,29 @@ public:
   virtual ~C2phaseVariable(void);
 
 
-  su2double GetMassSource( )               ;
+  virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-  void      SetMassSource(su2double S)     ;
+    virtual su2double GetRadius() ;
 
-  su2double GetLiquidEnthalpy( )           ;
+    virtual su2double GetLiquidPrim() ;
 
-  void      SetLiquidEnthalpy(su2double h) ;
+    virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
 
-  su2double GetAverageRadius( )            ;
+    virtual su2double GetMassSource( )             ;
 
-  void      SetAverageRadius(su2double R)  ;
+    virtual void     SetSource(su2double S)   ;
 
-  su2double GetLiquidFraction( )           ;
+    virtual su2double GetLiquidEnthalpy( )         ;
 
-  void      SetLiquidFraction(su2double Y) ;
+    virtual void      SetLiqEnthalpy(su2double h);
+
+    virtual su2double GetAverageRadius( )          ;
+
+    virtual void      SetRadius(su2double R);
+
+    virtual su2double GetLiquidFraction( )         ;
+
+    virtual void      SetLiquidFrac(su2double Y);
 
 };
 

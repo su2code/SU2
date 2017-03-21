@@ -493,6 +493,8 @@ void CEulerVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
 }
 
+
+
 CNSVariable::CNSVariable(void) : CEulerVariable() { }
 
 CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2double val_energy,

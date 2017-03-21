@@ -1392,10 +1392,10 @@ void C2phase_HillSolver::Postprocessing(CGeometry *geometry, CSolver **solver_co
     	R = 0; y = 0; rho_m = FlowPrimVar_i[nDim + 2]; S = 0;
     }
 
-	node[iPoint]->SetMassSource(S);
-	node[iPoint]->SetLiquidEnthalpy(Primitive_Liquid[2]);
-	node[iPoint]->SetAverageRadius(R);
-    node[iPoint]->SetLiquidFraction(Primitive_Liquid[2]);
+	node[iPoint]->SetSource(S);
+	node[iPoint]->SetLiqEnthalpy(Primitive_Liquid[2]);
+	node[iPoint]->SetRadius(R);
+    node[iPoint]->SetLiquidFrac(Primitive_Liquid[2]);
     
   }
   
@@ -1420,7 +1420,7 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     
     /*--- Compute the source term ---*/
     
-    numerics->ComputeResidual(Residual, Jacobian_i, *Primitive_Liquid, config);
+    numerics->ComputeResidual(Residual, Jacobian_i, Primitive_Liquid, config);
     
     /*--- Subtract residual and the Jacobian ---*/
     

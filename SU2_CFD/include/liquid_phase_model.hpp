@@ -48,6 +48,7 @@
 #include "math.h"
 
 #include "../../Common/include/datatype_structure.hpp"
+#include "../../Common/include/config_structure.hpp"
 
 using namespace std;
 
@@ -59,8 +60,11 @@ using namespace std;
 class CLiquidModel {
 
 protected:
-	su2double rho_l, h_l, T_l;
-	su2double dGibbs, Tsat, Psat, sigma, Rc;
+
+	su2double rho_l, rho_m, h_l, dGibbs, Tsat, Psat, y, R, T_l, sigma, Rc;
+	su2double Tstar, Gas_Constant;
+
+CConfig *config;
 
 
 public:
@@ -125,8 +129,25 @@ public:
     /*!
      * \brief return liquid density value.
      */
-    virtual   void SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
+    void SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
 
+    void SetRadius(su2double *Two_Phase_Var);
+
+    void SetRCritical (su2double P, su2double T);
+
+    void SetDensity_Mixture (su2double rho, su2double *Two_Phase_Var);
+
+    virtual void SetTsat(su2double P);
+
+    virtual void SetPsat (su2double T);
+
+    virtual void SetLiquidDensity();
+
+    virtual void SetTLiquid( su2double T);
+
+    virtual void SetLiquidEnthalpy(su2double h_v);
+
+    virtual void SetSurfaceTension(su2double T);
 
 };
 
@@ -137,8 +158,6 @@ public:
  */
 class CWater : public CLiquidModel {
 protected:
-
-  su2double rho_l, rho_m, h_l, dGibbs, Tsat, Psat, sigma, Rc, y, R;
   
   su2double *coeff_saturation, *coeff_latent_heat;
   su2double Asat, Bsat,
@@ -146,17 +165,13 @@ protected:
 		    Esat, Fsat,
 		    Gsat, Hsat;
 
-  su2double Tstar;
-
-  su2double Gas_Constant;
-
 public:
   
 
   /*!
    * \brief Constructor of the class.
    */
-  CWater(CConfig*config);
+  CWater();
   
   /*!
    * \brief Destructor of the class.
@@ -166,7 +181,18 @@ public:
   /*!
    * \brief return liquid density value.
    */
-  void SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var, su2double *val_solution);
+
+  void SetTsat(su2double P);
+
+  void SetPsat (su2double T);
+
+  void SetLiquidDensity();
+
+  void SetTLiquid( su2double T);
+
+  void SetLiquidEnthalpy(su2double h_v);
+
+  void SetSurfaceTension(su2double T);
 
   
 };

@@ -58,7 +58,7 @@ using namespace std;
  */
 class CNucleationModel {
 
-protected:
+protected: su2double J, G;
 
 public:
 
@@ -87,13 +87,13 @@ public:
      * \brief compute the nucleation rate.
      */
     virtual   void SetNucleationRate(su2double P, su2double T, su2double rho,
-            su2double h, su2double k, su2double mu, su2double V_Liquid);
+            su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
     /*!
      * \brief compute the growth rate.
      */
     virtual   void SetGrowthRate(su2double P, su2double T, su2double rho,
-            su2double h, su2double k, su2double mu, su2double V_Liquid);
+            su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
 };
 

@@ -43,4 +43,13 @@ inline su2double CLiquidModel::GetPsat() { return Psat; }
 inline su2double CLiquidModel::GetCriticalRadius() { return Rc; }
 inline su2double CLiquidModel::GetRadius() { return R; }
 
-inline su2double CLiquidModel::SetLiquidProperties(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var, su2double *val_Solution) { return R, rho_l, rho_m, h_l, T_l, Rc, Psat, Tsat, sigma); }
+inline void CLiquidModel::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {}
+inline void CLiquidModel::SetTsat(su2double P) {}  
+inline void CLiquidModel::SetPsat (su2double T) {}  
+inline void CLiquidModel::SetLiquidDensity() {}
+inline void CLiquidModel::SetTLiquid( su2double T) {}
+inline void CLiquidModel::SetLiquidEnthalpy(su2double h_v) {} 
+inline void CLiquidModel::SetSurfaceTension(su2double T) {}
+inline void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {}
+inline void CLiquidModel::SetRCritical (su2double P, su2double T) {}
+inline void CLiquidModel::SetDensity_Mixture (su2double rho, su2double *Two_Phase_Var) {}

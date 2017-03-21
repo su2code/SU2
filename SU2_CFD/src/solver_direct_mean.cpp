@@ -167,7 +167,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool two_phase = (config->GetKind_2phase_Model() != NONE );
+  unsigned short two_phase = config->GetKind_2phase_Model();
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   int Unst_RestartIter;
@@ -509,7 +509,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
 
-    	  if (two_phase) {
+    	  if (two_phase != NONE) {
     		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 2 + 4];
     		for (iVar = 0; iVar < nPrimVar + 2 + 4; iVar++) {
 			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
@@ -524,7 +524,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
       } else {
 
-      	  if (two_phase) {
+      	  if (two_phase!= NONE) {
     		DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 4];
     		for (iVar = 0; iVar < nPrimVar + 4; iVar++) {
 			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
@@ -2161,14 +2161,14 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
   int size = SINGLE_NODE;
   //bool ActDisk_Perimeter;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool two_phase = (config->GetKind_2phase_Model() != NONE);
+  unsigned short two_phase = config->GetKind_2phase_Model();
   
   unsigned short nPrimVar_ = nPrimVar;
   if (rans) {
-	  if (two_phase) nPrimVar_ += 6; // Add two extra variables for the turbulence + 4 for 2 phases.
+	  if (two_phase != NONE) nPrimVar_ += 6; // Add two extra variables for the turbulence + 4 for 2 phases.
 	  else nPrimVar_ +=2;
   } else {
-	  if (two_phase) nPrimVar_ += 4; // Add 2 for 4 phases.
+	  if (two_phase != NONE) nPrimVar_ += 4; // Add 2 for 4 phases.
 	  else nPrimVar_ +=0;
   }
   
@@ -2344,7 +2344,7 @@ void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geomet
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
             }
-            if (two_phase) {
+            if (two_phase != NONE) {
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
               Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
             }
@@ -3405,7 +3405,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
-  bool two_phase          = (config->GetKind_2phase_Model() != NONE);
+  unsigned short two_phase= config->GetKind_2phase_Model();
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
@@ -3728,6 +3728,26 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
   }
   
+  if (two_phase != NONE) {
+
+	    /*--- Constant viscosity model ---*/
+	    config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
+
+	    /*--- Sutherland's model ---*/
+
+	    config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
+	    config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
+	    config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
+
+	    /* constant thermal conductivity model */
+	    config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
+
+	    FluidModel->SetLaminarViscosityModel(config);
+	    FluidModel->SetThermalConductivityModel(config);
+	    FluidModel->SetLiquidPhaseModel(config);
+
+  }
+
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
   
   Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
@@ -3997,7 +4017,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool two_phase = (config->GetKind_2phase_Model() != NONE);
+  unsigned short two_phase = config->GetKind_2phase_Model();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
@@ -4144,7 +4164,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
           solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n1();
         }
-        if (two_phase) {
+        if (two_phase != NONE) {
 		  solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
 		  solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n1();
 		}
@@ -4162,10 +4182,10 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       if (rans)
         solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
 
-/*
-      if (two_phase)
+
+      if (two_phase != NONE)
         solver_container[MESH_0][TWO_PHASE_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
-*/
+
       
       /*--- Push back this new solution to time level N. ---*/
       
@@ -4175,7 +4195,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           if (rans) {
             solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
           }
-          if (two_phase) {
+          if (two_phase != NONE) {
             solver_container[iMesh][TWO_PHASE_SOL]->node[iPoint]->Set_Solution_time_n();
           }
         }
@@ -4303,6 +4323,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
   double S, h, R, Y;
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol  = true;
+  unsigned short two_phase = config->GetKind_2phase_Model();
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -4315,7 +4336,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
     RightSol = node[iPoint]->SetPrimVar(FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
 
-    if (config->GetKind_2phase_Model != NONE) {
+    if (two_phase != NONE) {
     	node[iPoint]->SetLaminarViscosity(FluidModel->GetLaminarViscosity());
     	node[iPoint]->SetThermalConductivity(FluidModel->GetThermalConductivity());
 
@@ -4851,7 +4872,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool windgust         = config->GetWind_Gust();
   bool body_force       = config->GetBody_Force();
-  bool two_phase        = (config->GetKind_2phase_Model!=NONE);
+  unsigned short two_phase        = config->GetKind_2phase_Model();
 
   /*--- Initialize the source residual to zero ---*/
 
@@ -5002,7 +5023,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     }
   }
 
-  if (two_phase) {
+  if (two_phase != NONE) {
 
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -5015,7 +5036,8 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
       
       /*--- Compute the 2-phase source residual ---*/
-      numerics->ComputeResidual_2phase(Primitive, Residual, Jacobian_i);
+      numerics->ComputeResidual_HeatMassTransfer(Primitive, Residual, Jacobian_i);
+
       
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
@@ -14487,7 +14509,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool two_phase = (config->GetKind_2phase_Model() != NONE );
+  unsigned short two_phase = config->GetKind_2phase_Model();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -14709,7 +14731,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
-    	  if (two_phase) {
+    	  if (two_phase != NONE) {
     		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2 + 4];
     		  for (iVar = 0; iVar < nPrimVar + 2 + 4; iVar++) {
     			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
@@ -14722,7 +14744,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     	  }
 
       }  else {
-    	  if (two_phase) {
+    	  if (two_phase != NONE) {
     		  DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar + 4];
     		  for (iVar = 0; iVar < nPrimVar + 4; iVar++) {
     			  DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
@@ -15432,6 +15454,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
   unsigned long iPoint, ErrorCounter = 0;
   su2double eddy_visc = 0.0, turb_ke = 0.0;
   unsigned short turb_model = config->GetKind_Turb_Model();
+  unsigned short two_phase = config->GetKind_2phase_Model();
   bool RightSol  = true;
   
   su2double  S, R, Y, h;
@@ -15458,7 +15481,7 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
     RightSol = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
     
-    if (config->GetKind_2phase_Model != NONE) {
+    if (two_phase != NONE) {
     	node[iPoint]->SetLaminarViscosity(FluidModel->GetLaminarViscosity());
     	node[iPoint]->SetThermalConductivity(FluidModel->GetThermalConductivity());
 

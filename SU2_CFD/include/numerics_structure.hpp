@@ -1437,13 +1437,16 @@ public:
 
   su2double  GetGrowthRate ();
 
-  su2double  GetCriticalRadius ();
+  virtual su2double  GetCriticalRadius ();
 
-  void       SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
+  virtual void       SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
-  void       SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
+  virtual void       SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
-  void       ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+  virtual void       ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
+
+  virtual void       ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double *val_liquid_i,
+		  su2double *val_liquid_j, CConfig *config);
 };
 
 /*!
@@ -2337,7 +2340,7 @@ public:
 
   void ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
 
-  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, CConfig *config);
+  void ComputeResidual(su2double *Residual, su2double **Jacobian_i, su2double *val_liquid_i, su2double *val_liquid_j, CConfig *config);
 
 };
 
