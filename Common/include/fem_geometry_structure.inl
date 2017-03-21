@@ -31,19 +31,38 @@
 
 #pragma once
 
+inline long3T::long3T(){long0 = long1 = long2 = 0;}
+
+inline long3T::long3T(const long a, const long b, const long c){long0 = a; long1 = b; long2 = c;}
+
+inline long3T::~long3T(){}
+
+inline long3T::long3T(const long3T &other){Copy(other);}
+
+inline long3T& long3T::operator=(const long3T &other){Copy(other); return (*this);}
+
+inline CReorderElementClass::CReorderElementClass(const unsigned long  val_GlobalElemID,
+                                                  const unsigned short val_TimeLevel,
+                                                  const bool           val_CommSolution)
+ {globalElemID = val_GlobalElemID; timeLevel = val_TimeLevel; commSolution = val_CommSolution;}
+
+inline CReorderElementClass::~CReorderElementClass(void) { }
+
+inline CReorderElementClass::CReorderElementClass(const CReorderElementClass &other) { Copy(other); }
+
+inline CReorderElementClass& CReorderElementClass::operator=(const CReorderElementClass &other) { Copy(other); return (*this); }
+
+inline bool CReorderElementClass::GetCommSolution(void) { return commSolution; }
+
+inline unsigned long CReorderElementClass::GetGlobalElemID(void) { return globalElemID; }
+
+inline unsigned short CReorderElementClass::GetTimeLevel(void) { return timeLevel; }
+
 inline SortFacesClass::SortFacesClass(unsigned long val_nVolElemOwned,
                                       unsigned long val_nVolElemTot)
  {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot;}
 
 inline SortFacesClass::~SortFacesClass(void) { }
-
-inline CPointCompare::CPointCompare(void) { }
-
-inline CPointCompare::~CPointCompare(void) { }
-
-inline CPointCompare::CPointCompare(const CPointCompare &other) { Copy(other); }
-
-inline CPointCompare& CPointCompare::operator=(const CPointCompare &other) { Copy(other); return (*this); }
 
 inline CVolumeElementFEM::CVolumeElementFEM(void) { }
 

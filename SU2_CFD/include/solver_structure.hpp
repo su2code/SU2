@@ -501,12 +501,29 @@ public:
 
   /*!
    * \brief A virtual member.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iStep  - Current step in the time accurate local time
-                         stepping algorithm
+   * \param[in]     config          - Definition of the particular problem.
+   * \param[in]     TimeSync        - The synchronization time.
+   * \param[in,out] timeEvolved     - On input the time evolved before the time step,
+                                      on output the time evolved after the time step.
+   * \param[out]    syncTimeReached - Whether or not the synchronization time is reached.
    */
-  virtual void ADER_DG_PredictorStep(CConfig *config, unsigned short iStep);
-  
+  virtual void CheckTimeSynchronization(CConfig         *config,
+                                        const su2double TimeSync,
+                                        su2double       &timeEvolved,
+                                        bool            &syncTimeReached);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  virtual void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                         CNumerics **numerics, CConfig *config,
+                                         unsigned short iMesh, unsigned short RunTime_EqSystem);  
+
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1340,16 +1357,6 @@ public:
   virtual void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iRKStep);
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iStep - Current step in the time accurate local time stepping.
-   */
-  virtual void ADER_DG_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                 unsigned short iStep);
-  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -3639,15 +3646,6 @@ public:
   virtual void SetFreeStream_Solution(CConfig *config);
 
   /*!
-   * \brief A virtual member.
-   * \param[in] iTime - Time index of the time integration point for the
-                        integration over the time slab in the corrector
-                        step of ADER-DG.
-   */
-  virtual void ADER_DG_TimeInterpolatePredictorSol(CConfig       *config,
-                                                   unsigned short iTime);
-  
-  /*!
    * \brief A virtual member
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -3683,15 +3681,6 @@ public:
    */
   virtual void Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                 CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iTime    - Time index of the time integration point for the
-                           integration over the time slab in the corrector
-                           step of ADER-DG.
-   * \param[in] weight   - Integration weight of this time integration point.
-   */
-  virtual void AccumulateSpaceTimeResidualADER(unsigned short iTime, su2double weight);
 
   /*!
    * \brief A virtual member.
@@ -12044,6 +12033,33 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
+
+  /*!
+   * \brief Function, which checks whether or not the time synchronization point is reached
+            when explicit time stepping is used.
+   * \param[in]     config          - Definition of the particular problem.
+   * \param[in]     TimeSync        - The synchronization time.
+   * \param[in,out] timeEvolved     - On input the time evolved before the time step,
+                                      on output the time evolved after the time step.
+   * \param[out]    syncTimeReached - Whether or not the synchronization time is reached.
+   */
+  void CheckTimeSynchronization(CConfig         *config,
+                                const su2double TimeSync,
+                                su2double       &timeEvolved,
+                                bool            &syncTimeReached);
+
+  /*!
+   * \brief Function, to carry out the space time integration for ADER
+            with time accurate local time stepping.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
+                                 CNumerics **numerics, CConfig *config,
+                                 unsigned short iMesh, unsigned short RunTime_EqSystem);
 
   /*!
    * \brief Function, carries out the predictor step of the ADER-DG

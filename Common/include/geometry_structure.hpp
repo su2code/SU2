@@ -68,7 +68,7 @@ using namespace std;
 /*! 
  * \class unsignedLong2T
  * \brief Help class used to store two unsigned longs as one entity.
- * \version 4.1.0 "Cardinal"
+ * \version 5.0.0 "Cardinal"
  */
 class unsignedLong2T {
 public:
@@ -157,7 +157,7 @@ private:
  * \class BoundaryFaceClass
  * \brief Help class used in the partitioning of the FEM grid.
  *        It stores a boundary element.
- * \version 4.1.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class BoundaryFaceClass {
  public:
