@@ -3571,15 +3571,16 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   upperlimit = new su2double[nVar];
   
   // k
-  lowerlimit[0] = 1.0e-14;
-  //  lowerlimit[0] = 0.0;
+  //  lowerlimit[0] = 1.0e-14;
+  lowerlimit[0] = 0.0;
   //  lowerlimit[0] = -1.0e-1;
   //  lowerlimit[0] = -1.0e-10;
   upperlimit[0] = 1.0e10;
 
   // epsi  
-  //lowerlimit[1] = 1.0e-14;
+  //  lowerlimit[1] = 1.0e-14;
   lowerlimit[1] = -1.0e10; //-1.0e2;
+  lowerlimit[1] = -1.0e2;
   upperlimit[1] = 1.0e10;
 
   // zeta
@@ -3589,16 +3590,16 @@ CTurbKESolver::CTurbKESolver(CGeometry *geometry, CConfig *config, unsigned shor
   */
 
   // v2
-  lowerlimit[2] = 1.0e-14;
-  //  lowerlimit[2] = 0.0;
+  //  lowerlimit[2] = 1.0e-14;
+  lowerlimit[2] = 0.0;
   //  lowerlimit[2] = -1.0e-1;
   //  lowerlimit[2] = -1.0e-10;
   upperlimit[2] = 1.0e10; 
   
   // f
-  //  lowerlimit[3] = 1.0e-14;
+  lowerlimit[3] = 1.0e-14;
   //  lowerlimit[3] = 0.0;
-  lowerlimit[3] = -1.0e10; //-1.0e2;
+  //  lowerlimit[3] = -1.0e10; //-1.0e2;
   upperlimit[3] = 1.0e10;
 
 
@@ -4163,8 +4164,8 @@ void CTurbKESolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       Solution_j[0] = kine_Inf;
       Solution_j[1] = epsi_Inf;
       Solution_j[2] = zeta_Inf;
-      //      Solution_j[3] = f_Inf;
-      Solution_j[3] = node[iPoint]->GetSolution(3);
+      Solution_j[3] = f_Inf;
+      //      Solution_j[3] = node[iPoint]->GetSolution(3);
       /*
       Solution_j[0] = node[iPoint]->GetSolution(0);
       Solution_j[1] = node[iPoint]->GetSolution(1);

@@ -2038,6 +2038,7 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   }
   else if (config->GetKind_Turb_Model() == KE){
     GridVel_Index += 4;
+    //    GridVel_Index += 3;
   }
   if (config->GetKind_Regime() != INCOMPRESSIBLE){
     GridVel_Index += 1;

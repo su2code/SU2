@@ -986,7 +986,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
   /*!\brief WRT_RESIDUALS
    *  \n DESCRIPTION: Output residual info to solution/restart file  \ingroup Config*/
-  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+  //  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, false);
+  addBoolOption("WRT_RESIDUALS", Wrt_Residuals, true);
   /*!\brief WRT_LIMITERS
    *  \n DESCRIPTION: Output limiter value information to solution/restart file  \ingroup Config*/
   addBoolOption("WRT_LIMITERS", Wrt_Limiters, false);
