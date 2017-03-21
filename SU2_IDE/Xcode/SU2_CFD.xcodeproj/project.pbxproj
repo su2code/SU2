@@ -493,7 +493,6 @@
 				E9DDCE9E1E36D0EA009E7A66 /* fem_geometry_structure.inl */,
 				E9DDCEA01E36D0EA009E7A66 /* fem_standard_element.inl */,
 				E9DDCEA21E36D0EA009E7A66 /* gauss_jacobi_quadrature.inl */,
-				E9DDCEA31E36D0EA009E7A66 /* gelite.hpp */,
 				05E6DAA217EB603F00FA1F7E /* grid_adaptation_structure.inl */,
 				05E6DAA317EB603F00FA1F7E /* grid_movement_structure.inl */,
 				05E6DAA417EB603F00FA1F7E /* linear_solvers_structure.inl */,
@@ -545,6 +544,7 @@
 				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
 				E9D9CE951C62A272004119E9 /* transfer_structure.hpp */,
 				E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */,
+				E9DDCEA31E36D0EA009E7A66 /* gelite.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";

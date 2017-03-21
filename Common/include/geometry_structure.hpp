@@ -883,7 +883,13 @@ public:
 	 * \returns Total number of nodes in a simulation across all processors (excluding halos).
 	 */
 	virtual unsigned long GetGlobal_nPointDomain();
-  
+
+  /*!
+   * \brief A virtual member.
+	 * \param[in] val_global_npoint - Global number of points in the mesh (excluding halos).
+   */
+  virtual void SetGlobal_nPointDomain(unsigned long val_global_npoint);
+
   /*!
 	 * \brief A virtual member.
 	 * \returns Total number of elements in a simulation across all processors.
