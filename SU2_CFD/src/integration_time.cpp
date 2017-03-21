@@ -1010,7 +1010,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
        specified and determine whether or not the time loop must be continued.
        When TimeSyncSpecified is false, the loop is always terminated. */
     if( TimeSyncSpecified )
-      solver_container[iZone][iMesh][SolContainer_Position]->CheckTimeSynchronization(TimeSync, timeEvolved,
+      solver_container[iZone][iMesh][SolContainer_Position]->CheckTimeSynchronization(config[iZone],
+                                                                                      TimeSync, timeEvolved,
                                                                                       syncTimeReached);
     else
       syncTimeReached = true;

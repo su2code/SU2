@@ -203,6 +203,10 @@ public:
 
   unsigned short indStandardElement; /*!< \brief Index in the vector of standard elements. */
 
+  unsigned int factTimeLevel;        /*!< \brief Number of local time steps for this element
+                                                 compared to the largest time step when time
+                                                 accurate local time stepping is employed. */
+
   unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
   unsigned long offsetDOFsSolLocal;  /*!< \brief Local offset of the solution DOFs of this element. */
