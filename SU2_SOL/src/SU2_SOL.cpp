@@ -32,6 +32,7 @@
  */
 
 #include "../include/SU2_SOL.hpp"
+#include "../../SU2_CFD/include/postprocessing_structure.hpp"
 
 using namespace std;
 
@@ -43,6 +44,10 @@ int main(int argc, char *argv[]) {
 	char config_file_name[MAX_STRING_SIZE];
 	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  su2double Objective_Function;
+
+  ofstream CFD_pressure_file ;
+  CFD_pressure_file.open("p_CFD.dat");
 
   /*--- MPI initialization ---*/
 
@@ -61,6 +66,7 @@ int main(int argc, char *argv[]) {
 	CGeometry **geometry_container = NULL;
 	CSolver **solver_container     = NULL;
 	CConfig **config_container     = NULL;
+	FWHSolver **FWH_container      = NULL;
 	
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
