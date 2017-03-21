@@ -861,6 +861,8 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   unsigned short iVar;
   unsigned long iPoint, total_index;
   su2double Delta, Vol;
+  bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
+
 
   /*--- Set maximum residual to zero ---*/
 
@@ -879,9 +881,14 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-    Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
-    Jacobian.AddVal2Diag(iPoint, Delta);
-
+    if(flow) {
+      Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+      Jacobian.AddVal2Diag(iPoint, Delta);
+    }
+    else {
+      Delta = Vol;
+      Jacobian.AddVal2Diag(iPoint, Delta);
+    }
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (iVar = 0; iVar < nVar; iVar++) {
