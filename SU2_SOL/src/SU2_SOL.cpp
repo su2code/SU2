@@ -382,6 +382,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
 						cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
 					output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
 				}
+				}
 
 				iExtIter++;
 				if (StopCalc) break;
