@@ -3677,7 +3677,8 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   ofstream restart_file;
-  string filename;
+  ofstream meta_file;
+  string filename, meta_filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -3858,21 +3859,23 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     restart_file << "\n";
   }
-  
+
   /*--- Write the general header and flow conditions ----*/
-  
+
+  if (dual_time)
+    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+  else
+    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
   restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
   restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
   restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
   restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
   if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-  if (dual_time)
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-  else
-    restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
-  
+
+  /*--- Close the data portion of the restart file. ---*/
+
   restart_file.close();
-  
+
 }
 
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
@@ -7748,7 +7751,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   
   short iSection, nSection;
   unsigned long iVertex, iPoint;
-  su2double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
+  su2double *Plane_P0, *Plane_Normal, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
   MomentInviscid[3] = {0.0,0.0,0.0}, MomentDist[3] = {0.0,0.0,0.0}, RefDensity, RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv;
   vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
   string Marker_Tag, Slice_Filename, Slice_Ext;
@@ -7804,7 +7807,6 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
       
       /*--- Read the values from the config file ---*/
       
-      MinPlane = config->GetSection_WingBounds(0); MaxPlane = config->GetSection_WingBounds(1);
       MinXCoord = -1E6; MaxXCoord = 1E6;
       
       Plane_Normal[0] = 0.0;    Plane_P0[0] = 0.0;
@@ -10075,6 +10077,7 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int size = SINGLE_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -10088,10 +10091,22 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
           available. SU2_SOL will remain intact for writing files
           until this capability is completed. ---*/
     
-    bool Wrt_Vol = false;
-    bool Wrt_Srf = false;
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
-    
+
+#ifdef HAVE_MPI
+    /*--- Do not merge the connectivity or write the visualization files
+     if we are running in parallel. Force the use of SU2_SOL to merge and
+     write the viz. files in this case to save overhead. ---*/
+
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (size > SINGLE_NODE) {
+      Wrt_Vol = false;
+      Wrt_Srf = false;
+    }
+#endif
+
     /*--- Write out CSV files in parallel for flow and adjoint. ---*/
     
     if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
@@ -10141,52 +10156,141 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       cout << "Sorting output data across all ranks." << endl;
     SortOutputData(config[iZone], geometry[iZone][MESH_0]);
     
-    /*--- Write parallel ASCII restart files. This will be replaced with
-     a binary alternative with MPI-IO soon. ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << "Writing SU2 native restart file." << endl;
-    SetRestart_Parallel(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
-    
+    /*--- Write either a binary or ASCII restart file in parallel. ---*/
+
+    if (config[iZone]->GetWrt_Binary_Restart()) {
+      if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
+      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    } else {
+      if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
+      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    }
+
     /*--- Get the file output format ---*/
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    /*--- If requested, write Tecplot ASCII solution files in parallel. ---*/
-    
-    if ((Wrt_Vol || Wrt_Srf) && (FileFormat == TECPLOT)) {
-      
+    /*--- Write the solution files iff they are requested and we are executing
+     with a single rank (all data on one proc and no comm. overhead). Once we
+     have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
+     can allow the write of the viz. files as well. ---*/
+
+    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
+
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
-      
+
       if (rank == MASTER_NODE)
         cout << "Preparing element connectivity across all ranks." << endl;
       SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
-      
+
       /*--- Sort the surface data and renumber if for writing. ---*/
-      
+
       SortOutputData_Surface(config[iZone], geometry[iZone][MESH_0]);
-      
-      /*--- Write Tecplot ASCII files for the volume and/or surface solutions. ---*/
-      
+
+      /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
+
       if (Wrt_Vol) {
-        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-        SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                 solver_container[iZone][MESH_0], iZone, val_nZone, false);
+
+        switch (FileFormat) {
+
+          case TECPLOT:
+
+            /*--- Write a Tecplot ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            break;
+
+          case FIELDVIEW:
+
+            /*--- We do not yet have a version of FieldView ASCII for new parallel output. ---*/
+
+            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
+
+            break;
+
+          case TECPLOT_BINARY:
+
+            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+
+            if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            break;
+
+          case FIELDVIEW_BINARY:
+
+            /*--- FieldView binary files not yet available for parallel output. ---*/
+
+            if (rank == MASTER_NODE) cout << "FieldView ASCII volume files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate FieldView ASCII." << endl;
+            break;
+
+          case PARAVIEW:
+
+            /*--- Write a Paraview ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            break;
+
+          default:
+            break;
+        }
+
       }
-      
+
       if (Wrt_Srf) {
-        if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
-        SetTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                 solver_container[iZone][MESH_0], iZone, val_nZone, true);
+
+        switch (FileFormat) {
+
+          case TECPLOT:
+
+            /*--- Write a Tecplot ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            break;
+
+          case TECPLOT_BINARY:
+
+            /*--- Write a Tecplot ASCII file instead for now in serial. ---*/
+
+            if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
+            if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            break;
+
+          case PARAVIEW:
+
+            /*--- Write a Paraview ASCII file ---*/
+
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
+                                        solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            break;
+            
+          default:
+            break;
+        }
+        
       }
-      
+
       /*--- Clean up the connectivity data that was allocated for output. ---*/
-      
+
       DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
       DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], true);
-      
+
       /*--- Clean up the surface data that was only needed for output. ---*/
-      
+
       DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][MESH_0]);
       
     }
@@ -10286,34 +10390,28 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
    names. Names can be set alternatively by using the commented code
    below. ---*/
   
-  for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-    varname << "Conservative_" << iVar+1;
-    Variable_Names.push_back(varname.str());
-    varname.str("");
+  if (incompressible) {
+    Variable_Names.push_back("Pressure");
+    Variable_Names.push_back("X-Momentum");
+    Variable_Names.push_back("Y-Momentum");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  } else {
+    Variable_Names.push_back("Density");
+    Variable_Names.push_back("X-Momentum");
+    Variable_Names.push_back("Y-Momentum");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+    Variable_Names.push_back("Energy");
   }
-  
-//  if (incompressible) {
-//    Variable_Names.push_back("Pressure");
-//    Variable_Names.push_back("X-Momentum");
-//    Variable_Names.push_back("Y-Momentum");
-//    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-//  } else {
-//    Variable_Names.push_back("Density");
-//    Variable_Names.push_back("X-Momentum");
-//    Variable_Names.push_back("Y-Momentum");
-//    if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
-//    Variable_Names.push_back("Energy");
-//  }
-//  if (SecondIndex != NONE) {
-//    if (config->GetKind_Turb_Model() == SST) {
-//      Variable_Names.push_back("TKE");
-//      Variable_Names.push_back("Omega");
-//    } else {
-//      /*--- S-A variants ---*/
-//      Variable_Names.push_back("Nu_Tilde");
-//    }
-//  }
-  
+  if (SecondIndex != NONE) {
+    if (config->GetKind_Turb_Model() == SST) {
+      Variable_Names.push_back("TKE");
+      Variable_Names.push_back("Omega");
+    } else {
+      /*--- S-A variants ---*/
+      Variable_Names.push_back("Nu_Tilde");
+    }
+  }
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -10323,66 +10421,54 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-        varname << "Limiter_" << iVar+1;
-        Variable_Names.push_back(varname.str());
-        varname.str("");
+      if (incompressible) {
+        Variable_Names.push_back("Limiter_Pressure");
+        Variable_Names.push_back("Limiter_X-Momentum");
+        Variable_Names.push_back("Limiter_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+      } else {
+        Variable_Names.push_back("Limiter_Density");
+        Variable_Names.push_back("Limiter_X-Momentum");
+        Variable_Names.push_back("Limiter_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+        Variable_Names.push_back("Limiter_Energy");
       }
-      
-//      if (incompressible) {
-//        Variable_Names.push_back("Limiter_Pressure");
-//        Variable_Names.push_back("Limiter_X-Momentum");
-//        Variable_Names.push_back("Limiter_Y-Momentum");
-//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-//      } else {
-//        Variable_Names.push_back("Limiter_Density");
-//        Variable_Names.push_back("Limiter_X-Momentum");
-//        Variable_Names.push_back("Limiter_Y-Momentum");
-//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
-//        Variable_Names.push_back("Limiter_Energy");
-//      }
-//      if (SecondIndex != NONE) {
-//        if (config->GetKind_Turb_Model() == SST) {
-//          Variable_Names.push_back("Limiter_TKE");
-//          Variable_Names.push_back("Limiter_Omega");
-//        } else {
-//          /*--- S-A variants ---*/
-//          Variable_Names.push_back("Limiter_Nu_Tilde");
-//        }
-//      }
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Limiter_TKE");
+          Variable_Names.push_back("Limiter_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Limiter_Nu_Tilde");
+        }
+      }
     }
     
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-        varname << "Residual_" << iVar+1;
-        Variable_Names.push_back(varname.str());
-        varname.str("");
+      if (incompressible) {
+        Variable_Names.push_back("Residual_Pressure");
+        Variable_Names.push_back("Residual_X-Momentum");
+        Variable_Names.push_back("Residual_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+      } else {
+        Variable_Names.push_back("Residual_Density");
+        Variable_Names.push_back("Residual_X-Momentum");
+        Variable_Names.push_back("Residual_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+        Variable_Names.push_back("Residual_Energy");
       }
-      
-//      if (incompressible) {
-//        Variable_Names.push_back("Residual_Pressure");
-//        Variable_Names.push_back("Residual_X-Momentum");
-//        Variable_Names.push_back("Residual_Y-Momentum");
-//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-//      } else {
-//        Variable_Names.push_back("Residual_Density");
-//        Variable_Names.push_back("Residual_X-Momentum");
-//        Variable_Names.push_back("Residual_Y-Momentum");
-//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
-//        Variable_Names.push_back("Residual_Energy");
-//      }
-//      if (SecondIndex != NONE) {
-//        if (config->GetKind_Turb_Model() == SST) {
-//          Variable_Names.push_back("Residual_TKE");
-//          Variable_Names.push_back("Residual_Omega");
-//        } else {
-//          /*--- S-A variants ---*/
-//          Variable_Names.push_back("Residual_Nu_Tilde");
-//        }
-//      }
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Residual_TKE");
+          Variable_Names.push_back("Residual_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Residual_Nu_Tilde");
+        }
+      }
     }
     
     /*--- Add the grid velocity. ---*/
@@ -10406,30 +10492,50 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     nVar_Par += 3;
     Variable_Names.push_back("Temperature");
-    Variable_Names.push_back("Pressure_Coefficient");
+		if (config->GetOutput_FileFormat() == PARAVIEW){
+			Variable_Names.push_back("Pressure_Coefficient");
+		} else {
+			Variable_Names.push_back("C<sub>p</sub>");
+		}
     Variable_Names.push_back("Mach");
     
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-      nVar_Par += 2;
-      Variable_Names.push_back("Skin_Friction_Coefficient_X");
-      Variable_Names.push_back("Skin_Friction_Coefficient_Y");
-      if (geometry->GetnDim() == 3) {
-        nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
-      }
-      nVar_Par += 2;
-      Variable_Names.push_back("Heat_Flux");
-      Variable_Names.push_back("Y_Plus");
+			if (config->GetOutput_FileFormat() == PARAVIEW){
+				nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
+				nVar_Par += 2;
+				Variable_Names.push_back("Skin_Friction_Coefficient_X");
+				Variable_Names.push_back("Skin_Friction_Coefficient_Y");
+				if (geometry->GetnDim() == 3) {
+					nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_Z");
+				}
+				nVar_Par += 2;
+				Variable_Names.push_back("Heat_Flux");
+				Variable_Names.push_back("Y_Plus");
+			} else {
+				nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
+				nVar_Par += 2;
+				Variable_Names.push_back("C<sub>f</sub>_x");
+				Variable_Names.push_back("C<sub>f</sub>_y");
+				if (geometry->GetnDim() == 3) {
+					nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
+				}
+				nVar_Par += 2;
+				Variable_Names.push_back("h");
+				Variable_Names.push_back("y<sup>+</sup>");
+			}
     }
     
     /*--- Add Eddy Viscosity. ---*/
     
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-      Variable_Names.push_back("Eddy_Viscosity");
-      
+			if (config->GetOutput_FileFormat() == PARAVIEW){
+				Variable_Names.push_back("Eddy_Viscosity");
+			} else {
+				Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
+			}
     }
     
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
@@ -10691,7 +10797,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double *Grid_Vel = NULL;
   su2double *Normal, Area;
   
-//  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = (config->GetGrid_Movement());
   bool Wrt_Halo       = config->GetWrt_Halo(), isPeriodic;
   
@@ -10740,36 +10846,30 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
    to avoid confusion with the serial version, which still prints these
    names. Names can be set alternatively by using the commented code
    below. ---*/
-  
-  for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-    varname << "Conservative_" << iVar+1;
-    Variable_Names.push_back(varname.str());
-    varname.str("");
+
+  if (incompressible) {
+    Variable_Names.push_back("Adjoint_Pressure");
+    Variable_Names.push_back("Adjoint_X-Momentum");
+    Variable_Names.push_back("Adjoint_Y-Momentum");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Momentum");
+  } else {
+    Variable_Names.push_back("Adjoint_Density");
+    Variable_Names.push_back("Adjoint_X-Momentum");
+    Variable_Names.push_back("Adjoint_Y-Momentum");
+    if (geometry->GetnDim() == 3)
+      Variable_Names.push_back("Adjoint_Z-Momentum");
+    Variable_Names.push_back("Adjoint_Energy");
   }
-  
-//  if (incompressible) {
-//    Variable_Names.push_back("Adjoint_Pressure");
-//    Variable_Names.push_back("Adjoint_X-Momentum");
-//    Variable_Names.push_back("Adjoint_Y-Momentum");
-//    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Momentum");
-//  } else {
-//    Variable_Names.push_back("Adjoint_Density");
-//    Variable_Names.push_back("Adjoint_X-Momentum");
-//    Variable_Names.push_back("Adjoint_Y-Momentum");
-//    if (geometry->GetnDim() == 3)
-//      Variable_Names.push_back("Adjoint_Z-Momentum");
-//    Variable_Names.push_back("Adjoint_Energy");
-//  }
-//  if (SecondIndex != NONE) {
-//    if (config->GetKind_Turb_Model() == SST) {
-//      Variable_Names.push_back("Adjoint_TKE");
-//      Variable_Names.push_back("Adjoint_Omega");
-//    } else {
-//      /*--- S-A variants ---*/
-//      Variable_Names.push_back("Adjoint_Nu_Tilde");
-//    }
-//  }
-  
+  if (SecondIndex != NONE) {
+    if (config->GetKind_Turb_Model() == SST) {
+      Variable_Names.push_back("Adjoint_TKE");
+      Variable_Names.push_back("Adjoint_Omega");
+    } else {
+      /*--- S-A variants ---*/
+      Variable_Names.push_back("Adjoint_Nu_Tilde");
+    }
+  }
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -10779,70 +10879,56 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      
-      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-        varname << "Limiter_" << iVar+1;
-        Variable_Names.push_back(varname.str());
-        varname.str("");
+      if (incompressible) {
+        Variable_Names.push_back("Limiter_Adjoint_Pressure");
+        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
+        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+      } else {
+        Variable_Names.push_back("Limiter_Adjoint_Density");
+        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
+        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
+        if (geometry->GetnDim() == 3)
+          Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+        Variable_Names.push_back("Limiter_Adjoint_Energy");
       }
-      
-//      if (incompressible) {
-//        Variable_Names.push_back("Limiter_Adjoint_Pressure");
-//        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
-//        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
-//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
-//      } else {
-//        Variable_Names.push_back("Limiter_Adjoint_Density");
-//        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
-//        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
-//        if (geometry->GetnDim() == 3)
-//          Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
-//        Variable_Names.push_back("Limiter_Adjoint_Energy");
-//      }
-//      if (SecondIndex != NONE) {
-//        if (config->GetKind_Turb_Model() == SST) {
-//          Variable_Names.push_back("Limiter_Adjoint_TKE");
-//          Variable_Names.push_back("Limiter_Adjoint_Omega");
-//        } else {
-//          /*--- S-A variants ---*/
-//          Variable_Names.push_back("Limiter_Adjoint_Nu_Tilde");
-//        }
-//      }
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Limiter_Adjoint_TKE");
+          Variable_Names.push_back("Limiter_Adjoint_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Limiter_Adjoint_Nu_Tilde");
+        }
+      }
     }
     
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      
-      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-        varname << "Residual_" << iVar+1;
-        Variable_Names.push_back(varname.str());
-        varname.str("");
+      if (incompressible) {
+        Variable_Names.push_back("Residual_Adjoint_Pressure");
+        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
+        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+      } else {
+        Variable_Names.push_back("Residual_Adjoint_Density");
+        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
+        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
+        if (geometry->GetnDim() == 3)
+          Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+        Variable_Names.push_back("Residual_Adjoint_Energy");
       }
-      
-//      if (incompressible) {
-//        Variable_Names.push_back("Residual_Adjoint_Pressure");
-//        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
-//        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
-//        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
-//      } else {
-//        Variable_Names.push_back("Residual_Adjoint_Density");
-//        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
-//        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
-//        if (geometry->GetnDim() == 3)
-//          Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
-//        Variable_Names.push_back("Residual_Adjoint_Energy");
-//      }
-//      if (SecondIndex != NONE) {
-//        if (config->GetKind_Turb_Model() == SST) {
-//          Variable_Names.push_back("Residual_Adjoint_TKE");
-//          Variable_Names.push_back("Residual_Adjoint_Omega");
-//        } else {
-//          /*--- S-A variants ---*/
-//          Variable_Names.push_back("Residual_Adjoint_Nu_Tilde");
-//        }
-//      }
+      if (SecondIndex != NONE) {
+        if (config->GetKind_Turb_Model() == SST) {
+          Variable_Names.push_back("Residual_Adjoint_TKE");
+          Variable_Names.push_back("Residual_Adjoint_Omega");
+        } else {
+          /*--- S-A variants ---*/
+          Variable_Names.push_back("Residual_Adjoint_Nu_Tilde");
+        }
+      }
     }
     
     /*--- Add the grid velocity. ---*/
@@ -11152,17 +11238,11 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
    names. Names can be set alternatively by using the commented code
    below. ---*/
   
-  for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-    varname << "Conservative_" << iVar+1;
-    Variable_Names.push_back(varname.str());
-    varname.str("");
-  }
-  
-//  Variable_Names.push_back("Displacement_1");
-//  Variable_Names.push_back("Displacement_2");
-//  if (geometry->GetnDim() == 3)
-//    Variable_Names.push_back("Displacement_3");
-  
+  Variable_Names.push_back("Displacement_1");
+  Variable_Names.push_back("Displacement_2");
+  if (geometry->GetnDim() == 3)
+    Variable_Names.push_back("Displacement_3");
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -11172,32 +11252,20 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     
     if (config->GetWrt_Limiters()) {
       nVar_Par += nVar_Consv_Par;
-      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-        varname << "Limiter_" << iVar+1;
-        Variable_Names.push_back(varname.str());
-        varname.str("");
-      }
-      
-//      Variable_Names.push_back("Limiter_Displacement_1");
-//      Variable_Names.push_back("Limiter_Displacement_2");
-//      if (geometry->GetnDim() == 3)
-//        Variable_Names.push_back("Limiter_Displacement_3");
+      Variable_Names.push_back("Limiter_Displacement_1");
+      Variable_Names.push_back("Limiter_Displacement_2");
+      if (geometry->GetnDim() == 3)
+        Variable_Names.push_back("Limiter_Displacement_3");
     }
     
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
-        varname << "Residual_" << iVar+1;
-        Variable_Names.push_back(varname.str());
-        varname.str("");
-      }
-      
-//      Variable_Names.push_back("Residual_Displacement_1");
-//      Variable_Names.push_back("Residual_Displacement_2");
-//      if (geometry->GetnDim() == 3)
-//        Variable_Names.push_back("Residual_Displacement_3");
+      Variable_Names.push_back("Residual_Displacement_1");
+      Variable_Names.push_back("Residual_Displacement_2");
+      if (geometry->GetnDim() == 3)
+        Variable_Names.push_back("Residual_Displacement_3");
     }
     
     /*--- If the analysis is dynamic... ---*/
@@ -14638,7 +14706,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
   /*--- Local variables ---*/
   
@@ -14744,25 +14812,335 @@ void COutput::SetRestart_Parallel(CConfig *config, CGeometry *geometry, CSolver 
 #endif
     
   }
-  
-  /*--- Write the general header and flow conditions (master rank alone) ----*/
-  
+
+  /*--- Write the metadata (master rank alone) ----*/
+
   if (rank == MASTER_NODE) {
+    if (dual_time)
+      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
+    else
+      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
     restart_file <<"AOA= " << config->GetAoA() - config->GetAoA_Offset() << endl;
     restart_file <<"SIDESLIP_ANGLE= " << config->GetAoS() - config->GetAoS_Offset() << endl;
     restart_file <<"INITIAL_BCTHRUST= " << config->GetInitial_BCThrust() << endl;
     restart_file <<"DCD_DCL_VALUE= " << config->GetdCD_dCL() << endl;
     if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
-    if (dual_time)
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + 1 << endl;
-    else
-      restart_file <<"EXT_ITER= " << config->GetExtIter() + config->GetExtIter_OffSet() + 1 << endl;
   }
-  
+
   /*--- All processors close the file. ---*/
-  
+
   restart_file.close();
   
+}
+
+void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+
+  /*--- Local variables ---*/
+
+  unsigned short iVar, nZone = geometry->GetnZone();
+  unsigned long iPoint, iExtIter = config->GetExtIter();
+  bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool adjoint   = (config->GetContinuous_Adjoint() ||
+                    config->GetDiscrete_Adjoint());
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  ofstream restart_file;
+  string filename;
+  char str_buf[CGNS_STRING_SIZE], fname[100];
+
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  int rank = MASTER_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Retrieve filename from config ---*/
+
+  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+    filename = config->GetRestart_AdjFileName();
+    filename = config->GetObjFunc_Extension(filename);
+  } else if (fem) {
+    filename = config->GetRestart_FEMFileName();
+  } else {
+    filename = config->GetRestart_FlowFileName();
+  }
+
+  /*--- Append the zone number if multizone problems ---*/
+  if (nZone > 1)
+    filename= config->GetMultizone_FileName(filename, val_iZone);
+
+  /*--- Unsteady problems require an iteration number to be appended. ---*/
+  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
+  } else if (config->GetWrt_Unsteady()) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  } else if ((fem) && (config->GetWrt_Dynamic())) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  }
+
+  strcpy(fname, filename.c_str());
+
+  /*--- These point offsets should be computed once and stored so that we don't
+  repeat this code throughout. ---*/
+
+  /*--- Search all send/recv boundaries on this partition for any periodic
+   nodes that were part of the original domain. We want to recover these
+   for visualization purposes. ---*/
+
+  unsigned long iVertex;
+  bool isPeriodic;
+
+  int *Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+
+      /*--- Checking for less than or equal to the rank, because there may
+       be some periodic halo nodes that send info to the same rank. ---*/
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                      (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+        if (isPeriodic) Local_Halo[iPoint] = false;
+      }
+    }
+  }
+
+  /*--- Sum total number of nodes that belong to the domain ---*/
+
+  unsigned long nTotalPoint;
+  unsigned long nLocalPoint = 0;
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    if (Local_Halo[iPoint] == false)
+      nLocalPoint++;
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nLocalPoint, &nTotalPoint, 1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nTotalPoint = nLocalPoint;
+#endif
+
+  /*--- Now that we know the actual number of points we need to output,
+   compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+
+  unsigned long *npoint_procs  = new unsigned long[size];
+  unsigned long *nPoint_Linear = new unsigned long[size+1];
+
+  unsigned long total_pt_accounted = 0;
+  for (int ii = 0; ii < size; ii++) {
+    npoint_procs[ii] = nTotalPoint/size;
+    total_pt_accounted = total_pt_accounted + npoint_procs[ii];
+  }
+
+  /*--- Get the number of remainder points after the even division. ---*/
+
+  unsigned long rem_points = nTotalPoint-total_pt_accounted;
+  for (unsigned long ii = 0; ii < rem_points; ii++) {
+    npoint_procs[ii]++;
+  }
+
+  /*--- Store the point offsets for each rank. ---*/
+
+  nPoint_Linear[0] = 0;
+  for (int ii = 1; ii < size; ii++) {
+    nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
+  }
+  nPoint_Linear[size] = nTotalPoint;
+
+  /*--- Prepare the first four ints containing the counts. The last two values
+   are for metadata: one int for ExtIter and 5 su2doubles. ---*/
+
+  int var_buf_size = 4;
+  int var_buf[4] = {nVar_Par, (int)nTotalPoint, 1, 5};
+
+  /*--- Prepare the 1D data buffer on this rank. ---*/
+
+  passivedouble *buf = new passivedouble[nParallel_Poin*nVar_Par];
+
+  /*--- For now, create a temp 1D buffer to load up the data for writing.
+   This will be replaced with a derived data type most likely. ---*/
+
+  for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
+    for (iVar = 0; iVar < nVar_Par; iVar++)
+      buf[iPoint*nVar_Par+iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
+
+  /*--- Prepare metadata. ---*/
+
+  int Restart_ExtIter;
+  if (dual_time)
+    Restart_ExtIter= (int)config->GetExtIter() + 1;
+  else
+    Restart_ExtIter = (int)config->GetExtIter() + (int)config->GetExtIter_OffSet() + 1;
+
+  passivedouble Restart_Metadata[5] = {
+    SU2_TYPE::GetValue(config->GetAoA() - config->GetAoA_Offset()),
+    SU2_TYPE::GetValue(config->GetAoS() - config->GetAoS_Offset()),
+    SU2_TYPE::GetValue(config->GetInitial_BCThrust()),
+    SU2_TYPE::GetValue(config->GetdCD_dCL()),
+    0.0
+  };
+  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+
+#ifndef HAVE_MPI
+
+  FILE* fhw;
+  fhw = fopen(fname, "wb");
+
+  /*--- Error check for opening the file. ---*/
+
+  if (!fhw) {
+    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- First, write the number of variables and points. ---*/
+
+  fwrite(var_buf, var_buf_size, sizeof(int), fhw);
+
+  /*--- Write the variable names to the file. Note that we are adopting a
+   fixed length of 33 for the string length to match with CGNS. This is 
+   needed for when we read the strings later. ---*/
+
+  for (iVar = 0; iVar < nVar_Par; iVar++) {
+    strcpy(str_buf, Variable_Names[iVar].c_str());
+    fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
+  }
+
+  /*--- Call to write the entire restart file data in binary in one shot. ---*/
+
+  fwrite(buf, nVar_Par*nParallel_Poin, sizeof(passivedouble), fhw);
+
+  /*--- Write the external iteration. ---*/
+
+  fwrite(&Restart_ExtIter, 1, sizeof(int), fhw);
+
+  /*--- Write the metadata. ---*/
+
+  fwrite(Restart_Metadata, 5, sizeof(passivedouble), fhw);
+
+  /*--- Close the file. ---*/
+
+  fclose(fhw);
+
+#else
+
+  /*--- Parallel binary output using MPI I/O. ---*/
+
+  MPI_File fhw;
+  MPI_Status status;
+  MPI_Datatype etype, filetype;
+  MPI_Offset disp;
+  int ierr;
+
+  /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+  etype = MPI_DOUBLE;
+
+  /*--- Define a derived datatype for this ranks contiguous chunk of data
+   that will be placed in the restart (1D array size = num points * num vars). ---*/
+
+  MPI_Type_contiguous(nVar_Par*nParallel_Poin, MPI_DOUBLE, &filetype);
+  MPI_Type_commit(&filetype);
+
+  /*--- All ranks open the file using MPI. Here, we try to open the file with
+   exclusive so that an error is generated if the file exists. We always want
+   to write a fresh restart file, so we delete any existing files and create
+   a new one. ---*/
+
+  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  if (ierr != MPI_SUCCESS)  {
+    if (rank == 0)
+      MPI_File_delete(fname, MPI_INFO_NULL);
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY, MPI_INFO_NULL, &fhw);
+  }
+
+  /*--- Error check opening the file. ---*/
+
+  if (ierr) {
+    if (rank == MASTER_NODE)
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+  }
+
+  /*--- First, write the number of variables and points (i.e., cols and rows),
+   which we will need in order to read the file later. Also, write the 
+   variable string names here. Only the master rank writes the header. ---*/
+
+  if (rank == MASTER_NODE) {
+    MPI_File_write(fhw, var_buf, var_buf_size, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Write the variable names to the file. Note that we are adopting a
+     fixed length of 33 for the string length to match with CGNS. This is
+     needed for when we read the strings later. ---*/
+
+    for (iVar = 0; iVar < nVar_Par; iVar++) {
+      disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
+      strcpy(str_buf, Variable_Names[iVar].c_str());
+      MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
+    }
+  }
+
+  /*--- Compute the offset for this rank's linear partition of the data in bytes.
+   After the calculations above, we have the partition sizes store in nPoint_Linear
+   in cumulative storage format. ---*/
+
+  disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
+          nVar_Par*nPoint_Linear[rank]*sizeof(passivedouble));
+
+  /*--- Set the view for the MPI file write, i.e., describe the location in
+   the file that this rank "sees" for writing its piece of the restart file. ---*/
+
+  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+
+  /*--- Collective call for all ranks to write to their view simultaneously. ---*/
+
+  MPI_File_write_all(fhw, buf, nVar_Par*nParallel_Poin, MPI_DOUBLE, &status);
+
+  /*--- Free the derived datatype. ---*/
+
+  MPI_Type_free(&filetype);
+
+  /*--- Reset the file view before writing the metadata. ---*/
+
+  MPI_File_set_view(fhw, 0, MPI_BYTE, MPI_BYTE, "native", MPI_INFO_NULL);
+
+  /*--- Finally, the master rank writes the metadata. ---*/
+
+  if (rank == MASTER_NODE) {
+
+    /*--- External iteration. ---*/
+
+    disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
+            nVar_Par*nTotalPoint*sizeof(passivedouble));
+    MPI_File_write_at(fhw, disp, &Restart_ExtIter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Additional doubles for AoA, AoS, etc. ---*/
+
+    disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
+            nVar_Par*nTotalPoint*sizeof(passivedouble) + 1*sizeof(int));
+    MPI_File_write_at(fhw, disp, Restart_Metadata, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
+
+  }
+
+  /*--- All ranks close the file after writing. ---*/
+
+  MPI_File_close(&fhw);
+
+#endif
+
+  /*--- Free temporary data buffer for writing the binary file. ---*/
+
+  delete [] buf;
+
 }
 
 void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geometry, bool surf_sol) {
