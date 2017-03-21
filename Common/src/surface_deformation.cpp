@@ -6910,7 +6910,7 @@ void CFreeFormDefBox::SetStiffnessMatrix(EigenMatrix &Matrix, CConfig *config, C
           Area += Normal[iDim]*Normal[iDim];
         }
         Area = sqrt(Area);
-        GetLocalStiffnessMatrix(LocalStiffness, ParamCoord, geometry->GetnDim());
+        GetLocalStiffnessMatrix(LocalStiffness, ParamCoord);
         MyEnergy += 0.5*(LocalStiffness.transpose()*ConstitutiveMatrix*LocalStiffness)*Area;
       }
     }
