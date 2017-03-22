@@ -192,7 +192,19 @@ public:
    */
   void SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
                                unsigned long iExtIter, unsigned short val_nZone);
-  
+
+  /*!
+   * \brief Writes and organizes the all the output files, except the history one, for DG-FEM simulations (SU2_SOL).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetBaselineResult_Files_FEM(CSolver **solver, CGeometry **geometry, CConfig **config,
+                               unsigned long iExtIter, unsigned short val_nZone);
+
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -379,7 +391,16 @@ public:
 	 * \param[in] val_nZone - iZone index.
 	 */
 	void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
-  
+
+  /*!
+   * \brief Merge the solution into a data structure used for output file writing (DG-FEM).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
+
   /*!
    * \brief Write a native SU2 restart file.
    * \param[in] config - Definition of the particular problem.
