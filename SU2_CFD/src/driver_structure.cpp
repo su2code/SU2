@@ -3137,17 +3137,6 @@ void CDriver::Output(unsigned long ExtIter) {
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
 
-    /*--- Make a distinction between the FEM and the FVM solvers. ---*/
-    if ((KindSolver == FEM_EULER) ||
-        (KindSolver == FEM_NAVIER_STOKES) ||
-        (KindSolver == FEM_RANS) ||
-        (KindSolver == FEM_LES)) {
-
-      /*--- Temporary output for the FEM solver. ---*/
-      output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
-
-    } else {
-
       /*--- Execute the routine for writing restart, volume solution,
        surface solution, and surface comma-separated value files. ---*/
 
@@ -3157,7 +3146,6 @@ void CDriver::Output(unsigned long ExtIter) {
     
       output->SetForces_Breakdown(geometry_container, solver_container,
                                   config_container, integration_container, ZONE_0);
-    }
     
     /*--- Compute the forces at different sections. ---*/
 

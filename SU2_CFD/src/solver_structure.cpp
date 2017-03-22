@@ -3096,9 +3096,6 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
   string Tag, text_line, AdjExt, UnstExt;
   unsigned long iExtIter = config->GetExtIter();
 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
-
   ifstream restart_file;
   string filename;
 
@@ -3106,12 +3103,11 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
   filename = config->GetSolution_FlowFileName();
 
-//  /*--- Unsteady problems require an iteration number to be appended. ---*/
-//  if (config->GetWrt_Unsteady()) {
-//    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-//  } else if (config->GetWrt_Dynamic()) {
-//    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-//  }
+  /*--- Unsteady problems require an iteration number to be appended. ---*/
+
+  if (config->GetWrt_Unsteady()) {
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
+  }
 
   /*--- Read only the number of variables in the restart file. ---*/
 
@@ -3247,6 +3243,10 @@ void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   ifstream restart_file;
 
   string restart_filename = config->GetSolution_FlowFileName();
+
+  if (config->GetWrt_Unsteady()) {
+    restart_filename = config->GetUnsteady_FileName(restart_filename, SU2_TYPE::Int(val_iter));
+  }
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
