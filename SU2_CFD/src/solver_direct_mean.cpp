@@ -12876,14 +12876,15 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
   
 }
 
-void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                          CConfig *config) {
   
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iDim, iVar, iMarker;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
+  bool viscous       = config->GetViscous();
   
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
@@ -12900,6 +12901,8 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
         if (geometry->node[iPoint]->GetDomain()) {
 
+          Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
           for (iVar = 0; iVar < nPrimVar; iVar++) {
             PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
             PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
@@ -12907,7 +12910,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
           /*--- Set primitive variables ---*/
 
-          numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
           
           if( !( config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS ) ) {
           Secondary_i = node[iPoint]->GetSecondary();
@@ -12919,7 +12922,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             Secondary_j[0] = FluidModel->GetdPdrho_e();
             Secondary_j[1] = FluidModel->GetdPde_rho();  
 
-            numerics->SetSecondary(Secondary_i, Secondary_j);
+            conv_numerics->SetSecondary(Secondary_i, Secondary_j);
           }
 
           /*--- Set the normal vector ---*/
@@ -12928,20 +12931,52 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           for (iDim = 0; iDim < nDim; iDim++) 
             Normal[iDim] = -Normal[iDim];
 
-          numerics->SetNormal(Normal);
+          conv_numerics->SetNormal(Normal);
 
           if (grid_movement)
-            numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
           /*--- Compute the convective residual using an upwind scheme ---*/
 
-          numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
           /*--- Add Residuals and Jacobians ---*/
 
           LinSysRes.AddBlock(iPoint, Residual);
           if (implicit) 
             Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+          if (viscous) {
+
+            PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5);
+            PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6);
+
+            /*--- Set the normal vector and the coordinates ---*/
+
+            visc_numerics->SetNormal(Normal);
+            visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+            /*--- Primitive variables, and gradient ---*/
+
+            visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+            visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+            /*--- Turbulent kinetic energy ---*/
+
+            if (config->GetKind_Turb_Model() == SST)
+              visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+            /*--- Compute and update residual ---*/
+
+            visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+            LinSysRes.SubtractBlock(iPoint, Residual);
+
+            /*--- Jacobian contribution for implicit integration ---*/
+
+            if (implicit)
+              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          }
         }
       }
     }
