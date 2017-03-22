@@ -819,9 +819,9 @@ public:
 
 /*!
  * \class CHBMultiZoneDriver
- * \brief Temporary Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time and geometric zones.
+ * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time and geometric zones.
  * \author A.Rubino
- * \version 4.3.0 "Cardinal"
+ * \version 5.0.0 "Raven"
  */
 class CHBMultiZoneDriver : public CHBDriver{
 
@@ -865,6 +865,26 @@ public:
    * \brief Update the solution for the Harmonic Balance.
    */
   void Update();
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetMixingPlane(unsigned short iZone);
+
+  /*!
+   * \brief Preprocessing Mixing Plane interface.
+   */
+  void PreprocessingMixingPlane(unsigned short donorZone);
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   */
+  void SetTurboPerformance(unsigned short targetZone);
+
+  /*!
+   * \brief Monitor the computation.
+   */
+  bool Monitor(unsigned long ExtIter);
 
 };
 

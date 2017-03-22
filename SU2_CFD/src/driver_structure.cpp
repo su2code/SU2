@@ -5064,6 +5064,198 @@ void CHBMultiZoneDriver::Update() {
 
 }
 
+void CHBMultiZoneDriver::SetMixingPlane(unsigned short donorZone){
+
+  unsigned short targetZone, nMarkerInt, iMarkerInt ;
+  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+
+  /* --- transfer the average value from the donorZone to the targetZone*/
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+    for (targetZone = 0; targetZone < nZone; targetZone++) {
+      if (targetZone != donorZone){
+        transfer_performance_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+            geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone], iMarkerInt );
+      }
+    }
+  }
+}
+
+void CHBMultiZoneDriver::PreprocessingMixingPlane(unsigned short donorZone){
+
+  unsigned short targetZone, nMarkerInt, iMarkerInt ;
+  nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+
+  /* --- transfer the average value from the donorZone to the targetZone*/
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+    for (targetZone = 0; targetZone < nZone; targetZone++) {
+      if (targetZone != donorZone){
+        transfer_performance_container[donorZone][targetZone]->Preprocessing_InterfaceAverage(geometry_container[donorZone][MESH_0], geometry_container[targetZone][MESH_0],
+            config_container[donorZone], config_container[targetZone],
+            iMarkerInt);
+      }
+    }
+  }
+}
+
+
+void CHBMultiZoneDriver::SetTurboPerformance(unsigned short targetZone){
+
+  unsigned short donorZone;
+  //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
+  /* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
+  for (donorZone = 1; donorZone < nZone; donorZone++) {
+    transfer_performance_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL], donorZone);
+  }
+
+  /* --- compute turboperformance for each stage and the global machine ---*/
+
+  output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0], config_container[targetZone]);
+
+}
+
+
+bool CHBMultiZoneDriver::Monitor(unsigned long ExtIter) {
+
+  su2double CFL;
+  su2double rot_z_ini, rot_z_final ,rot_z;
+  su2double outPres_ini, outPres_final, outPres;
+  unsigned long rampFreq, finalRamp_Iter;
+  unsigned short iMarker, KindBC, KindBCOption;
+  string Marker_Tag;
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Synchronization point after a single solver iteration. Compute the
+   wall clock time required. ---*/
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+
+  UsedTime = (StopTime - StartTime);
+
+
+  /*--- Check if there is any change in the runtime parameters ---*/
+  CConfig *runtime = NULL;
+  strcpy(runtime_file_name, "runtime.dat");
+  runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
+  runtime->SetExtIter(ExtIter);
+  delete runtime;
+
+  /*--- Update average process runtime in each zone---*/
+  //  for (iZone = 0; iZone < nZone; iZone++){
+  //  	config_container[iZone]->SetKind_AverageProcess(config_container[ZONE_0]->GetKind_AverageProcess());
+  //  	config_container[iZone]->SetKind_PerformanceAverageProcess(config_container[ZONE_0]->GetKind_PerformanceAverageProcess());
+  //  }
+
+  /*--- Update the convergence history file (serial and parallel computations). ---*/
+
+  output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+      config_container, integration_container, false, UsedTime, ZONE_0);
+
+
+
+  /*--- Evaluate the new CFL number (adaptive). ---*/
+  if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
+    if(mixingplane){
+      CFL = 0;
+      for (iZone = 0; iZone < nZone; iZone++){
+        output->SetCFL_Number(solver_container, config_container, iZone);
+        CFL += config_container[iZone]->GetCFL(MESH_0);
+      }
+      /*--- For fluid-multizone the new CFL number is the same for all the zones and it is equal to the zones' minimum value. ---*/
+      for (iZone = 0; iZone < nZone; iZone++){
+        config_container[iZone]->SetCFL(MESH_0, CFL/nZone);
+      }
+    }
+    else{
+      output->SetCFL_Number(solver_container, config_container, ZONE_0);
+    }
+  }
+
+
+  /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement() && config_container[ZONE_0]->GetRampRotatingFrame()) {
+    rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
+    finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
+    rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
+
+    if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
+
+      for (iZone = 0; iZone < nZone; iZone++) {
+        rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
+        if(abs(rot_z_final) > 0.0){
+          rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
+          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+
+          geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
+          geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
+          geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
+        }
+      }
+
+      for (iZone = 1; iZone < nZone; iZone++) {
+        transfer_performance_container[iZone][ZONE_0]->GatherAverageTurboGeoValues(geometry_container[iZone][MESH_0],geometry_container[ZONE_0][MESH_0], iZone);
+      }
+
+    }
+  }
+
+
+  /*--- Outlet Pressure Ramp: Compute the updated rotational velocity. ---*/
+  if (config_container[ZONE_0]->GetRampOutletPressure()) {
+    rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(1));
+    finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampOutletPressure_Coeff(2));
+    outPres_ini    = config_container[ZONE_0]->GetRampOutletPressure_Coeff(0);
+    outPres_final  = config_container[ZONE_0]->GetFinalOutletPressure();
+
+    if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
+      outPres = outPres_ini + ExtIter*(outPres_final - outPres_ini)/finalRamp_Iter;
+      if(rank == MASTER_NODE) config_container[ZONE_0]->SetMonitotOutletPressure(outPres);
+
+      for (iZone = 0; iZone < nZone; iZone++) {
+        for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
+          KindBC = config_container[iZone]->GetMarker_All_KindBC(iMarker);
+          switch (KindBC) {
+          case RIEMANN_BOUNDARY:
+            cout << "only implemented for NRBC" <<endl;
+            exit(EXIT_FAILURE);
+            break;
+          case NRBC_BOUNDARY:
+            Marker_Tag         = config_container[iZone]->GetMarker_All_TagBound(iMarker);
+            KindBCOption       = config_container[iZone]->GetKind_Data_NRBC(Marker_Tag);
+            if(KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D || KindBCOption == RADIAL_EQUILIBRIUM ){
+              config_container[iZone]->SetNRBC_Var1(outPres, Marker_Tag);
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+
+
+  /*--- Check whether the current simulation has reached the specified
+   convergence criteria, and set StopCalc to true, if so. ---*/
+
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
+  case EULER: case NAVIER_STOKES: case RANS:
+    StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+  case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+    StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+  }
+
+  return StopCalc;
+
+}
+
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
                        unsigned short val_nDim,
