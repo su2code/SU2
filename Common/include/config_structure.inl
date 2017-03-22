@@ -629,6 +629,8 @@ inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformati
 
 inline unsigned short CConfig::GetKind_Adaptation(void) { return Kind_Adaptation; }
 
+inline bool CConfig::GetPeriodicPreproc(void) {return SetPeriodic; }
+
 inline su2double CConfig::GetNew_Elem_Adapt(void) { return New_Elem_Adapt; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme(void) { return Kind_TimeNumScheme; }

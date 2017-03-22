@@ -101,6 +101,7 @@ private:
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
+	SetPeriodic,        /*!< \brief Flag to pre-process periodic boundaries in memory. */
 	Engine_Intake,			/*!< \brief Engine intake subsonic region. */
 	Frozen_Visc,			/*!< \brief Flag for adjoint problem with/without frozen viscosity. */
 	Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
@@ -3013,6 +3014,13 @@ public:
 	 * \return Kind of adaptation technique.
 	 */
 	unsigned short GetKind_Adaptation(void);
+
+  /*!
+   * \brief Get the flag to preprocess periodic boundaries.
+   * \return <code>FALSE</code> means that the periodic halo boundaries must
+   * be defined in the mesh file already.
+   */
+	bool GetPeriodicPreproc(void);
 
 	/*!
 	 * \brief Get the number of new elements added in the adaptation process.

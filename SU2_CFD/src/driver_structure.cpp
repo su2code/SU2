@@ -108,10 +108,71 @@ CDriver::CDriver(char* confFile,
 
     CGeometry *geometry_aux = NULL;
 
-    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    if (config_container[iZone]->GetPeriodicPreproc()) {
 
-    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-    
+      CGeometry *periodic = NULL;
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+
+      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      /*--- Allocate the memory of the current domain, and
+           divide the grid between the nodes ---*/
+
+      periodic = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+      /*--- Deallocate the memory of geometry_aux ---*/
+
+      delete geometry_aux;
+      geometry_aux = NULL;
+
+      /*--- Add the Send/Receive boundaries ---*/
+
+      periodic->SetSendReceive(config_container[iZone]);
+
+      /*--- Add the Send/Receive boundaries ---*/
+
+      periodic->SetBoundaries(config_container[iZone]);
+      /*--- Compute elements surrounding points, points surrounding points, and elements surronding elements ---*/
+
+      cout << "Setting local point and element connectivity." <<endl;
+      periodic->SetPoint_Connectivity(); periodic->SetElement_Connectivity();
+
+      /*--- Check the orientation before computing geometrical quantities ---*/
+
+      cout << "Check numerical grid orientation." <<endl;
+      periodic->SetBoundVolume();
+      periodic->Check_IntElem_Orientation(config_container[iZone]);
+      periodic->Check_BoundElem_Orientation(config_container[iZone]);
+
+      /*--- Create the edge structure ---*/
+
+      cout << "Identify faces, edges and vertices." <<endl;
+      periodic->SetFaces(); periodic->SetEdges(); periodic->SetVertex(config_container[iZone]); periodic->SetCoord_CG();
+
+      /*--- Create the control volume structures ---*/
+
+      cout << "Set control volume structure." << endl;
+      periodic->SetControlVolume(config_container[iZone], ALLOCATE);
+      periodic->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+
+
+      /*--- Set periodic boundary conditions ---*/
+
+      periodic->SetPeriodicBoundary(config_container[iZone]);
+
+      /*--- Create a new grid with the right periodic boundary ---*/
+
+      geometry_aux = new CPeriodicGeometry(periodic, config_container[iZone]);
+      geometry_aux->SetPeriodicBoundary(periodic, config_container[iZone]);
+
+      delete periodic;
+
+    }
+    else{
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    }
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
