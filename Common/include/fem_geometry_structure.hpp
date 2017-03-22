@@ -36,7 +36,7 @@
 
 using namespace std;
 
-/*! 
+/*!
  * \class long3T
  * \brief Help class used to store three longs as one entity.
  * \version 5.0.0 "Cardinal"
@@ -143,13 +143,15 @@ private:
  * \author E. van der Weide
  * \version 4.1.0 "Cardinal"
  */
+class CVolumeElementFEM;   // Forward declaration to avoid problems.
 class SortFacesClass {
 public:
   /*!
    * \brief Constructor of the class. Set the value of nVolElemTot.
    */
-   SortFacesClass(unsigned long val_nVolElemOwned,
-                  unsigned long val_nVolElemTot);
+   SortFacesClass(unsigned long            val_nVolElemOwned,
+                  unsigned long            val_nVolElemTot,
+                  const CVolumeElementFEM *val_volElem);
 
  /*!
   * \brief Destructor of the class. Nothing to be done.
@@ -166,6 +168,8 @@ public:
 private:
   unsigned long nVolElemOwned; /*!< \brief Number of locally owned volume elements. */
   unsigned long nVolElemTot;   /*!< \brief Total number of local volume elements . */
+
+  const CVolumeElementFEM *volElem; /*!< \brief The locally stored volume elements. */
 
   /*!
    * \brief Default constructor of the class. Disabled.
@@ -466,6 +470,9 @@ public:
 
   bool periodicBoundary; /*!< \brief Whether or not this boundary is a periodic boundary. */
 
+  vector<unsigned long> nSurfElem; /*!< \brief Number of surface elements per time level,
+                                               cumulative storage format. */
+
   vector<CSurfaceElementFEM> surfElem; /*!< \brief Vector of the local surface elements. */
 
   /*!
@@ -582,6 +589,18 @@ public:
   CVolumeElementFEM *GetVolElem(void);
 
   /*!
+  * \brief Function, which makes available the number of volume elements per time level.
+  * \return  The pointer to the data of nVolElemOwnedPerTimeLevel.
+  */
+  unsigned long *GetNVolElemOwnedPerTimeLevel(void);
+
+  /*!
+  * \brief Function, which makes available the number of internal volume elements per time level.
+  * \return  The pointer to the data of nVolElemInternalPerTimeLevel.
+  */
+  unsigned long *GetNVolElemInternalPerTimeLevel(void);
+
+  /*!
   * \brief Function, which makes available the number of standard boundary faces of the solution.
   * \return  Number of standard boundary faces of the solution.
   */
@@ -592,7 +611,7 @@ public:
   * \return  Pointer to the standard boundary faces of the solution.
   */
   FEMStandardBoundaryFaceClass *GetStandardBoundaryFacesSol(void);
-  
+
   /*!
   * \brief Function, which makes available the vector of receive ranks as
            a const reference.
@@ -635,11 +654,11 @@ public:
   */
   vector<vector<unsigned long> > GetRotPerHalos(void) const;
 
-  /*! 
+  /*!
   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
   * \param[in] config - Definition of the particular problem.
   */
-  void SetPositive_ZArea(CConfig *config); 
+  void SetPositive_ZArea(CConfig *config);
 
 protected:
   /*!
@@ -757,8 +776,10 @@ private:
   vector<su2double> timeInterpolDOFToIntegrationADER_DG; /*!< \brief The interpolation matrix between the time DOFs and
                                                                      the time integration points for ADER-DG. */
 
-  unsigned long nMatchingFacesWithHaloElem;      /*!< \brief Number of matching faces between an owned element and a halo
-                                                             element. These faces are numbered first in matchingFaces. */
+  vector<unsigned long> nMatchingFacesInternal;          /*!< \brief Number of matching faces between between two owned elements
+                                                                     per time level. Cumulative storage format. */
+  vector<unsigned long> nMatchingFacesWithHaloElem;      /*!< \brief Number of matching faces between an owned element and a halo
+                                                                     element per time level. Cumulative storage format. */
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
 
 public:
@@ -820,16 +841,17 @@ public:
 
  /*!
   * \brief Function, which makes available the number of matching internal faces
-           between an owned element and a halo element.
-  * \return  The number of matching internal faces between these elements.
+           between an owned element and a halo element per time level.
+  * \return  The number of matching internal faces between these elements per time level.
   */
-  unsigned long GetNMatchingFacesWithHaloElem(void);
+  unsigned long *GetNMatchingFacesWithHaloElem(void);
 
  /*!
-  * \brief Function, which makes available the number of matching internal faces.
-  * \return  The number of matching internal faces.
+  * \brief Function, which makes available the number of matching internal faces
+           between two owned elements per time level.
+  * \return  The number of matching internal faces per time level.
   */
-  unsigned long GetNMatchingFaces(void);
+  unsigned long *GetNMatchingFacesInternal(void);
 
  /*!
   * \brief Function, which makes available the matching internal faces.
@@ -848,7 +870,7 @@ public:
   * \return  Pointer to the standard volume elements of the solution.
   */
   FEMStandardElementClass *GetStandardElementsSol(void);
-  
+
  /*!
   * \brief Function, which makes available the number of standard internal matching faces of the solution.
   * \return  Number of standard internal matching faces of the solution.

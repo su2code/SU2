@@ -58,9 +58,10 @@ inline unsigned long CReorderElementClass::GetGlobalElemID(void) { return global
 
 inline unsigned short CReorderElementClass::GetTimeLevel(void) { return timeLevel; }
 
-inline SortFacesClass::SortFacesClass(unsigned long val_nVolElemOwned,
-                                      unsigned long val_nVolElemTot)
- {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot;}
+inline SortFacesClass::SortFacesClass(unsigned long            val_nVolElemOwned,
+                                      unsigned long            val_nVolElemTot,
+                                      const CVolumeElementFEM *val_volElem)
+ {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot; volElem = val_volElem;}
 
 inline SortFacesClass::~SortFacesClass(void) { }
 
@@ -110,6 +111,10 @@ inline unsigned long CMeshFEM::GetNVolElemTot(void) {return nVolElemTot;}
 
 inline CVolumeElementFEM* CMeshFEM::GetVolElem(void) {return volElem.data();}
 
+inline unsigned long* CMeshFEM::GetNVolElemOwnedPerTimeLevel(void) {return nVolElemOwnedPerTimeLevel.data();}
+
+inline unsigned long* CMeshFEM::GetNVolElemInternalPerTimeLevel(void) {return nVolElemInternalPerTimeLevel.data();}
+
 inline unsigned short CMeshFEM::GetNStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.size();}
 
 inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
@@ -134,9 +139,9 @@ inline su2double* CMeshFEM_DG::GetLagrangianBeginTimeIntervalADER_DG(void) {retu
 
 inline su2double* CMeshFEM_DG::GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}
 
-inline unsigned long CMeshFEM_DG::GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem;}
+inline unsigned long *CMeshFEM_DG::GetNMatchingFacesWithHaloElem(void) {return nMatchingFacesWithHaloElem.data();}
 
-inline unsigned long CMeshFEM_DG::GetNMatchingFaces(void) {return matchingFaces.size();}
+inline unsigned long *CMeshFEM_DG::GetNMatchingFacesInternal(void) {return nMatchingFacesInternal.data();}
 
 inline CInternalFaceElementFEM* CMeshFEM_DG::GetMatchingFaces(void) {return matchingFaces.data();}
 
