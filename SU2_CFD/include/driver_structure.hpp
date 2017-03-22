@@ -82,6 +82,7 @@ protected:
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   CInterpolator ***interpolator_container;      /*!< \brief Definition of the interpolation method between non-matching discretizations of the interface. */
   CTransfer ***transfer_container;              /*!< \brief Definition of the transfer of information and the physics involved in the interface. */
+  CTransfer ***transfer_performance_container;  /*!< \brief Definition of the transfer of performance involved in the interface. */
   su2double APIVarCoord[3];                     /*!< \brief This is used to store the VarCoord of each node. */
   su2double APINodalForce[3];                   /*!< \brief This is used to store the force at each node. */
   su2double APINodalForceDensity[3];            /*!< \brief This is used to store the force density at each node. */
@@ -639,11 +640,6 @@ public:
   void SetTurboPerformance(unsigned short targetZone);
 
   /*!
-   * \brief Set all the turbo geometrical quantities.
-   */
-  void Preprocessing(void);
-
-  /*!
    * \brief Monitor the computation.
    */
   bool Monitor(unsigned long ExtIter);
@@ -659,7 +655,7 @@ public:
  * \author T. Albring
  * \version 4.3.0 "Cardinal"
  */
-class CDiscAdjMultiZoneDriver : public CFluidDriver {
+class CDiscAdjFluidDriver : public CFluidDriver {
 
 protected:
   unsigned short RecordingState;
@@ -676,7 +672,7 @@ public:
     * \param[in] val_nZone - Total number of zones.
     * \param[in] val_nDim - Number of dimensions.
     */
-  CDiscAdjMultiZoneDriver(char* confFile,
+  CDiscAdjFluidDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim,
                    SU2_Comm MPICommunicator);
@@ -684,7 +680,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjMultiZoneDriver(void);
+  ~CDiscAdjFluidDriver(void);
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
@@ -710,7 +706,7 @@ public:
  * \author S. Vitale, T. Albring
  * \version 4.3.0 "Cardinal"
  */
-class CDiscAdjTurbomachineryDriver : public  CDiscAdjMultiZoneDriver {
+class CDiscAdjTurbomachineryDriver : public  CDiscAdjFluidDriver {
 
 public:
 
@@ -753,11 +749,6 @@ public:
    * \brief Set Mixing Plane interface within multiple zones.
    */
   void SetTurboPerformance(unsigned short targetZone);
-
-  /*!
-   * \brief Set all the turbo geometrical quantities.
-   */
-  void Preprocessing(void);
 
 
 };

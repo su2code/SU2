@@ -438,11 +438,12 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
-  unsigned short iMarker,iDim;
+  unsigned short iMarker, iDim, iMarker_Monitoring;
   unsigned long iVertex, iPoint;
-  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
-  su2double Total_Sens_Geo_local = 0.0;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area, Sens_Vertex;
   Total_Sens_Geo = 0.0;
+  su2double *MySens_Geo;
+  string Monitoring_Tag, Marker_Tag;
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Sens_Geo[iMarker] = 0.0;
@@ -452,7 +453,10 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
        || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
 
+      Sens = 0.0;
+
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         Prod = 0.0;
@@ -469,26 +473,44 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
         Area = sqrt(Area);
 
-        /*--- projection of the gradient
-         *     calculated with AD onto the normal
-         *     vector of the surface ---*/
-        Sens = Prod/Area;
+        /*--- Projection of the gradient calculated with AD onto the normal vector of the surface ---*/
+
+        Sens_Vertex = Prod/Area;
+        CSensitivity[iMarker][iVertex] = -Sens_Vertex;
+        Sens += Sens_Vertex*Sens_Vertex;
+      }
+
+      if (config->GetMarker_All_Monitoring(iMarker) == YES){
 
         /*--- Compute sensitivity for each surface point ---*/
-        CSensitivity[iMarker][iVertex] = -Sens;
-        if (geometry->node[iPoint]->GetDomain()) {
-          Sens_Geo[iMarker] += Sens*Sens;
+
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (Marker_Tag == Monitoring_Tag) {
+            Sens_Geo[iMarker_Monitoring] = Sens;
+          }
         }
       }
-      Total_Sens_Geo_local += sqrt(Sens_Geo[iMarker]);
     }
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&Total_Sens_Geo_local,&Total_Sens_Geo,1,MPI_DOUBLE,MPI_SUM, MPI_COMM_WORLD);
-#else
-  Total_Sens_Geo = Total_Sens_Geo_local;
+  MySens_Geo = new su2double[config->GetnMarker_Monitoring()];
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    MySens_Geo[iMarker_Monitoring] = Sens_Geo[iMarker_Monitoring];
+    Sens_Geo[iMarker_Monitoring]   = 0.0;
+  }
+
+  SU2_MPI::Allreduce(MySens_Geo, Sens_Geo, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  delete [] MySens_Geo;
 #endif
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    Sens_Geo[iMarker_Monitoring] = sqrt(Sens_Geo[iMarker_Monitoring]);
+    Total_Sens_Geo   += Sens_Geo[iMarker_Monitoring];
+  }
 }
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -517,8 +539,8 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent, *Solution_Fine, dull_val;
+  unsigned long iPoint, index, iChildren, Point_Fine, counter;
+  su2double Area_Children, Area_Parent, *Solution_Fine;
   ifstream restart_file;
   string restart_filename, filename, text_line;
 
@@ -535,25 +557,12 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  restart_file.open(restart_filename.data(), ios::in);
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  /*--- In case there is no file ---*/
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no adjoint restart file!! " << restart_filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
   /*--- Read all lines in the restart file ---*/
@@ -574,29 +583,28 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     }
   }
 
-  /*--- The first line is the header ---*/
+  /*--- Load data from the restart into correct containers. ---*/
 
-  getline (restart_file, text_line);
-
+  counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-    getline (restart_file, text_line);
-
-    istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
-      iPoint_Local = Global2Local[iPoint_Global];
+    if (iPoint_Local > -1) {
 
-      point_line >> index;
-      for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
-      for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
 
   }
@@ -623,10 +631,6 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 #endif
   }
 
-  /*--- Close the restart file ---*/
-
-  restart_file.close();
-
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. ---*/
 
@@ -645,5 +649,11 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       solver[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
   }
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
 
 }

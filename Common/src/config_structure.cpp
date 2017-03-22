@@ -472,6 +472,7 @@ void CConfig::SetPointersNull(void) {
   default_grid_fix      = NULL;
   default_inc_crit      = NULL;
   default_htp_axis      = NULL;
+  default_body_force    = NULL;
 
   Riemann_FlowDir= NULL;
   NRBC_FlowDir = NULL;
@@ -542,6 +543,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_grid_fix      = new su2double[6];
   default_inc_crit      = new su2double[3];
   default_htp_axis      = new su2double[2];
+  default_body_force    = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -571,12 +573,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
+  /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
+  addBoolOption("BODY_FORCE", Body_Force, false);
+  default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
+  /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
+  addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
   /* DESCRIPTION: Perform a low fidelity simulation */
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief UPDATE_RESTART_PARAMS \n DESCRIPTION: Update some parameters from a metadata file when restarting \n Options: NO, YES \ingroup Config */
   addBoolOption("UPDATE_RESTART_PARAMS", Update_Restart_Params, false);
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  addBoolOption("WRT_BINARY_RESTART", Wrt_Binary_Restart, true);
+  /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
+  addBoolOption("READ_BINARY_RESTART", Read_Binary_Restart, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
@@ -3765,62 +3776,62 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Identification of Fluid-Structure interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-	unsigned short indexMarker = 0;
+    unsigned short indexMarker = 0;
     Marker_CfgFile_FSIinterface[iMarker_CfgFile] = NO;
     for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_FSIinterface[iMarker_FSIinterface])
-			indexMarker = (int)(iMarker_FSIinterface/2+1);
-	  Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
+        indexMarker = (int)(iMarker_FSIinterface/2+1);
+    Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
   }
 
   /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-	unsigned short indexMarker=0;
-	Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
-	Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
+    unsigned short indexMarker=0;
+    Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
+    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
     for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++){
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_Turbomachinery]){
-      	indexMarker=(iMarker_Turbomachinery+1);
+        indexMarker=(iMarker_Turbomachinery+1);
         Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
         Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = INFLOW;
       }
-    	if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
-				indexMarker=(iMarker_Turbomachinery+1);
-				Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
-				Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
-    	}
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
+        indexMarker=(iMarker_Turbomachinery+1);
+        Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
+      }
     }
   }
   if(GetBoolTurbomachinery()){
-		unsigned short count = 0;
-		nBlades = new su2double[nZone];
-		su2double pitch;
-		for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-			unsigned short iMarker_PerBound;
-			for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
-				if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
-					if (count == 0){
-						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-						nBlades[count]= 2*PI_NUMBER/pitch;
-						if (pitch <= EPS){
-							nBlades[count]= 1.0;
-						}
+    unsigned short count = 0;
+    nBlades = new su2double[nZone];
+    su2double pitch;
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      unsigned short iMarker_PerBound;
+      for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
+        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
+          if (count == 0){
+            pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+            nBlades[count]= 2*PI_NUMBER/pitch;
+            if (pitch <= EPS){
+              nBlades[count]= 1.0;
+            }
 
-//						cout << nBlades[count] <<" in zone "<<  count<<endl;
-						count++;
-					}
-					if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (pitch <= EPS) ) && (count < nZone)){
-						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-						nBlades[count]= 2*PI_NUMBER/pitch;
-						if (pitch <= EPS){
-							nBlades[count]= 1.0;
-						}
-//						cout << nBlades[count] <<" in zone "<<  count<<endl;
-						count++;
-					}
-				}
-		}
+            //						cout << nBlades[count] <<" in zone "<<  count<<endl;
+            count++;
+          }
+          if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (pitch <= EPS) ) && (count < nZone)){
+            pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+            nBlades[count]= 2*PI_NUMBER/pitch;
+            if (pitch <= EPS){
+              nBlades[count]= 1.0;
+            }
+            //						cout << nBlades[count] <<" in zone "<<  count<<endl;
+            count++;
+          }
+        }
+    }
   }
   /*--- Identification of MixingPlane interface markers ---*/
 
@@ -4014,6 +4025,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (Restart) {
+      if (Read_Binary_Restart) cout << "Reading and writing binary SU2 native restart files." << endl;
+      else cout << "Reading and writing ASCII SU2 native restart files." << endl;
       if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
       if (ContinuousAdjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
       if (Kind_Solver == FEM_ELASTICITY) cout << "Read structural solution from: " << Solution_FEMFileName << "." << endl;
@@ -5810,6 +5823,7 @@ CConfig::~CConfig(void) {
   if (default_grid_fix      != NULL) delete [] default_grid_fix;
   if (default_inc_crit      != NULL) delete [] default_inc_crit;
   if (default_htp_axis      != NULL) delete [] default_htp_axis;
+  if (default_body_force    != NULL) delete [] default_body_force;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
@@ -6928,4 +6942,14 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
   y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
 
   return y;
+}
+
+void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
+
+  FreeStreamTurboNormal= new su2double[3];
+
+  FreeStreamTurboNormal[0] = turboNormal[0];
+  FreeStreamTurboNormal[1] = turboNormal[1];
+  FreeStreamTurboNormal[0] = 0.0;
+
 }

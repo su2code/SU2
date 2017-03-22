@@ -1003,8 +1003,8 @@ def expand_time(name,config):
             names = [name_pat%i for i in range(n_time)]
         else:
             for n in range(len(name)):
-                name_pat[i] = add_suffix(name, '%05d')
-                names[i]    = [name_pat%i for i in range(n_time)]
+                name_pat = add_suffix(name[n], '%05d')
+                names    = [name_pat%i for i in range(n_time)]
     else:
         if not isinstance(name, list):
             names = [name]

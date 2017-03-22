@@ -3476,7 +3476,16 @@ CGeneralAvgGrad_Flow::~CGeneralAvgGrad_Flow(void) {
 }
 
 void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-  
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(S_i, 4); AD::SetPreaccIn(S_j, 4);
+  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(Normal, nDim);
+
   /*--- Normalized normal vector ---*/
   Area = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
@@ -3550,7 +3559,8 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
     }
     
   }
-  
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 }
 
 CAvgGradCorrected_Flow::CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -3991,6 +4001,52 @@ void CSourceGravity::ComputeResidual(su2double *val_residual, CConfig *config) {
     
   }
   
+}
+
+CSourceBodyForce::CSourceBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  /*--- Store the pointer to the constant body force vector. ---*/
+
+  Body_Force_Vector = new su2double[nDim];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Body_Force_Vector[iDim] = config->GetBody_Force_Vector()[iDim];
+
+  /*--- Check for compressibility ---*/
+
+  compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+
+}
+
+CSourceBodyForce::~CSourceBodyForce(void) {
+
+  if (Body_Force_Vector != NULL) delete [] Body_Force_Vector;
+
+}
+
+void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
+
+  unsigned short iDim;
+  su2double Force_Ref = config->GetForce_Ref();
+
+  if (compressible) {
+
+    /*--- Zero the continuity contribution ---*/
+
+    val_residual[0] = 0.0;
+
+    /*--- Momentum contribution ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+
+    /*--- Energy contribution ---*/
+
+    val_residual[nDim+1] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+
+  }
+
 }
 
 CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

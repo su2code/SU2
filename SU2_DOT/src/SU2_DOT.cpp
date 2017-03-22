@@ -170,16 +170,21 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone]->SetEdges(); geometry_container[iZone]->SetVertex(config_container[iZone]);
   
   /*--- Compute center of gravity ---*/
+  
+  if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+  geometry_container[iZone]->SetCoord_CG();
+  
+  /*--- Create the dual control volume structures ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+  geometry_container[iZone]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-    geometry_container[iZone]->SetCoord_CG();
-
-    /*--- Create the dual control volume structures ---*/
-
-    if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-    geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
-
-    /*--- Load the surface sensitivities from file. This is done only
+  /*--- Store the global to local mapping after preprocessing. ---*/
+ 
+  if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+  geometry_container[iZone]->SetGlobal_to_Local_Point();
+ 
+  /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
     if (!config_container[iZone]->GetDiscrete_Adjoint()){

@@ -151,17 +151,18 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
   unsigned short iVar, iSpan, iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
-  ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
-  bool metadata  = config->GetUpdate_Restart_Params();
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  su2double AoA_, AoS_, BCThrust_;
-  string meta_filename;
-  string::size_type position;
-  unsigned long ExtIter_;
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   unsigned short direct_diff = config->GetDirectDiff();
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  string filename_ = config->GetSolution_FlowFileName();
   unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
 
   int rank = MASTER_NODE;
@@ -171,101 +172,39 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
-  
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
 
-    meta_filename = "restart.meta";
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    /*--- Open the restart file, throw an error if this fails. ---*/
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    restart_file.open(meta_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
 
-      string text_line;
+    /*--- Modify file name for a dual-time unsteady restart ---*/
 
-      /*--- Space for extra info (if any) ---*/
-
-      while (getline (restart_file, text_line)) {
-
-        /*--- Angle of attack ---*/
-
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-            }
-            config->SetAoA(AoA_ + config->GetAoA_Offset());
-          }
-          else {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-          }
-        }
-
-        /*--- Sideslip angle ---*/
-
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-            }
-            config->SetAoS(AoS_ + config->GetAoS_Offset());
-          }
-          else {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-          }
-        }
-
-        /*--- BCThrust angle ---*/
-
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-            config->SetInitial_BCThrust(BCThrust_);
-          }
-          else {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-          }
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-            config->SetExtIter_OffSet(ExtIter_);
-        }
-        
-      }
-      
-      /*--- Close the restart meta file. ---*/
-      
-      restart_file.close();
-      
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+
   }
 
   /*--- Array initialization ---*/
-  
+
   /*--- Basic array initialization ---*/
 
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
@@ -338,22 +277,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Initialize quantities for the average process for internal flow ---*/
 
-  AverageVelocity 									= NULL;
-  AverageTurboVelocity 							= NULL;
-  ExtAverageTurboVelocity 					= NULL;
-  AverageFlux 											= NULL;
-  SpanTotalFlux 										= NULL;
-  AveragePressure  									= NULL;
+  AverageVelocity 									                  = NULL;
+  AverageTurboVelocity 							             = NULL;
+  ExtAverageTurboVelocity 					          = NULL;
+  AverageFlux 											                      = NULL;
+  SpanTotalFlux 										                    = NULL;
+  AveragePressure  									                 = NULL;
   RadialEquilibriumPressure         = NULL;
-  ExtAveragePressure  							= NULL;
-  AverageDensity   									= NULL;
-  ExtAverageDensity   							= NULL;
+  ExtAveragePressure  							              = NULL;
+  AverageDensity   									                 = NULL;
+  ExtAverageDensity   							              = NULL;
   AverageNu                         = NULL;
   AverageKei                        = NULL;
-	AverageOmega                      = NULL;
-	ExtAverageNu                      = NULL;
-	ExtAverageKei                     = NULL;
-	ExtAverageOmega                   = NULL;
+  AverageOmega                      = NULL;
+  ExtAverageNu                      = NULL;
+  ExtAverageKei                     = NULL;
+  ExtAverageOmega                   = NULL;
 
 
   /*--- Initialize primitive quantities for turboperformace ---*/
@@ -775,80 +714,80 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   nSpanWiseSections = config->GetnSpanWiseSections();
 
-  AverageVelocity 									= new su2double** [nMarker];
-  AverageTurboVelocity 							= new su2double** [nMarker];
-  OldAverageTurboVelocity 					= new su2double** [nMarker];
-  ExtAverageTurboVelocity 					= new su2double** [nMarker];
-  AverageFlux 											= new su2double** [nMarker];
-  SpanTotalFlux 										= new su2double** [nMarker];
-  AveragePressure  									= new su2double* [nMarker];
-  OldAveragePressure  							= new su2double* [nMarker];
-  RadialEquilibriumPressure         = new su2double* [nMarker];
-  ExtAveragePressure  							= new su2double* [nMarker];
-  AverageDensity   									= new su2double* [nMarker];
-  OldAverageDensity   							= new su2double* [nMarker];
-  ExtAverageDensity   							= new su2double* [nMarker];
-  AverageNu  												= new su2double* [nMarker];
-  AverageKei 												= new su2double* [nMarker];
-	AverageOmega 											= new su2double* [nMarker];
-	ExtAverageNu 											= new su2double* [nMarker];
-	ExtAverageKei 										= new su2double* [nMarker];
-	ExtAverageOmega 									= new su2double* [nMarker];
+  AverageVelocity 									                      = new su2double** [nMarker];
+  AverageTurboVelocity 							                 = new su2double** [nMarker];
+  OldAverageTurboVelocity 					              = new su2double** [nMarker];
+  ExtAverageTurboVelocity 					              = new su2double** [nMarker];
+  AverageFlux 											                          = new su2double** [nMarker];
+  SpanTotalFlux                         										= new su2double** [nMarker];
+  AveragePressure  									                     = new su2double* [nMarker];
+  OldAveragePressure                    							= new su2double* [nMarker];
+  RadialEquilibriumPressure             = new su2double* [nMarker];
+  ExtAveragePressure  							                  = new su2double* [nMarker];
+  AverageDensity                        									= new su2double* [nMarker];
+  OldAverageDensity                     							= new su2double* [nMarker];
+  ExtAverageDensity                     							= new su2double* [nMarker];
+  AverageNu                             												= new su2double* [nMarker];
+  AverageKei                            												= new su2double* [nMarker];
+  AverageOmega 											                         = new su2double* [nMarker];
+  ExtAverageNu 											                         = new su2double* [nMarker];
+  ExtAverageKei 										                        = new su2double* [nMarker];
+  ExtAverageOmega 									                      = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  	AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
-  	AverageTurboVelocity[iMarker] 						= new su2double* [nSpanWiseSections + 1];
-  	OldAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-  	ExtAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-  	AverageFlux[iMarker] 											= new su2double* [nSpanWiseSections + 1];
-  	SpanTotalFlux[iMarker] 										= new su2double* [nSpanWiseSections + 1];
-  	AveragePressure[iMarker]  								= new su2double [nSpanWiseSections + 1];
-  	OldAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-  	RadialEquilibriumPressure[iMarker]  			= new su2double [nSpanWiseSections + 1];
-  	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-  	AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
-  	OldAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-  	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-    AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
-    AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
-  	AverageOmega[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageNu[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageKei[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-  	ExtAverageOmega[iMarker]   							  = new su2double [nSpanWiseSections + 1];
+    AverageVelocity[iMarker] 									               = new su2double* [nSpanWiseSections + 1];
+    AverageTurboVelocity[iMarker] 						          = new su2double* [nSpanWiseSections + 1];
+    OldAverageTurboVelocity[iMarker] 					       = new su2double* [nSpanWiseSections + 1];
+    ExtAverageTurboVelocity[iMarker] 					       = new su2double* [nSpanWiseSections + 1];
+    AverageFlux[iMarker] 											                   = new su2double* [nSpanWiseSections + 1];
+    SpanTotalFlux[iMarker] 										                 = new su2double* [nSpanWiseSections + 1];
+    AveragePressure[iMarker]  								              = new su2double [nSpanWiseSections + 1];
+    OldAveragePressure[iMarker]  							           = new su2double [nSpanWiseSections + 1];
+    RadialEquilibriumPressure[iMarker]  			    = new su2double [nSpanWiseSections + 1];
+    ExtAveragePressure[iMarker]  							           = new su2double [nSpanWiseSections + 1];
+    AverageDensity[iMarker]   								              = new su2double [nSpanWiseSections + 1];
+    OldAverageDensity[iMarker]   							           = new su2double [nSpanWiseSections + 1];
+    ExtAverageDensity[iMarker]   							           = new su2double [nSpanWiseSections + 1];
+    AverageNu[iMarker]   							                   = new su2double [nSpanWiseSections + 1];
+    AverageKei[iMarker]   							                  = new su2double [nSpanWiseSections + 1];
+    AverageOmega[iMarker]   							                = new su2double [nSpanWiseSections + 1];
+    ExtAverageNu[iMarker]   							                = new su2double [nSpanWiseSections + 1];
+    ExtAverageKei[iMarker]   							               = new su2double [nSpanWiseSections + 1];
+    ExtAverageOmega[iMarker]   							             = new su2double [nSpanWiseSections + 1];
 
-  	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-  		AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
-  		AverageTurboVelocity[iMarker][iSpan] 										= new su2double [nDim];
-  		OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
-  		ExtAverageTurboVelocity[iMarker][iSpan] 								= new su2double [nDim];
-  		AverageFlux[iMarker][iSpan] 														= new su2double [nVar];
-  		SpanTotalFlux[iMarker][iSpan] 													= new su2double [nVar];
-  		AveragePressure[iMarker][iSpan]  												= 0.0;
-  		OldAveragePressure[iMarker][iSpan]  										= 0.0;
-  		RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
-  		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
-  		AverageDensity[iMarker][iSpan]   												= 0.0;
-  		OldAverageDensity[iMarker][iSpan]   									  = 0.0;
-  		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
-      AverageNu[iMarker][iSpan]   										        = 0.0;
-      AverageKei[iMarker][iSpan]   										        = 0.0;
-    	AverageOmega[iMarker][iSpan]   										      = 0.0;
-    	ExtAverageNu[iMarker][iSpan]   										      = 0.0;
-    	ExtAverageKei[iMarker][iSpan]   										    = 0.0;
-    	ExtAverageOmega[iMarker][iSpan]   										  = 0.0;
+    for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
+      AverageVelocity[iMarker][iSpan]           												= new su2double [nDim];
+      AverageTurboVelocity[iMarker][iSpan] 										     = new su2double [nDim];
+      OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
+      ExtAverageTurboVelocity[iMarker][iSpan] 							  	= new su2double [nDim];
+      AverageFlux[iMarker][iSpan] 														              = new su2double [nVar];
+      SpanTotalFlux[iMarker][iSpan] 													            = new su2double [nVar];
+      AveragePressure[iMarker][iSpan]           												= 0.0;
+      OldAveragePressure[iMarker][iSpan]  										      = 0.0;
+      RadialEquilibriumPressure[iMarker][iSpan] 							= 0.0;
+      ExtAveragePressure[iMarker][iSpan]        										= 0.0;
+      AverageDensity[iMarker][iSpan]   												         = 0.0;
+      OldAverageDensity[iMarker][iSpan]   									      = 0.0;
+      ExtAverageDensity[iMarker][iSpan]         										= 0.0;
+      AverageNu[iMarker][iSpan]   										              = 0.0;
+      AverageKei[iMarker][iSpan]   										             = 0.0;
+      AverageOmega[iMarker][iSpan]   										           = 0.0;
+      ExtAverageNu[iMarker][iSpan]   										           = 0.0;
+      ExtAverageKei[iMarker][iSpan]   										          = 0.0;
+      ExtAverageOmega[iMarker][iSpan]   										        = 0.0;
 
-  		for (iDim = 0; iDim < nDim; iDim++) {
-  			AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
-  			AverageTurboVelocity[iMarker][iSpan][iDim] 									= 0.0;
-  			OldAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
-  			ExtAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
-  		}
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AverageVelocity[iMarker][iSpan][iDim] 											           = 0.0;
+        AverageTurboVelocity[iMarker][iSpan][iDim] 									      = 0.0;
+        OldAverageTurboVelocity[iMarker][iSpan][iDim] 							   = 0.0;
+        ExtAverageTurboVelocity[iMarker][iSpan][iDim] 						   	= 0.0;
+      }
 
-  		for (iVar = 0; iVar < nVar; iVar++) {
-  			AverageFlux[iMarker][iSpan][iVar] 													= 0.0;
-  			SpanTotalFlux[iMarker][iSpan][iVar] 												= 0.0;
-  		}
-  	}
+      for (iVar = 0; iVar < nVar; iVar++) {
+        AverageFlux[iMarker][iSpan][iVar] 													      = 0.0;
+        SpanTotalFlux[iMarker][iSpan][iVar] 												    = 0.0;
+      }
+    }
   }
 
 
@@ -864,27 +803,27 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-  	DensityIn               [iMarker] = new su2double [nSpanMax + 1];
-  	PressureIn              [iMarker] = new su2double [nSpanMax + 1];
-  	TurboVelocityIn         [iMarker] = new su2double*[nSpanMax + 1];
-  	DensityOut              [iMarker] = new su2double [nSpanMax + 1];
-  	PressureOut             [iMarker] = new su2double [nSpanMax + 1];
-  	TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
+    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
+    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
+    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
+    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
+    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
+    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
 
 
-  	for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
-  		DensityIn               [iMarker][iSpan] = 0.0;
-  		PressureIn              [iMarker][iSpan] = 0.0;
-  		TurboVelocityIn  [iMarker][iSpan]           = new su2double[nDim];
-  		DensityOut              [iMarker][iSpan] = 0.0;
-  		PressureOut             [iMarker][iSpan] = 0.0;
-  		TurboVelocityOut [iMarker][iSpan]           = new su2double[nDim];
+    for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
+      DensityIn[iMarker][iSpan]          = 0.0;
+      PressureIn[iMarker][iSpan]         = 0.0;
+      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
+      DensityOut[iMarker][iSpan]         = 0.0;
+      PressureOut[iMarker][iSpan]        = 0.0;
+      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
 
       for (iDim = 0; iDim < 3; iDim++){
-  			TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
-  			TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
-  		}
-  	}
+        TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
+        TurboVelocityOut [iMarker][iSpan][iDim]   = 0.0;
+      }
+    }
   }
 
 
@@ -984,11 +923,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-
-  /*--- Perform the MPI communication of the solution ---*/
-  //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
-  Set_MPI_Solution(geometry, config);
-  Set_MPI_Solution(geometry, config);
 
 }
 
@@ -4973,15 +4907,38 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar;
   unsigned long iPoint;
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool rotating_frame = config->GetRotating_Frame();
-  bool axisymmetric   = config->GetAxisymmetric();
-  bool gravity        = (config->GetGravityForce() == YES);
-  bool harmonic_balance  = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool windgust       = config->GetWind_Gust();
+  bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool rotating_frame   = config->GetRotating_Frame();
+  bool axisymmetric     = config->GetAxisymmetric();
+  bool gravity          = (config->GetGravityForce() == YES);
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool windgust         = config->GetWind_Gust();
+  bool body_force       = config->GetBody_Force();
 
   /*--- Initialize the source residual to zero ---*/
+
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+
+  if (body_force) {
+
+    /*--- Loop over all points ---*/
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      /*--- Load the conservative variables ---*/
+      numerics->SetConservative(node[iPoint]->GetSolution(),
+                                node[iPoint]->GetSolution());
+
+      /*--- Load the volume of the dual mesh cell ---*/
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the rotating frame source residual ---*/
+      numerics->ComputeResidual(Residual, config);
+
+      /*--- Add the source residual to the total ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+    }
+  }
 
   if (rotating_frame) {
 
@@ -10991,421 +10948,423 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-  	for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
-
-			/*--- using the other vertex information for retrieving some information ---*/
-			oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
-			V_boundary= GetCharacPrimVar(val_marker, oldVertex);
-
-			/*--- Index of the closest interior node ---*/
-			Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
-
-			/*--- Normal vector for this vertex (negate for outward convention),
-			 * 		this normal is scaled with the area of the face of the element  ---*/
-			geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
-			for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-			conv_numerics->SetNormal(Normal);
-
-			/*--- find the node related to the vertex ---*/
-			iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
-
-			/*--- Normalize Normal vector for this vertex (already for outward convention) ---*/
-			geometry->turbovertex[val_marker][iSpan][iVertex]->GetNormal(UnitNormal);
-			geometry->turbovertex[val_marker][iSpan][iVertex]->GetTurboNormal(turboNormal);
-
-			/*--- Retrieve solution at this boundary node ---*/
-			V_domain = node[iPoint]->GetPrimitive();
-
-			/* --- Compute the internal state u_i --- */
-			Velocity2_i = 0;
-			for (iDim=0; iDim < nDim; iDim++)
-			{
-				Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
-				Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
-			}
-
-			Density_i = node[iPoint]->GetDensity();
-
-			Energy_i = node[iPoint]->GetEnergy();
-			StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
-
-			FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
-
-			Pressure_i = FluidModel->GetPressure();
-			Enthalpy_i = Energy_i + Pressure_i/Density_i;
-
-			SoundSpeed_i = FluidModel->GetSoundSpeed();
-
-			Kappa_i = FluidModel->GetdPde_rho() / Density_i;
-			Chi_i = FluidModel->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
-
-			ProjVelocity_i = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++)
-				ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-
-			/*--- Build the external state u_e from boundary data and internal node ---*/
-
-			switch(config->GetKind_Data_Riemann(Marker_Tag))
-			{
-			//TODO(turbo), generilize for 3D case
-			//TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
-			//TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
-			case TOTAL_CONDITIONS_PT:
-
-				/*--- Retrieve the specified total conditions for this boundary. ---*/
-				if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-				else P_Total  = config->GetRiemann_Var1(Marker_Tag);
-				T_Total  = config->GetRiemann_Var2(Marker_Tag);
-				Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-
-				/*--- Non-dim. the inputs if necessary. ---*/
-				P_Total /= config->GetPressure_Ref();
-				T_Total /= config->GetTemperature_Ref();
-
-				/* --- Computes the total state --- */
-				FluidModel->SetTDState_PT(P_Total, T_Total);
-				Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-				Entropy_e = FluidModel->GetEntropy();
-
-				/* --- Compute the boundary state u_e --- */
-				Velocity2_e = Velocity2_i;
-				for (iDim = 0; iDim < nDim; iDim++)
-					turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
-				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-				Density_e = FluidModel->GetDensity();
-				StaticEnergy_e = FluidModel->GetStaticEnergy();
-				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-				if (tkeNeeded) Energy_e += GetTke_Inf();
-				break;
-
-			case MIXING_IN:
-
-			  /* --- compute total averaged quantities ---*/
-				FluidModel->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
-				AverageEnthalpy = FluidModel->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
-				AverageEntropy  = FluidModel->GetEntropy();
-
-				FlowDirMixMag = 0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
-				for (iDim = 0; iDim < nDim; iDim++){
-					FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
-				}
-
-
-				/* --- Computes the total state --- */
-				Enthalpy_e = AverageEnthalpy;
-				Entropy_e = AverageEntropy;
-
-				/* --- Compute the boundary state u_e --- */
-				Velocity2_e = Velocity2_i;
-				for (iDim = 0; iDim < nDim; iDim++){
-					turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
-
-				}
-				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
-
-				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
-				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
-				Density_e = FluidModel->GetDensity();
-				StaticEnergy_e = FluidModel->GetStaticEnergy();
-				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-//				if (tkeNeeded) Energy_e += GetTke_Inf();
-				break;
-
-
-			case MIXING_OUT:
-
-				/*--- Retrieve the staic pressure for this boundary. ---*/
-				Pressure_e = ExtAveragePressure[val_marker][iSpan];
-				Density_e = Density_i;
-
-				/* --- Compute the boundary state u_e --- */
-				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-				Velocity2_e = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Velocity_e[iDim] = Velocity_i[iDim];
-					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-				}
-				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-				break;
-
-			case STATIC_PRESSURE:
-
-				/*--- Retrieve the staic pressure for this boundary. ---*/
-				Pressure_e = config->GetRiemann_Var1(Marker_Tag);
-				Pressure_e /= config->GetPressure_Ref();
-				Density_e = Density_i;
-
-				/* --- Compute the boundary state u_e --- */
-				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-				Velocity2_e = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Velocity_e[iDim] = Velocity_i[iDim];
-					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-				}
-				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-				break;
-
-
-			case RADIAL_EQUILIBRIUM:
-
-				/*--- Retrieve the staic pressure for this boundary. ---*/
-				Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
-				Density_e = Density_i;
-
-				/* --- Compute the boundary state u_e --- */
-				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
-				Velocity2_e = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++) {
-					Velocity_e[iDim] = Velocity_i[iDim];
-					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
-				}
-				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
-				break;
-
-			default:
-				cout << "Warning! Invalid Riemann input!" << endl;
-				exit(EXIT_FAILURE);
-				break;
-
-			}
-
-			/*--- Compute P (matrix of right eigenvectors) ---*/
-			conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
-
-			/*--- Compute inverse P (matrix of left eigenvectors)---*/
-			conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
-
-			/*--- eigenvalues contribution due to grid motion ---*/
-			if (grid_movement){
-				gridVel = geometry->node[iPoint]->GetGridVel();
-
-				su2double ProjGridVel = 0.0;
-				for (iDim = 0; iDim < nDim; iDim++)
-					ProjGridVel   += gridVel[iDim]*UnitNormal[iDim];
-				ProjVelocity_i -= ProjGridVel;
-			}
-
-			/*--- Flow eigenvalues ---*/
-			for (iDim = 0; iDim < nDim; iDim++)
-				Lambda_i[iDim] = ProjVelocity_i;
-			Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
-			Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
-
-			/* --- Compute the boundary state u_e --- */
-			u_e[0] = Density_e;
-			for (iDim = 0; iDim < nDim; iDim++)
-				u_e[iDim+1] = Velocity_e[iDim]*Density_e;
-			u_e[nVar-1] = Energy_e*Density_e;
-
-			/* --- Compute the boundary state u_i --- */
-			u_i[0] = Density_i;
-			for (iDim = 0; iDim < nDim; iDim++)
-				u_i[iDim+1] = Velocity_i[iDim]*Density_i;
-			u_i[nVar-1] = Energy_i*Density_i;
-
-			/*--- Compute the characteristic jumps ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-			{
-				dw[iVar] = 0;
-				for (jVar = 0; jVar < nVar; jVar++)
-					dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
-
-			}
-
-			/*--- Compute the boundary state u_b using characteristics ---*/
-			for (iVar = 0; iVar < nVar; iVar++)
-			{
-				u_b[iVar] = u_i[iVar];
-
-				for (jVar = 0; jVar < nVar; jVar++)
-				{
-					if (Lambda_i[jVar] < 0)
-					{
-						u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
-
-					}
-				}
-			}
-
-
-			/*--- Compute the thermodynamic state in u_b ---*/
-			Density_b = u_b[0];
-			Velocity2_b = 0;
-			for (iDim = 0; iDim < nDim; iDim++)
-			{
-				Velocity_b[iDim] = u_b[iDim+1]/Density_b;
-				Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
-			}
-			Energy_b = u_b[nVar-1]/Density_b;
-			StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
-			FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
-			Pressure_b = FluidModel->GetPressure();
-			Temperature_b = FluidModel->GetTemperature();
-			Enthalpy_b = Energy_b + Pressure_b/Density_b;
-			Kappa_b = FluidModel->GetdPde_rho() / Density_b;
-			Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
-
-			/*--- Compute the residuals ---*/
-			conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
-
-			/*--- Residual contribution due to grid motion ---*/
-			if (grid_movement) {
-				gridVel = geometry->node[iPoint]->GetGridVel();
-				su2double projVelocity = 0.0;
-
-				for (iDim = 0; iDim < nDim; iDim++)
-					projVelocity +=  gridVel[iDim]*Normal[iDim];
-				for (iVar = 0; iVar < nVar; iVar++)
-					Residual[iVar] -= projVelocity *(u_b[iVar]);
-			}
-
-			if (implicit) {
-
-				Jacobian_b = new su2double*[nVar];
-				DubDu = new su2double*[nVar];
-				for (iVar = 0; iVar < nVar; iVar++)
-				{
-					Jacobian_b[iVar] = new su2double[nVar];
-					DubDu[iVar] = new su2double[nVar];
-				}
-
-				/*--- Initialize DubDu to unit matrix---*/
-
-				for (iVar = 0; iVar < nVar; iVar++)
-				{
-					for (jVar = 0; jVar < nVar; jVar++)
-						DubDu[iVar][jVar]= 0;
-
-					DubDu[iVar][iVar]= 1;
-				}
-
-				/*--- Compute DubDu -= RNL---*/
-				for (iVar=0; iVar<nVar; iVar++)
-				{
-					for (jVar=0; jVar<nVar; jVar++)
-					{
-						for (kVar=0; kVar<nVar; kVar++)
-						{
-							if (Lambda_i[kVar]<0)
-								DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
-						}
-					}
-				}
-
-				/*--- Compute flux Jacobian in state b ---*/
-				conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
-
-				/*--- Jacobian contribution due to grid motion ---*/
-				if (grid_movement)
-				{
-					gridVel = geometry->node[iPoint]->GetGridVel();
-					su2double projVelocity = 0.0;
-					for (iDim = 0; iDim < nDim; iDim++)
-						projVelocity +=  gridVel[iDim]*Normal[iDim];
-					for (iVar = 0; iVar < nVar; iVar++){
-						Residual[iVar] -= projVelocity *(u_b[iVar]);
-						Jacobian_b[iVar][iVar] -= projVelocity;
-					}
-
-				}
-
-				/*--- initiate Jacobian_i to zero matrix ---*/
-				for (iVar=0; iVar<nVar; iVar++)
-					for (jVar=0; jVar<nVar; jVar++)
-						Jacobian_i[iVar][jVar] = 0.0;
-
-				/*--- Compute numerical flux Jacobian at node i ---*/
-				for (iVar=0; iVar<nVar; iVar++) {
-					for (jVar=0; jVar<nVar; jVar++) {
-						for (kVar=0; kVar<nVar; kVar++) {
-							Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
-						}
-					}
-				}
-
-				for (iVar = 0; iVar < nVar; iVar++) {
-					delete [] Jacobian_b[iVar];
-					delete [] DubDu[iVar];
-				}
-				delete [] Jacobian_b;
-				delete [] DubDu;
-			}
-
-			/*--- Update residual value ---*/
-			LinSysRes.AddBlock(iPoint, Residual);
-
-			/*--- Jacobian contribution for implicit integration ---*/
-			if (implicit)
-				Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-
-			/*--- Roe Turkel preconditioning, set the value of beta ---*/
-			if (config->GetKind_Upwind() == TURKEL)
-				node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
-
-			/*--- Viscous contribution ---*/
-			if (viscous) {
-
-				/*--- Primitive variables, using the derived quantities ---*/
-				V_boundary[0] = Temperature_b;
-				for (iDim = 0; iDim < nDim; iDim++)
-					V_boundary[iDim+1] = Velocity_b[iDim];
-				V_boundary[nDim+1] = Pressure_b;
-				V_boundary[nDim+2] = Density_b;
-				V_boundary[nDim+3] = Enthalpy_b;
-
-				/*--- Set laminar and eddy viscosity at the infinity ---*/
-				V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
-				V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
-				V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
-				V_boundary[nDim+8] = FluidModel->GetCp();
-
-				/*--- Set the normal vector and the coordinates ---*/
-				visc_numerics->SetNormal(Normal);
-				visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
-				/*--- Primitive variables, and gradient ---*/
-				visc_numerics->SetPrimitive(V_domain, V_boundary);
-				visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
-
-				/*--- Secondary variables ---*/
-				S_domain = node[iPoint]->GetSecondary();
-
-				/*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
-
-				S_boundary[0]= FluidModel->GetdPdrho_e();
-				S_boundary[1]= FluidModel->GetdPde_rho();
-
-				S_boundary[2]= FluidModel->GetdTdrho_e();
-				S_boundary[3]= FluidModel->GetdTde_rho();
-
-				/*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
-
-				S_boundary[4]= FluidModel->Getdmudrho_T();
-				S_boundary[5]= FluidModel->GetdmudT_rho();
-
-				S_boundary[6]= FluidModel->Getdktdrho_T();
-				S_boundary[7]= FluidModel->GetdktdT_rho();
-
-				visc_numerics->SetSecondary(S_domain, S_boundary);
-
-				/*--- Turbulent kinetic energy ---*/
-				if (config->GetKind_Turb_Model() == SST)
-					visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-
-				/*--- Compute and update residual ---*/
-				visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-				LinSysRes.SubtractBlock(iPoint, Residual);
-
-				/*--- Jacobian contribution for implicit integration ---*/
-				if (implicit)
-					Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
-			}
-  }
+    for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
+
+      /*--- using the other vertex information for retrieving some information ---*/
+      oldVertex = geometry->turbovertex[val_marker][iSpan][iVertex]->GetOldVertex();
+      V_boundary= GetCharacPrimVar(val_marker, oldVertex);
+
+      /*--- Index of the closest interior node ---*/
+      Point_Normal = geometry->vertex[val_marker][oldVertex]->GetNormal_Neighbor();
+
+      /*--- Normal vector for this vertex (negate for outward convention),
+       * 		this normal is scaled with the area of the face of the element  ---*/
+      geometry->vertex[val_marker][oldVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+
+      /*--- find the node related to the vertex ---*/
+      iPoint = geometry->turbovertex[val_marker][iSpan][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()){
+
+        /*--- Normalize Normal vector for this vertex (already for outward convention) ---*/
+        geometry->turbovertex[val_marker][iSpan][iVertex]->GetNormal(UnitNormal);
+        geometry->turbovertex[val_marker][iSpan][iVertex]->GetTurboNormal(turboNormal);
+
+        /*--- Retrieve solution at this boundary node ---*/
+        V_domain = node[iPoint]->GetPrimitive();
+
+        /* --- Compute the internal state u_i --- */
+        Velocity2_i = 0;
+        for (iDim=0; iDim < nDim; iDim++)
+        {
+          Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+          Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
+        }
+
+        Density_i = node[iPoint]->GetDensity();
+
+        Energy_i = node[iPoint]->GetEnergy();
+        StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+
+        FluidModel->SetTDState_rhoe(Density_i, StaticEnergy_i);
+
+        Pressure_i = FluidModel->GetPressure();
+        Enthalpy_i = Energy_i + Pressure_i/Density_i;
+
+        SoundSpeed_i = FluidModel->GetSoundSpeed();
+
+        Kappa_i = FluidModel->GetdPde_rho() / Density_i;
+        Chi_i = FluidModel->GetdPdrho_e() - Kappa_i * StaticEnergy_i;
+
+        ProjVelocity_i = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
+
+        /*--- Build the external state u_e from boundary data and internal node ---*/
+
+        switch(config->GetKind_Data_Riemann(Marker_Tag))
+        {
+          //TODO(turbo), generilize for 3D case
+          //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
+          //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
+          case TOTAL_CONDITIONS_PT:
+
+            /*--- Retrieve the specified total conditions for this boundary. ---*/
+            if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+            else P_Total  = config->GetRiemann_Var1(Marker_Tag);
+            T_Total  = config->GetRiemann_Var2(Marker_Tag);
+            Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+
+            /*--- Non-dim. the inputs if necessary. ---*/
+            P_Total /= config->GetPressure_Ref();
+            T_Total /= config->GetTemperature_Ref();
+
+            /* --- Computes the total state --- */
+            FluidModel->SetTDState_PT(P_Total, T_Total);
+            Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+            Entropy_e = FluidModel->GetEntropy();
+
+            /* --- Compute the boundary state u_e --- */
+            Velocity2_e = Velocity2_i;
+            for (iDim = 0; iDim < nDim; iDim++)
+              turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+            ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
+            StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+            Density_e = FluidModel->GetDensity();
+            StaticEnergy_e = FluidModel->GetStaticEnergy();
+            Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+            if (tkeNeeded) Energy_e += GetTke_Inf();
+            break;
+
+          case MIXING_IN:
+
+            /* --- compute total averaged quantities ---*/
+            FluidModel->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
+            AverageEnthalpy = FluidModel->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
+            AverageEntropy  = FluidModel->GetEntropy();
+
+            FlowDirMixMag = 0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
+            for (iDim = 0; iDim < nDim; iDim++){
+              FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
+            }
+
+
+            /* --- Computes the total state --- */
+            Enthalpy_e = AverageEnthalpy;
+            Entropy_e = AverageEntropy;
+
+            /* --- Compute the boundary state u_e --- */
+            Velocity2_e = Velocity2_i;
+            for (iDim = 0; iDim < nDim; iDim++){
+              turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
+
+            }
+            ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
+
+            StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+            FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+            Density_e = FluidModel->GetDensity();
+            StaticEnergy_e = FluidModel->GetStaticEnergy();
+            Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+            //				if (tkeNeeded) Energy_e += GetTke_Inf();
+            break;
+
+
+          case MIXING_OUT:
+
+            /*--- Retrieve the staic pressure for this boundary. ---*/
+            Pressure_e = ExtAveragePressure[val_marker][iSpan];
+            Density_e = Density_i;
+
+            /* --- Compute the boundary state u_e --- */
+            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+            Velocity2_e = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity_e[iDim] = Velocity_i[iDim];
+              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+            }
+            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+            break;
+
+          case STATIC_PRESSURE:
+
+            /*--- Retrieve the staic pressure for this boundary. ---*/
+            Pressure_e = config->GetRiemann_Var1(Marker_Tag);
+            Pressure_e /= config->GetPressure_Ref();
+            Density_e = Density_i;
+
+            /* --- Compute the boundary state u_e --- */
+            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+            Velocity2_e = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity_e[iDim] = Velocity_i[iDim];
+              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+            }
+            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+            break;
+
+
+          case RADIAL_EQUILIBRIUM:
+
+            /*--- Retrieve the staic pressure for this boundary. ---*/
+            Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
+            Density_e = Density_i;
+
+            /* --- Compute the boundary state u_e --- */
+            FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+            Velocity2_e = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity_e[iDim] = Velocity_i[iDim];
+              Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+            }
+            Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+            break;
+
+          default:
+            cout << "Warning! Invalid Riemann input!" << endl;
+            exit(EXIT_FAILURE);
+            break;
+
+        }
+
+        /*--- Compute P (matrix of right eigenvectors) ---*/
+        conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
+
+        /*--- Compute inverse P (matrix of left eigenvectors)---*/
+        conv_numerics->GetPMatrix_inv(invP_Tensor, &Density_i, Velocity_i, &SoundSpeed_i, &Chi_i, &Kappa_i, UnitNormal);
+
+        /*--- eigenvalues contribution due to grid motion ---*/
+        if (grid_movement){
+          gridVel = geometry->node[iPoint]->GetGridVel();
+
+          su2double ProjGridVel = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGridVel   += gridVel[iDim]*UnitNormal[iDim];
+          ProjVelocity_i -= ProjGridVel;
+        }
+
+        /*--- Flow eigenvalues ---*/
+        for (iDim = 0; iDim < nDim; iDim++)
+          Lambda_i[iDim] = ProjVelocity_i;
+        Lambda_i[nVar-2] = ProjVelocity_i + SoundSpeed_i;
+        Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
+
+        /* --- Compute the boundary state u_e --- */
+        u_e[0] = Density_e;
+        for (iDim = 0; iDim < nDim; iDim++)
+          u_e[iDim+1] = Velocity_e[iDim]*Density_e;
+        u_e[nVar-1] = Energy_e*Density_e;
+
+        /* --- Compute the boundary state u_i --- */
+        u_i[0] = Density_i;
+        for (iDim = 0; iDim < nDim; iDim++)
+          u_i[iDim+1] = Velocity_i[iDim]*Density_i;
+        u_i[nVar-1] = Energy_i*Density_i;
+
+        /*--- Compute the characteristic jumps ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+        {
+          dw[iVar] = 0;
+          for (jVar = 0; jVar < nVar; jVar++)
+            dw[iVar] += invP_Tensor[iVar][jVar] * (u_e[jVar] - u_i[jVar]);
+
+        }
+
+        /*--- Compute the boundary state u_b using characteristics ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+        {
+          u_b[iVar] = u_i[iVar];
+
+          for (jVar = 0; jVar < nVar; jVar++)
+          {
+            if (Lambda_i[jVar] < 0)
+            {
+              u_b[iVar] += P_Tensor[iVar][jVar]*dw[jVar];
+
+            }
+          }
+        }
+
+
+        /*--- Compute the thermodynamic state in u_b ---*/
+        Density_b = u_b[0];
+        Velocity2_b = 0;
+        for (iDim = 0; iDim < nDim; iDim++)
+        {
+          Velocity_b[iDim] = u_b[iDim+1]/Density_b;
+          Velocity2_b += Velocity_b[iDim]*Velocity_b[iDim];
+        }
+        Energy_b = u_b[nVar-1]/Density_b;
+        StaticEnergy_b = Energy_b - 0.5*Velocity2_b;
+        FluidModel->SetTDState_rhoe(Density_b, StaticEnergy_b);
+        Pressure_b = FluidModel->GetPressure();
+        Temperature_b = FluidModel->GetTemperature();
+        Enthalpy_b = Energy_b + Pressure_b/Density_b;
+        Kappa_b = FluidModel->GetdPde_rho() / Density_b;
+        Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+
+        /*--- Compute the residuals ---*/
+        conv_numerics->GetInviscidProjFlux(&Density_b, Velocity_b, &Pressure_b, &Enthalpy_b, Normal, Residual);
+
+        /*--- Residual contribution due to grid motion ---*/
+        if (grid_movement) {
+          gridVel = geometry->node[iPoint]->GetGridVel();
+          su2double projVelocity = 0.0;
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            projVelocity +=  gridVel[iDim]*Normal[iDim];
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] -= projVelocity *(u_b[iVar]);
+        }
+
+        if (implicit) {
+
+          Jacobian_b = new su2double*[nVar];
+          DubDu = new su2double*[nVar];
+          for (iVar = 0; iVar < nVar; iVar++)
+          {
+            Jacobian_b[iVar] = new su2double[nVar];
+            DubDu[iVar] = new su2double[nVar];
+          }
+
+          /*--- Initialize DubDu to unit matrix---*/
+
+          for (iVar = 0; iVar < nVar; iVar++)
+          {
+            for (jVar = 0; jVar < nVar; jVar++)
+              DubDu[iVar][jVar]= 0;
+
+            DubDu[iVar][iVar]= 1;
+          }
+
+          /*--- Compute DubDu -= RNL---*/
+          for (iVar=0; iVar<nVar; iVar++)
+          {
+            for (jVar=0; jVar<nVar; jVar++)
+            {
+              for (kVar=0; kVar<nVar; kVar++)
+              {
+                if (Lambda_i[kVar]<0)
+                  DubDu[iVar][jVar] -= P_Tensor[iVar][kVar] * invP_Tensor[kVar][jVar];
+              }
+            }
+          }
+
+          /*--- Compute flux Jacobian in state b ---*/
+          conv_numerics->GetInviscidProjJac(Velocity_b, &Enthalpy_b, &Chi_b, &Kappa_b, Normal, 1.0, Jacobian_b);
+
+          /*--- Jacobian contribution due to grid motion ---*/
+          if (grid_movement)
+          {
+            gridVel = geometry->node[iPoint]->GetGridVel();
+            su2double projVelocity = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              projVelocity +=  gridVel[iDim]*Normal[iDim];
+            for (iVar = 0; iVar < nVar; iVar++){
+              Residual[iVar] -= projVelocity *(u_b[iVar]);
+              Jacobian_b[iVar][iVar] -= projVelocity;
+            }
+
+          }
+
+          /*--- initiate Jacobian_i to zero matrix ---*/
+          for (iVar=0; iVar<nVar; iVar++)
+            for (jVar=0; jVar<nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+
+          /*--- Compute numerical flux Jacobian at node i ---*/
+          for (iVar=0; iVar<nVar; iVar++) {
+            for (jVar=0; jVar<nVar; jVar++) {
+              for (kVar=0; kVar<nVar; kVar++) {
+                Jacobian_i[iVar][jVar] += Jacobian_b[iVar][kVar] * DubDu[kVar][jVar];
+              }
+            }
+          }
+
+          for (iVar = 0; iVar < nVar; iVar++) {
+            delete [] Jacobian_b[iVar];
+            delete [] DubDu[iVar];
+          }
+          delete [] Jacobian_b;
+          delete [] DubDu;
+        }
+
+        /*--- Update residual value ---*/
+        LinSysRes.AddBlock(iPoint, Residual);
+
+        /*--- Jacobian contribution for implicit integration ---*/
+        if (implicit)
+          Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+        /*--- Roe Turkel preconditioning, set the value of beta ---*/
+        if (config->GetKind_Upwind() == TURKEL)
+          node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
+
+        /*--- Viscous contribution ---*/
+        if (viscous) {
+
+          /*--- Primitive variables, using the derived quantities ---*/
+          V_boundary[0] = Temperature_b;
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_boundary[iDim+1] = Velocity_b[iDim];
+          V_boundary[nDim+1] = Pressure_b;
+          V_boundary[nDim+2] = Density_b;
+          V_boundary[nDim+3] = Enthalpy_b;
+
+          /*--- Set laminar and eddy viscosity at the infinity ---*/
+          V_boundary[nDim+5] = FluidModel->GetLaminarViscosity();
+          V_boundary[nDim+6] = node[iPoint]->GetEddyViscosity();
+          V_boundary[nDim+7] = FluidModel->GetThermalConductivity();
+          V_boundary[nDim+8] = FluidModel->GetCp();
+
+          /*--- Set the normal vector and the coordinates ---*/
+          visc_numerics->SetNormal(Normal);
+          visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+          /*--- Primitive variables, and gradient ---*/
+          visc_numerics->SetPrimitive(V_domain, V_boundary);
+          visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+          /*--- Secondary variables ---*/
+          S_domain = node[iPoint]->GetSecondary();
+
+          /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+
+          S_boundary[0]= FluidModel->GetdPdrho_e();
+          S_boundary[1]= FluidModel->GetdPde_rho();
+
+          S_boundary[2]= FluidModel->GetdTdrho_e();
+          S_boundary[3]= FluidModel->GetdTde_rho();
+
+          /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+
+          S_boundary[4]= FluidModel->Getdmudrho_T();
+          S_boundary[5]= FluidModel->GetdmudT_rho();
+
+          S_boundary[6]= FluidModel->Getdktdrho_T();
+          S_boundary[7]= FluidModel->GetdktdT_rho();
+
+          visc_numerics->SetSecondary(S_domain, S_boundary);
+
+          /*--- Turbulent kinetic energy ---*/
+          if (config->GetKind_Turb_Model() == SST)
+            visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+          /*--- Compute and update residual ---*/
+          visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+          LinSysRes.SubtractBlock(iPoint, Residual);
+
+          /*--- Jacobian contribution for implicit integration ---*/
+          if (implicit)
+            Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+
+        }
+      }
+    }
 }
 
   /*--- Free locally allocated memory ---*/
@@ -11477,59 +11436,62 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 
                 /*--- find the node related to the vertex ---*/
                 iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
-                j			 = geometry->turbovertex[iMarker][iSpan][iVertex]->GetGlobalVertexIndex();
+
+                if (geometry->node[iPoint]->GetDomain()){
+                  j			 = geometry->turbovertex[iMarker][iSpan][iVertex]->GetGlobalVertexIndex();
 
 
-                geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
-                /*--- Compute the internal state _i ---*/
+                  geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
+                  /*--- Compute the internal state _i ---*/
 
-                Pressure_i = node[iPoint]->GetPressure();
-                Density_i = node[iPoint]->GetDensity();
-                for (iDim = 0; iDim < nDim; iDim++)
-                {
-                  Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+                  Pressure_i = node[iPoint]->GetPressure();
+                  Density_i = node[iPoint]->GetDensity();
+                  for (iDim = 0; iDim < nDim; iDim++)
+                  {
+                    Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+                  }
+                  ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+
+                  if(nDim ==2){
+                    deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
+                    deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
+                    deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
+                    deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
+                  }
+                  else{
+                    //Here 3d
+                    deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
+                    deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
+                    deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
+                    deltaprim[3] = turboVelocity[2] - AverageTurboVelocity[iMarker][iSpan][2]; //New char
+                    deltaprim[4] = Pressure_i - AveragePressure[iMarker][iSpan];
+                  }
+
+                  FluidModel->SetTDState_Prho(AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
+                  AverageSoundSpeed = FluidModel->GetSoundSpeed();
+                  conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[iMarker][iSpan], deltaprim, cj);
+
+                  /*-----this is only valid 2D ----*/
+                  if(nDim ==2){
+                    cj_out1 = cj[1];
+                    cj_out2 = cj[2];
+                    cj_inf  = cj[3];
+                  }
+                  else{
+                    //Here 3D
+                    cj_out1 = cj[1];
+                    cj_out2 = cj[3];
+                    cj_inf  = cj[4];
+                  }
+
+                  jk_nVert = j*k/(nVert.real());
+                  //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
+                  complex<su2double> expArg = complex<su2double>(cos(TwoPi*jk_nVert)) - I*complex<su2double>(sin(TwoPi*jk_nVert));
+
+                  cktemp_out1 +=  cj_out1*expArg/nVert;
+                  cktemp_out2 +=  cj_out2*expArg/nVert;
+                  cktemp_inf  +=  cj_inf*expArg/nVert;
                 }
-                ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
-
-                if(nDim ==2){
-                  deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
-                  deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
-                  deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
-                  deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
-                }
-                else{
-                  //Here 3d
-                  deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
-                  deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
-                  deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
-                  deltaprim[3] = turboVelocity[2] - AverageTurboVelocity[iMarker][iSpan][2]; //New char
-                  deltaprim[4] = Pressure_i - AveragePressure[iMarker][iSpan];
-                }
-
-                FluidModel->SetTDState_Prho(AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
-                AverageSoundSpeed = FluidModel->GetSoundSpeed();
-                conv_numerics->GetCharJump(AverageSoundSpeed, AverageDensity[iMarker][iSpan], deltaprim, cj);
-
-                /*-----this is only valid 2D ----*/
-                if(nDim ==2){
-                  cj_out1 = cj[1];
-                  cj_out2 = cj[2];
-                  cj_inf  = cj[3];
-                }
-                else{
-                  //Here 3D
-                  cj_out1 = cj[1];
-                  cj_out2 = cj[3];
-                  cj_inf  = cj[4];
-                }
-
-                jk_nVert = j*k/(nVert.real());
-                //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
-                complex<su2double> expArg = complex<su2double>(cos(TwoPi*jk_nVert)) - I*complex<su2double>(sin(TwoPi*jk_nVert));
-
-                cktemp_out1 +=  cj_out1*expArg/nVert;
-                cktemp_out2 +=  cj_out2*expArg/nVert;
-                cktemp_inf  +=  cj_inf*expArg/nVert;
               }
             }
           }
@@ -14787,13 +14749,14 @@ void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetr
 
 }
 
+
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
-  
+
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh, iMeshFine;
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -14802,7 +14765,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
   string UnstExt, text_line;
   ifstream restart_file;
-  
+
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
@@ -14811,104 +14774,97 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
-  
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
   
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
     restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
 
   /*--- Modify file name for an unsteady restart ---*/
-  
+
   if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
-  /*--- Open the restart file, and throw an error if this fails. ---*/
-  
-  restart_file.open(restart_filename.data(), ios::in);
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no flow restart file!! " << restart_filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
-  }
-  
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-  
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  
-  for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-  
-  /*--- Read all lines in the restart file ---*/
-  
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  /*--- The first line is the header ---*/
-  
-  getline (restart_file, text_line);
-  
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
-    getline (restart_file, text_line);
-    
-    istringstream point_line(text_line);
-    
+
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-      
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
-      
+
       if (grid_movement && val_update_geo) {
-        
+
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
-        
+
         if (turb_model == SA || turb_model == SA_NEG) {
-          point_line >> dull_val;
+          index++;
         } else if (turb_model == SST) {
-          point_line >> dull_val >> dull_val;
+          index+=2;
         }
-        
+
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-        
+
         su2double GridVel[3] = {0.0,0.0,0.0};
         if (!steady_restart) {
-            if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-            else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[0];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[0] + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
-        
       }
-      
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
 
   }
@@ -14936,20 +14892,16 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 #endif
   }
 
-  /*--- Close the restart file ---*/
-  
-  restart_file.close();
-
   /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. We alo call the preprocessing routine 
+   it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-  
+
   solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-  
+
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
       Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
@@ -14967,26 +14919,26 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
-  
+
   /*--- Update the geometry for flows on dynamic meshes ---*/
-  
+
   if (grid_movement && val_update_geo) {
-    
+
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
-    
+
     geometry[MESH_0]->Set_MPI_Coord(config);
     geometry[MESH_0]->Set_MPI_GridVel(config);
-    
+
     /*--- Recompute the edges and dual mesh control volumes in the
      domain and on the boundaries. ---*/
-    
+
     geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    
+
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
-    
+
     for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
       iMeshFine = iMesh-1;
       geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
@@ -14997,7 +14949,13 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   }
   
   delete [] Coord;
-  
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
 }
 
 void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
@@ -15013,6 +14971,56 @@ void CEulerSolver::SetFreeStream_Solution(CConfig *config) {
     node[iPoint]->SetSolution(nVar-1, Density_Inf*Energy_Inf);
   }
 }
+
+void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned short iDim;
+  unsigned short iZone  =  config->GetiZone();
+  su2double *turboVelocity, *cartVelocity, *turboNormal;
+  bool RightSol;
+
+  su2double Alpha            = config->GetAoA()*PI_NUMBER/180.0;
+  su2double Mach             = config->GetMach();
+  su2double SoundSpeed;
+
+  turboVelocity   = new su2double[nDim];
+  cartVelocity    = new su2double[nDim];
+
+  turboNormal     = config->GetFreeStreamTurboNormal();
+
+  FluidModel->SetTDState_Prho(Pressure_Inf, Density_Inf);
+  SoundSpeed = FluidModel->GetSoundSpeed();
+
+  /*--- Compute the Free Stream velocity, using the Mach number ---*/
+  turboVelocity[0] = cos(Alpha)*Mach*SoundSpeed;
+  turboVelocity[1] = sin(Alpha)*Mach*SoundSpeed;
+
+
+  if (nDim == 3) {
+    turboVelocity[2] = 0.0;
+  }
+
+  ComputeBackVelocity(turboVelocity, turboNormal, cartVelocity, INFLOW, config->GetKind_TurboMachinery(iZone));
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->SetSolution(0, Density_Inf);
+    for (iDim = 0; iDim < nDim; iDim++) {
+      node[iPoint]->SetSolution(iDim+1, Density_Inf*cartVelocity[iDim]);
+    }
+    node[iPoint]->SetSolution(nVar-1, Density_Inf*Energy_Inf);
+
+    RightSol = node[iPoint]->SetPrimVar(FluidModel);
+    node[iPoint]->SetSecondaryVar(FluidModel);
+  }
+
+  delete [] turboVelocity;
+  delete [] cartVelocity;
+
+
+}
+
+
 
 void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
@@ -15055,46 +15063,46 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
     TotalAreaDensity  = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-    		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-    			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-    				/*--- Retrieve Old Solution ---*/
+            /*--- Retrieve Old Solution ---*/
 
-    				/*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
-    				for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
-    					iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+            /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
+            for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
+              iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+              if (geometry->node[iPoint]->GetDomain()){
+                /*--- Compute the integral fluxes for the boundaries ---*/
 
-    					/*--- Compute the integral fluxes for the boundaries ---*/
+                Pressure = node[iPoint]->GetPressure();
+                Density = node[iPoint]->GetDensity();
+                Enthalpy = node[iPoint]->GetEnthalpy();
 
-    					Pressure = node[iPoint]->GetPressure();
-    					Density = node[iPoint]->GetDensity();
-    					Enthalpy = node[iPoint]->GetEnthalpy();
+                /*--- Normal vector for this vertex (negate for outward convention) ---*/
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
+                geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
+                Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
+                su2double VelNormal = 0.0, VelSq = 0.0;
 
-    					/*--- Normal vector for this vertex (negate for outward convention) ---*/
-    					geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
-    					geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-    					Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
-    					su2double VelNormal = 0.0, VelSq = 0.0;
+                for (iDim = 0; iDim < nDim; iDim++) {
+                  Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
+                  VelSq += Velocity[iDim]*Velocity[iDim];
+                }
 
-    					for (iDim = 0; iDim < nDim; iDim++) {
-    						Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
-    						VelSq += Velocity[iDim]*Velocity[iDim];
-    					}
+                ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
-    					ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+                /*--- Compute different integral quantities for the boundary of interest ---*/
 
-    					/*--- Compute different integral quantities for the boundary of interest ---*/
-
-    					TotalAreaPressure += Area*Pressure;
-    					TotalAreaDensity  += Area*Density;
-    					for (iDim = 0; iDim < nDim; iDim++)
-    						TotalAreaVelocity[iDim] += Area*Velocity[iDim];
-
-    				}
-    			}
-    		}
-    	}
+                TotalAreaPressure += Area*Pressure;
+                TotalAreaDensity  += Area*Density;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+              }
+            }
+          }
+        }
+      }
     }
 
 
@@ -15102,7 +15110,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
     /*--- Add information using all the nodes ---*/
 
-    MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
+    MyTotalAreaDensity   = TotalAreaDensity;          					TotalAreaDensity     = 0;
     MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
 
     SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -15128,66 +15136,66 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-    		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-    			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-    				TotalArea 					= geometry->GetSpanArea(iMarker,iSpan);
-    				AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,iSpan);
-    				nVert								= geometry->GetnTotVertexSpan(iMarker,iSpan);
+            TotalArea 					= geometry->GetSpanArea(iMarker,iSpan);
+            AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,iSpan);
+            nVert								= geometry->GetnTotVertexSpan(iMarker,iSpan);
 
-    				/*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
+            /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
-    					AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
-    					AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
-    					for (iDim = 0; iDim < nDim; iDim++)
-    						AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+            AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
+            AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
+            for (iDim = 0; iDim < nDim; iDim++)
+              AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
-    				/* --- compute static averaged quantities ---*/
-    				ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+            /* --- compute static averaged quantities ---*/
+            ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
 
-    				OldAverageDensity[iMarker][iSpan] = AverageDensity[iMarker][iSpan];
-    				OldAveragePressure[iMarker][iSpan] = AveragePressure[iMarker][iSpan];
-    				for(iDim = 0; iDim < nDim;iDim++)
-    					OldAverageTurboVelocity[iMarker][iSpan][iDim] = AverageTurboVelocity[iMarker][iSpan][iDim];
+            OldAverageDensity[iMarker][iSpan] = AverageDensity[iMarker][iSpan];
+            OldAveragePressure[iMarker][iSpan] = AveragePressure[iMarker][iSpan];
+            for(iDim = 0; iDim < nDim;iDim++)
+              OldAverageTurboVelocity[iMarker][iSpan][iDim] = AverageTurboVelocity[iMarker][iSpan][iDim];
 
 
 
-    			}
-    		}
-    	}
+          }
+        }
+      }
     }
   }
 
   /*--- initialize 1D average quantities ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-  		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-  			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+        if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-  				AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,nSpanWiseSections);
+          AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,nSpanWiseSections);
 
-  				/*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
+          /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
-  				AverageDensity[iMarker][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections/2];
-  				AveragePressure[iMarker][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections/2];
-  				for (iDim = 0; iDim < nDim; iDim++)
-  					AverageVelocity[iMarker][nSpanWiseSections][iDim] = AverageVelocity[iMarker][nSpanWiseSections/2][iDim];
+          AverageDensity[iMarker][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections/2];
+          AveragePressure[iMarker][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections/2];
+          for (iDim = 0; iDim < nDim; iDim++)
+            AverageVelocity[iMarker][nSpanWiseSections][iDim] = AverageVelocity[iMarker][nSpanWiseSections/2][iDim];
 
-  				/* --- compute static averaged quantities ---*/
-  				ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
+          /* --- compute static averaged quantities ---*/
+          ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
 
-  				OldAverageDensity[iMarker][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections];
-  				OldAveragePressure[iMarker][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections];
-  				for(iDim = 0; iDim < nDim;iDim++)
-  					OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
+          OldAverageDensity[iMarker][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections];
+          OldAveragePressure[iMarker][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections];
+          for(iDim = 0; iDim < nDim;iDim++)
+            OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
 
 
 
-  			}
-  		}
-  	}
+        }
+      }
+    }
   }
 
 
@@ -15201,7 +15209,7 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 }
 
 
-void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
+void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint, nVert;
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
@@ -15209,7 +15217,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
   unsigned short performance_average_process = config->GetKind_PerformanceAverageProcess();
   su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *TurboVelocity,
       Area, TotalArea, Radius1, Radius2, Vt2, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal,
-			TotalMassPressure, TotalMassDensity, *TotalMassVelocity;
+      TotalMassPressure, TotalMassDensity, *TotalMassVelocity;
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -15220,12 +15228,11 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
   su2double TotalNu, TotalOmega, TotalKei, TotalMassNu, TotalMassOmega, TotalMassKei, TotalAreaNu, TotalAreaOmega, TotalAreaKei;
   su2double Nu, Kei, Omega;
   su2double MachTest, soundSpeed;
-  bool turbulent = (config->GetKind_Solver() == RANS);
+  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS));
   bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
   bool menter_sst       = (config->GetKind_Turb_Model() == SST);
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
-
 
   /*-- Variables declaration and allocation ---*/
   Velocity 							= new su2double[nDim];
@@ -15238,6 +15245,23 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
   TotalFluxes 					= new su2double[nVar];
   cartVelocity 					= new su2double[nDim];
 
+  su2double avgDensity, *avgVelocity, avgPressure, avgAreaDensity, *avgAreaVelocity, avgAreaPressure, avgMassDensity, *avgMassVelocity,
+  avgMassPressure, avgMixDensity, *avgMixVelocity, *avgMixTurboVelocity, avgMixPressure;
+
+  avgVelocity = new su2double[nDim];
+  avgAreaVelocity = new su2double[nDim];
+  avgMassVelocity = new su2double[nDim];
+  avgMixVelocity = new su2double[nDim];
+  avgMixTurboVelocity = new su2double[nDim];
+
+  su2double TotalDensity1D, TotalPressure1D, TotalAreaDensity1D, TotalAreaPressure1D, TotalMassDensity1D, TotalMassPressure1D, *TotalVelocity1D, *TotalAreaVelocity1D, *TotalMassVelocity1D, *TotalFluxes1D;
+  su2double TotalNu1D, TotalOmega1D, TotalKei1D, TotalAreaNu1D, TotalAreaOmega1D, TotalAreaKei1D, TotalMassNu1D, TotalMassOmega1D, TotalMassKei1D;
+
+  TotalVelocity1D     = new su2double[nDim];
+  TotalAreaVelocity1D = new su2double[nDim];
+  TotalMassVelocity1D = new su2double[nDim];
+  TotalFluxes1D       = new su2double[nVar];
+
 #ifdef HAVE_MPI
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
   su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
@@ -15246,7 +15270,32 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
-  for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+
+  /*--- initilize the 1D containers ---*/
+  TotalDensity1D      = 0.0;
+  TotalPressure1D     = 0.0;
+  TotalAreaDensity1D  = 0.0;
+  TotalAreaPressure1D = 0.0;
+  TotalMassDensity1D  = 0.0;
+  TotalMassPressure1D = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    TotalVelocity1D[iDim]     = 0.0;
+    TotalAreaVelocity1D[iDim] = 0.0;
+    TotalMassVelocity1D[iDim] = 0.0;
+  }
+  for (iVar = 0; iVar<nVar; iVar++) TotalFluxes1D[iVar] = 0.0;
+
+  TotalNu1D           = 0.0;
+  TotalOmega1D        = 0.0;
+  TotalKei1D          = 0.0;
+  TotalAreaNu1D       = 0.0;
+  TotalAreaOmega1D    = 0.0;
+  TotalAreaKei1D      = 0.0;
+  TotalMassNu1D       = 0.0;
+  TotalMassOmega1D    = 0.0;
+  TotalMassKei1D      = 0.0;
+
+  for (iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++){
 
     /*--- Forces initialization for contenitors ---*/
     for (iVar=0;iVar<nVar;iVar++)
@@ -15277,96 +15326,101 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
     Omega = 0.0;
     Kei   = 0.0;
 
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+    if(iSpan < nSpanWiseSections){
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+        for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+          if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+            if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-          	/*--- Retrieve Old Solution ---*/
+              /*--- Retrieve Old Solution ---*/
 
-            /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
-            for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
-              iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+              /*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
+              for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
+                iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
 
-              /*--- Compute the integral fluxes for the boundaries ---*/
-              if (compressible) {
-                Pressure = node[iPoint]->GetPressure();
-                Density = node[iPoint]->GetDensity();
-                Enthalpy = node[iPoint]->GetEnthalpy();
-              }
-              else {
-                cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
-                cout << "Press any key to exit..." << endl;
-                cin.get();
-                exit(1);
-              }
+                if (geometry->node[iPoint]->GetDomain()){
 
-
-              /*--- Normal vector for this vertex (negate for outward convention) ---*/
-              geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
-              geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-              Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
-              su2double VelNormal = 0.0, VelSq = 0.0;
-
-              for (iDim = 0; iDim < nDim; iDim++) {
-                Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
-                VelNormal += UnitNormal[iDim]*Velocity[iDim];
-                VelSq += Velocity[iDim]*Velocity[iDim];
-              }
-
-              ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
-
-              /*--- Compute different integral quantities for the boundary of interest ---*/
-
-              TotalDensity += Density;
-              TotalPressure += Pressure;
-              for (iDim = 0; iDim < nDim; iDim++)
-              	TotalVelocity[iDim] += Velocity[iDim];
-
-              TotalAreaPressure += Area*Pressure;
-              TotalAreaDensity  += Area*Density;
-              for (iDim = 0; iDim < nDim; iDim++)
-              	TotalAreaVelocity[iDim] += Area*Velocity[iDim];
-
-              TotalMassPressure += Area*(Density*TurboVelocity[0] )*Pressure;
-              TotalMassDensity  += Area*(Density*TurboVelocity[0] )*Density;
-              for (iDim = 0; iDim < nDim; iDim++)
-              	TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
-
-              TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
-              TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
-              for (iDim = 2; iDim < nDim+1; iDim++)
-              	TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
-              TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
+                  /*--- Compute the integral fluxes for the boundaries ---*/
+                  if (compressible) {
+                    Pressure = node[iPoint]->GetPressure();
+                    Density = node[iPoint]->GetDensity();
+                    Enthalpy = node[iPoint]->GetEnthalpy();
+                  }
+                  else {
+                    cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
+                    cout << "Press any key to exit..." << endl;
+                    cin.get();
+                    exit(1);
+                  }
 
 
-              /*--- Compute turbulent integral quantities for the boundary of interest ---*/
+                  /*--- Normal vector for this vertex (negate for outward convention) ---*/
+                  geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
+                  geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
+                  Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
+                  su2double VelNormal = 0.0, VelSq = 0.0;
 
-              if(turbulent){
-              	if(menter_sst){
-              		Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-              		Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
-              	}
-              	if(spalart_allmaras){
-              		Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-              	}
+                  for (iDim = 0; iDim < nDim; iDim++) {
+                    Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
+                    VelNormal += UnitNormal[iDim]*Velocity[iDim];
+                    VelSq += Velocity[iDim]*Velocity[iDim];
+                  }
 
-              	TotalKei   += Kei;
-              	TotalOmega += Omega;
-              	TotalNu     += Nu;
+                  ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
-              	TotalAreaKei    += Area*Kei;
-              	TotalAreaOmega  += Area*Omega;
-              	TotalAreaNu     += Area*Nu;
+                  /*--- Compute different integral quantities for the boundary of interest ---*/
 
-              	TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
-              	TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
-              	TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
+                  TotalDensity += Density;
+                  TotalPressure += Pressure;
+                  for (iDim = 0; iDim < nDim; iDim++)
+                    TotalVelocity[iDim] += Velocity[iDim];
 
-              	TotalAreaKei    += Area*Kei;
-              	TotalAreaOmega  += Area*Omega;
-              	TotalAreaNu     += Area*Nu;
+                  TotalAreaPressure += Area*Pressure;
+                  TotalAreaDensity  += Area*Density;
+                  for (iDim = 0; iDim < nDim; iDim++)
+                    TotalAreaVelocity[iDim] += Area*Velocity[iDim];
 
+                  TotalMassPressure += Area*(Density*TurboVelocity[0] )*Pressure;
+                  TotalMassDensity  += Area*(Density*TurboVelocity[0] )*Density;
+                  for (iDim = 0; iDim < nDim; iDim++)
+                    TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
+
+                  TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
+                  TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
+                  for (iDim = 2; iDim < nDim+1; iDim++)
+                    TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
+                  TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
+
+
+                  /*--- Compute turbulent integral quantities for the boundary of interest ---*/
+
+                  if(turbulent){
+                    if(menter_sst){
+                      Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+                      Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
+                    }
+                    if(spalart_allmaras){
+                      Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
+                    }
+
+                    TotalKei   += Kei;
+                    TotalOmega += Omega;
+                    TotalNu     += Nu;
+
+                    TotalAreaKei    += Area*Kei;
+                    TotalAreaOmega  += Area*Omega;
+                    TotalAreaNu     += Area*Nu;
+
+                    TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
+                    TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
+                    TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
+
+                    TotalAreaKei    += Area*Kei;
+                    TotalAreaOmega  += Area*Omega;
+                    TotalAreaNu     += Area*Nu;
+
+                  }
+                }
               }
             }
           }
@@ -15378,21 +15432,21 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
 
     /*--- Add information using all the nodes ---*/
 
-    MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
-    MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
-    MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
+    MyTotalDensity       = TotalDensity; 							             TotalDensity         = 0;
+    MyTotalPressure      = TotalPressure;  					           TotalPressure        = 0;
+    MyTotalAreaDensity   = TotalAreaDensity; 					         TotalAreaDensity     = 0;
     MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
     MyTotalMassDensity   = TotalMassDensity;          TotalMassDensity     = 0;
     MyTotalMassPressure  = TotalMassPressure;         TotalMassPressure    = 0;
-    MyTotalNu            = TotalNu; 	 								TotalNu              = 0;
-    MyTotalKei           = TotalKei; 	 								TotalKei             = 0;
-    MyTotalOmega         = TotalOmega; 	 							TotalOmega           = 0;
-    MyTotalAreaNu        = TotalAreaNu; 	 					  TotalAreaNu          = 0;
-    MyTotalAreaKei       = TotalAreaKei; 	 						TotalAreaKei         = 0;
-    MyTotalAreaOmega     = TotalAreaOmega; 	 					TotalAreaOmega       = 0;
-    MyTotalMassNu        = TotalMassNu; 	 					  TotalMassNu          = 0;
-    MyTotalMassKei       = TotalMassKei; 	 						TotalMassKei         = 0;
-    MyTotalMassOmega     = TotalMassOmega; 	 					TotalMassOmega       = 0;
+    MyTotalNu            = TotalNu; 	 								                 TotalNu              = 0;
+    MyTotalKei           = TotalKei; 	 								                TotalKei             = 0;
+    MyTotalOmega         = TotalOmega; 	 						              	TotalOmega           = 0;
+    MyTotalAreaNu        = TotalAreaNu; 	 					             TotalAreaNu          = 0;
+    MyTotalAreaKei       = TotalAreaKei; 	 						            TotalAreaKei         = 0;
+    MyTotalAreaOmega     = TotalAreaOmega; 	 					          TotalAreaOmega       = 0;
+    MyTotalMassNu        = TotalMassNu; 	 					             TotalMassNu          = 0;
+    MyTotalMassKei       = TotalMassKei; 	 						            TotalMassKei         = 0;
+    MyTotalMassOmega     = TotalMassOmega; 	 					          TotalMassOmega       = 0;
 
 
 
@@ -15414,7 +15468,7 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
     SU2_MPI::Allreduce(&MyTotalMassOmega, &TotalMassOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 
-    MyTotalFluxes					 = new su2double[nVar];
+    MyTotalFluxes					          = new su2double[nVar];
     MyTotalVelocity        = new su2double[nDim];
     MyTotalAreaVelocity    = new su2double[nDim];
     MyTotalMassVelocity    = new su2double[nDim];
@@ -15428,9 +15482,9 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
       MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
       TotalVelocity[iDim]        			  = 0.0;
       MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
-      TotalAreaVelocity[iDim]    				= 0.0;
-      MyTotalMassVelocity[iDim]         = TotalMassVelocity[iDim];
-      TotalMassVelocity[iDim]           = 0.0;
+      TotalAreaVelocity[iDim]    			  	= 0.0;
+      MyTotalMassVelocity[iDim]    = TotalMassVelocity[iDim];
+      TotalMassVelocity[iDim]      = 0.0;
     }
 
     SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -15445,269 +15499,273 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
 
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-    		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-    			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
-    				TotalArea 					= geometry->GetSpanArea(iMarker,iSpan);
-    				AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,iSpan);
-    				nVert								= geometry->GetnTotVertexSpan(iMarker,iSpan);
+            TotalArea 					= geometry->GetSpanArea(iMarker,iSpan);
+            AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,iSpan);
+            nVert								= geometry->GetnTotVertexSpan(iMarker,iSpan);
 
-    				/*--- compute normal Mach number as a check for massflow average and mixedout average ---*/
-    				FluidModel->SetTDState_Prho(TotalAreaPressure/TotalArea, TotalAreaDensity / TotalArea);
+            if (iSpan < nSpanWiseSections) {
+              /*--- fill the 1D containers ---*/
+              TotalDensity1D      += TotalDensity;
+              TotalPressure1D     += TotalPressure;
+              TotalAreaDensity1D  += TotalAreaDensity;
+              TotalAreaPressure1D += TotalAreaPressure;
+              TotalMassDensity1D  += TotalMassDensity;
+              TotalMassPressure1D += TotalMassPressure;
+
+              for (iDim = 0; iDim < nDim; iDim++){
+                TotalVelocity1D[iDim]     += TotalVelocity[iDim];
+                TotalAreaVelocity1D[iDim] += TotalAreaVelocity[iDim];
+                TotalMassVelocity1D[iDim] += TotalMassVelocity[iDim];
+              }
+
+              for (iVar = 0; iVar<nVar; iVar++) TotalFluxes1D[iVar] += TotalFluxes[iVar];
+
+              TotalNu1D           += TotalNu;
+              TotalOmega1D        += TotalOmega;
+              TotalKei1D          += TotalKei;
+              TotalAreaNu1D       += TotalAreaNu;
+              TotalAreaOmega1D    += TotalAreaOmega;
+              TotalAreaKei1D      += TotalAreaKei;
+              TotalMassNu1D       += TotalMassNu;
+              TotalMassOmega1D    += TotalMassOmega;
+              TotalMassKei1D      += TotalMassKei;
+            }
+            else{
+              /*--- use 1D containers to compute the average ---*/
+              TotalDensity  = TotalDensity1D;
+              TotalPressure = TotalPressure1D;
+              TotalAreaDensity  = TotalAreaDensity1D;
+              TotalAreaPressure = TotalAreaPressure1D;
+              TotalMassDensity  = TotalMassDensity1D;
+              TotalMassPressure = TotalMassPressure1D;
+
+              for (iDim = 0; iDim < nDim; iDim++){
+                TotalVelocity[iDim] = TotalVelocity1D[iDim];
+                TotalAreaVelocity[iDim] = TotalAreaVelocity1D[iDim];
+                TotalMassVelocity[iDim] = TotalMassVelocity1D[iDim];
+              }
+
+              for (iVar = 0; iVar<nVar; iVar++) TotalFluxes[iVar] = TotalFluxes1D[iVar];
+
+              TotalNu           = TotalNu1D;
+              TotalOmega        = TotalOmega1D;
+              TotalKei          = TotalKei1D;
+              TotalAreaNu       = TotalAreaNu1D;
+              TotalAreaOmega    = TotalAreaOmega1D;
+              TotalAreaKei      = TotalAreaKei1D;
+              TotalMassNu       = TotalMassNu1D;
+              TotalMassOmega    = TotalMassOmega1D;
+              TotalMassKei      = TotalMassKei1D;
+            }
+
+
+            /*--- compute normal Mach number as a check for massflow average and mixedout average ---*/
+            FluidModel->SetTDState_Prho(TotalAreaPressure/TotalArea, TotalAreaDensity / TotalArea);
             soundSpeed = FluidModel->GetSoundSpeed();
             MachTest   = TotalFluxes[0]/(TotalAreaDensity*soundSpeed);
-    				/*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
-    				switch(average_process){
-    				case ALGEBRAIC:
-    					AverageDensity[iMarker][iSpan] = TotalDensity / nVert;
-    					AveragePressure[iMarker][iSpan] = TotalPressure / nVert;
-    					for (iDim = 0; iDim < nDim; iDim++)
-    						AverageVelocity[iMarker][iSpan][iDim] = TotalVelocity[iDim] / nVert;
-    					break;
 
-    				case AREA:
-    					AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
-    					AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
-    					for (iDim = 0; iDim < nDim; iDim++)
-    						AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    					break;
+            /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
-    				case MASSFLUX:
-    					if (abs(MachTest)< config->GetAverageMachLimit()) {
-    						AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
-    						AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
-    						for (iDim = 0; iDim < nDim; iDim++)
-    							AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    					}else{
+            /*--- compute algebraic average ---*/
+            avgDensity        = TotalDensity / nVert;
+            avgPressure       = TotalPressure / nVert;
+            for (iDim = 0; iDim < nDim; iDim++) avgVelocity[iDim] = TotalVelocity[iDim] / nVert;
 
-    						AverageDensity[iMarker][iSpan] = TotalMassDensity / TotalFluxes[0];
-    						AveragePressure[iMarker][iSpan] = TotalMassPressure / TotalFluxes[0];
-    						for (iDim = 0; iDim < nDim; iDim++)
-    							AverageVelocity[iMarker][iSpan][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
-    					}
-    					break;
+            /*--- compute area average ---*/
+            avgAreaDensity    = TotalAreaDensity / TotalArea;
+            avgAreaPressure   = TotalAreaPressure / TotalArea;
+            for (iDim = 0; iDim < nDim; iDim++) avgAreaVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
 
-    				case MIXEDOUT:
-    					for (iVar = 0; iVar<nVar; iVar++){
-    						AverageFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar]/TotalArea;
-    						SpanTotalFlux[iMarker][iSpan][iVar]= TotalFluxes[iVar];
-    					}
-    					val_init_pressure = OldAveragePressure[iMarker][iSpan];
+            /*--- compute mass-flow average ---*/
+            if (abs(MachTest)< config->GetAverageMachLimit()) {
+              avgMassDensity   = avgAreaDensity;
+              avgMassPressure  = avgAreaPressure;
+              for (iDim = 0; iDim < nDim; iDim++) avgMassVelocity[iDim] = avgAreaVelocity[iDim];
+            }else{
+              avgMassDensity   = TotalMassDensity / TotalFluxes[0];
+              avgMassPressure  = TotalMassPressure / TotalFluxes[0];
+              for (iDim = 0; iDim < nDim; iDim++) avgMassVelocity[iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
+            }
+            /*--- compute mixed-out average ---*/
+            for (iVar = 0; iVar<nVar; iVar++){
+              AverageFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar]/TotalArea;
+              SpanTotalFlux[iMarker][iSpan][iVar]= TotalFluxes[iVar];
+            }
+            val_init_pressure = OldAveragePressure[iMarker][iSpan];
 
-    					if (abs(MachTest)< config->GetAverageMachLimit()) {
-    						AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
-    						AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
-    						for (iDim = 0; iDim < nDim; iDim++)
-    							AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
-
-    					}else {
-    						MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
-    						AverageTurboVelocity[iMarker][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - AveragePressure[iMarker][iSpan]) / AverageFlux[iMarker][iSpan][0];
-    						for (iDim = 2; iDim < nDim +1;iDim++)
-    							AverageTurboVelocity[iMarker][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-    						ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-    						if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan] || AveragePressure[iMarker][iSpan]!= AveragePressure[iMarker][iSpan]){
-    							val_init_pressure = TotalAreaPressure / TotalArea;
-    							MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
-    							AverageTurboVelocity[iMarker][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - AveragePressure[iMarker][iSpan]) / AverageFlux[iMarker][iSpan][0];
-    							for (iDim = 2; iDim < nDim +1;iDim++)
-    								AverageTurboVelocity[iMarker][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-    							ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-    						}
-    						if (AverageDensity[iMarker][iSpan] < 0.0 || AveragePressure[iMarker][iSpan] < 0.0){
-    							val_init_pressure = TotalAreaPressure / TotalArea;
-    							MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
-    							AverageTurboVelocity[iMarker][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - AveragePressure[iMarker][iSpan]) / AverageFlux[iMarker][iSpan][0];
-    							for (iDim = 2; iDim < nDim +1;iDim++)
-    								AverageTurboVelocity[iMarker][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-    							ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-    						}
-
-    					}
-  						break;
-
-    				default:
-    					cout << "Warning! Invalid AVERAGE PROCESS input!" << endl;
-    					exit(EXIT_FAILURE);
-    					break;
-    				}
-
-    				/* --- compute static averaged quantities ---*/
-    				ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-    				/* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
-    				if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan] || AveragePressure[iMarker][iSpan]!= AveragePressure[iMarker][iSpan]){
-    					cout<<"nan in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
-    					AverageDensity[iMarker][iSpan] = OldAverageDensity[iMarker][iSpan];
-    					AveragePressure[iMarker][iSpan] = OldAveragePressure[iMarker][iSpan];
-    					for(iDim = 0; iDim < nDim;iDim++)
-    						AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
-    				}
+            if (abs(MachTest)< config->GetAverageMachLimit()) {
+              avgMixDensity    = avgAreaDensity;
+              avgMixPressure   = avgAreaPressure;
+              for (iDim = 0; iDim < nDim; iDim++)
+                avgMixVelocity[iDim] = avgAreaVelocity[iDim];
+              ComputeTurboVelocity(avgMixVelocity, AverageTurboNormal , avgMixTurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
+            }else {
+              MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
+              avgMixTurboVelocity[0]= ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
+              for (iDim = 2; iDim < nDim +1;iDim++)
+                avgMixTurboVelocity[iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
+              if (avgMixDensity!= avgMixDensity || avgMixPressure!= avgMixPressure || avgMixPressure < 0.0 || avgMixDensity < 0.0 ){
+                val_init_pressure = avgAreaPressure;
+                MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
+                avgMixTurboVelocity[0]= ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
+                for (iDim = 2; iDim < nDim +1;iDim++)
+                  avgMixTurboVelocity[iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
+              }
+            }
 
 
-    				if (AverageDensity[iMarker][iSpan] < 0.0 || AveragePressure[iMarker][iSpan] < 0.0){
-    					cout << " negative density or pressure in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
-    					AverageDensity[iMarker][iSpan] = OldAverageDensity[iMarker][iSpan];
-    					AveragePressure[iMarker][iSpan] = OldAveragePressure[iMarker][iSpan];
-    					for(iDim = 0; iDim < nDim;iDim++)
-    						AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
-    				}
+            /*--- Store averaged value for the selected average method ---*/
+            switch(average_process){
+            case ALGEBRAIC:
+              AverageDensity[iMarker][iSpan]  = avgDensity;
+              AveragePressure[iMarker][iSpan] = avgPressure;
+              ComputeTurboVelocity(avgVelocity, AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              break;
+
+            case AREA:
+              AverageDensity[iMarker][iSpan] = avgAreaDensity;
+              AveragePressure[iMarker][iSpan] = avgAreaPressure;
+              ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              break;
+
+            case MASSFLUX:
+              AverageDensity[iMarker][iSpan] = avgMassDensity;
+              AveragePressure[iMarker][iSpan] = avgMassPressure;
+              ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              break;
+
+            case MIXEDOUT:
+              AverageDensity[iMarker][iSpan] = avgMixDensity;
+              AveragePressure[iMarker][iSpan] = avgMixPressure;
+              for (iDim = 0; iDim < nDim; iDim++) AverageTurboVelocity[iMarker][iSpan][iDim] = avgMixTurboVelocity[iDim];
+              break;
+            default:
+              cout << "Warning! Invalid AVERAGE PROCESS input!" << endl;
+              exit(EXIT_FAILURE);
+              break;
+            }
+
+            /* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
+            if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan] || AveragePressure[iMarker][iSpan]!= AveragePressure[iMarker][iSpan]){
+              cout<<"nan in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
+              AverageDensity[iMarker][iSpan] = OldAverageDensity[iMarker][iSpan];
+              AveragePressure[iMarker][iSpan] = OldAveragePressure[iMarker][iSpan];
+              for(iDim = 0; iDim < nDim;iDim++)
+                AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
+            }
 
 
-    				OldAverageDensity[iMarker][iSpan] = AverageDensity[iMarker][iSpan];
-    				OldAveragePressure[iMarker][iSpan] = AveragePressure[iMarker][iSpan];
-    				for(iDim = 0; iDim < nDim;iDim++)
-    					OldAverageTurboVelocity[iMarker][iSpan][iDim] = AverageTurboVelocity[iMarker][iSpan][iDim];
+            if (AverageDensity[iMarker][iSpan] < 0.0 || AveragePressure[iMarker][iSpan] < 0.0){
+              cout << " negative density or pressure in mixing process routine for iSpan: " << iSpan<< " in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
+              AverageDensity[iMarker][iSpan] = OldAverageDensity[iMarker][iSpan];
+              AveragePressure[iMarker][iSpan] = OldAveragePressure[iMarker][iSpan];
+              for(iDim = 0; iDim < nDim;iDim++)
+                AverageTurboVelocity[iMarker][iSpan][iDim] = OldAverageTurboVelocity[iMarker][iSpan][iDim];
+            }
+
+            /* --- update old average solution ---*/
+            OldAverageDensity[iMarker][iSpan] = AverageDensity[iMarker][iSpan];
+            OldAveragePressure[iMarker][iSpan] = AveragePressure[iMarker][iSpan];
+            for(iDim = 0; iDim < nDim;iDim++)
+              OldAverageTurboVelocity[iMarker][iSpan][iDim] = AverageTurboVelocity[iMarker][iSpan][iDim];
 
 
-    				if(turbulent){
-    					switch(average_process){
-    					case ALGEBRAIC:
-    						AverageNu[iMarker][iSpan]            = TotalNu/nVert;
-    						AverageKei[iMarker][iSpan]           = TotalKei/nVert;
-    						AverageOmega[iMarker][iSpan]         = TotalOmega/nVert;
-    						break;
-    					case AREA:
-    						AverageNu[iMarker][iSpan]            = TotalAreaNu/TotalArea;
-    						AverageKei[iMarker][iSpan]           = TotalAreaKei/TotalArea;
-    						AverageOmega[iMarker][iSpan]         = TotalAreaOmega/TotalArea;
-    						break;
-    					case MASSFLUX: case MIXEDOUT:
-    						if (abs(MachTest)< 0.03) {
-    							AverageNu[iMarker][iSpan]            = TotalAreaNu/TotalArea;
-    							AverageKei[iMarker][iSpan]           = TotalAreaKei/TotalArea;
-    							AverageOmega[iMarker][iSpan]         = TotalAreaOmega/TotalArea;
-    						}
-    						else{
-    							AverageNu[iMarker][iSpan]            = TotalMassNu/TotalFluxes[0];
-    							AverageKei[iMarker][iSpan]           = TotalMassKei/TotalFluxes[0];
-    							AverageOmega[iMarker][iSpan]         = TotalMassOmega/TotalFluxes[0];
+            if(turbulent){
+              switch(average_process){
+              case ALGEBRAIC:
+                AverageNu[iMarker][iSpan]            = TotalNu/nVert;
+                AverageKei[iMarker][iSpan]           = TotalKei/nVert;
+                AverageOmega[iMarker][iSpan]         = TotalOmega/nVert;
+                break;
+              case AREA:
+                AverageNu[iMarker][iSpan]            = TotalAreaNu/TotalArea;
+                AverageKei[iMarker][iSpan]           = TotalAreaKei/TotalArea;
+                AverageOmega[iMarker][iSpan]         = TotalAreaOmega/TotalArea;
+                break;
+              case MASSFLUX: case MIXEDOUT:
+                if (abs(MachTest)< config->GetAverageMachLimit()) {
+                  AverageNu[iMarker][iSpan]            = TotalAreaNu/TotalArea;
+                  AverageKei[iMarker][iSpan]           = TotalAreaKei/TotalArea;
+                  AverageOmega[iMarker][iSpan]         = TotalAreaOmega/TotalArea;
+                }
+                else{
+                  AverageNu[iMarker][iSpan]            = TotalMassNu/TotalFluxes[0];
+                  AverageKei[iMarker][iSpan]           = TotalMassKei/TotalFluxes[0];
+                  AverageOmega[iMarker][iSpan]         = TotalMassOmega/TotalFluxes[0];
 
-    						}
-    						break;
-    					}
-    				}
+                }
+                break;
+              }
+            }
 
 
-    				/*--- Compute the averaged values for performance computation. ---*/
-    				switch(performance_average_process){
-    				case ALGEBRAIC:
-    					if(marker_flag == INFLOW){
-    						DensityIn[iMarkerTP - 1][iSpan] = TotalDensity / nVert;
-    						PressureIn[iMarkerTP - 1][iSpan] = TotalPressure / nVert;
-    						for (iDim = 0; iDim < nDim; iDim++)
-    							cartVelocity[iDim] = TotalVelocity[iDim] / nVert;
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+            /*--- Store averaged performance value for the selected average method ---*/
+            switch(performance_average_process){
+            case ALGEBRAIC:
+              if(marker_flag == INFLOW){
+                DensityIn[iMarkerTP - 1][iSpan] = avgDensity;
+                PressureIn[iMarkerTP - 1][iSpan] = avgPressure;
+                ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              }
+              else{
+                DensityOut[iMarkerTP - 1][iSpan] = avgDensity;
+                PressureOut[iMarkerTP - 1][iSpan] = avgPressure;
+                ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              }
 
-    					}
-    					else{
-    						DensityOut[iMarkerTP - 1][iSpan] = TotalDensity / nVert;
-    						PressureOut[iMarkerTP - 1][iSpan] = TotalPressure / nVert;
-    						for (iDim = 0; iDim < nDim; iDim++)
-    							cartVelocity[iDim] = TotalVelocity[iDim] / nVert;
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              break;
+            case AREA:
+              if(marker_flag == INFLOW){
+                DensityIn[iMarkerTP - 1][iSpan] = avgAreaDensity;
+                PressureIn[iMarkerTP - 1][iSpan] = avgAreaPressure;
+                ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              }
+              else{
+                DensityOut[iMarkerTP - 1][iSpan] = avgAreaDensity;
+                PressureOut[iMarkerTP - 1][iSpan] = avgAreaPressure;
+                ComputeTurboVelocity(avgAreaVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              }
+              break;
 
-    					}
+            case MASSFLUX:
+              if(marker_flag == INFLOW){
+                DensityIn[iMarkerTP - 1][iSpan] = avgMassDensity;
+                PressureIn[iMarkerTP - 1][iSpan] = avgMassPressure;
+                ComputeTurboVelocity(avgMassVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              }
+              else{
+                DensityOut[iMarkerTP - 1][iSpan] = avgMassDensity;
+                PressureOut[iMarkerTP - 1][iSpan] = avgMassPressure;
+                ComputeTurboVelocity(avgMassVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
+              }
 
-    					break;
-    				case AREA:
-    					if(marker_flag == INFLOW){
-    						DensityIn[iMarkerTP - 1][iSpan] = TotalAreaDensity / TotalArea;
-    						PressureIn[iMarkerTP - 1][iSpan] = TotalAreaPressure / TotalArea;
-    						for (iDim = 0; iDim < nDim; iDim++)
-    							cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-    					}
-    					else{
-    						DensityOut[iMarkerTP - 1][iSpan] = TotalAreaDensity / TotalArea;
-    						PressureOut[iMarkerTP - 1][iSpan] = TotalAreaPressure / TotalArea;
-    						for (iDim = 0; iDim < nDim; iDim++)
-    							cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-    					}
-    					break;
+              break;
 
-    				case MASSFLUX:
-    					if(marker_flag == INFLOW){
-    						if (abs(MachTest)< config->GetAverageMachLimit()) {
-    							DensityIn[iMarkerTP -1][iSpan] = TotalAreaDensity / TotalArea;
-    							PressureIn[iMarkerTP -1][iSpan] = TotalAreaPressure / TotalArea;
-    							for (iDim = 0; iDim < nDim; iDim++)
-    								cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    						}else{
-    							DensityIn[iMarkerTP -1][iSpan] = TotalMassDensity / TotalFluxes[0];
-    							PressureIn[iMarkerTP -1][iSpan] = TotalMassPressure / TotalFluxes[0];
-    							for (iDim = 0; iDim < nDim; iDim++)
-    								cartVelocity[iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
-    						}
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-    					}
-    					else{
-    						if (abs(MachTest)< config->GetAverageMachLimit()) {
-    							DensityOut[iMarkerTP -1][iSpan] = TotalAreaDensity / TotalArea;
-    							PressureOut[iMarkerTP -1][iSpan] = TotalAreaPressure / TotalArea;
-    							for (iDim = 0; iDim < nDim; iDim++)
-    								cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    						}else{
-    							DensityOut[iMarkerTP -1][iSpan] = TotalMassDensity / TotalFluxes[0];
-    							PressureOut[iMarkerTP -1][iSpan] = TotalMassPressure / TotalFluxes[0];
-    							for (iDim = 0; iDim < nDim; iDim++)
-    								cartVelocity[iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
-    						}
-    						ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-    					}
+            case MIXEDOUT:
+              if (marker_flag == INFLOW){
+                DensityIn[iMarkerTP - 1][iSpan] = avgMixDensity;
+                PressureIn[iMarkerTP - 1][iSpan] = avgMixPressure;
+                for (iDim = 0; iDim < nDim; iDim++) TurboVelocityIn[iMarkerTP -1][iSpan][iDim] = avgMixTurboVelocity[iDim];
+              }
+              else{
+                DensityOut[iMarkerTP - 1][iSpan] = avgMixDensity;
+                PressureOut[iMarkerTP - 1][iSpan] = avgMixPressure;
+                for (iDim = 0; iDim < nDim; iDim++) TurboVelocityOut[iMarkerTP -1][iSpan][iDim] = avgMixTurboVelocity[iDim];
+              }
+              break;
 
-    					break;
-
-    				case MIXEDOUT:
-    					for (iVar = 0; iVar<nVar; iVar++){
-    						AverageFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar]/TotalArea;
-    						SpanTotalFlux[iMarker][iSpan][iVar]= TotalFluxes[iVar];
-    					}
-    					val_init_pressure = OldAveragePressure[iMarker][iSpan];
-    					if (marker_flag == INFLOW){
-    						if (abs(MachTest)< config->GetAverageMachLimit()) {
-
-    							DensityIn[iMarkerTP -1][iSpan] = TotalAreaDensity / TotalArea;
-    							PressureIn[iMarkerTP -1][iSpan] = TotalAreaPressure / TotalArea;
-    							for (iDim = 0; iDim < nDim; iDim++)
-    								cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    							ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-    						}else {
-    							MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, PressureIn[iMarkerTP -1][iSpan], DensityIn[iMarkerTP -1][iSpan]);
-    							TurboVelocityIn[iMarkerTP -1][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - PressureIn[iMarkerTP -1][iSpan]) / AverageFlux[iMarker][iSpan][0];
-    							for (iDim = 2; iDim < nDim +1;iDim++)
-    								TurboVelocityIn[iMarkerTP -1][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-    						}
-    					}
-    					else{
-    						if (abs(MachTest)< config->GetAverageMachLimit()) {
-    							DensityOut[iMarkerTP -1][iSpan] = TotalAreaDensity / TotalArea;
-    							PressureOut[iMarkerTP -1][iSpan] = TotalAreaPressure / TotalArea;
-    							for (iDim = 0; iDim < nDim; iDim++)
-    								cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-    							ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-    						}else {
-    							MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, PressureOut[iMarkerTP - 1][iSpan], DensityOut[iMarkerTP -1][iSpan]);
-    							TurboVelocityOut[iMarkerTP -1][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - PressureOut[iMarkerTP - 1][iSpan]) / AverageFlux[iMarker][iSpan][0];
-    							for (iDim = 2; iDim < nDim +1;iDim++)
-    								TurboVelocityOut[iMarkerTP -1][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-    						}
-    					}
-    					break;
-
-    				default:
-    					cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
-    					exit(EXIT_FAILURE);
-    					break;
-    				}
-    			}
-    		}
-    	}
+            default:
+              cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
+              exit(EXIT_FAILURE);
+              break;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -15715,571 +15773,46 @@ void CEulerSolver::SpanWiseAverageProcess(CSolver **solver, CGeometry *geometry,
 
   /*--- Compute Outlet Static Pressure if Radial equilibrium is imposed ---*/
 
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-					Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-					if(config->GetBoolNRBC() || config->GetBoolRiemann()){
-						if(config->GetBoolRiemann()){
-							if(config->GetKind_Data_Riemann(Marker_Tag) == RADIAL_EQUILIBRIUM){
-								RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetRiemann_Var1(Marker_Tag)/config->GetPressure_Ref();
-								for (iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
-									Radius2      = geometry->GetTurboRadius(iMarker,iSpan+1);
-									Radius1			= geometry->GetTurboRadius(iMarker,iSpan);
-									Vt2 					= AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
-									RadialEquilibriumPressure[iMarker][iSpan +1] =  RadialEquilibriumPressure[iMarker][iSpan] + AverageDensity[iMarker][iSpan +1]*Vt2/Radius2*(Radius2 - Radius1);
-								}
-								for (iSpan= nSpanWiseSections/2; iSpan > 0; iSpan--){
-									Radius2      = geometry->GetTurboRadius(iMarker,iSpan);
-									Radius1			= geometry->GetTurboRadius(iMarker,iSpan-1);
-									Vt2 					= AverageTurboVelocity[iMarker][iSpan - 1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
-									RadialEquilibriumPressure[iMarker][iSpan - 1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
-								}
-							}
-						}
-						else{
-							if(config->GetKind_Data_NRBC(Marker_Tag) == RADIAL_EQUILIBRIUM){
-								RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetNRBC_Var1(Marker_Tag)/config->GetPressure_Ref();
-								for (iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
-									Radius2      = geometry->GetTurboRadius(iMarker,iSpan+1);
-									Radius1			= geometry->GetTurboRadius(iMarker,iSpan);
-									Vt2 					= AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
-									RadialEquilibriumPressure[iMarker][iSpan +1] =  RadialEquilibriumPressure[iMarker][iSpan] + AverageDensity[iMarker][iSpan +1]*Vt2/Radius2*(Radius2 - Radius1);
-								}
-								for (iSpan= nSpanWiseSections/2; iSpan > 0; iSpan--){
-									Radius2      = geometry->GetTurboRadius(iMarker,iSpan);
-									Radius1			= geometry->GetTurboRadius(iMarker,iSpan-1);
-									Vt2 					= AverageTurboVelocity[iMarker][iSpan - 1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
-									RadialEquilibriumPressure[iMarker][iSpan - 1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-  /*--- Free locally allocated memory ---*/
-  delete [] Velocity;
-  delete [] UnitNormal;
-  delete [] TurboNormal;
-  delete [] TurboVelocity;
-  delete [] TotalVelocity;
-  delete [] TotalAreaVelocity;
-  delete [] TotalFluxes;
-  delete [] TotalMassVelocity;
-  delete [] cartVelocity;
-
-}
-
-
-
-void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
-
-  unsigned long iVertex, iPoint, nVert;
-  unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
-  unsigned short average_process = config->GetKind_AverageProcess();
-  unsigned short performance_average_process = config->GetKind_PerformanceAverageProcess();
-  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *TurboVelocity,
-       TotalMassPressure, TotalMassDensity, *TotalMassVelocity,
-      Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal;
-  string Marker_Tag, Monitoring_Tag;
-  su2double val_init_pressure;
-  unsigned short  iZone     = config->GetiZone();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool grid_movement        = config->GetGrid_Movement();
-  su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, AverageTangGridVelocity, avgVel2,
-  avgTotalEnthaply, *TotalFluxes, RelTangVelocity, *cartVelocity;
-  su2double TotalNu, TotalOmega, TotalKei, TotalMassNu, TotalMassOmega, TotalMassKei, TotalAreaNu, TotalAreaOmega, TotalAreaKei;
-  su2double Nu, Kei, Omega;
-  su2double MachTest, soundSpeed;
-  bool turbulent = (config->GetKind_Solver() == RANS);
-  bool spalart_allmaras = (config->GetKind_Turb_Model() == SA);
-  bool menter_sst       = (config->GetKind_Turb_Model() == SST);
-
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  /*-- Variables declaration and allocation ---*/
-  Velocity 							= new su2double[nDim];
-  UnitNormal 						= new su2double[nDim];
-  TurboNormal						= new su2double[nDim];
-  TurboVelocity				  = new su2double[nDim];
-  TotalVelocity 				= new su2double[nDim];
-  TotalAreaVelocity 		= new su2double[nDim];
-  TotalMassVelocity     = new su2double[nDim];
-  TotalFluxes 					= new su2double[nVar];
-  cartVelocity          = new su2double[nDim];
-
-
-
-#ifdef HAVE_MPI
-  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassDensity, MyTotalMassPressure, *MyTotalFluxes = NULL;
-  su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
-  su2double MyTotalNu, MyTotalKei, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKei, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKei, MyTotalMassOmega;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
-  /*--- Forces initialization for contenitors ---*/
-  for (iVar=0;iVar<nVar;iVar++)
-    TotalFluxes[iVar]= 0.0;
-  for (iDim=0; iDim<nDim; iDim++) {
-    TotalVelocity[iDim]=0.0;
-    TotalAreaVelocity[iDim]=0.0;
-    TotalMassVelocity[iDim]=0.0;
-  }
-
-  TotalDensity = 0.0;
-  TotalPressure = 0.0;
-  TotalAreaPressure=0.0;
-  TotalAreaDensity=0.0;
-  TotalMassPressure=0.0;
-  TotalMassDensity=0.0;
-  TotalNu						= 0.0;
-  TotalOmega        = 0.0;
-  TotalKei          = 0.0;
-  TotalMassNu       = 0.0;
-  TotalMassOmega    = 0.0;
-  TotalMassKei      = 0.0;
-  TotalAreaNu       = 0.0;
-  TotalAreaOmega    = 0.0;
-  TotalAreaKei      = 0.0;
-
-  Nu    = 0.0;
-  Omega = 0.0;
-  Kei   = 0.0;
-
-  for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-        if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-
-          	/*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
-          	for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
-          		iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
-
-          		/*--- Compute the integral fluxes for the boundaries ---*/
-          		if (compressible) {
-          			Pressure = node[iPoint]->GetPressure();
-          			Density = node[iPoint]->GetDensity();
-          			Enthalpy = node[iPoint]->GetEnthalpy();
-          		}
-          		else {
-          			cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
-          			cout << "Press any key to exit..." << endl;
-          			cin.get();
-          			exit(1);
-          		}
-
-
-          		/*--- Normal vector for this vertex (negate for outward convention) ---*/
-          		geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(UnitNormal);
-          		geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
-          		Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
-          		su2double VelNormal = 0.0, VelSq = 0.0;
-          		for (iDim = 0; iDim < nDim; iDim++) {
-          			Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
-          			VelNormal += UnitNormal[iDim]*Velocity[iDim];
-          			VelSq += Velocity[iDim]*Velocity[iDim];
-          		}
-
-          		ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
-
-
-          		/*--- Compute different integral quantities for the boundary of interest ---*/
-
-          		TotalDensity += Density;
-          		TotalPressure += Pressure;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			TotalVelocity[iDim] += Velocity[iDim];
-
-          		TotalAreaPressure += Area*Pressure;
-          		TotalAreaDensity  += Area*Density;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			TotalAreaVelocity[iDim] += Area*Velocity[iDim];
-
-          		TotalMassPressure += Area*(Density*TurboVelocity[0] )*Pressure;
-          		TotalMassDensity  += Area*(Density*TurboVelocity[0] )*Density;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			TotalMassVelocity[iDim] += Area*(Density*TurboVelocity[0] )*Velocity[iDim];
-
-          		TotalFluxes[0] += Area*(Density*TurboVelocity[0]);
-          		TotalFluxes[1] += Area*(Density*TurboVelocity[0]*TurboVelocity[0] + Pressure);
-          		for (iDim = 2; iDim < nDim+1; iDim++)
-          			TotalFluxes[iDim] += Area*(Density*TurboVelocity[0]*TurboVelocity[iDim -1]);
-          		TotalFluxes[nDim+1] += Area*(Density*TurboVelocity[0]*Enthalpy);
-
-
-          		/*--- Compute turbulent integral quantities for the boundary of interest ---*/
-
-          		if(turbulent){
-          			if(menter_sst){
-          				Kei = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-          				Omega = solver[TURB_SOL]->node[iPoint]->GetSolution(1);
-          			}
-          			if(spalart_allmaras){
-          				Nu = solver[TURB_SOL]->node[iPoint]->GetSolution(0);
-          			}
-
-          			TotalKei   += Kei;
-          			TotalOmega += Omega;
-          			TotalNu     += Nu;
-
-          			TotalAreaKei    += Area*Kei;
-          			TotalAreaOmega  += Area*Omega;
-          			TotalAreaNu     += Area*Nu;
-
-          			TotalMassKei    += Area*(Density*TurboVelocity[0] )*Kei;
-          			TotalMassOmega  += Area*(Density*TurboVelocity[0] )*Omega;
-          			TotalMassNu    += Area*(Density*TurboVelocity[0] )*Nu;
-
-          			TotalAreaKei    += Area*Kei;
-          			TotalAreaOmega  += Area*Omega;
-          			TotalAreaNu     += Area*Nu;
-
-          		}
-          	}
-          }
-        }
-      }
-    }
-  }
-
-#ifdef HAVE_MPI
-
-  /*--- Add information using all the nodes ---*/
-
-  MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
-  MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
-  MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
-  MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
-  MyTotalMassDensity   = TotalMassDensity;          TotalMassDensity     = 0;
-  MyTotalMassPressure  = TotalMassPressure;         TotalMassPressure    = 0;
-  MyTotalNu            = TotalNu; 	 								TotalNu              = 0;
-  MyTotalKei           = TotalKei; 	 								TotalKei             = 0;
-  MyTotalOmega         = TotalOmega; 	 							TotalOmega           = 0;
-  MyTotalAreaNu        = TotalAreaNu; 	 					  TotalAreaNu          = 0;
-  MyTotalAreaKei       = TotalAreaKei; 	 						TotalAreaKei         = 0;
-  MyTotalAreaOmega     = TotalAreaOmega; 	 					TotalAreaOmega       = 0;
-  MyTotalMassNu        = TotalMassNu; 	 					  TotalMassNu          = 0;
-  MyTotalMassKei       = TotalMassKei; 	 						TotalMassKei         = 0;
-  MyTotalMassOmega     = TotalMassOmega; 	 					TotalMassOmega       = 0;
-
-
-
-  SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalMassDensity, &TotalMassDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalMassPressure, &TotalMassPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalNu, &TotalNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalKei, &TotalKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalOmega, &TotalOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalAreaNu, &TotalAreaNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalAreaKei, &TotalAreaKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalAreaOmega, &TotalAreaOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalMassNu, &TotalMassNu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalMassKei, &TotalMassKei, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalMassOmega, &TotalMassOmega, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-
-
-  MyTotalFluxes					 = new su2double[nVar];
-  MyTotalVelocity        = new su2double[nDim];
-  MyTotalAreaVelocity    = new su2double[nDim];
-  MyTotalMassVelocity    = new su2double[nDim];
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    MyTotalFluxes[iVar]  = TotalFluxes[iVar];
-    TotalFluxes[iVar]    = 0.0;
-  }
-
-  for (iDim = 0; iDim < nDim; iDim++) {
-    MyTotalVelocity[iDim]             = TotalVelocity[iDim];
-    TotalVelocity[iDim]               = 0.0;
-    MyTotalAreaVelocity[iDim]         = TotalAreaVelocity[iDim];
-    TotalAreaVelocity[iDim]           = 0.0;
-    MyTotalMassVelocity[iDim]         = TotalMassVelocity[iDim];
-    TotalMassVelocity[iDim]           = 0.0;
-  }
-
-  SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MyTotalMassVelocity, TotalMassVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity; delete [] MyTotalMassVelocity;
-
-#endif
-
-
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-
-          TotalArea 					= geometry->GetSpanArea(iMarker,nSpanWiseSections);
-          AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,nSpanWiseSections);
-          nVert								= geometry->GetnTotVertexSpan(iMarker,nSpanWiseSections);
-
-  				/*--- compute normal Mach number as a check for massflow average and mixedout average ---*/
-  				FluidModel->SetTDState_Prho(TotalAreaPressure/TotalArea, TotalAreaDensity / TotalArea);
-          soundSpeed = FluidModel->GetSoundSpeed();
-          MachTest   = TotalFluxes[0]/(TotalAreaDensity*soundSpeed);
-
-          /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
-          switch(average_process){
-          case ALGEBRAIC:
-            AverageDensity[iMarker][nSpanWiseSections] = TotalDensity / nVert;
-            AveragePressure[iMarker][nSpanWiseSections] = TotalPressure / nVert;
-            for (iDim = 0; iDim < nDim; iDim++)
-              AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalVelocity[iDim] / nVert;
-            break;
-
-          case AREA:
-            AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-            AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-            for (iDim = 0; iDim < nDim; iDim++)
-              AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
-            break;
-
-          case MASSFLUX:
-          	if (abs(MachTest) < config->GetAverageMachLimit()) {
-          		AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-          		AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
-          	}else{
-          		AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalFluxes[0];
-          		AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalFluxes[0];
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
-          	}
-            break;
-
-          case MIXEDOUT:
-             for (iVar = 0; iVar<nVar; iVar++){
-               AverageFlux[iMarker][nSpanWiseSections][iVar] = TotalFluxes[iVar]/TotalArea;
-               SpanTotalFlux[iMarker][nSpanWiseSections][iVar] = TotalFluxes[iVar];
-             }
-             val_init_pressure = OldAveragePressure[iMarker][nSpanWiseSections];
-
-             if (abs(MachTest) < config->GetAverageMachLimit()) {
-               AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-               AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-               for (iDim = 0; iDim < nDim; iDim++)
-                 AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
-
-             }else {
-            	 MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, AveragePressure[iMarker][nSpanWiseSections], AverageDensity[iMarker][nSpanWiseSections]);
-            	 AverageTurboVelocity[iMarker][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - AveragePressure[iMarker][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
-            	 for (iDim = 2; iDim < nDim +1;iDim++)
-            		 AverageTurboVelocity[iMarker][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-            	 ComputeBackVelocity(AverageTurboVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-            	 if (AverageDensity[iMarker][nSpanWiseSections]!= AverageDensity[iMarker][nSpanWiseSections] || AveragePressure[iMarker][nSpanWiseSections]!= AveragePressure[iMarker][nSpanWiseSections]){
-            		 val_init_pressure = TotalAreaPressure / TotalArea;
-            		 MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, AveragePressure[iMarker][nSpanWiseSections], AverageDensity[iMarker][nSpanWiseSections]);
-            		 AverageTurboVelocity[iMarker][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - AveragePressure[iMarker][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
-            		 for (iDim = 2; iDim < nDim +1;iDim++)
-            			 AverageTurboVelocity[iMarker][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-            		 ComputeBackVelocity(AverageTurboVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-            	 }
-            	 if (AverageDensity[iMarker][nSpanWiseSections] < 0.0 || AveragePressure[iMarker][nSpanWiseSections] < 0.0){
-            		 val_init_pressure = TotalAreaPressure / TotalArea;
-            		 MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, AveragePressure[iMarker][nSpanWiseSections], AverageDensity[iMarker][nSpanWiseSections]);
-            		 AverageTurboVelocity[iMarker][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - AveragePressure[iMarker][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
-            		 for (iDim = 2; iDim < nDim +1;iDim++)
-            			 AverageTurboVelocity[iMarker][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-            		 ComputeBackVelocity(AverageTurboVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-            	 }
-
-
-
-
-             }
-             break;
-
-          default:
-            cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
-            exit(EXIT_FAILURE);
-            break;
-          }
-
-          /* --- compute static averaged quantities ---*/
-          ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-  				/* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
-  				if (AverageDensity[iMarker][nSpanWiseSections]!= AverageDensity[iMarker][nSpanWiseSections] || AveragePressure[iMarker][nSpanWiseSections]!= AveragePressure[iMarker][nSpanWiseSections]){
-  					cout<<"nan in mixing process routine 1D in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
-  					AverageDensity[iMarker][nSpanWiseSections] = OldAverageDensity[iMarker][nSpanWiseSections];
-  					AveragePressure[iMarker][nSpanWiseSections] = OldAveragePressure[iMarker][nSpanWiseSections];
-  					for(iDim = 0; iDim < nDim;iDim++)
-  						AverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
-  				}
-
-
-  				if (AverageDensity[iMarker][nSpanWiseSections] < 0.0 || AveragePressure[iMarker][nSpanWiseSections] < 0.0){
-  					cout << " negative density or pressure in mixing process 1D in marker " << config->GetMarker_All_TagBound(iMarker)<< endl;
-  					AverageDensity[iMarker][nSpanWiseSections] = OldAverageDensity[iMarker][nSpanWiseSections];
-  					AveragePressure[iMarker][nSpanWiseSections] = OldAveragePressure[iMarker][nSpanWiseSections];
-  					for(iDim = 0; iDim < nDim;iDim++)
-  						AverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
-  				}
-
-  				OldAverageDensity[iMarker][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections];
-  				OldAveragePressure[iMarker][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections];
-  				for(iDim = 0; iDim < nDim;iDim++)
-  					OldAverageTurboVelocity[iMarker][nSpanWiseSections][iDim] = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
-
-
-  				if(turbulent){
-          	switch(average_process){
-          	case ALGEBRAIC:
-          		AverageNu[iMarker][nSpanWiseSections]            = TotalNu/nVert;
-          		AverageKei[iMarker][nSpanWiseSections]           = TotalKei/nVert;
-          		AverageOmega[iMarker][nSpanWiseSections]         = TotalOmega/nVert;
-          		break;
-          	case AREA:
-          		AverageNu[iMarker][nSpanWiseSections]            = TotalAreaNu/TotalArea;
-          		AverageKei[iMarker][nSpanWiseSections]           = TotalAreaKei/TotalArea;
-          		AverageOmega[iMarker][nSpanWiseSections]         = TotalAreaOmega/TotalArea;
-          		break;
-          	case MASSFLUX: case MIXEDOUT:
-          		if (abs(MachTest)< 0.03) {
-          			AverageNu[iMarker][nSpanWiseSections]            = TotalAreaNu/TotalArea;
-          			AverageKei[iMarker][nSpanWiseSections]           = TotalAreaKei/TotalArea;
-          			AverageOmega[iMarker][nSpanWiseSections]         = TotalAreaOmega/TotalArea;
-          		}
-          		else{
-          			AverageNu[iMarker][nSpanWiseSections]            = TotalMassNu/TotalFluxes[0];
-          			AverageKei[iMarker][nSpanWiseSections]           = TotalMassKei/TotalFluxes[0];
-          			AverageOmega[iMarker][nSpanWiseSections]         = TotalMassOmega/TotalFluxes[0];
-
-          		}
-          		break;
-
-          	}
-          }
-
-          /*--- Compute the averaged values for performance computation ---*/
-          switch(performance_average_process){
-          case ALGEBRAIC:
-          	if(marker_flag == INFLOW){
-          		DensityIn[iMarkerTP - 1][nSpanWiseSections] = TotalDensity / nVert;
-          		PressureIn[iMarkerTP - 1][nSpanWiseSections] = TotalPressure / nVert;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			cartVelocity[iDim] = TotalVelocity[iDim] / nVert;
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-          	}
-          	else{
-          		DensityOut[iMarkerTP - 1][nSpanWiseSections] = TotalDensity / nVert;
-          		PressureOut[iMarkerTP - 1][nSpanWiseSections] = TotalPressure / nVert;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			cartVelocity[iDim] = TotalVelocity[iDim] / nVert;
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-          	}
-
-          	break;
-          case AREA:
-          	if(marker_flag == INFLOW){
-          		DensityIn[iMarkerTP - 1][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-          		PressureIn[iMarkerTP - 1][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-          	}
-          	else{
-          		DensityOut[iMarkerTP - 1][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-          		PressureOut[iMarkerTP - 1][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-          		for (iDim = 0; iDim < nDim; iDim++)
-          			cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-          	}
-          	break;
-
-          case MASSFLUX:
-          	if(marker_flag == INFLOW){
-          		if (abs(MachTest) < config->GetAverageMachLimit()) {
-          			DensityIn[iMarkerTP -1][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-          			PressureIn[iMarkerTP -1][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-          			for (iDim = 0; iDim < nDim; iDim++)
-          				cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-          		}else{
-          			DensityIn[iMarkerTP -1][nSpanWiseSections] = TotalMassDensity / TotalFluxes[0];
-          			PressureIn[iMarkerTP -1][nSpanWiseSections] = TotalMassPressure / TotalFluxes[0];
-          			for (iDim = 0; iDim < nDim; iDim++)
-          				cartVelocity[iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
-          		}
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-          	}
-          	else{
-          		if (abs(MachTest) < config->GetAverageMachLimit()) {
-          			DensityOut[iMarkerTP -1][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-          			PressureOut[iMarkerTP -1][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-          			for (iDim = 0; iDim < nDim; iDim++)
-          				cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-          		}else{
-          			DensityOut[iMarkerTP -1][nSpanWiseSections] = TotalMassDensity / TotalFluxes[0];
-          			PressureOut[iMarkerTP -1][nSpanWiseSections] = TotalMassPressure / TotalFluxes[0];
-          			for (iDim = 0; iDim < nDim; iDim++)
-          				cartVelocity[iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
-          		}
-          		ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-          	}
-
-          	break;
-
-          case MIXEDOUT:
-          	for (iVar = 0; iVar<nVar; iVar++){
-          		AverageFlux[iMarker][nSpanWiseSections][iVar] = TotalFluxes[iVar]/TotalArea;
-          		SpanTotalFlux[iMarker][nSpanWiseSections][iVar]= TotalFluxes[iVar];
-          	}
-          	val_init_pressure = OldAveragePressure[iMarker][nSpanWiseSections];
-          	if (marker_flag == INFLOW){
-          		if (abs(MachTest) < config->GetAverageMachLimit()) {
-
-          			DensityIn[iMarkerTP -1][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-          			PressureIn[iMarkerTP -1][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-          			for (iDim = 0; iDim < nDim; iDim++)
-          				cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-          			ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityIn[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-          		}else {
-          			MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, PressureIn[iMarkerTP -1][nSpanWiseSections], DensityIn[iMarkerTP -1][nSpanWiseSections]);
-          			TurboVelocityIn[iMarkerTP -1][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - PressureIn[iMarkerTP -1][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
-          			for (iDim = 2; iDim < nDim +1;iDim++)
-          				TurboVelocityIn[iMarkerTP -1][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-          		}
-          	}
-          	else{
-          		if (abs(MachTest) < config->GetAverageMachLimit()) {
-          			DensityOut[iMarkerTP -1][nSpanWiseSections] = TotalAreaDensity / TotalArea;
-          			PressureOut[iMarkerTP -1][nSpanWiseSections] = TotalAreaPressure / TotalArea;
-          			for (iDim = 0; iDim < nDim; iDim++)
-          				cartVelocity[iDim] = TotalAreaVelocity[iDim] / TotalArea;
-          			ComputeTurboVelocity(cartVelocity, AverageTurboNormal , TurboVelocityOut[iMarkerTP -1][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
-
-          		}else {
-          			MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageTurboNormal, PressureOut[iMarkerTP -1][nSpanWiseSections], DensityOut[iMarkerTP -1][nSpanWiseSections]);
-          			TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - PressureOut[iMarkerTP -1][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
-          			for (iDim = 2; iDim < nDim +1;iDim++)
-          				TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-          		}
-          	}
-          	break;
-
-          default:
-          	cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
-          	exit(EXIT_FAILURE);
-          	break;
+          Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
+          if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+            if(config->GetBoolRiemann()){
+              if(config->GetKind_Data_Riemann(Marker_Tag) == RADIAL_EQUILIBRIUM){
+                RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetRiemann_Var1(Marker_Tag)/config->GetPressure_Ref();
+                for (iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
+                  Radius2      = geometry->GetTurboRadius(iMarker,iSpan+1);
+                  Radius1			= geometry->GetTurboRadius(iMarker,iSpan);
+                  Vt2 					= AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
+                  RadialEquilibriumPressure[iMarker][iSpan +1] =  RadialEquilibriumPressure[iMarker][iSpan] + AverageDensity[iMarker][iSpan +1]*Vt2/Radius2*(Radius2 - Radius1);
+                }
+                for (iSpan= nSpanWiseSections/2; iSpan > 0; iSpan--){
+                  Radius2      = geometry->GetTurboRadius(iMarker,iSpan);
+                  Radius1			= geometry->GetTurboRadius(iMarker,iSpan-1);
+                  Vt2 					= AverageTurboVelocity[iMarker][iSpan - 1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
+                  RadialEquilibriumPressure[iMarker][iSpan - 1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
+                }
+              }
+            }
+            else{
+              if(config->GetKind_Data_NRBC(Marker_Tag) == RADIAL_EQUILIBRIUM){
+                RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetNRBC_Var1(Marker_Tag)/config->GetPressure_Ref();
+                for (iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
+                  Radius2      = geometry->GetTurboRadius(iMarker,iSpan+1);
+                  Radius1			= geometry->GetTurboRadius(iMarker,iSpan);
+                  Vt2 					= AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
+                  RadialEquilibriumPressure[iMarker][iSpan +1] =  RadialEquilibriumPressure[iMarker][iSpan] + AverageDensity[iMarker][iSpan +1]*Vt2/Radius2*(Radius2 - Radius1);
+                }
+                for (iSpan= nSpanWiseSections/2; iSpan > 0; iSpan--){
+                  Radius2      = geometry->GetTurboRadius(iMarker,iSpan);
+                  Radius1			= geometry->GetTurboRadius(iMarker,iSpan-1);
+                  Vt2 					= AverageTurboVelocity[iMarker][iSpan - 1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
+                  RadialEquilibriumPressure[iMarker][iSpan - 1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
+                }
+              }
+            }
           }
         }
       }
@@ -16287,27 +15820,33 @@ void CEulerSolver::AverageProcess1D(CSolver **solver, CGeometry *geometry, CConf
   }
 
   /*--- Free locally allocated memory ---*/
-  //  MPI_Comm_free(&marker_comm);
   delete [] Velocity;
   delete [] UnitNormal;
   delete [] TurboNormal;
   delete [] TurboVelocity;
   delete [] TotalVelocity;
   delete [] TotalAreaVelocity;
-  delete [] TotalMassVelocity;
   delete [] TotalFluxes;
-  delete [] cartVelocity;
+  delete [] TotalMassVelocity;
+  delete [] avgVelocity;
+  delete [] avgAreaVelocity;
+  delete [] avgMassVelocity;
+  delete [] avgMixVelocity;
+  delete [] avgMixTurboVelocity;
+  delete [] TotalVelocity1D;
+  delete [] TotalAreaVelocity1D;
+  delete [] TotalMassVelocity1D;
+  delete [] TotalFluxes1D;
 
 }
-
 
 void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal,
     su2double& pressure_mix, su2double& density_mix) {
 
 
-	int rank = MASTER_NODE;
-	su2double dx, f, df, resdl = 1.0E+05;
-	unsigned short iter = 0, iDim;
+  int rank = MASTER_NODE;
+  su2double dx, f, df, resdl = 1.0E+05;
+  unsigned short iter = 0, iDim;
   su2double relax_factor = config->GetMixedout_Coeff(0);
   su2double toll = config->GetMixedout_Coeff(1);
   unsigned short maxiter = SU2_TYPE::Int(config->GetMixedout_Coeff(2));
@@ -16326,24 +15865,24 @@ void CEulerSolver::MixedOut_Average (CConfig *config, su2double val_init_pressur
 
   while ( iter <= maxiter ) {
 
-  	density_mix = val_Averaged_Flux[0]*val_Averaged_Flux[0]/(val_Averaged_Flux[1] - pressure_mix);
-  	FluidModel->SetTDState_Prho(pressure_mix, density_mix);
-  	enthalpy_mix = FluidModel->GetStaticEnergy() + (pressure_mix)/(density_mix);
+    density_mix = val_Averaged_Flux[0]*val_Averaged_Flux[0]/(val_Averaged_Flux[1] - pressure_mix);
+    FluidModel->SetTDState_Prho(pressure_mix, density_mix);
+    enthalpy_mix = FluidModel->GetStaticEnergy() + (pressure_mix)/(density_mix);
 
-  	FluidModel->ComputeDerivativeNRBC_Prho(pressure_mix, density_mix);
-  	dhdP   = FluidModel->GetdhdP_rho();
-  	dhdrho = FluidModel->Getdhdrho_P();
+    FluidModel->ComputeDerivativeNRBC_Prho(pressure_mix, density_mix);
+    dhdP   = FluidModel->GetdhdP_rho();
+    dhdrho = FluidModel->Getdhdrho_P();
 
-  	vel[0]  = (val_Averaged_Flux[1] - pressure_mix) / val_Averaged_Flux[0];
-  	for (iDim = 1; iDim < nDim; iDim++) {
-  		vel[iDim]  = val_Averaged_Flux[iDim+1] / val_Averaged_Flux[0];
-  	}
+    vel[0]  = (val_Averaged_Flux[1] - pressure_mix) / val_Averaged_Flux[0];
+    for (iDim = 1; iDim < nDim; iDim++) {
+      vel[iDim]  = val_Averaged_Flux[iDim+1] / val_Averaged_Flux[0];
+    }
 
-  	velsq = 0.0;
-  	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  		velsq += vel[iDim]*vel[iDim];
-  	}
-  	f = val_Averaged_Flux[nDim+1] - val_Averaged_Flux[0]*(enthalpy_mix + velsq/2);
+    velsq = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      velsq += vel[iDim]*vel[iDim];
+    }
+    f = val_Averaged_Flux[nDim+1] - val_Averaged_Flux[0]*(enthalpy_mix + velsq/2);
     df = -val_Averaged_Flux[0]*(dhdP - 1/density_mix) - dhdrho*density_mix*density_mix/val_Averaged_Flux[0];
     dx = -f/df;
     resdl = dx/val_init_pressure;
@@ -16403,25 +15942,25 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     tangVelocityIn       = -1.0;
     radialVelocityIn     = -1.0;
     densityOut           = -1.0;
-		pressureOut          = -1.0;
-		normalVelocityOut    = -1.0;
-		tangVelocityOut      = -1.0;
-		radialVelocityOut    = -1.0;
+    pressureOut          = -1.0;
+    normalVelocityOut    = -1.0;
+    tangVelocityOut      = -1.0;
+    radialVelocityOut    = -1.0;
 
-		markerTP          = -1;
+    markerTP          = -1;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
       for (iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
-          	 markerTP            = iMarkerTP;
-          	 densityIn           = DensityIn[iMarkerTP -1][iSpan];
-          	 pressureIn          = PressureIn[iMarkerTP -1][iSpan];
-          	 normalVelocityIn    = TurboVelocityIn[iMarkerTP -1][iSpan][0];
-          	 tangVelocityIn      = TurboVelocityIn[iMarkerTP -1][iSpan][1];
-          	 if (nDim ==3){
-          		 radialVelocityIn  = TurboVelocityIn[iMarkerTP -1][iSpan][2];
-          	 }
+          if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
+            markerTP            = iMarkerTP;
+            densityIn           = DensityIn[iMarkerTP -1][iSpan];
+            pressureIn          = PressureIn[iMarkerTP -1][iSpan];
+            normalVelocityIn    = TurboVelocityIn[iMarkerTP -1][iSpan][0];
+            tangVelocityIn      = TurboVelocityIn[iMarkerTP -1][iSpan][1];
+            if (nDim ==3){
+              radialVelocityIn  = TurboVelocityIn[iMarkerTP -1][iSpan][2];
+            }
 
 
 #ifdef HAVE_MPI
@@ -16435,13 +15974,13 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 
           /*--- retrieve outlet information ---*/
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
-          	densityOut           = DensityOut[iMarkerTP -1][iSpan];
-          	pressureOut          = PressureOut[iMarkerTP -1][iSpan];
-          	normalVelocityOut    = TurboVelocityOut[iMarkerTP -1][iSpan][0];
-          	tangVelocityOut      = TurboVelocityOut[iMarkerTP -1][iSpan][1];
-          	if (nDim ==3){
-          		radialVelocityOut   = TurboVelocityOut[iMarkerTP -1][iSpan][2];
-          	}
+            densityOut           = DensityOut[iMarkerTP -1][iSpan];
+            pressureOut          = PressureOut[iMarkerTP -1][iSpan];
+            normalVelocityOut    = TurboVelocityOut[iMarkerTP -1][iSpan][0];
+            tangVelocityOut      = TurboVelocityOut[iMarkerTP -1][iSpan][1];
+            if (nDim ==3){
+              radialVelocityOut   = TurboVelocityOut[iMarkerTP -1][iSpan][2];
+            }
 
 
 
@@ -16496,16 +16035,16 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
         }
 
         if(TotTurbPerfOut[n2*i] > 0.0){
-        	densityOut        = 0.0;
-        	densityOut        = TotTurbPerfOut[n1*i];
-        	pressureOut       = 0.0;
-        	pressureOut       = TotTurbPerfOut[n1*i+1];
-        	normalVelocityOut = 0.0;
-        	normalVelocityOut = TotTurbPerfOut[n1*i+2];
-        	tangVelocityOut   = 0.0;
-        	tangVelocityOut   = TotTurbPerfOut[n1*i+3];
-        	radialVelocityOut = 0.0;
-        	radialVelocityOut = TotTurbPerfOut[n1*i+4];
+          densityOut        = 0.0;
+          densityOut        = TotTurbPerfOut[n1*i];
+          pressureOut       = 0.0;
+          pressureOut       = TotTurbPerfOut[n1*i+1];
+          normalVelocityOut = 0.0;
+          normalVelocityOut = TotTurbPerfOut[n1*i+2];
+          tangVelocityOut   = 0.0;
+          tangVelocityOut   = TotTurbPerfOut[n1*i+3];
+          radialVelocityOut = 0.0;
+          radialVelocityOut = TotTurbPerfOut[n1*i+4];
         }
       }
 
@@ -16562,12 +16101,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart    = (config->GetRestart() || config->GetRestart_Flow());
-  bool metadata   = config->GetUpdate_Restart_Params();
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  string meta_filename;
-  su2double AoA_, AoS_, BCThrust_;
-  string::size_type position;
-  unsigned long ExtIter_;
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nSpanMax    = config->GetnSpanMaxAllZones();
@@ -16577,100 +16118,38 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-  /*--- Check for a restart file to check if there is a change in the angle of attack
+  
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (!(!restart || (iMesh != MESH_0) || nZone > 1) && metadata) {
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
 
-    meta_filename = "restart.meta";
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    /*--- Open the restart file, throw an error if this fails. ---*/
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
 
-    restart_file.open(meta_filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE) {
-        cout << " Warning: There is no restart metadata file (" << meta_filename.data() << ")."<< endl;
-        cout << " Computation will continue without updating metadata parameters." << endl;
-      }
-    } else {
+    /*--- Modify file name for a dual-time unsteady restart ---*/
 
-      string text_line;
-
-      /*--- Space for extra info (if any) ---*/
-
-      while (getline (restart_file, text_line)) {
-
-        /*--- Angle of attack ---*/
-
-        position = text_line.find ("AOA=",0);
-        if (position != string::npos) {
-          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
-              cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
-            }
-            config->SetAoA(AoA_ + config->GetAoA_Offset());
-          }
-          else {
-            if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoA in the solution file." << endl;
-          }
-        }
-
-        /*--- Sideslip angle ---*/
-
-        position = text_line.find ("SIDESLIP_ANGLE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
-              cout.precision(6);
-              cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
-              cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
-            }
-            config->SetAoS(AoS_ + config->GetAoS_Offset());
-          }
-          else {
-            if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the AoS in the solution file." << endl;
-          }
-        }
-
-        /*--- BCThrust angle ---*/
-
-        position = text_line.find ("INITIAL_BCTHRUST=",0);
-        if (position != string::npos) {
-          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
-          if (config->GetDiscard_InFiles() == false) {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: ACDC will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
-            config->SetInitial_BCThrust(BCThrust_);
-          }
-          else {
-            if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
-              cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
-          }
-        }
-
-        /*--- External iteration ---*/
-
-        position = text_line.find ("EXT_ITER=",0);
-        if (position != string::npos) {
-          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
-          if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
-            config->SetExtIter_OffSet(ExtIter_);
-        }
-        
-      }
-      
-      /*--- Close the restart metadata file. ---*/
-      
-      restart_file.close();
-      
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
     }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    
   }
 
   /*--- Array initialization ---*/
@@ -17215,78 +16694,78 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   nSpanWiseSections = config->GetnSpanWiseSections();
 
-  AverageVelocity 									= new su2double** [nMarker];
-  AverageTurboVelocity 							= new su2double** [nMarker];
-  OldAverageTurboVelocity 					= new su2double** [nMarker];
-  ExtAverageTurboVelocity 					= new su2double** [nMarker];
-  AverageFlux 											= new su2double** [nMarker];
-  SpanTotalFlux 										= new su2double** [nMarker];
-  AveragePressure  									= new su2double* [nMarker];
-  OldAveragePressure  							= new su2double* [nMarker];
-  RadialEquilibriumPressure         = new su2double* [nMarker];
-  ExtAveragePressure  							= new su2double* [nMarker];
-  AverageDensity   									= new su2double* [nMarker];
-  OldAverageDensity   							= new su2double* [nMarker];
-  ExtAverageDensity   							= new su2double* [nMarker];
-  AverageNu  												= new su2double* [nMarker];
-  AverageKei 												= new su2double* [nMarker];
-  AverageOmega 											= new su2double* [nMarker];
-  ExtAverageNu 											= new su2double* [nMarker];
-  ExtAverageKei 										= new su2double* [nMarker];
-  ExtAverageOmega 									= new su2double* [nMarker];
+  AverageVelocity                       = new su2double** [nMarker];
+  AverageTurboVelocity                  = new su2double** [nMarker];
+  OldAverageTurboVelocity               = new su2double** [nMarker];
+  ExtAverageTurboVelocity               = new su2double** [nMarker];
+  AverageFlux                           = new su2double** [nMarker];
+  SpanTotalFlux                         = new su2double** [nMarker];
+  AveragePressure                       = new su2double* [nMarker];
+  OldAveragePressure                    = new su2double* [nMarker];
+  RadialEquilibriumPressure             = new su2double* [nMarker];
+  ExtAveragePressure                    = new su2double* [nMarker];
+  AverageDensity                        = new su2double* [nMarker];
+  OldAverageDensity                     = new su2double* [nMarker];
+  ExtAverageDensity                     = new su2double* [nMarker];
+  AverageNu                             = new su2double* [nMarker];
+  AverageKei                            = new su2double* [nMarker];
+  AverageOmega                          = new su2double* [nMarker];
+  ExtAverageNu                          = new su2double* [nMarker];
+  ExtAverageKei                         = new su2double* [nMarker];
+  ExtAverageOmega                       = new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    AverageVelocity[iMarker] 									= new su2double* [nSpanWiseSections + 1];
-    AverageTurboVelocity[iMarker] 						= new su2double* [nSpanWiseSections + 1];
-    OldAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-    ExtAverageTurboVelocity[iMarker] 					= new su2double* [nSpanWiseSections + 1];
-    AverageFlux[iMarker] 											= new su2double* [nSpanWiseSections + 1];
-    SpanTotalFlux[iMarker] 										= new su2double* [nSpanWiseSections + 1];
-    AveragePressure[iMarker]  								= new su2double [nSpanWiseSections + 1];
-    OldAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-    RadialEquilibriumPressure[iMarker]  			= new su2double [nSpanWiseSections + 1];
-    ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-    AverageDensity[iMarker]   								= new su2double [nSpanWiseSections + 1];
-    OldAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-    ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-    AverageNu[iMarker]   							        = new su2double [nSpanWiseSections + 1];
-    AverageKei[iMarker]   							      = new su2double [nSpanWiseSections + 1];
-    AverageOmega[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-    ExtAverageNu[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-    ExtAverageKei[iMarker]   							    = new su2double [nSpanWiseSections + 1];
-    ExtAverageOmega[iMarker]   							  = new su2double [nSpanWiseSections + 1];
+    AverageVelocity[iMarker]                = new su2double* [nSpanWiseSections + 1];
+    AverageTurboVelocity[iMarker]           = new su2double* [nSpanWiseSections + 1];
+    OldAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
+    ExtAverageTurboVelocity[iMarker]        = new su2double* [nSpanWiseSections + 1];
+    AverageFlux[iMarker]                    = new su2double* [nSpanWiseSections + 1];
+    SpanTotalFlux[iMarker]                  = new su2double* [nSpanWiseSections + 1];
+    AveragePressure[iMarker]                = new su2double [nSpanWiseSections + 1];
+    OldAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
+    RadialEquilibriumPressure[iMarker]      = new su2double [nSpanWiseSections + 1];
+    ExtAveragePressure[iMarker]             = new su2double [nSpanWiseSections + 1];
+    AverageDensity[iMarker]                 = new su2double [nSpanWiseSections + 1];
+    OldAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
+    ExtAverageDensity[iMarker]              = new su2double [nSpanWiseSections + 1];
+    AverageNu[iMarker]                      = new su2double [nSpanWiseSections + 1];
+    AverageKei[iMarker]                     = new su2double [nSpanWiseSections + 1];
+    AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
+    ExtAverageKei[iMarker]                  = new su2double [nSpanWiseSections + 1];
+    ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
 
     for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
-      AverageVelocity[iMarker][iSpan] 												= new su2double [nDim];
-      AverageTurboVelocity[iMarker][iSpan] 										= new su2double [nDim];
-      OldAverageTurboVelocity[iMarker][iSpan] 							  = new su2double [nDim];
-      ExtAverageTurboVelocity[iMarker][iSpan] 								= new su2double [nDim];
-      AverageFlux[iMarker][iSpan] 														= new su2double [nVar];
-      SpanTotalFlux[iMarker][iSpan] 													= new su2double [nVar];
-      AveragePressure[iMarker][iSpan]  												= 0.0;
-      OldAveragePressure[iMarker][iSpan]  										= 0.0;
-      RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
-      ExtAveragePressure[iMarker][iSpan]  										= 0.0;
-      AverageDensity[iMarker][iSpan]   												= 0.0;
-      OldAverageDensity[iMarker][iSpan]   									  = 0.0;
-      ExtAverageDensity[iMarker][iSpan]   										= 0.0;
-      AverageNu[iMarker][iSpan]   										        = 0.0;
-      AverageKei[iMarker][iSpan]   										        = 0.0;
-      AverageOmega[iMarker][iSpan]   										      = 0.0;
-      ExtAverageNu[iMarker][iSpan]   										      = 0.0;
-      ExtAverageKei[iMarker][iSpan]   										    = 0.0;
-      ExtAverageOmega[iMarker][iSpan]   										  = 0.0;
+      AverageVelocity[iMarker][iSpan]           = new su2double [nDim];
+      AverageTurboVelocity[iMarker][iSpan]      = new su2double [nDim];
+      OldAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
+      ExtAverageTurboVelocity[iMarker][iSpan]   = new su2double [nDim];
+      AverageFlux[iMarker][iSpan]               = new su2double [nVar];
+      SpanTotalFlux[iMarker][iSpan]             = new su2double [nVar];
+      AveragePressure[iMarker][iSpan]           = 0.0;
+      OldAveragePressure[iMarker][iSpan]        = 0.0;
+      RadialEquilibriumPressure[iMarker][iSpan] = 0.0;
+      ExtAveragePressure[iMarker][iSpan]        = 0.0;
+      AverageDensity[iMarker][iSpan]            = 0.0;
+      OldAverageDensity[iMarker][iSpan]         = 0.0;
+      ExtAverageDensity[iMarker][iSpan]         = 0.0;
+      AverageNu[iMarker][iSpan]                 = 0.0;
+      AverageKei[iMarker][iSpan]                = 0.0;
+      AverageOmega[iMarker][iSpan]              = 0.0;
+      ExtAverageNu[iMarker][iSpan]              = 0.0;
+      ExtAverageKei[iMarker][iSpan]             = 0.0;
+      ExtAverageOmega[iMarker][iSpan]           = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        AverageVelocity[iMarker][iSpan][iDim] 											= 0.0;
-        AverageTurboVelocity[iMarker][iSpan][iDim] 									= 0.0;
-        OldAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
-        ExtAverageTurboVelocity[iMarker][iSpan][iDim] 							= 0.0;
+        AverageVelocity[iMarker][iSpan][iDim]            = 0.0;
+        AverageTurboVelocity[iMarker][iSpan][iDim]       = 0.0;
+        OldAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
+        ExtAverageTurboVelocity[iMarker][iSpan][iDim]    = 0.0;
       }
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        AverageFlux[iMarker][iSpan][iVar] 													= 0.0;
-        SpanTotalFlux[iMarker][iSpan][iVar] 												= 0.0;
+        AverageFlux[iMarker][iSpan][iVar]       = 0.0;
+        SpanTotalFlux[iMarker][iSpan][iVar]     = 0.0;
       }
     }
   }
@@ -17304,21 +16783,21 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   TurboVelocityOut              = new su2double**[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-    DensityIn               [iMarker] = new su2double [nSpanMax + 1];
-    PressureIn              [iMarker] = new su2double [nSpanMax + 1];
-    TurboVelocityIn         [iMarker] = new su2double*[nSpanMax + 1];
-    DensityOut              [iMarker] = new su2double [nSpanMax + 1];
-    PressureOut             [iMarker] = new su2double [nSpanMax + 1];
-    TurboVelocityOut        [iMarker] = new su2double*[nSpanMax + 1];
+    DensityIn[iMarker]          = new su2double [nSpanMax + 1];
+    PressureIn[iMarker]         = new su2double [nSpanMax + 1];
+    TurboVelocityIn[iMarker]    = new su2double*[nSpanMax + 1];
+    DensityOut[iMarker]         = new su2double [nSpanMax + 1];
+    PressureOut[iMarker]        = new su2double [nSpanMax + 1];
+    TurboVelocityOut[iMarker]   = new su2double*[nSpanMax + 1];
 
 
     for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
-      DensityIn               [iMarker][iSpan] = 0.0;
-      PressureIn              [iMarker][iSpan] = 0.0;
-      TurboVelocityIn  [iMarker][iSpan]           = new su2double[3];
-      DensityOut              [iMarker][iSpan] = 0.0;
-      PressureOut             [iMarker][iSpan] = 0.0;
-      TurboVelocityOut [iMarker][iSpan]           = new su2double[3];
+      DensityIn[iMarker][iSpan]          = 0.0;
+      PressureIn[iMarker][iSpan]         = 0.0;
+      TurboVelocityIn[iMarker][iSpan]    = new su2double[nDim];
+      DensityOut[iMarker][iSpan]         = 0.0;
+      PressureOut[iMarker][iSpan]        = 0.0;
+      TurboVelocityOut [iMarker][iSpan]  = new su2double[nDim];
 
       for (iDim = 0; iDim < 3; iDim++){
         TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
@@ -17326,7 +16805,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       }
     }
   }
-
 
   /*--- Initialize quantities for NR BC ---*/
 
@@ -17446,12 +16924,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-
-  /*--- Perform the MPI communication of the solution ---*/
-
-  //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
-  Set_MPI_Solution(geometry, config);
-  Set_MPI_Solution(geometry, config);
 
 }
 

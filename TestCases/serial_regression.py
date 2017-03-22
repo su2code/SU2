@@ -149,6 +149,17 @@ def main():
     cylinder_lowmach.tol       = 0.00001
     test_list.append(cylinder_lowmach)
 
+    # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
+    poiseuille           = TestCase('poiseuille')
+    poiseuille.cfg_dir   = "navierstokes/poiseuille"
+    poiseuille.cfg_file  = "lam_poiseuille.cfg"
+    poiseuille.test_iter = 10
+    poiseuille.test_vals = [-12.272126, -3.335311, 0.000001, 2.351005] #last 4 columns
+    poiseuille.su2_exec  = "SU2_CFD"
+    poiseuille.timeout   = 1600
+    poiseuille.tol       = 0.00001
+    test_list.append(poiseuille)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -207,7 +218,18 @@ def main():
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
-    
+   
+    # NACA0012 (SA, FUN3D results for finest grid: CL=1.0983, CD=0.01242) with binary restart
+    turb_naca0012_sa_bin           = TestCase('turb_naca0012_sa_bin')
+    turb_naca0012_sa_bin.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sa_bin.cfg_file  = "turb_NACA0012_sa_binary.cfg"
+    turb_naca0012_sa_bin.test_iter = 10
+    turb_naca0012_sa_bin.test_vals = [-12.000763, -9.145363, 1.070528, 0.019417] #last 4 columns
+    turb_naca0012_sa_bin.su2_exec  = "SU2_CFD"
+    turb_naca0012_sa_bin.timeout   = 3200
+    turb_naca0012_sa_bin.tol       = 0.00001
+    test_list.append(turb_naca0012_sa_bin)
+ 
     # NACA0012 (SST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
@@ -391,7 +413,18 @@ def main():
     contadj_rans_naca0012.timeout   = 1600
     contadj_rans_naca0012.tol       = 0.00001
     test_list.append(contadj_rans_naca0012)
-    
+   
+    # Adjoint turbulent NACA0012 with binary restarts
+    contadj_rans_naca0012_bin           = TestCase('contadj_rans_naca0012_bin')
+    contadj_rans_naca0012_bin.cfg_dir   = "cont_adj_rans/naca0012"
+    contadj_rans_naca0012_bin.cfg_file  = "turb_nasa_binary.cfg"
+    contadj_rans_naca0012_bin.test_iter = 100
+    contadj_rans_naca0012_bin.test_vals = [-0.814736,-5.726472,1.9169e+01,-4.6176e-07] #last 4 columns
+    contadj_rans_naca0012_bin.su2_exec  = "SU2_CFD"
+    contadj_rans_naca0012_bin.timeout   = 1600
+    contadj_rans_naca0012_bin.tol       = 0.00001
+    test_list.append(contadj_rans_naca0012_bin)
+ 
     # Adjoint turbulent RAE2822
     contadj_rans_rae2822           = TestCase('contadj_rans_rae2822')
     contadj_rans_rae2822.cfg_dir   = "cont_adj_rans/rae2822"
