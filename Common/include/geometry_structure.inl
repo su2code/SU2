@@ -65,6 +65,8 @@ inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_im
 
 inline unsigned long CGeometry::GetGlobal_nPoint(void) { return 0; }
 
+inline void CGeometry::SetGlobal_nPointDomain(unsigned long val_global_npoint) { }
+
 inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nElem(void) { return 0; }
