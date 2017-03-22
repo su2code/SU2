@@ -83,13 +83,23 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
        marker, which is stored in faceIndicator. */
     if(f0.faceIndicator != f1.faceIndicator) return f0.faceIndicator < f1.faceIndicator;
 
-    /* Both faces belong to the same boundary marker. Make sure that the
+    /* Both faces belong to the same boundary marker. The second comparison is
+       based on the time level of the adjacent element. Note that the time
+       levels of the elements can only differ when time accurate local time
+       stepping is used. */
+    unsigned long ind0 = f0.elemID0 < nVolElemTot ? f0.elemID0 : f0.elemID1;
+    unsigned long ind1 = f1.elemID0 < nVolElemTot ? f1.elemID0 : f1.elemID1;
+
+    if(volElem[ind0].timeLevel != volElem[ind1].timeLevel)
+      return volElem[ind0].timeLevel < volElem[ind1].timeLevel;
+
+    /* Both faces belong to the same time level as well. Make sure that the
        sequence of the faces is identical to the sequence stored in the
        surface connectivity of the boundary. This information is stored in
        either nPolyGrid0 or nPolyGrid1, depending on which side of the face
        the corresponding element is located. */
-    unsigned long ind0 = f0.elemID0 < nVolElemTot ? f0.nPolyGrid1 : f0.nPolyGrid0;
-    unsigned long ind1 = f1.elemID0 < nVolElemTot ? f1.nPolyGrid1 : f1.nPolyGrid0;
+    ind0 = f0.elemID0 < nVolElemTot ? f0.nPolyGrid1 : f0.nPolyGrid0;
+    ind1 = f1.elemID0 < nVolElemTot ? f1.nPolyGrid1 : f1.nPolyGrid0;
 
     return ind0 < ind1;
   }
@@ -117,24 +127,39 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
          not local. */
       if(face0IsLocal == face1IsLocal) {
 
-        /* Both faces are either local or not local. These faces are sorted
-           according to their element ID's in order to increase cache performance.
-           This may be adapted to improve performance. */
+        /* Both faces are either local or not local. Determine the time level
+           of the faces, which is the minimum value of the adjacent volume
+           elements. */
+        const unsigned short timeLevel0 = min(volElem[elemIDMin0].timeLevel,
+                                              volElem[elemIDMax0].timeLevel);
+        const unsigned short timeLevel1 = min(volElem[elemIDMin1].timeLevel,
+                                              volElem[elemIDMax1].timeLevel);
+
+        /* Internal faces with the same status are first sorted according to
+           their time level. Faces with the smallest time level are numbered
+           first. Note this is only relevant for time accurate local time
+           stepping. */
+        if(timeLevel0 != timeLevel1) return timeLevel0 < timeLevel1;
+
+        /* The faces belong to the same time level. They are sorted according
+           to their element ID's in order to increase cache performance. */
         if(elemIDMin0 != elemIDMin1) return elemIDMin0 < elemIDMin1;
         return elemIDMax0 < elemIDMax1;
       }
       else {
 
         /* One face is a local face and the other is not. Make sure that
-           the local faces are numbered last. */
-        if( face0IsLocal ) return false;
-        else               return true;
+           the local faces are numbered first. */
+        if( face0IsLocal ) return true;
+        else               return false;
       }
     }
     else if(elemIDMax0 >= nVolElemTot && elemIDMax1 >= nVolElemTot) {
 
       /* Both faces are non-matching internal faces. Sort them according to
-         their relevant element ID. */
+         their relevant element ID. The time level is not taken into account
+         yet, because non-matching faces are not possible at the moment with
+         time accurate local time stepping. */
       return elemIDMin0 < elemIDMin1;
     }
     else {
@@ -147,9 +172,9 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
     }
   }
 
-  /*--- One face is a boundary face and the other face is an internal face. ---*/
-  /*--- Make sure that the boundary face is numbered first. This can be     ---*/
-  /*--- accomplished by using the > operator for faceIndicator.             ---*/
+  /*--- One face is a boundary face and the other face is an internal face.
+        Make sure that the boundary face is numbered first. This can be
+        accomplished by using the > operator for faceIndicator. ---*/
   return f0.faceIndicator > f1.faceIndicator;
 }
 
@@ -630,10 +655,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*---           that must send their data to other ranks. Note that not    ---*/
   /*---           sending the solution does not mean that the residual can   ---*/
   /*---           be built without communication. It is possible that a face ---*/
-  /*---           is owned by an element on a different rank. In that case   ---*/
-  /*---           residual information is communicated back. This reversed   ---*/
-  /*---           communication is not taken into account in the numbering   ---*/
-  /*---           of the elements.                                           ---*/
+  /*---           is owned by a local element, but it is adjacent to an      ---*/
+  /*---           element owned by a different rank. In that case the data   ---*/
+  /*---           from the neighboring element is communicated and stored in ---*/
+  /*---           a halo element. However, the residual of these internal    ---*/
+  /*---           elements do not receive a contribution computed on a       ---*/
+  /*---           different rank.                                            ---*/
   /*---         - A reverse Cuthill McKee renumbering takes place to obtain  ---*/
   /*---           better cache performance for the face residuals.           ---*/
   /*---                                                                      ---*/
@@ -887,7 +914,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
           volElem[ind].ElementOwnsFaces[k] = true;  // Boundary faces are always owned.
       }
 
-      volElem[ind].lenScale = doubleRecvBuf[i][indD++]; 
+      volElem[ind].lenScale = doubleRecvBuf[i][indD++];
     }
 
     /* The data for the nodes. Loop over these nodes in the buffer and store
@@ -2525,7 +2552,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   }
 
   /*--- It is possible that owned non-matching faces are present in the list.
-        These faces are indicated by and owned face and a faceIndicator of -2.
+        These faces are indicated by an owned face and a faceIndicator of -2.
         To avoid that these faces are removed afterwards, set their
         faceIndicator to -1. ---*/
   for(unsigned long i=0; i<localFaces.size(); ++i) {
@@ -2563,9 +2590,11 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /* Sort localFaces again, but now such that the boundary faces are numbered
      first, followed by the matching faces and at the end of localFaces the
      non-matching faces are stored. In order to carry out this sorting the
-     functor SortFacesClass is used for comparison. */
+     functor SortFacesClass is used for comparison. Within the categories
+     the sorting depends on the time levels of the adjacent volume elements
+     of the face. */
   sort(localFaces.begin(), localFaces.end(),
-       SortFacesClass(nVolElemOwned, nVolElemTot));
+       SortFacesClass(nVolElemOwned, nVolElemTot, volElem.data()));
 
   /*--- Carry out a possible swap of side 0 and side 1 of the faces. This is
         done for the following reasons (in order of importance).
@@ -2632,10 +2661,10 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
     }
   }
 
-  /*--- For triangular faces with a pyramid as an adjacent element, it    ---*/
-  /*--- must be made sure that the first corner point does not coincide   ---*/
-  /*--- with the top of the pyramid. Otherwise it is impossible to carry  ---*/
-  /*--- the transformation to the standard pyramid element.               ---*/
+  /*--- For triangular faces with a pyramid as an adjacent element, it must be
+        made sure that the first corner point does not coincide with the top of
+        the pyramid. Otherwise it is impossible to carry the transformation to
+        the standard pyramid element. ---*/
   for(unsigned long i=0; i<localFaces.size(); ++i) {
 
     /* Check for a triangular face. */
@@ -2702,16 +2731,25 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
     }
   }
 
-  /*--- Determine the number of matching and non-matching internal faces. ---*/
-  /*--- For the matching faces, also determine the number of faces        ---*/
-  /*--- between an owned element and a halo element.                      ---*/
-  nMatchingFacesWithHaloElem = 0;
-  unsigned long nMatchingFaces = 0, nNonMatchingFaces = 0;
+  /*--- Determine the number of matching and non-matching internal faces.
+        For the matching faces, determine these numbers per time level
+        and also make a distinction between internal faces and faces that
+        involve a halo element. ---*/
+  const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+  nMatchingFacesInternal.assign(nTimeLevels+1, 0);
+  nMatchingFacesWithHaloElem.assign(nTimeLevels+1, 0);
+
+  unsigned long nNonMatchingFaces = 0;
   for(unsigned long i=0; i<localFaces.size(); ++i) {
     if(localFaces[i].faceIndicator == -1) {
-      if(localFaces[i].elemID1 < nVolElemTot) {
-        ++nMatchingFaces;
-        if(localFaces[i].elemID1 >= nVolElemOwned) ++nMatchingFacesWithHaloElem;
+      const unsigned long e0 = localFaces[i].elemID0;
+      const unsigned long e1 = localFaces[i].elemID1;
+
+      if(e1 < nVolElemTot) {
+        const unsigned short timeLevel = min(volElem[e0].timeLevel,
+                                             volElem[e1].timeLevel);
+        if(e1 < nVolElemOwned) ++nMatchingFacesInternal[timeLevel+1];
+        else                   ++nMatchingFacesWithHaloElem[timeLevel+1];
       }
       else ++nNonMatchingFaces;
     }
@@ -2729,6 +2767,15 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 #endif
   }
 
+  /* Put nMatchingFacesInternal and nMatchingFacesWithHaloElem in
+     cumulative storage format. */
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    nMatchingFacesInternal[i+1] += nMatchingFacesInternal[i];
+
+  nMatchingFacesWithHaloElem[0] = nMatchingFacesInternal[nTimeLevels];
+  for(unsigned short i=0; i<nTimeLevels; ++i)
+    nMatchingFacesWithHaloElem[i+1] += nMatchingFacesWithHaloElem[i];
+
   /*---------------------------------------------------------------------------*/
   /*--- Step 3: Create the local face based data structure for the internal ---*/
   /*---         faces. These are needed for the computation of the surface  ---*/
@@ -2736,7 +2783,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*---------------------------------------------------------------------------*/
 
   /* Allocate the memory for the matching faces. */
-  matchingFaces.resize(nMatchingFaces);
+  matchingFaces.resize(nMatchingFacesWithHaloElem[nTimeLevels]);
 
   /*--- Loop over the volume elements to determine the maximum number
         of DOFs for the volume elements. Allocate the memory for the
@@ -2918,11 +2965,16 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*---         that belong to the physical boundaries.                     ---*/
   /*---------------------------------------------------------------------------*/
 
-  /*--- Loop over the boundary markers. The periodic boundaries are skipped,
-        because these are not physical boundaries and are treated via the
-        halo elements, which are already in place. ---*/
+  /* Loop over the boundary markers. ---*/
   unsigned long indBegMarker = 0;
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    /* Initialize the number of surface elements per time level to zero. */
+    boundaries[iMarker].nSurfElem.assign(nTimeLevels+1, 0);
+
+    /*--- The periodic boundaries are skipped, because these are not physical
+          boundaries and are treated via the halo elements. These have already
+          been created. ---*/
     if( !boundaries[iMarker].periodicBoundary ) {
 
       /* Determine the end index for this marker in localFaces. Note that
@@ -2939,6 +2991,14 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       /*--- Loop over range in localFaces for this boundary marker and create
             the connectivity information, which is stored in surfElem. ---*/
       for(unsigned long i=indBegMarker; i<indEndMarker; ++i) {
+
+         /* Determine the time level of the adjacent element and increment
+            the number of surface elements for this time level. The +1 is there,
+            because this vector will be put in cumulative storage format
+            afterwards. */
+         ii = i - indBegMarker;
+         const unsigned short timeLevel = volElem[surfElem[ii].volElemID].timeLevel;
+         ++boundaries[iMarker].nSurfElem[timeLevel+1];
 
          /*--- Determine the number of DOFs of the face for both the grid
                and solution. This value depends on the face type. ---*/
@@ -2972,7 +3032,6 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         const unsigned long v0 = localFaces[i].elemID0;
 
         /* Allocate the memory for the connectivities of the face. */
-        ii = i - indBegMarker;
         surfElem[ii].DOFsGridFace.resize(sizeDOFsGridFace);
         surfElem[ii].DOFsSolFace.resize(sizeDOFsSolFace);
 
@@ -3047,6 +3106,10 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
       /* Set indBegMarker to indEndMarker for the next marker. */
       indBegMarker = indEndMarker;
+
+      /* Put boundaries[iMarker].nSurfElem in cumulative storage. */
+      for(unsigned short i=0; i<nTimeLevels; ++i)
+        boundaries[iMarker].nSurfElem[i+1] += boundaries[iMarker].nSurfElem[i];
     }
   }
 }
@@ -5036,7 +5099,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
     /* Determine the length scale of the element, for which the length
        scale of the reference element, 2.0, must be taken into account. */
     const su2double maxJacFaces = volElem[i].lenScale;
-    volElem[i].lenScale         = 2.0*minJacElem/maxJacFaces; 
+    volElem[i].lenScale         = 2.0*minJacElem/maxJacFaces;
   }
 
   /*-------------------------------------------------------------------*/
@@ -5781,7 +5844,7 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig           *config,
     }
   }
 
-  timeElement.InverseMatrix(nTimeDOFs, MassTime); 
+  timeElement.InverseMatrix(nTimeDOFs, MassTime);
 
   /* Compute the gradient of the Vandermonde matrix in the time DOFs. */
   vector<su2double> VDr(nTimeDOFs*nTimeDOFs);

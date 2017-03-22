@@ -11798,13 +11798,21 @@ protected:
   unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */
   CVolumeElementFEM *volElem;   /*!< \brief Array of the local volume elements, including halos. */
+
+  const unsigned long *nVolElemOwnedPerTimeLevel;    /*!< \brief Number of owned local volume elements
+                                                                 per time level. Cumulative storage. */
+  const unsigned long *nVolElemInternalPerTimeLevel; /*!< \brief Number of internal local volume elements per
+                                                                 time level. Internal means that the solution
+                                                                 data does not need to be communicated. */
   
   unsigned long nMeshPoints;    /*!< \brief Number of mesh points in the local part of the grid. */
   const CPointFEM *meshPoints;  /*!< \brief Array of the points of the FEM mesh. */
   
-  unsigned long                 nMatchingInternalFacesWithHaloElem;  /*!< \brief Number of local matching internal faces 
-                                                                                 between an owned and a halo element. */
-  unsigned long                 nMatchingInternalFaces;              /*!< \brief Number of local matching internal faces. */
+  const unsigned long *nMatchingInternalFacesWithHaloElem;  /*!< \brief Number of local matching internal faces per time level
+                                                                        between an owned and a halo element. Cumulative storage. */
+  const unsigned long *nMatchingInternalFacesLocalElem;     /*!< \brief Number of local matching internal faces per time level
+                                                                        between local elements. Cumulative storage. */
+
   const CInternalFaceElementFEM *matchingInternalFaces;              /*!< \brief Array of the local matching internal faces. */
   
   const CBoundaryFEM *boundaries;     /*!< \brief Array of the boundaries of the FEM mesh. */
@@ -11850,8 +11858,16 @@ protected:
                                            residual of the faces. Cumulative storage. */
   vector<unsigned long> entriesResFaces;  /*!< \brief The corresponding entries in the residual of the faces. */
   
-  vector<unsigned long> startLocResFacesMarkers; /*!< \brief The starting location in the residual of the
-                                                  faces for the boundary markers. */
+  vector<vector<unsigned long> > startLocResFacesMarkers; /*!< \brief The starting location in the residual of the
+                                                                      faces for the time levels of the boundary
+                                                                      markers. */
+
+  vector<unsigned long> startLocResInternalFacesLocalElem; /*!< \brief The starting location in the residual of the
+                                                                       faces for the time levels of internal faces
+                                                                       between locally owned elements. */
+  vector<unsigned long> startLocResInternalFacesWithHaloElem; /*!< \brief The starting location in the residual of the
+                                                                          faces for the time levels of internal faces
+                                                                          between an owned and a halo element. */
   
   bool symmetrizingTermsPresent;    /*!< \brief Whether or not symmetrizing terms are present in the
                                      discretization. */
@@ -11917,10 +11933,13 @@ public:
   
   /*!
    * \brief Set the fluid solver nondimensionalization.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] config      - Definition of the particular problem.
+   * \param[in] iMesh       - Index of the mesh in multigrid computations.
+   * \param[in] writeOutput - Whether or not output must be written.
    */
-  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+  void SetNondimensionalization(CConfig        *config,
+                                unsigned short iMesh,
+                                const bool     writeOutput);
   
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
