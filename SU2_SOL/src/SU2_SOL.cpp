@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  bool fem_solver = false;
 
   /*--- MPI initialization ---*/
 
@@ -98,6 +99,13 @@ int main(int argc, char *argv[]) {
     config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
+    /*--- Determine whether or not the FEM solver is used, which decides the
+     type of geometry classes that are instantiated. ---*/
+    fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)         ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_RANS)          ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_LES));
+
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
     CGeometry *geometry_aux = NULL;
@@ -108,13 +116,24 @@ int main(int argc, char *argv[]) {
 
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+    if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
+    else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
 
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-
+    if( fem_solver ) {
+      switch( config_container[iZone]->GetKind_FEM_Flow() ) {
+        case DG: {
+          geometry_container[iZone] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
+          break;
+        }
+      }
+    }
+    else {
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    }
+    
     /*--- Deallocate the memory of geometry_aux ---*/
 
     delete geometry_aux;
@@ -136,6 +155,22 @@ int main(int argc, char *argv[]) {
 
     if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
     geometry_container[iZone]->SetGlobal_to_Local_Point();
+
+    if (fem_solver) {
+
+      /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
+       define all virtual functions in the base class CGeometry. ---*/
+      CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[iZone]);
+
+      /*--- Determine the standard elements for the volume elements. ---*/
+      if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+      DGMesh->CreateStandardVolumeElements(config_container[iZone]);
+
+      /*--- Create the face information needed to compute the contour integral
+       for the elements in the Discontinuous Galerkin formulation. ---*/
+      if (rank == MASTER_NODE) cout << "Creating face information." << endl;
+      DGMesh->CreateFaces(config_container[iZone]);
+    }
 
   }
 
@@ -251,6 +286,19 @@ int main(int argc, char *argv[]) {
       iExtIter++;
       if (StopCalc) break;
     }
+
+  } else if (fem_solver) {
+
+    /*--- Steady simulation: merge the single solution file. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Definition of the solution class ---*/
+
+      solver_container[iZone] = new CBaselineSolver_FEM(geometry_container[ZONE_0], config_container[ZONE_0]);
+      solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+    }
+
+    output->SetBaselineResult_Files_FEM(solver_container, geometry_container, config_container, 0, nZone);
 
   }
   else {
