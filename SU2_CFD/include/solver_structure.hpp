@@ -10646,6 +10646,8 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                            unsigned short iMesh, unsigned long Iteration);
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
    * \param[in] geometry - Geometric definition of the problem.

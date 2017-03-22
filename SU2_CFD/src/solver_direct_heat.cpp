@@ -856,11 +856,89 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
 }
 
+void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                               unsigned short iMesh, unsigned long Iteration) {
+
+  unsigned short iDim, iMarker;
+  unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
+  su2double *Normal, Area, Vol, laminar_viscosity, Prandtl_Lam, thermal_conductivity, Lambda;
+  su2double Local_Delta_Time, Local_Delta_Time_Visc, K_v = 0.25;
+
+  laminar_viscosity = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam = config->GetPrandtl_Lam();
+  thermal_conductivity = laminar_viscosity/Prandtl_Lam;
+
+  /*--- Compute spectral radius based on thermal conductivity ---*/
+
+  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    node[iPoint]->SetMax_Lambda_Inv(0.0);
+    node[iPoint]->SetMax_Lambda_Visc(0.0);
+  }
+
+  /*--- Loop interior edges ---*/
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    /*--- get the edge's normal vector to compute the edge's area ---*/
+    Normal = geometry->edge[iEdge]->GetNormal();
+    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+    Lambda = thermal_conductivity*Area*Area;
+
+    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
+
+  }
+  /*--- Loop boundary edges ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+      /*--- Point identification, Normal vector and area ---*/
+
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+      Lambda = thermal_conductivity*Area*Area;
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+
+    }
+  }
+
+  /*--- Each element uses their own speed, steady state simulation ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    Vol = geometry->node[iPoint]->GetVolume();
+
+    if (Vol != 0.0) {
+      //Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+      Local_Delta_Time = 1.E6;
+      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+      //Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+      if (Local_Delta_Time > config->GetMax_DeltaTime())
+        Local_Delta_Time = config->GetMax_DeltaTime();
+      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+    }
+    else {
+      node[iPoint]->SetDelta_Time(0.0);
+    }
+
+  }
+}
+
 void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
-  su2double Delta, Vol;
+  su2double Min_Delta, Delta, Delta_Flow, Vol;
   bool flow = (config->GetKind_Solver() != HEAT_EQUATION);
 
 
@@ -882,11 +960,13 @@ void CHeatSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
     if(flow) {
-      Delta = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
-      Jacobian.AddVal2Diag(iPoint, Delta);
+      Delta = Vol / node[iPoint]->GetDelta_Time();
+      Delta_Flow = Vol / (config->GetCFLRedCoeff_Turb()*solver_container[FLOW_SOL]->node[iPoint]->GetDelta_Time());
+      Min_Delta = min(Delta, Delta_Flow);
+      Jacobian.AddVal2Diag(iPoint, Min_Delta);
     }
     else {
-      Delta = Vol;
+      Delta = Vol / node[iPoint]->GetDelta_Time();
       Jacobian.AddVal2Diag(iPoint, Delta);
     }
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
