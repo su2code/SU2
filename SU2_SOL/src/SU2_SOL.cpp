@@ -375,13 +375,16 @@ for (iZone = 0; iZone < nZone; iZone++) {
 						}
                   solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
 					}
-					//Extracting flow data on the FWH surface as well as static pressure at the observer locations (for validation only)
-					 FWH_container[ZONE_0]->SetAeroacoustic_Analysis(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0],CFD_pressure_file);
+					if (config_container[ZONE_0]->GetKind_ObjFunc() != NOISE  ){  // && config_container[ZONE_0]->GetKind_ObjFunc() == NOISE
+						if (rank == MASTER_NODE)
+							cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
+						output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
+					} else {
 
-					if (rank == MASTER_NODE  && config_container[ZONE_0]->GetKind_ObjFunc() != NOISE  ){  // && config_container[ZONE_0]->GetKind_ObjFunc() == NOISE
-						cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
-					output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
-				}
+						//Extracting flow data on the FWH surface as well as static pressure at the observer locations (for validation only)
+					 	FWH_container[ZONE_0]->SetAeroacoustic_Analysis(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0],CFD_pressure_file);
+
+					}
 				}
 
 				iExtIter++;
