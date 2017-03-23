@@ -517,6 +517,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
+  virtual void Spatial_Residual_DG(CGeometry *geometry,  CSolver **solver_container,
+                                   CNumerics **numerics, CConfig *config,
+                                   unsigned short iMesh);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
   virtual void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                          CNumerics **numerics, CConfig *config,
                                          unsigned short iMesh, unsigned short RunTime_EqSystem);  
@@ -3643,51 +3655,6 @@ public:
    */
   virtual void SetFreeStream_Solution(CConfig *config);
 
-  /*!
-   * \brief A virtual member
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iStep - Current step in the time accurate local time
-                        stepping algorithm, if appropriate.
-   */
-  virtual void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                  CConfig *config, unsigned short iMesh, unsigned short iStep);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  virtual void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                               CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  virtual void Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] useADER - Whether or not the ADER residual must be multiplied.
-   */
-  virtual void MultiplyResidualByInverseMassMatrix(CConfig    *config,
-                                                   const bool useADER);
-  
   /*!
    * \brief A virtual member.
    */
@@ -12199,6 +12166,18 @@ public:
                                 bool            &syncTimeReached);
 
   /*!
+   * \brief Function, which computes the spatial residual for the DG discretization.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Spatial_Residual_DG(CGeometry *geometry,  CSolver **solver_container,
+                           CNumerics **numerics, CConfig *config,
+                           unsigned short iMesh);
+
+  /*!
    * \brief Function, to carry out the space time integration for ADER
             with time accurate local time stepping.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -12231,7 +12210,8 @@ public:
                                            unsigned short iTime);
 
   /*!
-   * \brief Compute the artificial viscosity for shock capturing in DG.
+   * \brief Compute the artificial viscosity for shock capturing in DG. It is a virtual
+            function, because this function is overruled for Navier-Stokes.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -12240,11 +12220,12 @@ public:
    * \param[in] iStep - Current step in the time accurate local time
                         stepping algorithm, if appropriate.
    */
-  void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh, unsigned short iStep);
+  virtual void Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                  CConfig *config, unsigned short iMesh, unsigned short iStep);
 
   /*!
-   * \brief Compute the volume contributions to the spatial residual.
+   * \brief Compute the volume contributions to the spatial residual. It is a virtual
+            function, because this function is overruled for Navier-Stokes.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -12253,8 +12234,8 @@ public:
    * \param[in] iStep - Current step in the time accurate local time
                         stepping algorithm, if appropriate.
    */
-  void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CConfig *config, unsigned short iMesh, unsigned short iStep);
+  virtual void Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                               CConfig *config, unsigned short iMesh, unsigned short iStep);
 
   /*!
    * \brief Source term integration.

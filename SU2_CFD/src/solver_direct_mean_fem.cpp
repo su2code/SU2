@@ -101,11 +101,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Array initialization ---*/
   FluidModel = NULL;
 
@@ -2143,10 +2138,96 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
   else syncTimeReached = false;
 }
 
+void CFEM_DG_EulerSolver::Spatial_Residual_DG(CGeometry *geometry,  CSolver **solver_container,
+                                              CNumerics **numerics, CConfig *config,
+                                              unsigned short iMesh) {
+  su2double tick = 0.0;
+
+  /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
+  config->Tick(&tick);
+  Shock_Capturing_DG(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+  config->Tock(tick,"Shock_Capturing",3);
+
+  /*--- Compute the volume portion of the residual. ---*/
+  config->Tick(&tick);
+  Volume_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+  config->Tock(tick,"Volume_Residual",3);
+
+  /*--- Compute source term residuals ---*/
+  config->Tick(&tick);
+  Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
+  config->Tock(tick,"Source_Residual",3);
+
+  /*--- Boundary conditions ---*/
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case EULER_WALL:
+        config->Tick(&tick);
+        BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Euler_Wall",3);
+        break;
+      case FAR_FIELD:
+        config->Tick(&tick);
+        BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Far_Field",3);
+        break;
+      case SYMMETRY_PLANE:
+        config->Tick(&tick);
+        BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Sym_Plane",3);
+        break;
+      case INLET_FLOW:
+        config->Tick(&tick);
+        BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Inlet",3);
+        break;
+      case OUTLET_FLOW:
+        config->Tick(&tick);
+        BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Outlet",3);
+        break;
+      case ISOTHERMAL:
+        config->Tick(&tick);
+        BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Isothermal_Wall",3);
+        break;
+      case HEAT_FLUX:
+        config->Tick(&tick);
+        BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_HeatFlux_Wall",3);
+        break;
+      case CUSTOM_BOUNDARY:
+        config->Tick(&tick);
+        BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        config->Tock(tick,"BC_Custom",3);
+        break;
+      case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
+        break;
+      default:
+        cout << "BC not implemented." << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+    }
+  }
+
+  /*--- Compute surface portion of the residual. ---*/
+  config->Tick(&tick);
+  Surface_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, 0);
+  config->Tock(tick,"Surface_Residual",3);
+
+  /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
+  config->Tick(&tick);
+  MultiplyResidualByInverseMassMatrix(config, false);
+  config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
+}
+
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
-
   su2double tick = 0.0;
 
   /*--- Preprocessing ---*/

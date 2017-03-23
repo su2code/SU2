@@ -796,10 +796,14 @@ inline void CSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_c
 inline void CSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 							        unsigned short iMesh, unsigned long Iteration) { }	
 
-inline void CSolver:: CheckTimeSynchronization(CConfig         *config,
-                                               const su2double TimeSync,
-                                               su2double       &timeEvolved,
-                                               bool            &syncTimeReached) {}
+inline void CSolver::CheckTimeSynchronization(CConfig         *config,
+                                              const su2double TimeSync,
+                                              su2double       &timeEvolved,
+                                              bool            &syncTimeReached) {}
+
+inline void CSolver::Spatial_Residual_DG(CGeometry *geometry,  CSolver **solver_container,
+                                         CNumerics **numerics, CConfig *config,
+                                         unsigned short iMesh) {}
 
 inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                CNumerics **numerics, CConfig *config,
@@ -2076,17 +2080,6 @@ inline void CSolver::SetSlidingState(unsigned short val_marker, unsigned long va
 
 inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return 0; }
 
-inline void CSolver::Shock_Capturing_DG(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver::Surface_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}
-
-inline void CSolver:: MultiplyResidualByInverseMassMatrix(CConfig    *config,
-                                                          const bool useADER) {}
 inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component){ SlidingState[val_marker][val_vertex][val_state] = component; }
 
 inline su2double CTurbSolver::GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state) { return SlidingState[val_marker][val_vertex][val_state]; }
