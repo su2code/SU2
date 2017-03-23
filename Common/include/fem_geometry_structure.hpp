@@ -780,6 +780,8 @@ private:
                                                                      element per time level. Cumulative storage format. */
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
 
+  map<unsigned long, unsigned long> Global_to_Local_Point; /*!< \brief Global-local mapping for the DOFs. */
+
 public:
 
  /*!
@@ -906,6 +908,30 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   void SetSendReceive(CConfig *config);
+
+  /*!
+   * \brief Set the value of the total number of points globally in the simulation.
+   * \param[in] val_global_npoint - Global number of points in the mesh (excluding halos).
+   */
+  void SetGlobal_nPointDomain(unsigned long val_global_npoint);
+
+  /*!
+   * \brief Retrieve total number of nodes in a simulation across all processors (excluding halos).
+   * \returns Total number of nodes in a simulation across all processors (excluding halos).
+   */
+  unsigned long GetGlobal_nPointDomain();
+
+  /*!
+   * \brief Set the local index that correspond with the global numbering index.
+   */
+  void SetGlobal_to_Local_Point();
+
+  /*!
+   * \brief Get the local index that correspond with the global numbering index.
+   * \param[in] val_ipoint - Global point.
+   * \returns Local index that correspond with the global index, -1 if not found on the current rank.
+   */
+  long GetGlobal_to_Local_Point(unsigned long val_ipoint);
 
 private:
  /*!

@@ -101,10 +101,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-  /*--- Determine the restart information. ---*/
-  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  string filename = config->GetSolution_FlowFileName();
-
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -365,6 +361,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   nDOFsGlobal = nDOFsLocOwned;
 #endif
 
+  /*--- Store the number of DOFs in the geometry class in case of restart. ---*/
+  geometry->SetnPointDomain(nDOFsLocOwned);
+  geometry->SetGlobal_nPointDomain(nDOFsGlobal);
+
   /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
   VecDeltaTime.resize(nVolElemOwned);
   VecResDOFs.resize(nVar*nDOFsLocTot);
@@ -573,151 +573,17 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     }
   }
 
-  /*--- Check for a restart and set up the variables at each node
-        appropriately. Coarse multigrid levels will be intitially set to
-        the farfield values bc the solver will immediately interpolate
-        the solution from the finest mesh to the coarser levels. ---*/
-  if (!restart || (iMesh != MESH_0)) {
+  /*--- Start the solution from the free-stream state ---*/
 
-    /*--- Start the solution from the free-stream state ---*/
-
-    unsigned long ii = 0;
-    for(unsigned long i=0; i<nDOFsLocTot; ++i) {
-      for(unsigned short j=0; j<nVar; ++j, ++ii) {
-        VecSolDOFs[ii] = ConsVarFreeStream[j];
-      }
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<nDOFsLocTot; ++i) {
+    for(unsigned short j=0; j<nVar; ++j, ++ii) {
+      VecSolDOFs[ii] = ConsVarFreeStream[j];
     }
-
-  } else {
-
-    /*--- Open the restart file, throw an error if this fails. ---*/
-    ifstream restart_file;
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      if (rank == MASTER_NODE)
-        cout << "There is no flow restart file " << filename.data() << "!!!"<< endl;
-      exit(EXIT_FAILURE);
-    }
-
-    /*--- Create the map from the global DOF ID to the local index. ---*/
-    map<unsigned long, unsigned long> mapGlobal2Local;
-
-    unsigned long ii = 0;
-    for(unsigned long i=0; i<nVolElemOwned; ++i) {
-      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
-        mapGlobal2Local[volElem[i].offsetDOFsSolGlobal+j] = ii;
-      }
-    }
-
-    /*--- The first line is the header ---*/
-    string text_line;
-    getline (restart_file, text_line);
-
-    /*--- Read all lines in the restart file ---*/
-    unsigned long iDOF_Global = 0, nDOF_Read = 0;
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-
-      /*--- Check if this DOF must be stored on this rank. ---*/
-      map<unsigned long, unsigned long>::const_iterator MI;
-      MI = mapGlobal2Local.find(iDOF_Global);
-      if(MI != mapGlobal2Local.end()) {
-
-        /*--- This DOF must be stored on this rank. Retrieve the local index
-              and read the data from file. ---*/
-        const unsigned long iDOF_Local = nVar*MI->second;
-
-        unsigned long index;
-        point_line >> index;
-        for(unsigned short i=0; i<nDim; ++i) {
-          su2double dull_val;
-          point_line >> dull_val;
-        }
-
-        for(unsigned short i=0; i<nVar; ++i) {
-          point_line >> VecSolDOFs[iDOF_Local+i];
-        }
-
-        /*--- Update the local counter nDOF_Read. ---*/
-        ++nDOF_Read;
-      }
-
-      /*--- Update the counter iDOF_Global. ---*/
-      ++iDOF_Global;
-    }
-
-    /*--- Detect a wrong solution file ---*/
-    unsigned short rbuf_NotMatching = 0;
-    if(nDOF_Read < nDOFsLocOwned) rbuf_NotMatching = 1;
-
-#ifdef HAVE_MPI
-    unsigned short sbuf_NotMatching = rbuf_NotMatching;
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
-#endif
-
-    if (rbuf_NotMatching != 0) {
-      if (rank == MASTER_NODE) {
-        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-        cout << "It could be empty lines at the end of the file." << endl << endl;
-      }
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-    }
-
-    /*--- Close the restart file ---*/
-    restart_file.close();
-  }
-
-  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-  unsigned long nBadDOFs = 0;
-
-  if( compressible ) {
-
-    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
-      const unsigned long ii = nVar*i;
-      su2double DensityInv = 1.0/VecSolDOFs[ii];
-
-      su2double Velocity2 = 0.0;
-      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-        const su2double vel = VecSolDOFs[ii+iDim]*DensityInv;
-        Velocity2 += vel*vel;
-      }
-
-      su2double StaticEnergy = VecSolDOFs[ii+nDim+1]*DensityInv - 0.5*Velocity2;
-
-      FluidModel->SetTDState_rhoe(VecSolDOFs[ii], StaticEnergy);
-      su2double Pressure = FluidModel->GetPressure();
-      su2double Temperature = FluidModel->GetTemperature();
-
-      /*--- Use the values at the infinity if the state is not physical. ---*/
-      if((Pressure < 0.0) || (VecSolDOFs[ii] < 0.0) || (Temperature < 0.0)) {
-        for(unsigned short j=0; j<nVar; ++j) {
-          VecSolDOFs[ii+j] = ConsVarFreeStream[j];
-        }
-
-        ++nBadDOFs;
-      }
-    }
-  }
-
-  /*--- Warning message about non-physical points ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
-#ifdef HAVE_MPI
-    unsigned long nBadDOFsLoc = nBadDOFs;
-    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-
-    if((rank == MASTER_NODE) && (nBadDOFs != 0))
-      cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
   }
 
   /*--- Set up the persistent communication for the conservative variables and
-        the reverse communication for the residuals of the halo elements. ---*/
+   the reverse communication for the residuals of the halo elements. ---*/
   Prepare_MPI_Communication(DGGeometry, config);
 
   /*--- Initialize boolean for deallocating MPI comm. structure. ---*/
@@ -726,6 +592,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /*--- Perform the MPI communication of the solution. ---*/
   Initiate_MPI_Communication();
   Complete_MPI_Communication();
+
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
@@ -4929,6 +4796,146 @@ void CFEM_DG_EulerSolver::RinglebSolution(const su2double *coor,
 }
 
 #endif
+
+void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+
+  /*--- Restart the solution from file information ---*/
+  unsigned short iVar;
+  unsigned long index;
+
+  string UnstExt, text_line;
+  ifstream restart_file;
+
+  const bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+
+  string restart_filename = config->GetSolution_FlowFileName();
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned short rbuf_NotMatching = 0;
+  unsigned long nDOF_Read = 0;
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) {
+        VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
+      }
+      /*--- Update the local counter nDOF_Read. ---*/
+      ++nDOF_Read;
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+    }
+
+  }
+
+  /*--- Detect a wrong solution file ---*/
+  if(nDOF_Read < nDOFsLocOwned) rbuf_NotMatching = 1;
+
+#ifdef HAVE_MPI
+  unsigned short sbuf_NotMatching = rbuf_NotMatching;
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
+  unsigned long nBadDOFs = 0;
+
+  if( compressible ) {
+
+    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+      const unsigned long ii = nVar*i;
+      su2double DensityInv = 1.0/VecSolDOFs[ii];
+
+      su2double Velocity2 = 0.0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double vel = VecSolDOFs[ii+iDim]*DensityInv;
+        Velocity2 += vel*vel;
+      }
+
+      su2double StaticEnergy = VecSolDOFs[ii+nDim+1]*DensityInv - 0.5*Velocity2;
+
+      FluidModel->SetTDState_rhoe(VecSolDOFs[ii], StaticEnergy);
+      su2double Pressure = FluidModel->GetPressure();
+      su2double Temperature = FluidModel->GetTemperature();
+
+      /*--- Use the values at the infinity if the state is not physical. ---*/
+      if((Pressure < 0.0) || (VecSolDOFs[ii] < 0.0) || (Temperature < 0.0)) {
+        for(unsigned short j=0; j<nVar; ++j) {
+          VecSolDOFs[ii+j] = ConsVarFreeStream[j];
+        }
+
+        ++nBadDOFs;
+      }
+    }
+  }
+
+  /*--- Warning message about non-physical points ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+    unsigned long nBadDOFsLoc = nBadDOFs;
+    SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+    if((rank == MASTER_NODE) && (nBadDOFs != 0))
+      cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
+  }
+
+  /*--- Perform the MPI communication of the solution. ---*/
+  Initiate_MPI_Communication();
+  Complete_MPI_Communication();
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+  
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
+}
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
 
