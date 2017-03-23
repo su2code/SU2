@@ -3063,7 +3063,6 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 
 void CDriver::Output(unsigned long ExtIter) {
 
-  unsigned short KindSolver = config_container[ZONE_0]->GetKind_Solver();
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
