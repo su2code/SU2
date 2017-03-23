@@ -14315,7 +14315,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
     NewSort[iPoint] = iPoint;
   }
 	
-  /*--
+  
   unsigned long Index = OldnPoint-1;
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (bound[iMarker][0]->GetVTK_Type() == VERTEX) {
@@ -14330,7 +14330,7 @@ void CPeriodicGeometry::SetMeshFile(CGeometry *geometry, CConfig *config, string
       }
     }
   }
-	--*/
+	
 	
   /*--- Write dimension, number of elements and number of points ---*/
   output_file << "NDIME= " << nDim << endl;
