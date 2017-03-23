@@ -2697,6 +2697,13 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
+//    cout << "*****************************************************************" << endl;
+//    cout << "Cell " << l << ":" << endl;
+//    cout << "Num Int Points = " << nInt << endl;
+//    cout << "Num DOFs       = " << nDOFs << endl;
+//    cout << "Num metrics    = " << nMetricPerPoint << endl;
+
+
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Interpolate the solution to the integration points of    ---*/
     /*---         the element.                                             ---*/
@@ -2704,6 +2711,10 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
 
     /* Easier storage of the solution variables for this element. */
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+//    for(unsigned short int k=0; k<nDOFs; k++)
+//    {
+//      cout << "Sol at DOF[" << k << "] = " << solDOFs[0] << ", " << solDOFs[1] << ", " << solDOFs[2] << ", " << solDOFs[3] << endl;
+//    }
 
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
@@ -2713,11 +2724,14 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
     /*---         integration weight, in the integration points.           ---*/
-    /*------------------------------------------------------------------------*/ 
+    /*------------------------------------------------------------------------*/
 
     /* Loop over the integration points. */
     unsigned short ll = 0;
     for(unsigned short i=0; i<nInt; ++i) {
+//      cout << "------------- Int Point " << i << " --------------" << endl;
+//      cout << "Weight at int = " << weights[i] << endl;
+//      cout << "Sol at int[" << i << "] = " << solInt[0] << ", " << solInt[1] << ", " << solInt[2] << ", " << solInt[3] << endl;
 
       /*--- Compute the velocities and pressure in this integration point. ---*/
       const su2double *sol = solInt + nVar*i;
@@ -2737,8 +2751,13 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
       /* Easier storage of the metric terms in this integration point. The +1
          is present, because the first element of the metric terms is the
          Jacobian in the integration point. */
+
+      const su2double jacobian = *(volElem[l].metricTerms.data() + i*nMetricPerPoint);
       const su2double *metricTerms = volElem[l].metricTerms.data()
                                    + i*nMetricPerPoint + 1;
+
+//      cout << "Jacobian = " << jacobian << endl;
+//      cout << "Metrics  = " << metricTerms[0] << ", " << metricTerms[1] << ", " << metricTerms[2] << ", " << metricTerms[3] << endl;
 
       /*--- Loop over the number of dimensions to compute the fluxes in the
             direction of the parametric coordinates. ---*/
@@ -2747,21 +2766,40 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
         /* Pointer to the metric terms for this direction. */
         const su2double *metric = metricTerms + iDim*nDim;
 
+
+
         /* Compute the velocity in the direction of the current parametric coordinate. */
         su2double vPar = 0.0;
         for(unsigned short jDim=0; jDim<nDim; ++jDim)
+        {
           vPar += vel[jDim]*metric[jDim];
+          //cout << "Metric[" << iDim << "][" << jDim << "] = " << metric[jDim] << endl;
+        }
+
+        //cout << "Dim " << iDim << " parametric velocity = " << vPar << endl;
+        //cout << "Fluxes in param dir " << iDim << " = ";
 
         /* Compute the flux, multiplied by minus the integration weight. */
         fluxes[ll++] = -weights[i]*sol[0]*vPar;
+        //cout << fluxes[ll-1] << ", ";
 
         for(unsigned short jDim=0; jDim<nDim; ++jDim)
+        {
           fluxes[ll++] = -weights[i]*(sol[jDim+1]*vPar + Pressure*metric[jDim]);
+          //cout << fluxes[ll-1] << ", ";
+        }
 
         fluxes[ll++] = -weights[i]*(sol[nDim+1] + Pressure)*vPar;
+        //cout << fluxes[ll-1] << endl;
       }
-    }
+      //cout << "fluxes at int[ " << i << "] = " << fluxes[i*4] << ", " << fluxes[i*4+1] << ", " << fluxes[i*4+2] << ", " << fluxes[i*4+3] << endl;
 
+    }
+    //cout << "ll = " << ll << endl;
+//    for(unsigned short int k=0; k<ll; k++)
+//    {
+//	cout << "flux[" << k << "] = " << fluxes[k] << endl;
+//    }
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the contribution to the residuals from the       ---*/
     /*---         integration over the volume element.                     ---*/
@@ -2770,58 +2808,65 @@ void CFEM_DG_EulerSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
+//    cout << "matDerBasisIntTrans:" << endl;
+//    for(unsigned short int k=0; k<nDOFs; k++)
+//      {
+//	for(unsigned short int p=0; p<nInt*nDim; p++)
+//	  {
+//	    cout << matDerBasisIntTrans[p*nDOFs+k] << ", ";
+//	  }
+//	cout << endl;
+//      }
+
     /* Call the general function to carry out the matrix product. */
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
 
-    if(rank == MASTER_NODE) {
-      if(l == 1500){
-	 cout << "Cell " << l << " vol residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
-      }
-    }
+//    cout << "residuals:" << endl;
+//    for(unsigned short int k=0; k<nDOFs; k++)
+//      {
+//	for(unsigned short int p=0; p<nVar; p++)
+//	  {
+//	    cout << res[p*nDOFs+k] << ", ";
+//	  }
+//	cout << endl;
+//      }
+
+
   }
 }
 
-void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
-                                          CSolver **solver_container,
-                                          CNumerics *numerics,
-                                          CNumerics *second_numerics,
-                                          CConfig *config,
-                                          unsigned short iMesh) {
+void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh){
 
   /*--- Stub for source term integration. ---*/
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   bool body_force = config->GetBody_Force();
 
   if (body_force) {
 
+    /* Get body force from config structure */
     su2double *body_force_vector = config->GetBody_Force_Vector();
 
     /*--- Set the pointers for the local arrays. ---*/
     su2double *solInt = VecTmpMemory.data();
-    su2double *sources = solInt + nIntegrationMax*nVar;
-    su2double tick = 0.0;
+    su2double *sources = solInt + nIntegrationMax * nVar;
+    double tick = 0.0;
 
     /* Store the number of metric points per integration point, which depends
-       on the number of dimensions. */
-    const unsigned short nMetricPerPoint = nDim*nDim + 1;
+     on the number of dimensions. */
+    const unsigned short nMetricPerPoint = nDim * nDim + 1;
 
     /*--- Loop over the owned volume elements ---*/
-    for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    for (unsigned long l = 0; l < nVolElemOwned; ++l) {
 
       /* Get the data from the corresponding standard element. */
-      const unsigned short ind             = volElem[l].indStandardElement;
-      const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
-      const unsigned short nDOFs           = volElem[l].nDOFsSol;
-      const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
-      const su2double *lagBasisIntTrans    = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
-      const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+      const unsigned short ind = volElem[l].indStandardElement;
+      const unsigned short nInt = standardElementsSol[ind].GetNIntegration();
+      const unsigned short nDOFs = volElem[l].nDOFsSol;
+      const su2double *matBasisInt = standardElementsSol[ind].GetBasisFunctionsIntegration();
+      const su2double *lagBasisIntTrans = standardElementsSol[ind].GetBasisFunctionsIntegrationTrans();
+      const su2double *weights = standardElementsSol[ind].GetWeightsIntegration();
 
       /*------------------------------------------------------------------------*/
       /*--- Step 1: Interpolate the density to the integration points of     ---*/
@@ -2829,7 +2874,7 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
       /*------------------------------------------------------------------------*/
 
       /* Easier storage of the solution variables for this element. */
-      su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+      su2double *solDOFs = VecSolDOFs.data() + nVar * volElem[l].offsetDOFsSolLocal;
 
       /* Call the general function to carry out the matrix product. */
       config->GEMM_Tick(&tick);
@@ -2838,58 +2883,80 @@ void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry,
 
       /* Loop over the integration points. */
       unsigned short ll = 0;
-      for(unsigned short i=0; i<nInt; ++i) {
+      for (unsigned short i = 0; i < nInt; ++i) {
 
         /* Create pointer to solution at integration points */
-    	const su2double *sol = solInt + nVar*i;
+        const su2double *sol = solInt + nVar * i;
 
-    	/* Easier storage of the metric terms in this integration point. The +1
-    	   is present, because the first element of the metric terms is the
-    	   Jacobian in the integration point. */
-    	const su2double *metricTerms = volElem[l].metricTerms.data()
-    	                                   + i*nMetricPerPoint;
-    	const su2double jacobian = metricTerms[0];
+        /* Easier storage of the metric terms in this integration point. The +1
+         is present, because the first element of the metric terms is the
+         Jacobian in the integration point. */
+        const su2double *metricTerms = volElem[l].metricTerms.data() + i * nMetricPerPoint;
+        const su2double jacobian = metricTerms[0];
 
-    	/* Store inverse of the density */
-        const su2double DensityInv = 1.0/sol[0];
-        su2double vel[3] = {0.0, 0.0, 0.0};
-        for(unsigned short iDim=0; iDim<nDim; ++iDim){
-          vel[iDim] = sol[iDim+1]*DensityInv;
+        /* Store inverse of the density */
+        const su2double DensityInv = 1.0 / sol[0];
+        su2double vel[3] = { 0.0, 0.0, 0.0 };
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+          vel[iDim] = sol[iDim + 1] * DensityInv;
         }
 
         /* Compute the mass source (zero) */
         sources[ll++] = 0.0;
 
         /* Compute the momentum sources in each cartesian direction */
-        for(unsigned short iDim=0; iDim<nDim; ++iDim){
-          sources[ll++] = -weights[i]*jacobian*body_force_vector[iDim];
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+          sources[ll++] = -weights[i] * jacobian * body_force_vector[iDim];
         }
 
         /* Compute the contribution to the energy from the force */
-        for(unsigned short iDim=0; iDim<nDim; ++iDim){
-          sources[ll] += -weights[i]*jacobian*body_force_vector[iDim]*vel[iDim];
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+          sources[ll] += -weights[i] * jacobian * body_force_vector[iDim] * vel[iDim];
         }
         ll++;
       }
+
       /*------------------------------------------------------------------------*/
       /*--- Step 3: Compute the contribution to the residuals from the       ---*/
       /*---         integration over the volume element.                     ---*/
       /*------------------------------------------------------------------------*/
 
       /* Easier storage of the residuals for this volume element. */
-      su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+      su2double *res = VecResDOFs.data() + nVar * volElem[l].offsetDOFsSolLocal;
+      su2double resTemp[nDOFs * nVar];
+
+      cout << "matBasisInt:" << endl;
+      for (unsigned short int k = 0; k < nDOFs; k++) {
+        for (unsigned short int p = 0; p < nInt; p++) {
+          cout << matBasisInt[p * nDOFs + k] << ", ";
+        }
+        cout << endl;
+      }
+
+      cout << "lagBasisIntTrans:" << endl;
+      for (unsigned short int k = 0; k < nDOFs; k++) {
+        for (unsigned short int p = 0; p < nInt; p++) {
+          cout << lagBasisIntTrans[p * nDOFs + k] << ", ";
+        }
+        cout << endl;
+      }
 
       /* Call the general function to carry out the matrix product. */
       config->GEMM_Tick(&tick);
-      DenseMatrixProduct(nDOFs, nVar, nInt, lagBasisIntTrans, sources , res);
+      DenseMatrixProduct(nDOFs, nVar, nInt, matBasisInt, sources, resTemp);
       config->GEMM_Tock(tick, "Source_Residual2", nDOFs, nVar, nInt);
-      if(rank == MASTER_NODE) {
-//          cout << "nDofs = " << nDOFs << endl;
-//          cout << "nVar  = " << nVar << endl;
-//          cout << "nInt  = " << nInt << endl;
-//          cout << "nDim  = " << nDim << endl;
-          cout << "Cell " << l << " source residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
+
+      for (unsigned short int k = 0; k < nDOFs * nVar; k++) {
+        res[k] = res[k] = resTemp[k];
+      }
+
+      cout << "residuals:" << endl;
+      for (unsigned short int k = 0; k < nDOFs; k++) {
+        for (unsigned short int p = 0; p < nVar; p++) {
+          cout << resTemp[p * nDOFs + k] << ", ";
         }
+        cout << endl;
+      }
     }
   }
 }
@@ -6150,9 +6217,9 @@ void CFEM_DG_NSSolver::Volume_Residual(CGeometry *geometry, CSolver **solver_con
     config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
     config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, nVar, nInt*nDim);
-    if(rank == MASTER_NODE) {
-	 cout << "Cell " << l << " vol residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
-    }
+//    if(rank == MASTER_NODE) {
+//	 cout << "Cell " << l << " vol residuals = " << res[0] << ", " << res[1] << ", " << res[2] << ", " << res[3] << endl;
+//    }
   }
 }
 
