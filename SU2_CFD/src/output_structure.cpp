@@ -1435,11 +1435,8 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
   
-  bool Wrt_Halo = config->GetWrt_Halo(), isPeriodic;
-  
   /*--- Local variables needed for merging the geometry with MPI. ---*/
   
-  unsigned long iVertex, iMarker;
   unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
   unsigned long MaxLocalPoint = 0;
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
@@ -1508,8 +1505,7 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
    by the master and sorted by global index in one large n-dim. array. ---*/
   
   /*--- Loop over this partition to collect the coords of the local points. ---*/
-  su2double *Coords_Local; jPoint = 0;
-  
+  jPoint = 0;
   for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
     
     /*--- Check for halos and write only if requested ---*/
@@ -1971,7 +1967,7 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
   
   int iProcessor;
   unsigned short NODES_PER_ELEMENT;
-  unsigned long iPoint, iNode, jNode;
+  unsigned long iNode, jNode;
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
   
@@ -2156,8 +2152,8 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
   SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #else
-  for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
+  for (unsigned long iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
+  for (unsigned long iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
 #endif
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
@@ -2630,7 +2626,7 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
   
   unsigned short NODES_PER_ELEMENT;
   
-  unsigned long iPoint, iNode, jNode;
+  unsigned long iNode, jNode;
   unsigned long iElem = 0;
   unsigned long nLocalElem = 0, nElem_Total = 0;
   
@@ -2795,8 +2791,8 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
   SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #else
-  for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
-  for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
+  for (unsigned long iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
+  for (unsigned long iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
 #endif
   
   /*--- The master node unpacks and sorts the connectivity. ---*/
@@ -4372,7 +4368,6 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
   
   unsigned long iPoint = 0, jPoint = 0;
-  su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
   unsigned long Buffer_Send_nPoint[1], *Buffer_Recv_nPoint = NULL;
   unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
@@ -4386,42 +4381,6 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-  
-  bool grid_movement  = (config->GetGrid_Movement());
-  bool flow           = (( config->GetKind_Solver() == EULER             ) ||
-                         ( config->GetKind_Solver() == NAVIER_STOKES     ) ||
-                         ( config->GetKind_Solver() == RANS              ) ||
-                         ( config->GetKind_Solver() == FEM_EULER         ) ||
-                         ( config->GetKind_Solver() == FEM_NAVIER_STOKES ) ||
-                         ( config->GetKind_Solver() == FEM_RANS          ) ||
-                         ( config->GetKind_Solver() == FEM_LES           ) ||
-                         ( config->GetKind_Solver() == ADJ_EULER         ) ||
-                         ( config->GetKind_Solver() == ADJ_NAVIER_STOKES ) ||
-                         ( config->GetKind_Solver() == ADJ_RANS          )   );
-  
-  unsigned short iDim;
-  unsigned short nDim = geometry->GetnDim();
-  su2double RefAreaCoeff = config->GetRefAreaCoeff();
-  su2double Gamma = config->GetGamma();
-  su2double RefVel2;
-  
-  /*--- Set the non-dimensionalization ---*/
-  if (flow) {
-    if (grid_movement) {
-      Gas_Constant = config->GetGas_ConstantND();
-      Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
-      Mach_Motion = config->GetMach_Motion();
-      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
-    }
-    else {
-      RefVel2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
-    }
-    RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
-    RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-    factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
-  }
   
   /*--- Prepare send buffers for the conservative variables. Need to
    find the total number of conservative variables and also the
@@ -8655,7 +8614,6 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
   int rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
-  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
@@ -9038,11 +8996,9 @@ void COutput::SetBaselineResult_Files_FEM(CSolver **solver, CGeometry **geometry
                                       unsigned long iExtIter, unsigned short val_nZone) {
 
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
   unsigned short iZone;
@@ -13349,20 +13305,7 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
   unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE;
   unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
 
-  su2double RefAreaCoeff = config->GetRefAreaCoeff();
-  su2double RefVel2;
-  su2double RefDensity, RefPressure = 0.0, factor = 0.0;
-
   stringstream varname;
-
-  /*--- Set the non-dimensionalization for coefficients. ---*/
-
-  RefVel2 = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-    RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
-  RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
-  RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
-  factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
 
   /*--- Use a switch statement to decide how many solver containers we have
    in this zone for output. ---*/
