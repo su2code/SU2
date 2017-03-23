@@ -1433,15 +1433,12 @@ public:
    * additional routines from CNucleationModel
    */
 
-  su2double  GetNucleationRate ();
+  void       SetNucleation_GrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
-  su2double  GetGrowthRate ();
+  su2double  GetNucleation_Rate ();
 
-  virtual su2double  GetCriticalRadius ();
+  su2double  GetGrowth_Rate ();
 
-  virtual void       SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
-
-  virtual void       SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
 
   virtual void       ComputeResidual_HeatMassTransfer(su2double *Primitive, su2double *Residual, su2double **Jacobian_i);
 
@@ -2316,19 +2313,6 @@ public:
    */
   ~CUpw_2phaseHill_Rus(void);
 
-
-  // routines from CNucleationModel
-
-  su2double  GetNucleationRate ();
-
-  su2double  GetGrowthRate ();
-
-  su2double  GetCriticalRadius ();
-
-  void  SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
-
-  void  SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
-
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
@@ -2374,20 +2358,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CUpw_2phaseQMOM(void);
-
-
-  // routines from CNucleationModel
-
-  su2double  GetNucleationRate ();
-
-  su2double  GetGrowthRate ();
-
-  su2double  GetCriticalRadius ();
-
-  void  SetNucleationRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
-
-  void  SetGrowthRate (su2double P, su2double T, su2double rho, su2double h, su2double k, su2double mu, su2double *V_Liquid);
-
 
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.

@@ -48,6 +48,7 @@
 #include <stdio.h>
 
 #include "fluid_model.hpp"
+#include "liquid_phase_model.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
 #include "../../Common/include/gauss_structure.hpp"
@@ -8364,17 +8365,6 @@ public:
   void Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                        unsigned short iMesh);
 
-  /*!
-   * \brief Compute the viscous residuals for the turbulent equation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
@@ -9112,13 +9102,7 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
-  
 
-  /*!
-   * \brief Set the solution using the Freestream values.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFreeStream_Solution(CConfig *config);
   
 };
 
@@ -9247,12 +9231,6 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
 
-
-  /*!
-   * \brief Set the solution using the Freestream values.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFreeStream_Solution(CConfig *config);
 
 };
 

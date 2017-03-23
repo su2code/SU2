@@ -526,11 +526,9 @@ void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 
 	      numerics->Set2phaseVar(Solution_i, Solution_j);
 
-
 	      /* liquid properties stored in Primitive_Liquid*/
 
-	      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, liquid, config);
-	      Primitive_Liquid = node[iPoint]->GetLiquidPrim();
+	      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config);
 
 	    }
 
@@ -1329,8 +1327,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
       /* liquid properties stored in Primitive_Liquid*/
 
-      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, liquid, config);
-      Primitive_Liquid = node[iPoint]->GetLiquidPrim();
+      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config);
 
     }
 
@@ -1411,8 +1408,6 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     
     numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
 
-    Primitive_Liquid = node[iPoint]->GetLiquidPrim();
-
     /*--- Set volume ---*/
     
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -1420,7 +1415,7 @@ void C2phase_HillSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
     
     /*--- Compute the source term ---*/
     
-    numerics->ComputeResidual(Residual, Jacobian_i, Primitive_Liquid, config);
+    numerics->ComputeResidual(Residual, Jacobian_i, Primitive_Liquid, NULL, config);
     
     /*--- Subtract residual and the Jacobian ---*/
     
@@ -2008,8 +2003,7 @@ void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 
       /* liquid properties stored in Primitive_Liquid*/
 
-      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, liquid, config);
-      Primitive_Liquid = node[iPoint]->GetLiquidPrim();
+      node[iPoint]->SetLiquidPrim(FlowPrimVar_i, Solution_i, config);
 
     }
 

@@ -48,6 +48,7 @@
 #include "math.h"
 
 #include "../../Common/include/datatype_structure.hpp"
+#include "../../Common/include/config_structure.hpp"
 
 using namespace std;
 
@@ -60,13 +61,20 @@ class CNucleationModel {
 
 protected: su2double J, G;
 
+		   su2double Gamma, Gas_Constant;
+		   double    Boltzmann, MolMass;
+
+
+
 public:
 
 
     /*!
      * \brief Constructor of the class.
      */
-    CNucleationModel(void);
+    CNucleationModel();
+
+    CNucleationModel(CConfig *config);
 
     /*!
      * \brief Destructor of the class.
@@ -107,8 +115,6 @@ protected:
 
   su2double Theta, J, G;
   su2double Lambda, Ni, Pr;
-  su2double Gamma, Gas_Constant;
-  double    Boltzmann, MolMass;
 
 public:
   
@@ -116,7 +122,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CClassicalTheory(CConfig *config);
+  CClassicalTheory();
   
   /*!
    * \brief Destructor of the class.

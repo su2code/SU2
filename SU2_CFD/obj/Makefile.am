@@ -64,6 +64,10 @@ libSU2Core_sources = \
   ../include/integration_structure.inl \
   ../include/driver_structure.hpp \
   ../include/iteration_structure.hpp \
+  ../include/liquid_phase_model.hpp \
+  ../include/liquid_phase_model.inl \
+  ../include/nucleation_model.hpp \
+  ../include/nucleation_model.inl \
   ../include/numerics_structure.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
@@ -85,9 +89,12 @@ libSU2Core_sources = \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
+  ../src/liquid_phase_model.cpp\
+  ../src/nucleation_model.cpp\
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_mean_inc.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
+  ../src/numerics_direct_2phase.cpp \
   ../src/numerics_direct_poisson.cpp \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
@@ -110,6 +117,7 @@ libSU2Core_sources = \
   ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
+  ../src/solver_direct_2phase.cpp \
   ../src/solver_direct_poisson.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
@@ -127,6 +135,7 @@ libSU2Core_sources = \
   ../src/variable_adjoint_mean_inc.cpp \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
+  ../src/variable_direct_2phase.cpp \
   ../src/variable_direct_poisson.cpp \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \

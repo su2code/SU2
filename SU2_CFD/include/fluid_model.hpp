@@ -82,7 +82,7 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
 
 CViscosityModel *LaminarViscosity;            /*!< \brief Laminar Viscosity Model */
 CConductivityModel *ThermalConductivity;    /*!< \brief Thermal Conductivity Model */
-CLiquidModel *Liquid_Prop;    /*!< \brief Thermal Conductivity Model */
+CLiquidModel *Liquid_Prop;
 
 public:
 
@@ -268,6 +268,18 @@ public:
      */
 
     virtual void SetTDState_Ps (su2double P, su2double s );
+
+    void SetLiquidProp (su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
+
+    su2double GetLiquidDensity ();
+    su2double GetMixtureDensity ();
+    su2double GetLiquidTemperature ();
+    su2double GetLiquidEnthalpy ();
+    su2double GetSurfaceTension ();
+    su2double GetTsat ();
+    su2double GetPsat ();
+    su2double GetCriticalRadius ();
+    su2double GetRadius ();
 
 };
 

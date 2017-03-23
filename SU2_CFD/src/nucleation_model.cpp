@@ -32,8 +32,17 @@
 
 #include "../include/nucleation_model.hpp"
 
+CNucleationModel::CNucleationModel() {
 
-CNucleationModel::CNucleationModel(void) {
+}
+
+CNucleationModel::CNucleationModel(CConfig *config) {
+
+	Gamma = config->GetGamma();
+	Gas_Constant = config -> GetGas_ConstantND();
+
+	Boltzmann = 1.38064852/config->GetBoltzmann_Ref();
+	MolMass   = 18.0 * 1.66054e-27 / config ->GetMass_Ref();
 
 
 }
@@ -42,13 +51,7 @@ CNucleationModel::~CNucleationModel(void) { }
 
 
 
-CClassicalTheory::CClassicalTheory(CConfig *config) : CNucleationModel() {
-
-	Gamma = config->GetGamma();
-	Gas_Constant = config -> GetGas_ConstantND();
-
-	Boltzmann = 1.38064852/config->GetBoltzmann_Ref();
-	MolMass   = 18.0 * 1.66054e-27 / config ->GetMass_Ref();
+CClassicalTheory::CClassicalTheory() : CNucleationModel() {
 
 }
 

@@ -32,7 +32,6 @@
  */
 
 #include "../include/fluid_model.hpp"
-#include "../include/liquid_phase_model.hpp"
 
 
 CFluidModel::CFluidModel(void) {

@@ -55,6 +55,19 @@ inline su2double CFluidModel::GetLaminarViscosity () {
         return Mu;
 }
 
+inline void CFluidModel::SetLiquidProp (su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {
+        Liquid_Prop->Set_LiquidProp(P, T, rho, h_v, Two_Phase_Var);
+}
+
+inline su2double CFluidModel::GetLiquidDensity () { return Liquid_Prop->Get_LiquidDensity();}
+inline su2double CFluidModel::GetMixtureDensity () { return Liquid_Prop->Get_MixtureDensity();}
+inline su2double CFluidModel::GetLiquidTemperature () { return Liquid_Prop->Get_LiquidTemperature();}
+inline su2double CFluidModel::GetLiquidEnthalpy () { return Liquid_Prop->Get_LiquidEnthalpy();}
+inline su2double CFluidModel::GetSurfaceTension () { return Liquid_Prop->Get_SurfaceTension();}
+inline su2double CFluidModel::GetTsat () { return Liquid_Prop->Get_Tsat();}
+inline su2double CFluidModel::GetPsat () { return Liquid_Prop->Get_Psat();}
+inline su2double CFluidModel::GetCriticalRadius () { return Liquid_Prop->Get_CriticalRadius();}
+inline su2double CFluidModel::GetRadius () { return Liquid_Prop->Get_Radius();}
 
 inline su2double CFluidModel::Getdmudrho_T () {
         return LaminarViscosity->Getdmudrho_T();

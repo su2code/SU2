@@ -61,23 +61,15 @@ C2phaseVariable::C2phaseVariable(unsigned short val_nDim, unsigned short val_nva
   }
   
 }
+/*
+C2phaseVariable::SetSource(su2double S) {Source = S; };
 
-su2double C2phaseVariable::GetMassSource( )               { return Source; };
+C2phaseVariable::SetLiqEnthalpy(su2double h) {Enthalpy_Liquid = h; };
 
-void      C2phaseVariable::SetSource(su2double S)     {Source = S; };
+C2phaseVariable::SetRadius(su2double R)     {Radius = R;};
 
-su2double C2phaseVariable::GetLiquidEnthalpy( )           { return Enthalpy_Liquid; };
-
-void      C2phaseVariable::SetLiqEnthalpy(su2double h) {Enthalpy_Liquid = h; };
-
-su2double C2phaseVariable::GetAverageRadius( )               { return Radius; };
-
-void      C2phaseVariable::SetRadius(su2double R)     {Radius = R;};
-
-su2double C2phaseVariable::GetLiquidFraction( )           { return Liquid_Fraction; };
-
-void      C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; };
-
+C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; };
+*/
 
 C2phaseVariable::~C2phaseVariable(void) {
 	if (Primitive_Liquid != NULL) delete [] Primitive_Liquid;
@@ -87,7 +79,7 @@ C2phaseVariable::~C2phaseVariable(void) {
 
 C2phase_HillVariable::C2phase_HillVariable(void) : C2phaseVariable() {
 
-	V_l = new su2double [9];
+	//V_l = new su2double [9];
 }
 
 C2phase_HillVariable::C2phase_HillVariable(su2double val_R, su2double val_N, su2double rho_m, CConfig *config): C2phaseVariable() {
@@ -117,7 +109,7 @@ C2phase_HillVariable::C2phase_HillVariable(su2double val_R, su2double val_N, su2
 
 C2phase_HillVariable::~C2phase_HillVariable(void) {
 
-	if (V_l != NULL) delete [] V_l;
+	//if (V_l != NULL) delete [] V_l;
   
 }
 
@@ -138,42 +130,45 @@ void C2phase_HillVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2d
 
 }
 
-void C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,
-		   CLiquidModel *liquid, CConfig *config) {
+void C2phase_HillVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_Phase_Var,CConfig *config) {
+
+	su2double rho_l, rho_m, T_l, h_l, Psat, Tsat, sigma, Rc, R;
 
 	P   = Primitive[nDim+1] / config->GetPressure_Ref();
 	T   = Primitive[0]      / config->GetTemperature_Ref();
 	rho = Primitive[nDim+2] / config->GetDensity_Ref();
 	h   = Primitive[nDim+3] / config->GetEnergy_Ref();
 
-	liquid->SetLiquidProp(P, T, rho, h, Two_Phase_Var);
+	FluidModel->SetLiquidProp(P, T, rho, h, Two_Phase_Var);
 
-	V_l[0] = liquid->GetLiquidTemperature();
-	V_l[0] = V_l[0]/config->GetTemperature_Ref();
+	T_l = FluidModel->GetLiquidTemperature()/config->GetTemperature_Ref();
 
-	V_l[1] = liquid->GetLiquidDensity();
-	V_l[1] = V_l[1]/config->GetDensity_Ref();
+	rho_l = FluidModel->GetLiquidDensity()/config->GetDensity_Ref();
 
-	V_l[2] = liquid->GetLiquidEnthalpy();
-	V_l[2] = V_l[2]/config->GetEnergy_Ref();
+	h_l = FluidModel->GetLiquidEnthalpy()/config->GetEnergy_Ref();
 
-	V_l[3] = liquid->GetPsat();
-	V_l[3] = V_l[3]/config->GetPressure_Ref();
+	Psat = FluidModel->GetPsat()/config->GetPressure_Ref();
 
-	V_l[4] = liquid->GetTsat();
-	V_l[4] = V_l[4]/config->GetTemperature_Ref();
+	Tsat = FluidModel->GetTsat()/config->GetTemperature_Ref();
 
-	V_l[5] = liquid->GetSurfaceTension();
-	V_l[5] = V_l[5]/config->GetSurfTension_Ref();
+	sigma = FluidModel->GetSurfaceTension()/config->GetSurfTension_Ref();
 
-	V_l[6] = liquid->GetCriticalRadius();
-	V_l[6] = V_l[6]/config->GetLength_Ref();
+	Rc = FluidModel->GetCriticalRadius()/config->GetLength_Ref();
 
-	V_l[7] = liquid->GetRadius();
-	V_l[7] = V_l[7]/config->GetLength_Ref();
+	R = FluidModel->GetRadius()/config->GetLength_Ref();
 
-	V_l[8] = liquid->GetMixtureDensity();
-	V_l[8] = V_l[8]/config->GetDensity_Ref();
+	rho_m = FluidModel->GetMixtureDensity()/config->GetDensity_Ref();
+
+
+	Primitive_Liquid[0] = T_l;
+	Primitive_Liquid[1] = rho_l;
+	Primitive_Liquid[2] = h_l;
+	Primitive_Liquid[3] = Psat;
+	Primitive_Liquid[4] = Tsat;
+	Primitive_Liquid[5] = sigma;
+	Primitive_Liquid[6] = Rc;
+	Primitive_Liquid[7] = R;
+	Primitive_Liquid[8] = rho_m;
 
 
 }

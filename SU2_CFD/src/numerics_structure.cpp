@@ -96,6 +96,8 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
 
+  nucleation_model = new CNucleationModel();
+
   UnitNormal = new su2double [nDim];
   UnitNormald = new su2double [nDim];
 

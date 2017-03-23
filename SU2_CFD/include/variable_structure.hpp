@@ -2036,35 +2036,33 @@ public:
 
   // classes for 2phase solver
 
-//  virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
+  virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-//  virtual su2double GetRadius() ;
+  virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
+
+  virtual su2double GetRadius() ;
 
   virtual su2double GetMassSource() ;
 
-//  virtual su2double GetLiquidPrim() ;
-
-//  virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
-
-//  virtual void      SetSource(su2double S)   ;
-
-  virtual void      SetMassSource(su2double S)   ;
-
   virtual su2double GetLiquidEnthalpy( )         ;
-
-//  virtual void      SetLiqEnthalpy(su2double h);
-
-  virtual void      SetLiquidEnthalpy(su2double h);
 
   virtual su2double GetAverageRadius( )          ;
 
-//  virtual void      SetRadius(su2double R);
+  virtual su2double GetLiquidFraction( )         ;
+
+  virtual void      SetSource(su2double S)   ;
+
+  virtual void      SetMassSource(su2double S)   ;
+
+  virtual void      SetLiqEnthalpy(su2double h);
+
+  virtual void      SetLiquidEnthalpy(su2double h);
+
+  virtual void      SetRadius(su2double R);
 
   virtual void      SetAverageRadius(su2double R);
 
-  virtual su2double GetLiquidFraction( )         ;
-
-//  virtual void      SetLiquidFrac(su2double Y);
+  virtual void      SetLiquidFrac(su2double Y);
 
   virtual void      SetLiquidFraction(su2double Y);
 
@@ -3542,9 +3540,6 @@ public:
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
 
-  void SetMassSource(su2double S) ;
-
-  void SetLiquidEnthalpy(su2double h) ;
 };
 
 /*!
@@ -3703,6 +3698,8 @@ protected:
 	su2double Source, Enthalpy_Liquid, Radius, Liquid_Fraction;
 	su2double *Primitive_Liquid;
 
+	CFluidModel *FluidModel;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -3725,27 +3722,27 @@ public:
 
   virtual void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
-    virtual su2double GetRadius() ;
+  virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
 
-    virtual su2double GetLiquidPrim() ;
+  su2double  GetRadius() ;
 
-    virtual void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
+//  su2double* GetLiquidPrim() ;
 
-    virtual su2double GetMassSource( )             ;
+  su2double GetMassSource( )             ;
 
-    virtual void     SetSource(su2double S)   ;
+  su2double GetLiquidEnthalpy( )         ;
 
-    virtual su2double GetLiquidEnthalpy( )         ;
+  su2double GetAverageRadius( )          ;
 
-    virtual void      SetLiqEnthalpy(su2double h);
+  su2double GetLiquidFraction( )         ;
 
-    virtual su2double GetAverageRadius( )          ;
+  void      SetSource(su2double S)   ;
 
-    virtual void      SetRadius(su2double R);
+  void      SetLiqEnthalpy(su2double h);
 
-    virtual su2double GetLiquidFraction( )         ;
+  void      SetRadius(su2double R);
 
-    virtual void      SetLiquidFrac(su2double Y);
+  void      SetLiquidFrac(su2double Y);
 
 };
 
@@ -4001,15 +3998,17 @@ public:
 
   void SetLiquidEnthalpy(su2double h) ;
 */
-  void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
 
+
+  void SetDropletProp(su2double rho_l, su2double rho_v, su2double G);
+/*
   su2double GetRadius() ;
 
   su2double GetMassSource() ;
 
   su2double GetLiquidPrim() ;
-
-  void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config);
+*/
+  void SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config);
 
 };
 

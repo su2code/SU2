@@ -176,11 +176,10 @@ void CUpw_2phaseHill_Rus::ComputeResidual(su2double *Residual, su2double **Jacob
 
 	// compute the nucleation rate the growth rate
 
-	SetNucleationRate(P, T, rho, h, k, mu, val_liquid_i);
-	SetGrowthRate(P, T, rho, h, k, mu, val_liquid_i);
+	SetNucleation_GrowthRate(P, T, rho, h, k, mu, val_liquid_i);
 
-	Nucleation_rate = GetNucleationRate();
-	Growth_rate = GetGrowthRate();
+	Nucleation_rate = GetNucleation_Rate();
+	Growth_rate = GetGrowth_Rate();
 
 	// compute the source terms
 

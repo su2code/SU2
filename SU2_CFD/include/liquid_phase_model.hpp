@@ -83,53 +83,53 @@ public:
     /*!
      * \brief return liquid density value.
      */
-    su2double GetLiquidDensity(void);
+    su2double Get_LiquidDensity(void);
 
     /*!
      * \brief return mixture density value.
      */
-    su2double GetMixtureDensity(void);
+    su2double Get_MixtureDensity(void);
 
     /*!
      * \brief return liquid density value.
      */
-    su2double GetLiquidTemperature(void);
+    su2double Get_LiquidTemperature(void);
 
     /*!
      * \brief return liquid enthalpy value.
      */
-    su2double GetLiquidEnthalpy(void);
+    su2double Get_LiquidEnthalpy(void);
 
     /*!
      * \brief return surface tension value.
      */
-    su2double GetSurfaceTension(void);
+    su2double Get_SurfaceTension(void);
 
     /*!
      * \brief return saturation temperature value at correspondent pressure.
      */
-    su2double GetTsat(void);
+    su2double Get_Tsat(void);
 
     /*!
      * \brief return saturation pressure value at correspondent temperature.
      */
-    su2double GetPsat(void);
+    su2double Get_Psat(void);
 
     /*!
      * \brief return critical radius.
      */
-    su2double GetCriticalRadius(void);
+    su2double Get_CriticalRadius(void);
 
     /*!
 	* \brief return radius.
 	*/
-	su2double GetRadius(void);
+	su2double Get_Radius(void);
 
 
     /*!
      * \brief return liquid density value.
      */
-    void SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
+    void Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var);
 
     void SetRadius(su2double *Two_Phase_Var);
 

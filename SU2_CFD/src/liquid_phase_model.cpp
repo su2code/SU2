@@ -52,7 +52,7 @@ CLiquidModel::CLiquidModel(void) {
 
 CLiquidModel::~CLiquidModel(void) { }
 
-void CLiquidModel::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {
+void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {
 
 	SetRadius(Two_Phase_Var);
 
@@ -78,8 +78,7 @@ void CLiquidModel::SetRCritical(su2double P, su2double T) {
 
 		Rc = 2.0*sigma / (rho_l * dGibbs);
     }
-    else { Rc = 0.0  	;
-    }
+    else { Rc = 0.0  	;    }
 
 }
 
@@ -156,7 +155,7 @@ void CWater::SetTsat(su2double P) {
     Gsat =  coeff_saturation[1]*Hsat*Hsat + coeff_saturation[4]*Hsat + coeff_saturation[7];
     Dsat =  2.0 * Gsat /(-Fsat -sqrt(Fsat*Fsat - 4.0 * Esat * Gsat));
 
-    Tsat = pow((coeff_saturation[9] + Dsat), 2) - 4.0  (coeff_saturation[8] + coeff_saturation[9] * Dsat);
+    Tsat = pow((coeff_saturation[9] + Dsat), 2) - 4.0 * (coeff_saturation[8] + coeff_saturation[9] * Dsat);
     Tsat = -sqrt(Tsat) + coeff_saturation[9] + Dsat;
 
     Tsat =  Tsat * 0.5;
@@ -194,8 +193,8 @@ void CWater::SetTLiquid(su2double T) {
 
 void CWater::SetLiquidDensity() {
 
-		rho_l = 928.08 + 464.63*T_l/Tstar - 568.46*(T_l/Tstar)*(T_l/Tstar) &
-						 - 255.17*pow((T_l/Tstar),3);
+		rho_l = 928.08 + 464.63*T_l/Tstar - 568.46*(T_l/Tstar)*(T_l/Tstar)
+				- 255.17*(T_l/Tstar)*(T_l/Tstar)*(T_l/Tstar);
 
 }
 

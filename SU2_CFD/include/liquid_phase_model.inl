@@ -33,23 +33,23 @@
 
 #pragma once
 
-inline su2double CLiquidModel::GetLiquidDensity() { return rho_l; }
-inline su2double CLiquidModel::GetMixtureDensity() { return rho_m; }
-inline su2double CLiquidModel::GetLiquidTemperature() { return T_l; }
-inline su2double CLiquidModel::GetLiquidEnthalpy() { return h_l; }
-inline su2double CLiquidModel::GetSurfaceTension() { return sigma; }
-inline su2double CLiquidModel::GetTsat() { return Tsat; }
-inline su2double CLiquidModel::GetPsat() { return Psat; }
-inline su2double CLiquidModel::GetCriticalRadius() { return Rc; }
-inline su2double CLiquidModel::GetRadius() { return R; }
+inline su2double CLiquidModel::Get_LiquidDensity() { return rho_l; }
+inline su2double CLiquidModel::Get_MixtureDensity() { return rho_m; }
+inline su2double CLiquidModel::Get_LiquidTemperature() { return T_l; }
+inline su2double CLiquidModel::Get_LiquidEnthalpy() { return h_l; }
+inline su2double CLiquidModel::Get_SurfaceTension() { return sigma; }
+inline su2double CLiquidModel::Get_Tsat() { return Tsat; }
+inline su2double CLiquidModel::Get_Psat() { return Psat; }
+inline su2double CLiquidModel::Get_CriticalRadius() { return Rc; }
+inline su2double CLiquidModel::Get_Radius() { return R; }
 
-inline void CLiquidModel::SetLiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {}
-inline void CLiquidModel::SetTsat(su2double P) {}  
-inline void CLiquidModel::SetPsat (su2double T) {}  
-inline void CLiquidModel::SetLiquidDensity() {}
-inline void CLiquidModel::SetTLiquid( su2double T) {}
-inline void CLiquidModel::SetLiquidEnthalpy(su2double h_v) {} 
-inline void CLiquidModel::SetSurfaceTension(su2double T) {}
-inline void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {}
-inline void CLiquidModel::SetRCritical (su2double P, su2double T) {}
-inline void CLiquidModel::SetDensity_Mixture (su2double rho, su2double *Two_Phase_Var) {}
+// inline void CLiquidModel::Set_LiquidProp(su2double P, su2double T, su2double rho, su2double h_v, su2double *Two_Phase_Var) {}
+inline void CLiquidModel::SetTsat(su2double P)  {}
+inline void CLiquidModel::SetPsat (su2double T) {} 
+inline void CLiquidModel::SetLiquidDensity()    {}
+inline void CLiquidModel::SetTLiquid( su2double T)  {}
+inline void CLiquidModel::SetLiquidEnthalpy(su2double h_v) {}
+inline void CLiquidModel::SetSurfaceTension(su2double T)   {}
+// inline void CLiquidModel::SetRadius(su2double *Two_Phase_Var) {}
+// inline void CLiquidModel::SetRCritical (su2double P, su2double T)  {}
+// inline void CLiquidModel::SetDensity_Mixture (su2double rho, su2double *Two_Phase_Var)  {}

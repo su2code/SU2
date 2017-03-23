@@ -1107,25 +1107,23 @@ inline void       C2phaseVariable::SetDropletProp(su2double rho_l, su2double rho
 
 inline su2double  C2phaseVariable::GetRadius() { return Radius; } 
 
-inline su2double  C2phaseVariable::GetLiquidPrim() { return *Primitive_Liquid; }
+inline void       C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
 
-inline void       C2phaseVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CLiquidModel *liquid, CConfig *config) {}
+inline  su2double C2phaseVariable::GetMassSource()   {return Source;} 
 
-inline  su2double C2phaseVariable::GetMassSource()             {return Source;} ;
+inline  void      C2phaseVariable::SetSource(su2double S)  {Source = S; }   
 
-inline  void      C2phaseVariable::SetSource(su2double S)  {}   ;
+inline  su2double C2phaseVariable::GetLiquidEnthalpy()         {return Enthalpy_Liquid;}  
 
-inline  su2double C2phaseVariable::GetLiquidEnthalpy()         {return Enthalpy_Liquid;}  ;
+inline  void      C2phaseVariable::SetLiqEnthalpy(su2double h) {Enthalpy_Liquid = h; }
 
-inline  void      C2phaseVariable::SetLiqEnthalpy(su2double h) {};
+inline  su2double C2phaseVariable::GetAverageRadius()      {return Radius;}         
 
-inline  su2double C2phaseVariable::GetAverageRadius()      {return Radius;}         ;
+inline  void      C2phaseVariable::SetRadius(su2double R)   {Radius = R;}  
 
-inline  void      C2phaseVariable::SetRadius(su2double R)  {}   ;
+inline  su2double C2phaseVariable::GetLiquidFraction()    {return Liquid_Fraction;}       
 
-inline  su2double C2phaseVariable::GetLiquidFraction()    {return Liquid_Fraction;}       ;
-
-inline  void      C2phaseVariable::SetLiquidFrac(su2double Y) {};
+inline  void      C2phaseVariable::SetLiquidFrac(su2double Y) {Liquid_Fraction = Y; }
 
  
 inline void CEulerVariable::SetLaminarViscosity(su2double laminarViscosity) {
@@ -1151,6 +1149,41 @@ inline void CEulerVariable::SetAverageRadius(su2double R) {
 inline void CEulerVariable::SetLiquidFraction(su2double Y) {
   Primitive[sizeof Primitive - 1] = Y;
 }
+
+
+inline void       CVariable::SetDropletProp(su2double rho_l, su2double rho_v, su2double G) { }
+
+inline su2double  CVariable::GetRadius() { } 
+
+//inline su2double*  CVariable::GetLiquidPrim() { }
+
+inline void       CVariable::SetLiquidPrim(su2double *Primitive, su2double *Two_phase_i, CConfig *config) {}
+
+inline  su2double CVariable::GetMassSource()   {} 
+
+inline  void      CVariable::SetSource(su2double S)  {}   
+
+inline  su2double CVariable::GetLiquidEnthalpy()   {}  
+
+inline  void      CVariable::SetLiqEnthalpy(su2double h) {}
+
+inline  su2double CVariable::GetAverageRadius()      {}         
+
+inline  void      CVariable::SetRadius(su2double R)   {}  
+
+inline  su2double CVariable::GetLiquidFraction()    {}       
+
+inline  void      CVariable::SetLiquidFrac(su2double Y) {}
+
+inline void CVariable::SetMassSource(su2double S) {}
+
+inline void CVariable::SetLiquidEnthalpy(su2double h) {}
+
+inline void CVariable::SetAverageRadius(su2double R) {}
+
+inline void CVariable::SetLiquidFraction(su2double Y) {}
+
+
 
 
 
