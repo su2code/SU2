@@ -135,6 +135,29 @@ inline CMeshFEM_DG::CMeshFEM_DG(void) { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
 
+inline void CMeshFEM_DG::SetGlobal_nPointDomain(unsigned long val_global_npoint) { Global_nPointDomain =  val_global_npoint; }
+
+inline unsigned long CMeshFEM_DG::GetGlobal_nPointDomain(void) { return Global_nPointDomain; }
+
+inline void CMeshFEM_DG::SetGlobal_to_Local_Point(void) {
+  Global_to_Local_Point.clear();
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
+      Global_to_Local_Point[volElem[i].offsetDOFsSolGlobal+j] = ii;
+    }
+  }
+}
+
+inline long CMeshFEM_DG::GetGlobal_to_Local_Point(unsigned long val_ipoint) {
+  map<unsigned long, unsigned long>::const_iterator MI = Global_to_Local_Point.find(val_ipoint);
+  if (MI != Global_to_Local_Point.end()) {
+    return Global_to_Local_Point[val_ipoint];
+  } else {
+    return -1;
+  }
+}
+
 inline su2double* CMeshFEM_DG::GetLagrangianBeginTimeIntervalADER_DG(void) {return LagrangianBeginTimeIntervalADER_DG.data();}
 
 inline su2double* CMeshFEM_DG::GetTimeInterpolDOFToIntegrationADER_DG(void) {return timeInterpolDOFToIntegrationADER_DG.data();}

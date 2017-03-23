@@ -1009,6 +1009,8 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
 
+inline su2double* CBaselineSolver_FEM::GetVecSolDOFs(void) {return VecSolDOFs.data();}
+
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->SetSolution_New();
