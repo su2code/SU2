@@ -5557,31 +5557,32 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          if (compressible) {
-            cout.width(15); cout << log10(residual_adjflow[0]);
-            cout.width(15); cout << log10(residual_adjflow[nDim+1]);
-          }
-          if (incompressible) {
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjflow[1]);
-          }
-          
-          if (disc_adj) {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_AoA;
-          }else {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
+          if (DualTime_Iteration || !Unsteady){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            if (compressible) {
+              cout.width(15); cout << log10(residual_adjflow[0]);
+              cout.width(15); cout << log10(residual_adjflow[nDim+1]);
+            }
+            if (incompressible) {
+              cout.width(17); cout << log10(residual_adjflow[0]);
+              cout.width(16); cout << log10(residual_adjflow[1]);
+            }
+
+            if (disc_adj) {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Press;
+              cout.width(14); cout << Total_Sens_AoA;
+            }else {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Geo;
               cout.width(14); cout << Total_Sens_AoA;
             }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);          
+            cout << endl;
+            cout.unsetf(ios_base::floatfield);
+          }
 
           break;
           
@@ -5594,35 +5595,36 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(17); cout << log10(residual_adjflow[0]);
-          if (!config[val_iZone]->GetFrozen_Visc()) {
-            cout.width(17); cout << log10(residual_adjturbulent[0]);
-          }
-          else {
-            if (compressible) {
-              if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
-              else { cout.width(15); cout << log10(residual_adjflow[4]); }
+          if (DualTime_Iteration || !Unsteady){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(17); cout << log10(residual_adjflow[0]);
+            if (!config[val_iZone]->GetFrozen_Visc()) {
+              cout.width(17); cout << log10(residual_adjturbulent[0]);
             }
-            if (incompressible) {
-              cout.width(15); cout << log10(residual_adjflow[1]);
+            else {
+              if (compressible) {
+                if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
+                else { cout.width(15); cout << log10(residual_adjflow[4]); }
+              }
+              if (incompressible) {
+                cout.width(15); cout << log10(residual_adjflow[1]);
+              }
             }
-          }
-          if (disc_adj) {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_AoA;
-          }else {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
+            if (disc_adj) {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Press;
+              cout.width(14); cout << Total_Sens_AoA;
+            }else {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Geo;
               cout.width(14); cout << Total_Sens_AoA;
             }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);
+            cout << endl;
+            cout.unsetf(ios_base::floatfield);
+          }
           break;
           
       }
