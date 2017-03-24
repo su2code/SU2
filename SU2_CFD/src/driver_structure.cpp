@@ -1832,7 +1832,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
 	    if (!(properties_file.fail())) {
 
-	        cout << "THERE IS A PROPERTIES FILE!! " << endl;
 	        numerics_container[MESH_0][FEA_SOL][MAT_NHCOMP]  = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
 	        numerics_container[MESH_0][FEA_SOL][MAT_NHINC]   = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
 	        numerics_container[MESH_0][FEA_SOL][MAT_IDEALDE] = new CFEM_IdealDE(nDim, nVar_FEM, config);
@@ -5811,11 +5810,14 @@ void CDiscAdjFSIStatDriver::Iterate_Block(unsigned short ZONE_FLOW,
 
     adjoint_convergence = CheckConvergence(IntIter, ZONE_FLOW, ZONE_STRUCT, kind_recording);
 
-//    if (adjoint_convergence) break;
-
     /*--- Write the convergence history (only screen output) ---*/
 
     ConvergenceHistory(IntIter, nIntIter, ZONE_FLOW, ZONE_STRUCT, kind_recording);
+
+    /*--- Break the loop if converged ---*/
+
+    if (adjoint_convergence) break;
+
 
   }
 
@@ -5992,31 +5994,57 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
                                                    unsigned short ZONE_STRUCT,
                                                    unsigned short kind_recording){
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
   bool flow_convergence    = false,
         mesh_convergence    = false,
         struct_convergence  = false;
 
   bool adjoint_convergence = false;
 
+  su2double residual_1, residual_2;
+
   if (kind_recording == FLOW_VARIABLES) {
 
-    /*--- Set the convergence criteria (only residual possible) ---*/
+      /*--- Set the convergence criteria (only residual possible as of now) ---*/
 
-    integration_container[ZONE_FLOW][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW],
-        IntIter,log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+      residual_1 = log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
+      residual_2 = log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
 
-    flow_convergence = integration_container[ZONE_FLOW][ADJFLOW_SOL]->GetConvergence();
+      flow_convergence = ((residual_1 < config_container[ZONE_FLOW]->GetMinLogResidual()) &&
+                          (residual_2 < config_container[ZONE_FLOW]->GetMinLogResidual()));
+
+
+//
+//    integration_container[ZONE_FLOW][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW],
+//        IntIter,log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+//
+//    flow_convergence = integration_container[ZONE_FLOW][ADJFLOW_SOL]->GetConvergence();
 
   }
 
   if (kind_recording == FEM_VARIABLES) {
 
+    /*--- Set the convergence criteria (only residual possible as of now) ---*/
+
+    residual_1 = log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(0));
+    residual_2 = log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(1));
+
+    // Temporary, until function is added
+    struct_convergence = ((residual_1 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()) &&
+                          (residual_2 < config_container[ZONE_STRUCT]->GetResidual_FEM_UTOL()));
+
     /*--- Set the convergence criteria (only residual possible) ---*/
 
-    integration_container[ZONE_STRUCT][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT],
-                                                                          IntIter,log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(0)), MESH_0);
-
-    struct_convergence = integration_container[ZONE_STRUCT][ADJFEA_SOL]->GetConvergence();
+//    integration_container[ZONE_STRUCT][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT],
+//                                                                          IntIter,log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(0)), MESH_0);
+//
+//    struct_convergence = integration_container[ZONE_STRUCT][ADJFEA_SOL]->GetConvergence();
 
   }
 
@@ -6030,6 +6058,37 @@ bool CDiscAdjFSIStatDriver::CheckConvergence(unsigned long IntIter,
   case GEOMETRY_CROSS_TERM: adjoint_convergence = true; break;
   default:                  adjoint_convergence = false; break;
   }
+
+  /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+  /*--- Convergence criteria ---*/
+
+  sbuf_conv[0] = adjoint_convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*-- Compute global convergence criteria in the master node --*/
+
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (sbuf_conv[0] == 1) { adjoint_convergence = true;}
+  else { adjoint_convergence = false;}
+
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+
+#endif
 
   return adjoint_convergence;
 
@@ -6304,19 +6363,19 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(unsigned long IntIter,
     residual_struct_rel[iRes] = fabs(residual_struct[iRes] - init_res_struct[iRes]);
   }
 
+  /*--- Check convergence ---*/
+  flow_converged_absolute = ((residual_flow[0] < flow_criteria) && (residual_flow[nVar_Flow-1] < flow_criteria));
+  flow_converged_relative = ((residual_flow_rel[0] > flow_criteria_rel) && (residual_flow_rel[nVar_Flow-1] > flow_criteria_rel));
+
+  struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Flow-1] < structure_criteria));
+  struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Flow-1] > structure_criteria_rel));
+
+  Convergence = ((flow_converged_absolute && struct_converged_absolute) ||
+                 (flow_converged_absolute && struct_converged_relative) ||
+                 (flow_converged_relative && struct_converged_relative) ||
+                 (flow_converged_relative && struct_converged_absolute));
+
   if (rank == MASTER_NODE){
-
-    /*--- Check convergence ---*/
-    flow_converged_absolute = ((residual_flow[0] < flow_criteria) && (residual_flow[nVar_Flow-1] < flow_criteria));
-    flow_converged_relative = ((residual_flow_rel[0] > flow_criteria_rel) && (residual_flow_rel[nVar_Flow-1] > flow_criteria_rel));
-
-    struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Flow-1] < structure_criteria));
-    struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Flow-1] > structure_criteria_rel));
-
-    Convergence = ((flow_converged_absolute && struct_converged_absolute) ||
-                   (flow_converged_absolute && struct_converged_relative) ||
-                   (flow_converged_relative && struct_converged_relative) ||
-                   (flow_converged_relative && struct_converged_absolute));
 
     cout << endl << "-------------------------------------------------------------------------" << endl;
     cout << endl;
