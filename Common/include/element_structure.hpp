@@ -422,6 +422,18 @@ public:
    */
   virtual su2double ComputeVolume(void);
 
+  /*!
+   * \brief Compute the value of the area of the element in current coordinates
+   * \param[out] val_Area - Area of the element
+   */
+  virtual su2double ComputeCurrentArea(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element in current coordinates
+   * \param[out] val_Volume - Volume of the element
+   */
+  virtual su2double ComputeCurrentVolume(void);
+
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
 	 * \param[in] val_solution - Solution of the problem.
@@ -495,6 +507,12 @@ public:
    */
   su2double ComputeArea(void);
 
+  /*!
+   * \brief Compute the value of the area of the element in current coordinates
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeCurrentArea(void);
+
 };
 
 
@@ -548,6 +566,12 @@ public:
    * \param[out] val_Area - Area of the element
    */
   su2double ComputeArea(void);
+
+  /*!
+   * \brief Compute the value of the area of the element in current coordinates
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeCurrentArea(void);
 
 	/*!
 	 * \brief Virtual member.
@@ -661,6 +685,12 @@ public:
    */
   su2double ComputeVolume(void);
 
+  /*!
+   * \brief Compute the value of the volume of the element in current coordinates
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeCurrentVolume(void);
+
 };
 
 /*!
@@ -713,6 +743,12 @@ public:
    * \param[out] val_Volume - Volume of the element
    */
   su2double ComputeVolume(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeCurrentVolume(void);
 
 	/*!
 	 * \brief Virtual member.

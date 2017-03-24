@@ -3512,6 +3512,15 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual su2double Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_iter - Current external iteration number.
@@ -11486,6 +11495,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
+   * \brief Compute the penalty due to the stiffness increase
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
 
   /*!
    * \brief Get the value of the FSI convergence.
