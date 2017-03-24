@@ -1419,7 +1419,7 @@ void CFEM_ElasticitySolver::Set_ElementProperties(CGeometry *geometry, CConfig *
   if (nZone > 1)
     filename = config->GetMultizone_FileName(filename, iZone);
 
-  cout << "Filename: " << filename << "." << endl;
+  if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
   properties_file.open(filename.data(), ios::in);
 
@@ -1563,7 +1563,7 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   if (nZone > 1)
     filename = config->GetMultizone_FileName(filename, iZone);
   
-  cout << "Filename: " << filename << "." << endl;
+  if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
   
   prestretch_file.open(filename.data(), ios::in);
   
@@ -1764,7 +1764,7 @@ void CFEM_ElasticitySolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *
     exit(EXIT_FAILURE);
   }
 
-  cout << "Filename: " << filename << " and format " << file_format << "." << endl;
+  if (rank == MASTER_NODE) cout << "Filename: " << filename << " and format " << file_format << "." << endl;
 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
