@@ -300,6 +300,23 @@ su2double CTRIA1::ComputeArea(void){
   return Area;
   
 }
+
+su2double CTRIA1::ComputeCurrentArea(void){
+
+  unsigned short iDim;
+  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
+  su2double Area = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = CurrentCoord[0][iDim]-CurrentCoord[2][iDim];
+    b[iDim] = CurrentCoord[1][iDim]-CurrentCoord[2][iDim];
+  }
+
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+
+  return Area;
+
+}
   
 CQUAD4::CQUAD4(void) : CElement() {
   
@@ -598,6 +615,30 @@ su2double CQUAD4::ComputeArea(void){
   
   return Area;
   
+}
+
+su2double CQUAD4::ComputeCurrentArea(void){
+
+  unsigned short iDim;
+  su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0};
+  su2double Area = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = CurrentCoord[0][iDim]-CurrentCoord[2][iDim];
+    b[iDim] = CurrentCoord[1][iDim]-CurrentCoord[2][iDim];
+  }
+
+  Area = 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    a[iDim] = CurrentCoord[0][iDim]-CurrentCoord[3][iDim];
+    b[iDim] = CurrentCoord[2][iDim]-CurrentCoord[3][iDim];
+  }
+
+  Area += 0.5*fabs(a[0]*b[1]-a[1]*b[0]);
+
+  return Area;
+
 }
   
   
@@ -1242,6 +1283,28 @@ su2double CTETRA1::ComputeVolume(void){
 
 }
 
+su2double CTETRA1::ComputeCurrentVolume(void){
+
+  unsigned short iDim;
+  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
+  su2double Volume = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = CurrentCoord[1][iDim] - CurrentCoord[0][iDim];
+    r2[iDim] = CurrentCoord[2][iDim] - CurrentCoord[0][iDim];
+    r3[iDim] = CurrentCoord[3][iDim] - CurrentCoord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  return Volume;
+
+}
+
 CHEXA8::CHEXA8(void) : CElement() {
   
 }
@@ -1670,6 +1733,76 @@ su2double CHEXA8::ComputeVolume(void){
     r1[iDim] = RefCoord[7][iDim] - RefCoord[2][iDim];
     r2[iDim] = RefCoord[5][iDim] - RefCoord[2][iDim];
     r3[iDim] = RefCoord[6][iDim] - RefCoord[2][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  return Volume;
+
+}
+
+su2double CHEXA8::ComputeCurrentVolume(void){
+
+  unsigned short iDim;
+  su2double r1[3] = {0.0,0.0,0.0}, r2[3] = {0.0,0.0,0.0}, r3[3] = {0.0,0.0,0.0}, CrossProduct[3] = {0.0,0.0,0.0};
+  su2double Volume = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = CurrentCoord[1][iDim] - CurrentCoord[0][iDim];
+    r2[iDim] = CurrentCoord[2][iDim] - CurrentCoord[0][iDim];
+    r3[iDim] = CurrentCoord[5][iDim] - CurrentCoord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = CurrentCoord[2][iDim] - CurrentCoord[0][iDim];
+    r2[iDim] = CurrentCoord[7][iDim] - CurrentCoord[0][iDim];
+    r3[iDim] = CurrentCoord[5][iDim] - CurrentCoord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = CurrentCoord[2][iDim] - CurrentCoord[0][iDim];
+    r2[iDim] = CurrentCoord[3][iDim] - CurrentCoord[0][iDim];
+    r3[iDim] = CurrentCoord[7][iDim] - CurrentCoord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = CurrentCoord[5][iDim] - CurrentCoord[0][iDim];
+    r2[iDim] = CurrentCoord[7][iDim] - CurrentCoord[0][iDim];
+    r3[iDim] = CurrentCoord[4][iDim] - CurrentCoord[0][iDim];
+  }
+
+  CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];
+  CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
+  CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
+
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    r1[iDim] = CurrentCoord[7][iDim] - CurrentCoord[2][iDim];
+    r2[iDim] = CurrentCoord[5][iDim] - CurrentCoord[2][iDim];
+    r3[iDim] = CurrentCoord[6][iDim] - CurrentCoord[2][iDim];
   }
 
   CrossProduct[0] = (r1[1]*r2[2] - r1[2]*r2[1])*r3[0];

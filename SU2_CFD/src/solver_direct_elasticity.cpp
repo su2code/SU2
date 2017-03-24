@@ -5558,4 +5558,74 @@ void CFEM_ElasticitySolver::Compute_OFRefNode(CGeometry *geometry, CSolver **sol
 
 }
 
+su2double CFEM_ElasticitySolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config){
+
+  unsigned long iElem, iVar, iPoint;
+  unsigned short iNode, iDim, nNodes;
+  unsigned short i_DV;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, val_Sol;
+  int EL_KIND, DV_TERM;
+
+  su2double *Ta = NULL;
+  unsigned short NelNodes;
+
+  bool de_effects = config->GetDE_Effects();
+
+  switch (config->GetDV_FEA()) {
+  case YOUNG_MODULUS:
+    DV_TERM = FEA_ADJ;
+    break;
+  case ELECTRIC_FIELD:
+    DV_TERM = DE_ADJ;
+    break;
+  }
+
+
+  /*--- Loops over all the elements ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+    /*--- The solution comes from the direct solver ---*/
+    for (iNode = 0; iNode < nNodes; iNode++) {
+        indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+        for (iDim = 0; iDim < nDim; iDim++) {
+            val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+            val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+            element_container[DV_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+            element_container[DV_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        }
+    }
+
+    element_container[DV_TERM][EL_KIND]->Set_iDe(i_DV);
+
+    numerics_container[DV_TERM]->Compute_NodalStress_Term(element_container[DV_TERM][EL_KIND], config);
+
+    NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
+
+    for (iNode = 0; iNode < NelNodes; iNode++){
+
+        Ta = element_container[DV_TERM][EL_KIND]->Get_Kt_a(iNode);
+        for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = Ta[iVar];
+
+//        LinSysRes_dSdv.SubtractBlock(indexNode[iNode], Residual);
+
+    }
+
+
+  }
+
+
+
+}
+
 
