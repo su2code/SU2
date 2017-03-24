@@ -543,13 +543,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
-
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify 2phase model \n Options: DEFAULT: NO_2PHASE_MODEL \ingroup Config*/
   addEnumOption("KIND_2PHASE_MODEL", Kind_2phase_Model, Two_phase_Model_Map, NO_2PHASE_MODEL);
-
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
-
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
   /* DESCRIPTION: Add the gravity force */
@@ -903,11 +900,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
-
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
   addDoubleOption("CFL_REDUCTION_2PHASE", CFLRedCoeff_2phase, 1.0);
-
-
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
   /* DESCRIPTION: Number of total iterations */
@@ -943,11 +937,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
-
   /* DESCRIPTION: Time discretization */
-    addEnumOption("TIME_DISCRE_2PHASE", Kind_TimeIntScheme_2phase, Time_Int_Map, EULER_IMPLICIT);
-
-
+  addEnumOption("TIME_DISCRE_2PHASE", Kind_TimeIntScheme_2phase, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -978,10 +969,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
   /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_TURB", Relaxation_Factor_Turb, 1.0);
-
   /* DESCRIPTION: Relaxation of the 2phase equations solver for the implicit formulation */
     addDoubleOption("RELAXATION_FACTOR_2PHASE", Relaxation_Factor_2phase, 1.0);
-
 
   /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
@@ -1118,8 +1107,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_TURB
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
-  
-
   /*!\brief SPATIAL_ORDER_2PHASE
    *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_2PHASE", SpatialOrder_2phase, SpatialOrder_Map, FIRST_ORDER);
@@ -1129,9 +1116,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_2PHASE
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_2PHASE", Kind_ConvNumScheme_2phase, Kind_Centered_2phase, Kind_Upwind_2phase);
-
-
-
   /*!\brief SPATIAL_ORDER_ADJTURB
    *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);

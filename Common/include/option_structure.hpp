@@ -646,10 +646,10 @@ static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, EN
 ("SST", SST);
 
 enum ENUM_2PHASE_MODEL {
-  NO_2PHASE_MODEL = 0, /*!< \brief No turbulence model. */
+  NO_2PHASE_MODEL = 0, /*!< \brief No 2phase model. */
   HILL_RUS        = 1, /*!< \brief Kind of 2phase model (Hill's formulation). */
   HILL_AUSM       = 2, /*!< \brief Kind of 2phase model (Hill's formulation). */
-  QMOM_RUS        = 3, /*!< \brief Kind of 2phase model (Hill's formulation). */
+  QMOM_RUS        = 3, /*!< \brief Kind of 2phase model (QMOM   formulation). */
 };
 static const map<string, ENUM_2PHASE_MODEL> Two_phase_Model_Map = CCreateMap<string, ENUM_2PHASE_MODEL>
 ("NONE", NO_2PHASE_MODEL)
