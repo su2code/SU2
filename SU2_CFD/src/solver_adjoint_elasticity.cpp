@@ -660,7 +660,7 @@ void CFEM_ElasticitySolver_Adj::Set_ReferenceGeometry(CGeometry *geometry, CConf
     exit(EXIT_FAILURE);
   }
 
-  cout << "Filename: " << filename << " and format " << file_format << "." << endl;
+  if (rank == MASTER_NODE) cout << "Filename: " << filename << " and format " << file_format << "." << endl;
 
   /*--- In case this is a parallel simulation, we need to perform the
  	 Global2Local index transformation first. ---*/
@@ -3133,7 +3133,7 @@ void CDiscAdjFEASolver::ReadDV(CConfig *config) {
 
   filename = input_name;
 
-  cout << "Filename: " << filename << "." << endl;
+  if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
   properties_file.open(filename.data(), ios::in);
 

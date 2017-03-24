@@ -136,9 +136,7 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
     case DEAD_WEIGHT:
     case ELECTRIC_FIELD:
       ReadDV(config);
-      cout << "Test DV Vals " << n_DV << endl;
       for (unsigned short iDV = 0; iDV < n_DV; iDV++)
-        cout << scientific << DV_Val[iDV] << endl;
       if ((config->GetDirectDiff() == D_YOUNG) ||
           (config->GetDirectDiff() == D_POISSON) ||
           (config->GetDirectDiff() == D_RHO) ||
@@ -384,7 +382,7 @@ void CFEM_Elasticity::ReadDV(CConfig *config) {
 
   filename = input_name;
 
-  cout << "Filename: " << filename << "." << endl;
+  if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
   properties_file.open(filename.data(), ios::in);
 
