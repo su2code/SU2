@@ -610,13 +610,15 @@ enum ENUM_LIMITER {
   VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
   BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
   SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
-  SOLID_WALL_DISTANCE = 3       /*!< \brief Slope limiter using wall distance. */
+  SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
+  DRIKAKIS_ZOLTAK = 4		/*!< \brief Slope limiter using Drikakis-Zoltak method. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES)
-("WALL_DISTANCE", SOLID_WALL_DISTANCE);
+("WALL_DISTANCE", SOLID_WALL_DISTANCE)
+("DRIKAKIS_ZOLTAK", DRIKAKIS_ZOLTAK);
 
 /*!
  * \brief types of turbulent models
@@ -652,12 +654,14 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 enum ENUM_TIME_INT {
   RUNGE_KUTTA_EXPLICIT = 1,	/*!< \brief Explicit Runge-Kutta time integration definition. */
   EULER_EXPLICIT = 2,   	/*!< \brief Explicit Euler time integration definition. */
-  EULER_IMPLICIT = 3   	/*!< \brief Implicit Euler time integration definition. */
+  EULER_IMPLICIT = 3,   	/*!< \brief Implicit Euler time integration definition. */
+  CLASSICAL_RK4_EXPLICIT = 4,   	/*!< \brief Calssical RK4 time integration definition. */
 };
 static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_TIME_INT>
 ("RUNGE-KUTTA_EXPLICIT", RUNGE_KUTTA_EXPLICIT)
 ("EULER_EXPLICIT", EULER_EXPLICIT)
-("EULER_IMPLICIT", EULER_IMPLICIT);
+("EULER_IMPLICIT", EULER_IMPLICIT)
+("CLASSICAL_RK4_EXPLICIT", CLASSICAL_RK4_EXPLICIT);
 
 /*!
  * \brief type of time integration schemes
