@@ -147,7 +147,7 @@ CDiscAdjSolver::~CDiscAdjSolver(void) {
 
 }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording) {
+void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -279,110 +279,8 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   }
 }
 
-void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  /*--- Here we can add new (scalar) objective functions ---*/
-  if (config->GetnObj()==1) {
-    switch (config->GetKind_ObjFunc()) {
-    case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CD();
-      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
-      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCM() * direct_solver->GetTotal_CMy();
-      break;
-    case LIFT_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CL();
-      break;
-    case AERO_DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_AeroCD();
-      break;
-    case RADIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_RadialDistortion();
-      break;
-    case CIRCUMFERENTIAL_DISTORTION:
-      ObjFunc_Value = direct_solver->GetTotal_CircumferentialDistortion();
-      break;
-    case SIDEFORCE_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CSF();
-      break;
-    case EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_CEff();
-      break;
-    case MOMENT_X_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMx();
-      break;
-    case MOMENT_Y_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMy();
-      break;
-    case MOMENT_Z_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMz();
-      break;
-    case EQUIVALENT_AREA:
-      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
-      break;
-    case AVG_TOTAL_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_TotalPress();
-      break;
-    case AVG_OUTLET_PRESSURE:
-      ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
-      break;
-    case MASS_FLOW_RATE:
-      ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
-      break;
-    }
-
-    /*--- Template for new objective functions where TemplateObjFunction()
-     *  is the routine that returns the obj. function value. The computation
-     * must be done while the tape is active, i.e. between AD::StartRecording() and
-     * AD::StopRecording() in DiscAdjFluidIteration::Iterate(). The best place is somewhere
-     * inside FluidIteration::Iterate().
-     *
-     * case TEMPLATE_OBJECTIVE:
-     *    ObjFunc_Value = TemplateObjFunction();
-     *    break;
-     * ---*/
-  }
-  else{
-    ObjFunc_Value = direct_solver->GetTotal_ComboObj();
-  }
-  if (rank == MASTER_NODE) {
-    AD::RegisterOutput(ObjFunc_Value);
-  }
-}
-
-void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
-  int rank = MASTER_NODE;
-
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
-  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
-  unsigned long ExtIter = config->GetExtIter();
-  su2double seeding = 1.0;
-
-  if (time_stepping) {
-    if (ExtIter < IterAvg_Obj) {
-      seeding = 1.0/((su2double)IterAvg_Obj);
-    }
-    else {
-      seeding = 0.0;
-    }
-  }
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if (rank == MASTER_NODE) {
-    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
-  } else {
-    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
-  }
-}
-
-void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config) {
+void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
