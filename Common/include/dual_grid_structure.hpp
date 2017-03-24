@@ -1258,7 +1258,9 @@ private:
 //	su2double PitchCoord;       /*!< \brief Value of the abscissa pitch wise */
 	su2double AngularCoord;     /*!< \brief Value of the angular coordinate  */
 	su2double DeltaAngularCoord;     /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
-	unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
+su2double RelAngularCoord; /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
+
+unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
 	int GlobalIndex;						/*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
 
 public:
@@ -1348,12 +1350,23 @@ public:
 	/*!
 	 * \brief set angular coord.
 	 */
-	void SetDeltaAngularCoord(su2double angCoord);
+	void SetDeltaAngularCoord(su2double deltaAngCoord);
 
 	/*!
 	 * \brief get angular coord.
 	 */
 	su2double GetDeltaAngularCoord(void);
+
+/*!
+ * \brief set angular coord.
+ */
+void SetRelAngularCoord(su2double minAngCoord);
+
+/*!
+ * \brief get angular coord.
+ */
+su2double GetRelAngularCoord(void);
+
 };
 
 #include "dual_grid_structure.inl"
