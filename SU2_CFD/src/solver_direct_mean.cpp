@@ -3414,8 +3414,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
         Density_FreeStream = FluidModel->GetDensity();
         config->SetDensity_FreeStream(Density_FreeStream);
-      }
-      else {
+      } else {
         FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
         Temperature_FreeStream = FluidModel->GetTemperature();
         config->SetTemperature_FreeStream(Temperature_FreeStream);
@@ -6230,12 +6229,12 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   unsigned short iDim, iVar, iMarker;
   su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
   Partial_Gradient, Partial_Res, *Normal;
+  bool InDomain_i,InDomain_j;
+  su2double **Gradient_i, **Gradient_j, Rec_Volume;
   
   /*--- Gradient primitive variables compressible (temp, vx, vy, vz, P, rho) ---*/
 
   PrimVar_Vertex = new su2double [nPrimVarGrad];
-  PrimVar_i = new su2double [nPrimVarGrad];
-  PrimVar_j = new su2double [nPrimVarGrad];
   
   /*--- Set Gradient_Primitive to zero ---*/
   
@@ -6248,21 +6247,64 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-      PrimVar_j[iVar] = node[jPoint]->GetPrimitive(iVar);
-    }
-    
-    Normal = geometry->edge[iEdge]->GetNormal();
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    PrimVar_i = node[iPoint]->GetPrimitive();
+    PrimVar_j = node[jPoint]->GetPrimitive();
+    Gradient_i= node[iPoint]->GetGradient_Primitive();
+    Gradient_j= node[jPoint]->GetGradient_Primitive();
+    InDomain_i=geometry->node[iPoint]->GetDomain();
+    InDomain_j=geometry->node[jPoint]->GetDomain();
+
+    if(InDomain_i) {
+       // i in domain
+       Normal = geometry->edge[iEdge]->GetNormal();
+     if(InDomain_j) {
+       // j in domain
+     if(nDim==3) {
+     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
+      Partial_Res = PrimVar_Average*Normal[0];
+      Gradient_i[iVar][0]+=Partial_Res;
+      Gradient_j[iVar][0]-=Partial_Res;
+      Partial_Res = PrimVar_Average*Normal[1];
+      Gradient_i[iVar][1]+=Partial_Res;
+      Gradient_j[iVar][1]-=Partial_Res;
+      Partial_Res = PrimVar_Average*Normal[2];
+      Gradient_i[iVar][2]+=Partial_Res;
+      Gradient_j[iVar][2]-=Partial_Res;
+     }
+     } else { // nDIM < 3
+     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
       for (iDim = 0; iDim < nDim; iDim++) {
         Partial_Res = PrimVar_Average*Normal[iDim];
-        if (geometry->node[iPoint]->GetDomain())
-          node[iPoint]->AddGradient_Primitive(iVar, iDim, Partial_Res);
-        if (geometry->node[jPoint]->GetDomain())
-          node[jPoint]->SubtractGradient_Primitive(iVar, iDim, Partial_Res);
+        Gradient_i[iVar][iDim]+=Partial_Res;
+        Gradient_j[iVar][iDim]-=Partial_Res;
       }
+     }
+     }
+    } else { // j is not in domain
+     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Partial_Res = PrimVar_Average*Normal[iDim];
+        Gradient_i[iVar][iDim]+=Partial_Res;
+        Gradient_j[iVar][iDim]-=Partial_Res;
+      }
+     }
+    } // end j
+
+    } else { // i is not in domain
+     if(InDomain_j) {
+      // j in domain
+     Normal = geometry->edge[iEdge]->GetNormal();
+     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Partial_Res = PrimVar_Average*Normal[iDim];
+        Gradient_j[iVar][iDim]-=Partial_Res;
+      }
+     }
+     }
     }
   }
 
@@ -6290,17 +6332,24 @@ void CEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config
   /*--- Update gradient value ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+   Rec_Volume = 1. / (geometry->node[iPoint]->GetVolume());
+   Gradient_i= node[iPoint]->GetGradient_Primitive();
+   if(nDim==3) {
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+     Gradient_i[iVar][0]=Gradient_i[iVar][0] * Rec_Volume;
+     Gradient_i[iVar][1]=Gradient_i[iVar][1] * Rec_Volume;
+     Gradient_i[iVar][2]=Gradient_i[iVar][2] * Rec_Volume;
+    }
+   } else {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim) / (geometry->node[iPoint]->GetVolume());
-        node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
+        Gradient_i[iVar][iDim]=Gradient_i[iVar][iDim] * Rec_Volume;
       }
     }
+   }
   }
 
   delete [] PrimVar_Vertex;
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
 
   Set_MPI_Primitive_Gradient(geometry, config);
 
@@ -6456,6 +6505,7 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iDim;
   su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Primitive_i, *Primitive_j,
   dave, LimK, eps2, eps1, dm, dp, du, y, limiter;
+  su2double Coordiv[3],dmi,dmj,*Limiter_i,*Limiter_j;
   
   /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
   
@@ -6574,13 +6624,29 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       Gradient_j = node[jPoint]->GetGradient_Primitive();
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
-      
+      Limiter_i= node[iPoint]->GetLimiter_Primitive();
+      Limiter_j= node[jPoint]->GetLimiter_Primitive();
 
       AD::StartPreacc();
       AD::SetPreaccIn(Gradient_i, nPrimVarGrad, nDim);
       AD::SetPreaccIn(Gradient_j, nPrimVarGrad, nDim);
       AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
 
+      switch(nDim)
+      {
+       case 1:
+          Coordiv[0] = 0.5*(Coord_j[0]-Coord_i[0]);
+          break;
+       case 2:
+          Coordiv[0] = 0.5*(Coord_j[0]-Coord_i[0]);
+          Coordiv[1] = 0.5*(Coord_j[1]-Coord_i[1]);
+          break;
+       case 3:
+          Coordiv[0] = 0.5*(Coord_j[0]-Coord_i[0]);
+          Coordiv[1] = 0.5*(Coord_j[1]-Coord_i[1]);
+          Coordiv[2] = 0.5*(Coord_j[2]-Coord_i[2]);
+          break;
+      }
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         
@@ -6591,35 +6657,60 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
 
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
-        dm = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dm += 0.5*(Coord_j[iDim]-Coord_i[iDim])*Gradient_i[iVar][iDim];
+        switch(nDim)
+        {
+        case 1:
+          dmi = Coordiv[0]*Gradient_i[iVar][0];
+          dmj = Coordiv[0]*Gradient_j[iVar][0];
+          break;
+        case 2:
+          dmi = Coordiv[0]*Gradient_i[iVar][0]
+              + Coordiv[1]*Gradient_i[iVar][1];
+          dmj = -(Coordiv[0]*Gradient_j[iVar][0]
+              +   Coordiv[1]*Gradient_j[iVar][1]);
+          break;
+        case 3:
+          dmi = Coordiv[0]*Gradient_i[iVar][0]
+              + Coordiv[1]*Gradient_i[iVar][1]
+              + Coordiv[2]*Gradient_i[iVar][2];
+          dmj = -(Coordiv[0]*Gradient_j[iVar][0]
+              +   Coordiv[1]*Gradient_j[iVar][1]
+              +   Coordiv[2]*Gradient_j[iVar][2]);
+          break;
+        }
+        dm=dmi;
         
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
         
         if ( dm > 0.0 ) dp = node[iPoint]->GetSolution_Max(iVar);
         else dp = node[iPoint]->GetSolution_Min(iVar);
-        
+        if(dp==0.) {
+          limiter=eps2/(2.0*dm*dm + eps2); 
+        }else
+        {
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+        }
         
-        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar)) {
-          node[iPoint]->SetLimiter_Primitive(iVar, limiter);
+        if (limiter < Limiter_i[iVar]){
+          Limiter_i[iVar]=limiter;
           AD::SetPreaccOut(node[iPoint]->GetLimiter_Primitive()[iVar]);
         }
         
         /*-- Repeat for point j on the edge ---*/
         
-        dm = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dm += 0.5*(Coord_i[iDim]-Coord_j[iDim])*Gradient_j[iVar][iDim];
+        dm=dmj;
         
         if ( dm > 0.0 ) dp = node[jPoint]->GetSolution_Max(iVar);
         else dp = node[jPoint]->GetSolution_Min(iVar);
-        
+        if(dp==0.) {
+          limiter=eps2/(2.0*dm*dm + eps2); 
+        }else
+        {
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
+        }
         
-        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar)) {
-          node[jPoint]->SetLimiter_Primitive(iVar, limiter);
+        if (limiter < Limiter_j[iVar]){
+          Limiter_j[iVar]=limiter;
           AD::SetPreaccOut(node[jPoint]->GetLimiter_Primitive()[iVar]);
         }
       }

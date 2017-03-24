@@ -610,35 +610,36 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool t
       for (jVar = 0; jVar < (short)nVar; jVar++)
         block[iVar*nVar+jVar] = Block[jVar*nVar+iVar];
   }
+#include "../include/Gauss_Elimination_core.hpp"
   /*--- Gauss elimination ---*/
-  
-  if (nVar == 1) {
-    rhs[0] /= block[0];
-  }
-  else {
-    
+//
+//if (nVar == 1) {
+//  rhs[0] /= block[0];
+//}
+//else {
+//  
     /*--- Transform system in Upper Matrix ---*/
-    
-    for (iVar = 1; iVar < (short)nVar; iVar++) {
-      for (jVar = 0; jVar < iVar; jVar++) {
-        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < (short)nVar; kVar++)
-          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
-        rhs[iVar] -= weight*rhs[jVar];
-      }
-    }
+//  
+//  for (iVar = 1; iVar < (short)nVar; iVar++) {
+//    for (jVar = 0; jVar < iVar; jVar++) {
+//      weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
+//      for (kVar = jVar; kVar < (short)nVar; kVar++)
+//        block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
+//      rhs[iVar] -= weight*rhs[jVar];
+//    }
+//  }
     
     /*--- Backwards substitution ---*/
     
-    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
-    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
-      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
-        aux += block[iVar*nVar+jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
-      if (iVar == 0) break;
-    }
-  }
+//  rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
+//  for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
+//    aux = 0.0;
+//    for (jVar = iVar+1; jVar < (short)nVar; jVar++)
+//      aux += block[iVar*nVar+jVar]*rhs[jVar];
+//    rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
+//    if (iVar == 0) break;
+//  }
+// }
   
 }
 
@@ -656,32 +657,33 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     for (jVar = 0; jVar < (short)nVar; jVar++)
       block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
   
+#include "../include/Gauss_Elimination_core.hpp"
   /*--- Gauss elimination ---*/
-  if (nVar == 1) {
-    rhs[0] /= block[0];
-  }
-  else {
-    
+//if (nVar == 1) {
+//  rhs[0] /= block[0];
+//}
+//else {
+//  
     /*--- Transform system in Upper Matrix ---*/
-    for (iVar = 1; iVar < (short)nVar; iVar++) {
-      for (jVar = 0; jVar < iVar; jVar++) {
-        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < (short)nVar; kVar++)
-          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
-        rhs[iVar] -= weight*rhs[jVar];
-      }
-    }
-    
+//  for (iVar = 1; iVar < (short)nVar; iVar++) {
+//    for (jVar = 0; jVar < iVar; jVar++) {
+//      weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
+//      for (kVar = jVar; kVar < (short)nVar; kVar++)
+//        block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
+//      rhs[iVar] -= weight*rhs[jVar];
+//    } 
+//  } 
+
     /*--- Backwards substitution ---*/
-    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
-    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
-      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
-        aux += block[iVar*nVar+jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
-      if (iVar == 0) break;
-    }
-  }
+//  rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
+//  for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
+//    aux = 0.0;
+//    for (jVar = iVar+1; jVar < (short)nVar; jVar++)
+//      aux += block[iVar*nVar+jVar]*rhs[jVar];
+//    rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
+//    if (iVar == 0) break;
+//  }
+// }
   
 }
 
@@ -696,32 +698,32 @@ void CSysMatrix::Gauss_Elimination(su2double* Block, su2double* rhs) {
   for (iVar = 0; iVar < (short)nVar; iVar++)
     for (jVar = 0; jVar < (short)nVar; jVar++)
       block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
-  
-  
-  if (nVar == 1) {
-    rhs[0] /= block[0];
-  }
-  else {
+#include "../include/Gauss_Elimination_core.hpp"
+
+//if (nVar == 1) {
+//  rhs[0] /= block[0];
+//}
+//else {
     /*--- Transform system in Upper Matrix ---*/
-    for (iVar = 1; iVar < (short)nVar; iVar++) {
-      for (jVar = 0; jVar < iVar; jVar++) {
-        weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
-        for (kVar = jVar; kVar < (short)nVar; kVar++)
-          block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
-        rhs[iVar] -= weight*rhs[jVar];
-      }
-    }
-    
+//  for (iVar = 1; iVar < (short)nVar; iVar++) {
+//    for (jVar = 0; jVar < iVar; jVar++) {
+//      weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
+//      for (kVar = jVar; kVar < (short)nVar; kVar++)
+//        block[iVar*nVar+kVar] -= weight*block[jVar*nVar+kVar];
+//      rhs[iVar] -= weight*rhs[jVar];
+//    } 
+//  } 
+ 
     /*--- Backwards substitution ---*/
-    rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
-    for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
-      aux = 0.0;
-      for (jVar = iVar+1; jVar < (short)nVar; jVar++)
-        aux += block[iVar*nVar+jVar]*rhs[jVar];
-      rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
-      if (iVar == 0) break;
-    }
-  }
+//  rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
+//  for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
+//    aux = 0.0;
+//    for (jVar = iVar+1; jVar < (short)nVar; jVar++)
+//      aux += block[iVar*nVar+jVar]*rhs[jVar];
+//    rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
+//    if (iVar == 0) break;
+//  }
+// }
   
 }
 
@@ -732,11 +734,52 @@ void CSysMatrix::ProdBlockVector(unsigned long block_i, unsigned long block_j, c
   
   su2double *block = GetBlock(block_i, block_j);
   
+  switch (nVar) 
+  {
+  case 1:
+      prod_block_vector[0] = block[0]*vec[j];
+      break;
+  case 2:
+    prod_block_vector[0] = block[0*nVar+0]*vec[j+0] + block[0*nVar+1]*vec[j+1];
+    prod_block_vector[1] = block[1*nVar+0]*vec[j+0] + block[1*nVar+1]*vec[j+1];
+    break;
+  case 3:
+    prod_block_vector[0] = block[0*nVar+0]*vec[j+0] + block[0*nVar+1]*vec[j+1] + 
+                           block[0*nVar+2]*vec[j+2];
+    prod_block_vector[1] = block[1*nVar+0]*vec[j+0] + block[1*nVar+1]*vec[j+1] +
+                           block[1*nVar+2]*vec[j+2];
+    prod_block_vector[2] = block[2*nVar+0]*vec[j+0] + block[2*nVar+1]*vec[j+1] +
+                           block[2*nVar+2]*vec[j+2];
+    break;
+  case 4:
+    prod_block_vector[0] = block[0*nVar+0]*vec[j+0] + block[0*nVar+1]*vec[j+1] + 
+                           block[0*nVar+2]*vec[j+2] + block[0*nVar+3]*vec[j+3];
+    prod_block_vector[1] = block[1*nVar+0]*vec[j+0] + block[1*nVar+1]*vec[j+1] +
+                           block[1*nVar+2]*vec[j+2] + block[1*nVar+3]*vec[j+3];
+    prod_block_vector[2] = block[2*nVar+0]*vec[j+0] + block[2*nVar+1]*vec[j+1] +
+                           block[2*nVar+2]*vec[j+2] + block[2*nVar+3]*vec[j+3];
+    prod_block_vector[3] = block[3*nVar+0]*vec[j+0] + block[3*nVar+1]*vec[j+1] +
+                           block[3*nVar+2]*vec[j+2] + block[3*nVar+3]*vec[j+3];
+    break;
+  case 5:
+    prod_block_vector[0] = block[0*nVar+0]*vec[j+0] + block[0*nVar+1]*vec[j+1] + 
+     block[0*nVar+2]*vec[j+2] + block[0*nVar+3]*vec[j+3] + block[0*nVar+4]*vec[j+4];
+    prod_block_vector[1] = block[1*nVar+0]*vec[j+0] + block[1*nVar+1]*vec[j+1] +
+     block[1*nVar+2]*vec[j+2] + block[1*nVar+3]*vec[j+3] + block[1*nVar+4]*vec[j+4];
+    prod_block_vector[2] = block[2*nVar+0]*vec[j+0] + block[2*nVar+1]*vec[j+1] +
+     block[2*nVar+2]*vec[j+2] + block[2*nVar+3]*vec[j+3] + block[2*nVar+4]*vec[j+4];
+    prod_block_vector[3] = block[3*nVar+0]*vec[j+0] + block[3*nVar+1]*vec[j+1] +
+     block[3*nVar+2]*vec[j+2] + block[3*nVar+3]*vec[j+3] + block[3*nVar+4]*vec[j+4];
+    prod_block_vector[4] = block[4*nVar+0]*vec[j+0] + block[4*nVar+1]*vec[j+1] +
+     block[4*nVar+2]*vec[j+2] + block[4*nVar+3]*vec[j+3] + block[4*nVar+4]*vec[j+4];
+    break;
+   default:
   for (iVar = 0; iVar < nVar; iVar++) {
     prod_block_vector[iVar] = 0;
     for (jVar = 0; jVar < nVar; jVar++)
       prod_block_vector[iVar] += block[iVar*nVar+jVar]*vec[j+jVar];
   }
+ }
   
 }
 
@@ -972,7 +1015,7 @@ void CSysMatrix::RowProduct(const CSysVector & vec, unsigned long row_i) {
   unsigned long iVar, index;
   
   for (iVar = 0; iVar < nVar; iVar++)
-    prod_row_vector[iVar] = 0;
+    prod_row_vector[iVar] = 0.0;
   
   for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
     ProdBlockVector(row_i, col_ind[index], vec);
@@ -1141,7 +1184,7 @@ void CSysMatrix::InverseDiagonalBlock(unsigned long block_i, su2double *invBlock
     for (jVar = 0; jVar < nVar; jVar++)
       invBlock[jVar*nVar+iVar] = aux_vector[jVar];
   }
-  
+   
   //  su2double Det, **Matrix, **CoFactor;
   //  su2double *Block = GetBlock(block_i, block_i);
   //

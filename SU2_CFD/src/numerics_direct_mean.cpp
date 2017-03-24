@@ -1172,7 +1172,7 @@ if (sM > 0.0) {
   
       for (iVar = 0; iVar < nVar; iVar++) 
         for (jVar = 0; jVar < nVar; jVar++) 
-          val_Jacobian_j[iVar][jVar] = 0;
+          val_Jacobian_j[iVar][jVar] = 0.;
 
       GetInviscidProjJac(Velocity_i, &Energy_i, UnitNormal, 1.0, val_Jacobian_i);
 
@@ -1181,7 +1181,7 @@ if (sM > 0.0) {
       /*--- Compute Jacobian based on Left Star State ---*/
 
       EStar = IntermediateState[nVar-1];
-      Omega = 1/(sL-sM);
+      Omega = 1./(sL-sM);
       OmegaSM = Omega * sM;
 
 
@@ -1694,7 +1694,7 @@ if (sM > 0.0) {
   
       for (iVar = 0; iVar < nVar; iVar++) 
         for (jVar = 0; jVar < nVar; jVar++) 
-          val_Jacobian_j[iVar][jVar] = 0;
+          val_Jacobian_j[iVar][jVar] = 0.;
 
 
       GetInviscidProjJac(Velocity_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, 1.0, val_Jacobian_i);
@@ -1819,13 +1819,13 @@ if (sM > 0.0) {
       /*--- Jacobian First Row ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        val_Jacobian_j[0][iVar] = IntermediateState[0] * ( OmegaSM + 1 ) * dSm_dU[iVar];
+        val_Jacobian_j[0][iVar] = IntermediateState[0] * ( OmegaSM + 1. ) * dSm_dU[iVar];
 
       /*--- Jacobian Middle Rows ---*/
 
       for (iDim = 0; iDim < nDim; iDim++) {
         for (iVar = 0; iVar < nVar; iVar++)
-          val_Jacobian_j[iDim+1][iVar] = ( OmegaSM + 1 ) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
+          val_Jacobian_j[iDim+1][iVar] = ( OmegaSM + 1. ) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
       }
 
       /*--- Jacobian Last Row ---*/
@@ -1841,7 +1841,7 @@ if (sM > 0.0) {
   
       for (iVar = 0; iVar < nVar; iVar++) 
         for (jVar = 0; jVar < nVar; jVar++) 
-          val_Jacobian_i[iVar][jVar] = 0;
+          val_Jacobian_i[iVar][jVar] = 0.;
 
       GetInviscidProjJac(Velocity_j, &Enthalpy_j, &Chi_j, &Kappa_j, UnitNormal, 1.0, val_Jacobian_j);
     
@@ -1889,13 +1889,13 @@ if (sM > 0.0) {
       /*--- Jacobian First Row ---*/
 
       for (iVar = 0; iVar < nVar; iVar++)
-        val_Jacobian_i[0][iVar] = IntermediateState[0] * ( OmegaSM + 1 ) * dSm_dU[iVar];
+        val_Jacobian_i[0][iVar] = IntermediateState[0] * ( OmegaSM + 1. ) * dSm_dU[iVar];
 
       /*--- Jacobian Middle Rows ---*/
 
       for (iDim = 0; iDim < nDim; iDim++) {
         for (iVar = 0; iVar < nVar; iVar++)
-          val_Jacobian_i[iDim+1][iVar] = (OmegaSM + 1) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
+          val_Jacobian_i[iDim+1][iVar] = (OmegaSM + 1.) * ( IntermediateState[iDim+1] * dSm_dU[iVar] + UnitNormal[iDim] * dpStar_dU[iVar] );
       }
 
       /*--- Jacobian Last Row ---*/
@@ -1920,7 +1920,7 @@ if (sM > 0.0) {
       
       dSm_dU[0] = - ( - ProjVelocity_j * ProjVelocity_j + sM * sR + dPI_dU[0] ) / RHO;
       for (iDim = 0; iDim < nDim; iDim++)
-        dSm_dU[iDim+1] = - ( UnitNormal[iDim] * ( 2 * ProjVelocity_j - sR - sM) + dPI_dU[iDim+1] ) / RHO;
+        dSm_dU[iDim+1] = - ( UnitNormal[iDim] * ( 2.0 * ProjVelocity_j - sR - sM) + dPI_dU[iDim+1] ) / RHO;
       dSm_dU[nVar-1]  = - dPI_dU[nVar-1] / RHO;
 
 
@@ -1959,7 +1959,7 @@ if (sM > 0.0) {
 
       for (jDim = 0; jDim < nDim; jDim++) {
         for (iVar = 0; iVar < nVar; iVar++)
-          val_Jacobian_j[jDim+1][iVar] = ( OmegaSM + 1 ) * ( UnitNormal[jDim] * dpStar_dU[iVar] + IntermediateState[jDim+1] * dSm_dU[iVar] );
+          val_Jacobian_j[jDim+1][iVar] = ( OmegaSM + 1.0 ) * ( UnitNormal[jDim] * dpStar_dU[iVar] + IntermediateState[jDim+1] * dSm_dU[iVar] );
 
         val_Jacobian_j[jDim+1][0] += OmegaSM * Velocity_j[jDim] * ProjVelocity_j;
 

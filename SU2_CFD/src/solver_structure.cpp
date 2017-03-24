@@ -226,7 +226,8 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
       
     }
     
-    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/ geometry->GetnPoint() )));
+//js MPI-Ser mismatch    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
     
   }
   
