@@ -437,7 +437,11 @@ inline void CTurboVertex::SetAngularCoord(su2double angCoord){AngularCoord = ang
 
 inline su2double CTurboVertex::GetAngularCoord(void) { return AngularCoord; }
 
-inline void CTurboVertex::SetDeltaAngularCoord(su2double angCoord){DeltaAngularCoord = angCoord;}
+inline void CTurboVertex::SetDeltaAngularCoord(su2double deltaAngCoord){DeltaAngularCoord = deltaAngCoord;}
 
 inline su2double CTurboVertex::GetDeltaAngularCoord(void) { return DeltaAngularCoord; }
+
+inline void CTurboVertex::SetRelAngularCoord(su2double minAngCoord) {RelAngularCoord = AngularCoord - minAngCoord;}
+
+inline su2double CTurboVertex::GetRelAngularCoord(void){return RelAngularCoord;}
 

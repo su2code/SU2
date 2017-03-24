@@ -130,6 +130,8 @@ public:
 	su2double ***AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
 	su2double **AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
 	su2double **SpanArea; /*! <\brief Area at each span wise section for each marker.*/
+su2double **MaxAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
+su2double **MinAngularPitch; /*! <\brief Max angular pitch at each span wise section for each marker.*/
   su2double **TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
 	su2double **TangGridVelIn, **TangGridVelOut; /*! <\brief Average tangential rotational speed at each span wise section for each turbomachinery marker.*/
 	su2double **SpanAreaIn, **SpanAreaOut; /*! <\brief Area at each span wise section for each turbomachinery marker.*/
