@@ -1291,10 +1291,7 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
     filename = config->GetMultizone_FileName(filename, iZone);
 
   if (dynamic) {
-
-    Dyn_RestartIter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
-
-    filename = config->GetUnsteady_FileName(filename, (int)Dyn_RestartIter);
+      filename = config->GetUnsteady_FileName(filename, val_iter);
   }
 
   restart_file.open(filename.data(), ios::in);
@@ -3271,9 +3268,11 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
       break;
     case POL_ORDER_3:
       ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+      if (CurrentTime > Ramp_Time) ModAmpl = 1.0;
       break;
     case POL_ORDER_5:
       ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+      if (CurrentTime > Ramp_Time) ModAmpl = 1.0;
       break;
     case SIGMOID_10:
       ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
@@ -3614,9 +3613,11 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
       break;
     case POL_ORDER_3:
       ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+      if (Transfer_Time > 1.0) ModAmpl = 1.0;
       break;
     case POL_ORDER_5:
       ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+      if (Transfer_Time > 1.0) ModAmpl = 1.0;
       break;
     case SIGMOID_10:
       ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
