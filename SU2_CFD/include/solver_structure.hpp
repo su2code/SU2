@@ -111,9 +111,14 @@ protected:
   
   su2double **Smatrix,  /*!< \brief Auxiliary structure for computing gradients by least-squares */
   **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
-  
+
+  int *Restart_Vars;       /*!< \brief Auxiliary structure for holding the number of variables and points in a restart. */
+  int Restart_ExtIter;     /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
+  passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
-  
+
+  su2double ***SlidingState; /*!< \brief Sliding State variables. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -738,10 +743,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -3310,6 +3316,30 @@ public:
                            CConfig *config, int val_iter, bool val_update_geo);
 
   /*!
+   * \brief Read a native SU2 restart file in ASCII format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Read a native SU2 restart file in binary format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -4331,10 +4361,11 @@ public:
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
-  * \param[in] numerics - Description of the numerical method.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
   * \param[in] config - Definition of the particular problem.
   */
-  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
     
   /*!
    * \brief Impose the engine inflow boundary condition.
@@ -6010,7 +6041,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-  
+
   /*!
    * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
    * \param[in] val_marker   - marker index
@@ -8183,7 +8214,8 @@ protected:
   *upperlimit;            /*!< \brief contains upper limits for turbulence variables. */
   su2double Gamma;           /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One; /*!< \brief Fluids's Gamma - 1.0  . */
-  
+  unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
+  *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
 public:
   
   /*!
@@ -8198,6 +8230,7 @@ public:
   
   /*!
    * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CConfig *config);
   
@@ -8305,6 +8338,23 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
+ /*!
+  * \brief Get the outer state for fluid interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_vertex - vertex index
+  * \param[in] val_state  - requested state component
+  */
+  su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+
 };
 
 /*!
@@ -8478,7 +8528,17 @@ public:
    */
   void BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
-  
+
+  /*!
+   * \brief Impose the fluid interface boundary condition using tranfer data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Impose the near-field boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -8672,6 +8732,16 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                  unsigned short val_marker);
   
+ /*!
+  * \brief Impose the interface state across sliding meshes.
+  * \param[in] geometry - Geometrical definition of the problem.
+  * \param[in] solver_container - Container vector with all the solutions.
+  * \param[in] conv_numerics - Description of the numerical method.
+  * \param[in] visc_numerics - Description of the numerical method.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
   /*!
    * \brief Get the constants for the SST model.
    * \return A pointer to an array containing a set of constants

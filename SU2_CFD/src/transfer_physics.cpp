@@ -360,12 +360,25 @@ void CTransfer_SlidingInterface::GetPhysical_Constants(CSolver *donor_solution, 
 void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                                                 unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
-  unsigned short iVar;
+  unsigned short iVar, nDonorVar;
+  nDonorVar = donor_solution->GetnPrimVar();
 
-  /*--- Retrieve solution and set it as the donor variable ---*/
+  /*---  the number of primitive variables is set to two by default for the turbulent solver ---*/
+  bool turbulent = (nDonorVar == 2) ;
 
-  for (iVar = 0; iVar < nVar; iVar++)
-    Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+  if (turbulent){
+
+    /*---  for turbulent solver retrieve solution and set it as the donor variable ---*/
+    Donor_Variable[0] = donor_solution->node[Point_Donor]->GetSolution(0);
+    Donor_Variable[1] = donor_solution->node[Point_Donor]->GetSolution(1);
+
+  } else{
+
+    /*---  Retrieve primitive variables and set them as the donor variables ---*/
+    for (iVar = 0; iVar < nDonorVar; iVar++)
+      Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
+
+  }
 }
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,

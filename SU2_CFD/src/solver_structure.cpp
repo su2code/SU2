@@ -66,6 +66,8 @@ CSolver::CSolver(void) {
   Jacobian_jj        = NULL;
   Smatrix            = NULL;
   Cvector            = NULL;
+  Restart_Vars       = NULL;
+  Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
   
@@ -166,6 +168,9 @@ CSolver::~CSolver(void) {
       delete [] Cvector[iVar];
     delete [] Cvector;
   }
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
 
 }
 
@@ -1602,99 +1607,166 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
-    /*--- This function is intended for dual time simulations ---*/
 
-    unsigned long iPoint, index;
+  /*--- This function is intended for dual time simulations ---*/
 
-    int Unst_RestartIter;
-    ifstream restart_file_n;
-    unsigned short iZone = config->GetiZone();
-    unsigned short nZone = geometry->GetnZone();
-    string filename = config->GetSolution_FlowFileName();
-    string filename_n;
+  unsigned long index;
 
-    /*--- Auxiliary vector for storing the coordinates ---*/
-    su2double *Coord;
-    Coord = new su2double[nDim];
+  int Unst_RestartIter;
+  ifstream restart_file_n;
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+  string filename = config->GetSolution_FlowFileName();
+  string filename_n;
 
-    /*--- Variables for reading the restart files ---*/
-    string text_line;
-    long iPoint_Local;
-    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
-    unsigned short rbuf_NotMatching, sbuf_NotMatching;
+  /*--- Auxiliary vector for storing the coordinates ---*/
+  su2double *Coord;
+  Coord = new su2double[nDim];
 
-    int rank = MASTER_NODE;
+  /*--- Variables for reading the restart files ---*/
+  string text_line;
+  long iPoint_Local;
+  unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
+  unsigned short rbuf_NotMatching, sbuf_NotMatching;
+
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
 
-    if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone);
+  if (nZone > 1)
+    filename = config->GetMultizone_FileName(filename, iZone);
 
-    /*--- First, we load the restart file for time n ---*/
+  /*--- First, we load the restart file for time n ---*/
 
-    /*-------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  /*--- Modify file name for an unsteady restart ---*/
+  Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+  filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+
+  /*--- Open the restart file, throw an error if this fails. ---*/
+
+  restart_file_n.open(filename_n.data(), ios::in);
+  if (restart_file_n.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no flow restart file!! " << filename_n.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
+  iPoint_Global_Local = 0, iPoint_Global = 0;
+
+  /*--- Read all lines in the restart file ---*/
+  /*--- The first line is the header ---*/
+
+  getline (restart_file_n, text_line);
+
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    
+    getline (restart_file_n, text_line);
+    
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
+      if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
+
+      geometry->node[iPoint_Local]->SetCoord_n(Coord);
+
+      iPoint_Global_Local++;
+    }
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Close the restart file ---*/
+
+  restart_file_n.close();
+
+  /*-------------------------------------------------------------------------------------------*/
+  /*-------------------------------------------------------------------------------------------*/
+
+  /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
+
+  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+
+    ifstream restart_file_n1;
+    string filename_n1;
 
     /*--- Modify file name for an unsteady restart ---*/
-    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
-    filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+    filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
 
     /*--- Open the restart file, throw an error if this fails. ---*/
 
-    restart_file_n.open(filename_n.data(), ios::in);
+    restart_file_n.open(filename_n1.data(), ios::in);
     if (restart_file_n.fail()) {
-        if (rank == MASTER_NODE)
-            cout << "There is no flow restart file!! " << filename_n.data() << "."<< endl;
-        exit(EXIT_FAILURE);
+      if (rank == MASTER_NODE)
+        cout << "There is no flow restart file!! " << filename_n1.data() << "."<< endl;
+      exit(EXIT_FAILURE);
     }
-
-    /*--- In case this is a parallel simulation, we need to perform the
-     Global2Local index transformation first. ---*/
-
-    long *Global2Local_n = new long[geometry->GetGlobal_nPointDomain()];
 
     /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
     iPoint_Global_Local = 0, iPoint_Global = 0;
-
-    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-        Global2Local_n[iPoint] = -1;
-
-    /*--- Now fill array with the transform values only for local points ---*/
-
-    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-        Global2Local_n[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
 
     /*--- Read all lines in the restart file ---*/
     /*--- The first line is the header ---*/
 
     getline (restart_file_n, text_line);
 
-    while (getline (restart_file_n, text_line)) {
-        istringstream point_line(text_line);
+    for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+      
+      getline (restart_file_n, text_line);
+      
+      istringstream point_line(text_line);
 
-        /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
+      /*--- Retrieve local index. If this node from the restart file lives
+       on the current processor, we will load and instantiate the vars. ---*/
 
-        iPoint_Local = Global2Local_n[iPoint_Global];
+      iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
-        /*--- Load the solution for this node. Note that the first entry
-       on the restart file line is the global index, followed by the
-       node coordinates, and then the conservative variables. ---*/
+      if (iPoint_Local > -1) {
 
-        if (iPoint_Local >= 0) {
+        if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
+        if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
 
-            if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-            if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
+        geometry->node[iPoint_Local]->SetCoord_n1(Coord);
 
-            geometry->node[iPoint_Local]->SetCoord_n(Coord);
+        iPoint_Global_Local++;
+      }
 
-            iPoint_Global_Local++;
-        }
-        iPoint_Global++;
     }
 
     /*--- Detect a wrong solution file ---*/
@@ -1708,140 +1780,588 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 #else
     SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-
     if (rbuf_NotMatching != 0) {
-        if (rank == MASTER_NODE) {
-            cout << endl << "The solution file " << filename_n.data() << " doesn't match with the mesh file!" << endl;
-            cout << "It could be empty lines at the end of the file." << endl << endl;
-        }
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
 #ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
+      exit(EXIT_FAILURE);
 #else
-        MPI_Barrier(MPI_COMM_WORLD);
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
 #endif
     }
 
     /*--- Close the restart file ---*/
 
-    restart_file_n.close();
+    restart_file_n1.close();
 
-    /*--- Free memory needed for the transformation ---*/
+  }
 
-    delete [] Global2Local_n;
+  /*--- It's necessary to communicate this information ---*/
 
-    /*-------------------------------------------------------------------------------------------*/
-    /*-------------------------------------------------------------------------------------------*/
+  geometry->Set_MPI_OldCoord(config);
+  
+  delete [] Coord;
 
-    /*--- Now, we load the restart file for time n-1, if the simulation is 2nd Order ---*/
+}
 
-    if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, CConfig *config, string val_filename) {
 
-        ifstream restart_file_n1;
-        string filename_n1;
-
-        /*--- Modify file name for an unsteady restart ---*/
-        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
-        filename_n1 = config->GetUnsteady_FileName(filename, Unst_RestartIter);
-
-        /*--- Open the restart file, throw an error if this fails. ---*/
-
-        restart_file_n.open(filename_n1.data(), ios::in);
-        if (restart_file_n.fail()) {
-            if (rank == MASTER_NODE)
-                cout << "There is no flow restart file!! " << filename_n1.data() << "."<< endl;
-            exit(EXIT_FAILURE);
-        }
-
-        /*--- In case this is a parallel simulation, we need to perform the
-         Global2Local index transformation first. ---*/
-
-        long *Global2Local_n1 = new long[geometry->GetGlobal_nPointDomain()];
-
-        /*--- First, set all indices to a negative value by default, and Global n indices to 0 ---*/
-        iPoint_Global_Local = 0, iPoint_Global = 0;
-
-        for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
-            Global2Local_n1[iPoint] = -1;
-
-        /*--- Now fill array with the transform values only for local points ---*/
-
-        for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
-            Global2Local_n1[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-
-        /*--- Read all lines in the restart file ---*/
-        /*--- The first line is the header ---*/
-
-        getline (restart_file_n, text_line);
-
-        while (getline (restart_file_n, text_line)) {
-            istringstream point_line(text_line);
-
-            /*--- Retrieve local index. If this node from the restart file lives
-           on a different processor, the value of iPoint_Local will be -1.
-           Otherwise, the local index for this node on the current processor
-           will be returned and used to instantiate the vars. ---*/
-
-            iPoint_Local = Global2Local_n1[iPoint_Global];
-
-            /*--- Load the solution for this node. Note that the first entry
-           on the restart file line is the global index, followed by the
-           node coordinates, and then the conservative variables. ---*/
-
-            if (iPoint_Local >= 0) {
-
-                if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1];
-                if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2];
-
-                geometry->node[iPoint_Local]->SetCoord_n1(Coord);
-
-                iPoint_Global_Local++;
-            }
-            iPoint_Global++;
-        }
-
-        /*--- Detect a wrong solution file ---*/
-
-        rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-        if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-        rbuf_NotMatching = sbuf_NotMatching;
-#else
-        SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  ifstream restart_file;
+  string text_line, Tag;
+  unsigned short iVar;
+  long index, iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  int counter = 0;
+  config->fields.clear();
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-        if (rbuf_NotMatching != 0) {
-            if (rank == MASTER_NODE) {
-                cout << endl << "The solution file " << filename_n1.data() << " doesn't match with the mesh file!" << endl;
-                cout << "It could be empty lines at the end of the file." << endl << endl;
-            }
+  Restart_Vars = new int[4];
+
+  /*--- Open the restart file ---*/
+
+  restart_file.open(val_filename.data(), ios::in);
+
+  /*--- In case there is no restart file ---*/
+
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "SU2 ASCII solution file " << val_filename << " not found." << endl;
+
 #ifndef HAVE_MPI
-            exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
 #else
-            MPI_Barrier(MPI_COMM_WORLD);
-            MPI_Abort(MPI_COMM_WORLD,1);
-            MPI_Finalize();
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
 #endif
-        }
 
-        /*--- Close the restart file ---*/
+  }
 
-        restart_file_n1.close();
+  /*--- Identify the number of fields (and names) in the restart file ---*/
 
-        /*--- Free memory needed for the transformation ---*/
+  getline (restart_file, text_line);
 
-        delete [] Global2Local_n1;
+  stringstream ss(text_line);
+  while (ss >> Tag) {
+    config->fields.push_back(Tag);
+    if (ss.peek() == ',') ss.ignore();
+  }
+
+  /*--- Set the number of variables, one per field in the
+   restart file (without including the PointID) ---*/
+
+  Restart_Vars[0] = (int)config->fields.size() - 1;
+
+  /*--- Allocate memory for the restart data. ---*/
+
+  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
+
+  /*--- Read all lines in the restart file and extract data. ---*/
+
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    getline (restart_file, text_line);
+
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- The PointID is not stored --*/
+
+      point_line >> index;
+
+      /*--- Store the solution (starting with node coordinates) --*/
+
+      for (iVar = 0; iVar < Restart_Vars[0]; iVar++)
+        point_line >> Restart_Data[counter*Restart_Vars[0] + iVar];
+
+      /*--- Increment our local point counter. ---*/
+
+      counter++;
+
+    }
+  }
+
+}
+
+
+void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, CConfig *config, string val_filename) {
+
+  char str_buf[CGNS_STRING_SIZE], fname[100];
+  unsigned short iVar;
+  strcpy(fname, val_filename.c_str());
+  int nRestart_Vars = 4;
+  Restart_Vars = new int[4];
+  config->fields.clear();
+
+#ifndef HAVE_MPI
+
+  /*--- Serial binary input. ---*/
+
+  FILE *fhw;
+  fhw = fopen(fname,"rb");
+
+  /*--- Error check for opening the file. ---*/
+
+  if (!fhw) {
+    cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- First, read the number of variables and points. ---*/
+
+  fread(Restart_Vars, sizeof(int), nRestart_Vars, fhw);
+
+  /*--- Read the variable names from the file. Note that we are adopting a
+   fixed length of 33 for the string length to match with CGNS. This is
+   needed for when we read the strings later. We pad the beginning of the
+   variable string vector with the Point_ID tag that wasn't written. ---*/
+
+  config->fields.push_back("Point_ID");
+  for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+    fread(str_buf, sizeof(char), CGNS_STRING_SIZE, fhw);
+    config->fields.push_back(str_buf);
+  }
+
+  /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
+
+  /*--- Read in the data for the restart at all local points. ---*/
+
+  fread(Restart_Data, sizeof(passivedouble), Restart_Vars[0]*geometry->GetnPointDomain(), fhw);
+
+  /*--- Close the file. ---*/
+
+  fclose(fhw);
+
+#else
+
+  /*--- Parallel binary input using MPI I/O. ---*/
+
+  MPI_File fhw;
+  MPI_Status status;
+  MPI_Datatype etype, filetype;
+  MPI_Offset disp;
+  unsigned long iPoint_Global, index, iChar;
+  string field_buf;
+
+  int rank = MASTER_NODE, ierr;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  /*--- All ranks open the file using MPI. ---*/
+
+  ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+  /*--- Error check opening the file. ---*/
+
+  if (ierr) {
+    if (rank == MASTER_NODE)
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+  }
+
+  /*--- First, read the number of variables and points (i.e., cols and rows),
+   which we will need in order to read the file later. Also, read the
+   variable string names here. Only the master rank reads the header. ---*/
+
+  if (rank == MASTER_NODE)
+    MPI_File_read(fhw, Restart_Vars, nRestart_Vars, MPI_INT, MPI_STATUS_IGNORE);
+
+  /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+  SU2_MPI::Bcast(Restart_Vars, nRestart_Vars, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*--- Read the variable names from the file. Note that we are adopting a
+   fixed length of 33 for the string length to match with CGNS. This is
+   needed for when we read the strings later. ---*/
+
+  char *mpi_str_buf = new char[Restart_Vars[0]*CGNS_STRING_SIZE];
+  if (rank == MASTER_NODE) {
+    disp = nRestart_Vars*sizeof(int);
+    MPI_File_read_at(fhw, disp, mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE,
+                     MPI_CHAR, MPI_STATUS_IGNORE);
+  }
+
+  /*--- Broadcast the string names of the variables. ---*/
+
+  SU2_MPI::Bcast(mpi_str_buf, Restart_Vars[0]*CGNS_STRING_SIZE, MPI_CHAR,
+                 MASTER_NODE, MPI_COMM_WORLD);
+
+  /*--- Now parse the string names and load into the config class in case
+   we need them for writing visualization files (SU2_SOL). ---*/
+
+  config->fields.push_back("Point_ID");
+  for (iVar = 0; iVar < Restart_Vars[0]; iVar++) {
+    index = iVar*CGNS_STRING_SIZE;
+    field_buf.append("\"");
+    for (iChar = 0; iChar < CGNS_STRING_SIZE; iChar++) {
+      str_buf[iChar] = mpi_str_buf[index + iChar];
+    }
+    field_buf.append(str_buf);
+    field_buf.append("\"");
+    config->fields.push_back(field_buf.c_str());
+    field_buf.clear();
+  }
+
+  /*--- Free string buffer memory. ---*/
+
+  delete [] mpi_str_buf;
+
+  /*--- We're writing only su2doubles in the data portion of the file. ---*/
+
+  etype = MPI_DOUBLE;
+
+  /*--- We need to ignore the 4 ints describing the nVar_Restart and nPoints,
+   along with the string names of the variables. ---*/
+
+  disp = nRestart_Vars*sizeof(int) + CGNS_STRING_SIZE*Restart_Vars[0]*sizeof(char);
+
+  /*--- Define a derived datatype for this rank's set of non-contiguous data
+   that will be placed in the restart. Here, we are collecting each one of the
+   points which are distributed throughout the file in blocks of nVar_Restart data. ---*/
+
+  int *blocklen = new int[geometry->GetnPointDomain()];
+  int *displace = new int[geometry->GetnPointDomain()];
+  int counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+    if (geometry->GetGlobal_to_Local_Point(iPoint_Global) > -1) {
+      blocklen[counter] = Restart_Vars[0];
+      displace[counter] = iPoint_Global*Restart_Vars[0];
+      counter++;
+    }
+  }
+  MPI_Type_indexed(geometry->GetnPointDomain(), blocklen, displace, MPI_DOUBLE, &filetype);
+  MPI_Type_commit(&filetype);
+
+  /*--- Set the view for the MPI file write, i.e., describe the location in
+   the file that this rank "sees" for writing its piece of the restart file. ---*/
+
+  MPI_File_set_view(fhw, disp, etype, filetype, "native", MPI_INFO_NULL);
+
+  /*--- For now, create a temp 1D buffer to read the data from file. ---*/
+
+  Restart_Data = new passivedouble[Restart_Vars[0]*geometry->GetnPointDomain()];
+
+  /*--- Collective call for all ranks to read from their view simultaneously. ---*/
+
+  MPI_File_read_all(fhw, Restart_Data, Restart_Vars[0]*geometry->GetnPointDomain(), MPI_DOUBLE, &status);
+
+  /*--- All ranks close the file after writing. ---*/
+
+  MPI_File_close(&fhw);
+
+  /*--- Free the derived datatype and release temp memory. ---*/
+
+  MPI_Type_free(&filetype);
+
+  delete [] blocklen;
+  delete [] displace;
+  
+#endif
+  
+}
+
+void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, string val_filename) {
+
+  su2double AoA_ = config->GetAoA();
+  su2double AoS_ = config->GetAoS();
+  su2double BCThrust_ = config->GetInitial_BCThrust();
+  su2double dCD_dCL_ = config->GetdCD_dCL();
+  su2double dCD_dCM_ = config->GetdCD_dCM();
+  string::size_type position;
+  unsigned long ExtIter_ = 0;
+  ifstream restart_file;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (config->GetRead_Binary_Restart()) {
+
+    char fname[100];
+    strcpy(fname, val_filename.c_str());
+    int nVar_Buf = 4;
+    int var_buf[4];
+    int Restart_Iter = 0;
+    passivedouble Restart_Meta[5] = {0.0,0.0,0.0,0.0,0.0};
+
+#ifndef HAVE_MPI
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    /*--- First, read the number of variables and points. ---*/
+
+    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+
+    /*--- Compute (negative) displacements and grab the metadata. ---*/
+
+    fseek(fhw,-(sizeof(int) + 5*sizeof(passivedouble)), SEEK_END);
+
+    /*--- Read the external iteration. ---*/
+
+    fread(&Restart_Iter, 1, sizeof(int), fhw);
+
+    /*--- Read the metadata. ---*/
+
+    fread(Restart_Meta, 5, sizeof(passivedouble), fhw);
+
+    /*--- Close the file. ---*/
+
+    fclose(fhw);
+
+#else
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    MPI_Offset disp;
+    int rank = MASTER_NODE, ierr;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+
+    if (rank == MASTER_NODE)
+      MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
+
+    /*--- Broadcast the number of variables to all procs and store clearly. ---*/
+
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- Access the metadata. ---*/
+
+    if (rank == MASTER_NODE) {
+
+      /*--- External iteration. ---*/
+      disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
+              var_buf[0]*var_buf[1]*sizeof(passivedouble));
+      MPI_File_read_at(fhw, disp, &Restart_Iter, 1, MPI_INT, MPI_STATUS_IGNORE);
+
+      /*--- Additional doubles for AoA, AoS, etc. ---*/
+
+      disp = (nVar_Buf*sizeof(int) + var_buf[0]*CGNS_STRING_SIZE*sizeof(char) +
+              var_buf[0]*var_buf[1]*sizeof(passivedouble) + 1*sizeof(int));
+      MPI_File_read_at(fhw, disp, Restart_Meta, 5, MPI_DOUBLE, MPI_STATUS_IGNORE);
 
     }
 
-    /*--- It's necessary to communicate this information ---*/
+    /*--- Communicate metadata. ---*/
 
-    geometry->Set_MPI_OldCoord(config);
-  
-  delete [] Coord;
+    SU2_MPI::Bcast(&Restart_Iter, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(Restart_Meta, 5, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+    /*--- All ranks close the file after writing. ---*/
+
+    MPI_File_close(&fhw);
+
+#endif
+
+    /*--- Store intermediate vals from file I/O in correct variables. ---*/
+
+    ExtIter_  = Restart_Iter;
+    AoA_      = Restart_Meta[0];
+    AoS_      = Restart_Meta[1];
+    BCThrust_ = Restart_Meta[2];
+    dCD_dCL_  = Restart_Meta[3];
+
+  } else {
+
+    /*--- Open the restart file, throw an error if this fails. ---*/
+
+    restart_file.open(val_filename.data(), ios::in);
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE) {
+        cout << " Warning: There is no restart file (" << val_filename.data() << ")."<< endl;
+        cout << " Computation will continue without updating metadata parameters." << endl;
+      }
+    } else {
+
+      unsigned long iPoint_Global = 0;
+      string text_line;
+
+      /*--- The first line is the header (General description) ---*/
+
+      getline (restart_file, text_line);
+
+      /*--- Space for the solution ---*/
+
+      for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+        getline (restart_file, text_line);
+
+      }
+
+      /*--- Space for extra info (if any) ---*/
+
+      while (getline (restart_file, text_line)) {
+
+        /*--- External iteration ---*/
+
+        position = text_line.find ("EXT_ITER=",0);
+        if (position != string::npos) {
+          text_line.erase (0,9); ExtIter_ = atoi(text_line.c_str());
+        }
+
+        /*--- Angle of attack ---*/
+
+        position = text_line.find ("AOA=",0);
+        if (position != string::npos) {
+          text_line.erase (0,4); AoA_ = atof(text_line.c_str());
+        }
+
+        /*--- Sideslip angle ---*/
+
+        position = text_line.find ("SIDESLIP_ANGLE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,15); AoS_ = atof(text_line.c_str());
+        }
+
+        /*--- BCThrust angle ---*/
+
+        position = text_line.find ("INITIAL_BCTHRUST=",0);
+        if (position != string::npos) {
+          text_line.erase (0,17); BCThrust_ = atof(text_line.c_str());
+        }
+
+        if (adjoint && config->GetRestart()) {
+
+          if (config->GetEval_dCD_dCX() == true) {
+
+          /*--- dCD_dCL coefficient ---*/
+
+          position = text_line.find ("DCD_DCL_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,14); dCD_dCL_ = atof(text_line.c_str());
+          }
+
+          /*--- dCD_dCM coefficient ---*/
+
+          position = text_line.find ("DCD_DCM_VALUE=",0);
+          if (position != string::npos) {
+            text_line.erase (0,14); dCD_dCM_ = atof(text_line.c_str());
+          }
+          }
+
+        }
+        
+      }
+
+
+      /*--- Close the restart meta file. ---*/
+
+      restart_file.close();
+
+    }
+  }
+
+  /*--- Load the metadata. ---*/
+
+  /*--- Angle of attack ---*/
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout << fixed <<"WARNING: AoA in the solution file (" << AoA_ << " deg.) +" << endl;
+      cout << "         AoA offset in mesh file (" << config->GetAoA_Offset() << " deg.) = " << AoA_ + config->GetAoA_Offset() << " deg." << endl;
+    }
+    config->SetAoA(AoA_ + config->GetAoA_Offset());
+  }
+  else {
+    if ((config->GetAoA() != AoA_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoA in the solution file." << endl;
+  }
+
+  /*--- Sideslip angle ---*/
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE)) {
+      cout.precision(6);
+      cout << fixed <<"WARNING: AoS in the solution file (" << AoS_ << " deg.) +" << endl;
+      cout << "         AoS offset in mesh file (" << config->GetAoS_Offset() << " deg.) = " << AoS_ + config->GetAoS_Offset() << " deg." << endl;
+    }
+    config->SetAoS(AoS_ + config->GetAoS_Offset());
+  }
+  else {
+    if ((config->GetAoS() != AoS_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the AoS in the solution file." << endl;
+  }
+
+  /*--- BCThrust angle ---*/
+
+  if (config->GetDiscard_InFiles() == false) {
+    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: SU2 will use the initial BC Thrust provided in the solution file: " << BCThrust_ << " lbs." << endl;
+    config->SetInitial_BCThrust(BCThrust_);
+  }
+  else {
+    if ((config->GetInitial_BCThrust() != BCThrust_) &&  (rank == MASTER_NODE))
+      cout <<"WARNING: Discarding the BC Thrust in the solution file." << endl;
+  }
+
+  if (adjoint && config->GetRestart()) {
+    if (config->GetEval_dCD_dCX() == true) {
+
+      /*--- dCD_dCL coefficient ---*/
+
+      if ((config->GetdCD_dCL() != dCD_dCL_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCD/dCL provided in\nthe adjoint solution file: " << dCD_dCL_ << " ." << endl;
+      config->SetdCD_dCL(dCD_dCL_);
+
+      /*--- dCD_dCM coefficient ---*/
+
+      if ((config->GetdCD_dCM() != dCD_dCM_) &&  (rank == MASTER_NODE))
+        cout <<"WARNING: SU2 will use the dCD/dCM provided in\nthe adjoint solution file: " << dCD_dCM_ << " ." << endl;
+      config->SetdCD_dCM(dCD_dCM_);
+    }
+  }
+
+  /*--- External iteration ---*/
+
+  if ((!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint()) ||
+      (adjoint && config->GetRestart()))
+    config->SetExtIter_OffSet(ExtIter_);
 
 }
 
@@ -1945,44 +2465,127 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
-  /*--- Open the restart file ---*/
+  /*--- Read only the number of variables in the restart file. ---*/
 
-  restart_file.open(filename.data(), ios::in);
+  if (config->GetRead_Binary_Restart()) {
 
-  /*--- In case there is no restart file ---*/
-
-  if (restart_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "SU2 solution file " << filename << " not found." << endl;
+    char fname[100];
+    strcpy(fname, filename.c_str());
+    int nVar_Buf = 4;
+    int var_buf[4];
 
 #ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
+
+    /*--- Serial binary input. ---*/
+
+    FILE *fhw;
+    fhw = fopen(fname,"rb");
+
+    /*--- Error check for opening the file. ---*/
+
+    if (!fhw) {
+      cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    /*--- First, read the number of variables and points. ---*/
+
+    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+
+    /*--- Close the file. ---*/
+
+    fclose(fhw);
+
 #else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+
+    /*--- Parallel binary input using MPI I/O. ---*/
+
+    MPI_File fhw;
+    int rank = MASTER_NODE, ierr;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    /*--- All ranks open the file using MPI. ---*/
+
+    ierr = MPI_File_open(MPI_COMM_WORLD, fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fhw);
+
+    /*--- Error check opening the file. ---*/
+
+    if (ierr) {
+      if (rank == MASTER_NODE)
+        cout << endl << "Error: unable to open SU2 restart file " << fname << "." << endl;
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+    }
+
+    /*--- First, read the number of variables and points (i.e., cols and rows),
+     which we will need in order to read the file later. Also, read the
+     variable string names here. Only the master rank reads the header. ---*/
+
+    if (rank == MASTER_NODE) {
+      MPI_File_read(fhw, var_buf, nVar_Buf, MPI_INT, MPI_STATUS_IGNORE);
+    }
+
+    /*--- Broadcast the number of variables to all procs and store more clearly. ---*/
+
+    SU2_MPI::Bcast(var_buf, nVar_Buf, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+    
+    /*--- All ranks close the file after writing. ---*/
+    
+    MPI_File_close(&fhw);
+
 #endif
 
+    /*--- Set the number of variables, one per field in the
+     restart file (without including the PointID) ---*/
+
+    nVar = var_buf[0];
+
+  } else {
+
+    /*--- Open the restart file ---*/
+
+    restart_file.open(filename.data(), ios::in);
+
+    /*--- In case there is no restart file ---*/
+
+    if (restart_file.fail()) {
+      if (rank == MASTER_NODE)
+        cout << "SU2 solution file " << filename << " not found." << endl;
+
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+
+    /*--- Identify the number of fields (and names) in the restart file ---*/
+
+    getline (restart_file, text_line);
+
+    stringstream ss(text_line);
+    while (ss >> Tag) {
+      config->fields.push_back(Tag);
+      if (ss.peek() == ',') ss.ignore();
+    }
+
+    /*--- Close the file (the solution date is read later). ---*/
+    
+    restart_file.close();
+
+    /*--- Set the number of variables, one per field in the
+     restart file (without including the PointID) ---*/
+
+    nVar = config->fields.size() - 1;
+
+    /*--- Clear the fields vector since we'll read it again. ---*/
+
+    config->fields.clear();
+
   }
-
-  /*--- Identify the number of fields (and names) in the restart file ---*/
-
-  getline (restart_file, text_line);
-
-  stringstream ss(text_line);
-  while (ss >> Tag) {
-    config->fields.push_back(Tag);
-    if (ss.peek() == ',') ss.ignore();
-  }
-
-  /*--- Close the file (the solution date is read later). ---*/
-
-  restart_file.close();
-
-  /*--- Set the number of variables, one per field in the
-   restart file (without including the PointID) ---*/
-
-  nVar = config->fields.size() - 1;
 
 }
 
@@ -2181,10 +2784,10 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Restart the solution from file information ---*/
 
   string filename;
-  unsigned long iPoint, index;
+  unsigned long index;
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
-  unsigned short iField, iDim;
+  unsigned short iDim, iVar;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
@@ -2193,12 +2796,15 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
-  su2double dull_val;
-  
+
   su2double *Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
-  
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
   /*--- Retrieve filename from config ---*/
 
   if (adjoint) {
@@ -2223,87 +2829,53 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
-  /*--- Open the restart file ---*/
-
-  solution_file.open(filename.data(), ios::in);
-
-  /*--- In case there is no file ---*/
-
-  if (solution_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no SU2 restart file!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
   /*--- Output the file name to the console. ---*/
 
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename
     << "." << endl;
 
-  /*--- Set the number of variables, one per field in the
-   restart file (without including the PointID) ---*/
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  nVar = config->fields.size() - 1;
-  su2double *Solution = new su2double[nVar];
-
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < geometry[iZone]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[iZone]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
 
-  /*--- Read all lines in the restart file ---*/
-
+  int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
-  /*--- The first line is the header ---*/
-
-  getline (solution_file, text_line);
+  /*--- Load data from the restart into correct containers. ---*/
 
   for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
-    getline (solution_file, text_line);
-    
-    istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
+
+    iPoint_Local = geometry[iZone]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
       
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      /*--- The PointID is not stored --*/
-      
-      point_line >> index;
-      
-      /*--- Store the solution (starting with node coordinates) --*/
-      
-      for (iField = 0; iField < nVar; iField++)
-        point_line >> Solution[iField];
-      
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0];
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
      
       /*--- For dynamic meshes, read in and store the
        grid coordinates and grid velocities for each node. ---*/
       
       if (grid_movement && val_update_geo) {
-        
+
         /*--- First, remove any variables for the turbulence model that
          appear in the restart file before the grid velocities. ---*/
-        
+
         if (turb_model == SA || turb_model == SA_NEG) {
-          point_line >> dull_val;
+          index++;
         } else if (turb_model == SST) {
-          point_line >> dull_val >> dull_val;
+          index+=2;
         }
         
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
@@ -2312,28 +2884,28 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         
         su2double GridVel[3] = {0.0,0.0,0.0};
         if (!steady_restart) {
-          if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-          else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[0];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[0] + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
-        
+
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[iZone]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
           geometry[iZone]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
-        
       }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
     }
     
   }
 
-  /*--- Close the restart file ---*/
-
-  solution_file.close();
-  
-  /*--- Free memory needed for the transformation ---*/
-  
-  delete [] Solution;
-  
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry[iZone], config);
@@ -2350,7 +2922,13 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   }
   
   delete [] Coord;
-  
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+
 }
 
 void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) {
@@ -2362,10 +2940,10 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
 
   /*--- Restart the solution from file information ---*/
   string filename;
-  unsigned long iPoint, index;
+  unsigned long index;
   string UnstExt, text_line, AdjExt;
   ifstream solution_file;
-  unsigned short iField;
+  unsigned short iVar;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
@@ -2394,80 +2972,53 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 
-  /*--- Open the restart file ---*/
-  solution_file.open(filename.data(), ios::in);
-
-  /*--- In case there is no file ---*/
-  if (solution_file.fail()) {
-    if (rank == MASTER_NODE)
-      cout << "There is no SU2 restart file!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
   /*--- Output the file name to the console. ---*/
+
   if (rank == MASTER_NODE)
     cout << "Reading and storing the solution from " << filename
     << "." << endl;
 
-  /*--- Set the number of variables, one per field in the
-   restart file (without including the PointID) ---*/
-  nVar = config->fields.size() - 1;
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  su2double *Solution = new su2double[nVar];
-
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-
-  map<unsigned long,unsigned long> Global2Local;
-  map<unsigned long,unsigned long>::const_iterator MI;
-  
-  /*--- Now fill array with the transform values only for local points ---*/
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry, config, filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry, config, filename);
   }
 
-  /*--- Read all lines in the restart file ---*/
+  unsigned short nVar_Local = Restart_Vars[0];
+  su2double *Solution_Local = new su2double[nVar_Local];
+
+  int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
 
-  
-  /*--- The first line is the header ---*/
-  
-  getline (solution_file, text_line);
+  /*--- Load data from the restart into correct containers. ---*/
   
   for (iPoint_Global = 0; iPoint_Global < geometry->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-    
-    getline (solution_file, text_line);
-    
-    istringstream point_line(text_line);
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-    
-    MI = Global2Local.find(iPoint_Global);
-    if (MI != Global2Local.end()) {
-      
-      iPoint_Local = Global2Local[iPoint_Global];
 
-      /*--- The PointID is not stored --*/
-      point_line >> index;
+    iPoint_Local = geometry->GetGlobal_to_Local_Point(iPoint_Global);
 
-      /*--- Store the solution (starting with node coordinates) --*/
-      for (iField = 0; iField < nVar; iField++)
-        point_line >> Solution[iField];
+    if (iPoint_Local > -1) {
 
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[0];
+      for (iVar = 0; iVar < nVar_Local; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
 
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+
+      counter++;
 
     }
 
   }
 
-  /*--- Close the restart file ---*/
-  solution_file.close();
-
-  /*--- Free memory needed for the transformation ---*/
-
-  delete [] Solution;
+  delete [] Solution_Local;
 
 }
 
