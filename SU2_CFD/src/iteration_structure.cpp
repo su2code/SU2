@@ -546,13 +546,11 @@ void CFluidIteration::Iterate(COutput *output,
     
   }
   
-  // solve the 2-phase equations
+    /*--- Solve two-phase model ---*/
 
-  if (config_container[val_iZone]->GetKind_2phase_Model() != NONE)  {
+  	  if (config_container[val_iZone]->GetKind_2phase_Model() != NONE)  {
 
-	  // solve the 2-phase equations
-
-	  config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_2PHASE_SYS, ExtIter);
+  		  config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_2PHASE_SYS, ExtIter);
 	  integration_container[val_iZone][TWO_PHASE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
 																	   config_container, RUNTIME_2PHASE_SYS, IntIter, val_iZone);
   }

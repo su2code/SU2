@@ -2790,17 +2790,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
 
-  if ((Kind_2phase_Model != NONE) &&
+  if ((Kind_Solver == TWO_PHASE_NAVIER_STOKES) &&
       (Kind_Turb_Model != NONE))
-    Kind_Solver = RANS;
-
-  if ((Kind_2phase_Model != NONE) && (Kind_Turb_Model == NONE) ) {
-	  if ((Kind_Solver != NAVIER_STOKES) &&
-			  (Kind_Solver != EULER)) {
-           cout << "Please, select NAVIER_STOKES, EULER solver"<<endl;
-           getchar();
-	  }
-  }
+    Kind_Solver = TWO_PHASE_RANS;
     
   Kappa_1st_Flow = Kappa_Flow[0];
   Kappa_2nd_Flow = Kappa_Flow[1];
@@ -5783,19 +5775,59 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               SpatialOrder_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
-
+      if (val_system == RUNTIME_TRANS_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
+                              Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
+                              SpatialOrder_Turb);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+      }
+      break;
+    case TWO_PHASE_EULER:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              SpatialOrder_Flow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+      }
       if (val_system == RUNTIME_2PHASE_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
                               Kind_Upwind_2phase, Kind_SlopeLimit_2phase,
                               SpatialOrder_2phase);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_2phase);
       }
-
-      if (val_system == RUNTIME_TRANS_SYS) {
+      break;
+    case TWO_PHASE_NAVIER_STOKES:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              SpatialOrder_Flow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+      }
+      if (val_system == RUNTIME_2PHASE_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
+                              Kind_Upwind_2phase, Kind_SlopeLimit_2phase,
+                              SpatialOrder_2phase);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_2phase);
+      }
+      break;
+    case TWO_PHASE_RANS:
+      if (val_system == RUNTIME_FLOW_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
+                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
+                              SpatialOrder_Flow);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+      }
+      if (val_system == RUNTIME_TURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+      }
+      if (val_system == RUNTIME_2PHASE_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
+                              Kind_Upwind_2phase, Kind_SlopeLimit_2phase,
+                              SpatialOrder_2phase);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_2phase);
       }
       break;
     case ADJ_EULER:
@@ -5844,12 +5876,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               SpatialOrder_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
-      }
-      if (val_system == RUNTIME_2PHASE_SYS) {
-          SetKind_ConvNumScheme(Kind_ConvNumScheme_2phase, Kind_Centered_2phase,
-                                Kind_Upwind_2phase, Kind_SlopeLimit_2phase,
-                                SpatialOrder_2phase);
-          SetKind_TimeIntScheme(Kind_TimeIntScheme_2phase);
       }
       if (val_system == RUNTIME_ADJTURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,

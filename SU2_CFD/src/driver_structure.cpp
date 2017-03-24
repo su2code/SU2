@@ -698,9 +698,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
                                    CConfig *config) {
   
   unsigned short iMGlevel;
-  unsigned short two_phase = config->GetKind_2phase_Model();
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
+  two_phase,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition, hill_rus, hill_ausm,
   template_solver, disc_adj;
@@ -715,7 +715,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;
+  spalart_allmaras = false;  menter_sst      = false;  two_phase = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;   disc_adj        = false;
   fem = false;
@@ -775,6 +775,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case TWO_PHASE_EULER : euler = true; two_phase = true; break;
+    case TWO_PHASE_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); two_phase = true; break;
+    case TWO_PHASE_RANS : ns = true; turbulent = true; two_phase = true; break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
@@ -792,8 +795,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
   
   /*--- Assign 2phase model booleans ---*/
-
-  if (two_phase != 0)
+  if (two_phase)
     switch (config->GetKind_2phase_Model()) {
       case HILL_RUS:     hill_rus  = true;     break;
 //      case HILL_AUSM :   hill_ausm = true;     break;
@@ -814,7 +816,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
-    
     if (euler) {
       if (compressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
@@ -854,7 +855,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
-    if (two_phase !=0) {
+    if (two_phase) {
       if (hill_rus || hill_ausm) {
         solver_container[iMGlevel][TWO_PHASE_SOL] = new C2phase_HillSolver(geometry[iMGlevel], config, iMGlevel);
       }
@@ -911,7 +912,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (turbulent) {
       solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
-    if (two_phase != 0 ) {
+    if (two_phase) {
       solver_container[MESH_0][TWO_PHASE_SOL]->LoadRestart(geometry, solver_container, config, val_iter, update_geo);
     }
     if (fem) {
@@ -970,9 +971,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry,
                                     CConfig *config) {
   unsigned short iMGlevel;
-  unsigned short two_phase = config-> GetKind_2phase_Model();
   bool euler, ns, turbulent, hill_rus, hill_ausm,
   adj_euler, adj_ns, adj_turb,
+  two_phase,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
@@ -981,7 +982,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  spalart_allmaras = false;  menter_sst      = false;
+  spalart_allmaras = false;  menter_sst      = false;  two_phase = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
   fem = false;
@@ -1003,6 +1004,9 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case TWO_PHASE_EULER : euler = true; two_phase = true; break;
+    case TWO_PHASE_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); two_phase = true; break;
+    case TWO_PHASE_RANS : ns = true; turbulent = true; two_phase = true; break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
@@ -1017,7 +1021,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       case SST:    menter_sst = true;           break;
     }
   
-  if (two_phase !=0)
+  if (two_phase)
     switch (config->GetKind_Turb_Model()) {
       case HILL_RUS:     hill_rus  = true;     break;
       case HILL_AUSM:    hill_ausm = true;     break;
@@ -1058,7 +1062,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       }
     }
 
-    if (two_phase != 0) {
+    if (two_phase) {
       delete solver_container[iMGlevel][TWO_PHASE_SOL];
     }
     if (poisson) {
@@ -1083,15 +1087,14 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, template_solver, transition, disc_adj;
-  bool two_phase = (config->GetKind_2phase_Model() != 0);
+      heat, template_solver, transition, disc_adj, two_phase;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
   ns               = false; adj_ns           = false;
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
-  wave             = false;
+  wave             = false; two_phase        = false;
   heat             = false;
   fem = false;
   transition       = false;
@@ -1110,6 +1113,9 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case TWO_PHASE_EULER : euler = true; two_phase = true; break;
+    case TWO_PHASE_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); two_phase = true; break;
+    case TWO_PHASE_RANS : ns = true; turbulent = true; two_phase = true; break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
@@ -1142,16 +1148,14 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
 void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     CGeometry **geometry, CConfig *config) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, template_solver, transition, disc_adj;
-
-  bool two_phase = (config->GetKind_2phase_Model() != 0);
+      heat, template_solver, transition, disc_adj, two_phase;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
   ns               = false; adj_ns           = false;
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
-  wave             = false;
+  wave             = false;two_phase         = false;
   heat             = false;
   fem = false;
   transition       = false;
@@ -1170,6 +1174,9 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case TWO_PHASE_EULER : euler = true; two_phase = true; break;
+    case TWO_PHASE_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); two_phase = true; break;
+    case TWO_PHASE_RANS : ns = true; turbulent = true; two_phase = true; break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
@@ -1210,7 +1217,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
-  nVar_FEM        = 0,
+  nVar_FEM              = 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0;
   
@@ -1226,8 +1233,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   fem,
   heat,
   transition,
-  template_solver;
-  bool two_phase = (config->GetKind_2phase_Model() != 0);
+  template_solver,
+  two_phase;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1238,8 +1245,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem        = false;
-  spalart_allmaras = false; neg_spalart_allmaras = false;  menter_sst       = false;
-  transition       = false;
+  spalart_allmaras = false;   neg_spalart_allmaras = false;  menter_sst       = false;
+  transition       = false;   two_phase        = false;
   template_solver  = false;
   hill_rus = false; hill_ausm = false;
   
@@ -1256,6 +1263,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case TWO_PHASE_EULER : euler = true; two_phase = true; break;
+    case TWO_PHASE_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); two_phase = true; break;
+    case TWO_PHASE_RANS : ns = true; turbulent = true; two_phase = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1950,9 +1960,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   fem,
   heat,
   transition,
+  two_phase,
   template_solver;
   
-  bool two_phase = (config->GetKind_2phase_Model() != 0);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   
@@ -1962,7 +1972,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem        = false;
   spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
-  transition       = false;
+  transition       = false;   two_phase        = false;
   template_solver  = false;
   
   hill_rus = false; hill_ausm = false;
@@ -1980,6 +1990,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case TWO_PHASE_EULER : euler = true; two_phase = true; break;
+    case TWO_PHASE_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); two_phase = true; break;
+    case TWO_PHASE_RANS : ns = true; turbulent = true; two_phase = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -2388,13 +2401,20 @@ void CDriver::Iteration_Preprocessing() {
       cout << ": FEM iteration." << endl;
       iteration_container[iZone] = new CFEM_StructuralAnalysis(config_container[iZone]);
     break;
-    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+
+  case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     if (rank == MASTER_NODE)
       cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CAdjFluidIteration(config_container[iZone]);
     break;
 
-    case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+  case TWO_PHASE_EULER: case TWO_PHASE_NAVIER_STOKES: case TWO_PHASE_RANS:
+    if (rank == MASTER_NODE)
+      cout << ": 2phase Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
+    break;
+
+   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
     if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CDiscAdjFluidIteration(config_container[iZone]);

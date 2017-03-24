@@ -1075,7 +1075,7 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Dimension of the problem --> dependent on the 2phase model. ---*/
-  
+getchar();
   nVar = 4;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -1140,7 +1140,7 @@ C2phase_HillSolver::C2phase_HillSolver(CGeometry *geometry, CConfig *config, uns
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
     
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (MOM model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
@@ -1816,7 +1816,7 @@ C2phase_QMOMSolver::C2phase_QMOMSolver(CGeometry *geometry, CConfig *config, uns
 
     /*--- Initialization of the structure of the whole Jacobian ---*/
 
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SST model)." << endl;
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (QMOM model)." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||

@@ -193,6 +193,9 @@ enum ENUM_SOLVER {
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  TWO_PHASE_EULER = 21,					/*!< \brief Definition of the two-phase Euler's solver. */
+  TWO_PHASE_NAVIER_STOKES = 22,			/*!< \brief Definition of the two-phase Navier-Stokes' solver. */
+  TWO_PHASE_RANS = 23,					/*!< \brief Definition of the two-phase Reynolds-averaged Navier-Stokes' (RANS) solver. */
   TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
@@ -208,6 +211,9 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
+("TWO_PHASE_EULER", TWO_PHASE_EULER)
+("TWO_PHASE_NAVIER_STOKES", TWO_PHASE_NAVIER_STOKES)
+("TWO_PHASE_RANS", TWO_PHASE_RANS)
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("FEM_ELASTICITY", FEM_ELASTICITY)
