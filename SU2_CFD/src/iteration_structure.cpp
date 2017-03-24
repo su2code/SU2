@@ -1904,7 +1904,14 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   unsigned short Kind_Solver = config_container[val_iZone]->GetKind_Solver();
+  unsigned IntIter = 0;
+  bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
 
+  if (!unsteady)
+    IntIter = ExtIter;
+  else {
+    IntIter = config_container[val_iZone]->GetIntIter();
+  }
 
     /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 
@@ -1917,7 +1924,7 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
     /*--- Set the convergence criteria (only residual possible) ---*/
 
     integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
-                                                                          ExtIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+                                                                          IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
     }
   if ((Kind_Solver == DISC_ADJ_RANS)) {
@@ -2028,7 +2035,20 @@ void CDiscAdjFluidIteration::Update(COutput *output,
                                        CSurfaceMovement **surface_movement,
                                        CVolumetricMovement **grid_movement,
                                        CFreeFormDefBox*** FFDBox,
-                                       unsigned short val_iZone)      { }
+                                       unsigned short val_iZone)      {
+
+  unsigned short iMesh;
+
+  /*--- Dual time stepping strategy ---*/
+
+  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
+
+    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
+      integration_container[val_iZone][ADJFLOW_SOL]->SetConvergence(false);
+    }
+  }
+}
 void CDiscAdjFluidIteration::Monitor()     { }
 void CDiscAdjFluidIteration::Output()      { }
 void CDiscAdjFluidIteration::Postprocess() { }
