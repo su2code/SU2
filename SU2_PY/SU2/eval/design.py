@@ -275,20 +275,22 @@ def obj_df(dvs,problem,state=None):
     objectives = def_objs.keys()
     n_obj = len( objectives )
     multi_objective = (config['OPT_COMBINE_OBJECTIVE']=="YES")
+
+# TODO: Add scaling
      
-    dv_scales = config['DEFINITION_DV']['SCALE']
-    dv_size   = config['DEFINITION_DV']['SIZE']
+#    dv_scales = config['DEFINITION_DV']['SCALE']
+#    dv_size   = config['DEFINITION_DV']['SIZE']
 
     vals_out = []
     for i_obj, this_obj in enumerate(objectives):
         config.GRADIENT_METHOD = grad_method
         grad = su2grad(this_obj, grad_method, problem, state)
-        # scaling : obj scale and sign are accounted for in combo gradient, dv scale now applied
-        k = 0
-        for i_dv, dv_scl in enumerate(dv_scales):
-            for i_grd in range(dv_size[i_dv]):
-                grad[k] = grad[k] / dv_scl
-                k = k + 1
+        # # scaling : obj scale and sign are accounted for in combo gradient, dv scale now applied
+        # k = 0
+        # for i_dv, dv_scl in enumerate(dv_scales):
+        #     for i_grd in range(dv_size[i_dv]):
+        #         grad[k] = grad[k] / dv_scl
+        #         k = k + 1
         vals_out.append(grad)
 
     '''

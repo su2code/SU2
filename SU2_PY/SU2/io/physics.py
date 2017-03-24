@@ -314,8 +314,8 @@ class fsi(physics):
         files['RESTART_DIRECT'] = [add_suffix(config.RESTART_FLOW_FILENAME, '0')]
         files['RESTART_DIRECT'].append(add_suffix(config.RESTART_STRUCTURE_FILENAME, '1'))
         # Restart (direct) files
-        files['RESTART_ADJOINT'] = [add_suffix(config.RESTART_FLOW_FILENAME, '0')]
-        files['RESTART_ADJOINT'].append(add_suffix(config.RESTART_STRUCTURE_FILENAME, '1'))
+        files['RESTART_ADJOINT'] = [add_suffix(config.RESTART_ADJ_FILENAME, '0')]
+        files['RESTART_ADJOINT'].append(add_suffix(config.RESTART_ADJ_STRUCTURE_FILENAME, '1'))
 
         special_cases = ['PRESTRETCH',
                          'REFERENCE_GEOMETRY']
@@ -341,6 +341,26 @@ class fsi(physics):
             config.SOLUTION_ADJ_STRUCTURE_FILENAME = config.RESTART_ADJ_STRUCTURE_FILENAME
             config.SOLUTION_ADJ_FILENAME = config.RESTART_ADJ_FILENAME
 
+    def get_adjoint_files(self, suffix):
+
+        res = self.files['RESTART_ADJOINT']
+        sol = self.files['ADJOINT']
+
+        # TODO: this is only until binaries are modified
+        # Difficult to sort out the order of multizone and objective function
+
+        restarts = [res[1]]
+        solutions = [sol[1]]
+
+        restart_flow = res[0]
+        restart_fea = res[1]
+        restart_flow = add_suffix(restart_flow, suffix)
+
+        solution_flow = sol[0]
+        solution_fea = sol[1]
+        solution_flow = add_suffix(restart_flow, suffix)
+
+        return restarts, solutions
 
 
 def read_physics(config, oFunction = 'NONE'):

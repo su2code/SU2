@@ -277,7 +277,7 @@ class State(ordered_bunch):
         for key in dvs:
             DV_LABEL = 'DV_' + key
             register_file(DV_LABEL, dvs[key]._filename)
-        
+
         return
     
     def __setitem__(self,k,v):

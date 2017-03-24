@@ -610,6 +610,14 @@ def structural( problem, state=None ):
             name = info.FILES['DIRECT']
             name = su2io.expand_time(name, problem.physics)
             push.extend(name)
+
+            # If multizone
+            nZone = problem.physics.nZone
+            for i in range(1, nZone):
+                DIR_LABEL = 'DIRECT_' + str(i)
+                name = info.FILES[DIR_LABEL]
+                name = su2io.expand_time(name, problem.physics)
+                push.extend(name)
                 
     #: with output redirection
     # return output 

@@ -1020,8 +1020,13 @@ def restart2solution(problem, state={}):
             shutil.move( res , sol )
         # update state
         # TODO: this is a hack here - for multiphysics will need to add DIRECT_1, etc
-        if state: state.FILES.DIRECT = solutions[0]
-        
+        if state:
+            state.FILES.DIRECT = solutions[0]
+            nZone = problem.physics.nZone
+            for i in range(1, nZone):
+                DIR_LABEL = 'DIRECT_' + str(i)
+                state.FILES[DIR_LABEL] = solutions[i]
+
     # adjoint solution
     elif problem.kind == 'ADJOINT_GRADIENT':
 
