@@ -39,55 +39,57 @@ inline su2double CConfig::GetCFL_AdaptParam(unsigned short val_index) { return C
 
 inline bool CConfig::GetCFL_Adapt(void) { return CFL_Adapt; }
 
-inline void CConfig::SetInflow_Mach(unsigned short val_imarker, su2double val_fanface_mach) { Inflow_Mach[val_imarker] = val_fanface_mach; }
+inline void CConfig::SetEngineInflow_Mach(unsigned short val_imarker, su2double val_fanface_mach) { EngineInflow_Mach[val_imarker] = val_fanface_mach; }
 
-inline void CConfig::SetInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure) { Inflow_Pressure[val_imarker] = val_fanface_pressure; }
+inline void CConfig::SetEngineInflow_Area(unsigned short val_imarker, su2double val_area) { EngineInflow_Area[val_imarker] = val_area; }
 
-inline void CConfig::SetInflow_MassFlow(unsigned short val_imarker, su2double val_fanface_massflow) { Inflow_MassFlow[val_imarker] = val_fanface_massflow; }
+inline void CConfig::SetEngineInflow_Pressure(unsigned short val_imarker, su2double val_fanface_pressure) { EngineInflow_Pressure[val_imarker] = val_fanface_pressure; }
 
-inline void CConfig::SetInflow_ReverseMassFlow(unsigned short val_imarker, su2double val_fanface_reversemassflow) { Inflow_ReverseMassFlow[val_imarker] = val_fanface_reversemassflow; }
+inline void CConfig::SetEngineInflow_MassFlow(unsigned short val_imarker, su2double val_fanface_massflow) { EngineInflow_MassFlow[val_imarker] = val_fanface_massflow; }
 
-inline void CConfig::SetInflow_TotalPressure(unsigned short val_imarker, su2double val_fanface_totalpressure) { Inflow_TotalPressure[val_imarker] = val_fanface_totalpressure; }
+inline void CConfig::SetEngineInflow_ReverseMassFlow(unsigned short val_imarker, su2double val_fanface_reversemassflow) { EngineInflow_ReverseMassFlow[val_imarker] = val_fanface_reversemassflow; }
 
-inline void CConfig::SetInflow_Temperature(unsigned short val_imarker, su2double val_fanface_temperature) { Inflow_Temperature[val_imarker] = val_fanface_temperature; }
+inline void CConfig::SetEngineInflow_TotalPressure(unsigned short val_imarker, su2double val_fanface_totalpressure) { EngineInflow_TotalPressure[val_imarker] = val_fanface_totalpressure; }
 
-inline void CConfig::SetInflow_TotalTemperature(unsigned short val_imarker, su2double val_fanface_totaltemperature) { Inflow_TotalTemperature[val_imarker] = val_fanface_totaltemperature; }
+inline void CConfig::SetEngineInflow_Temperature(unsigned short val_imarker, su2double val_fanface_temperature) { EngineInflow_Temperature[val_imarker] = val_fanface_temperature; }
 
-inline void CConfig::SetInflow_RamDrag(unsigned short val_imarker, su2double val_fanface_ramdrag) { Inflow_RamDrag[val_imarker] = val_fanface_ramdrag; }
+inline void CConfig::SetEngineInflow_TotalTemperature(unsigned short val_imarker, su2double val_fanface_totaltemperature) { EngineInflow_TotalTemperature[val_imarker] = val_fanface_totaltemperature; }
 
-inline void CConfig::SetInflow_Force(unsigned short val_imarker, su2double val_fanface_force) { Inflow_Force[val_imarker] = val_fanface_force; }
+inline void CConfig::SetEngineInflow_RamDrag(unsigned short val_imarker, su2double val_fanface_ramdrag) { EngineInflow_RamDrag[val_imarker] = val_fanface_ramdrag; }
 
-inline void CConfig::SetInflow_Power(unsigned short val_imarker, su2double val_fanface_power) { Inflow_Power[val_imarker] = val_fanface_power; }
+inline void CConfig::SetEngineInflow_Force(unsigned short val_imarker, su2double val_fanface_force) { EngineInflow_Force[val_imarker] = val_fanface_force; }
 
-inline su2double CConfig::GetInflow_ReverseMassFlow(unsigned short val_imarker) { return Inflow_ReverseMassFlow[val_imarker]; }
+inline void CConfig::SetEngineInflow_Power(unsigned short val_imarker, su2double val_fanface_power) { EngineInflow_Power[val_imarker] = val_fanface_power; }
 
-inline void CConfig::SetExhaust_Pressure(unsigned short val_imarker, su2double val_exhaust_pressure) { Exhaust_Pressure[val_imarker] = val_exhaust_pressure; }
+inline su2double CConfig::GetEngineInflow_ReverseMassFlow(unsigned short val_imarker) { return EngineInflow_ReverseMassFlow[val_imarker]; }
 
-inline void CConfig::SetExhaust_Temperature(unsigned short val_imarker, su2double val_exhaust_temp) { Exhaust_Temperature[val_imarker] = val_exhaust_temp; }
+inline void CConfig::SetEngineExhaust_Pressure(unsigned short val_imarker, su2double val_exhaust_pressure) { EngineExhaust_Pressure[val_imarker] = val_exhaust_pressure; }
 
-inline void CConfig::SetExhaust_MassFlow(unsigned short val_imarker, su2double val_exhaust_massflow) { Exhaust_MassFlow[val_imarker] = val_exhaust_massflow; }
+inline void CConfig::SetEngineExhaust_Temperature(unsigned short val_imarker, su2double val_exhaust_temp) { EngineExhaust_Temperature[val_imarker] = val_exhaust_temp; }
 
-inline void CConfig::SetExhaust_TotalPressure(unsigned short val_imarker, su2double val_exhaust_totalpressure) { Exhaust_TotalPressure[val_imarker] = val_exhaust_totalpressure; }
+inline void CConfig::SetEngineExhaust_MassFlow(unsigned short val_imarker, su2double val_exhaust_massflow) { EngineExhaust_MassFlow[val_imarker] = val_exhaust_massflow; }
 
-inline void CConfig::SetExhaust_TotalTemperature(unsigned short val_imarker, su2double val_exhaust_totaltemp) { Exhaust_TotalTemperature[val_imarker] = val_exhaust_totaltemp; }
+inline void CConfig::SetEngineExhaust_TotalPressure(unsigned short val_imarker, su2double val_exhaust_totalpressure) { EngineExhaust_TotalPressure[val_imarker] = val_exhaust_totalpressure; }
 
-inline void CConfig::SetExhaust_GrossThrust(unsigned short val_imarker, su2double val_exhaust_grossthrust) { Exhaust_GrossThrust[val_imarker] = val_exhaust_grossthrust; }
+inline void CConfig::SetEngineExhaust_TotalTemperature(unsigned short val_imarker, su2double val_exhaust_totaltemp) { EngineExhaust_TotalTemperature[val_imarker] = val_exhaust_totaltemp; }
 
-inline void CConfig::SetExhaust_Force(unsigned short val_imarker, su2double val_exhaust_force) { Exhaust_Force[val_imarker] = val_exhaust_force; }
+inline void CConfig::SetEngineExhaust_GrossThrust(unsigned short val_imarker, su2double val_exhaust_grossthrust) { EngineExhaust_GrossThrust[val_imarker] = val_exhaust_grossthrust; }
 
-inline void CConfig::SetExhaust_Power(unsigned short val_imarker, su2double val_exhaust_power) { Exhaust_Power[val_imarker] = val_exhaust_power; }
+inline void CConfig::SetEngineExhaust_Force(unsigned short val_imarker, su2double val_exhaust_force) { EngineExhaust_Force[val_imarker] = val_exhaust_force; }
 
-inline void CConfig::SetEngine_Mach(unsigned short val_imarker, su2double val_engine_mach) { Engine_Mach[val_imarker] = val_engine_mach; }
+inline void CConfig::SetEngineExhaust_Power(unsigned short val_imarker, su2double val_exhaust_power) { EngineExhaust_Power[val_imarker] = val_exhaust_power; }
 
-inline void CConfig::SetEngine_Force(unsigned short val_imarker, su2double val_engine_force) { Engine_Force[val_imarker] = val_engine_force; }
+inline void CConfig::SetEngine_Mach(unsigned short val_iengine, su2double val_engine_mach) { Engine_Mach[val_iengine] = val_engine_mach; }
 
-inline void CConfig::SetEngine_Power(unsigned short val_imarker, su2double val_engine_power) { Engine_Power[val_imarker] = val_engine_power; }
+inline void CConfig::SetEngine_Force(unsigned short val_iengine, su2double val_engine_force) { Engine_Force[val_iengine] = val_engine_force; }
 
-inline void CConfig::SetEngine_NetThrust(unsigned short val_imarker, su2double val_engine_netthrust) { Engine_NetThrust[val_imarker] = val_engine_netthrust; }
+inline void CConfig::SetEngine_Power(unsigned short val_iengine, su2double val_engine_power) { Engine_Power[val_iengine] = val_engine_power; }
 
-inline void CConfig::SetEngine_GrossThrust(unsigned short val_imarker, su2double val_engine_grossthrust) { Engine_GrossThrust[val_imarker] = val_engine_grossthrust; }
+inline void CConfig::SetEngine_NetThrust(unsigned short val_iengine, su2double val_engine_netthrust) { Engine_NetThrust[val_iengine] = val_engine_netthrust; }
 
-inline void CConfig::SetEngine_Area(unsigned short val_imarker, su2double val_engine_area) { Engine_Area[val_imarker] = val_engine_area; }
+inline void CConfig::SetEngine_GrossThrust(unsigned short val_iengine, su2double val_engine_grossthrust) { Engine_GrossThrust[val_iengine] = val_engine_grossthrust; }
+
+inline void CConfig::SetEngine_Area(unsigned short val_iengine, su2double val_engine_area) { Engine_Area[val_iengine] = val_engine_area; }
 
 inline void CConfig::SetActDisk_DeltaPress(unsigned short val_imarker, su2double val_actdisk_deltapress) { ActDisk_DeltaPress[val_imarker] = val_actdisk_deltapress; }
 
@@ -189,6 +191,10 @@ inline void CConfig::SetActDiskInlet_TotalTemperature(unsigned short val_imarker
 
 inline void CConfig::SetActDiskInlet_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow) { ActDiskInlet_MassFlow[val_imarker] = val_actdisk_massflow; }
 
+inline void CConfig::SetActDiskInlet_Mach(unsigned short val_imarker, su2double val_actdisk_mach) { ActDiskInlet_Mach[val_imarker] = val_actdisk_mach; }
+
+inline void CConfig::SetActDiskInlet_Area(unsigned short val_imarker, su2double val_actdisk_area) { ActDiskInlet_Area[val_imarker] = val_actdisk_area; }
+
 inline void CConfig::SetActDiskOutlet_Pressure(unsigned short val_imarker, su2double val_actdisk_press) { ActDiskOutlet_Pressure[val_imarker] = val_actdisk_press; }
 
 inline void CConfig::SetActDiskOutlet_TotalPressure(unsigned short val_imarker, su2double val_actdisk_totalpress) { ActDiskOutlet_TotalPressure[val_imarker] = val_actdisk_totalpress; }
@@ -205,23 +211,25 @@ inline void CConfig::SetActDiskOutlet_TotalTemperature(unsigned short val_imarke
 
 inline void CConfig::SetActDiskOutlet_MassFlow(unsigned short val_imarker, su2double val_actdisk_massflow) { ActDiskOutlet_MassFlow[val_imarker] = val_actdisk_massflow; }
 
-inline su2double CConfig::GetEngine_Mach(unsigned short val_imarker) { return Engine_Mach[val_imarker]; }
+inline su2double CConfig::GetEngine_Mach(unsigned short val_iengine) { return Engine_Mach[val_iengine]; }
 
-inline su2double CConfig::GetEngine_Force(unsigned short val_imarker) { return Engine_Force[val_imarker]; }
+inline su2double CConfig::GetEngine_Force(unsigned short val_iengine) { return Engine_Force[val_iengine]; }
 
-inline su2double CConfig::GetEngine_Power(unsigned short val_imarker) { return Engine_Power[val_imarker]; }
+inline su2double CConfig::GetEngine_Power(unsigned short val_iengine) { return Engine_Power[val_iengine]; }
 
-inline su2double CConfig::GetEngine_NetThrust(unsigned short val_imarker) { return Engine_NetThrust[val_imarker]; }
+inline su2double CConfig::GetEngine_NetThrust(unsigned short val_iengine) { return Engine_NetThrust[val_iengine]; }
 
-inline su2double CConfig::GetEngine_GrossThrust(unsigned short val_imarker) { return Engine_GrossThrust[val_imarker]; }
+inline su2double CConfig::GetEngine_GrossThrust(unsigned short val_iengine) { return Engine_GrossThrust[val_iengine]; }
 
-inline su2double CConfig::GetEngine_Area(unsigned short val_imarker) { return Engine_Area[val_imarker]; }
+inline su2double CConfig::GetEngine_Area(unsigned short val_iengine) { return Engine_Area[val_iengine]; }
 
 inline unsigned short CConfig::GetnZone(void) { return nZone; }
 
 inline unsigned short CConfig::GetiZone(void) { return iZone; }
 
 inline unsigned short CConfig::GetKind_SU2(void) { return Kind_SU2; }
+
+inline unsigned short CConfig::GetnEngine(void) { return nEngine; }
 
 inline unsigned short CConfig::GetRef_NonDim(void) { return Ref_NonDim; }
 

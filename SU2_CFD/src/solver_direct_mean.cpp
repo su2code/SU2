@@ -76,10 +76,10 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   
   /*--- Engine simulation array initialization ---*/
   
-  Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
-  Inflow_Mach = NULL;       Inflow_Area = NULL;
-  Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
-  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
+  EngineInflow_MassFlow = NULL;   EngineInflow_Pressure = NULL;
+  EngineInflow_Mach = NULL;       EngineInflow_Area = NULL;
+  EngineExhaust_Pressure = NULL;  EngineExhaust_Temperature = NULL;
+  EngineExhaust_MassFlow = NULL;  EngineExhaust_Area = NULL;
   
   /*--- Numerical methods array initialization ---*/
   
@@ -258,10 +258,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Engine simulation array initialization ---*/
   
-  Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
-  Inflow_Mach = NULL;       Inflow_Area = NULL;
-  Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
-  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
+  EngineInflow_MassFlow = NULL;   EngineInflow_Pressure = NULL;
+  EngineInflow_Mach = NULL;       EngineInflow_Area = NULL;
+  EngineExhaust_Pressure = NULL;  EngineExhaust_Temperature = NULL;
+  EngineExhaust_MassFlow = NULL;  EngineExhaust_Area = NULL;
   
   /*--- Numerical methods array initialization ---*/
   
@@ -642,15 +642,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Engine simulation ---*/
   
-  Inflow_MassFlow     = new su2double[nMarker];
-  Inflow_Pressure     = new su2double[nMarker];
-  Inflow_Mach         = new su2double[nMarker];
-  Inflow_Area         = new su2double[nMarker];
+  EngineInflow_MassFlow     = new su2double[nMarker];
+  EngineInflow_Pressure     = new su2double[nMarker];
+  EngineInflow_Mach         = new su2double[nMarker];
+  EngineInflow_Area         = new su2double[nMarker];
   
-  Exhaust_MassFlow    = new su2double[nMarker];
-  Exhaust_Pressure    = new su2double[nMarker];
-  Exhaust_Temperature = new su2double[nMarker];
-  Exhaust_Area        = new su2double[nMarker];
+  EngineExhaust_MassFlow    = new su2double[nMarker];
+  EngineExhaust_Pressure    = new su2double[nMarker];
+  EngineExhaust_Temperature = new su2double[nMarker];
+  EngineExhaust_Area        = new su2double[nMarker];
   
   /*--- Init total coefficients ---*/
   
@@ -703,15 +703,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inflow_MassFlow[iMarker]     = 0.0;
-    Inflow_Mach[iMarker]         = Mach_Inf;
-    Inflow_Pressure[iMarker]     = Pressure_Inf;
-    Inflow_Area[iMarker]         = 0.0;
+    EngineInflow_MassFlow[iMarker]     = 0.0;
+    EngineInflow_Mach[iMarker]         = Mach_Inf;
+    EngineInflow_Pressure[iMarker]     = Pressure_Inf;
+    EngineInflow_Area[iMarker]         = 0.0;
     
-    Exhaust_MassFlow[iMarker]    = 0.0;
-    Exhaust_Temperature[iMarker] = Temperature_Inf;
-    Exhaust_Pressure[iMarker]    = Pressure_Inf;
-    Exhaust_Area[iMarker]        = 0.0;
+    EngineExhaust_MassFlow[iMarker]    = 0.0;
+    EngineExhaust_Temperature[iMarker] = Temperature_Inf;
+    EngineExhaust_Pressure[iMarker]    = Pressure_Inf;
+    EngineExhaust_Area[iMarker]        = 0.0;
   }
   
   /*--- Initializate quantities for SlidingMesh Interface ---*/
@@ -974,15 +974,15 @@ CEulerSolver::~CEulerSolver(void) {
   if (MomentInviscid != NULL)    delete [] MomentInviscid;
   if (ForceMomentum != NULL)     delete [] ForceMomentum;
   if (MomentMomentum != NULL)    delete [] MomentMomentum;
-  if (Inflow_MassFlow != NULL)  delete [] Inflow_MassFlow;
-  if (Exhaust_MassFlow != NULL)  delete [] Exhaust_MassFlow;
-  if (Exhaust_Area != NULL)      delete [] Exhaust_Area;
-  if (Inflow_Pressure != NULL)  delete [] Inflow_Pressure;
-  if (Inflow_Mach != NULL)      delete [] Inflow_Mach;
-  if (Inflow_Area != NULL)      delete [] Inflow_Area;
+  if (EngineInflow_MassFlow != NULL)  delete [] EngineInflow_MassFlow;
+  if (EngineExhaust_MassFlow != NULL)  delete [] EngineExhaust_MassFlow;
+  if (EngineExhaust_Area != NULL)      delete [] EngineExhaust_Area;
+  if (EngineInflow_Pressure != NULL)  delete [] EngineInflow_Pressure;
+  if (EngineInflow_Mach != NULL)      delete [] EngineInflow_Mach;
+  if (EngineInflow_Area != NULL)      delete [] EngineInflow_Area;
 
-  if (Exhaust_Pressure != NULL)  delete [] Exhaust_Pressure;
-  if (Exhaust_Temperature != NULL)      delete [] Exhaust_Temperature;
+  if (EngineExhaust_Pressure != NULL)  delete [] EngineExhaust_Pressure;
+  if (EngineExhaust_Temperature != NULL)      delete [] EngineExhaust_Temperature;
 
   if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
   if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
@@ -8339,26 +8339,26 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
   Velocity2, Density, Area, SoundSpeed, TotalPressure, Vel_Infty2, RamDrag,
   TotalTemperature, VelocityJet,
   Vel_Infty, MaxPressure, MinPressure, MFR, InfVel2;
-  unsigned short iMarker_Inlet, iMarker_Outlet, nMarker_Inlet, nMarker_Outlet;
+  unsigned short iMarker_Inlet, iMarker_Outlet, nMarker_Inlet, nMarker_Outlet, nEngine, iEngine;
   string Inlet_TagBound, Outlet_TagBound;
   su2double DeltaPress = 0.0, DeltaTemp = 0.0, TotalPressRatio = 0.0, TotalTempRatio = 0.0, StaticPressRatio = 0.0, StaticTempRatio = 0.0,
   NetThrust = 0.0, GrossThrust = 0.0, Power = 0.0, MassFlow = 0.0, Mach = 0.0, Force = 0.0;
+  su2double Inlet_ForceX = 0.0, Inlet_ForceY = 0.0, Inlet_ForceZ = 0.0, Outlet_ForceX = 0.0, Outlet_ForceY = 0.0, Outlet_ForceZ = 0.0;
   bool ReverseFlow, Engine = false, Pair = true;
   
-  su2double Gas_Constant                         = config->GetGas_ConstantND();
-  su2double Cp                                               = Gas_Constant*Gamma / (Gamma-1.0);
-  su2double Alpha                                         = config->GetAoA()*PI_NUMBER/180.0;
-  su2double Beta                                           = config->GetAoS()*PI_NUMBER/180.0;
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetExtIter()!= 0))
-                      || (config->GetExtIter() == 1));
-  bool Evaluate_BC = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0))
-                      || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
+  su2double Gas_Constant = config->GetGas_ConstantND();
+  su2double Cp           = Gas_Constant*Gamma / (Gamma-1.0);
+  su2double Alpha        = config->GetAoA()*PI_NUMBER/180.0;
+  su2double Beta         = config->GetAoS()*PI_NUMBER/180.0;
+  bool write_heads       = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetExtIter()!= 0))
+                            || (config->GetExtIter() == 1));
+  bool Evaluate_BC       = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0))
+                            || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
   
   if ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0)) Engine = true;
   if ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0)) Engine = false;
-  if ((config->GetnMarker_EngineInflow()) != (config->GetnMarker_EngineExhaust())) Pair = false;
   
-  
+  nEngine= config->GetnEngine();
   if (Engine) { nMarker_Inlet  = config->GetnMarker_EngineInflow(); nMarker_Outlet = config->GetnMarker_EngineExhaust(); }
   else  { nMarker_Inlet   = config->GetnMarker_ActDiskInlet(); nMarker_Outlet  = config->GetnMarker_ActDiskOutlet(); }
   
@@ -8373,50 +8373,48 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     
     /*--- Allocate memory ---*/
     
-    su2double *Inlet_MassFlow         = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_ReverseMassFlow  = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_Pressure         = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_Mach             = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_MaxPressure      = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_MinPressure      = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_TotalPressure    = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_Temperature      = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_TotalTemperature   = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_Area             = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_RamDrag          = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_Force            = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_Power            = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_XCG                        = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_YCG                        = new su2double [config->GetnMarker_All()];
-    su2double *Inlet_ZCG                        = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_MassFlow          = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_ReverseMassFlow   = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_Pressure          = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_Mach              = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_MaxPressure       = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_MinPressure       = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_TotalPressure     = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_Temperature       = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_TotalTemperature  = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_Area              = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_RamDrag           = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_Force             = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_Power             = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_XCG               = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_YCG               = new su2double [config->GetnMarker_All()];
+    su2double *Inlet_ZCG               = new su2double [config->GetnMarker_All()];
     
-    su2double *Outlet_MassFlow           = new su2double [config->GetnMarker_All()];
-    su2double *Outlet_Pressure           = new su2double [config->GetnMarker_All()];
+    su2double *Outlet_MassFlow         = new su2double [config->GetnMarker_All()];
+    su2double *Outlet_Pressure         = new su2double [config->GetnMarker_All()];
     su2double *Outlet_TotalPressure    = new su2double [config->GetnMarker_All()];
-    su2double *Outlet_Temperature        = new su2double [config->GetnMarker_All()];
+    su2double *Outlet_Temperature      = new su2double [config->GetnMarker_All()];
     su2double *Outlet_TotalTemperature = new su2double [config->GetnMarker_All()];
-    su2double *Outlet_Area                   = new su2double [config->GetnMarker_All()];
-    su2double *Outlet_GrossThrust        = new su2double [config->GetnMarker_All()];
-    su2double *Outlet_Force                    = new su2double [config->GetnMarker_All()];
-    su2double *Outlet_Power                    = new su2double [config->GetnMarker_All()];
+    su2double *Outlet_Area             = new su2double [config->GetnMarker_All()];
+    su2double *Outlet_GrossThrust      = new su2double [config->GetnMarker_All()];
+    su2double *Outlet_Force            = new su2double [config->GetnMarker_All()];
+    su2double *Outlet_Power            = new su2double [config->GetnMarker_All()];
     
-    /*--- Comute MassFlow, average temp, press, etc. ---*/
+    /*--- Comute mass flow, average temp, press, etc. ---*/
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       
-      Inlet_MassFlow[iMarker] = 0.0;      Inlet_ReverseMassFlow[iMarker] = 0.0;  Inlet_MinPressure[iMarker] = 0.0;
-      Inlet_Pressure[iMarker] = 0.0;      Inlet_Mach[iMarker] = 0.0;             Inlet_Temperature[iMarker] = 0.0;
-      Inlet_MinPressure[iMarker] = +1E10; Inlet_MaxPressure[iMarker] = -1E10;    Inlet_Power[iMarker] = 0.0;
-      Inlet_TotalPressure[iMarker] = 0.0; Inlet_TotalTemperature[iMarker] = 0.0;
+      Inlet_MassFlow[iMarker] = 0.0;        Inlet_ReverseMassFlow[iMarker] = 0.0;  Inlet_MinPressure[iMarker] = 0.0;
+      Inlet_Pressure[iMarker] = 0.0;        Inlet_Mach[iMarker] = 0.0;             Inlet_Temperature[iMarker] = 0.0;
+      Inlet_MinPressure[iMarker] = +1E10;   Inlet_MaxPressure[iMarker] = -1E10;    Inlet_Power[iMarker] = 0.0;
+      Inlet_TotalPressure[iMarker] = 0.0;   Inlet_TotalTemperature[iMarker] = 0.0;
       Inlet_Area[iMarker] = 0.0;
-      Inlet_RamDrag[iMarker] = 0.0; Inlet_Force[iMarker]    = 0.0;
-      Inlet_XCG[iMarker] = 0.0;  Inlet_YCG[iMarker]    = 0.0; Inlet_ZCG[iMarker]    = 0.0;
+      Inlet_RamDrag[iMarker] = 0.0;         Inlet_Force[iMarker] = 0.0;
+      Inlet_XCG[iMarker] = 0.0;             Inlet_YCG[iMarker] = 0.0;              Inlet_ZCG[iMarker]    = 0.0;
       
-      Outlet_MassFlow[iMarker] = 0.0;
-      Outlet_Pressure[iMarker] = 0.0; Outlet_Temperature[iMarker] = 0.0;
-      Outlet_TotalPressure[iMarker] = 0.0; Outlet_TotalTemperature[iMarker] = 0.0;
-      Outlet_Area[iMarker] = 0.0;
-      Outlet_GrossThrust[iMarker]    = 0.0; Outlet_Force[iMarker]    = 0.0; Outlet_Power[iMarker]    = 0.0;
+      Outlet_MassFlow[iMarker] = 0.0;       Outlet_Pressure[iMarker] = 0.0;          Outlet_Temperature[iMarker] = 0.0;
+      Outlet_TotalPressure[iMarker] = 0.0;  Outlet_TotalTemperature[iMarker] = 0.0;  Outlet_Area[iMarker] = 0.0;
+      Outlet_GrossThrust[iMarker]    = 0.0; Outlet_Force[iMarker]    = 0.0;          Outlet_Power[iMarker]    = 0.0;
       
       MinPressure = +1E10; MaxPressure = -1E10;
       
@@ -8433,34 +8431,32 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
             
-            Temperature     = V_inlet[0];
-            Pressure                = V_inlet[nDim+1];
-            
-            Density                         = V_inlet[nDim+2];
+            Temperature = V_inlet[0];
+            Pressure    = V_inlet[nDim+1];
+            Density     = V_inlet[nDim+2];
             SoundSpeed  = sqrt(Gamma*Pressure/Density);
             
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 =0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              Area += Vector[iDim]*Vector[iDim];
+              Area           += Vector[iDim]*Vector[iDim];
               Velocity[iDim] = V_inlet[iDim+1];
-              Velocity2 += Velocity[iDim]*Velocity[iDim];
-              Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
-              MassFlow -= Vector[iDim]*Velocity[iDim]*Density;
+              Velocity2      += Velocity[iDim]*Velocity[iDim];
+              Vel_Infty2     += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
+              MassFlow       -= Vector[iDim]*Velocity[iDim]*Density;
             }
             
             Vn = 0.0; ReverseFlow = false;
             for (iDim = 0; iDim < nDim; iDim++) {  Vn -= Velocity[iDim]*Vector[iDim]/Area; }
             if (Vn < 0.0) { ReverseFlow = true; }
             
-            Vel_Infty                   = sqrt (Vel_Infty2);
-            Area                                = sqrt (Area);
-            Mach                                = sqrt(Velocity2)/SoundSpeed;
-            TotalPressure           = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-            TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-            MinPressure               = min(MinPressure, TotalPressure);
-            MaxPressure               = max(MaxPressure, TotalPressure);
-            
-            RamDrag     = MassFlow * Vel_Infty;
+            Vel_Infty        = sqrt (Vel_Infty2);
+            Area             = sqrt (Area);
+            Mach             = sqrt(Velocity2)/SoundSpeed;
+            TotalPressure    = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
+            TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+            MinPressure      = min(MinPressure, TotalPressure);
+            MaxPressure      = max(MaxPressure, TotalPressure);
+            RamDrag          = MassFlow * Vel_Infty;
             
             Inlet_MassFlow[iMarker]         += MassFlow;
             Inlet_Pressure[iMarker]         += Pressure*MassFlow;
@@ -8472,17 +8468,17 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Inlet_TotalTemperature[iMarker] += TotalTemperature*MassFlow;
             Inlet_Area[iMarker]             += Area;
             Inlet_RamDrag[iMarker]          += RamDrag;
-            Inlet_Power[iMarker] += MassFlow*Cp*TotalTemperature;
+            Inlet_Power[iMarker]            += MassFlow*Cp*TotalTemperature;
             if (ReverseFlow) Inlet_ReverseMassFlow[iMarker]  += MassFlow;
             
-            su2double Inlet_ForceX =  -(Pressure - Pressure_Inf)*Vector[0] + MassFlow*Velocity[0];
-            su2double Inlet_ForceY = -(Pressure - Pressure_Inf)*Vector[1] + MassFlow*Velocity[1];
-            su2double Inlet_ForceZ = 0.0;
+            Inlet_ForceX = -(Pressure - Pressure_Inf)*Vector[0] + MassFlow*Velocity[0];
+            Inlet_ForceY = -(Pressure - Pressure_Inf)*Vector[1] + MassFlow*Velocity[1];
             if (nDim == 3) Inlet_ForceZ = -(Pressure - Pressure_Inf)*Vector[2] + MassFlow*Velocity[2];
-            Inlet_Force[iMarker] +=  Inlet_ForceX*cos(Alpha)*cos(Beta) + Inlet_ForceY*sin(Beta) +Inlet_ForceZ*sin(Alpha)*cos(Beta);
             
-            Inlet_XCG[iMarker]                        += geometry->node[iPoint]->GetCoord(0)*Area;
-            Inlet_YCG[iMarker]                        += geometry->node[iPoint]->GetCoord(1)*Area;
+            Inlet_Force[iMarker] +=  Inlet_ForceX*cos(Alpha)*cos(Beta) + Inlet_ForceY*sin(Beta) + Inlet_ForceZ*sin(Alpha)*cos(Beta);
+            
+            Inlet_XCG[iMarker] += geometry->node[iPoint]->GetCoord(0)*Area;
+            Inlet_YCG[iMarker] += geometry->node[iPoint]->GetCoord(1)*Area;
             if (nDim == 3) Inlet_ZCG[iMarker] += geometry->node[iPoint]->GetCoord(2)*Area;
             
           }
@@ -8503,42 +8499,39 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
             
-            Temperature         = V_outlet[0];
-            Pressure                    = V_outlet[nDim+1];
-            
-            Density                         = V_outlet[nDim+2];
+            Temperature = V_outlet[0];
+            Pressure    = V_outlet[nDim+1];
+            Density     = V_outlet[nDim+2];
             SoundSpeed  = sqrt(Gamma*Pressure/Density);
             
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
-              Area += Vector[iDim]*Vector[iDim];
+              Area          += Vector[iDim]*Vector[iDim];
               Velocity[iDim] = V_outlet[iDim+1];
-              Velocity2 += Velocity[iDim]*Velocity[iDim];
-              Vel_Infty2 += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
-              MassFlow += Vector[iDim]*Velocity[iDim]*Density;
+              Velocity2     += Velocity[iDim]*Velocity[iDim];
+              Vel_Infty2    += GetVelocity_Inf(iDim)*GetVelocity_Inf(iDim);
+              MassFlow      += Vector[iDim]*Velocity[iDim]*Density;
             }
             
-            Vel_Infty                   = sqrt (Vel_Infty2);
-            Area                                            = sqrt (Area);
-            Mach                                = sqrt(Velocity2)/SoundSpeed;
-            TotalPressure           = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
-            TotalTemperature    = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-            VelocityJet         = sqrt(Velocity2) ;
+            Vel_Infty        = sqrt (Vel_Infty2);
+            Area             = sqrt (Area);
+            Mach             = sqrt(Velocity2)/SoundSpeed;
+            TotalPressure    = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
+            TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+            VelocityJet      = sqrt(Velocity2) ;
+            GrossThrust      = MassFlow * VelocityJet;
 
-            GrossThrust     = MassFlow * VelocityJet;
-
-            Outlet_MassFlow[iMarker]                            += MassFlow;
-            Outlet_Pressure[iMarker]                                += Pressure*MassFlow;
-            Outlet_TotalPressure[iMarker]               += TotalPressure*MassFlow;
-            Outlet_Temperature[iMarker]                     += Temperature*MassFlow;
-            Outlet_TotalTemperature[iMarker]    += TotalTemperature*MassFlow;
-            Outlet_Area[iMarker]                                            += Area;
-            Outlet_GrossThrust[iMarker]             += GrossThrust;
-            Outlet_Power[iMarker] += MassFlow*Cp*TotalTemperature;
+            Outlet_MassFlow[iMarker]         += MassFlow;
+            Outlet_Pressure[iMarker]         += Pressure*MassFlow;
+            Outlet_TotalPressure[iMarker]    += TotalPressure*MassFlow;
+            Outlet_Temperature[iMarker]      += Temperature*MassFlow;
+            Outlet_TotalTemperature[iMarker] += TotalTemperature*MassFlow;
+            Outlet_Area[iMarker]             += Area;
+            Outlet_GrossThrust[iMarker]      += GrossThrust;
+            Outlet_Power[iMarker]            += MassFlow*Cp*TotalTemperature;
             
-            su2double Outlet_ForceX = -(Pressure - Pressure_Inf)*Vector[0] -MassFlow*Velocity[0];
-            su2double Outlet_ForceY =  -(Pressure - Pressure_Inf)*Vector[1] -MassFlow*Velocity[1];
-            su2double Outlet_ForceZ = 0.0;
+            Outlet_ForceX = -(Pressure - Pressure_Inf)*Vector[0] -MassFlow*Velocity[0];
+            Outlet_ForceY =  -(Pressure - Pressure_Inf)*Vector[1] -MassFlow*Velocity[1];
             if (nDim == 3) Outlet_ForceZ = -(Pressure - Pressure_Inf)*Vector[2] -MassFlow*Velocity[2];
             
             if (nDim == 2) Outlet_Force[iMarker] +=  Outlet_ForceX*cos(Alpha) + Outlet_ForceY*sin(Alpha);
@@ -8553,116 +8546,116 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     
     /*--- Copy to the appropriate structure ---*/
     
-    su2double *Inlet_MassFlow_Local             = new su2double [nMarker_Inlet];
-    su2double *Inlet_ReverseMassFlow_Local              = new su2double [nMarker_Inlet];
-    su2double *Inlet_Temperature_Local          = new su2double [nMarker_Inlet];
+    su2double *Inlet_MassFlow_Local         = new su2double [nMarker_Inlet];
+    su2double *Inlet_ReverseMassFlow_Local  = new su2double [nMarker_Inlet];
+    su2double *Inlet_Temperature_Local      = new su2double [nMarker_Inlet];
     su2double *Inlet_TotalTemperature_Local = new su2double [nMarker_Inlet];
-    su2double *Inlet_Pressure_Local             = new su2double [nMarker_Inlet];
+    su2double *Inlet_Pressure_Local         = new su2double [nMarker_Inlet];
     su2double *Inlet_Mach_Local             = new su2double [nMarker_Inlet];
     su2double *Inlet_MinPressure_Local      = new su2double [nMarker_Inlet];
     su2double *Inlet_MaxPressure_Local      = new su2double [nMarker_Inlet];
-    su2double *Inlet_Power_Local        = new su2double [nMarker_Inlet];
-    su2double *Inlet_TotalPressure_Local        = new su2double [nMarker_Inlet];
-    su2double *Inlet_RamDrag_Local              = new su2double [nMarker_Inlet];
-    su2double *Inlet_Force_Local                            = new su2double [nMarker_Inlet];
-    su2double *Inlet_Area_Local              = new su2double [nMarker_Inlet];
-    su2double *Inlet_XCG_Local                      = new su2double [nMarker_Inlet];
-    su2double *Inlet_YCG_Local                      = new su2double [nMarker_Inlet];
-    su2double *Inlet_ZCG_Local                      = new su2double [nMarker_Inlet];
+    su2double *Inlet_Power_Local            = new su2double [nMarker_Inlet];
+    su2double *Inlet_TotalPressure_Local    = new su2double [nMarker_Inlet];
+    su2double *Inlet_RamDrag_Local          = new su2double [nMarker_Inlet];
+    su2double *Inlet_Force_Local            = new su2double [nMarker_Inlet];
+    su2double *Inlet_Area_Local             = new su2double [nMarker_Inlet];
+    su2double *Inlet_XCG_Local              = new su2double [nMarker_Inlet];
+    su2double *Inlet_YCG_Local              = new su2double [nMarker_Inlet];
+    su2double *Inlet_ZCG_Local              = new su2double [nMarker_Inlet];
     
-    su2double *Inlet_MassFlow_Total                         = new su2double [nMarker_Inlet];
-    su2double *Inlet_ReverseMassFlow_Total              = new su2double [nMarker_Inlet];
-    su2double *Inlet_Pressure_Total                             = new su2double [nMarker_Inlet];
-    su2double *Inlet_Mach_Total                             = new su2double [nMarker_Inlet];
-    su2double *Inlet_MinPressure_Total            = new su2double [nMarker_Inlet];
-    su2double *Inlet_MaxPressure_Total         = new su2double [nMarker_Inlet];
-    su2double *Inlet_Power_Total                            = new su2double [nMarker_Inlet];
-    su2double *Inlet_TotalPressure_Total            = new su2double [nMarker_Inlet];
-    su2double *Inlet_Temperature_Total                  = new su2double [nMarker_Inlet];
-    su2double *Inlet_TotalTemperature_Total     = new su2double [nMarker_Inlet];
-    su2double *Inlet_RamDrag_Total                          = new su2double [nMarker_Inlet];
-    su2double *Inlet_Force_Total                                = new su2double [nMarker_Inlet];
-    su2double *Inlet_Area_Total                                         = new su2double [nMarker_Inlet];
-    su2double *Inlet_XCG_Total                                          = new su2double [nMarker_Inlet];
-    su2double *Inlet_YCG_Total                                          = new su2double [nMarker_Inlet];
-    su2double *Inlet_ZCG_Total                                          = new su2double [nMarker_Inlet];
+    su2double *Inlet_MassFlow_Total         = new su2double [nMarker_Inlet];
+    su2double *Inlet_ReverseMassFlow_Total  = new su2double [nMarker_Inlet];
+    su2double *Inlet_Pressure_Total         = new su2double [nMarker_Inlet];
+    su2double *Inlet_Mach_Total             = new su2double [nMarker_Inlet];
+    su2double *Inlet_MinPressure_Total      = new su2double [nMarker_Inlet];
+    su2double *Inlet_MaxPressure_Total      = new su2double [nMarker_Inlet];
+    su2double *Inlet_Power_Total            = new su2double [nMarker_Inlet];
+    su2double *Inlet_TotalPressure_Total    = new su2double [nMarker_Inlet];
+    su2double *Inlet_Temperature_Total      = new su2double [nMarker_Inlet];
+    su2double *Inlet_TotalTemperature_Total = new su2double [nMarker_Inlet];
+    su2double *Inlet_RamDrag_Total          = new su2double [nMarker_Inlet];
+    su2double *Inlet_Force_Total            = new su2double [nMarker_Inlet];
+    su2double *Inlet_Area_Total             = new su2double [nMarker_Inlet];
+    su2double *Inlet_XCG_Total              = new su2double [nMarker_Inlet];
+    su2double *Inlet_YCG_Total              = new su2double [nMarker_Inlet];
+    su2double *Inlet_ZCG_Total              = new su2double [nMarker_Inlet];
     
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-      Inlet_MassFlow_Local[iMarker_Inlet]                       = 0.0;
-      Inlet_ReverseMassFlow_Local[iMarker_Inlet]            = 0.0;
-      Inlet_Pressure_Local[iMarker_Inlet]                           = 0.0;
-      Inlet_Mach_Local[iMarker_Inlet]                           = 0.0;
-      Inlet_MinPressure_Local[iMarker_Inlet]            = 0.0;
-      Inlet_MaxPressure_Local[iMarker_Inlet]            = 0.0;
-      Inlet_TotalPressure_Local[iMarker_Inlet]          = 0.0;
-      Inlet_Temperature_Local[iMarker_Inlet]                    = 0.0;
+      Inlet_MassFlow_Local[iMarker_Inlet]         = 0.0;
+      Inlet_ReverseMassFlow_Local[iMarker_Inlet]  = 0.0;
+      Inlet_Pressure_Local[iMarker_Inlet]         = 0.0;
+      Inlet_Mach_Local[iMarker_Inlet]             = 0.0;
+      Inlet_MinPressure_Local[iMarker_Inlet]      = 0.0;
+      Inlet_MaxPressure_Local[iMarker_Inlet]      = 0.0;
+      Inlet_TotalPressure_Local[iMarker_Inlet]    = 0.0;
+      Inlet_Temperature_Local[iMarker_Inlet]      = 0.0;
       Inlet_TotalTemperature_Local[iMarker_Inlet] = 0.0;
-      Inlet_RamDrag_Local[iMarker_Inlet]                    = 0.0;
-      Inlet_Force_Local[iMarker_Inlet]                              = 0.0;
-      Inlet_Power_Local[iMarker_Inlet]                          = 0.0;
-      Inlet_Area_Local[iMarker_Inlet]                                           = 0.0;
-      Inlet_XCG_Local[iMarker_Inlet]                                            = 0.0;
-      Inlet_YCG_Local[iMarker_Inlet]                                            = 0.0;
-      Inlet_ZCG_Local[iMarker_Inlet]                                            = 0.0;
+      Inlet_RamDrag_Local[iMarker_Inlet]          = 0.0;
+      Inlet_Force_Local[iMarker_Inlet]            = 0.0;
+      Inlet_Power_Local[iMarker_Inlet]            = 0.0;
+      Inlet_Area_Local[iMarker_Inlet]             = 0.0;
+      Inlet_XCG_Local[iMarker_Inlet]              = 0.0;
+      Inlet_YCG_Local[iMarker_Inlet]              = 0.0;
+      Inlet_ZCG_Local[iMarker_Inlet]              = 0.0;
       
-      Inlet_MassFlow_Total[iMarker_Inlet]                           = 0.0;
-      Inlet_ReverseMassFlow_Total[iMarker_Inlet]                = 0.0;
-      Inlet_Pressure_Total[iMarker_Inlet]                               = 0.0;
-      Inlet_Mach_Total[iMarker_Inlet]                               = 0.0;
-      Inlet_MinPressure_Total[iMarker_Inlet]                = 0.0;
-      Inlet_MaxPressure_Total[iMarker_Inlet]                = 0.0;
-      Inlet_TotalPressure_Total[iMarker_Inlet]              = 0.0;
-      Inlet_Temperature_Total[iMarker_Inlet]                    = 0.0;
-      Inlet_TotalTemperature_Total[iMarker_Inlet]   = 0.0;
-      Inlet_RamDrag_Total[iMarker_Inlet]                        = 0.0;
-      Inlet_Force_Total[iMarker_Inlet]                                  = 0.0;
-      Inlet_Power_Total[iMarker_Inlet]              = 0.0;
-      Inlet_Area_Total[iMarker_Inlet]                                           = 0.0;
-      Inlet_XCG_Total[iMarker_Inlet]                                            = 0.0;
-      Inlet_YCG_Total[iMarker_Inlet]                                            = 0.0;
-      Inlet_ZCG_Total[iMarker_Inlet]                                            = 0.0;
+      Inlet_MassFlow_Total[iMarker_Inlet]         = 0.0;
+      Inlet_ReverseMassFlow_Total[iMarker_Inlet]  = 0.0;
+      Inlet_Pressure_Total[iMarker_Inlet]         = 0.0;
+      Inlet_Mach_Total[iMarker_Inlet]             = 0.0;
+      Inlet_MinPressure_Total[iMarker_Inlet]      = 0.0;
+      Inlet_MaxPressure_Total[iMarker_Inlet]      = 0.0;
+      Inlet_TotalPressure_Total[iMarker_Inlet]    = 0.0;
+      Inlet_Temperature_Total[iMarker_Inlet]      = 0.0;
+      Inlet_TotalTemperature_Total[iMarker_Inlet] = 0.0;
+      Inlet_RamDrag_Total[iMarker_Inlet]          = 0.0;
+      Inlet_Force_Total[iMarker_Inlet]            = 0.0;
+      Inlet_Power_Total[iMarker_Inlet]            = 0.0;
+      Inlet_Area_Total[iMarker_Inlet]             = 0.0;
+      Inlet_XCG_Total[iMarker_Inlet]              = 0.0;
+      Inlet_YCG_Total[iMarker_Inlet]              = 0.0;
+      Inlet_ZCG_Total[iMarker_Inlet]              = 0.0;
     }
     
-    su2double *Outlet_MassFlow_Local                            = new su2double [nMarker_Outlet];
-    su2double *Outlet_Pressure_Local                                = new su2double [nMarker_Outlet];
-    su2double *Outlet_TotalPressure_Local           = new su2double [nMarker_Outlet];
-    su2double *Outlet_Temperature_Local                     = new su2double [nMarker_Outlet];
-    su2double *Outlet_TotalTemperature_Local    = new su2double [nMarker_Outlet];
-    su2double *Outlet_GrossThrust_Local             = new su2double [nMarker_Outlet];
-    su2double *Outlet_Force_Local               = new su2double [nMarker_Outlet];
-    su2double *Outlet_Power_Local               = new su2double [nMarker_Outlet];
-    su2double *Outlet_Area_Local                                            = new su2double [nMarker_Outlet];
+    su2double *Outlet_MassFlow_Local         = new su2double [nMarker_Outlet];
+    su2double *Outlet_Pressure_Local         = new su2double [nMarker_Outlet];
+    su2double *Outlet_TotalPressure_Local    = new su2double [nMarker_Outlet];
+    su2double *Outlet_Temperature_Local      = new su2double [nMarker_Outlet];
+    su2double *Outlet_TotalTemperature_Local = new su2double [nMarker_Outlet];
+    su2double *Outlet_GrossThrust_Local      = new su2double [nMarker_Outlet];
+    su2double *Outlet_Force_Local            = new su2double [nMarker_Outlet];
+    su2double *Outlet_Power_Local            = new su2double [nMarker_Outlet];
+    su2double *Outlet_Area_Local             = new su2double [nMarker_Outlet];
     
-    su2double *Outlet_MassFlow_Total                        = new su2double [nMarker_Outlet];
-    su2double *Outlet_Pressure_Total                            = new su2double [nMarker_Outlet];
-    su2double *Outlet_TotalPressure_Total           = new su2double [nMarker_Outlet];
-    su2double *Outlet_Temperature_Total                     = new su2double [nMarker_Outlet];
-    su2double *Outlet_TotalTemperature_Total    = new su2double [nMarker_Outlet];
-    su2double *Outlet_GrossThrust_Total             = new su2double [nMarker_Outlet];
-    su2double *Outlet_Force_Total                             = new su2double [nMarker_Outlet];
-    su2double *Outlet_Power_Total                             = new su2double [nMarker_Outlet];
-    su2double *Outlet_Area_Total                                            = new su2double [nMarker_Outlet];
+    su2double *Outlet_MassFlow_Total         = new su2double [nMarker_Outlet];
+    su2double *Outlet_Pressure_Total         = new su2double [nMarker_Outlet];
+    su2double *Outlet_TotalPressure_Total    = new su2double [nMarker_Outlet];
+    su2double *Outlet_Temperature_Total      = new su2double [nMarker_Outlet];
+    su2double *Outlet_TotalTemperature_Total = new su2double [nMarker_Outlet];
+    su2double *Outlet_GrossThrust_Total      = new su2double [nMarker_Outlet];
+    su2double *Outlet_Force_Total            = new su2double [nMarker_Outlet];
+    su2double *Outlet_Power_Total            = new su2double [nMarker_Outlet];
+    su2double *Outlet_Area_Total             = new su2double [nMarker_Outlet];
     
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      Outlet_MassFlow_Local[iMarker_Outlet]                     = 0.0;
-      Outlet_Pressure_Local[iMarker_Outlet]                         = 0.0;
-      Outlet_TotalPressure_Local[iMarker_Outlet]            = 0.0;
-      Outlet_Temperature_Local[iMarker_Outlet]                  = 0.0;
+      Outlet_MassFlow_Local[iMarker_Outlet]         = 0.0;
+      Outlet_Pressure_Local[iMarker_Outlet]         = 0.0;
+      Outlet_TotalPressure_Local[iMarker_Outlet]    = 0.0;
+      Outlet_Temperature_Local[iMarker_Outlet]      = 0.0;
       Outlet_TotalTemperature_Local[iMarker_Outlet] = 0.0;
-      Outlet_GrossThrust_Local[iMarker_Outlet]              = 0.0;
-      Outlet_Force_Local[iMarker_Outlet]                        = 0.0;
-      Outlet_Power_Local[iMarker_Outlet]                        = 0.0;
-      Outlet_Area_Local[iMarker_Outlet]                                         = 0.0;
+      Outlet_GrossThrust_Local[iMarker_Outlet]      = 0.0;
+      Outlet_Force_Local[iMarker_Outlet]            = 0.0;
+      Outlet_Power_Local[iMarker_Outlet]            = 0.0;
+      Outlet_Area_Local[iMarker_Outlet]             = 0.0;
       
-      Outlet_MassFlow_Total[iMarker_Outlet]                             = 0.0;
-      Outlet_Pressure_Total[iMarker_Outlet]                             = 0.0;
-      Outlet_TotalPressure_Total[iMarker_Outlet]                = 0.0;
-      Outlet_Temperature_Total[iMarker_Outlet]                  = 0.0;
+      Outlet_MassFlow_Total[iMarker_Outlet]         = 0.0;
+      Outlet_Pressure_Total[iMarker_Outlet]         = 0.0;
+      Outlet_TotalPressure_Total[iMarker_Outlet]    = 0.0;
+      Outlet_Temperature_Total[iMarker_Outlet]      = 0.0;
       Outlet_TotalTemperature_Total[iMarker_Outlet] = 0.0;
-      Outlet_GrossThrust_Total[iMarker_Outlet]              = 0.0;
-      Outlet_Force_Total[iMarker_Outlet]                        = 0.0;
-      Outlet_Power_Total[iMarker_Outlet]                        = 0.0;
-      Outlet_Area_Total[iMarker_Outlet]                                         = 0.0;
+      Outlet_GrossThrust_Total[iMarker_Outlet]      = 0.0;
+      Outlet_Force_Total[iMarker_Outlet]            = 0.0;
+      Outlet_Power_Total[iMarker_Outlet]            = 0.0;
+      Outlet_Area_Total[iMarker_Outlet]             = 0.0;
     }
     
     /*--- Copy the values to the local array for MPI ---*/
@@ -8676,22 +8669,22 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           if (config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW) Inlet_TagBound = config->GetMarker_EngineInflow_TagBound(iMarker_Inlet);
           
           if (config->GetMarker_All_TagBound(iMarker) == Inlet_TagBound) {
-            Inlet_MassFlow_Local[iMarker_Inlet]                             += Inlet_MassFlow[iMarker];
-            Inlet_ReverseMassFlow_Local[iMarker_Inlet]              += Inlet_ReverseMassFlow[iMarker];
-            Inlet_Pressure_Local[iMarker_Inlet]                                 += Inlet_Pressure[iMarker];
-            Inlet_Mach_Local[iMarker_Inlet]                                     += Inlet_Mach[iMarker];
-            Inlet_MinPressure_Local[iMarker_Inlet]              += Inlet_MinPressure[iMarker];
-            Inlet_MaxPressure_Local[iMarker_Inlet]          += Inlet_MaxPressure[iMarker];
-            Inlet_TotalPressure_Local[iMarker_Inlet]            += Inlet_TotalPressure[iMarker];
-            Inlet_Temperature_Local[iMarker_Inlet]                  += Inlet_Temperature[iMarker];
-            Inlet_TotalTemperature_Local[iMarker_Inlet] += Inlet_TotalTemperature[iMarker];
-            Inlet_RamDrag_Local[iMarker_Inlet]                          += Inlet_RamDrag[iMarker];
-            Inlet_Force_Local[iMarker_Inlet]                                    += Inlet_Force[iMarker];
-            Inlet_Power_Local[iMarker_Inlet]                          += Inlet_Power[iMarker];
-            Inlet_Area_Local[iMarker_Inlet]                                                 += Inlet_Area[iMarker];
-            Inlet_XCG_Local[iMarker_Inlet]                                              += Inlet_XCG[iMarker];
-            Inlet_YCG_Local[iMarker_Inlet]                                              += Inlet_YCG[iMarker];
-            if (nDim == 3) Inlet_ZCG_Local[iMarker_Inlet]                                               += Inlet_ZCG[iMarker];
+            Inlet_MassFlow_Local[iMarker_Inlet]           += Inlet_MassFlow[iMarker];
+            Inlet_ReverseMassFlow_Local[iMarker_Inlet]    += Inlet_ReverseMassFlow[iMarker];
+            Inlet_Pressure_Local[iMarker_Inlet]           += Inlet_Pressure[iMarker];
+            Inlet_Mach_Local[iMarker_Inlet]               += Inlet_Mach[iMarker];
+            Inlet_MinPressure_Local[iMarker_Inlet]        += Inlet_MinPressure[iMarker];
+            Inlet_MaxPressure_Local[iMarker_Inlet]        += Inlet_MaxPressure[iMarker];
+            Inlet_TotalPressure_Local[iMarker_Inlet]      += Inlet_TotalPressure[iMarker];
+            Inlet_Temperature_Local[iMarker_Inlet]        += Inlet_Temperature[iMarker];
+            Inlet_TotalTemperature_Local[iMarker_Inlet]   += Inlet_TotalTemperature[iMarker];
+            Inlet_RamDrag_Local[iMarker_Inlet]            += Inlet_RamDrag[iMarker];
+            Inlet_Force_Local[iMarker_Inlet]              += Inlet_Force[iMarker];
+            Inlet_Power_Local[iMarker_Inlet]              += Inlet_Power[iMarker];
+            Inlet_Area_Local[iMarker_Inlet]               += Inlet_Area[iMarker];
+            Inlet_XCG_Local[iMarker_Inlet]                += Inlet_XCG[iMarker];
+            Inlet_YCG_Local[iMarker_Inlet]                += Inlet_YCG[iMarker];
+            if (nDim == 3) Inlet_ZCG_Local[iMarker_Inlet] += Inlet_ZCG[iMarker];
           }
           
         }
@@ -8704,15 +8697,15 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
           if (config->GetMarker_All_KindBC(iMarker) == ENGINE_EXHAUST) Outlet_TagBound = config->GetMarker_EngineExhaust_TagBound(iMarker_Outlet);
           
           if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
-            Outlet_MassFlow_Local[iMarker_Outlet]                           += Outlet_MassFlow[iMarker];
-            Outlet_Pressure_Local[iMarker_Outlet]                               += Outlet_Pressure[iMarker];
-            Outlet_TotalPressure_Local[iMarker_Outlet]          += Outlet_TotalPressure[iMarker];
-            Outlet_Temperature_Local[iMarker_Outlet]                    += Outlet_Temperature[iMarker];
-            Outlet_TotalTemperature_Local[iMarker_Outlet]   += Outlet_TotalTemperature[iMarker];
-            Outlet_GrossThrust_Local[iMarker_Outlet]                    += Outlet_GrossThrust[iMarker];
-            Outlet_Force_Local[iMarker_Outlet]                              += Outlet_Force[iMarker];
-            Outlet_Power_Local[iMarker_Outlet]                              += Outlet_Power[iMarker];
-            Outlet_Area_Local[iMarker_Outlet]                                               += Outlet_Area[iMarker];
+            Outlet_MassFlow_Local[iMarker_Outlet]         += Outlet_MassFlow[iMarker];
+            Outlet_Pressure_Local[iMarker_Outlet]         += Outlet_Pressure[iMarker];
+            Outlet_TotalPressure_Local[iMarker_Outlet]    += Outlet_TotalPressure[iMarker];
+            Outlet_Temperature_Local[iMarker_Outlet]      += Outlet_Temperature[iMarker];
+            Outlet_TotalTemperature_Local[iMarker_Outlet] += Outlet_TotalTemperature[iMarker];
+            Outlet_GrossThrust_Local[iMarker_Outlet]      += Outlet_GrossThrust[iMarker];
+            Outlet_Force_Local[iMarker_Outlet]            += Outlet_Force[iMarker];
+            Outlet_Power_Local[iMarker_Outlet]            += Outlet_Power[iMarker];
+            Outlet_Area_Local[iMarker_Outlet]             += Outlet_Area[iMarker];
           }
           
         }
@@ -8730,8 +8723,8 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     
     if (!ActDisk) {
       for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-        Inlet_MinPressure_Local[iMarker_Inlet]          = 1E10;
-        Inlet_MaxPressure_Local[iMarker_Inlet]      = -1E10;
+        Inlet_MinPressure_Local[iMarker_Inlet] = 1E10;
+        Inlet_MaxPressure_Local[iMarker_Inlet] = -1E10;
       }
     }
     
@@ -8769,34 +8762,34 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 #else
     
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-      Inlet_MassFlow_Total[iMarker_Inlet]                            = Inlet_MassFlow_Local[iMarker_Inlet];
-      Inlet_ReverseMassFlow_Total[iMarker_Inlet] = Inlet_ReverseMassFlow_Local[iMarker_Inlet];
-      Inlet_Pressure_Total[iMarker_Inlet]                              = Inlet_Pressure_Local[iMarker_Inlet];
-      Inlet_Mach_Total[iMarker_Inlet]                                        = Inlet_Mach_Local[iMarker_Inlet];
-      Inlet_MinPressure_Total[iMarker_Inlet]                 = Inlet_MinPressure_Local[iMarker_Inlet];
-      Inlet_MaxPressure_Total[iMarker_Inlet]             = Inlet_MaxPressure_Local[iMarker_Inlet];
-      Inlet_TotalPressure_Total[iMarker_Inlet]               = Inlet_TotalPressure_Local[iMarker_Inlet];
-      Inlet_Temperature_Total[iMarker_Inlet]                     = Inlet_Temperature_Local[iMarker_Inlet];
-      Inlet_TotalTemperature_Total[iMarker_Inlet]    = Inlet_TotalTemperature_Local[iMarker_Inlet];
-      Inlet_RamDrag_Total[iMarker_Inlet]                         = Inlet_RamDrag_Local[iMarker_Inlet];
-      Inlet_Force_Total[iMarker_Inlet]                               = Inlet_Force_Local[iMarker_Inlet];
-      Inlet_Power_Total[iMarker_Inlet]                           = Inlet_Power_Local[iMarker_Inlet];
-      Inlet_Area_Total[iMarker_Inlet]                                            = Inlet_Area_Local[iMarker_Inlet];
-      Inlet_XCG_Total[iMarker_Inlet]                                             = Inlet_XCG_Local[iMarker_Inlet];
-      Inlet_YCG_Total[iMarker_Inlet]                                             = Inlet_YCG_Local[iMarker_Inlet];
-      if (nDim == 3) Inlet_ZCG_Total[iMarker_Inlet]                                          = Inlet_ZCG_Local[iMarker_Inlet];
+      Inlet_MassFlow_Total[iMarker_Inlet]           = Inlet_MassFlow_Local[iMarker_Inlet];
+      Inlet_ReverseMassFlow_Total[iMarker_Inlet]    = Inlet_ReverseMassFlow_Local[iMarker_Inlet];
+      Inlet_Pressure_Total[iMarker_Inlet]           = Inlet_Pressure_Local[iMarker_Inlet];
+      Inlet_Mach_Total[iMarker_Inlet]               = Inlet_Mach_Local[iMarker_Inlet];
+      Inlet_MinPressure_Total[iMarker_Inlet]        = Inlet_MinPressure_Local[iMarker_Inlet];
+      Inlet_MaxPressure_Total[iMarker_Inlet]        = Inlet_MaxPressure_Local[iMarker_Inlet];
+      Inlet_TotalPressure_Total[iMarker_Inlet]      = Inlet_TotalPressure_Local[iMarker_Inlet];
+      Inlet_Temperature_Total[iMarker_Inlet]        = Inlet_Temperature_Local[iMarker_Inlet];
+      Inlet_TotalTemperature_Total[iMarker_Inlet]   = Inlet_TotalTemperature_Local[iMarker_Inlet];
+      Inlet_RamDrag_Total[iMarker_Inlet]            = Inlet_RamDrag_Local[iMarker_Inlet];
+      Inlet_Force_Total[iMarker_Inlet]              = Inlet_Force_Local[iMarker_Inlet];
+      Inlet_Power_Total[iMarker_Inlet]              = Inlet_Power_Local[iMarker_Inlet];
+      Inlet_Area_Total[iMarker_Inlet]               = Inlet_Area_Local[iMarker_Inlet];
+      Inlet_XCG_Total[iMarker_Inlet]                = Inlet_XCG_Local[iMarker_Inlet];
+      Inlet_YCG_Total[iMarker_Inlet]                = Inlet_YCG_Local[iMarker_Inlet];
+      if (nDim == 3) Inlet_ZCG_Total[iMarker_Inlet] = Inlet_ZCG_Local[iMarker_Inlet];
     }
     
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      Outlet_MassFlow_Total[iMarker_Outlet]                         = Outlet_MassFlow_Local[iMarker_Outlet];
-      Outlet_Pressure_Total[iMarker_Outlet]                             = Outlet_Pressure_Local[iMarker_Outlet];
-      Outlet_TotalPressure_Total[iMarker_Outlet]                = Outlet_TotalPressure_Local[iMarker_Outlet];
-      Outlet_Temperature_Total[iMarker_Outlet]                  = Outlet_Temperature_Local[iMarker_Outlet];
+      Outlet_MassFlow_Total[iMarker_Outlet]         = Outlet_MassFlow_Local[iMarker_Outlet];
+      Outlet_Pressure_Total[iMarker_Outlet]         = Outlet_Pressure_Local[iMarker_Outlet];
+      Outlet_TotalPressure_Total[iMarker_Outlet]    = Outlet_TotalPressure_Local[iMarker_Outlet];
+      Outlet_Temperature_Total[iMarker_Outlet]      = Outlet_Temperature_Local[iMarker_Outlet];
       Outlet_TotalTemperature_Total[iMarker_Outlet] = Outlet_TotalTemperature_Local[iMarker_Outlet];
-      Outlet_GrossThrust_Total[iMarker_Outlet]              = Outlet_GrossThrust_Local[iMarker_Outlet];
-      Outlet_Force_Total[iMarker_Outlet]                          = Outlet_Force_Local[iMarker_Outlet];
-      Outlet_Power_Total[iMarker_Outlet]                          = Outlet_Power_Local[iMarker_Outlet];
-      Outlet_Area_Total[iMarker_Outlet]                                         = Outlet_Area_Local[iMarker_Outlet];
+      Outlet_GrossThrust_Total[iMarker_Outlet]      = Outlet_GrossThrust_Local[iMarker_Outlet];
+      Outlet_Force_Total[iMarker_Outlet]            = Outlet_Force_Local[iMarker_Outlet];
+      Outlet_Power_Total[iMarker_Outlet]            = Outlet_Power_Local[iMarker_Outlet];
+      Outlet_Area_Total[iMarker_Outlet]             = Outlet_Area_Local[iMarker_Outlet];
     }
     
 #endif
@@ -8806,41 +8799,45 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
       if (Inlet_Area_Total[iMarker_Inlet] != 0.0) {
-        Inlet_Pressure_Total[iMarker_Inlet] /= Inlet_MassFlow_Total[iMarker_Inlet];
-        Inlet_Mach_Total[iMarker_Inlet] /= Inlet_MassFlow_Total[iMarker_Inlet];
-        Inlet_TotalPressure_Total[iMarker_Inlet] /= Inlet_MassFlow_Total[iMarker_Inlet];
-        Inlet_Temperature_Total[iMarker_Inlet] /= Inlet_MassFlow_Total[iMarker_Inlet];
-        Inlet_TotalTemperature_Total[iMarker_Inlet] /= Inlet_MassFlow_Total[iMarker_Inlet];
-        Inlet_XCG_Total[iMarker_Inlet] /= Inlet_Area_Total[iMarker_Inlet];
-        Inlet_YCG_Total[iMarker_Inlet] /= Inlet_Area_Total[iMarker_Inlet];
+        Inlet_Pressure_Total[iMarker_Inlet]           /= Inlet_MassFlow_Total[iMarker_Inlet];
+        Inlet_Mach_Total[iMarker_Inlet]               /= Inlet_MassFlow_Total[iMarker_Inlet];
+        Inlet_TotalPressure_Total[iMarker_Inlet]      /= Inlet_MassFlow_Total[iMarker_Inlet];
+        Inlet_Temperature_Total[iMarker_Inlet]        /= Inlet_MassFlow_Total[iMarker_Inlet];
+        Inlet_TotalTemperature_Total[iMarker_Inlet]   /= Inlet_MassFlow_Total[iMarker_Inlet];
+        Inlet_XCG_Total[iMarker_Inlet]                /= Inlet_Area_Total[iMarker_Inlet];
+        Inlet_YCG_Total[iMarker_Inlet]                /= Inlet_Area_Total[iMarker_Inlet];
         if (nDim == 3) Inlet_ZCG_Total[iMarker_Inlet] /= Inlet_Area_Total[iMarker_Inlet];
       }
       else {
-        Inlet_Pressure_Total[iMarker_Inlet] = 0.0;
-        Inlet_Mach_Total[iMarker_Inlet] = 0.0;
-        Inlet_TotalPressure_Total[iMarker_Inlet] = 0.0;
-        Inlet_Temperature_Total[iMarker_Inlet] = 0.0;
-        Inlet_TotalTemperature_Total[iMarker_Inlet] = 0.0;
-        Inlet_XCG_Total[iMarker_Inlet] = 0.0;
-        Inlet_YCG_Total[iMarker_Inlet] = 0.0;
+        Inlet_Pressure_Total[iMarker_Inlet]           = 0.0;
+        Inlet_Mach_Total[iMarker_Inlet]               = 0.0;
+        Inlet_TotalPressure_Total[iMarker_Inlet]      = 0.0;
+        Inlet_Temperature_Total[iMarker_Inlet]        = 0.0;
+        Inlet_TotalTemperature_Total[iMarker_Inlet]   = 0.0;
+        Inlet_XCG_Total[iMarker_Inlet]                = 0.0;
+        Inlet_YCG_Total[iMarker_Inlet]                = 0.0;
         if (nDim == 3) Inlet_ZCG_Total[iMarker_Inlet] = 0.0;
       }
       
       if (iMesh == MESH_0) {
         
         if (Engine) {
-          config->SetInflow_MassFlow(iMarker_Inlet, Inlet_MassFlow_Total[iMarker_Inlet]);
-          config->SetInflow_ReverseMassFlow(iMarker_Inlet, Inlet_ReverseMassFlow_Total[iMarker_Inlet]);
-          config->SetInflow_Pressure(iMarker_Inlet, Inlet_Pressure_Total[iMarker_Inlet]);
-          config->SetInflow_TotalPressure(iMarker_Inlet, Inlet_TotalPressure_Total[iMarker_Inlet]);
-          config->SetInflow_Temperature(iMarker_Inlet, Inlet_Temperature_Total[iMarker_Inlet]);
-          config->SetInflow_TotalTemperature(iMarker_Inlet, Inlet_TotalTemperature_Total[iMarker_Inlet]);
-          config->SetInflow_RamDrag(iMarker_Inlet, Inlet_RamDrag_Total[iMarker_Inlet]);
-          config->SetInflow_Force(iMarker_Inlet, Inlet_Force_Total[iMarker_Inlet]);
-          config->SetInflow_Power(iMarker_Inlet, Inlet_Power_Total[iMarker_Inlet]);
+          config->SetEngineInflow_MassFlow(iMarker_Inlet, Inlet_MassFlow_Total[iMarker_Inlet]);
+          config->SetEngineInflow_Mach(iMarker_Inlet, Inlet_Mach_Total[iMarker_Inlet]);
+          config->SetEngineInflow_Area(iMarker_Inlet, Inlet_Area_Total[iMarker_Inlet]);
+          config->SetEngineInflow_ReverseMassFlow(iMarker_Inlet, Inlet_ReverseMassFlow_Total[iMarker_Inlet]);
+          config->SetEngineInflow_Pressure(iMarker_Inlet, Inlet_Pressure_Total[iMarker_Inlet]);
+          config->SetEngineInflow_TotalPressure(iMarker_Inlet, Inlet_TotalPressure_Total[iMarker_Inlet]);
+          config->SetEngineInflow_Temperature(iMarker_Inlet, Inlet_Temperature_Total[iMarker_Inlet]);
+          config->SetEngineInflow_TotalTemperature(iMarker_Inlet, Inlet_TotalTemperature_Total[iMarker_Inlet]);
+          config->SetEngineInflow_RamDrag(iMarker_Inlet, Inlet_RamDrag_Total[iMarker_Inlet]);
+          config->SetEngineInflow_Force(iMarker_Inlet, Inlet_Force_Total[iMarker_Inlet]);
+          config->SetEngineInflow_Power(iMarker_Inlet, Inlet_Power_Total[iMarker_Inlet]);
         }
         else {
           config->SetActDiskInlet_MassFlow(iMarker_Inlet, Inlet_MassFlow_Total[iMarker_Inlet]);
+          config->SetActDiskInlet_Mach(iMarker_Inlet, Inlet_Mach_Total[iMarker_Inlet]);
+          config->SetActDiskInlet_Area(iMarker_Inlet, Inlet_Area_Total[iMarker_Inlet]);
           config->SetActDiskInlet_ReverseMassFlow(iMarker_Inlet, Inlet_ReverseMassFlow_Total[iMarker_Inlet]);
           config->SetActDiskInlet_Pressure(iMarker_Inlet, Inlet_Pressure_Total[iMarker_Inlet]);
           config->SetActDiskInlet_TotalPressure(iMarker_Inlet, Inlet_TotalPressure_Total[iMarker_Inlet]);
@@ -8857,29 +8854,29 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
     
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
-        Outlet_Pressure_Total[iMarker_Outlet] /= Outlet_MassFlow_Total[iMarker_Outlet];
-        Outlet_TotalPressure_Total[iMarker_Outlet] /= Outlet_MassFlow_Total[iMarker_Outlet];
-        Outlet_Temperature_Total[iMarker_Outlet] /= Outlet_MassFlow_Total[iMarker_Outlet];
+        Outlet_Pressure_Total[iMarker_Outlet]         /= Outlet_MassFlow_Total[iMarker_Outlet];
+        Outlet_TotalPressure_Total[iMarker_Outlet]    /= Outlet_MassFlow_Total[iMarker_Outlet];
+        Outlet_Temperature_Total[iMarker_Outlet]      /= Outlet_MassFlow_Total[iMarker_Outlet];
         Outlet_TotalTemperature_Total[iMarker_Outlet] /= Outlet_MassFlow_Total[iMarker_Outlet];
       }
       else {
-        Outlet_Pressure_Total[iMarker_Outlet] = 0.0;
-        Outlet_TotalPressure_Total[iMarker_Outlet] = 0.0;
-        Outlet_Temperature_Total[iMarker_Outlet] = 0.0;
+        Outlet_Pressure_Total[iMarker_Outlet]         = 0.0;
+        Outlet_TotalPressure_Total[iMarker_Outlet]    = 0.0;
+        Outlet_Temperature_Total[iMarker_Outlet]      = 0.0;
         Outlet_TotalTemperature_Total[iMarker_Outlet] = 0.0;
       }
       
       if (iMesh == MESH_0) {
         
         if (Engine) {
-          config->SetExhaust_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
-          config->SetExhaust_Pressure(iMarker_Outlet, Outlet_Pressure_Total[iMarker_Outlet]);
-          config->SetExhaust_TotalPressure(iMarker_Outlet, Outlet_TotalPressure_Total[iMarker_Outlet]);
-          config->SetExhaust_Temperature(iMarker_Outlet, Outlet_Temperature_Total[iMarker_Outlet]);
-          config->SetExhaust_TotalTemperature(iMarker_Outlet, Outlet_TotalTemperature_Total[iMarker_Outlet]);
-          config->SetExhaust_GrossThrust(iMarker_Outlet, Outlet_GrossThrust_Total[iMarker_Outlet]);
-          config->SetExhaust_Force(iMarker_Outlet, Outlet_Force_Total[iMarker_Outlet]);
-          config->SetExhaust_Power(iMarker_Outlet, Outlet_Power_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_Pressure(iMarker_Outlet, Outlet_Pressure_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_TotalPressure(iMarker_Outlet, Outlet_TotalPressure_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_Temperature(iMarker_Outlet, Outlet_Temperature_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_TotalTemperature(iMarker_Outlet, Outlet_TotalTemperature_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_GrossThrust(iMarker_Outlet, Outlet_GrossThrust_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_Force(iMarker_Outlet, Outlet_Force_Total[iMarker_Outlet]);
+          config->SetEngineExhaust_Power(iMarker_Outlet, Outlet_Power_Total[iMarker_Outlet]);
         }
         else {
           config->SetActDiskOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
@@ -8896,368 +8893,394 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
       
     }
     
+    /*--- Store delta pressure, temperature, thrust, and area ---*/
     
-    if (Pair) {
+    for (iEngine = 0; iEngine < nEngine; iEngine++) {
       
-      /*--- Store delta pressure, temperature, thrust, and area ---*/
+      su2double DeltaPress = 0.0, DeltaTemp = 0.0, NetThrust = 0.0, GrossThrust = 0.0, TotalPressRatio = 0.0, TotalTempRatio = 0.0, StaticPressRatio = 0.0, StaticTempRatio = 0.0;
+      su2double TotalPressRatio_Denominator = 0.0, TotalTempRatio_Denominator = 0.0, StaticPressRatio_Denominator = 0.0, StaticTempRatio_Denominator = 0.0;
+      su2double TotalPressRatio_Numerator = 0.0, TotalTempRatio_Numerator = 0.0, StaticPressRatio_Numerator = 0.0, StaticTempRatio_Numerator = 0.0;
       
       for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-        
         if (Engine) {
           Inlet_TagBound = config->GetMarker_EngineInflow_TagBound(iMarker_Inlet);
-          jMarker = config->GetMarker_CfgFile_EngineExhaust(Inlet_TagBound);
-          Outlet_TagBound = config->GetMarker_CfgFile_TagBound(jMarker);
+          if  (config->GetEngineInflow_EngineID(Inlet_TagBound) == iEngine) {
+            DeltaPress -= config->GetEngineInflow_Pressure(Inlet_TagBound);
+            DeltaTemp  -= config->GetEngineInflow_Temperature(Inlet_TagBound);
+            NetThrust  -= config->GetEngineInflow_RamDrag(Inlet_TagBound);
+            Force      += config->GetEngineInflow_Force(Inlet_TagBound) ;
+            Power      -= config->GetEngineInflow_Power(Inlet_TagBound);
+            MassFlow   +=  config->GetEngineInflow_MassFlow(Inlet_TagBound);
+            Mach       +=  config->GetEngineInflow_Mach(Inlet_TagBound);
+            Area       +=  config->GetEngineInflow_Area(Inlet_TagBound);
+            
+            TotalPressRatio_Denominator   += config->GetEngineInflow_TotalPressure(Inlet_TagBound);
+            TotalTempRatio_Denominator    += config->GetEngineInflow_TotalTemperature(Inlet_TagBound);
+            StaticPressRatio_Denominator   += config->GetEngineInflow_Pressure(Inlet_TagBound);
+            StaticTempRatio_Denominator    += config->GetEngineInflow_Temperature(Inlet_TagBound);
+          }
         }
         else {
           Inlet_TagBound = config->GetMarker_ActDiskInlet_TagBound(iMarker_Inlet);
-          jMarker = config->GetMarker_CfgFile_ActDiskOutlet(Inlet_TagBound);
-          Outlet_TagBound = config->GetMarker_CfgFile_TagBound(jMarker);
+          if  (iMarker_Inlet == iEngine) {
+            DeltaPress -= config->GetActDiskInlet_Pressure(Inlet_TagBound);
+            DeltaTemp  -= config->GetActDiskInlet_Temperature(Inlet_TagBound);
+            NetThrust  -= config->GetActDiskInlet_RamDrag(Inlet_TagBound);
+            Force      += config->GetActDiskInlet_Force(Inlet_TagBound) ;
+            Power      -= config->GetActDiskInlet_Power(Inlet_TagBound);
+            MassFlow   +=  config->GetActDiskInlet_MassFlow(Inlet_TagBound);
+            Mach       +=  config->GetActDiskInlet_Mach(Inlet_TagBound);
+            Area       +=  config->GetActDiskInlet_Area(Inlet_TagBound);
+            
+            TotalPressRatio_Denominator   += config->GetActDiskInlet_TotalPressure(Inlet_TagBound);
+            TotalTempRatio_Denominator    += config->GetActDiskInlet_TotalTemperature(Inlet_TagBound);
+            StaticPressRatio_Denominator   += config->GetActDiskInlet_Pressure(Inlet_TagBound);
+            StaticTempRatio_Denominator    += config->GetActDiskInlet_Temperature(Inlet_TagBound);
+          }
         }
-        
-        
-        su2double DeltaPress = 0.0, DeltaTemp = 0.0, NetThrust = 0.0, GrossThrust = 0.0, TotalPressRatio = 0.0, TotalTempRatio = 0.0, StaticPressRatio = 0.0, StaticTempRatio = 0.0;
-        
-        if (Engine) {
-          DeltaPress   = config->GetExhaust_Pressure(Outlet_TagBound) - config->GetInflow_Pressure(Inlet_TagBound);
-          DeltaTemp         = config->GetExhaust_Temperature(Outlet_TagBound) - config->GetInflow_Temperature(Inlet_TagBound);
-          NetThrust    = config->GetExhaust_GrossThrust(Outlet_TagBound) - config->GetInflow_RamDrag(Inlet_TagBound);
-          GrossThrust   = config->GetExhaust_GrossThrust(Outlet_TagBound);
-          TotalPressRatio   = config->GetExhaust_TotalPressure(Outlet_TagBound)/config->GetInflow_TotalPressure(Inlet_TagBound);
-          TotalTempRatio    = config->GetExhaust_TotalTemperature(Outlet_TagBound)/config->GetInflow_TotalTemperature(Inlet_TagBound);
-          StaticPressRatio   = config->GetExhaust_Pressure(Outlet_TagBound)/config->GetInflow_Pressure(Inlet_TagBound);
-          StaticTempRatio    = config->GetExhaust_Temperature(Outlet_TagBound)/config->GetInflow_Temperature(Inlet_TagBound);
-          Force = config->GetInflow_Force(Inlet_TagBound) + config->GetExhaust_Force(Outlet_TagBound);
-          Power = config->GetExhaust_Power(Outlet_TagBound) - config->GetInflow_Power(Inlet_TagBound);
-        }
-        else {
-          DeltaPress   = config->GetActDiskOutlet_Pressure(Outlet_TagBound) - config->GetActDiskInlet_Pressure(Inlet_TagBound);
-          DeltaTemp         = config->GetActDiskOutlet_Temperature(Outlet_TagBound) - config->GetActDiskInlet_Temperature(Inlet_TagBound);
-          NetThrust    = config->GetActDiskOutlet_GrossThrust(Outlet_TagBound) - config->GetActDiskInlet_RamDrag(Inlet_TagBound);
-          GrossThrust   = config->GetActDiskOutlet_GrossThrust(Outlet_TagBound);
-          TotalPressRatio   = config->GetActDiskOutlet_TotalPressure(Outlet_TagBound)/config->GetActDiskInlet_TotalPressure(Inlet_TagBound);
-          TotalTempRatio    = config->GetActDiskOutlet_TotalTemperature(Outlet_TagBound)/config->GetActDiskInlet_TotalTemperature(Inlet_TagBound);
-          StaticPressRatio   = config->GetActDiskOutlet_Pressure(Outlet_TagBound)/config->GetActDiskInlet_Pressure(Inlet_TagBound);
-          StaticTempRatio    = config->GetActDiskOutlet_Temperature(Outlet_TagBound)/config->GetActDiskInlet_Temperature(Inlet_TagBound);
-          Force = config->GetActDiskInlet_Force(Inlet_TagBound) + config->GetActDiskOutlet_Force(Outlet_TagBound);
-          Power =  config->GetActDiskOutlet_Power(Outlet_TagBound) - config->GetActDiskInlet_Power(Inlet_TagBound);
-          MassFlow =  config->GetActDiskInlet_MassFlow(Inlet_TagBound);
-        }
-        
-        Mach        = Inlet_Mach_Total[iMarker_Inlet];
-        Area              = Inlet_Area_Total[iMarker_Inlet];
-        
-        if (Engine) {
-          config->SetEngine_Mach(iMarker_Inlet, Mach);
-          config->SetEngine_Force(iMarker_Inlet, Force);
-          config->SetEngine_Power(iMarker_Inlet, Power);
-          config->SetEngine_NetThrust(iMarker_Inlet, NetThrust);
-          config->SetEngine_GrossThrust(iMarker_Inlet, GrossThrust);
-          config->SetEngine_Area(iMarker_Inlet, Area);
-        }
-        else {
-          config->SetActDisk_DeltaPress(iMarker_Inlet, DeltaPress);
-          config->SetActDisk_DeltaTemp(iMarker_Inlet, DeltaTemp);
-          config->SetActDisk_Mach(iMarker_Inlet, Mach);
-          config->SetActDisk_Force(iMarker_Inlet, Force);
-          config->SetActDisk_Power(iMarker_Inlet, Power);
-          config->SetActDisk_MassFlow(iMarker_Inlet, MassFlow);
-          config->SetActDisk_TotalPressRatio(iMarker_Inlet, TotalPressRatio);
-          config->SetActDisk_TotalTempRatio(iMarker_Inlet, TotalTempRatio);
-          config->SetActDisk_StaticPressRatio(iMarker_Inlet, StaticPressRatio);
-          config->SetActDisk_StaticTempRatio(iMarker_Inlet, StaticTempRatio);
-          config->SetActDisk_NetThrust(iMarker_Inlet, NetThrust);
-          config->SetActDisk_GrossThrust(iMarker_Inlet, GrossThrust);
-          config->SetActDisk_Area(iMarker_Inlet, Area);
-        }
-        
       }
       
-      /*--- Screen output using the values already stored in the config container ---*/
-      
-      if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
-        
-        cout.precision(5);
-        cout.setf(ios::fixed, ios::floatfield);
-        
-        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-          if (Engine) cout << endl   << "---------------------------- Engine properties --------------------------" << endl;
-          else cout << endl   << "------------------------ Actuator Disk properties -----------------------" << endl;
-        }
-        
-        for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-          
-          if (Engine) {
-            Inlet_TagBound = config->GetMarker_EngineInflow_TagBound(iMarker_Inlet);
-            jMarker = config->GetMarker_CfgFile_EngineExhaust(Inlet_TagBound);
-            Outlet_TagBound = config->GetMarker_CfgFile_TagBound(jMarker);
+      for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+        if (Engine) {
+          Outlet_TagBound = config->GetMarker_EngineExhaust_TagBound(iMarker_Outlet);
+          if  (config->GetEngineExhaust_EngineID(Outlet_TagBound) == iEngine) {
+            DeltaPress  += config->GetEngineExhaust_Pressure(Outlet_TagBound);
+            DeltaTemp   += config->GetEngineExhaust_Temperature(Outlet_TagBound);
+            NetThrust   += config->GetEngineExhaust_GrossThrust(Outlet_TagBound);
+            GrossThrust += config->GetEngineExhaust_GrossThrust(Outlet_TagBound);
+            Force       += config->GetEngineExhaust_Force(Outlet_TagBound);
+            Power       += config->GetEngineExhaust_Power(Outlet_TagBound);
+            TotalPressRatio_Numerator   += config->GetEngineExhaust_TotalPressure(Outlet_TagBound);
+            TotalTempRatio_Numerator    += config->GetEngineExhaust_TotalTemperature(Outlet_TagBound);
+            StaticPressRatio_Numerator   += config->GetEngineExhaust_Pressure(Outlet_TagBound);
+            StaticTempRatio_Numerator    += config->GetEngineExhaust_Temperature(Outlet_TagBound);
           }
-          else {
-            Inlet_TagBound = config->GetMarker_ActDiskInlet_TagBound(iMarker_Inlet);
+        }
+        else {
+          if  (iMarker_Outlet == iEngine) {
+            Inlet_TagBound = config->GetMarker_ActDiskInlet_TagBound(iMarker_Outlet);
             jMarker = config->GetMarker_CfgFile_ActDiskOutlet(Inlet_TagBound);
             Outlet_TagBound = config->GetMarker_CfgFile_TagBound(jMarker);
+            DeltaPress  += config->GetActDiskOutlet_Pressure(Outlet_TagBound);
+            DeltaTemp   += config->GetActDiskOutlet_Temperature(Outlet_TagBound);
+            NetThrust   += config->GetActDiskOutlet_GrossThrust(Outlet_TagBound);
+            GrossThrust += config->GetActDiskOutlet_GrossThrust(Outlet_TagBound);
+            Force       += config->GetActDiskOutlet_Force(Outlet_TagBound);
+            Power       += config->GetActDiskOutlet_Power(Outlet_TagBound);
+            TotalPressRatio_Numerator   += config->GetActDiskOutlet_TotalPressure(Outlet_TagBound);
+            TotalTempRatio_Numerator    += config->GetActDiskOutlet_TotalTemperature(Outlet_TagBound);
+            StaticPressRatio_Numerator   += config->GetActDiskOutlet_Pressure(Outlet_TagBound);
+            StaticTempRatio_Numerator    += config->GetActDiskOutlet_Temperature(Outlet_TagBound);
           }
-          
-          
-          if (Engine) {
-            NetThrust             =  config->GetEngine_NetThrust(iMarker_Inlet);
-            GrossThrust   = config->GetEngine_GrossThrust(iMarker_Inlet);
-            Power               = config->GetEngine_Power(iMarker_Inlet);
-            Mach                  = config->GetEngine_Mach(iMarker_Inlet);
-            Force               = config->GetEngine_Force(iMarker_Inlet);
-          }
-          else {
-            DeltaPress      = config->GetActDisk_DeltaPress(iMarker_Inlet);
-            DeltaTemp         = config->GetActDisk_DeltaTemp(iMarker_Inlet);
-            TotalPressRatio       = config->GetActDisk_TotalPressRatio(iMarker_Inlet);
-            TotalTempRatio        = config->GetActDisk_TotalTempRatio(iMarker_Inlet);
-            StaticPressRatio      = config->GetActDisk_StaticPressRatio(iMarker_Inlet);
-            StaticTempRatio           = config->GetActDisk_StaticTempRatio(iMarker_Inlet);
-            NetThrust             =  config->GetActDisk_NetThrust(iMarker_Inlet);
-            GrossThrust   = config->GetActDisk_GrossThrust(iMarker_Inlet);
-            Power               = config->GetActDisk_Power(iMarker_Inlet);
-            Mach                  = config->GetActDisk_Mach(iMarker_Inlet);
-            Force               = config->GetActDisk_Force(iMarker_Inlet);
-          }
-          
-          su2double Mach_Inf                  = config->GetMach();
-          su2double Pressure_Inf  = config->GetPressure_FreeStreamND();
-          
-          su2double TotalPressure_Inf  = Pressure_Inf * pow( 1.0 + Mach_Inf * Mach_Inf * 0.5 * (Gamma - 1.0), Gamma     / (Gamma - 1.0));
-          
-          su2double MinPressure = Inlet_MinPressure_Total[iMarker_Inlet]/TotalPressure_Inf;
-          su2double MaxPressure = Inlet_MaxPressure_Total[iMarker_Inlet]/TotalPressure_Inf;
-          su2double AvePressure = Inlet_TotalPressure_Total[iMarker_Inlet]/TotalPressure_Inf;
-          
-          su2double RefDensity  = Density_Inf;
-          su2double RefAreaCoeff     = config->GetRefAreaCoeff();
-          su2double RefVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-          
-          su2double Factor = (0.5*RefDensity*RefAreaCoeff*RefVel2);
-          su2double Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
-          su2double DmT = GetTotal_CD() * Factor;
-          
-//          su2double ModDmT = 0.0;
-//          if (nDim == 2) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
-//                                       GetTotal_CFy()*GetTotal_CFy());
-//
-//          if (nDim == 3) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
-//                                       GetTotal_CFy()*GetTotal_CFy() +
-//                                       GetTotal_CFz()*GetTotal_CFz());
-//
-//          DmTVector[0] = GetTotal_CFx()/ModDmT;
-//          DmTVector[1] = GetTotal_CFy()/ModDmT;
-//          if (nDim == 3)  DmTVector[2] = GetTotal_CFz()/ModDmT;
-          
-          /*--- Set the aero drag ---*/
-
-          su2double Aero_Drag = DmT - Force;
-          su2double Aero_CD = Aero_Drag / Factor;
-
-          SetTotal_AeroCD(Aero_CD);
-
-          /*--- Set the solid surface drag ---*/
-          
-          su2double SolidSurf_Drag = DmT - Force;
-          su2double SolidSurf_CD = SolidSurf_Drag / Factor;
-
-          SetTotal_CD_SolidSurf(SolidSurf_CD);
-          
-          /*--- Set the net thrust value---*/
-          
-          su2double CT = NetThrust / Factor;
-
-          SetTotal_NetCThrust(CT);
-          
-          /*--- Set the total power ---*/
-          
-          su2double PowerHP = Power * Ref *  config->GetVelocity_Ref() / 550.0;
-          
-          SetTotal_Power(PowerHP);
-          
-          /*--- Set the total ReverseFlow ---*/
-          
-          su2double ReverseFlow;
-          if (Engine) ReverseFlow = fabs(config->GetInflow_ReverseMassFlow(iMarker_Inlet)  / config->GetInflow_MassFlow(Inlet_TagBound));
-          else ReverseFlow = fabs(config->GetActDisk_ReverseMassFlow(iMarker_Inlet)  / config->GetActDiskInlet_MassFlow(Inlet_TagBound));
-          
-          SetTotal_ReverseFlow(ReverseFlow);
-          
-          /*--- Set the total mass flow ratio ---*/
-          
-          InfVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) InfVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-          if (Engine) MFR =fabs(config->GetInflow_MassFlow(Inlet_TagBound)) / (Density_Inf * sqrt(InfVel2) * config->GetHighlite_Area());
-          else MFR = fabs(config->GetActDiskInlet_MassFlow(Inlet_TagBound)) / (Density_Inf * sqrt(InfVel2) * config->GetHighlite_Area());
-          SetTotal_MFR(MFR);
-          
-          /*--- Evaluate shaft power and adiabatic efficiency (average) ---*/
-          
-          su2double Pstatic1, P1, P2, T1, T2;
-          if (Engine) {
-            Pstatic1 = config->GetInflow_Pressure(Inlet_TagBound);
-            P1 = config->GetInflow_TotalPressure(Inlet_TagBound);
-            P2 = config->GetExhaust_TotalPressure(Outlet_TagBound);
-            T1 = config->GetInflow_TotalTemperature(Inlet_TagBound);
-            T2 = config->GetExhaust_TotalTemperature(Outlet_TagBound);
-          }
-          else {
-            Pstatic1 = config->GetActDiskInlet_Pressure(Inlet_TagBound);
-            P1 = config->GetActDiskInlet_TotalPressure(Inlet_TagBound);
-            P2 = config->GetActDiskOutlet_TotalPressure(Outlet_TagBound);
-            T1 = config->GetActDiskInlet_TotalTemperature(Inlet_TagBound);
-            T2 = config->GetActDiskOutlet_TotalTemperature(Outlet_TagBound);
-          }
-          
-          /*-- Set the propulsive efficiency ---*/
-          
-          su2double mu_prop = fabs(DmT)*sqrt(RefVel2)/Power;
-          SetTotal_Prop_Eff(mu_prop);
-          
-          /*-- Set the bypass propulsive efficiency ---*/
-          
-          su2double mu_bypass_prop = NetThrust*sqrt(RefVel2)/Power;
-          SetTotal_ByPassProp_Eff(mu_bypass_prop);
-          
-          /*-- Set the fan adiabatic efficiency ---*/
-          
-          su2double mu_isentropic = 0.0;
-          if ((P2/P1) > 0.0) mu_isentropic =    (T1/(T2-T1))*(pow((P2/P1),(Gamma-1.0)/Gamma)-1.0);
-          SetTotal_Adiab_Eff(mu_isentropic);
-          
-          /*-- Set the polytropic efficiency ---*/
-          
-          su2double poly_coeff = 1.0/(1.0-log(T2/T1)/log(P2/P1));
-          su2double mu_polytropic = ((Gamma-1.0)/Gamma)/((poly_coeff-1.0)/poly_coeff);
-          SetTotal_Poly_Eff(mu_polytropic);
-          
-          if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-            
-            if (iMarker_Inlet > 0) cout << endl;
-            
-            /*--- Geometry defintion ---*/
-            
-            if (Engine) cout <<"Engine surfaces: " << Inlet_TagBound << ", " << Outlet_TagBound << "." << endl;
-            else cout <<"Actuator disk surfaces: " << Inlet_TagBound << ", " << Outlet_TagBound << "." << endl;
-            
-            if (nDim == 2) {
-              if (config->GetSystemMeasurements() == SI)
-                cout <<"CG (m): (" << Inlet_XCG_Total[iMarker_Inlet] <<", " << Inlet_YCG_Total[iMarker_Inlet] << "). Length (m): " << Inlet_Area_Total[iMarker_Inlet] << "." << endl;
-              else if (config->GetSystemMeasurements() == US)
-                cout <<"CG (in): (" << Inlet_XCG_Total[iMarker_Inlet]*12.0 <<", " << Inlet_YCG_Total[iMarker_Inlet]*12.0 << "). Length (in): " << Inlet_Area_Total[iMarker_Inlet]*12.0 << "." << endl;
-              cout << endl;
-            }
-            
-            if (nDim ==3) {
-              if (config->GetSystemMeasurements() == SI)
-                cout <<"CG (m): (" << Inlet_XCG_Total[iMarker_Inlet] <<", " << Inlet_YCG_Total[iMarker_Inlet] <<", " << Inlet_ZCG_Total[iMarker_Inlet] << "). Area (m^2): " << Inlet_Area_Total[iMarker_Inlet] << ". Radius (m): " << sqrt(Inlet_Area_Total[iMarker_Inlet]/PI_NUMBER) << "." << endl;
-              else if (config->GetSystemMeasurements() == US)
-                cout <<"CG (in): (" << Inlet_XCG_Total[iMarker_Inlet]*12.0 <<", " << Inlet_YCG_Total[iMarker_Inlet]*12.0 <<", " << Inlet_ZCG_Total[iMarker_Inlet]*12.0 << "). Area (in^2): " << Inlet_Area_Total[iMarker_Inlet]*12.0*12.0 << "." << endl;
-              cout << endl;
-            }
-            
-            
-            /*--- Flow field descritption  ---*/
-            
-            if (config->GetSystemMeasurements() == SI) {
-              cout << setprecision(2) << "Inlet Ave. P (Pa): " << Pstatic1*config->GetPressure_Ref() << setprecision(3) <<  ". Inlet Ave. Mach: " << Mach << "." << endl;
-              cout << setprecision(2) << "Outlet Ave. PT (Pa): " << P2*config->GetPressure_Ref() << ". Outlet Ave. TT (K): " << T2*config->GetTemperature_Ref() << "." << endl;
-            }
-            else if (config->GetSystemMeasurements() == US) {
-              cout << setprecision(2) << "Inlet Ave. P (psf): " << Pstatic1*config->GetPressure_Ref() << setprecision(3) <<  ". Inlet Ave. Mach: " << Mach << "." << endl;
-              cout << setprecision(2) << "Outlet Ave. PT (psf): " << P2*config->GetPressure_Ref() << ". Outlet Ave. TT (R): " << T2*config->GetTemperature_Ref() << "." << endl;
-            }
-            
-            cout << "Inlet min. PT/PTinf: " << MinPressure << ". Inlet max. PT/PTinf: " << MaxPressure << ". Inlet Ave. PT/PTinf: " << AvePressure << endl;
-            
-            su2double InfVel2, Inlet_MassFlow, Outlet_MassFlow;
-            
-            if (Engine) Inlet_MassFlow = fabs(config->GetInflow_MassFlow(Inlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-            else Inlet_MassFlow = fabs(config->GetActDiskInlet_MassFlow(Inlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-            
-            if (config->GetSystemMeasurements() == SI) { cout << "Inlet mass flow (kg/s): "; cout << setprecision(2) << Inlet_MassFlow; }
-            else if (config->GetSystemMeasurements() == US) { cout << "Inlet mass flow (lbs/s): "; cout << setprecision(2) << Inlet_MassFlow * 32.174; }
-            
-            if (Engine) Outlet_MassFlow = fabs(config->GetExhaust_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-            else Outlet_MassFlow = fabs(config->GetActDiskOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
-            
-            //          if (config->GetSystemMeasurements() == SI) { cout << ". Outlet mass flow (kg/s): "; cout << setprecision(2) << Outlet_MassFlow; }
-            //          else if (config->GetSystemMeasurements() == US) { cout << ". Outlet mass flow (lbs/s): "; cout << setprecision(2) << Outlet_MassFlow * 32.174; }
-            
-            if (Inlet_MassFlow > Outlet_MassFlow) cout << ". I/O diff.: " << setprecision(2) << 100.0*fabs(1.0-(Outlet_MassFlow/Inlet_MassFlow)) << "%";
-            else cout << ". I/O diff.: " << setprecision(2) << -100.0*fabs(1.0-(Inlet_MassFlow/Outlet_MassFlow)) << "%";
-            
-            InfVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) InfVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
-            cout << setprecision(2) << ". MFR: " << MFR << "." << endl;
-            
-            if (!Engine) {
-              
-              cout << setprecision(3) << "PT in/out ratio: " << TotalPressRatio << ". TT in/out ratio: " << TotalTempRatio  <<  "." << endl;
-              
-              if (config->GetActDisk_Jump() == VARIABLES_JUMP) {
-                if (config->GetSystemMeasurements() == SI) cout << setprecision(3) << "P in/out jump (Pa): ";
-                else if (config->GetSystemMeasurements() == US) cout << setprecision(3) << "P in/out jump (psf): ";
-                cout << setprecision(3) << DeltaPress * config->GetPressure_Ref();
-                if (config->GetSystemMeasurements() == SI) cout << setprecision(3) << ". T in/out jump (K): ";
-                else if (config->GetSystemMeasurements() == US) cout << setprecision(3) << ". T in/out jump (R): ";
-                cout << setprecision(3) << DeltaTemp * config->GetTemperature_Ref() <<"."<< endl;
-              }
-              else  if (config->GetActDisk_Jump() == RATIO) {
-                cout << setprecision(3) << "P in/out ratio: ";
-                cout << setprecision(3) << StaticPressRatio;
-                cout  << setprecision(3) <<". T in/out ratio: ";
-                cout << setprecision(3) << StaticTempRatio <<"."<< endl;
-              }
-            }
-            
-            cout << setprecision(1) << "\nProp. eff. (D-T.V/Shaft P): " << 100*mu_prop << "%. By-pass prop. eff. (NetT.V/Shaft P): " << 100*mu_bypass_prop <<   "%." << endl;
-            cout << setprecision(1) << "Fan adiabatic eff.: " << 100*mu_isentropic  << "%. Fan poly. eff.: " << 100*mu_polytropic << "%. Poly coeff. (n): " << setprecision(4) << poly_coeff << "." << endl;
-            
-            cout << endl;
-            
-            
-            /*--- Forces descritption  ---*/
-            
-            if (config->GetSystemMeasurements() == SI) cout << setprecision(1) << "Ram Drag (N): ";
-            else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Ram Drag (lbf): ";
-            cout << (GrossThrust-NetThrust) * Ref;
-            
-            if (config->GetSystemMeasurements() == SI) cout << setprecision(1) << ". Gross Thrust (N): ";
-            else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << ". Gross Thrust (lbf): ";
-            cout << -GrossThrust * Ref  << "." << endl;
-            
-            if (config->GetSystemMeasurements() == SI) cout << setprecision(1) << "Open surfaces Thurst (N): ";
-            else if (config->GetSystemMeasurements() == US) cout  << setprecision(1) << "Open surfaces Thrust (lbf): ";
-            cout<< setprecision(1) << Force * Ref << ". Open surfaces CT: " << setprecision(5) << -Force / Factor << "." << endl;
-            
-            if (config->GetSystemMeasurements() == SI) cout << "Solid surfaces Drag (N): ";
-            else if (config->GetSystemMeasurements() == US) cout << "Solid surfaces Drag (lbf): ";
-            cout << setprecision(1) << SolidSurf_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << SolidSurf_CD << "." << endl;
-
-            if (config->GetSystemMeasurements() == SI) cout << "Aero Drag (N): ";
-            else if (config->GetSystemMeasurements() == US) cout << "Aero Drag (lbf): ";
-            cout << setprecision(1) << Aero_Drag * Ref << ". Aero CD: " << setprecision(5) << Aero_CD << "." << endl;
-
-            if (config->GetSystemMeasurements() == SI) cout << setprecision(1) <<"Net Thrust (N): ";
-            else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Net Thrust (lbf): ";
-            cout << setprecision(5) << -NetThrust * Ref  << ". Net CT: " << CT;
-            
-            if (config->GetSystemMeasurements() == SI) {
-              cout << ". Power (W): ";
-              cout << setprecision(1) << Power * Ref *  config->GetVelocity_Ref()  << "." << endl;
-            }
-            else if (config->GetSystemMeasurements() == US) {
-              cout << ". Power (HP): ";
-              cout << setprecision(1) << Power * Ref *  config->GetVelocity_Ref() / 550.0 << "." << endl;
-            }
-            
-          }
-          
         }
-        
-        if (write_heads && Output && !config->GetDiscrete_Adjoint()) cout << "-------------------------------------------------------------------------" << endl << endl;
-        
+      }
+      
+      TotalPressRatio   = TotalPressRatio_Numerator/TotalPressRatio_Denominator;
+      TotalTempRatio    = TotalTempRatio_Numerator/TotalTempRatio_Denominator;
+      StaticPressRatio   = StaticPressRatio_Numerator/StaticPressRatio_Denominator;
+      StaticTempRatio    = StaticTempRatio_Numerator/StaticTempRatio_Denominator;
+      
+      /*--- The the values at each engine ---*/
+      
+      if (Engine) {
+        config->SetEngine_Mach(iEngine, Mach);
+        config->SetEngine_Force(iEngine, Force);
+        config->SetEngine_Power(iEngine, Power);
+        config->SetEngine_NetThrust(iEngine, NetThrust);
+        config->SetEngine_GrossThrust(iEngine, GrossThrust);
+        config->SetEngine_Area(iEngine, Area);
+      }
+      else {
+        config->SetActDisk_DeltaPress(iEngine, DeltaPress);
+        config->SetActDisk_DeltaTemp(iEngine, DeltaTemp);
+        config->SetActDisk_Mach(iEngine, Mach);
+        config->SetActDisk_Force(iEngine, Force);
+        config->SetActDisk_Power(iEngine, Power);
+        config->SetActDisk_MassFlow(iEngine, MassFlow);
+        config->SetActDisk_TotalPressRatio(iEngine, TotalPressRatio);
+        config->SetActDisk_TotalTempRatio(iEngine, TotalTempRatio);
+        config->SetActDisk_StaticPressRatio(iEngine, StaticPressRatio);
+        config->SetActDisk_StaticTempRatio(iEngine, StaticTempRatio);
+        config->SetActDisk_NetThrust(iEngine, NetThrust);
+        config->SetActDisk_GrossThrust(iEngine, GrossThrust);
+        config->SetActDisk_Area(iEngine, Area);
       }
       
     }
+    
+    /*--- Screen output using the values already stored in the config container ---*/
+    
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
+      
+      cout.precision(5);
+      cout.setf(ios::fixed, ios::floatfield);
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+        if (Engine) cout << endl   << "---------------------------- Engine properties --------------------------" << endl;
+        else cout << endl   << "------------------------ Actuator Disk properties -----------------------" << endl;
+      }
+      
+      for (iEngine = 0; iEngine < nEngine; iEngine++) {
+        
+        if (Engine) {
+          NetThrust             =  config->GetEngine_NetThrust(iEngine);
+          GrossThrust   = config->GetEngine_GrossThrust(iEngine);
+          Power               = config->GetEngine_Power(iEngine);
+          Mach                  = config->GetEngine_Mach(iEngine);
+          Force               = config->GetEngine_Force(iEngine);
+        }
+        else {
+          DeltaPress      = config->GetActDisk_DeltaPress(iEngine);
+          DeltaTemp         = config->GetActDisk_DeltaTemp(iEngine);
+          TotalPressRatio       = config->GetActDisk_TotalPressRatio(iEngine);
+          TotalTempRatio        = config->GetActDisk_TotalTempRatio(iEngine);
+          StaticPressRatio      = config->GetActDisk_StaticPressRatio(iEngine);
+          StaticTempRatio           = config->GetActDisk_StaticTempRatio(iEngine);
+          NetThrust             =  config->GetActDisk_NetThrust(iEngine);
+          GrossThrust   = config->GetActDisk_GrossThrust(iEngine);
+          Power               = config->GetActDisk_Power(iEngine);
+          Mach                  = config->GetActDisk_Mach(iEngine);
+          Force               = config->GetActDisk_Force(iEngine);
+        }
+        
+        su2double Mach_Inf                  = config->GetMach();
+        su2double Pressure_Inf  = config->GetPressure_FreeStreamND();
+        
+        su2double TotalPressure_Inf  = Pressure_Inf * pow( 1.0 + Mach_Inf * Mach_Inf * 0.5 * (Gamma - 1.0), Gamma     / (Gamma - 1.0));
+        
+        su2double MinPressure = Inlet_MinPressure_Total[iMarker_Inlet]/TotalPressure_Inf;
+        su2double MaxPressure = Inlet_MaxPressure_Total[iMarker_Inlet]/TotalPressure_Inf;
+        su2double AvePressure = Inlet_TotalPressure_Total[iMarker_Inlet]/TotalPressure_Inf;
+        
+        su2double RefDensity  = Density_Inf;
+        su2double RefAreaCoeff     = config->GetRefAreaCoeff();
+        su2double RefVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+        
+        su2double Factor = (0.5*RefDensity*RefAreaCoeff*RefVel2);
+        su2double Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
+        su2double DmT = GetTotal_CD() * Factor;
+        
+        //          su2double ModDmT = 0.0;
+        //          if (nDim == 2) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
+        //                                       GetTotal_CFy()*GetTotal_CFy());
+        //
+        //          if (nDim == 3) ModDmT = sqrt(GetTotal_CFx()*GetTotal_CFx() +
+        //                                       GetTotal_CFy()*GetTotal_CFy() +
+        //                                       GetTotal_CFz()*GetTotal_CFz());
+        //
+        //          DmTVector[0] = GetTotal_CFx()/ModDmT;
+        //          DmTVector[1] = GetTotal_CFy()/ModDmT;
+        //          if (nDim == 3)  DmTVector[2] = GetTotal_CFz()/ModDmT;
+        
+        /*--- Set the aero drag ---*/
+        
+        su2double Aero_Drag = DmT - Force;
+        su2double Aero_CD = Aero_Drag / Factor;
+        
+        SetTotal_AeroCD(Aero_CD);
+        
+        /*--- Set the solid surface drag ---*/
+        
+        su2double SolidSurf_Drag = DmT - Force;
+        su2double SolidSurf_CD = SolidSurf_Drag / Factor;
+        
+        SetTotal_CD_SolidSurf(SolidSurf_CD);
+        
+        /*--- Set the net thrust value---*/
+        
+        su2double CT = NetThrust / Factor;
+        
+        SetTotal_NetCThrust(CT);
+        
+        /*--- Set the total power ---*/
+        
+        su2double PowerHP = Power * Ref *  config->GetVelocity_Ref() / 550.0;
+        
+        SetTotal_Power(PowerHP);
+        
+        /*--- Set the total ReverseFlow ---*/
+        
+//        su2double ReverseFlow;
+//        if (Engine) ReverseFlow = fabs(config->GetEngineInflow_ReverseMassFlow(iMarker_Inlet)  / config->GetEngineInflow_MassFlow(Inlet_TagBound));
+//        else ReverseFlow = fabs(config->GetActDisk_ReverseMassFlow(iMarker_Inlet)  / config->GetActDiskInlet_MassFlow(Inlet_TagBound));
+//        SetTotal_ReverseFlow(ReverseFlow);
+        
+//        /*--- Set the total mass flow ratio ---*/
+//
+//        InfVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) InfVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+//        if (Engine) MFR =fabs(config->GetEngineInflow_MassFlow(Inlet_TagBound)) / (Density_Inf * sqrt(InfVel2) * config->GetHighlite_Area());
+//        else MFR = fabs(config->GetActDiskInlet_MassFlow(Inlet_TagBound)) / (Density_Inf * sqrt(InfVel2) * config->GetHighlite_Area());
+//        SetTotal_MFR(MFR);
+        
+//        /*--- Evaluate shaft power and adiabatic efficiency (average) ---*/
+//
+//        su2double Pstatic1, P1, P2, T1, T2;
+//        if (Engine) {
+//          Pstatic1 = config->GetEngineInflow_Pressure(Inlet_TagBound);
+//          P1 = config->GetEngineInflow_TotalPressure(Inlet_TagBound);
+//          P2 = config->GetEngineExhaust_TotalPressure(Outlet_TagBound);
+//          T1 = config->GetEngineInflow_TotalTemperature(Inlet_TagBound);
+//          T2 = config->GetEngineExhaust_TotalTemperature(Outlet_TagBound);
+//        }
+//        else {
+//          Pstatic1 = config->GetActDiskInlet_Pressure(Inlet_TagBound);
+//          P1 = config->GetActDiskInlet_TotalPressure(Inlet_TagBound);
+//          P2 = config->GetActDiskOutlet_TotalPressure(Outlet_TagBound);
+//          T1 = config->GetActDiskInlet_TotalTemperature(Inlet_TagBound);
+//          T2 = config->GetActDiskOutlet_TotalTemperature(Outlet_TagBound);
+//       }
+        
+        /*-- Set the propulsive efficiency ---*/
+        
+        su2double mu_prop = fabs(DmT)*sqrt(RefVel2)/Power;
+        SetTotal_Prop_Eff(mu_prop);
+        
+        /*-- Set the bypass propulsive efficiency ---*/
+        
+        su2double mu_bypass_prop = NetThrust*sqrt(RefVel2)/Power;
+        SetTotal_ByPassProp_Eff(mu_bypass_prop);
+        
+        /*-- Set the fan adiabatic efficiency ---*/
+        
+//        su2double mu_isentropic = 0.0;
+//        if ((P2/P1) > 0.0) mu_isentropic =    (T1/(T2-T1))*(pow((P2/P1),(Gamma-1.0)/Gamma)-1.0);
+//        SetTotal_Adiab_Eff(mu_isentropic);
+        
+        /*-- Set the polytropic efficiency ---*/
+        
+//        su2double poly_coeff = 1.0/(1.0-log(T2/T1)/log(P2/P1));
+//        su2double mu_polytropic = ((Gamma-1.0)/Gamma)/((poly_coeff-1.0)/poly_coeff);
+//        SetTotal_Poly_Eff(mu_polytropic);
+        
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+          
+          if (iEngine > 0) cout << endl;
+          
+          /*--- Geometry defintion ---*/
+          
+//          if (Engine) cout <<"Engine surfaces: " << Inlet_TagBound << ", " << Outlet_TagBound << "." << endl;
+//          else cout <<"Actuator disk surfaces: " << Inlet_TagBound << ", " << Outlet_TagBound << "." << endl;
+          
+//          if (nDim == 2) {
+//            if (config->GetSystemMeasurements() == SI)
+//              cout <<"CG (m): (" << Inlet_XCG_Total[iMarker_Inlet] <<", " << Inlet_YCG_Total[iMarker_Inlet] << "). Length (m): " << Inlet_Area_Total[iMarker_Inlet] << "." << endl;
+//            else if (config->GetSystemMeasurements() == US)
+//              cout <<"CG (in): (" << Inlet_XCG_Total[iMarker_Inlet]*12.0 <<", " << Inlet_YCG_Total[iMarker_Inlet]*12.0 << "). Length (in): " << Inlet_Area_Total[iMarker_Inlet]*12.0 << "." << endl;
+//            cout << endl;
+//          }
+          
+//          if (nDim ==3) {
+//            if (config->GetSystemMeasurements() == SI)
+//              cout <<"CG (m): (" << Inlet_XCG_Total[iMarker_Inlet] <<", " << Inlet_YCG_Total[iMarker_Inlet] <<", " << Inlet_ZCG_Total[iMarker_Inlet] << "). Area (m^2): " << Inlet_Area_Total[iMarker_Inlet] << ". Radius (m): " << sqrt(Inlet_Area_Total[iMarker_Inlet]/PI_NUMBER) << "." << endl;
+//            else if (config->GetSystemMeasurements() == US)
+//              cout <<"CG (in): (" << Inlet_XCG_Total[iMarker_Inlet]*12.0 <<", " << Inlet_YCG_Total[iMarker_Inlet]*12.0 <<", " << Inlet_ZCG_Total[iMarker_Inlet]*12.0 << "). Area (in^2): " << Inlet_Area_Total[iMarker_Inlet]*12.0*12.0 << "." << endl;
+//            cout << endl;
+//          }
+          
+          
+//          /*--- Flow field descritption  ---*/
+//
+//          if (config->GetSystemMeasurements() == SI) {
+//            cout << setprecision(2) << "Inlet Ave. P (Pa): " << Pstatic1*config->GetPressure_Ref() << setprecision(3) <<  ". Inlet Ave. Mach: " << Mach << "." << endl;
+//            cout << setprecision(2) << "Outlet Ave. PT (Pa): " << P2*config->GetPressure_Ref() << ". Outlet Ave. TT (K): " << T2*config->GetTemperature_Ref() << "." << endl;
+//          }
+//          else if (config->GetSystemMeasurements() == US) {
+//            cout << setprecision(2) << "Inlet Ave. P (psf): " << Pstatic1*config->GetPressure_Ref() << setprecision(3) <<  ". Inlet Ave. Mach: " << Mach << "." << endl;
+//            cout << setprecision(2) << "Outlet Ave. PT (psf): " << P2*config->GetPressure_Ref() << ". Outlet Ave. TT (R): " << T2*config->GetTemperature_Ref() << "." << endl;
+//          }
+          
+          cout << "Inlet min. PT/PTinf: " << MinPressure << ". Inlet max. PT/PTinf: " << MaxPressure << ". Inlet Ave. PT/PTinf: " << AvePressure << endl;
+          
+          su2double InfVel2, Inlet_MassFlow, Outlet_MassFlow;
+          
+          if (Engine) Inlet_MassFlow = fabs(config->GetEngineInflow_MassFlow(Inlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          else Inlet_MassFlow = fabs(config->GetActDiskInlet_MassFlow(Inlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          
+          if (config->GetSystemMeasurements() == SI) { cout << "Inlet mass flow (kg/s): "; cout << setprecision(2) << Inlet_MassFlow; }
+          else if (config->GetSystemMeasurements() == US) { cout << "Inlet mass flow (lbs/s): "; cout << setprecision(2) << Inlet_MassFlow * 32.174; }
+          
+          if (Engine) Outlet_MassFlow = fabs(config->GetEngineExhaust_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          else Outlet_MassFlow = fabs(config->GetActDiskOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          
+          //          if (config->GetSystemMeasurements() == SI) { cout << ". Outlet mass flow (kg/s): "; cout << setprecision(2) << Outlet_MassFlow; }
+          //          else if (config->GetSystemMeasurements() == US) { cout << ". Outlet mass flow (lbs/s): "; cout << setprecision(2) << Outlet_MassFlow * 32.174; }
+          
+          if (Inlet_MassFlow > Outlet_MassFlow) cout << ". I/O diff.: " << setprecision(2) << 100.0*fabs(1.0-(Outlet_MassFlow/Inlet_MassFlow)) << "%";
+          else cout << ". I/O diff.: " << setprecision(2) << -100.0*fabs(1.0-(Inlet_MassFlow/Outlet_MassFlow)) << "%";
+          
+          InfVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) InfVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+          cout << setprecision(2) << ". MFR: " << MFR << "." << endl;
+          
+          if (!Engine) {
+            
+            cout << setprecision(3) << "PT in/out ratio: " << TotalPressRatio << ". TT in/out ratio: " << TotalTempRatio  <<  "." << endl;
+            
+            if (config->GetActDisk_Jump() == VARIABLES_JUMP) {
+              if (config->GetSystemMeasurements() == SI) cout << setprecision(3) << "P in/out jump (Pa): ";
+              else if (config->GetSystemMeasurements() == US) cout << setprecision(3) << "P in/out jump (psf): ";
+              cout << setprecision(3) << DeltaPress * config->GetPressure_Ref();
+              if (config->GetSystemMeasurements() == SI) cout << setprecision(3) << ". T in/out jump (K): ";
+              else if (config->GetSystemMeasurements() == US) cout << setprecision(3) << ". T in/out jump (R): ";
+              cout << setprecision(3) << DeltaTemp * config->GetTemperature_Ref() <<"."<< endl;
+            }
+            else  if (config->GetActDisk_Jump() == RATIO) {
+              cout << setprecision(3) << "P in/out ratio: ";
+              cout << setprecision(3) << StaticPressRatio;
+              cout  << setprecision(3) <<". T in/out ratio: ";
+              cout << setprecision(3) << StaticTempRatio <<"."<< endl;
+            }
+          }
+          
+          cout << setprecision(1) << "\nProp. eff. (D-T.V/Shaft P): " << 100*mu_prop << "%. By-pass prop. eff. (NetT.V/Shaft P): " << 100*mu_bypass_prop <<   "%." << endl;
+          cout << setprecision(1) << "Fan adiabatic eff.: " << 100*mu_isentropic  << "%. Fan poly. eff.: " << 100*mu_polytropic << "%. Poly coeff. (n): " << setprecision(4) << poly_coeff << "." << endl;
+          
+          cout << endl;
+          
+          
+          /*--- Forces descritption  ---*/
+          
+          if (config->GetSystemMeasurements() == SI) cout << setprecision(1) << "Ram Drag (N): ";
+          else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Ram Drag (lbf): ";
+          cout << (GrossThrust-NetThrust) * Ref;
+          
+          if (config->GetSystemMeasurements() == SI) cout << setprecision(1) << ". Gross Thrust (N): ";
+          else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << ". Gross Thrust (lbf): ";
+          cout << -GrossThrust * Ref  << "." << endl;
+          
+          if (config->GetSystemMeasurements() == SI) cout << setprecision(1) << "Open surfaces Thurst (N): ";
+          else if (config->GetSystemMeasurements() == US) cout  << setprecision(1) << "Open surfaces Thrust (lbf): ";
+          cout<< setprecision(1) << Force * Ref << ". Open surfaces CT: " << setprecision(5) << -Force / Factor << "." << endl;
+          
+          if (config->GetSystemMeasurements() == SI) cout << "Solid surfaces Drag (N): ";
+          else if (config->GetSystemMeasurements() == US) cout << "Solid surfaces Drag (lbf): ";
+          cout << setprecision(1) << SolidSurf_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << SolidSurf_CD << "." << endl;
+          
+          if (config->GetSystemMeasurements() == SI) cout << "Aero Drag (N): ";
+          else if (config->GetSystemMeasurements() == US) cout << "Aero Drag (lbf): ";
+          cout << setprecision(1) << Aero_Drag * Ref << ". Aero CD: " << setprecision(5) << Aero_CD << "." << endl;
+          
+          if (config->GetSystemMeasurements() == SI) cout << setprecision(1) <<"Net Thrust (N): ";
+          else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Net Thrust (lbf): ";
+          cout << setprecision(5) << -NetThrust * Ref  << ". Net CT: " << CT;
+          
+          if (config->GetSystemMeasurements() == SI) {
+            cout << ". Power (W): ";
+            cout << setprecision(1) << Power * Ref *  config->GetVelocity_Ref()  << "." << endl;
+          }
+          else if (config->GetSystemMeasurements() == US) {
+            cout << ". Power (HP): ";
+            cout << setprecision(1) << Power * Ref *  config->GetVelocity_Ref() / 550.0 << "." << endl;
+          }
+          
+        }
+        
+      }
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) cout << "-------------------------------------------------------------------------" << endl << endl;
+      
+    }
+    
+    
     
     
     delete [] Outlet_MassFlow_Local;
@@ -9954,10 +9977,12 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::Compute_ComboObj(CConfig *config) {
+  
   unsigned short iMarker_Monitoring;
   su2double Weight_ObjFunc;
 
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+  
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
     switch(config->GetKind_ObjFunc(iMarker_Monitoring))
@@ -9998,9 +10023,10 @@ void CEulerSolver::Compute_ComboObj(CConfig *config) {
     case MAXIMUM_HEATFLUX:
       Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
       break;
+        
     /*--- The following are not per-surface, and as a result will be
-     * double-counted iff multiple surfaces are specified as well as multi-objective
-     * TODO: print a warning to the user about that possibility. ---*/
+     * double-counted if multiple surfaces are specified as well as multi-objective. ---*/
+        
     case EQUIVALENT_AREA:
       Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
       break;
@@ -12593,8 +12619,8 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure, Inflow_Pressure = 0.0, Velocity[3], Velocity2, Entropy, Target_Inflow_MassFlow = 0.0, Target_Inflow_Mach = 0.0, Density, Energy,
-  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, Inflow_Pressure_inc, Inflow_Pressure_old, Inflow_Mach_old, Inflow_MassFlow_old;
+  su2double Pressure, EngineInflow_Pressure = 0.0, Velocity[3], Velocity2, Entropy, Target_EngineInflow_MassFlow = 0.0, Target_EngineInflow_Mach = 0.0, Density, Energy,
+  Riemann, Area, UnitNormal[3], Vn, SoundSpeed, Vn_Exit, EngineInflow_Pressure_inc, EngineInflow_Pressure_old, EngineInflow_Mach_old, EngineInflow_MassFlow_old;
   su2double *V_inflow, *V_domain;
   
   su2double DampingFactor = config->GetDamp_Engine_Inflow();
@@ -12615,20 +12641,20 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Retrieve the specified target fan face mach at the nacelle. ---*/
     
-    Target_Inflow_Mach = config->GetEngineInflow_Target(Marker_Tag);
+    Target_EngineInflow_Mach = config->GetEngineInflow_MassFlow_Target(Marker_Tag);
     
     /*--- Retrieve the old fan face pressure and mach number in the nacelle (this has been computed in a preprocessing). ---*/
     
-    Inflow_Pressure_old = config->GetInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
-    Inflow_Mach_old = config->GetInflow_Mach(Marker_Tag);
+    EngineInflow_Pressure_old = config->GetEngineInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
+    EngineInflow_Mach_old = config->GetEngineInflow_Mach(Marker_Tag);
     
     /*--- Compute the pressure increment (note that increasing pressure decreases flow speed) ---*/
     
-    Inflow_Pressure_inc = - (1.0 - (Inflow_Mach_old/Target_Inflow_Mach)) * Baseline_Press;
+    EngineInflow_Pressure_inc = - (1.0 - (EngineInflow_Mach_old/Target_EngineInflow_Mach)) * Baseline_Press;
     
     /*--- Estimate the new fan face pressure ---*/
     
-    Inflow_Pressure = (1.0 - DampingFactor)*Inflow_Pressure_old + DampingFactor * (Inflow_Pressure_old + Inflow_Pressure_inc);
+    EngineInflow_Pressure = (1.0 - DampingFactor)*EngineInflow_Pressure_old + DampingFactor * (EngineInflow_Pressure_old + EngineInflow_Pressure_inc);
     
   }
   
@@ -12636,24 +12662,24 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Retrieve the specified target mass flow (non-dimensional) at the nacelle. ---*/
     
-    Target_Inflow_MassFlow = config->GetEngineInflow_Target(Marker_Tag) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+    Target_EngineInflow_MassFlow = config->GetEngineInflow_MassFlow_Target(Marker_Tag) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
     
-    if (config->GetSystemMeasurements() == US) Target_Inflow_MassFlow /= 32.174;
+    if (config->GetSystemMeasurements() == US) Target_EngineInflow_MassFlow /= 32.174;
     
-    if (Engine_HalfModel) Target_Inflow_MassFlow /= 2.0;
+    if (Engine_HalfModel) Target_EngineInflow_MassFlow /= 2.0;
 
     /*--- Retrieve the old fan face pressure and mach number in the nacelle (this has been computed in a preprocessing). ---*/
     
-    Inflow_Pressure_old = config->GetInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
-    Inflow_MassFlow_old = config->GetInflow_MassFlow(Marker_Tag);  // same here... it is a non dimensional value
+    EngineInflow_Pressure_old = config->GetEngineInflow_Pressure(Marker_Tag);  // Note that has been computed by the code (non-dimensional).
+    EngineInflow_MassFlow_old = config->GetEngineInflow_MassFlow(Marker_Tag);  // same here... it is a non dimensional value
     
     /*--- Compute the pressure increment (note that increasing pressure decreases flow speed) ---*/
     
-    Inflow_Pressure_inc = - (1.0 - (Inflow_MassFlow_old/Target_Inflow_MassFlow)) * Baseline_Press;
+    EngineInflow_Pressure_inc = - (1.0 - (EngineInflow_MassFlow_old/Target_EngineInflow_MassFlow)) * Baseline_Press;
     
     /*--- Estimate the new fan face pressure ---*/
     
-    Inflow_Pressure = (1.0 - DampingFactor)*Inflow_Pressure_old + DampingFactor * (Inflow_Pressure_old + Inflow_Pressure_inc);
+    EngineInflow_Pressure = (1.0 - DampingFactor)*EngineInflow_Pressure_old + DampingFactor * (EngineInflow_Pressure_old + EngineInflow_Pressure_inc);
     
   }
   
@@ -12663,7 +12689,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Retrieve the specified pressure (non-dimensional) at the nacelle. ---*/
     
-    Inflow_Pressure = config->GetEngineInflow_Target(Marker_Tag) / config->GetPressure_Ref();
+    EngineInflow_Pressure = config->GetEngineInflow_MassFlow_Target(Marker_Tag) / config->GetPressure_Ref();
     
   }
   
@@ -12725,9 +12751,9 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Compute the new fictious state at the outlet ---*/
       
-      Density    = pow(Inflow_Pressure/Entropy,1.0/Gamma);
-      Pressure   = Inflow_Pressure;
-      SoundSpeed = sqrt(Gamma*Inflow_Pressure/Density);
+      Density    = pow(EngineInflow_Pressure/Entropy,1.0/Gamma);
+      Pressure   = EngineInflow_Pressure;
+      SoundSpeed = sqrt(Gamma*EngineInflow_Pressure/Density);
       Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
       Velocity2  = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -12735,7 +12761,7 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
         Velocity2 += Velocity[iDim]*Velocity[iDim];
       }
       
-      Energy = Inflow_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
+      Energy = EngineInflow_Pressure/(Density*Gamma_Minus_One) + 0.5*Velocity2;
       if (tkeNeeded) Energy += GetTke_Inf();
       
       /*--- Conservative variables, using the derived quantities ---*/
@@ -12811,8 +12837,8 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Exhaust_Pressure, Exhaust_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
-  su2double *V_exhaust, *V_domain, Target_Exhaust_Pressure, Exhaust_Pressure_old, Exhaust_Pressure_inc;
+  su2double EngineExhaust_Pressure, EngineExhaust_Temperature, Velocity[3], Velocity2, H_Exhaust, Temperature, Riemann, Area, UnitNormal[3], Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Exhaust2, Vel_Mag, alpha, aa, bb, cc, dd, Flow_Dir[3];
+  su2double *V_exhaust, *V_domain, Target_EngineExhaust_Pressure, EngineExhaust_Pressure_old, EngineExhaust_Pressure_inc;
   
   su2double Gas_Constant = config->GetGas_ConstantND();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -12827,29 +12853,29 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   
   /*--- Retrieve the specified exhaust pressure in the engine (non-dimensional). ---*/
   
-  Target_Exhaust_Pressure = config->GetExhaust_Pressure_Target(Marker_Tag) / config->GetPressure_Ref();
+  Target_EngineExhaust_Pressure = config->GetEngineExhaust_Pressure_Target(Marker_Tag) / config->GetPressure_Ref();
   
   /*--- Retrieve the old exhaust pressure in the engine exhaust (this has been computed in a preprocessing). ---*/
   
-  Exhaust_Pressure_old = config->GetExhaust_Pressure(Marker_Tag);
+  EngineExhaust_Pressure_old = config->GetEngineExhaust_Pressure(Marker_Tag);
   
   /*--- Compute the Pressure increment ---*/
   
-  Exhaust_Pressure_inc = (1.0 - (Exhaust_Pressure_old/Target_Exhaust_Pressure)) * Baseline_Press;
+  EngineExhaust_Pressure_inc = (1.0 - (EngineExhaust_Pressure_old/Target_EngineExhaust_Pressure)) * Baseline_Press;
   
   /*--- Estimate the new exhaust pressure ---*/
   
-  Exhaust_Pressure = (1.0 - DampingFactor) * Exhaust_Pressure_old + DampingFactor * (Exhaust_Pressure_old + Exhaust_Pressure_inc);
+  EngineExhaust_Pressure = (1.0 - DampingFactor) * EngineExhaust_Pressure_old + DampingFactor * (EngineExhaust_Pressure_old + EngineExhaust_Pressure_inc);
   
   /*--- The temperature is given (no iteration is required) ---*/
   
-  Exhaust_Temperature  = config->GetExhaust_Temperature_Target(Marker_Tag);
-  Exhaust_Temperature /= config->GetTemperature_Ref();
+  EngineExhaust_Temperature  = config->GetEngineExhaust_Temperature_Target(Marker_Tag);
+  EngineExhaust_Temperature /= config->GetTemperature_Ref();
   
   /*--- The pressure is given (no iteration is required) ---*/
   
-  Exhaust_Pressure  = config->GetExhaust_Pressure_Target(Marker_Tag);
-  Exhaust_Pressure /= config->GetPressure_Ref();
+  EngineExhaust_Pressure  = config->GetEngineExhaust_Pressure_Target(Marker_Tag);
+  EngineExhaust_Pressure /= config->GetPressure_Ref();
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -12900,7 +12926,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
       }
       Energy      = V_domain[nDim+3] - V_domain[nDim+1]/V_domain[nDim+2];
       Pressure    = V_domain[nDim+1];
-      H_Exhaust   = (Gamma*Gas_Constant/Gamma_Minus_One)*Exhaust_Temperature;
+      H_Exhaust   = (Gamma*Gas_Constant/Gamma_Minus_One)*EngineExhaust_Temperature;
       SoundSpeed2 = Gamma*Pressure/Density;
       
       /*--- Compute the acoustic Riemann invariant that is extrapolated
@@ -12962,7 +12988,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
         
         /*--- Static pressure using isentropic relation at a point ---*/
         
-        Pressure = Exhaust_Pressure*pow((Temperature/Exhaust_Temperature), Gamma/Gamma_Minus_One);
+        Pressure = EngineExhaust_Pressure*pow((Temperature/EngineExhaust_Temperature), Gamma/Gamma_Minus_One);
         
         /*--- Density at the exhaust from the gas law ---*/
         
@@ -15054,15 +15080,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Engine simulation ---*/
   
-  Inflow_MassFlow     = new su2double[nMarker];
-  Inflow_Pressure     = new su2double[nMarker];
-  Inflow_Mach         = new su2double[nMarker];
-  Inflow_Area         = new su2double[nMarker];
+  EngineInflow_MassFlow     = new su2double[nMarker];
+  EngineInflow_Pressure     = new su2double[nMarker];
+  EngineInflow_Mach         = new su2double[nMarker];
+  EngineInflow_Area         = new su2double[nMarker];
   
-  Exhaust_MassFlow    = new su2double[nMarker];
-  Exhaust_Pressure    = new su2double[nMarker];
-  Exhaust_Temperature = new su2double[nMarker];
-  Exhaust_Area        = new su2double[nMarker];
+  EngineExhaust_MassFlow    = new su2double[nMarker];
+  EngineExhaust_Pressure    = new su2double[nMarker];
+  EngineExhaust_Temperature = new su2double[nMarker];
+  EngineExhaust_Area        = new su2double[nMarker];
   
   /*--- Init total coefficients ---*/
   
@@ -15119,15 +15145,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Initializate fan face pressure, fan face mach number, and mass flow rate ---*/
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    Inflow_MassFlow[iMarker]     = 0.0;
-    Inflow_Mach[iMarker]         = Mach_Inf;
-    Inflow_Pressure[iMarker]     = Pressure_Inf;
-    Inflow_Area[iMarker]         = 0.0;
+    EngineInflow_MassFlow[iMarker]     = 0.0;
+    EngineInflow_Mach[iMarker]         = Mach_Inf;
+    EngineInflow_Pressure[iMarker]     = Pressure_Inf;
+    EngineInflow_Area[iMarker]         = 0.0;
     
-    Exhaust_MassFlow[iMarker]    = 0.0;
-    Exhaust_Temperature[iMarker] = Temperature_Inf;
-    Exhaust_Pressure[iMarker]    = Pressure_Inf;
-    Exhaust_Area[iMarker]        = 0.0;
+    EngineExhaust_MassFlow[iMarker]    = 0.0;
+    EngineExhaust_Temperature[iMarker] = Temperature_Inf;
+    EngineExhaust_Pressure[iMarker]    = Pressure_Inf;
+    EngineExhaust_Area[iMarker]        = 0.0;
 
   }
   

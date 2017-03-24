@@ -218,13 +218,13 @@ inline su2double CSolver::GetSurface_CMy_Mnt(unsigned short val_marker) { return
 
 inline su2double CSolver::GetSurface_CMz_Mnt(unsigned short val_marker) { return 0; }
 
-inline su2double CSolver::GetInflow_MassFlow(unsigned short val_marker) { return 0; }
+inline su2double CSolver::GetEngineInflow_MassFlow(unsigned short val_marker) { return 0; }
 
-inline su2double CSolver::GetExhaust_MassFlow(unsigned short val_marker) { return 0; }
+inline su2double CSolver::GetEngineExhaust_MassFlow(unsigned short val_marker) { return 0; }
 
-inline su2double CSolver::GetInflow_Pressure(unsigned short val_marker) { return 0; }
+inline su2double CSolver::GetEngineInflow_Pressure(unsigned short val_marker) { return 0; }
 
-inline su2double CSolver::GetInflow_Mach(unsigned short val_marker) { return 0; }
+inline su2double CSolver::GetEngineInflow_Mach(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetCSF_Inv(unsigned short val_marker) { return 0; }
 
@@ -1126,13 +1126,13 @@ inline su2double CEulerSolver::GetSurface_CMy_Mnt(unsigned short val_marker) { r
 
 inline su2double CEulerSolver::GetSurface_CMz_Mnt(unsigned short val_marker) { return Surface_CMz_Mnt[val_marker]; }
 
-inline su2double CEulerSolver::GetInflow_MassFlow(unsigned short val_marker) { return Inflow_MassFlow[val_marker]; }
+inline su2double CEulerSolver::GetEngineInflow_MassFlow(unsigned short val_marker) { return EngineInflow_MassFlow[val_marker]; }
 
-inline su2double CEulerSolver::GetExhaust_MassFlow(unsigned short val_marker) { return Exhaust_MassFlow[val_marker]; }
+inline su2double CEulerSolver::GetEngineExhaust_MassFlow(unsigned short val_marker) { return EngineExhaust_MassFlow[val_marker]; }
 
-inline su2double CEulerSolver::GetInflow_Pressure(unsigned short val_marker) { return Inflow_Pressure[val_marker]; }
+inline su2double CEulerSolver::GetEngineInflow_Pressure(unsigned short val_marker) { return EngineInflow_Pressure[val_marker]; }
 
-inline su2double CEulerSolver::GetInflow_Mach(unsigned short val_marker) { return Inflow_Mach[val_marker]; }
+inline su2double CEulerSolver::GetEngineInflow_Mach(unsigned short val_marker) { return EngineInflow_Mach[val_marker]; }
 
 inline su2double CEulerSolver::GetCSF_Inv(unsigned short val_marker) { return CSF_Inv[val_marker]; }
 

@@ -2070,7 +2070,7 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
-  virtual su2double GetInflow_MassFlow(unsigned short val_marker);
+  virtual su2double GetEngineInflow_MassFlow(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -2129,21 +2129,21 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
-  virtual su2double GetExhaust_MassFlow(unsigned short val_marker);
+  virtual su2double GetEngineExhaust_MassFlow(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the fan face pressure on the surface <i>val_marker</i>.
    */
-  virtual su2double GetInflow_Pressure(unsigned short val_marker);
+  virtual su2double GetEngineInflow_Pressure(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the fan face mach on the surface <i>val_marker</i>.
    */
-  virtual su2double GetInflow_Mach(unsigned short val_marker);
+  virtual su2double GetEngineInflow_Mach(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -3770,18 +3770,18 @@ protected:
   *MomentInviscid,  /*!< \brief Inviscid moment for each boundary. */
   *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
   *MomentMomentum;  /*!< \brief Inviscid moment for each boundary. */
-  su2double *Inflow_MassFlow,  /*!< \brief Mass flow rate for each boundary. */
-  *Exhaust_MassFlow,  /*!< \brief Mass flow rate for each boundary. */
-  *Inflow_Pressure,  /*!< \brief Fan face pressure for each boundary. */
-  *Inflow_Mach,  /*!< \brief Fan face mach number for each boundary. */
-  *Inflow_Area,  /*!< \brief Boundary total area. */
-  *Exhaust_Area,  /*!< \brief Boundary total area. */
-  *Exhaust_Pressure,  /*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature,  /*!< \brief Fan face mach number for each boundary. */
-  Inflow_MassFlow_Total,  /*!< \brief Mass flow rate for each boundary. */
-  Exhaust_MassFlow_Total,  /*!< \brief Mass flow rate for each boundary. */
-  Inflow_Pressure_Total,  /*!< \brief Fan face pressure for each boundary. */
-  Inflow_Mach_Total,  /*!< \brief Fan face mach number for each boundary. */
+  su2double *EngineInflow_MassFlow,  /*!< \brief Mass flow rate for each boundary. */
+  *EngineExhaust_MassFlow,  /*!< \brief Mass flow rate for each boundary. */
+  *EngineInflow_Pressure,  /*!< \brief Fan face pressure for each boundary. */
+  *EngineInflow_Mach,  /*!< \brief Fan face mach number for each boundary. */
+  *EngineInflow_Area,  /*!< \brief Boundary total area. */
+  *EngineExhaust_Area,  /*!< \brief Boundary total area. */
+  *EngineExhaust_Pressure,  /*!< \brief Fan face pressure for each boundary. */
+  *EngineExhaust_Temperature,  /*!< \brief Fan face mach number for each boundary. */
+  EngineInflow_MassFlow_Total,  /*!< \brief Mass flow rate for each boundary. */
+  EngineExhaust_MassFlow_Total,  /*!< \brief Mass flow rate for each boundary. */
+  EngineInflow_Pressure_Total,  /*!< \brief Fan face pressure for each boundary. */
+  EngineInflow_Mach_Total,  /*!< \brief Fan face mach number for each boundary. */
   InverseDesign;  /*!< \brief Inverse design functional for each boundary. */
   unsigned long **DonorGlobalIndex;    /*!< \brief Value of the donor global index. */
   su2double **ActDisk_DeltaP,    /*!< \brief Value of the Delta P. */
@@ -5208,28 +5208,28 @@ public:
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
-  su2double GetInflow_MassFlow(unsigned short val_marker);
+  su2double GetEngineInflow_MassFlow(unsigned short val_marker);
   
   /*!
    * \brief Provide the mass flow rate.
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the mass flow rate on the surface <i>val_marker</i>.
    */
-  su2double GetExhaust_MassFlow(unsigned short val_marker);
+  su2double GetEngineExhaust_MassFlow(unsigned short val_marker);
   
   /*!
    * \brief Provide the mass flow rate.
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the fan face pressure on the surface <i>val_marker</i>.
    */
-  su2double GetInflow_Pressure(unsigned short val_marker);
+  su2double GetEngineInflow_Pressure(unsigned short val_marker);
   
   /*!
    * \brief Provide the mass flow rate.
    * \param val_marker Surface where the coeficient is going to be computed.
    * \return Value of the fan face mach on the surface <i>val_marker</i>.
    */
-  su2double GetInflow_Mach(unsigned short val_marker);
+  su2double GetEngineInflow_Mach(unsigned short val_marker);
   
   /*!
    * \brief Provide the non dimensional sideforce coefficient (inviscid contribution).

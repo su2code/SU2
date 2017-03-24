@@ -882,7 +882,7 @@ enum ENGINE_INFLOW_TYPE {
   FAN_FACE_MDOT = 2,           /*!< \brief User specifies Static pressure. */
   FAN_FACE_PRESSURE = 3        /*!< \brief User specifies Static pressure. */
 };
-static const map<string, ENGINE_INFLOW_TYPE> Engine_Inflow_Map = CCreateMap<string, ENGINE_INFLOW_TYPE>
+static const map<string, ENGINE_INFLOW_TYPE> Engine_EngineInflow_Map = CCreateMap<string, ENGINE_INFLOW_TYPE>
 ("FAN_FACE_MACH", FAN_FACE_MACH)
 ("FAN_FACE_MDOT", FAN_FACE_MDOT)
 ("FAN_FACE_PRESSURE", FAN_FACE_PRESSURE);
@@ -2868,20 +2868,16 @@ public:
 //};
 
 
-
-
-
-
-//Inlet condition where the input direction is assumed
 class COptionExhaust : public COptionBase {
   string name; // identifier for the option
   unsigned short & size;
   string * & marker;
+  unsigned short * & engineid;
   su2double * & ttotal;
   su2double * & ptotal;
 
 public:
-  COptionExhaust(string option_field_name, unsigned short & nMarker_Exhaust, string* & Marker_Exhaust, su2double* & Ttotal, su2double* & Ptotal) : size(nMarker_Exhaust), marker(Marker_Exhaust), ttotal(Ttotal), ptotal(Ptotal) {
+  COptionExhaust(string option_field_name, unsigned short & nMarker_Exhaust, string* & Marker_Exhaust, unsigned short* & EngineID, su2double* & Ttotal, su2double* & Ptotal) : size(nMarker_Exhaust), marker(Marker_Exhaust), engineid(EngineID), ttotal(Ttotal), ptotal(Ptotal) {
     this->name = option_field_name;
   }
 
@@ -2893,35 +2889,41 @@ public:
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
+      this->engineid = NULL;
       this->ttotal = NULL;
       this->ptotal = NULL;
       return "";
     }
 
-    if (totalVals % 3 != 0) {
+    if (totalVals % 4 != 0) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 3");
+      newstring.append(": must have a number of entries divisible by 4");
       this->size = 0;
       this->marker = NULL;
+      this->engineid = NULL;
       this->ttotal = NULL;
       this->ptotal = NULL;
       return newstring;
     }
 
-    unsigned short nVals = totalVals / 3;
+    unsigned short nVals = totalVals / 4;
     this->size = nVals;
     this->marker = new string[nVals];
+    this->engineid = new unsigned short[nVals];
     this->ttotal = new su2double[nVals];
     this->ptotal = new su2double[nVals];
 
     for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[3*i]);
-      istringstream ss_1st(option_value[3*i + 1]);
-      if (!(ss_1st >> this->ttotal[i]))
+      this->marker[i].assign(option_value[4*i]);
+      istringstream ss_1st(option_value[4*i + 1]);
+      if (!(ss_1st >> this->engineid[i]))
         return badValue(option_value, "exhaust fixed", this->name);
-      istringstream ss_2nd(option_value[3*i + 2]);
-      if (!(ss_2nd >> this->ptotal[i]))
+      istringstream ss_2nd(option_value[4*i + 2]);
+      if (!(ss_2nd >> this->ttotal[i]))
+        return badValue(option_value, "exhaust fixed", this->name);
+      istringstream ss_3rd(option_value[4*i + 3]);
+      if (!(ss_3rd >> this->ptotal[i]))
         return badValue(option_value, "exhaust fixed", this->name);
     }
     
@@ -2930,8 +2932,73 @@ public:
 
   void SetDefault() {
     this->marker = NULL;
+    this->engineid = NULL;
     this->ttotal = NULL;
     this->ptotal = NULL;
+    this->size = 0; // There is no default value for list
+  }
+  
+};
+
+class COptionInflow : public COptionBase {
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  unsigned short * & engineid;
+  su2double * & massflow;
+  
+public:
+  COptionInflow(string option_field_name, unsigned short & nMarker_Inflow, string* & Marker_Inflow, unsigned short* & EngineID, su2double* & MassFlow) : size(nMarker_Inflow), marker(Marker_Inflow), engineid(EngineID), massflow(MassFlow) {
+    this->name = option_field_name;
+  }
+  
+  ~COptionInflow() {};
+  
+  string SetValue(vector<string> option_value) {
+    
+    unsigned short totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = NULL;
+      this->engineid = NULL;
+      this->massflow = NULL;
+      return "";
+    }
+    
+    if (totalVals % 3 != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 3");
+      this->size = 0;
+      this->marker = NULL;
+      this->engineid = NULL;
+      this->massflow = NULL;
+      return newstring;
+    }
+    
+    unsigned short nVals = totalVals / 3;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->engineid = new unsigned short[nVals];
+    this->massflow = new su2double[nVals];
+    
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->marker[i].assign(option_value[3*i]);
+      istringstream ss_1st(option_value[3*i + 1]);
+      if (!(ss_1st >> this->engineid[i]))
+        return badValue(option_value, "inflow fixed", this->name);
+      istringstream ss_2nd(option_value[3*i + 2]);
+      if (!(ss_2nd >> this->massflow[i]))
+        return badValue(option_value, "inflow fixed", this->name);
+    }
+    
+    return "";
+  }
+  
+  void SetDefault() {
+    this->marker = NULL;
+    this->engineid = NULL;
+    this->massflow = NULL;
     this->size = 0; // There is no default value for list
   }
   

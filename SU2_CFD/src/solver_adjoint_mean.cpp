@@ -5348,7 +5348,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
       
       /*--- Subsonic flow is assumed, note that there is no non-dimensionalization. ---*/
       
-      P_Fan = config->GetInflow_Pressure(Marker_Tag);
+      P_Fan = config->GetEngineInflow_Pressure(Marker_Tag);
       
       Density = V_domain[nDim+2];
       Velocity2 = 0.0; Vn = 0.0;
