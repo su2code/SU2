@@ -974,7 +974,7 @@ inline void CSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
-inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording){}
+inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetPressure_Inf(su2double p_inf){}
 

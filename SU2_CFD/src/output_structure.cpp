@@ -5568,31 +5568,32 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          if (compressible) {
-            cout.width(15); cout << log10(residual_adjflow[0]);
-            cout.width(15); cout << log10(residual_adjflow[nDim+1]);
-          }
-          if (incompressible) {
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjflow[1]);
-          }
-          
-          if (disc_adj) {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_AoA;
-          }else {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
+          if (DualTime_Iteration || !Unsteady){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            if (compressible) {
+              cout.width(15); cout << log10(residual_adjflow[0]);
+              cout.width(15); cout << log10(residual_adjflow[nDim+1]);
+            }
+            if (incompressible) {
+              cout.width(17); cout << log10(residual_adjflow[0]);
+              cout.width(16); cout << log10(residual_adjflow[1]);
+            }
+
+            if (disc_adj) {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Press;
+              cout.width(14); cout << Total_Sens_AoA;
+            }else {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Geo;
               cout.width(14); cout << Total_Sens_AoA;
             }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);          
+            cout << endl;
+            cout.unsetf(ios_base::floatfield);
+          }
 
           break;
           
@@ -5605,35 +5606,36 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(17); cout << log10(residual_adjflow[0]);
-          if (!config[val_iZone]->GetFrozen_Visc()) {
-            cout.width(17); cout << log10(residual_adjturbulent[0]);
-          }
-          else {
-            if (compressible) {
-              if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
-              else { cout.width(15); cout << log10(residual_adjflow[4]); }
+          if (DualTime_Iteration || !Unsteady){
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(17); cout << log10(residual_adjflow[0]);
+            if (!config[val_iZone]->GetFrozen_Visc()) {
+              cout.width(17); cout << log10(residual_adjturbulent[0]);
             }
-            if (incompressible) {
-              cout.width(15); cout << log10(residual_adjflow[1]);
+            else {
+              if (compressible) {
+                if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
+                else { cout.width(15); cout << log10(residual_adjflow[4]); }
+              }
+              if (incompressible) {
+                cout.width(15); cout << log10(residual_adjflow[1]);
+              }
             }
-          }
-          if (disc_adj) {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_AoA;
-          }else {
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
+            if (disc_adj) {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Press;
+              cout.width(14); cout << Total_Sens_AoA;
+            }else {
+              cout.precision(4);
+              cout.setf(ios::scientific, ios::floatfield);
+              cout.width(14); cout << Total_Sens_Geo;
               cout.width(14); cout << Total_Sens_AoA;
             }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);
+            cout << endl;
+            cout.unsetf(ios_base::floatfield);
+          }
           break;
           
       }
@@ -10760,12 +10762,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         
-        /*--- Increment the point counter, as there may have been halos we
-         skipped over during the data loading. ---*/
-        
-        jPoint++;
-        
       }
+
+      /*--- Increment the point counter, as there may have been halos we
+       skipped over during the data loading. ---*/
+
+      jPoint++;
+
     }
   }
   
@@ -10870,6 +10873,20 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     }
   }
 
+
+  /*--- For the discrete adjoint, we have the full field of sensitivity
+   in each coordinate direction. ---*/
+
+  if ((Kind_Solver == DISC_ADJ_EULER)         ||
+      (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+      (Kind_Solver == DISC_ADJ_RANS)) {
+    nVar_Par += nDim;
+    Variable_Names.push_back("Sensitivity_x");
+    Variable_Names.push_back("Sensitivity_y");
+    if (geometry->GetnDim()== 3)
+      Variable_Names.push_back("Sensitivity_z");
+  }
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -10957,19 +10974,6 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       } else {
         Variable_Names.push_back("Limiter_Adjoint_Density");
       }
-    }
-    
-    /*--- For the discrete adjoint, we have the full field of sensitivity
-     in each coordinate direction. ---*/
-    
-    if ((Kind_Solver == DISC_ADJ_EULER)         ||
-        (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-        (Kind_Solver == DISC_ADJ_RANS)) {
-      nVar_Par += nDim;
-      Variable_Names.push_back("Sensitivity_x");
-      Variable_Names.push_back("Sensitivity_y");
-      if (geometry->GetnDim()== 3)
-        Variable_Names.push_back("Sensitivity_z");
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -11072,25 +11076,6 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         iVar++;
       }
       
-      if (!config->GetLow_MemoryOutput()) {
-        if (config->GetWrt_Limiters()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
-            iVar++;
-          }
-        }
-        if (config->GetWrt_Residuals()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            if (!config->GetDiscrete_Adjoint()) {
-              Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
-            } else {
-              Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar) -
-              solver[FirstIndex]->node[iPoint]->GetSolution_Old(jVar);
-            }
-            iVar++;
-          }
-        }
-      }
       
       /*--- If this is Adj. RANS, i.e., the second solver container is not empty,
        then load data for the conservative turbulence variables and the
@@ -11101,28 +11086,60 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar);
           iVar++;
         }
-        if (!config->GetLow_MemoryOutput()) {
-          if (config->GetWrt_Limiters()) {
-            for (jVar = 0; jVar < nVar_Second; jVar++) {
-              Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter(jVar);
-              iVar++;
-            }
-          }
-          if (config->GetWrt_Residuals()) {
-            for (jVar = 0; jVar < nVar_Second; jVar++) {
-              if (!config->GetDiscrete_Adjoint()) {
-                Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
-              } else {
-                Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar) -
-                solver[SecondIndex]->node[iPoint]->GetSolution_Old(jVar);
-              }
-              iVar++;
-            }
-          }
+      }
+
+      /*--- Load data for the discrete sensitivities. ---*/
+
+      if ((Kind_Solver == DISC_ADJ_EULER)         ||
+          (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
+          (Kind_Solver == DISC_ADJ_RANS)) {
+        Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(0); iVar++;
+        Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(1); iVar++;
+        if (geometry->GetnDim()== 3) {
+          Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(2);
+          iVar++;
         }
       }
       
       if (!config->GetLow_MemoryOutput()) {
+
+          if (config->GetWrt_Limiters()) {
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
+              iVar++;
+            }
+          }
+          if (config->GetWrt_Residuals()) {
+            for (jVar = 0; jVar < nVar_First; jVar++) {
+              if (!config->GetDiscrete_Adjoint()) {
+                Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
+              } else {
+                Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar) -
+                solver[FirstIndex]->node[iPoint]->GetSolution_Old(jVar);
+              }
+              iVar++;
+            }
+          }
+
+          if (SecondIndex != NONE) {
+            if (config->GetWrt_Limiters()) {
+              for (jVar = 0; jVar < nVar_Second; jVar++) {
+                Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetLimiter(jVar);
+                iVar++;
+              }
+            }
+            if (config->GetWrt_Residuals()) {
+              for (jVar = 0; jVar < nVar_Second; jVar++) {
+                if (!config->GetDiscrete_Adjoint()) {
+                  Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+                } else {
+                  Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar) -
+                                             solver[SecondIndex]->node[iPoint]->GetSolution_Old(jVar);
+                }
+                iVar++;
+              }
+            }
+          }
         
         /*--- Load buffers with the three grid velocity components. ---*/
         
@@ -11152,28 +11169,15 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
           }
         }
         
-        /*--- Load data for the discrete sensitivities. ---*/
-        
-        if ((Kind_Solver == DISC_ADJ_EULER)         ||
-            (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
-            (Kind_Solver == DISC_ADJ_RANS)) {
-          Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(0); iVar++;
-          Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(1); iVar++;
-          if (geometry->GetnDim()== 3) {
-            Local_Data[jPoint][iVar] = solver[ADJFLOW_SOL]->node[iPoint]->GetSensitivity(2);
-            iVar++;
-          }
-        }
-        
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
-       
-        /*--- Increment the point counter, as there may have been halos we
-         skipped over during the data loading. ---*/
-        
-        jPoint++;
         
       }
+
+      /*--- Increment the point counter, as there may have been halos we
+       skipped over during the data loading. ---*/
+
+      jPoint++;
     }
   }
   
@@ -11453,12 +11457,12 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         
-        /*--- Increment the point counter, as there may have been halos we
-         skipped over during the data loading. ---*/
-        
-        jPoint++;
-        
       }
+
+      /*--- Increment the point counter, as there may have been halos we
+       skipped over during the data loading. ---*/
+
+      jPoint++;
     }
   }
   
