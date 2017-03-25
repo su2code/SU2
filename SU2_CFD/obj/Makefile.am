@@ -72,6 +72,7 @@ libSU2Core_sources = \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
+  ../include/SUBoom.hpp \
   ../include/transport_model.hpp \
   ../include/transport_model.inl \
   ../include/variable_structure.hpp \
@@ -123,6 +124,7 @@ libSU2Core_sources = \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
+  ../src/SUBoom.cpp \
   ../src/transfer_physics.cpp \
   ../src/transfer_structure.cpp \
   ../src/transport_model.cpp \

@@ -14,41 +14,6 @@
 
 @SET_MAKE@
 
-################################################################################
-#
-# \file Makefile.am
-# \brief Makefile for SU2_SOL
-# \author M. Colonno, T. Economon, F. Palacios
-# \version 5.0.0 "Raven"
-#
-# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
-#                      Dr. Thomas D. Economon (economon@stanford.edu).
-#
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
-#
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
-#
-# SU2 is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
-#
-# SU2 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
-#
-################################################################################
-
 VPATH = @srcdir@
 am__make_dryrun = \
   { \
@@ -86,7 +51,34 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = ../bin/SU2_SOL$(EXEEXT)
+bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
+@BUILD_NORMAL_TRUE@am__append_1 = ../bin/SU2_SOL
+@BUILD_REVERSE_TRUE@am__append_2 = ../bin/SU2_SOL_AD
+@BUILD_NORMAL_TRUE@am__append_3 = \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-postprocessing_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-SUBoom.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../Common/lib/libSU2.a
+
+@BUILD_REVERSE_TRUE@am__append_4 = \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-postprocessing_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@   ../../Common/lib/libSU2_AD.a
+
 subdir = SU2_SOL/obj
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
@@ -100,23 +92,30 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+@BUILD_NORMAL_TRUE@am__EXEEXT_1 = ../bin/SU2_SOL$(EXEEXT)
+@BUILD_REVERSE_TRUE@am__EXEEXT_2 = ../bin/SU2_SOL_AD$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am_____bin_SU2_SOL_SOURCES_DIST = ../include/SU2_SOL.hpp \
+	../src/SU2_SOL.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
-am____bin_SU2_SOL_OBJECTS = ../src/___bin_SU2_SOL-SU2_SOL.$(OBJEXT)
+am__objects_1 = ../src/___bin_SU2_SOL-SU2_SOL.$(OBJEXT)
+@BUILD_NORMAL_TRUE@am____bin_SU2_SOL_OBJECTS = $(am__objects_1)
 ___bin_SU2_SOL_OBJECTS = $(am____bin_SU2_SOL_OBJECTS)
-___bin_SU2_SOL_DEPENDENCIES =  \
-	../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-	../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-	../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-	../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-	../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-	../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
-	../../Common/lib/libSU2.a
+am__DEPENDENCIES_1 = $(am__append_3) $(am__append_4)
+@BUILD_NORMAL_TRUE@___bin_SU2_SOL_DEPENDENCIES =  \
+@BUILD_NORMAL_TRUE@	$(am__DEPENDENCIES_1)
 ___bin_SU2_SOL_LINK = $(CXXLD) $(___bin_SU2_SOL_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am_____bin_SU2_SOL_AD_SOURCES_DIST = ../include/SU2_SOL.hpp \
+	../src/SU2_SOL.cpp
+am__objects_2 = ../src/___bin_SU2_SOL_AD-SU2_SOL.$(OBJEXT)
+@BUILD_REVERSE_TRUE@am____bin_SU2_SOL_AD_OBJECTS = $(am__objects_2)
+___bin_SU2_SOL_AD_OBJECTS = $(am____bin_SU2_SOL_AD_OBJECTS)
+@BUILD_REVERSE_TRUE@___bin_SU2_SOL_AD_DEPENDENCIES =  \
+@BUILD_REVERSE_TRUE@	$(am__DEPENDENCIES_1)
+___bin_SU2_SOL_AD_LINK = $(CXXLD) $(___bin_SU2_SOL_AD_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -162,8 +161,9 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(___bin_SU2_SOL_SOURCES)
-DIST_SOURCES = $(___bin_SU2_SOL_SOURCES)
+SOURCES = $(___bin_SU2_SOL_SOURCES) $(___bin_SU2_SOL_AD_SOURCES)
+DIST_SOURCES = $(am_____bin_SU2_SOL_SOURCES_DIST) \
+	$(am_____bin_SU2_SOL_AD_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -305,14 +305,57 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+################################################################################
+#
+# \file Makefile.am
+# \brief Makefile for SU2_SOL
+# \author M. Colonno, T. Economon, F. Palacios
+# \version 5.0.0 "Raven"
+#
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
+#                      Dr. Thomas D. Economon (economon@stanford.edu).
+#
+# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
+#                 Prof. Piero Colonna's group at Delft University of Technology.
+#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
+#
+# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+#
+# SU2 is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# SU2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+#
+################################################################################
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
-___bin_SU2_SOL_SOURCES = \
-  ../include/SU2_SOL.hpp \
-  ../src/SU2_SOL.cpp
+su2_sol_sources = ../include/SU2_SOL.hpp \
+		../src/SU2_SOL.cpp
 
+su2_sol_ldadd = $(am__append_3) $(am__append_4) @su2_externals_LIBS@ \
+	@MUTATIONPP_LD@ @JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
+	$(am__empty)
 
 # always link to built dependencies from ./externals
+
+# if BUILD_MUTATIONPP
+# endif
+
+# if BUILD_JSONCPP
+# endif
 
 # if BUILD_HDF5
 # endif
@@ -321,26 +364,15 @@ ___bin_SU2_SOL_SOURCES = \
 # endif
 
 # if BUILD_ZLIB
+su2_sol_cxx_flags = @su2_externals_INCLUDES@ @MUTATIONPP_CXX@ \
+	@JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ $(am__empty)
 # endif
-
-# if BUILD_MUTATIONPP
-# endif
-
-# if BUILD_JSONCPP
-___bin_SU2_SOL_CXXFLAGS = @su2_externals_INCLUDES@ @HDF5_CXX@ \
-	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
-	$(am__empty)
-___bin_SU2_SOL_LDADD =  \
-	../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-	../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-	../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-	../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-	../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-	../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-	../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
-	../../Common/lib/libSU2.a @su2_externals_LIBS@ @HDF5_LD@ \
-	@SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
+@BUILD_NORMAL_TRUE@___bin_SU2_SOL_SOURCES = ${su2_sol_sources}
+@BUILD_NORMAL_TRUE@___bin_SU2_SOL_CXXFLAGS = ${su2_sol_cxx_flags}
+@BUILD_NORMAL_TRUE@___bin_SU2_SOL_LDADD = ${su2_sol_ldadd}
+@BUILD_REVERSE_TRUE@___bin_SU2_SOL_AD_SOURCES = ${su2_sol_sources}
+@BUILD_REVERSE_TRUE@___bin_SU2_SOL_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_sol_cxx_flags} 
+@BUILD_REVERSE_TRUE@___bin_SU2_SOL_AD_LDADD = @REVERSE_LIBS@ ${su2_sol_ldadd}
 all: all-am
 
 .SUFFIXES:
@@ -429,6 +461,11 @@ clean-binPROGRAMS:
 ../bin/SU2_SOL$(EXEEXT): $(___bin_SU2_SOL_OBJECTS) $(___bin_SU2_SOL_DEPENDENCIES) $(EXTRA____bin_SU2_SOL_DEPENDENCIES) ../bin/$(am__dirstamp)
 	@rm -f ../bin/SU2_SOL$(EXEEXT)
 	$(AM_V_CXXLD)$(___bin_SU2_SOL_LINK) $(___bin_SU2_SOL_OBJECTS) $(___bin_SU2_SOL_LDADD) $(LIBS)
+../src/___bin_SU2_SOL_AD-SU2_SOL.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../bin/SU2_SOL_AD$(EXEEXT): $(___bin_SU2_SOL_AD_OBJECTS) $(___bin_SU2_SOL_AD_DEPENDENCIES) $(EXTRA____bin_SU2_SOL_AD_DEPENDENCIES) ../bin/$(am__dirstamp)
+	@rm -f ../bin/SU2_SOL_AD$(EXEEXT)
+	$(AM_V_CXXLD)$(___bin_SU2_SOL_AD_LINK) $(___bin_SU2_SOL_AD_OBJECTS) $(___bin_SU2_SOL_AD_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -438,6 +475,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_SOL-SU2_SOL.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_SOL_AD-SU2_SOL.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -468,6 +506,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_SOL.cpp' object='../src/___bin_SU2_SOL-SU2_SOL.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_SOL_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_SOL-SU2_SOL.obj `if test -f '../src/SU2_SOL.cpp'; then $(CYGPATH_W) '../src/SU2_SOL.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_SOL.cpp'; fi`
+
+../src/___bin_SU2_SOL_AD-SU2_SOL.o: ../src/SU2_SOL.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_SOL_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_SOL_AD-SU2_SOL.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_SOL_AD-SU2_SOL.Tpo -c -o ../src/___bin_SU2_SOL_AD-SU2_SOL.o `test -f '../src/SU2_SOL.cpp' || echo '$(srcdir)/'`../src/SU2_SOL.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_SOL_AD-SU2_SOL.Tpo ../src/$(DEPDIR)/___bin_SU2_SOL_AD-SU2_SOL.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_SOL.cpp' object='../src/___bin_SU2_SOL_AD-SU2_SOL.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_SOL_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_SOL_AD-SU2_SOL.o `test -f '../src/SU2_SOL.cpp' || echo '$(srcdir)/'`../src/SU2_SOL.cpp
+
+../src/___bin_SU2_SOL_AD-SU2_SOL.obj: ../src/SU2_SOL.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_SOL_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_SOL_AD-SU2_SOL.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_SOL_AD-SU2_SOL.Tpo -c -o ../src/___bin_SU2_SOL_AD-SU2_SOL.obj `if test -f '../src/SU2_SOL.cpp'; then $(CYGPATH_W) '../src/SU2_SOL.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_SOL.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_SOL_AD-SU2_SOL.Tpo ../src/$(DEPDIR)/___bin_SU2_SOL_AD-SU2_SOL.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SU2_SOL.cpp' object='../src/___bin_SU2_SOL_AD-SU2_SOL.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_SOL_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_SOL_AD-SU2_SOL.obj `if test -f '../src/SU2_SOL.cpp'; then $(CYGPATH_W) '../src/SU2_SOL.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SU2_SOL.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -689,7 +741,6 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-binPROGRAMS
 
-# endif
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

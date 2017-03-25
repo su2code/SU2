@@ -33,11 +33,12 @@
 
 #include "../include/SU2_SOL.hpp"
 #include "../../SU2_CFD/include/postprocessing_structure.hpp"
+#include "../../SU2_CFD/include/SUBoom.hpp"
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
-  
+
 	unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	ofstream ConvHist_file;
@@ -59,18 +60,18 @@ int main(int argc, char *argv[]) {
 #else
   SU2_Comm MPICommunicator(0);
 #endif
-  
+
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
-  
+
 	COutput *output                = NULL;
 	CGeometry **geometry_container = NULL;
 	CSolver **solver_container     = NULL;
 	CConfig **config_container     = NULL;
 	FWHSolver **FWH_container      = NULL;
-	
+
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
-  
+
   if (argc == 2 || argc == 3) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
 
@@ -80,64 +81,64 @@ int main(int argc, char *argv[]) {
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
 	/*--- Definition of the containers per zones ---*/
-  
+
 	solver_container = new CSolver*[nZone];
 	config_container = new CConfig*[nZone];
 	geometry_container = new CGeometry*[nZone];
-  
+
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone]       = NULL;
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
   }
-  
+
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    
+
     /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
-    
+
     config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
-        
+
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
-    
+
     CGeometry *geometry_aux = NULL;
-    
+
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-    
+
     geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-    
+
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-    
+
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
-    
+
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
-    
+
     geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-    
+
     /*--- Deallocate the memory of geometry_aux ---*/
-    
+
     delete geometry_aux;
 
     /*--- Add the Send/Receive boundaries ---*/
-    
+
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
-    
+
     /*--- Add the Send/Receive boundaries ---*/
-    
+
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
-    
+
     /*--- Create the vertex structure (required for MPI) ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
     geometry_container[iZone]->SetVertex(config_container[iZone]);
-    
+
     /*--- Store the global to local mapping after preprocessing. ---*/
 
     if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
@@ -148,15 +149,15 @@ int main(int argc, char *argv[]) {
   /*--- Determine whether the simulation is a FSI simulation ---*/
 
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
-  
+
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
-  
+
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
 #else
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
-  
+
 
 
 
@@ -204,23 +205,23 @@ geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLO
 
   geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
-      FWH_container = new FWHSolver* [nZone];
-for (iZone = 0; iZone < nZone; iZone++) {
+////////      FWH_container = new FWHSolver* [nZone];
+////////for (iZone = 0; iZone < nZone; iZone++) {
 
-   FWH_container[iZone]  = new FWHSolver(config_container[iZone],geometry_container[iZone]);
+////////   FWH_container[iZone]  = new FWHSolver(config_container[iZone],geometry_container[iZone]);
 
-}
-
-
+////////}
 
 
-  
+
+
+
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
-  
+
 	/*--- Definition of the output class (one for all the zones) ---*/
 	output = new COutput();
-  
+
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
 
@@ -328,7 +329,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
 			unsigned long iExtIter = 0;
 			bool StopCalc = false;
 			bool *SolutionInstantiated = new bool[nZone];
-			
+
 			for (iZone = 0; iZone < nZone; iZone++)
 				SolutionInstantiated[iZone] = false;
 
@@ -357,11 +358,11 @@ for (iZone = 0; iZone < nZone; iZone++) {
 												(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
 												((iExtIter == 0) || (iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
 
-					
+
 
 					/*--- Read in the restart file for this time step ---*/
 					for (iZone = 0; iZone < nZone; iZone++) {
-						
+
 						/*--- Set the current iteration number in the config class. ---*/
 						config_container[iZone]->SetExtIter(iExtIter);
 
@@ -376,7 +377,8 @@ for (iZone = 0; iZone < nZone; iZone++) {
                   solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
 					}
 					//Extracting flow data on the FWH surface as well as static pressure at the observer locations (for validation only)
-					 FWH_container[ZONE_0]->SetAeroacoustic_Analysis(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0],CFD_pressure_file);
+////////					 FWH_container[ZONE_0]->SetAeroacoustic_Analysis(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0],CFD_pressure_file);
+
 
 					if (rank == MASTER_NODE  && config_container[ZONE_0]->GetKind_ObjFunc() != NOISE  ){  // && config_container[ZONE_0]->GetKind_ObjFunc() == NOISE
 						cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
@@ -391,7 +393,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
 			if (config_container[ZONE_0]->GetAD_Mode()) AD::StopRecording();
 
 		}
-    
+
 		else if (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
 			/*--- Read in the restart file for this time step ---*/
@@ -410,7 +412,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
 
 			output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iZone, nZone);
 		}
-    
+
         else if (config_container[ZONE_0]->GetWrt_Dynamic()){
 
 			/*--- Dynamic simulation: merge all unsteady time steps. First,
@@ -470,7 +472,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
 			}
 
 		  }
-    
+
     else {
 
 			  /*--- Steady simulation: merge the single solution file. ---*/
@@ -537,46 +539,59 @@ for (iZone = 0; iZone < nZone; iZone++) {
            }else{
              if (rank == MASTER_NODE)
                cout << endl <<"------------------------- Computing Far Field Noise (Primal Only) -----------------------" << endl;
-             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+////////             FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+
+             SUBoom boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
+             cout << "SUBoom Initialized" << endl;
+             boom.ConditionAtmosphericData();
+             cout << "Condition Atmospheric Data Complete" << endl;
+             boom.ScaleFactors();
+             cout << "Scale Factors Complete" << endl;
+             boom.InitialWaveNormals();
+             cout << "Initial Wave Normals Complete" << endl;
+             boom.RayTracer();
+             cout << "Ray Tracer Complete" << endl;
+             boom.RayTubeArea();
+             cout << "Ray Tube Area Complete" << endl;
+             boom.FindInitialRayTime();
+             cout << "Find Initial Ray Time Complete" << endl;
+             boom.ODETerms();
+             cout << "ODE Terms Complete" << endl;
+             boom.DistanceToTime();
+             cout << "Distance To Time Complete" << endl;
+             boom.CreateSignature();
+             cout << "Create Signature Complete" << endl;
+             boom.PropagateSignal();
            }
-
-
-
-
-
-
-
-
-
 
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
-  
+
 #ifdef HAVE_MPI
   StopTime = MPI_Wtime();
 #else
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
-  
+
   /*--- Compute/print the total time for performance benchmarking. ---*/
-  
+
   UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
     cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
-  
+
   /*--- Exit the solver cleanly ---*/
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_SOL) ------------------------" << endl << endl;
-  
+
   /*--- Finalize MPI parallelization ---*/
-  
+
 #ifdef HAVE_MPI
   MPI_Finalize();
 #endif
-  
+
   return EXIT_SUCCESS;
 }
